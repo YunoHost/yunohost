@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
-       (len(args) < 2 or args[1] != 'tools' or args[2] != 'postinstall'):
+       (len(args) < 2 or args[0] != 'tools' or args[1] != 'postinstall'):
         from moulinette.interfaces.cli import colorize, get_locale
 
         # Init i18n

@@ -963,7 +963,7 @@ tools:
             action_help: YunoHost post-install
             api: POST /postinstall
             configuration:
-                authenticate: all
+                authenticate: false
                 lock: false
             arguments:
                 -d:

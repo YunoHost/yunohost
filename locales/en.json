@@ -9,7 +9,7 @@
     "no_list_found" : "No list found",
     "custom_list_name_required" : "You must provide a name for your custom list",
     "list_retrieve_error" : "Unable to retrieve the remote list",
-    "list_feteched" : "List successfully fetched",
+    "list_fetched" : "List successfully fetched",
     "list_unknown" : "Unknown list",
     "list_removed" : "List successfully removed",
     "app_unknown" : "Unknown app",
