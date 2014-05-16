@@ -1,0 +1,56 @@
+parents:
+    ou=users:
+        ou: users
+        objectClass:
+            - organizationalUnit
+            - top
+
+    ou=domains:
+        ou: domains
+        objectClass:
+            - organizationalUnit
+            - top
+
+    ou=apps:
+        ou: apps
+        objectClass:
+            - organizationalUnit
+            - top
+
+    ou=groups:
+        ou: groups
+        objectClass:
+            - organizationalUnit
+            - top
+    ou=sudo:
+        ou: sudo
+        objectClass:
+            - organizationalUnit
+            - top
+
+children:
+    cn=admins,ou=groups:
+        cn: admins
+        gidNumber: "4001"
+        memberUid: admin
+        objectClass:
+            - posixGroup
+            - top
+
+    cn=sftpusers,ou=groups:
+        cn: sftpusers
+        gidNumber: "4002"
+        memberUid: admin
+        objectClass:
+            - posixGroup
+            - top
+
+    cn=admin,ou=sudo:
+        cn: admin
+        sudoUser: admin
+        sudoHost: ALL
+        sudoCommand: ALL
+        sudoOption: "!authenticate"
+        objectClass:
+            - sudoRole
+            - top

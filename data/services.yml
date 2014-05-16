@@ -1,0 +1,38 @@
+nginx:
+   status: service
+   log: /var/log/nginx
+bind9:
+   status: service
+   log: /var/log/daemon.log
+dovecot:
+   status: service
+   log: [/var/log/mail.log,/var/log/mail.err]
+postfix:
+   status: service
+   log: [/var/log/mail.log,/var/log/mail.err]
+mysql:
+   status: service
+   log: [/var/log/mysql.log,/var/log/mysql.err]
+glances:
+   status: service
+tahoe-lafs:
+   status: ps aux | grep tahoe |grep -v grep
+   log: /home/yunohost.backup/tahoe/logs/twistd.log
+ssh:
+   status: service
+   log: /var/log/auth.log
+metronome:
+   status: metronomectl status
+   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
+slapd:
+   status: service
+   log: /var/log/syslog
+php5-fpm:
+   status: service
+   log: /var/log/php5-fpm.log
+yunohost-api:
+   status: cat /usr/share/pyshared/yunohost-cli/twistd.pid
+   log: /var/log/yunohost.log
+postgrey:
+   status: service
+   log: /var/log/mail.log
