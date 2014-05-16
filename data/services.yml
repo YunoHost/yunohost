@@ -31,7 +31,7 @@ php5-fpm:
    status: service
    log: /var/log/php5-fpm.log
 yunohost-api:
-   status: cat /usr/share/pyshared/yunohost-cli/twistd.pid
+    status: ps aux | grep yunohost-api | grep -v grep
    log: /var/log/yunohost.log
 postgrey:
    status: service

@@ -363,7 +363,7 @@ def tools_upgrade(ignore_apps=False, ignore_packages=False):
         
         # If API call
         if not os.isatty(1):
-            critical_packages = ["yunohost-cli", "yunohost-admin", "yunohost-config-nginx", "ssowat", "python"]
+            critical_packages = ["moulinette", "moulinette-yunohost", "yunohost-admin", "yunohost-config-nginx", "ssowat", "python"]
             for pkg in cache.get_changes():
                 if pkg.name in critical_packages:
                     # Temporarily keep package ...
