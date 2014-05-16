@@ -188,6 +188,8 @@ def tools_postinstall(domain, password, dyndns=False):
         password -- YunoHost admin password
 
     """
+    from moulinette.core import init_authenticator
+
     from yunohost.backup import backup_init
     from yunohost.app import app_ssowatconf
 
@@ -260,6 +262,13 @@ def tools_postinstall(domain, password, dyndns=False):
         if os.system(command) != 0:
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('yunohost_ca_creation_failed'))
+
+    # Instantiate LDAP Authenticator
+    auth = init_authenticator(('ldap', 'default'),
+                              { 'uri': "ldap://localhost:389",
+                                'base_dn': "dc=yunohost,dc=org",
+                                'user_rdn': "cn=admin" })
+    auth.authenticate('yunohost')
 
     # Initialize YunoHost LDAP base
     tools_ldapinit(auth)
