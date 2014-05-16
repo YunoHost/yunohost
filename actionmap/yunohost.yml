@@ -1,0 +1,1065 @@
+##########################################################################
+# Category/actions/arguments file
+#
+#
+# Except for general_arguments, this file contains 3 levels
+# as in this sample command line:
+#
+#     yunohost   monitor    info    --cpu --ram
+#        ^          ^         ^          ^
+#     (script) | category | action | parameters
+#
+#
+# Above example will lead to the function 'monitor_info(args)'
+# in the file 'yunohost_monitor.py' with 'cpu' and 'ram'
+# stored in an 'args' dictionnary.
+#
+# Usage:
+#    You can add a category at the first level, action at the second one,
+#    and arguments at the third one.
+#    If a connexion is needed for the action, don't forget to add it to
+#    the action parameters (ldap, repo, dns or firewall).
+#
+# Documentation:
+#     You can see all arguments settings at the argparse documentation:
+#     http://docs.python.org/dev/library/argparse.html
+#     #argparse.ArgumentParser.add_argument
+#
+#     Don't forget to turn argument yaml style (setting: value)
+#
+##########################################################################
+
+#############################
+#     Global parameters     #
+#############################
+_global:
+    configuration:
+        authenticate:
+            - api
+        authenticator:
+            default:
+                vendor: ldap
+                help: Admin Password
+                parameters:
+                    uri: ldap://localhost:389
+                    base_dn: dc=yunohost,dc=org
+                    user_rdn: cn=admin
+            ldap-anonymous:
+                vendor: ldap
+                parameters:
+                    uri: ldap://localhost:389
+                    base_dn: dc=yunohost,dc=org
+        argument_auth: true
+        lock: true
+    arguments:
+        -v:
+            full: --version
+            help: Display moulinette version
+            action: version
+            version: moulinette %version%
+
+#############################
+#           User            #
+#############################
+user:
+    category_help: Manage users
+    actions:
+
+        ### user_list()
+        list:
+            action_help: List users
+            api: GET /users
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+               --fields:
+                    help: fields to fetch
+                    nargs: "+"
+               -f:
+                    full: --filter
+                    help: LDAP filter used to search
+               -l:
+                    full: --limit
+                    help: Maximum number of user fetched
+                    type: int
+               -o:
+                    full: --offset
+                    help: Starting number for user fetching
+                    type: int
+
+        ### user_create()
+        create:
+            action_help: Create user
+            api: POST /users
+            configuration:
+                authenticate: all
+            arguments:
+                -u:
+                    full: --username
+                    help: Must be unique
+                    extra:
+                        ask: "Username"
+                        pattern:
+                            - '^[a-z0-9_]+$'
+                            - "Must be alphanumeric and underscore characters only"
+                -f:
+                    full: --firstname
+                    extra:
+                        ask: "Firstname"
+                -l:
+                    full: --lastname
+                    extra:
+                        ask: "Lastname"
+                -m:
+                    full: --mail
+                    help: Main mail address must be unique
+                    extra:
+                        ask: "Mail address"
+                        pattern:
+                            - '^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$'
+                            - "Must be a valid email address (e.g. someone@domain.org)"
+                -p:
+                    full: --password
+                    extra:
+                        password: "User password"
+
+        ### user_delete()
+        delete:
+            action_help: Delete user
+            api: 'DELETE /users/<users>'
+            configuration:
+                authenticate: all
+            arguments:
+                -u:
+                    full: --users
+                    help: Username of users to delete
+                    nargs: "*"
+                    extra:
+                        ask: "Users to delete"
+                        pattern:
+                            - '^[a-z0-9_]+$'
+                            - "Must be alphanumeric and underscore characters only"
+                --purge:
+                    action: store_true
+
+        ### user_update()
+        update:
+            action_help: Update user informations
+            api: 'PUT /users/<username>'
+            configuration:
+                authenticate: all
+            arguments:
+                username:
+                    help: Username of user to update
+                -f:
+                    full: --firstname
+                -l:
+                    full: --lastname
+                -m:
+                    full: --mail
+                -p:
+                    full: --change-password
+                    help: New password to set
+                    metavar: PASSWORD
+                --add-mailforward:
+                    help: Mailforward addresses to add
+                    nargs: "*"
+                    metavar: MAIL
+                --remove-mailforward:
+                    help: Mailforward addresses to remove
+                    nargs: "*"
+                    metavar: MAIL
+                --add-mailalias:
+                    help: Mail aliases to add
+                    nargs: "*"
+                    metavar: MAIL
+                --remove-mailalias:
+                    help: Mail aliases to remove
+                    nargs: "*"
+                    metavar: MAIL
+
+        ### user_info()
+        info:
+            action_help: Get user informations
+            api: 'GET /users/<username>'
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                username:
+                    help: Username or mail to get informations
+
+
+#############################
+#          Domain           #
+#############################
+domain:
+    category_help: Manage domains
+    actions:
+
+        ### domain_list()
+        list:
+            action_help: List domains
+            api: GET /domains
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                -f:
+                    full: --filter
+                    help: LDAP filter used to search
+                -l:
+                    full: --limit
+                    help: Maximum number of domain fetched
+                    type: int
+                -o:
+                    full: --offset
+                    help: Starting number for domain fetching
+                    type: int
+
+        ### domain_add()
+        add:
+            action_help: Create a custom domain
+            api: POST /domains
+            configuration:
+                authenticate: all
+            arguments:
+                domains:
+                    help: Domain name to add
+                    nargs: '+'
+                    extra:
+                        pattern:
+                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - "Must be a valid domain name (e.g. my-domain.org)"
+                -m:
+                    full: --main
+                    help: Is the main domain
+                    action: store_true
+                -d:
+                    full: --dyndns
+                    help: Subscribe to the DynDNS service
+                    action: store_true
+
+        ### domain_remove()
+        remove:
+            action_help: Delete domains
+            api: 'DELETE /domains/{domains}'
+            configuration:
+                authenticate: all
+            arguments:
+                domains:
+                    help: Domain(s) to delete
+                    nargs: "+"
+                    extra:
+                        pattern:
+                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - "Must be a valid domain name (e.g. my-domain.org)"
+
+        ### domain_info()
+#        info:
+#            action_help: Get domain informations
+#            api: 'GET /domains/<domain>'
+#            arguments:
+#                domain:
+#                    help: ""
+#                    extra:
+#                        pattern:
+#                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+#                            - "Must be a valid domain name (e.g. my-domain.org)"
+
+
+#############################
+#            App            #
+#############################
+app:
+    category_help: Manage apps
+    actions:
+
+        ### app_fetchlist()
+        fetchlist:
+            action_help: Fetch application list from app server
+            api: PUT /app/lists
+            arguments:
+                -u:
+                    full: --url
+                    help: URL of remote JSON list (default http://fapp.yunohost.org/app/list/raw)
+                -n:
+                    full: --name
+                    help: Name of the list (default fapp)
+
+        ### app_listlists()
+        listlists:
+            action_help: List fetched lists
+            api: GET /app/lists
+
+        ### app_removelist()
+        removelist:
+            action_help: Remove list from the repositories
+            api: DELETE /app/lists
+            arguments:
+                -n:
+                    full: --name
+                    help: Name of the list to remove
+                    extra:
+                        ask: "List to remove"
+                        pattern:
+                            - '^[a-z0-9_]+$'
+                            - "Must be alphanumeric and underscore characters only"
+
+        ### app_list()
+        list:
+            action_help: List apps
+            api: GET /apps
+            arguments:
+                -l:
+                    full: --limit
+                    help: Maximum number of app fetched
+                -o:
+                    full: --offset
+                    help: Starting number for app fetching
+                -f:
+                    full: --filter
+                    help: Name filter of app_id or app_name
+                -r:
+                    full: --raw
+                    help: Return the full app_dict
+                    action: store_true
+
+        ### app_info()
+        info:
+            action_help: Get app info
+            api: GET /app/<app>
+            arguments:
+                app:
+                    help: Specific app ID
+                -r:
+                    full: --raw
+                    help: Return the full app_dict
+                    action: store_true
+
+        ### app_map()
+        map:
+            action_help: List apps by domain
+            api: GET /app/map
+            arguments:
+                -a:
+                    full: --app
+                    help: Specific app to map
+                -r:
+                    full: --raw
+                    help: Return complete dict
+                    action: store_true
+                -u:
+                    full: --user
+                    help: Allowed app map for a user
+                    extra:
+                        pattern:
+                            - '^[a-z0-9_]+$'
+                            - "Must be alphanumeric and underscore characters only"
+
+
+        ### app_install() TODO: Write help
+        install:
+            action_help: Install apps
+            api: POST /app
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+                lock: false
+            arguments:
+                app:
+                    help: App to install
+                -l:
+                    full: --label
+                    help: Custom name for the app
+                -a:
+                    full: --args
+                    help: Serialize arguments for app installation
+
+        ### app_remove() TODO: Write help
+        remove:
+            action_help: Remove app
+            api: DELETE /app
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: App(s) to delete
+
+        ### app_upgrade()
+        upgrade:
+            action_help: Upgrade app
+            api: PUT /app
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: App(s) to upgrade (default all)
+                    nargs: "*"
+                -u:
+                    full: --url
+                    help: Git url to fetch for upgrade
+                -f:
+                    full: --file
+                    help: Folder or tarball for upgrade
+
+        ### app_setting()
+        setting:
+            action_help: Set ou get an app setting value
+            api: GET /app/<app>/setting
+            arguments:
+                app:
+                    help: App ID
+                key:
+                    help: Key to get/set
+                -v:
+                    full: --value
+                    help: Value to set
+                -d:
+                    full: --delete
+                    help: Delete the key
+                    action: store_true
+
+        ### app_service()
+        service:
+            action_help: Add or remove a YunoHost monitored service
+            api: POST /app/service/<service>
+            arguments:
+                service:
+                    help: Service to add/remove
+                -s:
+                    full: --status
+                    help: Custom status command
+                -l:
+                    full: --log
+                    help: Absolute path to log file to display
+                -r:
+                    full: --runlevel
+                    help: Runlevel priority of the service
+                -R:
+                    full: --remove
+                    help: Remove service
+                    action: store_true
+
+        ### app_checkport()
+        checkport:
+            action_help: Check availability of a local port
+            api: GET /app/checkport
+            arguments:
+                port:
+                    help: Port to check
+                    extra:
+                        pattern:
+                            - '^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
+                            - "Must be a valid port number (i.e. 0-65535)"
+
+        ### app_checkurl()
+        checkurl:
+            action_help: Check availability of a web path
+            api: GET /app/checkurl
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                url:
+                    help: Url to check
+                -a:
+                    full: --app
+                    help: Write domain & path to app settings for further checks
+
+        ### app_initdb()
+        initdb:
+            action_help: Create database and initialize it with optionnal attached script
+            api: POST /app/initdb
+            arguments:
+                user:
+                    help: Name of the DB user
+                -p:
+                    full: --password
+                    help: Password of the DB (generated unless set)
+                -d:
+                    full: --db
+                    help: DB name (user unless set)
+                -s:
+                    full: --sql
+                    help: Initial SQL file
+
+        ### app_makedefault()
+        makedefault:
+            action_help: Redirect domain root to an app
+            api: PUT /app/default
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: App name to put on domain root
+                -d:
+                    full: --domain
+                    help: Specific domain to put app on (the app domain by default)
+
+        ### app_ssowatconf()
+        ssowatconf:
+            action_help: Regenerate SSOwat configuration file
+            api: PUT /ssowatconf
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### app_addaccess() TODO: Write help
+        addaccess:
+            action_help: Grant access right to users (everyone by default)
+            api: PUT /app/access
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                apps:
+                    nargs: "+"
+                -u:
+                    full: --users
+                    nargs: "+"
+
+        ### app_removeaccess() TODO: Write help
+        removeaccess:
+            action_help: Revoke access right to users (everyone by default)
+            api: DELETE /app/access
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                apps:
+                    nargs: "+"
+                -u:
+                    full: --users
+                    nargs: "+"
+
+        ### app_clearaccess()
+        clearaccess:
+            action_help: Reset access rights for the app
+            api: POST /app/access
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                apps:
+                    nargs: "+"
+
+#############################
+#          Backup           #
+#############################
+backup:
+    category_help: Manage backups
+    actions:
+
+        ### backup_init()
+        init:
+            action_help: Init Tahoe-LAFS configuration
+            api: POST /backup/init
+            arguments:
+                --helper:
+                    help: Init as a helper node rather than a "helped" one
+                    action: store_true
+
+
+#############################
+#          Monitor          #
+#############################
+monitor:
+    category_help: Monitor the server
+    actions:
+
+        ### monitor_disk()
+        disk:
+            action_help: Monitor disk space and usage
+            api: GET /monitor/disk
+            arguments:
+                -f:
+                    full: --filesystem
+                    help: Show filesystem disk space
+                    action: append_const
+                    const: filesystem
+                    dest: units
+                -t:
+                    full: --io
+                    help: Show I/O throughput
+                    action: append_const
+                    const: io
+                    dest: units
+                -m:
+                    full: --mountpoint
+                    help: Monitor only the device mounted on MOUNTPOINT
+                    action: store
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
+
+        ### monitor_network()
+        network:
+            action_help: Monitor network interfaces
+            api: GET /monitor/network
+            arguments:
+                -u:
+                    full: --usage
+                    help: Show interfaces bit rates
+                    action: append_const
+                    const: usage
+                    dest: units
+                -i:
+                    full: --infos
+                    help: Show network informations
+                    action: append_const
+                    const: infos
+                    dest: units
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
+
+        ### monitor_system()
+        system:
+            action_help: Monitor system informations and usage
+            api: GET /monitor/system
+            arguments:
+                -m:
+                    full: --memory
+                    help: Show memory usage
+                    action: append_const
+                    const: memory
+                    dest: units
+                -c:
+                    full: --cpu
+                    help: Show CPU usage and load
+                    action: append_const
+                    const: cpu
+                    dest: units
+                -p:
+                    full: --process
+                    help: Show processes summary
+                    action: append_const
+                    const: process
+                    dest: units
+                -u:
+                    full: --uptime
+                    help: Show the system uptime
+                    action: append_const
+                    const: uptime
+                    dest: units
+                -i:
+                    full: --infos
+                    help: Show system informations
+                    action: append_const
+                    const: infos
+                    dest: units
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
+
+        ### monitor_updatestats()
+        update-stats:
+            action_help: Update monitoring statistics
+            api: POST /monitor/update-stats
+            arguments:
+                period:
+                    help: Time period to update
+                    choices:
+                        - day
+                        - week
+                        - month
+
+        ### monitor_showstats()
+        show-stats:
+            action_help: Show monitoring statistics
+            api: GET /monitor/show-stats
+            arguments:
+                period:
+                    help: Time period to show
+                    choices:
+                        - day
+                        - week
+                        - month
+
+        ### monitor_enable()
+        enable:
+            action_help: Enable server monitoring
+            arguments:
+                -n:
+                    full: --no-stats
+                    help: Disable monitoring statistics
+                    action: store_true
+
+        ### monitor_disable()
+        disable:
+            action_help: Disable server monitoring
+
+
+#############################
+#         Service           #
+#############################
+service:
+    category_help: Manage services
+    actions:
+
+        ### service_start()
+        start:
+            action_help: Start one or more services
+            arguments:
+                names:
+                    help: Service name to start
+                    nargs: +
+                    metavar: NAME
+
+        ### service_stop()
+        stop:
+            action_help: Stop one or more services
+            arguments:
+                names:
+                    help: Service name to stop
+                    nargs: +
+                    metavar: NAME
+
+        ### service_enable()
+        enable:
+            action_help: Enable one or more services
+            arguments:
+                names:
+                    help: Service name to enable
+                    nargs: +
+                    metavar: NAME
+
+        ### service_disable()
+        disable:
+            action_help: Disable one or more services
+            arguments:
+                names:
+                    help: Service name to disable
+                    nargs: +
+                    metavar: NAME
+
+        ### service_status()
+        status:
+            action_help: Show status information about one or more services (all by default)
+            arguments:
+                names:
+                    help: Service name to show
+                    nargs: "*"
+                    metavar: NAME
+
+        ### service_log()
+        log:
+            action_help: Log every log files of a service
+            arguments:
+                name:
+                    help: Service name to log
+                -n:
+                    full: --number
+                    help: Number of lines to display
+                    default: "50"
+                    extra:
+                        pattern:
+                            - '^[0-9]+$'
+                            - "Must be a valid number"
+
+
+#############################
+#         Firewall          #
+#############################
+firewall:
+    category_help: Manage firewall rules
+    actions:
+
+        ### firewall_list()
+        list:
+            action_help: List all firewall rules
+            api: GET /firewall/list
+            arguments:
+                -r:
+                    full: --raw
+                    help: Return the complete YAML dict
+                    action: store_true
+
+        ### firewall_reload()
+        reload:
+            action_help: Reload all firewall rules
+            api: PUT /firewall/list
+
+        ### firewall_allow()
+        allow:
+            action_help: Allow connection port/protocol
+            api: POST /firewall/port
+            arguments:
+                port:
+                    help: Port to open
+                    extra:
+                        pattern:
+                            - '^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
+                            - "Must be a valid port number (i.e. 0-65535)"
+                protocol:
+                    help: Protocol associated with port
+                    choices:
+                        - UDP
+                        - TCP
+                        - Both
+                        - []
+                    nargs: "*"
+                    default: TCP
+                --ipv6:
+                    action: store_true
+                --no-upnp:
+                    action: store_true
+
+
+        ### firewall_disallow()
+        disallow:
+            action_help: Disallow connection
+            api: DELETE /firewall/port
+            arguments:
+                port:
+                    help: Port to close
+                    extra:
+                        pattern:
+                            - '^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
+                            - "Must be a valid port number (i.e. 0-65535)"
+                protocol:
+                    help: Protocol associated with port
+                    choices:
+                        - UDP
+                        - TCP
+                        - Both
+                        - []
+                    nargs: "*"
+                    default: TCP
+                --ipv6:
+                    action: store_true
+
+
+        ### firewall_upnp()
+        upnp:
+            action_help: Add uPnP cron and enable uPnP in firewall.yml, or the opposite.
+            api: GET /firewall/upnp
+            arguments:
+                action:
+                    help: enable/disable
+                    choices:
+                        - enable
+                        - disable
+                        - []
+                    nargs: "*"
+
+        ### firewall_stop()
+        stop:
+            action_help: Stop iptables and ip6tables
+            api: DELETE /firewall
+
+
+
+#############################
+#          DynDNS           #
+#############################
+dyndns:
+    category_help: Subscribe and Update DynDNS Hosts
+    actions:
+
+        ### dyndns_subscribe()
+        subscribe:
+            action_help: Subscribe to a DynDNS service
+            api: POST /dyndns
+            arguments:
+                --subscribe-host:
+                    help: Dynette HTTP API to subscribe to
+                    default: "dyndns.yunohost.org"
+                -d:
+                    full: --domain
+                    help: Full domain to subscribe with
+                -k:
+                    full: --key
+                    help: Public DNS key
+
+        ### dyndns_update()
+        update:
+            action_help: Update IP on DynDNS platform
+            api: PUT /dyndns
+            arguments:
+                --dyn-host:
+                    help: Dynette DNS server to inform
+                    default: "dynhost.yunohost.org"
+                -d:
+                    full: --domain
+                    help: Full domain to subscribe with
+                -k:
+                    full: --key
+                    help: Public DNS key
+                -i:
+                    full: --ip
+                    help: IP address to send
+
+        ### dyndns_installcron()
+        installcron:
+            action_help: Install IP update cron
+            api: POST /dyndns/cron
+
+        ### dyndns_removecron()
+        removecron:
+            action_help: Remove IP update cron
+            api: DELETE /dyndns/cron
+
+
+#############################
+#           Tools           #
+#############################
+tools:
+    category_help: Specific tools
+    actions:
+
+        ### tools_ldapinit()
+        ldapinit:
+            action_help: YunoHost LDAP initialization
+            api: POST /ldap
+            configuration:
+                authenticate: all
+
+        ### tools_adminpw()
+        adminpw:
+            action_help: Change admin password
+            api: PUT /adminpw
+            arguments:
+                -o:
+                    full: --old-password
+                    extra:
+                        password: "Current admin password"
+                -n:
+                    full: --new-password
+                    extra:
+                        password: "New admin password"
+
+        ### tools_maindomain()
+        maindomain:
+            action_help: Main domain change tool
+            api: PUT /domain/main
+            configuration:
+                authenticate: all
+            arguments:
+                -o:
+                    full: --old-domain
+                    extra:
+                        pattern:
+                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - "Must be a valid domain name (e.g. my-domain.org)"
+                -n:
+                    full: --new-domain
+                    extra:
+                        ask: "New main domain"
+                        pattern:
+                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - "Must be a valid domain name (e.g. my-domain.org)"
+
+        ### tools_postinstall()
+        postinstall:
+            action_help: YunoHost post-install
+            api: POST /postinstall
+            configuration:
+                authenticate: all
+                lock: false
+            arguments:
+                -d:
+                    full: --domain
+                    help: YunoHost main domain
+                    extra:
+                        ask: "Main domain"
+                        pattern:
+                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - "Must be a valid domain name (e.g. my-domain.org)"
+                -p:
+                    full: --password
+                    help: YunoHost admin password
+                    extra:
+                        password: "New admin password"
+                --dyndns:
+                    help: Subscribe domain to a DynDNS service
+                    action: store_true
+
+        ### tools_update()
+        update:
+            action_help: YunoHost update
+            api: PUT /update
+            arguments:
+                --ignore-apps:
+                    help: Ignore apps cache update and changelog
+                    action: store_true
+                --ignore-packages:
+                    help: Ignore APT cache update and changelog
+                    action: store_true
+
+        ### tools_upgrade()
+        upgrade:
+            action_help: YunoHost upgrade
+            api: PUT /upgrade
+            arguments:
+                --ignore-apps:
+                    help: Ignore apps upgrade
+                    action: store_true
+                --ignore-packages:
+                    help: Ignore APT packages upgrade
+                    action: store_true
+
+
+#############################
+#           Hook            #
+#############################
+hook:
+    category_help: Manage hooks
+    actions:
+
+        ### hook_add()
+        add:
+            action_help: Store hook script to filesystem
+            api: PUT /hook
+            arguments:
+                app:
+                    help: App to link with
+                file:
+                    help: Script to add
+
+        ### hook_remove()
+        remove:
+            action_help: Remove hook scripts from filesystem
+            api: DELETE /hook
+            arguments:
+                app:
+                    help: Scripts related to app will be removed
+
+        ### hook_callback()
+        callback:
+            action_help: Execute all scripts binded to an action
+            api: GET /hooks
+            arguments:
+                action:
+                    help: Action name
+                -a:
+                    full: --args
+                    help: Ordered list of arguments to pass to the script
+                    nargs: '*'
+
+        ### hook_check()
+        check:
+            action_help: Parse the script file and get arguments
+            api: GET /hook/check
+            arguments:
+                file:
+                    help: File to check
+
+        ### hook_exec()
+        exec:
+            action_help: Execute hook from a file with arguments
+            api: GET /hook
+            arguments:
+                file:
+                    help: Script to execute
+                -a:
+                    full: --args
+                    help: Arguments to pass to the script
