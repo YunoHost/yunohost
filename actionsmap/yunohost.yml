@@ -961,7 +961,6 @@ tools:
                 -n:
                     full: --new-domain
                     extra:
-                        ask: "New main domain"
                         pattern:
                             - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
                             - "Must be a valid domain name (e.g. my-domain.org)"
