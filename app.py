@@ -488,7 +488,7 @@ def app_install(auth, app, label=None, args=None):
         raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
 
 
-def app_remove(app):
+def app_remove(auth, app):
     """
     Remove app
 
@@ -518,7 +518,7 @@ def app_remove(app):
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
-    app_ssowatconf()
+    app_ssowatconf(auth)
     msignals.display(m18n.n('app_removed') % app, 'success')
 
 
