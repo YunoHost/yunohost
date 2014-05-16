@@ -244,7 +244,7 @@ domain:
         ### domain_remove()
         remove:
             action_help: Delete domains
-            api: DELETE /domain/delete/{domains}
+            api: DELETE /domain/delete/<domains>
             configuration:
                 authenticate: all
             arguments:
