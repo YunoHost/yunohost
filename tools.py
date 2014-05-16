@@ -44,7 +44,7 @@ def tools_ldapinit(auth):
 
 
     """
-    with open('ldap_scheme.yml') as f:
+    with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
         ldap_map = yaml.load(f)
 
     for rdn, attr_dict in ldap_map['parents'].items():
