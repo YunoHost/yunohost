@@ -364,7 +364,7 @@ app:
             action_help: Install apps
             api: POST /app/install
             configuration:
-                authenticate: false
+                authenticate: all
                 authenticator: ldap-anonymous
                 lock: false
             arguments:
@@ -687,7 +687,7 @@ monitor:
         ### monitor_enable()
         enable:
             action_help: Enable server monitoring
-	    api: PUT /monitor/enable
+            api: PUT /monitor/enable
             arguments:
                 -n:
                     full: --no-stats
@@ -696,7 +696,7 @@ monitor:
 
         ### monitor_disable()
         disable:
-	    api: DELETE /monitor/disable
+            api: DELETE /monitor/disable
             action_help: Disable server monitoring
 
 
@@ -710,7 +710,7 @@ service:
         ### service_start()
         start:
             action_help: Start one or more services
-	    api: PUT /service/start
+            api: PUT /service/start
             arguments:
                 names:
                     help: Service name to start
@@ -720,7 +720,7 @@ service:
         ### service_stop()
         stop:
             action_help: Stop one or more services
-	    api: DELETE /service/stop
+            api: DELETE /service/stop
             arguments:
                 names:
                     help: Service name to stop
@@ -730,7 +730,7 @@ service:
         ### service_enable()
         enable:
             action_help: Enable one or more services
-	    api: PUT /service/enable
+            api: PUT /service/enable
             arguments:
                 names:
                     help: Service name to enable
@@ -740,7 +740,7 @@ service:
         ### service_disable()
         disable:
             action_help: Disable one or more services
-	    api: DELETE /service/disable
+            api: DELETE /service/disable
             arguments:
                 names:
                     help: Service name to disable
@@ -750,7 +750,7 @@ service:
         ### service_status()
         status:
             action_help: Show status information about one or more services (all by default)
-	    api: GET /service/status
+            api: GET /service/status
             arguments:
                 names:
                     help: Service name to show
@@ -760,7 +760,7 @@ service:
         ### service_log()
         log:
             action_help: Log every log files of a service
-	    api: GET /service/log
+            api: GET /service/log
             arguments:
                 name:
                     help: Service name to log
