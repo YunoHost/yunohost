@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+import os.path
+
+from_source = False
+
+# Run from source
+basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
+if os.path.isdir('%s/moulinette' % basedir):
+    sys.path.insert(0, basedir)
+    from_source = True
+
+from moulinette import init, cli, MoulinetteError
+from moulinette.helpers import YunoHostError, colorize
+
+
+## Main action
+
+if __name__ == '__main__':
+    # Run from source
+    init(_from_source=from_source)
+
+    # Additional arguments
+    use_cache = True
+    if '--no-cache' in sys.argv:
+        use_cache = False
+        sys.argv.remove('--no-cache')
+
+    args = list(sys.argv)
+    args.pop(0)
+
+    # Check that YunoHost is installed
+    if not os.path.isfile('/etc/yunohost/installed') and \
+       (len(args) < 2 or args[1] != 'tools' or args[2] != 'postinstall'):
+        from moulinette.interfaces.cli import colorize, get_locale
+
+        # Init i18n
+        m18n.load_namespace('yunohost')
+        m18n.set_locale(get_locale())
+
+        # Print error and exit
+        print('%s %s' % (colorize(m18n.g('error'), 'red'),
+                         m18n.n('yunohost_not_installed')))
+        sys.exit(1)
+
+    # Execute the action
+    ret = cli(['yunohost'], args, use_cache)
+    sys.exit(ret)
