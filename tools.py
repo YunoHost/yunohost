@@ -149,18 +149,12 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
         'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
         'echo %s > /etc/yunohost/current_host' % new_domain,
-        'service nginx restart',
         'service metronome restart',
         'service postfix restart',
         'service dovecot restart',
-        'service amavis restart'
+        'service amavis restart',
+        'service nginx restart',
     ]
-
-    try:
-        with open('/etc/yunohost/light') as f: pass
-    except IOError:
-        command_list.append('service amavis restart')
-        #command_list.append('service tahoe-lafs restart')
 
     for command in command_list:
         if os.system(command) != 0:
@@ -286,7 +280,6 @@ def tools_postinstall(domain, password, dyndns=False):
     tools_adminpw(old_password='yunohost', new_password=password)
 
     os.system('touch /etc/yunohost/installed')
-    os.system('service yunohost-api restart &')
 
     msignals.display(m18n.n('yunohost_configured'), 'success')
 
@@ -319,7 +312,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                 'fullname': pkg.fullname,
                 'changelog': pkg.get_changelog()
             })
-        
+
     apps = []
     if not ignore_apps:
         app_fetchlist()
@@ -347,7 +340,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                         'id': app_id,
                         'label': current_app_dict['settings']['label']
                     })
-    
+
     if len(apps) == 0 and len(packages) == 0:
         msignals.display(m18n.n('system_no_upgrade'), 'success')
 
@@ -369,7 +362,7 @@ def tools_upgrade(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
         cache.open(None)
         cache.upgrade(True)
-        
+
         # If API call
         if not os.isatty(1):
             critical_packages = ["moulinette", "moulinette-yunohost", "yunohost-admin", "yunohost-config-nginx", "ssowat", "python"]
