@@ -248,7 +248,7 @@ def firewall_upnp(action=None):
         if firewall['uPnP']['enabled'] == True:
             msignals.display(m18n.n('upnp_active'), 'success')
         else:
-            raise MoulinetteError(errno.EPERM,
+            raise MoulinetteError(errno.EADV,
                               m18n.n('upnp_inactive'))
             
     if action:
