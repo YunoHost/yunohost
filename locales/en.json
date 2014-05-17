@@ -67,6 +67,8 @@
     "upnp_port_open_failed" : "Unable to open uPnP ports",
     "upnp_enabled" : "uPnP successfully enabled",
     "upnp_disabled" : "uPnP successfully disabled",
+    "upnp_active" : "uPnP is activate",
+    "upnp_desactive" : "uPnP is not activate",
     "firewall_reloaded" : "Firewall successfully reloaded",
 
     "hook_choice_invalid" : "Invalid choice '%s'",
