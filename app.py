@@ -90,7 +90,7 @@ def app_fetchlist(url=None, name=None):
     os.rename('%s.tmp' % list_file, list_file)
 
     os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
-    os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s --no-ldap > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
+    os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
 
     msignals.display(m18n.n('list_fetched'), 'success')
 

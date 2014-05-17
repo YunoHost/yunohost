@@ -191,7 +191,7 @@ def firewall_reload():
         for protocol in ['TCP', 'UDP']:
             for port in firewall['ipv6'][protocol]:
                 os.system("ip6tables -A INPUT -p %s --dport %d -j ACCEPT" % (protocol, port))
-    
+
         os.system("ip6tables -A INPUT -i lo -j ACCEPT")
         os.system("ip6tables -A INPUT -p icmpv6 -j ACCEPT")
         os.system("ip6tables -P INPUT DROP")
@@ -217,7 +217,7 @@ def firewall_upnp(action=None):
 
     if action == 'enable':
         firewall['uPnP']['enabled'] = True
-        
+
         with open('/etc/cron.d/yunohost-firewall', 'w+') as f:
             f.write('*/50 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin yunohost firewall reload >>/dev/null')
 
@@ -237,7 +237,7 @@ def firewall_upnp(action=None):
                             try: upnpc.deleteportmapping(port, protocol)
                             except: pass
         except: pass
-                
+
 
         try: os.remove('/etc/cron.d/yunohost-firewall')
         except: pass

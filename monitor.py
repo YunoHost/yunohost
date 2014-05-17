@@ -386,9 +386,9 @@ def monitor_enable(no_stats=False):
     if not no_stats:
         cmd = 'yunohost monitor update-stats'
         #  day: every 5 min  #  week: every 1 h  #  month: every 4 h  #
-        rules = ('*/5 * * * * root %(cmd)s day --no-ldap >> /dev/null\n' + \
-                 '3 * * * * root %(cmd)s week --no-ldap >> /dev/null\n' + \
-                 '6 */4 * * * root %(cmd)s month --no-ldap >> /dev/null') % {'cmd': cmd}
+        rules = ('*/5 * * * * root %(cmd)s day >> /dev/null\n' + \
+                 '3 * * * * root %(cmd)s week >> /dev/null\n' + \
+                 '6 */4 * * * root %(cmd)s month >> /dev/null') % {'cmd': cmd}
         os.system("touch %s" % crontab_path)
         os.system("echo '%s' >%s" % (rules, crontab_path))
 
