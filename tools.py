@@ -186,6 +186,7 @@ def tools_postinstall(domain, password, dyndns=False):
 
     from yunohost.backup import backup_init
     from yunohost.app import app_ssowatconf
+    from yunohost.firewall import firewall_upnp
 
     try:
         with open('/etc/yunohost/installed') as f: pass
@@ -278,6 +279,9 @@ def tools_postinstall(domain, password, dyndns=False):
 
     # Change LDAP admin password
     tools_adminpw(old_password='yunohost', new_password=password)
+
+    # Enable uPnP
+    firewall_upnp(action='enable')
 
     os.system('touch /etc/yunohost/installed')
 
