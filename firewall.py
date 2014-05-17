@@ -256,7 +256,6 @@ def firewall_upnp(action=None):
         with open('/etc/yunohost/firewall.yml', 'w') as f:
             yaml.safe_dump(firewall, f, default_flow_style=False)
 
-    return { "enabled": firewall['uPnP']['enabled'] }
 
 
 def firewall_stop():
