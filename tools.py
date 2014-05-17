@@ -281,7 +281,7 @@ def tools_postinstall(domain, password, dyndns=False):
     tools_adminpw(old_password='yunohost', new_password=password)
 
     # Enable uPnP
-    firewall_upnp(action='enable')
+    firewall_upnp(action=['enable'])
 
     os.system('touch /etc/yunohost/installed')
 
