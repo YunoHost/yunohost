@@ -91,7 +91,7 @@ user:
         ### user_create()
         create:
             action_help: Create user
-            api: POST /user
+            api: POST /users
             configuration:
                 authenticate: all
             arguments:
@@ -127,7 +127,7 @@ user:
         ### user_delete()
         delete:
             action_help: Delete user
-            api: DELETE /user/delete/<users>
+            api: DELETE /users/<users>
             configuration:
                 authenticate: all
             arguments:
@@ -146,7 +146,7 @@ user:
         ### user_update()
         update:
             action_help: Update user informations
-            api: PUT /user/update/<username>
+            api: PUT /users/<username>
             configuration:
                 authenticate: all
             arguments:
@@ -182,7 +182,7 @@ user:
         ### user_info()
         info:
             action_help: Get user informations
-            api: GET /user/<username>
+            api: GET /users/<username>
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -221,7 +221,7 @@ domain:
         ### domain_add()
         add:
             action_help: Create a custom domain
-            api: POST /domain/create
+            api: POST /domains
             configuration:
                 authenticate: all
             arguments:
@@ -244,7 +244,7 @@ domain:
         ### domain_remove()
         remove:
             action_help: Delete domains
-            api: DELETE /domain/delete/<domains>
+            api: DELETE /domains/<domains>
             configuration:
                 authenticate: all
             arguments:
@@ -279,7 +279,7 @@ app:
         ### app_fetchlist()
         fetchlist:
             action_help: Fetch application list from app server
-            api: PUT /applist/refresh
+            api: PUT /appslists
             arguments:
                 -u:
                     full: --url
@@ -291,12 +291,12 @@ app:
         ### app_listlists()
         listlists:
             action_help: List fetched lists
-            api: GET /applist/lists
+            api: GET /appslists
 
         ### app_removelist()
         removelist:
             action_help: Remove list from the repositories
-            api: DELETE /applist/delete
+            api: DELETE /appslists
             arguments:
                 -n:
                     full: --name
@@ -329,7 +329,7 @@ app:
         ### app_info()
         info:
             action_help: Get app info
-            api: GET /app/<app>
+            api: GET /apps/<app>
             arguments:
                 app:
                     help: Specific app ID
@@ -341,7 +341,7 @@ app:
         ### app_map()
         map:
             action_help: List apps by domain
-            api: GET /app/map
+            api: GET /appsmap
             arguments:
                 -a:
                     full: --app
@@ -362,7 +362,7 @@ app:
         ### app_install() TODO: Write help
         install:
             action_help: Install apps
-            api: POST /app/install
+            api: POST /apps
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -380,7 +380,7 @@ app:
         ### app_remove() TODO: Write help
         remove:
             action_help: Remove app
-            api: DELETE /app/delete
+            api: DELETE /apps
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -391,7 +391,7 @@ app:
         ### app_upgrade()
         upgrade:
             action_help: Upgrade app
-            api: PUT /app/upgrade
+            api: PUT /upgrade/apps
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -409,7 +409,7 @@ app:
         ### app_setting()
         setting:
             action_help: Set ou get an app setting value
-            api: GET /app/<app>/setting
+            api: GET /apps/<app>/settings
             arguments:
                 app:
                     help: App ID
@@ -426,7 +426,7 @@ app:
         ### app_service()
         service:
             action_help: Add or remove a YunoHost monitored service
-            api: POST /app/service/<service>
+            api: POST /services
             arguments:
                 service:
                     help: Service to add/remove
@@ -447,7 +447,7 @@ app:
         ### app_checkport()
         checkport:
             action_help: Check availability of a local port
-            api: GET /app/checkport
+            api: GET /tools/checkport
             arguments:
                 port:
                     help: Port to check
@@ -459,7 +459,7 @@ app:
         ### app_checkurl()
         checkurl:
             action_help: Check availability of a web path
-            api: GET /app/checkurl
+            api: GET /tools/checkurl
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -473,7 +473,7 @@ app:
         ### app_initdb()
         initdb:
             action_help: Create database and initialize it with optionnal attached script
-            api: POST /app/initdb
+            api: POST /tools/initdb
             arguments:
                 user:
                     help: Name of the DB user
@@ -490,7 +490,7 @@ app:
         ### app_makedefault()
         makedefault:
             action_help: Redirect domain root to an app
-            api: PUT /app/default
+            api: PUT /apps/<app>/default
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -512,7 +512,7 @@ app:
         ### app_addaccess() TODO: Write help
         addaccess:
             action_help: Grant access right to users (everyone by default)
-            api: PUT /app/access/grant
+            api: PUT /access
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -526,7 +526,7 @@ app:
         ### app_removeaccess() TODO: Write help
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
-            api: DELETE /app/access/delete
+            api: DELETE /access
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -540,7 +540,7 @@ app:
         ### app_clearaccess()
         clearaccess:
             action_help: Reset access rights for the app
-            api: POST /app/access/clear
+            api: POST /access
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -558,7 +558,7 @@ backup:
         ### backup_init()
         init:
             action_help: Init Tahoe-LAFS configuration
-            api: POST /backup/init
+            # api: POST /backup/init
             arguments:
                 --helper:
                     help: Init as a helper node rather than a "helped" one
@@ -663,7 +663,7 @@ monitor:
         ### monitor_updatestats()
         update-stats:
             action_help: Update monitoring statistics
-            api: POST /monitor/update-stats
+            api: POST /monitor/stats
             arguments:
                 period:
                     help: Time period to update
@@ -675,7 +675,7 @@ monitor:
         ### monitor_showstats()
         show-stats:
             action_help: Show monitoring statistics
-            api: GET /monitor/show-stats
+            api: GET /monitor/stats
             arguments:
                 period:
                     help: Time period to show
@@ -687,7 +687,7 @@ monitor:
         ### monitor_enable()
         enable:
             action_help: Enable server monitoring
-            api: PUT /monitor/enable
+            api: PUT /monitor
             arguments:
                 -n:
                     full: --no-stats
@@ -696,7 +696,7 @@ monitor:
 
         ### monitor_disable()
         disable:
-            api: DELETE /monitor/disable
+            api: DELETE /monitor
             action_help: Disable server monitoring
 
 
@@ -710,7 +710,7 @@ service:
         ### service_start()
         start:
             action_help: Start one or more services
-            api: PUT /service/start
+            api: PUT /services/<names>
             arguments:
                 names:
                     help: Service name to start
@@ -720,7 +720,7 @@ service:
         ### service_stop()
         stop:
             action_help: Stop one or more services
-            api: DELETE /service/stop
+            api: DELETE /services/<names>
             arguments:
                 names:
                     help: Service name to stop
@@ -730,7 +730,7 @@ service:
         ### service_enable()
         enable:
             action_help: Enable one or more services
-            api: PUT /service/enable
+            api: PUT /services/<names>/enable
             arguments:
                 names:
                     help: Service name to enable
@@ -740,7 +740,7 @@ service:
         ### service_disable()
         disable:
             action_help: Disable one or more services
-            api: DELETE /service/disable
+            api: DELETE /services/<names>/enable
             arguments:
                 names:
                     help: Service name to disable
@@ -750,7 +750,7 @@ service:
         ### service_status()
         status:
             action_help: Show status information about one or more services (all by default)
-            api: GET /service/status
+            api: GET /services/<names>
             arguments:
                 names:
                     help: Service name to show
@@ -760,7 +760,7 @@ service:
         ### service_log()
         log:
             action_help: Log every log files of a service
-            api: GET /service/log
+            api: GET /services/<name>/log
             arguments:
                 name:
                     help: Service name to log
@@ -784,7 +784,7 @@ firewall:
         ### firewall_list()
         list:
             action_help: List all firewall rules
-            api: GET /firewall/list
+            api: GET /firewall
             arguments:
                 -r:
                     full: --raw
@@ -794,12 +794,12 @@ firewall:
         ### firewall_reload()
         reload:
             action_help: Reload all firewall rules
-            api: PUT /firewall/reload
+            api: PUT /firewall
 
         ### firewall_allow()
         allow:
             action_help: Allow connection port/protocol
-            api: POST /firewall/allow
+            api: POST /firewall/port
             arguments:
                 port:
                     help: Port to open
@@ -825,7 +825,7 @@ firewall:
         ### firewall_disallow()
         disallow:
             action_help: Disallow connection
-            api: DELETE /firewall/disallow
+            api: DELETE /firewall/port
             arguments:
                 port:
                     help: Port to close
@@ -862,7 +862,7 @@ firewall:
         ### firewall_stop()
         stop:
             action_help: Stop iptables and ip6tables
-            api: DELETE /firewall/stop
+            api: DELETE /firewall
 
 
 
@@ -876,7 +876,7 @@ dyndns:
         ### dyndns_subscribe()
         subscribe:
             action_help: Subscribe to a DynDNS service
-            api: POST /dyndns/subscribe
+            api: POST /dyndns
             arguments:
                 --subscribe-host:
                     help: Dynette HTTP API to subscribe to
@@ -891,7 +891,7 @@ dyndns:
         ### dyndns_update()
         update:
             action_help: Update IP on DynDNS platform
-            api: PUT /dyndns/update
+            api: PUT /dyndns
             arguments:
                 --dyn-host:
                     help: Dynette DNS server to inform
@@ -909,12 +909,12 @@ dyndns:
         ### dyndns_installcron()
         installcron:
             action_help: Install IP update cron
-            api: POST /dyndns/cron/install
+            api: POST /dyndns/cron
 
         ### dyndns_removecron()
         removecron:
             action_help: Remove IP update cron
-            api: DELETE /dyndns/cron/remove
+            api: DELETE /dyndns/cron
 
 
 #############################
@@ -1025,7 +1025,7 @@ hook:
         ### hook_add()
         add:
             action_help: Store hook script to filesystem
-            api: PUT /hook/store
+            api: PUT /hook
             arguments:
                 app:
                     help: App to link with
@@ -1035,7 +1035,7 @@ hook:
         ### hook_remove()
         remove:
             action_help: Remove hook scripts from filesystem
-            api: DELETE /hook/delete
+            api: DELETE /hook
             arguments:
                 app:
                     help: Scripts related to app will be removed
