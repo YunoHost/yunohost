@@ -186,7 +186,7 @@ def tools_postinstall(domain, password, dyndns=False):
 
     from yunohost.backup import backup_init
     from yunohost.app import app_ssowatconf
-    from yunohost.firewall import firewall_upnp
+    from yunohost.firewall import firewall_upnp, firewall_reload
 
     try:
         with open('/etc/yunohost/installed') as f: pass
@@ -282,6 +282,7 @@ def tools_postinstall(domain, password, dyndns=False):
 
     # Enable uPnP
     firewall_upnp(action=['enable'])
+    firewall_reload()
 
     os.system('touch /etc/yunohost/installed')
 
