@@ -104,7 +104,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
 
     # IPv6
     # TODO: Put global IPv6 in the DNS zone instead of ULA
-    ipv6 = None
+    new_ipv6 = None
     try:
         with open('/etc/yunohost/ipv6') as f:
             old_ipv6 = f.readline().rstrip()
@@ -119,8 +119,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         with open('/etc/yunohost/ula') as f:
             ula = f.readline().rstrip()
         # Get the IPv6 address given by radvd and sanitize it
-        #with open('/proc/net/if_inet6') as f:
-        with open('/tmp/inet6') as f:
+        with open('/proc/net/if_inet6') as f:
             plain_ula = ''
             for hextet in ula.split(':')[0:3]:
                 if len(hextet) < 4:
@@ -136,7 +135,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
     except IOError:
         new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
 
-    if old_ip != new_ip or old_ipv6 != new_ipv6:
+    if old_ip != new_ip or old_ipv6 != new_ipv6 and new_ipv6 is not None:
         host = domain.split('.')[1:]
         host = '.'.join(host)
         lines = [
@@ -152,6 +151,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             'update delete _xmpp-client._tcp.%s. SRV' % domain,
             'update delete _xmpp-server._tcp.%s. SRV' % domain,
             'update add %s. 1800 A %s'      % (domain, new_ip),
+            'update add %s. 1800 AAAA %s'   % (domain, new_ipv6),
             'update add %s. 14400 MX 5 %s.' % (domain, domain),
             'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
             'update add pubsub.%s. 1800 A %s'    % (domain, new_ip),
