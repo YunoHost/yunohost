@@ -85,6 +85,10 @@
     "monitor_glances_con_failed" : "Unable to connect to Glances server",
 
     "service_unknown" : "Unknown service '%s'",
+    "service_add_failed" : "Unable to add service '%s'",
+    "service_added" : "Service successfully added",
+    "service_remove_failed" : "Unable to remove service '%s'",
+    "service_removed" : "Service successfully removed",
     "service_start_failed" : "Unable to start service '%s'",
     "service_already_started" : "Service '%s' is already started",
     "service_started" : "Service '%s' successfully started",

@@ -740,45 +740,6 @@ def app_setting(app, key, value=None, delete=False):
             yaml.safe_dump(app_settings, f, default_flow_style=False)
 
 
-def app_service(service, status=None, log=None, runlevel=None, remove=False):
-    """
-    Add or remove a YunoHost monitored service
-
-    Keyword argument:
-        service -- Service to add/remove
-        status -- Custom status command
-        log -- Absolute path to log file to display
-        runlevel -- Runlevel priority of the service
-        remove -- Remove service
-
-    """
-    service_file = '/etc/yunohost/services.yml'
-
-    try:
-        with open(service_file) as f:
-            services = yaml.load(f)
-    except IOError:
-        # Do not fail if service file is not there
-        services = {}
-
-    if remove and service in services:
-        del services[service]
-    else:
-        if status is None:
-            services[service] = { 'status': 'service' }
-        else:
-            services[service] = { 'status': status }
-
-    if log is not None:
-        services[service]['log'] = log
-
-    if runlevel is not None:
-        services[service]['runlevel'] = runlevel
-
-    with open(service_file, 'w') as f:
-        yaml.safe_dump(services, f, default_flow_style=False)
-
-
 def app_checkport(port):
     """
     Check availability of a local port

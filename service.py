@@ -32,6 +32,61 @@ import os.path
 from moulinette.core import MoulinetteError
 
 
+def service_add(name, status=None, log=None, runlevel=None):
+    """
+    Add a custom service
+
+    Keyword argument:
+        name -- Service name to add
+        status -- Custom status command
+        log -- Absolute path to log file to display
+        runlevel -- Runlevel priority of the service
+
+    """
+    services = _get_services()
+
+    if not status:
+        services[name] = { 'status': 'service' }
+    else:
+        services[name] = { 'status': status }
+
+    if log is not None:
+        services[name]['log'] = log
+
+    if runlevel is not None:
+        services[name]['runlevel'] = runlevel
+
+    try:
+        _save_services(services)
+    except:
+        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed') % name)
+
+    msignals.display(m18n.n('service_added'), 'success')
+
+
+def service_remove(name):
+    """
+    Remove a custom service
+
+    Keyword argument:
+        name -- Service name to remove
+
+    """
+    services = _get_services()
+
+    try:
+        del services[name]
+    except KeyError:
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown') % name)
+
+    try:
+        _save_services(services)
+    except:
+        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed') % name)
+
+    msignals.display(m18n.n('service_removed'), 'success')
+
+
 def service_start(names):
     """
     Start one or more services
@@ -238,10 +293,25 @@ def _get_services():
     Get a dict of managed services with their parameters
 
     """
-    with open('/etc/yunohost/services.yml', 'r') as f:
-        services = yaml.load(f)
-    return services
+    try:
+        with open('/etc/yunohost/services.yml', 'r') as f:
+            services = yaml.load(f)
+    except:
+        return {}
+    else:
+        return services
 
+def _save_services(services):
+    """
+    Save managed services to files
+
+    Keyword argument:
+        services -- A dict of managed services with their parameters
+
+    """
+    # TODO: Save to custom services.yml
+    with open('/etc/yunohost/services.yml', 'w') as f:
+        yaml.safe_dump(services, f, default_flow_style=False)
 
 def _tail(file, n, offset=None):
     """

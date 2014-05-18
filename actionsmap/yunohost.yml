@@ -423,27 +423,6 @@ app:
                     help: Delete the key
                     action: store_true
 
-        ### app_service()
-        service:
-            action_help: Add or remove a YunoHost monitored service
-            api: POST /services
-            arguments:
-                service:
-                    help: Service to add/remove
-                -s:
-                    full: --status
-                    help: Custom status command
-                -l:
-                    full: --log
-                    help: Absolute path to log file to display
-                -r:
-                    full: --runlevel
-                    help: Runlevel priority of the service
-                -R:
-                    full: --remove
-                    help: Remove service
-                    action: store_true
-
         ### app_checkport()
         checkport:
             action_help: Check availability of a local port
@@ -706,6 +685,32 @@ monitor:
 service:
     category_help: Manage services
     actions:
+
+        ### service_add()
+        add:
+            action_help: Add a service
+            # api: POST /services
+            arguments:
+                name:
+                    help: Service name to add
+                -s:
+                    full: --status
+                    help: Custom status command
+                -l:
+                    full: --log
+                    help: Absolute path to log file to display
+                -r:
+                    full: --runlevel
+                    help: Runlevel priority of the service
+                    type: int
+
+        ### service_remove()
+        remove:
+            action_help: Remove a service
+            # api: DELETE /services
+            arguments:
+                name:
+                    help: Service name to remove
 
         ### service_start()
         start:
