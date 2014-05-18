@@ -102,13 +102,48 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
     except IOError:
         old_ip = '0.0.0.0'
 
-    if old_ip != new_ip:
+    # IPv6
+    # TODO: Put global IPv6 in the DNS zone instead of ULA
+    ipv6 = None
+    try:
+        with open('/etc/yunohost/ipv6') as f:
+            old_ipv6 = f.readline().rstrip()
+    except IOError:
+        old_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
+
+    try:
+        # Get the interface
+        with open('/etc/yunohost/interface') as f:
+            interface = f.readline().rstrip()
+        # Get the ULA
+        with open('/etc/yunohost/ula') as f:
+            ula = f.readline().rstrip()
+        # Get the IPv6 address given by radvd and sanitize it
+        #with open('/proc/net/if_inet6') as f:
+        with open('/tmp/inet6') as f:
+            plain_ula = ''
+            for hextet in ula.split(':')[0:3]:
+                if len(hextet) < 4:
+                    hextet = '0000'+ hextet
+                    hextet = hextet[-4:]
+                plain_ula = plain_ula + hextet
+            for line in f.readlines():
+                if interface in line and plain_ula == line[0:12]:
+                    new_ipv6 = ':'.join([line[0:32][i:i+4] for i in range(0, 32, 4)])
+                    with open('/etc/yunohost/ipv6', 'w+') as f:
+                        f.write(new_ipv6)
+                    break
+    except IOError:
+        new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
+
+    if old_ip != new_ip or old_ipv6 != new_ipv6:
         host = domain.split('.')[1:]
         host = '.'.join(host)
         lines = [
             'server %s' % dyn_host,
             'zone %s' % host,
             'update delete %s. A'        % domain,
+            'update delete %s. AAAA'     % domain,
             'update delete %s. MX'       % domain,
             'update delete %s. TXT'      % domain,
             'update delete pubsub.%s. A' % domain,
@@ -119,9 +154,12 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             'update add %s. 1800 A %s'      % (domain, new_ip),
             'update add %s. 14400 MX 5 %s.' % (domain, domain),
             'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
-            'update add pubsub.%s. 1800 A %s' % (domain, new_ip),
-            'update add muc.%s. 1800 A %s'    % (domain, new_ip),
-            'update add vjud.%s. 1800 A %s'   % (domain, new_ip),
+            'update add pubsub.%s. 1800 A %s'    % (domain, new_ip),
+            'update add pubsub.%s. 1800 AAAA %s' % (domain, new_ipv6),
+            'update add muc.%s. 1800 A %s'       % (domain, new_ip),
+            'update add muc.%s. 1800 AAAA %s'    % (domain, new_ipv6),
+            'update add vjud.%s. 1800 A %s'      % (domain, new_ip),
+            'update add vjud.%s. 1800 AAAA %s'   % (domain, new_ipv6),
             'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
             'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain),
             'show',
