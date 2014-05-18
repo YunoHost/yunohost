@@ -49,6 +49,7 @@
     "domain_deletion_failed" : "Unable to delete domain",
     "domain_deleted" : "Domain successfully deleted",
 
+    "dyndns_key_generating" : "DNS key is being generated, it may take a while...",
     "dyndns_unavailable" : "Unavailable DynDNS subdomain",
     "dyndns_registration_failed" : "Unable to register DynDNS domain: %s",
     "dyndns_registered" : "DynDNS domain successfully registered",
