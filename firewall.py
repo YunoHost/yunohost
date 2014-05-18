@@ -145,7 +145,7 @@ def firewall_reload():
     if upnp:
         try:
             upnpc = miniupnpc.UPnP()
-            upnpc.discoverdelay = 200
+            upnpc.discoverdelay = 3000
             if upnpc.discover() == 1:
                 upnpc.selectigd()
                 for protocol in ['TCP', 'UDP']:
@@ -228,7 +228,7 @@ def firewall_upnp(action=None):
 
         try:
             upnpc = miniupnpc.UPnP()
-            upnpc.discoverdelay = 200
+            upnpc.discoverdelay = 3000
             if upnpc.discover() == 1:
                 upnpc.selectigd()
                 for protocol in ['TCP', 'UDP']:
