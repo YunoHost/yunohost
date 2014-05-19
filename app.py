@@ -897,30 +897,25 @@ def app_ssowatconf(auth):
     with open('/etc/ssowat/conf.json') as f:
         conf_dict = json.load(f)
 
-    if not 'portal_domain' in conf_dict:
-        conf_dict['portal_domain'] = main_domain
-    if not 'portal_path' in conf_dict:
-        conf_dict['portal_path'] = '/yunohost/sso/'
-    if not 'portal_port' in conf_dict:
-        conf_dict['portal_port'] = '443'
-    if not 'portal_scheme' in conf_dict:
-        conf_dict['portal_scheme'] = 'https'
-    if not 'additional_headers' in conf_dict:
-        conf_dict['additional_headers'] = {
+    conf_dict.update({
+        'portal_domain': main_domain,
+        'portal_path': '/yunohost/sso/',
+        'additional_headers': {
             'Auth-User': 'uid',
             'Remote-User': 'uid',
             'Name': 'cn',
             'Email': 'mail'
-        }
-    conf_dict['domains'] = domains
-    conf_dict['skipped_urls'] = skipped_urls
-    conf_dict['unprotected_urls'] = unprotected_urls
-    conf_dict['protected_urls'] = protected_urls
-    conf_dict['skipped_regex'] = skipped_regex
-    conf_dict['unprotected_regex'] = unprotected_regex
-    conf_dict['protected_regex'] = protected_regex
-    conf_dict['redirected_regex'] = redirected_regex
-    conf_dict['users'] = users
+        },
+        'domains': domains,
+        'skipped_urls': skipped_urls,
+        'unprotected_urls': unprotected_urls,
+        'protected_urls': protected_urls,
+        'skipped_regex': skipped_regex,
+        'unprotected_regex': unprotected_regex,
+        'protected_regex': protected_regex,
+        'redirected_regex': redirected_regex,
+        'users': users,
+    })
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)
