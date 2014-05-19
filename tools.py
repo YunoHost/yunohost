@@ -282,7 +282,10 @@ def tools_postinstall(domain, password, dyndns=False):
 
     # Enable uPnP
     firewall_upnp(action=['enable'])
-    firewall_reload()
+    try:
+        firewall_reload()
+    except MoulinetteError:
+        pass
 
     os.system('touch /etc/yunohost/installed')
 
