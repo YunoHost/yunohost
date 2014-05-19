@@ -380,7 +380,7 @@ app:
         ### app_remove() TODO: Write help
         remove:
             action_help: Remove app
-            api: DELETE /apps
+            api: DELETE /apps/<app>
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -757,7 +757,9 @@ service:
         ### service_status()
         status:
             action_help: Show status information about one or more services (all by default)
-            api: GET /services/<names>
+            api:
+                - GET /services
+                - GET /services/<names>
             arguments:
                 names:
                     help: Service name to show
