@@ -957,7 +957,7 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Main domain change tool
-            api: PUT /domain/main
+            api: PUT /domains/main
             configuration:
                 authenticate: all
             arguments:
