@@ -285,7 +285,7 @@ def tools_postinstall(domain, password, dyndns=False):
     try:
         firewall_reload()
     except MoulinetteError:
-        pass
+        firewall_upnp(action=['disable'])
 
     os.system('touch /etc/yunohost/installed')
 
