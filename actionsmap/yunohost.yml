@@ -384,6 +384,7 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
+                lock: false
             arguments:
                 app:
                     help: App(s) to delete
@@ -395,6 +396,7 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
+                lock: false
             arguments:
                 app:
                     help: App(s) to upgrade (default all)
