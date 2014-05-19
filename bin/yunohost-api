@@ -35,16 +35,16 @@ if __name__ == '__main__':
     init(_from_source=from_source)
 
     # Additional arguments
-    use_cache = True
+    cache = True
     if '--no-cache' in sys.argv:
-        use_cache = False
+        cache = False
         sys.argv.remove('--no-cache')
     # TODO: Add log argument
 
     try:
         # Run the server
-        api(['yunohost'], 6787,
-            {('GET', '/installed'): is_installed}, use_cache)
+        api(['yunohost'], port=6787,
+            routes={('GET', '/installed'): is_installed}, use_cache=cache)
     except MoulinetteError as e:
         from moulinette.interfaces.cli import colorize
         print('%s %s' % (colorize(m18n.g('error'), 'red'), e.strerror))
