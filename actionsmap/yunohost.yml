@@ -861,10 +861,11 @@ firewall:
             api: GET /firewall/upnp
             arguments:
                 action:
-                    help: enable/disable
+                    help: enable/disable/check
                     choices:
                         - enable
                         - disable
+                        - check
                         - []
                     nargs: "*"
 

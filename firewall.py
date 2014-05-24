@@ -207,7 +207,7 @@ def firewall_upnp(action=None):
     Add uPnP cron and enable uPnP in firewall.yml, or the opposite.
 
     Keyword argument:
-        action -- enable/disable
+        action -- enable/disable/check
 
     """
     firewall = firewall_list(raw=True)
@@ -244,12 +244,18 @@ def firewall_upnp(action=None):
 
         msignals.display(m18n.n('upnp_disabled'), 'success')
 
+    if action == 'check':
+        if firewall['uPnP']['enabled'] == True:
+            msignals.display(m18n.n('upnp_active'), 'success')
+        else:
+            raise MoulinetteError(errno.EADV,
+                              m18n.n('upnp_inactive'))
+            
     if action:
         os.system("cp /etc/yunohost/firewall.yml /etc/yunohost/firewall.yml.old")
         with open('/etc/yunohost/firewall.yml', 'w') as f:
             yaml.safe_dump(firewall, f, default_flow_style=False)
 
-    return { "enabled": firewall['uPnP']['enabled'] }
 
 
 def firewall_stop():
