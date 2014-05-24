@@ -34,6 +34,7 @@
     "mysql_db_initialized" : "MySQL database successfully initialized",
     "extracting" : "Extracting...",
     "downloading" : "Downloading...",
+    "executing_script": "Executing script...",
     "done" : "Done.",
 
     "domain_unknown" : "Unknown domain",

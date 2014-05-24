@@ -28,6 +28,7 @@ import sys
 import re
 import json
 import errno
+import subprocess
 
 from moulinette.core import MoulinetteError
 
@@ -179,5 +180,13 @@ def hook_exec(file, args=None):
     if "/" in file and file[0:2] != file_path:
         file_path = os.path.dirname(file)
         file = file.replace(file_path +"/", "")
-    return os.system('su - admin -c "cd \\"%s\\" && bash \\"%s\\" %s"' % (file_path, file, ' '.join(arg_list))) 
+    msignals.display(m18n.n('executing_script'))
     #TODO: Allow python script
+    p = subprocess.Popen('su - admin -c "cd \\"%s\\" && /bin/bash -x \\"%s\\" %s"' % (file_path, file, ' '.join(arg_list)), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    for line in iter(p.stdout.readline, ''):
+        line = line.rstrip()
+        msignals.display(line, 'log')
+    errorcode = p.poll()
+    p.stdout.close()
+
+    return errorcode
