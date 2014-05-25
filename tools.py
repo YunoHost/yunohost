@@ -306,9 +306,12 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     packages = []
     if not ignore_packages:
         cache = apt.Cache()
+
         # Update APT cache
+        msignals.display(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
+        msignals.display(m18n.n('done'))
 
         cache.open(None)
         cache.upgrade(True)
@@ -350,7 +353,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                     })
 
     if len(apps) == 0 and len(packages) == 0:
-        msignals.display(m18n.n('system_no_upgrade'), 'success')
+        msignals.display(m18n.n('packages_no_upgrade'))
 
     return { 'packages': packages, 'apps': apps }
 
@@ -366,25 +369,45 @@ def tools_upgrade(ignore_apps=False, ignore_packages=False):
     """
     from yunohost.app import app_upgrade
 
+    is_api = True if msettings.get('interface') == 'api' else False
+
     if not ignore_packages:
         cache = apt.Cache()
         cache.open(None)
         cache.upgrade(True)
 
         # If API call
-        if not os.isatty(1):
-            critical_packages = ["moulinette", "moulinette-yunohost", "yunohost-admin", "yunohost-config-nginx", "ssowat", "python"]
+        if is_api:
+            critical_packages = ("moulinette", "moulinette-yunohost",
+                "yunohost-admin", "yunohost-config-nginx", "ssowat", "python")
+            critical_upgrades = set()
+
             for pkg in cache.get_changes():
                 if pkg.name in critical_packages:
+                    critical_upgrades.add(pkg.name)
                     # Temporarily keep package ...
                     pkg.mark_keep()
-                    # ... and set a hourly cron up to upgrade critical packages
-                    with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
-                        f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install '+ ' '.join(critical_packages) + ' -y && rm -f /etc/cron.d/yunohost-upgrade')
-        try:
-            # Apply APT changes
-            cache.commit(apt.progress.text.AcquireProgress(), apt.progress.base.InstallProgress())
-        except: pass
+            # ... and set a hourly cron up to upgrade critical packages
+            if critical_upgrades:
+                msignals.display(m18n.n('packages_upgrade_critical_later')
+                                    % ', '.join(critical_upgrades))
+                with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
+                    f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade' % ' '.join(critical_upgrades))
+
+        if cache.get_changes():
+            msignals.display(m18n.n('upgrading_packages'))
+            try:
+                # Apply APT changes
+                # TODO: Logs output for the API
+                cache.commit(apt.progress.text.AcquireProgress(),
+                             apt.progress.base.InstallProgress())
+            except Exception as e:
+                logging.warning('unable to upgrade packages: %s' % str(e))
+                msignals.display(m18n.n('packages_upgrade_failed'), 'error')
+            else:
+                msignals.display(m18n.n('done'))
+        else:
+            msignals.display(m18n.n('packages_no_upgrade'))
 
     if not ignore_apps:
         try:
@@ -394,5 +417,6 @@ def tools_upgrade(ignore_apps=False, ignore_packages=False):
     msignals.display(m18n.n('system_upgraded'), 'success')
 
     # Return API logs if it is an API call
-    if not os.isatty(1):
+    if msettings.get('interface') == 'api':
+        from yunohost.service import service_log
         return { "log": service_log('yunohost-api', number="100").values()[0] }

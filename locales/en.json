@@ -114,8 +114,12 @@
     "yunohost_already_installed" : "YunoHost is already installed",
     "yunohost_ca_creation_failed" : "Unable to create certificate authority",
     "yunohost_configured" : "YunoHost successfully configured",
+    "updating_apt_cache" : "Updating the lists of available packages...",
     "update_cache_failed" : "Unable to update APT cache",
-    "system_no_upgrade" : "There is no packages to upgrade",
+    "packages_no_upgrade" : "There is no package to upgrade",
+    "packages_upgrade_critical_later" : "Critical packages (%s) will be upgraded later",
+    "upgrading_packages" : "Upgrading packages...",
+    "packages_upgrade_failed" : "Unable to upgrade all packages",
     "system_upgraded" : "System successfully upgraded",
 
     "field_invalid" : "Invalid field '%s'",
