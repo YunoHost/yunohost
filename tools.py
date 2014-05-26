@@ -69,7 +69,7 @@ def tools_ldapinit(auth):
 
     auth.update('cn=admin', admin_dict)
 
-    msignals.display(m18n.n('ldap_ initialized'), 'success')
+    msignals.display(m18n.n('ldap_initialized'), 'success')
 
 
 def tools_adminpw(old_password, new_password):
