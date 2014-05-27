@@ -75,7 +75,10 @@ def domain_add(auth, domains, main=False, dyndns=False):
 
     """
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
-    ip = str(urlopen('http://ip.yunohost.org').read())
+    try:
+        ip = str(urlopen('http://ip.yunohost.org').read())
+    except IOError:
+        ip = "127.0.0.1"
     now = datetime.datetime.now()
     timestamp = str(now.year) + str(now.month) + str(now.day)
     result = []
@@ -94,17 +97,21 @@ def domain_add(auth, domains, main=False, dyndns=False):
             import requests
             from yunohost.dyndns import dyndns_subscribe
 
-            r = requests.get('http://dyndns.yunohost.org/domains')
-            dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(domain.split('.')[1:])
-            if dyndomain in dyndomains:
-                if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-                    raise MoulinetteError(errno.EPERM,
-                                          m18n.n('domain_dyndns_already_subscribed'))
-                dyndns_subscribe(domain=domain)
+            try:
+                r = requests.get('http://dyndns.yunohost.org/domains')
+            except ConnectionError:
+                pass
             else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('domain_dyndns_root_unknown'))
+                dyndomains = json.loads(r.text)
+                dyndomain  = '.'.join(domain.split('.')[1:])
+                if dyndomain in dyndomains:
+                    if os.path.exists('/etc/cron.d/yunohost-dyndns'):
+                        raise MoulinetteError(errno.EPERM,
+                                              m18n.n('domain_dyndns_already_subscribed'))
+                    dyndns_subscribe(domain=domain)
+                else:
+                    raise MoulinetteError(errno.EINVAL,
+                                          m18n.n('domain_dyndns_root_unknown'))
 
         # Commands
         ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'

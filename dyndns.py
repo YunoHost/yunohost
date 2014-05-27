@@ -49,8 +49,11 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
             domain = f.readline().rstrip()
 
     # Verify if domain is available
-    if requests.get('http://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
-        raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
+    try:
+        if requests.get('http://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
+            raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
+    except ConnectionError:
+        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
@@ -64,7 +67,10 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
             key = f.readline().strip().split(' ')[-1]
 
     # Send subscription
-    r = requests.post('http://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={ 'subdomain': domain })
+    try:
+        r = requests.post('http://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={ 'subdomain': domain })
+    except ConnectionError:
+        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:
         try:    error = json.loads(r.text)['error']
         except: error = "Server error"
@@ -92,7 +98,10 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             domain = f.readline().rstrip()
 
     if ip is None:
-        new_ip = requests.get('http://ip.yunohost.org').text
+        try:
+            new_ip = requests.get('http://ip.yunohost.org').text
+        except ConnectionError:
+            raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     else:
         new_ip = ip
 

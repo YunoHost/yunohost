@@ -163,11 +163,15 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
     if dyndns: dyndns_subscribe(domain=new_domain)
     elif len(new_domain.split('.')) >= 3:
-        r = requests.get('http://dyndns.yunohost.org/domains')
-        dyndomains = json.loads(r.text)
-        dyndomain  = '.'.join(new_domain.split('.')[1:])
-        if dyndomain in dyndomains:
-            dyndns_subscribe(domain=new_domain)
+        try:
+            r = requests.get('http://dyndns.yunohost.org/domains')
+        except ConnectionError:
+            pass
+        else:
+            dyndomains = json.loads(r.text)
+            dyndomain  = '.'.join(new_domain.split('.')[1:])
+            if dyndomain in dyndomains:
+                dyndns_subscribe(domain=new_domain)
 
     msignals.display(m18n.n('maindomain_changed'), 'success')
 
@@ -196,14 +200,18 @@ def tools_postinstall(domain, password, dyndns=False):
         raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
 
     if len(domain.split('.')) >= 3:
-        r = requests.get('http://dyndns.yunohost.org/domains')
-        dyndomains = json.loads(r.text)
-        dyndomain  = '.'.join(domain.split('.')[1:])
-        if dyndomain in dyndomains:
-            if requests.get('http://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
-                dyndns=True
-            else:
-                raise MoulinetteError(errno.EEXIST,
+        try:
+            r = requests.get('http://dyndns.yunohost.org/domains')
+        except ConnectionError:
+            pass
+        else:
+            dyndomains = json.loads(r.text)
+            dyndomain  = '.'.join(domain.split('.')[1:])
+            if dyndomain in dyndomains:
+                if requests.get('http://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
+                    dyndns=True
+                else:
+                    raise MoulinetteError(errno.EEXIST,
                                       m18n.n('dyndns_unavailable'))
 
     # Create required folders

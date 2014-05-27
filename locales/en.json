@@ -49,6 +49,7 @@
     "domain_uninstall_app_first" : "One or more apps are installed on this domain. Please uninstall them before proceed to domain removal.",
     "domain_deletion_failed" : "Unable to delete domain",
     "domain_deleted" : "Domain successfully deleted",
+    "no_internet_connection": "Server not connected to the Internet",
 
     "dyndns_key_generating" : "DNS key is being generated, it may take a while...",
     "dyndns_unavailable" : "Unavailable DynDNS subdomain",
