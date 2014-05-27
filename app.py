@@ -892,7 +892,7 @@ def app_ssowatconf(auth):
                         protected_regex.append(item)
 
     for domain in domains:
-        skipped_urls.extend([domain +'/yunohost/admin', domain +'/yunohost/api'])
+        skipped_urls.extend(['/yunohost/admin', '/yunohost/api'])
 
     with open('/etc/ssowat/conf.json') as f:
         conf_dict = json.load(f)
