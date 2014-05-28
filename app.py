@@ -55,7 +55,7 @@ def app_listlists():
             if '.json' in filename:
                 list_list.append(filename[:len(filename)-5])
     except OSError:
-        raise MoulinetteError(1, m18n.n('no_list_found'))
+        raise MoulinetteError(1, m18n.n('no_appslist_found'))
 
     return { 'lists' : list_list }
 
@@ -79,12 +79,12 @@ def app_fetchlist(url=None, name=None):
     else:
         if name is None:
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_list_name_required'))
+                                  m18n.n('custom_appslist_name_required'))
 
     list_file = '%s/%s.json' % (repo_path, name)
     if os.system('wget "%s" -O "%s.tmp"' % (url, list_file)) != 0:
         os.remove('%s.tmp' % list_file)
-        raise MoulinetteError(errno.EBADR, m18n.n('list_retrieve_error'))
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
 
     # Rename fetched temp list
     os.rename('%s.tmp' % list_file, list_file)
@@ -92,7 +92,7 @@ def app_fetchlist(url=None, name=None):
     os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
     os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
 
-    msignals.display(m18n.n('list_fetched'), 'success')
+    msignals.display(m18n.n('appslist_fetched'), 'success')
 
 
 def app_removelist(name):
@@ -107,9 +107,9 @@ def app_removelist(name):
         os.remove('%s/%s.json' % (repo_path, name))
         os.remove("/etc/cron.d/yunohost-applist-%s" % name)
     except OSError:
-        raise MoulinetteError(errno.ENOENT, m18n.n('unknown_list'))
+        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
 
-    msignals.display(m18n.n('list_removed'), 'success')
+    msignals.display(m18n.n('appslist_removed'), 'success')
 
 
 def app_list(offset=None, limit=None, filter=None, raw=False):
