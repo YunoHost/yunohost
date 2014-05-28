@@ -161,7 +161,7 @@ def firewall_reload():
 
     os.system("iptables -F")
     os.system("iptables -X")
-    os.system("iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT")
+    os.system("iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT")
 
     if 22 not in firewall['ipv4']['TCP']:
         firewall_allow(22)
@@ -182,7 +182,7 @@ def firewall_reload():
         os.system("ip6tables -P INPUT ACCEPT")
         os.system("ip6tables -F")
         os.system("ip6tables -X")
-        os.system("ip6tables -A INPUT -m state --state ESTABLISHED -j ACCEPT")
+        os.system("ip6tables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT")
 
         if 22 not in firewall['ipv6']['TCP']:
             firewall_allow(22, ipv6=True)
