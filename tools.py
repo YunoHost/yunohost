@@ -334,7 +334,10 @@ def tools_update(ignore_apps=False, ignore_packages=False):
 
     apps = []
     if not ignore_apps:
-        app_fetchlist()
+        try:
+            app_fetchlist()
+        except MoulinetteError:
+            pass
         app_list = os.listdir(apps_setting_path)
         if len(app_list) > 0:
             for app_id in app_list:
