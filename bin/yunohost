@@ -32,10 +32,7 @@ if __name__ == '__main__':
         json = True
         sys.argv.remove('--json')
 
-    ## Compatibility with previous moulinette
-    if not os.isatty(1):
-        json = True
-
+    # Retrieve remaining arguments
     args = list(sys.argv)
     args.pop(0)
 
