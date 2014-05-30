@@ -726,7 +726,7 @@ def app_setting(app, key, value=None, delete=False):
     if value is None and not delete:
         # Get the value
         if app_settings is not None and key in app_settings:
-            print(app_settings[key])
+            return app_settings[key]
     else:
         # Set the value
         if app_settings is None:
@@ -821,7 +821,6 @@ def app_initdb(user, password=None, db=None, sql=None):
     if password is None:
         password = random_password(12)
         return_pwd = True
-        print(password)
 
     mysql_root_pwd = open('/etc/yunohost/mysql').read().rstrip()
     mysql_command = 'mysql -u root -p%s -e "CREATE DATABASE %s ; GRANT ALL PRIVILEGES ON %s.* TO \'%s\'@localhost IDENTIFIED BY \'%s\';"' % (mysql_root_pwd, db, db, user, password)
@@ -831,8 +830,10 @@ def app_initdb(user, password=None, db=None, sql=None):
         if os.system('mysql -u %s -p%s %s < %s' % (user, password, db, sql)) != 0:
             raise MoulinetteError(errno.EIO, m18n.n('mysql_db_init_failed'))
 
-    if not return_pwd:
-        msignals.display(m18n.n('mysql_db_initialized'), 'success')
+    if return_pwd:
+        return password
+
+    msignals.display(m18n.n('mysql_db_initialized'), 'success')
 
 
 def app_ssowatconf(auth):

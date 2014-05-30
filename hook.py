@@ -54,7 +54,6 @@ def hook_add(app, file):
     except OSError: os.makedirs(hook_folder + action)
 
     finalpath = hook_folder + action +'/'+ priority +'-'+ app
-    print app
     os.system('cp %s %s' % (file, finalpath))
     os.system('chown -hR admin: %s' % hook_folder)
 
