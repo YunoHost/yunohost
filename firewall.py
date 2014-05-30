@@ -67,7 +67,7 @@ def firewall_allow(port=None, protocol='TCP', ipv6=False, no_upnp=False):
         if port not in firewall[ipv][protocol]:
             firewall[ipv][protocol].append(port)
         else:
-            msignals.display(m18n.n('port_already_opened') % port, 'warning')
+            msignals.display(m18n.n('port_already_opened', port), 'warning')
 
     with open('/etc/yunohost/firewall.yml', 'w') as f:
         yaml.safe_dump(firewall, f, default_flow_style=False)
@@ -103,7 +103,7 @@ def firewall_disallow(port=None, protocol='TCP', ipv6=False):
         if port in firewall[ipv][protocol]:
             firewall[ipv][protocol].remove(port)
         else:
-            msignals.display(m18n.n('port_already_closed') % port, 'warning')
+            msignals.display(m18n.n('port_already_closed', port), 'warning')
 
     with open('/etc/yunohost/firewall.yml', 'w') as f:
         yaml.safe_dump(firewall, f, default_flow_style=False)

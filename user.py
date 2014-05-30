@@ -66,7 +66,7 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                 attrs.append(attr)
             else:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('field_invalid') % attr)
+                                      m18n.n('field_invalid', attr))
     else:
         attrs = [ 'uid', 'cn', 'mail' ]
 
@@ -110,8 +110,8 @@ def user_create(auth, username, firstname, lastname, mail, password):
 
     if mail[mail.find('@')+1:] not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('mail_domain_unknown')
-                                      % mail[mail.find('@')+1:])
+                              m18n.n('mail_domain_unknown',
+                                     mail[mail.find('@')+1:]))
 
     # Get random UID/GID
     uid_check = gid_check = 0
@@ -267,8 +267,8 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
         auth.validate_uniqueness({ 'mail': mail })
         if mail[mail.find('@')+1:] not in domains:
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('mail_domain_unknown')
-                                          % mail[mail.find('@')+1:])
+                                  m18n.n('mail_domain_unknown',
+                                          mail[mail.find('@')+1:]))
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
 
@@ -279,8 +279,8 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
             auth.validate_uniqueness({ 'mail': mail })
             if mail[mail.find('@')+1:] not in domains:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_domain_unknown')
-                                              % mail[mail.find('@')+1:])
+                                      m18n.n('mail_domain_unknown',
+                                             mail[mail.find('@')+1:]))
             user['mail'].append(mail)
         new_attr_dict['mail'] = user['mail']
 
@@ -292,7 +292,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
                 user['mail'].remove(mail)
             else:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_alias_remove_failed') % mail)
+                                      m18n.n('mail_alias_remove_failed', mail))
         new_attr_dict['mail'] = user['mail']
 
     if add_mailforward:
@@ -312,7 +312,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
                 user['maildrop'].remove(mail)
             else:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_forward_remove_failed') % mail)
+                                      m18n.n('mail_forward_remove_failed', mail))
         new_attr_dict['maildrop'] = user['maildrop']
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):

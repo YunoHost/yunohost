@@ -59,7 +59,7 @@ def service_add(name, status=None, log=None, runlevel=None):
     try:
         _save_services(services)
     except:
-        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed') % name)
+        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', name))
 
     msignals.display(m18n.n('service_added'), 'success')
 
@@ -77,12 +77,12 @@ def service_remove(name):
     try:
         del services[name]
     except KeyError:
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown') % name)
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', name))
 
     try:
         _save_services(services)
     except:
-        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed') % name)
+        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', name))
 
     msignals.display(m18n.n('service_removed'), 'success')
 
@@ -99,12 +99,12 @@ def service_start(names):
         names = [names]
     for name in names:
         if _run_service_command('start', name):
-            msignals.display(m18n.n('service_started') % name, 'success')
+            msignals.display(m18n.n('service_started', name), 'success')
         else:
             if service_status(name)['status'] != 'running':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed') % name)
-            msignals.display(m18n.n('service_already_started') % name)
+                                      m18n.n('service_start_failed', name))
+            msignals.display(m18n.n('service_already_started', name))
 
 
 def service_stop(names):
@@ -119,12 +119,12 @@ def service_stop(names):
         names = [names]
     for name in names:
         if _run_service_command('stop', name):
-            msignals.display(m18n.n('service_stopped') % name, 'success')
+            msignals.display(m18n.n('service_stopped', name), 'success')
         else:
             if service_status(name)['status'] != 'inactive':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed') % name)
-            msignals.display(m18n.n('service_already_stopped') % name)
+                                      m18n.n('service_stop_failed', name))
+            msignals.display(m18n.n('service_already_stopped', name))
 
 
 def service_enable(names):
@@ -139,10 +139,10 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command('enable', name):
-            msignals.display(m18n.n('service_enabled') % name, 'success')
+            msignals.display(m18n.n('service_enabled', name), 'success')
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed') % name)
+                                  m18n.n('service_enable_failed', name))
 
 
 def service_disable(names):
@@ -157,10 +157,10 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command('disable', name):
-            msignals.display(m18n.n('service_disabled') % name, 'success')
+            msignals.display(m18n.n('service_disabled', name), 'success')
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed') % name)
+                                  m18n.n('service_disable_failed', name))
 
 
 def service_status(names=[]):
@@ -184,7 +184,7 @@ def service_status(names=[]):
     for name in names:
         if check_names and name not in services.keys():
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('service_unknown') % name)
+                                  m18n.n('service_unknown', name))
 
         status = None
         if services[name]['status'] == 'service':
@@ -206,7 +206,7 @@ def service_status(names=[]):
                 result[name]['status'] = 'inactive'
             else:
                 # TODO: Log output?
-                msignals.display(m18n.n('service_status_failed') % name,
+                msignals.display(m18n.n('service_status_failed', name),
                                  'warning')
         else:
             result[name]['status'] = 'running'
@@ -237,7 +237,7 @@ def service_log(name, number=50):
     services = _get_services()
 
     if name not in services.keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown') % name)
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', name))
 
     if 'log' in services[name]:
         log_list = services[name]['log']
@@ -252,7 +252,7 @@ def service_log(name, number=50):
             else:
                 result[log_path] = _tail(log_path, int(number))
     else:
-        raise MoulinetteError(errno.EPERM, m18n.n('service_no_log') % name)
+        raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', name))
 
     return result
 
@@ -267,7 +267,7 @@ def _run_service_command(action, service):
 
     """
     if service not in _get_services().keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown') % name)
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', name))
 
     cmd = None
     if action in ['start', 'stop']:
@@ -282,7 +282,7 @@ def _run_service_command(action, service):
         ret = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         # TODO: Log output?
-        msignals.display(m18n.n('service_cmd_exec_failed')  % ' '.join(e.cmd),
+        msignals.display(m18n.n('service_cmd_exec_failed', ' '.join(e.cmd)),
                          'warning')
         return False
     return True

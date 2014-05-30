@@ -400,8 +400,8 @@ def tools_upgrade(ignore_apps=False, ignore_packages=False):
                     pkg.mark_keep()
             # ... and set a hourly cron up to upgrade critical packages
             if critical_upgrades:
-                msignals.display(m18n.n('packages_upgrade_critical_later')
-                                    % ', '.join(critical_upgrades))
+                msignals.display(m18n.n('packages_upgrade_critical_later',
+                                        ', '.join(critical_upgrades)))
                 with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
                     f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade' % ' '.join(critical_upgrades))
 

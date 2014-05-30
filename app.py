@@ -284,7 +284,7 @@ def app_upgrade(auth, app, url=None, file=None):
         installed = _is_installed(app_id)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
-                                  m18n.n('app_not_installed') % app_id)
+                                  m18n.n('app_not_installed', app_id))
 
         if app_id in upgraded_apps:
             continue
@@ -303,7 +303,7 @@ def app_upgrade(auth, app, url=None, file=None):
             manifest = _fetch_app_from_git(url)
         elif 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
             raise MoulinetteError(errno.EDESTADDRREQ,
-                                  m18n.n('custom_app_url_required') % app_id)
+                                  m18n.n('custom_app_url_required', app_id))
         elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
               or ('update_time' not in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
@@ -316,7 +316,7 @@ def app_upgrade(auth, app, url=None, file=None):
         # Check min version
         if 'min_version' in manifest and __version__ < manifest['min_version']:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('app_recent_version_required') % app_id)
+                                  m18n.n('app_recent_version_required', app_id))
 
         app_setting_path = apps_setting_path +'/'+ app_id
 
@@ -360,7 +360,7 @@ def app_upgrade(auth, app, url=None, file=None):
 
         # So much win
         upgraded_apps.append(app_id)
-        msignals.display(m18n.n('app_upgraded') % app_id, 'success')
+        msignals.display(m18n.n('app_upgraded', app_id), 'success')
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('no_app_upgrade'))
@@ -398,14 +398,14 @@ def app_install(auth, app, label=None, args=None):
     # Check min version
     if 'min_version' in manifest and __version__ < manifest['min_version']:
         raise MoulinetteError(errno.EPERM,
-                              m18n.n('app_recent_version_required') % app_id)
+                              m18n.n('app_recent_version_required', app_id))
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
     if instance_number > 1 :
         if 'multi_instance' not in manifest or not is_true(manifest['multi_instance']):
             raise MoulinetteError(errno.EEXIST,
-                                  m18n.n('app_already_installed') % app_id)
+                                  m18n.n('app_already_installed', app_id))
 
         app_id_forked = app_id + '__' + str(instance_number)
 
@@ -499,7 +499,7 @@ def app_remove(auth, app):
     from yunohost.hook import hook_exec, hook_remove
 
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_not_installed') % app)
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_not_installed', app))
 
     app_setting_path = apps_setting_path + app
 
@@ -519,7 +519,7 @@ def app_remove(auth, app):
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
     app_ssowatconf(auth)
-    msignals.display(m18n.n('app_removed') % app, 'success')
+    msignals.display(m18n.n('app_removed', app), 'success')
 
 
 def app_addaccess(auth, apps, users):
@@ -544,7 +544,7 @@ def app_addaccess(auth, apps, users):
     for app in apps:
         if not _is_installed(app):
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed') % app)
+                                  m18n.n('app_not_installed', app))
 
         with open(apps_setting_path + app +'/settings.yml') as f:
             app_settings = yaml.load(f)
@@ -598,7 +598,7 @@ def app_removeaccess(auth, apps, users):
 
         if not _is_installed(app):
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed') % app)
+                                  m18n.n('app_not_installed', app))
 
         with open(apps_setting_path + app +'/settings.yml') as f:
             app_settings = yaml.load(f)
@@ -641,7 +641,7 @@ def app_clearaccess(auth, apps):
     for app in apps:
         if not _is_installed(app):
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed') % app)
+                                  m18n.n('app_not_installed', app))
 
         with open(apps_setting_path + app +'/settings.yml') as f:
             app_settings = yaml.load(f)
@@ -667,7 +667,7 @@ def app_makedefault(auth, app, domain=None):
     from yunohost.domain import domain_list
 
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_not_installed') % app)
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_not_installed', app))
 
     with open(apps_setting_path + app +'/settings.yml') as f:
         app_settings = yaml.load(f)
@@ -754,10 +754,10 @@ def app_checkport(port):
         s.connect(("localhost", int(port)))
         s.close()
     except socket.error:
-        msignals.display(m18n.n('port_available') % int(port), 'success')
+        msignals.display(m18n.n('port_available', int(port)), 'success')
     else:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('port_unavailable') % int(port))
+                              m18n.n('port_unavailable', int(port)))
 
 
 def app_checkurl(auth, url, app=None):

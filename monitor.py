@@ -132,7 +132,7 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
             for dname in devices_names:
                 _set(dname, 'not-available')
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown') % u)
+            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', u))
 
     if result_dname is not None:
         return result[result_dname]
@@ -204,7 +204,7 @@ def monitor_network(units=None, human_readable=False):
                 'gateway': gateway
             }
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown') % u)
+            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', u))
 
     if len(units) == 1:
         return result[units[0]]
@@ -254,7 +254,7 @@ def monitor_system(units=None, human_readable=False):
         elif u == 'infos':
             result[u] = json.loads(glances.getSystem())
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown') % u)
+            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', u))
 
     if len(units) == 1 and type(result[units[0]]) is not str:
         return result[units[0]]

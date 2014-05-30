@@ -141,8 +141,7 @@ def hook_exec(file, args=None):
             if arg['name'] in args:
                 if 'choices' in arg and args[arg['name']] not in arg['choices']:
                     raise MoulinetteError(errno.EINVAL,
-                                          m18n.n('hook_choice_invalid')
-                                                  % args[arg['name']])
+                        m18n.n('hook_choice_invalid', args[arg['name']]))
                 arg_list.append(args[arg['name']])
             else:
                 if os.isatty(1) and 'ask' in arg:
@@ -172,8 +171,7 @@ def hook_exec(file, args=None):
                     arg_list.append(arg['default'])
                 else:
                     raise MoulinetteError(errno.EINVAL,
-                                          m18n.n('hook_argument_missing')
-                                                  % arg['name'])
+                        m18n.n('hook_argument_missing', arg['name']))
 
     file_path = "./"
     if "/" in file and file[0:2] != file_path:
