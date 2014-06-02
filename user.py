@@ -98,6 +98,7 @@ def user_create(auth, username, firstname, lastname, mail, password):
     """
     from yunohost.domain import domain_list
     from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf
 
     # Validate password length
     if len(password) < 4:
@@ -168,14 +169,14 @@ def user_create(auth, username, firstname, lastname, mail, password):
 
         except IOError: pass
 
-    
+
     if auth.add(rdn, attr_dict):
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
         memberlist.append(username)
         if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
             os.system("su - %s -c ''" % username)
-            os.system('yunohost app ssowatconf > /dev/null 2>&1')
+            app_ssowatconf(auth)
             #TODO: Send a welcome mail to user
             msignals.display(m18n.n('user_created'), 'success')
             hook_callback('post_user_create', [username, mail, password, firstname, lastname])
@@ -194,6 +195,8 @@ def user_delete(auth, users, purge=False):
         purge
 
     """
+    from yunohost.app import app_ssowatconf
+
     if not isinstance(users, list):
         users = [ users ]
     deleted = []
@@ -212,7 +215,7 @@ def user_delete(auth, users, purge=False):
         else:
             raise MoulinetteError(169, m18n.n('user_deletion_failed'))
 
-    os.system('yunohost app ssowatconf > /dev/null 2>&1')
+    app_ssowatconf(auth)
     msignals.display(m18n.n('user_deleted'), 'success')
     return { 'users': deleted }
 
@@ -234,6 +237,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
 
     """
     from yunohost.domain import domain_list
+    from yunohost.app import app_ssowatconf
 
     attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     new_attr_dict = {}
@@ -317,6 +321,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
        msignals.display(m18n.n('user_updated'), 'success')
+       app_ssowatconf(auth)
        return user_info(auth, username)
     else:
        raise MoulinetteError(169, m18n.n('user_update_failed'))
