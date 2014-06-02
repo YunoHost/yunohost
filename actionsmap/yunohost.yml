@@ -39,7 +39,7 @@ _global:
         authenticator:
             default:
                 vendor: ldap
-                help: Admin Password
+                help: admin_password
                 parameters:
                     uri: ldap://localhost:389
                     base_dn: dc=yunohost,dc=org
@@ -95,34 +95,43 @@ user:
             configuration:
                 authenticate: all
             arguments:
-                -u:
-                    full: --username
-                    help: Must be unique
+                username:
+                    help: The unique username to create
                     extra:
-                        ask: "Username"
                         pattern:
                             - '^[a-z0-9_]+$'
-                            - "Must be alphanumeric and underscore characters only"
+                            - pattern_username
                 -f:
                     full: --firstname
                     extra:
-                        ask: "Firstname"
+                        ask: ask_firstname
+                        required: True
+                        pattern:
+                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
+                            - pattern_firstname
                 -l:
                     full: --lastname
                     extra:
-                        ask: "Lastname"
+                        ask: ask_lastname
+                        required: True
+                        pattern:
+                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
+                            - pattern_lastname
                 -m:
                     full: --mail
-                    help: Main mail address must be unique
+                    help: Main unique email address
                     extra:
-                        ask: "Mail address"
+                        ask: ask_email
+                        required: True
                         pattern:
                             - '^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$'
-                            - "Must be a valid email address (e.g. someone@domain.org)"
+                            - pattern_email
                 -p:
                     full: --password
+                    help: User password
                     extra:
-                        password: "User password"
+                        password: ask_password
+                        required: True
 
         ### user_delete()
         delete:
@@ -131,15 +140,12 @@ user:
             configuration:
                 authenticate: all
             arguments:
-                -u:
-                    full: --users
-                    help: Username of users to delete
-                    nargs: "*"
+                username:
+                    help: Username to delete
                     extra:
-                        ask: "Users to delete"
                         pattern:
                             - '^[a-z0-9_]+$'
-                            - "Must be alphanumeric and underscore characters only"
+                            - pattern_username
                 --purge:
                     action: store_true
 
@@ -151,13 +157,25 @@ user:
                 authenticate: all
             arguments:
                 username:
-                    help: Username of user to update
+                    help: Username to update
                 -f:
                     full: --firstname
+                    extra:
+                        pattern:
+                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
+                            - pattern_firstname
                 -l:
                     full: --lastname
+                    extra:
+                        pattern:
+                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
+                            - pattern_lastname
                 -m:
                     full: --mail
+                    extra:
+                        pattern:
+                            - '^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$'
+                            - pattern_email
                 -p:
                     full: --change-password
                     help: New password to set
@@ -181,14 +199,14 @@ user:
 
         ### user_info()
         info:
-            action_help: Get user informations
+            action_help: Get user information
             api: GET /users/<username>
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
                 username:
-                    help: Username or mail to get informations
+                    help: Username or email to get information
 
 
 #############################

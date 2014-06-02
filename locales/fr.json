@@ -134,6 +134,16 @@
     "user_deleted" : "Utilisateur supprimé avec succès",
     "user_update_failed" : "Impossible de modifier l'utilisateur",
     "user_updated" : "Utilisateur modifié avec succès",
-    "user_info_failed" : "Impossible de récupérer les informations de l'utilisateur"
+    "user_info_failed" : "Impossible de récupérer les informations de l'utilisateur",
+
+    "admin_password" : "Mot de passe d'administration",
+    "ask_firstname" : "Prénom",
+    "ask_lastname" : "Nom",
+    "ask_email" : "Adresse mail",
+    "ask_password" : "Mot de passe",
+    "pattern_username" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
+    "pattern_firstname" : "Doit être un prénom valide",
+    "pattern_lastname" : "Doit être un nom valide",
+    "pattern_email" : "Doit être une adresse mail valide (ex. : someone@domain.org)"
 }
 

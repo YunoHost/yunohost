@@ -186,38 +186,30 @@ def user_create(auth, username, firstname, lastname, mail, password):
     raise MoulinetteError(169, m18n.n('user_creation_failed'))
 
 
-def user_delete(auth, users, purge=False):
+def user_delete(auth, username, purge=False):
     """
     Delete user
 
     Keyword argument:
-        users -- Username of users to delete
+        username -- Username to delete
         purge
 
     """
     from yunohost.app import app_ssowatconf
 
-    if not isinstance(users, list):
-        users = [ users ]
-    deleted = []
-
-    for user in users:
-        if auth.remove('uid=%s,ou=users' % user):
-            # Update SFTP user group
-            memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
-            try: memberlist.remove(user)
-            except: pass
-            if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
-                if purge:
-                    os.system('rm -rf /home/%s' % user)
-                deleted.append(user)
-                continue
-        else:
-            raise MoulinetteError(169, m18n.n('user_deletion_failed'))
+    if auth.remove('uid=%s,ou=users' % username):
+        # Update SFTP user group
+        memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
+        try: memberlist.remove(username)
+        except: pass
+        if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
+            if purge:
+                os.system('rm -rf /home/%s' % username)
+    else:
+        raise MoulinetteError(169, m18n.n('user_deletion_failed'))
 
     app_ssowatconf(auth)
     msignals.display(m18n.n('user_deleted'), 'success')
-    return { 'users': deleted }
 
 
 def user_update(auth, username, firstname=None, lastname=None, mail=None, change_password=None, add_mailforward=None, remove_mailforward=None, add_mailalias=None, remove_mailalias=None):
