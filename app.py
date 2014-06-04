@@ -211,7 +211,7 @@ def app_info(app, raw=False):
         else:
             return {
                 'name': app_info['manifest']['name'],
-                'description': app_info['manifest']['description']['en'],
+                'description': _value_for_locale(app_info['manifest']['description']),
                 # FIXME: Temporarly allow undefined license
                 'license': app_info['manifest'].get('license',
                     m18n.n('license_undefined')),
@@ -1110,6 +1110,27 @@ def _is_installed(app):
             continue
 
     return False
+
+
+def _value_for_locale(values):
+    """
+    Return proper value for current locale
+
+    Keyword arguments:
+        values -- A dict of values associated to their locale
+
+    """
+    if not isinstance(values, dict):
+        return values
+
+    for lang in [m18n.locale, m18n.default_locale]:
+        try:
+            return values[lang]
+        except KeyError:
+            continue
+
+    # Fallback to first value
+    return values.values()[0]
 
 
 def is_true(arg):

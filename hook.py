@@ -129,6 +129,8 @@ def hook_exec(file, args=None):
         args -- Arguments to pass to the script
 
     """
+    from yunohost.app import _value_for_locale
+
     if isinstance(args, list):
         arg_list = args
     else:
@@ -146,14 +148,7 @@ def hook_exec(file, args=None):
             else:
                 if os.isatty(1) and 'ask' in arg:
                     # Retrieve proper ask string
-                    ask_string = None
-                    for lang in [m18n.locale, m18n.default_locale]:
-                        if lang in arg['ask']:
-                            ask_string = arg['ask'][lang]
-                            break
-                    if not ask_string:
-                        # Fallback to en
-                        ask_string = arg['ask']['en']
+                    ask_string = _value_for_locale(arg['ask'])
 
                     # Append extra strings
                     if 'choices' in arg:
