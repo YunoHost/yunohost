@@ -6,6 +6,7 @@
     "installation_complete" : "Installation terminée",
     "installation_failed" : "Échec de l'installation",
 
+    "license_undefined" : "indéfinie",
     "no_appslist_found" : "Aucune liste d'applications trouvée",
     "custom_appslist_name_required" : "Vous devez spécifier un nom pour votre liste d'applications personnalisée",
     "appslist_retrieve_error" : "Impossible de récupérer la liste d'applications distante",

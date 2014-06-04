@@ -6,6 +6,7 @@
     "installation_complete" : "Installation complete",
     "installation_failed" : "Installation failed",
 
+    "license_undefined" : "undefined",
     "no_appslist_found" : "No apps list found",
     "custom_appslist_name_required" : "You must provide a name for your custom apps list",
     "appslist_retrieve_error" : "Unable to retrieve the remote apps list",
