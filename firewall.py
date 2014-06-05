@@ -35,6 +35,31 @@ except ImportError:
 
 from moulinette.core import MoulinetteError
 
+""" Search the ssh port in ssh config file 
+    If we don't find the ssh port we define 22"""
+
+try:
+
+  with open('/etc/ssh/sshd_config') as ssh_config_file:
+    for line in ssh_config_file:
+
+      line0 = line.split(" ")[0]
+
+      if line0 == 'Port':
+        ssh_port = line.split(' ')[1]
+        ssh_port = ssh_port.rstrip('\n\r')
+
+  ssh_config_file.close()
+  
+  if ssh_port == '' :
+    
+    ssh_port = '22'
+
+except:
+  
+  ssh_port = '22'
+  
+ssh_port = int(ssh_port)
 
 def firewall_allow(port=None, protocol='TCP', ipv6=False, no_upnp=False):
     """
@@ -163,8 +188,8 @@ def firewall_reload():
     os.system("iptables -X")
     os.system("iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT")
 
-    if 22 not in firewall['ipv4']['TCP']:
-        firewall_allow(22)
+    if ssh_port not in firewall['ipv4']['TCP']:
+        firewall_allow(ssh_port)
 
     # Loop
     for protocol in ['TCP', 'UDP']:
@@ -184,8 +209,8 @@ def firewall_reload():
         os.system("ip6tables -X")
         os.system("ip6tables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT")
 
-        if 22 not in firewall['ipv6']['TCP']:
-            firewall_allow(22, ipv6=True)
+        if ssh_port not in firewall['ipv6']['TCP']:
+            firewall_allow(ssh_port, ipv6=True)
 
         # Loop v6
         for protocol in ['TCP', 'UDP']:
