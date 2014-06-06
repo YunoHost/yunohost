@@ -39,10 +39,8 @@ from moulinette.core import MoulinetteError
     If we don't find the ssh port we define 22"""
 
 try:
-
   with open('/etc/ssh/sshd_config') as ssh_config_file:
     for line in ssh_config_file:
-
       line0 = line.split(" ")[0]
 
       if line0 == 'Port':
@@ -51,17 +49,15 @@ try:
 
   ssh_config_file.close()
   
-  if ssh_port == '' :
-    
+  if ssh_port == '':
     ssh_port = '22'
 
 except:
-  
   ssh_port = '22'
   
 ssh_port = int(ssh_port)
 
-def firewall_allow(port=None, protocol='TCP', ipv6=False, no_upnp=False):
+def firewall_allow(port=None, protocol=['TCP'], ipv6=False, no_upnp=False):
     """
     Allow connection port/protocol
 
@@ -74,7 +70,8 @@ def firewall_allow(port=None, protocol='TCP', ipv6=False, no_upnp=False):
     """
     port = int(port)
     ipv  = "ipv4"
-    protocols = [protocol]
+    protocols = protocol
+    protocol  = protocol[0]
 
     firewall = firewall_list(raw=True)
 
@@ -100,7 +97,7 @@ def firewall_allow(port=None, protocol='TCP', ipv6=False, no_upnp=False):
     return firewall_reload()
 
 
-def firewall_disallow(port=None, protocol='TCP', ipv6=False):
+def firewall_disallow(port=None, protocol=['TCP'], ipv6=False):
     """
     Allow connection port/protocol
 
@@ -112,7 +109,8 @@ def firewall_disallow(port=None, protocol='TCP', ipv6=False):
     """
     port = int(port)
     ipv  = "ipv4"
-    protocols = [protocol]
+    protocols = protocol
+    protocol  = protocol[0]
 
     firewall = firewall_list(raw=True)
 
