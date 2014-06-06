@@ -36,15 +36,20 @@ if __name__ == '__main__':
 
     # Additional arguments
     cache = True
+    websocket = True
     if '--no-cache' in sys.argv:
         cache = False
         sys.argv.remove('--no-cache')
+    if '--no-websocket' in sys.argv:
+        websocket = False
+        sys.argv.remove('--no-websocket')
     # TODO: Add log argument
 
     try:
         # Run the server
         api(['yunohost'], port=6787,
-            routes={('GET', '/installed'): is_installed}, use_cache=cache)
+            routes={('GET', '/installed'): is_installed},
+            use_cache=cache, use_websocket=websocket)
     except MoulinetteError as e:
         from moulinette.interfaces.cli import colorize
         print('%s %s' % (colorize(m18n.g('error'), 'red'), e.strerror))
