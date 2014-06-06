@@ -145,6 +145,9 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
                         f.write(new_ipv6)
                     break
     except IOError:
+        pass
+    
+    if new_ipv6 is None:
         new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
 
     if old_ip != new_ip or old_ipv6 != new_ipv6 and new_ipv6 is not None:
