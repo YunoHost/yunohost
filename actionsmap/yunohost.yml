@@ -136,7 +136,7 @@ user:
         ### user_delete()
         delete:
             action_help: Delete user
-            api: DELETE /users/<users>
+            api: DELETE /users/<username>
             configuration:
                 authenticate: all
             arguments:
