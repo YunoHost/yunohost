@@ -146,7 +146,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
                     break
     except IOError:
         pass
-    
+
     if new_ipv6 is None:
         new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
 
@@ -205,7 +205,7 @@ def dyndns_installcron():
 
     """
     with open('/etc/cron.d/yunohost-dyndns', 'w+') as f:
-        f.write('*/2 * * * * root yunohost dyndns update >> /dev/null')
+        f.write('*/2 * * * * root yunohost dyndns update >> /dev/null\n')
 
     msignals.display(m18n.n('dyndns_cron_installed'), 'success')
 
