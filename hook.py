@@ -55,7 +55,7 @@ def hook_add(app, file):
 
     finalpath = hook_folder + action +'/'+ priority +'-'+ app
     os.system('cp %s %s' % (file, finalpath))
-    os.system('chown -hR admin: %s' % hook_folder)
+    os.system('chown -hR admin %s' % hook_folder)
 
     return { 'hook': finalpath }
 

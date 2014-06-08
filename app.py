@@ -353,7 +353,7 @@ def app_upgrade(auth, app, url=None, file=None):
                 hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
 
         # Execute App upgrade script
-        os.system('chown -hR admin: %s' % install_tmp)
+        os.system('chown -hR admin %s' % install_tmp)
         if hook_exec(app_tmp_folder +'/scripts/upgrade') != 0:
             #TODO: display fail messages from script
             pass
@@ -459,7 +459,7 @@ def app_install(auth, app, label=None, args=None):
     else:
         app_setting(app_id, 'label', manifest['name'])
 
-    os.system('chown -R admin: '+ app_tmp_folder)
+    os.system('chown -R admin '+ app_tmp_folder)
 
     try:
         if args is None:
@@ -469,7 +469,7 @@ def app_install(auth, app, label=None, args=None):
         args_dict = {}
 
     # Execute App install script
-    os.system('chown -hR admin: %s' % install_tmp)
+    os.system('chown -hR admin %s' % install_tmp)
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (app_tmp_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
@@ -478,7 +478,7 @@ def app_install(auth, app, label=None, args=None):
             shutil.rmtree(app_tmp_folder)
             os.system('chmod -R 400 %s' % app_setting_path)
             os.system('chown -R root: %s' % app_setting_path)
-            os.system('chown -R admin: %s/scripts' % app_setting_path)
+            os.system('chown -R admin %s/scripts' % app_setting_path)
             app_ssowatconf(auth)
             msignals.display(m18n.n('installation_complete'), 'success')
         else:
@@ -514,8 +514,8 @@ def app_remove(auth, app):
         shutil.rmtree('/tmp/yunohost_remove')
     except: pass
 
-    os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
-    os.system('chown -R admin: /tmp/yunohost_remove')
+    os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin /tmp/yunohost_remove' % app_setting_path)
+    os.system('chown -R admin /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove') != 0:
