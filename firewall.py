@@ -35,7 +35,7 @@ except ImportError:
 
 from moulinette.core import MoulinetteError
 
-""" Search the ssh port in ssh config file 
+""" Search the ssh port in ssh config file
     If we don't find the ssh port we define 22"""
 
 try:
@@ -48,13 +48,13 @@ try:
         ssh_port = ssh_port.rstrip('\n\r')
 
   ssh_config_file.close()
-  
+
   if ssh_port == '':
     ssh_port = '22'
 
 except:
   ssh_port = '22'
-  
+
 ssh_port = int(ssh_port)
 
 def firewall_allow(port=None, protocol=['TCP'], ipv6=False, no_upnp=False):
@@ -70,8 +70,11 @@ def firewall_allow(port=None, protocol=['TCP'], ipv6=False, no_upnp=False):
     """
     port = int(port)
     ipv  = "ipv4"
-    protocols = protocol
-    protocol  = protocol[0]
+    if isinstance(protocol, list):
+        protocols = protocol
+    else:
+        protocols = [protocol]
+    protocol  = protocols[0]
 
     firewall = firewall_list(raw=True)
 
@@ -109,8 +112,11 @@ def firewall_disallow(port=None, protocol=['TCP'], ipv6=False):
     """
     port = int(port)
     ipv  = "ipv4"
-    protocols = protocol
-    protocol  = protocol[0]
+    if isinstance(protocol, list):
+        protocols = protocol
+    else:
+        protocols = [protocol]
+    protocol  = protocols[0]
 
     firewall = firewall_list(raw=True)
 
