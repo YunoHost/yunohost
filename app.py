@@ -369,7 +369,7 @@ def app_upgrade(auth, app, url=None, file=None):
         msignals.display(m18n.n('app_upgraded', app_id), 'success')
 
     if not upgraded_apps:
-        raise MoulinetteError(errno.ENODATA, m18n.n('no_app_upgrade'))
+        raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
 
     msignals.display(m18n.n('upgrade_complete'), 'success')
 
