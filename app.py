@@ -869,7 +869,12 @@ def app_ssowatconf(auth):
     redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
 
     apps = {}
-    for app in app_list()['apps']:
+    try:
+        apps_list = app_list()['apps']
+    except:
+        apps_list = []
+
+    for app in apps_list:
         if _is_installed(app['id']):
             with open(apps_setting_path + app['id'] +'/settings.yml') as f:
                 app_settings = yaml.load(f)
