@@ -22,7 +22,7 @@
     "app_id_invalid" : "Id d'application incorrect",
     "app_already_installed" : "{:s} est déjà installé",
     "app_removed" : "{:s} supprimé avec succès",
-    "app_location_already_used" : "Une application est déjà installé à cet emplacement",
+    "app_location_already_used" : "Une application est déjà installée à cet emplacement",
     "app_location_install_failed" : "Impossible d'installer l'application à cet emplacement",
     "app_extraction_failed" : "Impossible d'extraire les fichiers d'installation",
     "app_install_files_invalid" : "Fichiers d'installation incorrects",
@@ -63,7 +63,7 @@
     "dyndns_cron_removed" : "Tâche cron pour DynDNS enlevée avec succès",
 
     "port_available" : "Le port {:d} est disponible",
-    "port_unavailable" : "Le port {:d} n'est pas disponible",
+    "port_unavailable" : "Le port {:d} est indisponible",
     "port_already_opened" : "Le port {:d} est déjà ouvert",
     "port_already_closed" : "Le port {:d} est déjà fermé",
     "iptables_unavailable" : "Vous ne pouvez pas faire joujou avec iptables ici. Vous êtes sûrement dans un conteneur, autrement votre noyau ne le supporte pas.",
