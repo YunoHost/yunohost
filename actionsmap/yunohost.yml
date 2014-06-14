@@ -719,6 +719,7 @@ service:
                 -l:
                     full: --log
                     help: Absolute path to log file to display
+                    nargs: +
                 -r:
                     full: --runlevel
                     help: Runlevel priority of the service
