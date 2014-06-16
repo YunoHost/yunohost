@@ -64,12 +64,12 @@ def domain_list(auth, filter=None, limit=None, offset=None):
     return { 'domains': result_list }
 
 
-def domain_add(auth, domains, main=False, dyndns=False):
+def domain_add(auth, domain, main=False, dyndns=False):
     """
     Create a custom domain
 
     Keyword argument:
-        domains -- Domain name to add
+        domain -- Domain name to add
         main -- Is the main domain
         dyndns -- Subscribe to DynDNS
 
@@ -81,38 +81,34 @@ def domain_add(auth, domains, main=False, dyndns=False):
         ip = "127.0.0.1"
     now = datetime.datetime.now()
     timestamp = str(now.year) + str(now.month) + str(now.day)
-    result = []
 
-    if not isinstance(domains, list):
-        domains = [ domains ]
+    if domain in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
 
-    for domain in domains:
-        if domain in domain_list(auth)['domains']:
-            continue
+    # DynDNS domain
+    if dyndns:
+        if len(domain.split('.')) < 3:
+            raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
+        import requests
+        from yunohost.dyndns import dyndns_subscribe
 
-        # DynDNS domain
-        if dyndns:
-            if len(domain.split('.')) < 3:
-                raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-            import requests
-            from yunohost.dyndns import dyndns_subscribe
-
-            try:
-                r = requests.get('http://dyndns.yunohost.org/domains')
-            except ConnectionError:
-                pass
+        try:
+            r = requests.get('http://dyndns.yunohost.org/domains')
+        except ConnectionError:
+            pass
+        else:
+            dyndomains = json.loads(r.text)
+            dyndomain  = '.'.join(domain.split('.')[1:])
+            if dyndomain in dyndomains:
+                if os.path.exists('/etc/cron.d/yunohost-dyndns'):
+                    raise MoulinetteError(errno.EPERM,
+                                          m18n.n('domain_dyndns_already_subscribed'))
+                dyndns_subscribe(domain=domain)
             else:
-                dyndomains = json.loads(r.text)
-                dyndomain  = '.'.join(domain.split('.')[1:])
-                if dyndomain in dyndomains:
-                    if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-                        raise MoulinetteError(errno.EPERM,
-                                              m18n.n('domain_dyndns_already_subscribed'))
-                    dyndns_subscribe(domain=domain)
-                else:
-                    raise MoulinetteError(errno.EINVAL,
-                                          m18n.n('domain_dyndns_root_unknown'))
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('domain_dyndns_root_unknown'))
 
+    try:
         # Commands
         ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
         ssl_domain_path  = '/etc/yunohost/certs/%s' % domain
@@ -236,75 +232,69 @@ def domain_add(auth, domains, main=False, dyndns=False):
         os.system('sed -i s/yunohost.org/%s/g /etc/nginx/conf.d/%s.conf' % (domain, domain))
         os.system('service nginx reload')
 
-        if auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
-            result.append(domain)
-            continue
-        else:
+        if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
 
-
-    os.system('yunohost app ssowatconf > /dev/null 2>&1')
+        os.system('yunohost app ssowatconf > /dev/null 2>&1')
+    except:
+        # Force domain removal
+        domain_remove(auth, domain, True)
+        raise
 
     msignals.display(m18n.n('domain_created'), 'success')
-    return { 'domains': result }
 
 
-def domain_remove(auth, domains):
+def domain_remove(auth, domain, force=False):
     """
     Delete domains
 
     Keyword argument:
-        domains -- Domain(s) to delete
+        domain -- Domain to delete
+        force -- Force the domain removal
 
     """
-    result = []
-    domains_list = domain_list(auth)['domains']
+    if not force and domain not in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
-    if not isinstance(domains, list):
-        domains = [ domains ]
-
-    for domain in domains:
-        if domain not in domains_list:
-            raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
-
-        # Check if apps are installed on the domain
-        for app in os.listdir('/etc/yunohost/apps/'):
-            with open('/etc/yunohost/apps/' + app +'/settings.yml') as f:
-                try:
-                    app_domain = yaml.load(f)['domain']
-                except:
-                    continue
-                else:
-                    if app_domain == domain:
-                        raise MoulinetteError(errno.EPERM,
-                                              m18n.n('domain_uninstall_app_first'))
-
-        if auth.remove('virtualdomain=' + domain + ',ou=domains'):
+    # Check if apps are installed on the domain
+    for app in os.listdir('/etc/yunohost/apps/'):
+        with open('/etc/yunohost/apps/' + app +'/settings.yml') as f:
             try:
-                shutil.rmtree('/etc/yunohost/certs/%s' % domain)
-                os.remove('/var/lib/bind/%s.zone' % domain)
-                shutil.rmtree('/var/lib/metronome/%s' % domain.replace('.', '%2e'))
-                os.remove('/etc/metronome/conf.d/%s.cfg.lua' % domain)
-                shutil.rmtree('/etc/nginx/conf.d/%s.d' % domain)
-                os.remove('/etc/nginx/conf.d/%s.conf' % domain)
+                app_domain = yaml.load(f)['domain']
             except:
-                pass
-            with open('/etc/bind/named.conf.local', 'r') as conf:
-                conf_lines = conf.readlines()
-            with open('/etc/bind/named.conf.local', 'w') as conf:
-                in_block = False
-                for line in conf_lines:
-                    if re.search(r'^zone "%s' % domain, line):
-                        in_block = True
-                    if in_block:
-                        if re.search(r'^};$', line):
-                            in_block = False
-                    else:
-                        conf.write(line)
-            result.append(domain)
-            continue
-        else:
-            raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
+                continue
+            else:
+                if app_domain == domain:
+                    raise MoulinetteError(errno.EPERM,
+                                          m18n.n('domain_uninstall_app_first'))
+
+    if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
+        command_list = [
+            'rm -rf /etc/yunohost/certs/%s' % domain,
+            'rm -f  /var/lib/bind/%s.zone' % domain,
+            'rm -rf /var/lib/metronome/%s' % domain.replace('.', '%2e'),
+            'rm -f  /etc/metronome/conf.d/%s.cfg.lua' % domain,
+            'rm -rf /etc/nginx/conf.d/%s.d' % domain,
+            'rm -f  /etc/nginx/conf.d/%s.conf' % domain,
+        ]
+        for command in command_list:
+            if os.system(command) != 0:
+                msignals.display(m18n.n('path_removal_failed', command[7:]),
+                                 'warning')
+        with open('/etc/bind/named.conf.local', 'r') as conf:
+            conf_lines = conf.readlines()
+        with open('/etc/bind/named.conf.local', 'w') as conf:
+            in_block = False
+            for line in conf_lines:
+                if re.search(r'^zone "%s' % domain, line):
+                    in_block = True
+                if in_block:
+                    if re.search(r'^};$', line):
+                        in_block = False
+                else:
+                    conf.write(line)
+    else:
+        raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
     os.system('yunohost app ssowatconf > /dev/null 2>&1')
     os.system('service nginx reload')
@@ -312,4 +302,3 @@ def domain_remove(auth, domains):
     os.system('service metronome restart')
 
     msignals.display(m18n.n('domain_deleted'), 'success')
-    return { 'domains': result }

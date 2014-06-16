@@ -38,6 +38,7 @@
     "executing_script": "Exécution du script...",
     "done" : "Terminé.",
 
+    "path_removal_failed" : "Impossible de supprimer le chemin {:s}",
     "domain_unknown" : "Domaine inconnu",
     "domain_dyndns_invalid" : "Domaine incorrect pour un usage avec DynDNS",
     "domain_dyndns_already_subscribed" : "Vous avez déjà souscris à un domaine DynDNS",

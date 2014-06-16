@@ -243,9 +243,8 @@ domain:
             configuration:
                 authenticate: all
             arguments:
-                domains:
+                domain:
                     help: Domain name to add
-                    nargs: '+'
                     extra:
                         pattern:
                             - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
@@ -266,9 +265,8 @@ domain:
             configuration:
                 authenticate: all
             arguments:
-                domains:
-                    help: Domain(s) to delete
-                    nargs: "+"
+                domain:
+                    help: Domain to delete
                     extra:
                         pattern:
                             - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
