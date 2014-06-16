@@ -237,8 +237,9 @@ def domain_add(auth, domain, main=False, dyndns=False):
 
         os.system('yunohost app ssowatconf > /dev/null 2>&1')
     except:
-        # Force domain removal
-        domain_remove(auth, domain, True)
+        # Force domain removal silently
+        try: domain_remove(auth, domain, True)
+        except: pass
         raise
 
     msignals.display(m18n.n('domain_created'), 'success')
