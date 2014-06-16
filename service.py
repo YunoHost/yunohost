@@ -262,12 +262,13 @@ def _run_service_command(action, service):
     Run services management command (start, stop,  enable, disable)
 
     Keyword argument:
-        service -- Service name
         action -- Action to perform
+        service -- Service name
 
     """
     if service not in _get_services().keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', name))
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown',
+                                                   service))
 
     cmd = None
     if action in ['start', 'stop']:
