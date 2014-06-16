@@ -142,9 +142,15 @@
     "ask_lastname" : "Nom",
     "ask_email" : "Adresse mail",
     "ask_password" : "Mot de passe",
+    "ask_current_admin_password" : "Mot de passe d'administration actuel",
+    "ask_new_admin_password" : "Nouveau mot de passe d'administration",
+    "ask_list_to_remove" : "Liste à supprimer",
     "pattern_username" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
     "pattern_firstname" : "Doit être un prénom valide",
     "pattern_lastname" : "Doit être un nom valide",
-    "pattern_email" : "Doit être une adresse mail valide (ex. : someone@domain.org)"
+    "pattern_email" : "Doit être une adresse mail valide (ex. : someone@domain.org)",
+    "pattern_domain" : "Doit être un nom de domaine valide (ex : mon-domaine.org)",
+    "pattern_listname" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
+    "pattern_port" : "Doit être un numéro de port valide (0-65535)"
 }
 

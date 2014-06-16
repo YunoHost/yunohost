@@ -142,9 +142,15 @@
     "ask_lastname" : "Last name",
     "ask_email" : "Email address",
     "ask_password" : "Password",
+    "ask_current_admin_password" : "Current administration password",
+    "ask_new_admin_password" : "New administration password",
+    "ask_list_to_remove" : "List to remove",
     "pattern_username" : "Must be alphanumeric and underscore characters only",
     "pattern_firstname" : "Must be a valid first name",
     "pattern_lastname" : "Must be a valid last name",
-    "pattern_email" : "Must be a valid email address (e.g. someone@domain.org)"
+    "pattern_email" : "Must be a valid email address (e.g. someone@domain.org)",
+    "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
+    "pattern_listname" : "Must be alphanumeric and underscore characters only",
+    "pattern_port" : "Must be a valid port number (i.e. 0-65535)"
 }
 
