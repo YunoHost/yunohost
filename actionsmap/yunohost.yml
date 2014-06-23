@@ -1023,6 +1023,8 @@ tools:
         update:
             action_help: YunoHost update
             api: PUT /update
+            configuration:
+                lock: false
             arguments:
                 --ignore-apps:
                     help: Ignore apps cache update and changelog
@@ -1035,6 +1037,10 @@ tools:
         upgrade:
             action_help: YunoHost upgrade
             api: PUT /upgrade
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+                lock: false
             arguments:
                 --ignore-apps:
                     help: Ignore apps upgrade
