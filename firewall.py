@@ -248,7 +248,7 @@ def firewall_upnp(action=None):
         firewall['uPnP']['enabled'] = True
 
         with open('/etc/cron.d/yunohost-firewall', 'w+') as f:
-            f.write('*/50 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin yunohost firewall reload >>/dev/null\n')
+            f.write('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/50 * * * * root  iptables -L | grep dpt:https > /dev/null 2>&1 && if [ $? != 0 ]; then yunohost firewall reload; fi\n')
 
         msignals.display(m18n.n('upnp_enabled'), 'success')
 
