@@ -1124,18 +1124,30 @@ def _value_for_locale(values):
     Keyword arguments:
         values -- A dict of values associated to their locale
 
+    Returns:
+        An utf-8 encoded string
+
     """
     if not isinstance(values, dict):
         return values
 
     for lang in [m18n.locale, m18n.default_locale]:
         try:
-            return values[lang]
+            return _encode_string(values[lang])
         except KeyError:
             continue
 
     # Fallback to first value
-    return values.values()[0]
+    return _encode_string(values.values()[0])
+
+
+def _encode_string(value):
+    """
+    Return the string encoded in utf-8 if needed
+    """
+    if isinstance(value, unicode):
+        return value.encode('utf8')
+    return value
 
 
 def is_true(arg):
