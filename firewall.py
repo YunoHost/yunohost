@@ -172,21 +172,7 @@ def firewall_reload():
     if os.system("iptables -P INPUT ACCEPT") != 0:
         raise MoulinetteError(errno.ESRCH, m18n.n('iptables_unavailable'))
     if upnp:
-        try:
-            upnpc = miniupnpc.UPnP()
-            upnpc.discoverdelay = 3000
-            if upnpc.discover() == 1:
-                upnpc.selectigd()
-                for protocol in ['TCP', 'UDP']:
-                    for port in firewall['uPnP'][protocol]:
-                        if upnpc.getspecificportmapping(port, protocol):
-                            try: upnpc.deleteportmapping(port, protocol)
-                            except: pass
-                        upnpc.addportmapping(port, protocol, upnpc.lanaddr, port, 'yunohost firewall : port %d' % port, '')
-            else:
-                raise MoulinetteError(errno.ENXIO, m18n.n('upnp_dev_not_found'))
-        except:
-            msignals.display(m18n.n('upnp_port_open_failed'), 'warning')
+        firewall_upnp(action="reload")
 
     os.system("iptables -F")
     os.system("iptables -X")
@@ -236,19 +222,23 @@ def firewall_upnp(action=None):
     Add uPnP cron and enable uPnP in firewall.yml, or the opposite.
 
     Keyword argument:
-        action -- enable/disable
+        action -- enable/disable/reload
 
     """
     firewall = firewall_list(raw=True)
 
-    if action:
+    if action == 'reload':
+        action = action[0:]
+    else:
         action = action[0]
 
     if action == 'enable':
         firewall['uPnP']['enabled'] = True
 
         with open('/etc/cron.d/yunohost-firewall', 'w+') as f:
-            f.write('*/50 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin yunohost firewall reload >>/dev/null\n')
+            f.write('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+            \n*/50 * * * * root yunohost firewall upnp reload >>/dev/null \
+            \n*/50 * * * * root iptables -L | grep ^fail2ban-dovecot > /dev/null 2>&1; if [ $? != 0 ]; then yunohost firewall reload; fi >>/dev/null')
 
         msignals.display(m18n.n('upnp_enabled'), 'success')
 
@@ -272,6 +262,26 @@ def firewall_upnp(action=None):
         except: pass
 
         msignals.display(m18n.n('upnp_disabled'), 'success')
+
+    if action == 'reload':
+        upnp = firewall['uPnP']['enabled']
+
+        if upnp:
+            try:
+                upnpc = miniupnpc.UPnP()
+                upnpc.discoverdelay = 3000
+                if upnpc.discover() == 1:
+                    upnpc.selectigd()
+                    for protocol in ['TCP', 'UDP']:
+                        for port in firewall['uPnP'][protocol]:
+                            if upnpc.getspecificportmapping(port, protocol):
+                                try: upnpc.deleteportmapping(port, protocol)
+                                except: pass
+                            upnpc.addportmapping(port, protocol, upnpc.lanaddr, port, 'yunohost firewall : port %d' % port, '')
+                else:
+                    raise MoulinetteError(errno.ENXIO, m18n.n('upnp_dev_not_found'))
+            except:
+                msignals.display(m18n.n('upnp_port_open_failed'), 'warning')
 
     if action:
         os.system("cp /etc/yunohost/firewall.yml /etc/yunohost/firewall.yml.old")
