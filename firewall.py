@@ -172,7 +172,7 @@ def firewall_reload():
     if os.system("iptables -P INPUT ACCEPT") != 0:
         raise MoulinetteError(errno.ESRCH, m18n.n('iptables_unavailable'))
     if upnp:
-        firewall_upnp(action="reload")
+        firewall_upnp(action=['reload'])
 
     os.system("iptables -F")
     os.system("iptables -X")
@@ -227,9 +227,7 @@ def firewall_upnp(action=None):
     """
     firewall = firewall_list(raw=True)
 
-    if action == 'reload':
-        action = action[0:]
-    else:
+    if action:
         action = action[0]
 
     if action == 'enable':
