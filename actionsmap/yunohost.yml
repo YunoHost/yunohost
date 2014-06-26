@@ -881,6 +881,7 @@ firewall:
                     choices:
                         - enable
                         - disable
+                        - reload
                         - []
                     nargs: "*"
 
