@@ -140,7 +140,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             for line in lines:
                 sources.write(re.sub(r''+ old_domain +'', new_domain, line))
 
-    domain_add(auth, [new_domain], main=True)
+    domain_add(auth, new_domain, main=True)
 
     os.system('rm /etc/ssl/private/yunohost_key.pem')
     os.system('rm /etc/ssl/certs/yunohost_crt.pem')
