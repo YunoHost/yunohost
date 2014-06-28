@@ -646,6 +646,8 @@ def app_clearaccess(auth, apps):
         apps
 
     """
+    from yunohost.hook import hook_callback
+
     if not isinstance(apps, list): apps = [apps]
 
     for app in apps:
@@ -661,6 +663,8 @@ def app_clearaccess(auth, apps):
 
         if 'allowed_users' in app_settings:
             app_setting(app, 'allowed_users', delete=True)
+
+        hook_callback('post_app_clearaccess', [app])
 
     app_ssowatconf(auth)
 
