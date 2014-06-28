@@ -538,6 +538,7 @@ def app_addaccess(auth, apps, users):
 
     """
     from yunohost.user import user_list, user_info
+    from yunohost.hook import hook_callback
 
     if not users:
         users = []
@@ -577,6 +578,7 @@ def app_addaccess(auth, apps, users):
                         new_users = new_users +','+ allowed_user
 
             app_setting(app, 'allowed_users', new_users.strip())
+            hook_callback('post_app_addaccess', [app, new_users])
 
     app_ssowatconf(auth)
 
@@ -593,6 +595,7 @@ def app_removeaccess(auth, apps, users):
 
     """
     from yunohost.user import user_list
+    from yunohost.hook import hook_callback
 
     remove_all = False
     if not users:
@@ -628,6 +631,7 @@ def app_removeaccess(auth, apps, users):
                         new_users=new_users+','+user['username']
 
             app_setting(app, 'allowed_users', new_users.strip())
+            hook_callback('post_app_removeaccess', [app, new_users])
 
     app_ssowatconf(auth)
 
