@@ -31,7 +31,7 @@ php5-fpm:
    status: service
    log: /var/log/php5-fpm.log
 yunohost-api:
-    status: ps aux | grep yunohost-api | grep -v grep
+   status: service
    log: /var/log/yunohost.log
 postgrey:
    status: service
