@@ -200,14 +200,14 @@ def service_status(names=[]):
 
         # Retrieve service status
         try:
-            ret = subprocess.check_output(status.split(), stderr=subprocess.STDOUT)
+            ret = subprocess.check_output(status, stderr=subprocess.STDOUT,
+                                          shell=True)
         except subprocess.CalledProcessError as e:
-            if 'usage:' not in e.output.lower():
-                result[name]['status'] = 'inactive'
-            else:
-                # TODO: Log output?
+            if 'usage:' in e.output.lower():
                 msignals.display(m18n.n('service_status_failed', name),
                                  'warning')
+            else:
+                result[name]['status'] = 'inactive'
         else:
             result[name]['status'] = 'running'
 
