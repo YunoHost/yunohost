@@ -308,8 +308,8 @@ def app_upgrade(auth, app, url=None, file=None):
         elif url:
             manifest = _fetch_app_from_git(url)
         elif 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-            raise MoulinetteError(errno.EDESTADDRREQ,
-                                  m18n.n('custom_app_url_required', app_id))
+            msignals.display(m18n.n('custom_app_url_required', app_id), 'warning')
+            continue
         elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
               or ('update_time' not in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
