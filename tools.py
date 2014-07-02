@@ -369,7 +369,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     return { 'packages': packages, 'apps': apps }
 
 
-def tools_upgrade(ignore_apps=False, ignore_packages=False):
+def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     """
     Update apps & package cache, then display changelog
 
@@ -422,7 +422,7 @@ def tools_upgrade(ignore_apps=False, ignore_packages=False):
 
     if not ignore_apps:
         try:
-            app_upgrade()
+            app_upgrade(auth)
         except: pass
 
     msignals.display(m18n.n('system_upgraded'), 'success')

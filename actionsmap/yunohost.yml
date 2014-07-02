@@ -1039,6 +1039,8 @@ tools:
             action_help: YunoHost upgrade
             api: PUT /upgrade
             configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
                 lock: false
             arguments:
                 --ignore-apps:
