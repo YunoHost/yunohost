@@ -1005,7 +1005,7 @@ tools:
                     full: --domain
                     help: YunoHost main domain
                     extra:
-                        ask: "Main domain"
+                        ask: ask_main_domain
                         pattern:
                             - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
                             - pattern_domain

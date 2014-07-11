@@ -145,6 +145,7 @@
     "ask_password" : "Password",
     "ask_current_admin_password" : "Current administration password",
     "ask_new_admin_password" : "New administration password",
+    "ask_main_domain" : "Main domain",
     "ask_list_to_remove" : "List to remove",
     "pattern_username" : "Must be alphanumeric and underscore characters only",
     "pattern_firstname" : "Must be a valid first name",
