@@ -172,9 +172,20 @@ def hook_exec(file, args=None):
     if "/" in file and file[0:2] != file_path:
         file_path = os.path.dirname(file)
         file = file.replace(file_path +"/", "")
-    msignals.display(m18n.n('executing_script'))
+
     #TODO: Allow python script
-    p = subprocess.Popen('su - admin -c "cd \\"%s\\" && /bin/bash -x \\"%s\\" %s"' % (file_path, file, ' '.join(arg_list)), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
+    arg_str = ''
+    if arg_list:
+        # Concatenate arguments and escape them with double quotes to prevent
+        # bash related issue if an argument is empty and is not the last
+        arg_str = '\\"{:s}\\"'.format('\\" \\"'.join(arg_list))
+
+    msignals.display(m18n.n('executing_script'))
+
+    p = subprocess.Popen('su - admin -c "cd \\"{:s}\\" && ' \
+            '/bin/bash -x \\"{:s}\\" {:s}"'.format(file_path, file, arg_str),
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     for line in iter(p.stdout.readline, ''):
         line = line.rstrip()
         msignals.display(line, 'log')
