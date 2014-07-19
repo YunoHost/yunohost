@@ -107,7 +107,7 @@ user:
                         ask: ask_firstname
                         required: True
                         pattern:
-                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
+                            - "^([^\\W\\d_]{2,30}[ ,.'-]{0,3})+$"
                             - pattern_firstname
                 -l:
                     full: --lastname
