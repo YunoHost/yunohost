@@ -482,16 +482,24 @@ def app_install(auth, app, label=None, args=None):
             app_ssowatconf(auth)
             msignals.display(m18n.n('installation_complete'), 'success')
         else:
-            #TODO: display script fail messages
-            hook_remove(app_id)
-            shutil.rmtree(app_setting_path)
-            shutil.rmtree(app_tmp_folder)
             raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
-    except KeyboardInterrupt, EOFError:
+    except:
+        # Execute remove script and clean folders
         hook_remove(app_id)
         shutil.rmtree(app_setting_path)
         shutil.rmtree(app_tmp_folder)
-        raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
+
+        # Reraise proper exception
+        try:
+            raise
+        except MoulinetteError:
+            raise
+        except KeyboardInterrupt, EOFError:
+            raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
+        except Exception as e:
+            import traceback
+            msignals.display(traceback.format_exc(), 'log')
+            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
 
 
 def app_remove(auth, app):
