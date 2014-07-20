@@ -5,6 +5,7 @@
     "upgrade_complete" : "Upgrade complete",
     "installation_complete" : "Installation complete",
     "installation_failed" : "Installation failed",
+    "unexpected_error" : "An unexpected error occured",
 
     "license_undefined" : "undefined",
     "no_appslist_found" : "No apps list found",

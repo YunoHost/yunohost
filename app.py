@@ -498,8 +498,8 @@ def app_install(auth, app, label=None, args=None):
             raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
         except Exception as e:
             import traceback
-            msignals.display(traceback.format_exc(), 'log')
-            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+            msignals.display(traceback.format_exc().strip(), 'log')
+            raise MoulinetteError(errno.EIO, m18n.n('unexpected_error'))
 
 
 def app_remove(auth, app):
