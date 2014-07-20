@@ -129,7 +129,7 @@ def hook_exec(file, args=None):
         args -- Arguments to pass to the script
 
     """
-    from yunohost.app import _value_for_locale, _encode_string
+    from yunohost.app import _value_for_locale
 
     if isinstance(args, list):
         arg_list = args
@@ -152,11 +152,9 @@ def hook_exec(file, args=None):
 
                     # Append extra strings
                     if 'choices' in arg:
-                        ask_string += ' ({:s})'.format(
-                            _encode_string('|'.join(arg['choices'])))
+                        ask_string += ' ({:s})'.format('|'.join(arg['choices']))
                     if 'default' in arg:
-                        ask_string += ' (default: {:s})'.format(
-                            _encode_string(arg['default']))
+                        ask_string += ' (default: {:s})'.format(arg['default'])
 
                     input_string = msignals.prompt(ask_string)
 
