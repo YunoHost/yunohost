@@ -107,7 +107,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         old_domain
 
     """
-    from yunohost.domain import domain_add
+    from yunohost.domain import domain_add, domain_list
     from yunohost.dyndns import dyndns_subscribe
 
     if not old_domain:
@@ -116,6 +116,11 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
         if not new_domain:
             return { 'current_main_domain': old_domain }
+
+    if not new_domain:
+        raise MoulinetteError(errno.EINVAL, m18n.n('new_domain_required'))
+    if new_domain not in domain_list(auth)['domains']:
+        domain_add(auth, new_domain, main=True)
 
     config_files = [
         '/etc/postfix/main.cf',
@@ -139,8 +144,6 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         with open(file, "w") as sources:
             for line in lines:
                 sources.write(re.sub(r''+ old_domain +'', new_domain, line))
-
-    domain_add(auth, new_domain, main=True)
 
     os.system('rm /etc/ssl/private/yunohost_key.pem')
     os.system('rm /etc/ssl/certs/yunohost_crt.pem')

@@ -112,6 +112,7 @@
     "password_too_short" : "Password is too short",
     "admin_password_change_failed" : "Unable to change password",
     "admin_password_changed" : "Administration password successfully changed",
+    "new_domain_required" : "You must provide the new main domain",
     "maindomain_change_failed" : "Unable to change main domain",
     "maindomain_changed" : "Main domain successfully changed",
     "yunohost_installing" : "Installing YunoHost...",
