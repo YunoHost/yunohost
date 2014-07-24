@@ -64,13 +64,12 @@ def domain_list(auth, filter=None, limit=None, offset=None):
     return { 'domains': result_list }
 
 
-def domain_add(auth, domain, main=False, dyndns=False):
+def domain_add(auth, domain, dyndns=False):
     """
     Create a custom domain
 
     Keyword argument:
         domain -- Domain name to add
-        main -- Is the main domain
         dyndns -- Subscribe to DynDNS
 
     """
@@ -163,12 +162,6 @@ def domain_add(auth, domain, main=False, dyndns=False):
              '_xmpp-server._tcp.%s.  IN   SRV   0  5   5269  %s.' % (domain, domain),
              '_jabber._tcp.%s.       IN   SRV   0  5   5269  %s.' % (domain, domain),
             ]
-            if main:
-                zone_lines.extend([
-                    'pubsub.%s.   IN   A     %s' % (domain, ip),
-                    'muc.%s.      IN   A     %s' % (domain, ip),
-                    'vjud.%s.     IN   A     %s' % (domain, ip)
-                ])
             with open('/var/lib/bind/%s.zone' % domain, 'w') as zone:
                 for line in zone_lines:
                     zone.write(line + '\n')

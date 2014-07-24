@@ -120,7 +120,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     if not new_domain:
         raise MoulinetteError(errno.EINVAL, m18n.n('new_domain_required'))
     if new_domain not in domain_list(auth)['domains']:
-        domain_add(auth, new_domain, main=True)
+        domain_add(auth, new_domain)
 
     config_files = [
         '/etc/postfix/main.cf',
@@ -144,6 +144,35 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         with open(file, "w") as sources:
             for line in lines:
                 sources.write(re.sub(r''+ old_domain +'', new_domain, line))
+
+    ## Update DNS zone file for old and new domains
+    main_subdomains = ['pubsub', 'muc', 'vjud']
+    try:
+        with open('/var/lib/bind/%s.zone' % old_domain, 'r') as f:
+            old_zone = f.read()
+    except IOError:
+        pass
+    else:
+        # Remove unneeded subdomains entries
+        for sub in main_subdomains:
+            old_zone = re.sub(
+                r'^({sub}.{domain}.|{sub})[\ \t]+(IN).*$[\n]?'.format(
+                    sub=sub, domain=old_domain),
+                '', old_zone, 1, re.MULTILINE)
+        with open('/var/lib/bind/%s.zone' % old_domain, 'w') as f:
+            f.write(old_zone)
+    try:
+        with open('/var/lib/bind/%s.zone' % new_domain, 'r') as f:
+            new_zone = f.read()
+    except IOError:
+        msignals.display(m18n.n('domain_zone_not_found', new_domain), 'warning')
+    else:
+        # Add main subdomains entries
+        for sub in main_subdomains:
+            new_zone += '{sub}  IN  CNAME   {domain}.\n'.format(
+                sub=sub, domain=new_domain)
+        with open('/var/lib/bind/%s.zone' % new_domain, 'w') as f:
+            f.write(new_zone)
 
     os.system('rm /etc/ssl/private/yunohost_key.pem')
     os.system('rm /etc/ssl/certs/yunohost_crt.pem')
