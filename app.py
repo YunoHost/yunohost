@@ -379,9 +379,9 @@ def app_install(auth, app, label=None, args=None):
     Install apps
 
     Keyword argument:
-        label
-        app -- App to install
-        args -- Serialize arguments of installation
+        app -- Name, local path or git URL of the app to install
+        label -- Custom name for the app
+        args -- Serialize arguments for app installation
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec

@@ -373,7 +373,7 @@ app:
                             - '^[a-z0-9_]+$'
                             - pattern_username
 
-        ### app_install() TODO: Write help
+        ### app_install()
         install:
             action_help: Install apps
             api: POST /apps
@@ -383,7 +383,7 @@ app:
                 lock: false
             arguments:
                 app:
-                    help: App to install
+                    help: Name, local path or git URL of the app to install
                 -l:
                     full: --label
                     help: Custom name for the app
