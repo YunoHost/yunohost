@@ -12,8 +12,8 @@ if os.path.isdir('%s/moulinette' % basedir):
     sys.path.insert(0, basedir)
     from_source = True
 
-from moulinette import init, cli, MoulinetteError
-from moulinette.helpers import YunoHostError, colorize
+from moulinette import init, cli
+from moulinette.interfaces.cli import colorize
 
 
 ## Main action
