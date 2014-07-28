@@ -29,6 +29,7 @@ import re
 import json
 import errno
 import subprocess
+from shlex import split as arg_split
 
 from moulinette.core import MoulinetteError
 
@@ -129,6 +130,7 @@ def hook_exec(file, args=None):
         args -- Arguments to pass to the script
 
     """
+    from moulinette.helpers import NonBlockingStreamReader
     from yunohost.app import _value_for_locale
 
     if isinstance(args, list):
@@ -183,13 +185,24 @@ def hook_exec(file, args=None):
 
     msignals.display(m18n.n('executing_script'))
 
-    p = subprocess.Popen('su - admin -c "cd \\"{:s}\\" && ' \
-            '/bin/bash -x \\"{:s}\\" {:s}"'.format(file_path, file, arg_str),
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    for line in iter(p.stdout.readline, ''):
-        line = line.rstrip()
-        msignals.display(line, 'log')
-    errorcode = p.poll()
-    p.stdout.close()
+    p = subprocess.Popen(
+            arg_split('su - admin -c "cd \\"{:s}\\" && ' \
+                '/bin/bash -x \\"{:s}\\" {:s}"'.format(
+                    file_path, file, arg_str)),
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            shell=False)
 
-    return errorcode
+    # Wrap and get process ouput
+    stream = NonBlockingStreamReader(p.stdout)
+    while True:
+        line = stream.readline(True, 0.1)
+        if not line:
+            # Check if process has terminated
+            returncode = p.poll()
+            if returncode is not None:
+                break
+        else:
+            msignals.display(line.rstrip(), 'log')
+    stream.close()
+
+    return returncode
