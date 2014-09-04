@@ -81,10 +81,6 @@ def tools_adminpw(old_password, new_password):
         old_password
 
     """
-    # Validate password length
-    if len(new_password) < 4:
-        raise MoulinetteError(errno.EINVAL, m18n.n('password_too_short'))
-
     old_password.replace('"', '\\"')
     old_password.replace('&', '\\&')
     new_password.replace('"', '\\"')

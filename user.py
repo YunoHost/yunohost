@@ -100,10 +100,6 @@ def user_create(auth, username, firstname, lastname, mail, password):
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
 
-    # Validate password length
-    if len(password) < 4:
-        raise MoulinetteError(errno.EINVAL, m18n.n('password_too_short'))
-
     auth.validate_uniqueness({
         'uid'       : username,
         'mail'      : mail

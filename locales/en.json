@@ -110,7 +110,6 @@
     "service_cmd_exec_failed" : "Unable to execute command '{:s}'",
 
     "ldap_initialized" : "LDAP successfully initialized",
-    "password_too_short" : "Password is too short",
     "admin_password_change_failed" : "Unable to change password",
     "admin_password_changed" : "Administration password successfully changed",
     "new_domain_required" : "You must provide the new main domain",
@@ -154,6 +153,7 @@
     "pattern_firstname" : "Must be a valid first name",
     "pattern_lastname" : "Must be a valid last name",
     "pattern_email" : "Must be a valid email address (e.g. someone@domain.org)",
+    "pattern_password" : "Must be at least 3 characters long",
     "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_listname" : "Must be alphanumeric and underscore characters only",
     "pattern_port" : "Must be a valid port number (i.e. 0-65535)"

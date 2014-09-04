@@ -132,6 +132,9 @@ user:
                     extra:
                         password: ask_password
                         required: True
+                        pattern:
+                            - '^.{3,}$'
+                            - pattern_password
 
         ### user_delete()
         delete:
@@ -180,6 +183,10 @@ user:
                     full: --change-password
                     help: New password to set
                     metavar: PASSWORD
+                    extra:
+                        pattern:
+                            - '^.{3,}$'
+                            - pattern_password
                 --add-mailforward:
                     help: Mailforward addresses to add
                     nargs: "*"
@@ -968,6 +975,9 @@ tools:
                     extra:
                         password: ask_new_admin_password
                         required: True
+                        pattern:
+                            - '^.{3,}$'
+                            - pattern_password
 
         ### tools_maindomain()
         maindomain:
@@ -1012,6 +1022,9 @@ tools:
                     extra:
                         password: ask_new_admin_password
                         required: True
+                        pattern:
+                            - '^.{3,}$'
+                            - pattern_password
                 --dyndns:
                     help: Subscribe domain to a DynDNS service
                     action: store_true

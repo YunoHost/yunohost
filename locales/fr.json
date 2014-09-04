@@ -110,7 +110,6 @@
     "service_cmd_exec_failed" : "Impossible d'exécuter la commande '{:s}'",
 
     "ldap_initialized" : "Répertoire LDAP initialisé avec succès",
-    "password_too_short" : "Le mot de passe est trop court",
     "admin_password_change_failed" : "Impossible de modifier le mot de passe d'administration",
     "admin_password_changed" : "Mot de passe d'administration modifié avec succès",
     "new_domain_required" : "Vous devez spécifier le nouveau domaine principal",
@@ -154,6 +153,7 @@
     "pattern_firstname" : "Doit être un prénom valide",
     "pattern_lastname" : "Doit être un nom valide",
     "pattern_email" : "Doit être une adresse mail valide (ex. : someone@domain.org)",
+    "pattern_password" : "Doit être composé d'au moins 3 caractères",
     "pattern_domain" : "Doit être un nom de domaine valide (ex : mon-domaine.org)",
     "pattern_listname" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
     "pattern_port" : "Doit être un numéro de port valide (0-65535)"
