@@ -96,15 +96,26 @@ def user_create(auth, username, firstname, lastname, mail, password):
         password
 
     """
+    import pwd
     from yunohost.domain import domain_list
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
 
+    # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
         'uid'       : username,
         'mail'      : mail
     })
 
+    # Validate uniqueness of username in system users
+    try:
+        pwd.getpwnam(username)
+    except KeyError:
+        pass
+    else:
+        raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
+
+    # Check that the mail domain exists
     if mail[mail.find('@')+1:] not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',

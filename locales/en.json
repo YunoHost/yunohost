@@ -132,6 +132,7 @@
     "mail_alias_remove_failed" : "Unable to remove mail alias '{:s}'",
     "mail_forward_remove_failed" : "Unable to remove mail forward '{:s}'",
     "user_unknown" : "Unknown user",
+    "system_username_exists" : "Username already exists in the system users",
     "user_creation_failed" : "Unable to create user",
     "user_created" : "User successfully created",
     "user_deletion_failed" : "Unable to delete user",

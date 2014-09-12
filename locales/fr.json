@@ -131,6 +131,7 @@
     "mail_domain_unknown" : "Domaine '{:s}' de l'adresse mail inconnu",
     "mail_alias_remove_failed" : "Impossible de supprimer l'adresse mail supplémentaire '{:s}'",
     "mail_forward_remove_failed" : "Impossible de supprimer l'adresse mail de transfert '{:s}'",
+    "system_username_exists" : "Le nom d'utilisateur existe déjà dans les utilisateurs système",
     "user_unknown" : "Utilisateur inconnu",
     "user_creation_failed" : "Impossible de créer l'utilisateur",
     "user_created" : "Utilisateur créé avec succès",
