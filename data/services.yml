@@ -1,6 +1,9 @@
 nginx:
    status: service
    log: /var/log/nginx
+avahi-daemon:
+   status: service
+   log: /var/log/daemon.log
 bind9:
    status: service
    log: /var/log/daemon.log
