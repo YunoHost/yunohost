@@ -235,8 +235,7 @@ def firewall_upnp(action=None):
 
         with open('/etc/cron.d/yunohost-firewall', 'w+') as f:
             f.write('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-            \n*/50 * * * * root yunohost firewall upnp reload >>/dev/null \
-            \n*/50 * * * * root iptables -L | grep ^fail2ban-dovecot > /dev/null 2>&1; if [ $? != 0 ]; then yunohost firewall reload; fi >>/dev/null')
+            \n*/50 * * * * root yunohost firewall upnp reload >>/dev/null')
 
         msignals.display(m18n.n('upnp_enabled'), 'success')
 
