@@ -325,6 +325,9 @@ def tools_postinstall(domain, password, dyndns=False):
     except MoulinetteError:
         firewall_upnp(action=['disable'])
 
+    # Enable iptables at boot time
+    os.system('update-rc.d yunohost-firewall defaults')
+    
     os.system('touch /etc/yunohost/installed')
 
     msignals.display(m18n.n('yunohost_configured'), 'success')
