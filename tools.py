@@ -174,6 +174,8 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     os.system('rm /etc/ssl/certs/yunohost_crt.pem')
 
     command_list = [
+        'rm -f /etc/nginx/conf.d/%s.d/yunohost_local.conf' % old_domain,
+        'cp /usr/share/yunohost/yunohost-config/nginx/yunohost_local.conf /etc/nginx/conf.d/%s.d/' % new_domain,
         'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
         'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
         'echo %s > /etc/yunohost/current_host' % new_domain,
