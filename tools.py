@@ -257,6 +257,9 @@ def tools_postinstall(domain, password, dyndns=False):
         try: os.listdir(folder)
         except OSError: os.makedirs(folder)
 
+    # Change folders permissions
+    os.system('chmod 755 /home/yunohost.app')
+
     # Set hostname to avoid amavis bug
     if os.system('hostname -d') != 0:
         os.system('hostname yunohost.yunohost.org')
