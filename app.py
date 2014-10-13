@@ -261,7 +261,7 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
-def app_upgrade(auth, app, url=None, file=None):
+def app_upgrade(auth, app=[], url=None, file=None):
     """
     Upgrade app
 

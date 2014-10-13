@@ -31,6 +31,7 @@ import getpass
 import requests
 import json
 import errno
+import logging
 import apt
 import apt.progress
 
@@ -330,7 +331,7 @@ def tools_postinstall(domain, password, dyndns=False):
 
     # Enable iptables at boot time
     os.system('update-rc.d yunohost-firewall defaults')
-    
+
     os.system('touch /etc/yunohost/installed')
 
     msignals.display(m18n.n('yunohost_configured'), 'success')
@@ -416,6 +417,9 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     """
     from yunohost.app import app_upgrade
 
+    failure = False
+
+    # Retrieve interface
     is_api = True if msettings.get('interface') == 'api' else False
 
     if not ignore_packages:
@@ -449,6 +453,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                 cache.commit(apt.progress.text.AcquireProgress(),
                              apt.progress.base.InstallProgress())
             except Exception as e:
+                failure = True
                 logging.warning('unable to upgrade packages: %s' % str(e))
                 msignals.display(m18n.n('packages_upgrade_failed'), 'error')
             else:
@@ -459,11 +464,15 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     if not ignore_apps:
         try:
             app_upgrade(auth)
-        except: pass
+        except Exception as e:
+            failure = True
+            logging.warning('unable to upgrade apps: %s' % str(e))
+            msignals.display(m18n.n('app_upgrade_failed'), 'error')
 
-    msignals.display(m18n.n('system_upgraded'), 'success')
+    if not failure:
+        msignals.display(m18n.n('system_upgraded'), 'success')
 
     # Return API logs if it is an API call
-    if msettings.get('interface') == 'api':
+    if is_api:
         from yunohost.service import service_log
         return { "log": service_log('yunohost-api', number="100").values()[0] }

@@ -20,6 +20,7 @@
     "custom_app_url_required" : "You must provide an URL to upgrade your custom app {:s}",
     "app_recent_version_required" : "{:s} requires a more recent version of the moulinette",
     "app_upgraded" : "{:s} successfully upgraded",
+    "app_upgrade_failed" : "Unable to upgrade all apps",
     "app_id_invalid" : "Invalid app id",
     "app_already_installed" : "{:s} is already installed",
     "app_removed" : "{:s} successfully removed",
