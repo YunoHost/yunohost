@@ -392,8 +392,10 @@ def app_install(auth, app, label=None, args=None):
 
     if app in app_list(raw=True) or ('@' in app) or ('http://' in app) or ('https://' in app):
         manifest = _fetch_app_from_git(app)
-    else:
+    elif os.path.exists(app):
         manifest = _extract_app_from_file(app)
+    else:
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
 
     # Check ID
     if 'id' not in manifest or '__' in manifest['id']:
