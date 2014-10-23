@@ -924,10 +924,7 @@ def app_ssowatconf(auth):
     for domain in domains:
         skipped_urls.extend(['/yunohost/admin', '/yunohost/api'])
 
-    with open('/etc/ssowat/conf.json') as f:
-        conf_dict = json.load(f)
-
-    conf_dict.update({
+    conf_dict = {
         'portal_domain': main_domain,
         'portal_path': '/yunohost/sso/',
         'additional_headers': {
@@ -945,7 +942,7 @@ def app_ssowatconf(auth):
         'protected_regex': protected_regex,
         'redirected_regex': redirected_regex,
         'users': users,
-    })
+    }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)
