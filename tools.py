@@ -212,7 +212,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     Keyword argument:
         domain -- YunoHost main domain
-        dyndns -- Subscribe domain to a DynDNS service
+        ignore_dyndns -- Do not subscribe domain to a DynDNS service
         password -- YunoHost admin password
 
     """
@@ -220,6 +220,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     from yunohost.app import app_ssowatconf
     from yunohost.firewall import firewall_upnp, firewall_reload
+
+    dyndns = not ignore_dyndns
 
     try:
         with open('/etc/yunohost/installed') as f: pass
