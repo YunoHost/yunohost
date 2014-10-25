@@ -51,4 +51,4 @@ def backup_backup():
 
     #TODO: Compress & encrypt
 
-    msignals.display(m18n.n('backup_completed'), 'success')
+    msignals.display(m18n.n('backup_complete'), 'success')
