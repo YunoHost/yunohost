@@ -30,7 +30,7 @@ import time
 
 from moulinette.core import MoulinetteError
 
-def backup():
+def backup_backup():
     """
     Create an encrypted backup tarball
 
