@@ -94,7 +94,7 @@ def hook_callback(action, args=None):
         elif not isinstance(args, list):
             args = [args]
 
-        for hook in os.listdir(hook_folder + action):
+        for hook in sorted(os.listdir(hook_folder + action)):
             try:
                 hook_exec(file=hook_folder + action +'/'+ hook, args=args)
             except: pass
