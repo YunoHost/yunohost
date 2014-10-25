@@ -2,8 +2,8 @@
 
 backup_dir="$1/xmpp"
 
-sudo cp -a $backup_dir/etc/* /etc/metronome/
-sudo cp -a $backup_dir/var/* /var/lib/metronome/
+sudo cp -a $backup_dir/etc/. /etc/metronome
+sudo cp -a $backup_dir/var/. /var/lib/metronome
 
 # Restart to apply new conf and certs
 sudo service metronome restart

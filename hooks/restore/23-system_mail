@@ -2,7 +2,7 @@
 
 backup_dir="$1/mail"
 
-sudo cp -a $backup_dir/* /var/mail/
+sudo cp -a $backup_dir/. /var/mail
 
 # Restart services to use migrated certs
 sudo service postfix restart

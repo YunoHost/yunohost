@@ -2,4 +2,4 @@
 
 backup_dir="$1/ssowat"
 
-sudo cp -a $backup_dir/* /etc/ssowat/
+sudo cp -a $backup_dir/. /etc/ssowat

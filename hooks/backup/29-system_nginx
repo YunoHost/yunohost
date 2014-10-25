@@ -3,4 +3,4 @@
 backup_dir="$1/nginx"
 mkdir -p $backup_dir
 
-sudo cp -a /etc/nginx/conf.d/* $backup_dir/
+sudo cp -a /etc/nginx/conf.d/. $backup_dir

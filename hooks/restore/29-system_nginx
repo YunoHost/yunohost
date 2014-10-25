@@ -2,7 +2,7 @@
 
 backup_dir="$1/nginx"
 
-sudo cp -a $backup_dir/* /etc/nginx/conf.d/
+sudo cp -a $backup_dir/. /etc/nginx/conf.d
 
 # Restart to use new conf and certs
 sudo service nginx restart
