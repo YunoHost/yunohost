@@ -1,0 +1,11 @@
+#!/bin/bash
+
+backup_dir="$1/yunohost"
+
+sudo cp -a $backup_dir/* /etc/yunohost/
+sudo yunohost app ssowatconf
+sudo yunohost firewall reload
+
+# Reload interface name
+sudo rm /etc/yunohost/interface
+sudo apt-get install --reinstall -y yunohost-config-others

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+backup_dir="$1/home"
+
+sudo cp -a $backup_dir/* /home/

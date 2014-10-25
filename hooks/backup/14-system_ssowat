@@ -1,0 +1,6 @@
+#!/bin/bash
+
+backup_dir="$1/ssowat"
+mkdir -p $backup_dir
+
+sudo cp -a /etc/ssowat/* $backup_dir/

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+backup_dir="$1/ldap"
+mkdir -p $backup_dir
+
+sudo cp -a /etc/ldap/slapd.conf $backup_dir/
+slapcat -l $backup_dir/slapcat.ldif.raw
+egrep -v "^entryCSN:" < $backup_dir/slapcat.ldif.raw > $backup_dir/slapcat.ldif
+rm -f $backup_dir/slapcat.ldif.raw

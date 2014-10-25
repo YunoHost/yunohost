@@ -1,0 +1,6 @@
+#!/bin/bash
+
+backup_dir="$1/ssh"
+
+sudo cp -a $backup_dir/* /etc/ssh/
+sudo service ssh restart

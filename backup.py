@@ -43,6 +43,8 @@ def backup():
     # Create directory
     try: os.listdir(backup_dir)
     except OSError: os.makedirs(backup_dir)
+    os.system('chmod 755 /home/yunohost.backup /home/yunohost.backup/tmp')
+    os.system('chown -hR admin: %s' % backup_dir)
 
     # Run hook
     hook_callback('backup', [backup_dir])
