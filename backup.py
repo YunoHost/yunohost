@@ -90,7 +90,8 @@ def backup_restore(path):
 
     try:
         with open('/etc/yunohost/installed') as f:
-            raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_already_installed'))
+            #raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_already_installed'))
+            pass
     except IOError:
         tools_postinstall(domain, 'yunohost', True)
 
