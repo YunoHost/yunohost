@@ -191,8 +191,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('maindomain_change_failed'))
 
-    if dyndns: dyndns_subscribe(domain=new_domain)
-    elif len(new_domain.split('.')) >= 3:
+    if dyndns and len(new_domain.split('.')) >= 3:
         try:
             r = requests.get('http://dyndns.yunohost.org/domains')
         except ConnectionError:

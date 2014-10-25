@@ -52,7 +52,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     try:
         if requests.get('http://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
             raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
-    except ConnectionError:
+    except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
 
     if key is None:
