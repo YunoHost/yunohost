@@ -557,8 +557,8 @@ backup:
     category_help: Manage backups
     actions:
 
-        ### backup_init()
-        init:
+        ### backup_backup()
+        backup:
             action_help: Create an encrypted backup tarball
             api: POST /backup
 
