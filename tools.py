@@ -207,7 +207,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     msignals.display(m18n.n('maindomain_changed'), 'success')
 
 
-def tools_postinstall(domain, password, dyndns=False):
+def tools_postinstall(domain, password, ignore_dyndns=False):
     """
     YunoHost post-install
 
@@ -230,7 +230,7 @@ def tools_postinstall(domain, password, dyndns=False):
     else:
         raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
 
-    if len(domain.split('.')) >= 3:
+    if len(domain.split('.')) >= 3 and not ignore_dyndns:
         try:
             r = requests.get('http://dyndns.yunohost.org/domains')
         except ConnectionError:
@@ -309,9 +309,6 @@ def tools_postinstall(domain, password, dyndns=False):
 
     # Initialize YunoHost LDAP base
     tools_ldapinit(auth)
-
-    # Initialize backup system
-    backup_init()
 
     # New domain config
     tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain, dyndns=dyndns)

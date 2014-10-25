@@ -128,6 +128,8 @@
     "packages_upgrade_failed" : "Unable to upgrade all packages",
     "system_upgraded" : "System successfully upgraded",
 
+    "backup_complete" : "Backup complete",
+
     "field_invalid" : "Invalid field '{:s}'",
     "mail_domain_unknown" : "Unknown mail address domain '{:s}'",
     "mail_alias_remove_failed" : "Unable to remove mail alias '{:s}'",

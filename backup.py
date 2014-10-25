@@ -26,27 +26,27 @@
 import os
 import sys
 import json
-import yaml
-import glob
+import time
 
 from moulinette.core import MoulinetteError
 
-def backup_init(helper=False):
+def backup():
     """
-    Init Tahoe-LAFS configuration
-
-    Keyword argument:
-        helper -- Init as a helper node rather than a "helped" one
+    Create an encrypted backup tarball
 
     """
-    tahoe_cfg_dir = '/usr/share/yunohost/yunohost-config/backup'
-    if helper:
-        configure_cmd = '/configure_tahoe.sh helper'
-    else:
-        configure_cmd = '/configure_tahoe.sh'
+    from yunohost.hook import hook_callback
 
-    os.system('tahoe create-client /home/yunohost.backup/tahoe')
-    os.system('/bin/bash %s%s' % (tahoe_cfg_dir, configure_cmd))
-    os.system('cp %s/tahoe.cfg /home/yunohost.backup/tahoe/' % tahoe_cfg_dir)
-    #os.system('update-rc.d tahoe-lafs defaults')
-    #os.system('service tahoe-lafs restart')
+    backup_dirname = int(time.time())
+    backup_dir = "/home/yunohost.backup/tmp/%s" % backup_dirname
+
+    # Create directory
+    try: os.listdir(backup_dir)
+    except OSError: os.makedirs(backup_dir)
+
+    # Run hook
+    hook_callback('backup', [backup_dir])
+
+    #TODO: Compress & encrypt
+
+    msignals.display(m18n.n('backup_completed'), 'success')

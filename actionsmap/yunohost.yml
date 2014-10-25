@@ -559,12 +559,8 @@ backup:
 
         ### backup_init()
         init:
-            action_help: Init Tahoe-LAFS configuration
-            # api: POST /backup/init
-            arguments:
-                --helper:
-                    help: Init as a helper node rather than a "helped" one
-                    action: store_true
+            action_help: Create an encrypted backup tarball
+            api: POST /backup
 
 
 #############################
@@ -1025,8 +1021,8 @@ tools:
                         pattern:
                             - '^.{3,}$'
                             - pattern_password
-                --dyndns:
-                    help: Subscribe domain to a DynDNS service
+                --ignore-dyndns:
+                    help: Do not subscribe domain to a DynDNS service
                     action: store_true
 
         ### tools_update()

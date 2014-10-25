@@ -128,6 +128,8 @@
     "packages_upgrade_failed" : "Impossible de mettre à jour tous les paquets",
     "system_upgraded" : "Système mis à jour avec succès",
 
+    "backup_complete" : "Sauvegarde terminée",
+
     "field_invalid" : "Champ incorrect : {:s}",
     "mail_domain_unknown" : "Domaine '{:s}' de l'adresse mail inconnu",
     "mail_alias_remove_failed" : "Impossible de supprimer l'adresse mail supplémentaire '{:s}'",
