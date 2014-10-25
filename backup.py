@@ -28,6 +28,7 @@ import sys
 import json
 import errno
 import time
+import shutil
 
 from moulinette.core import MoulinetteError
 
@@ -47,6 +48,15 @@ def backup_backup():
     os.system('chmod 755 /home/yunohost.backup /home/yunohost.backup/tmp')
     os.system('chown -hR admin: %s' % backup_dir)
 
+    # Add app's backup hooks
+    try:
+        for app_id in os.listdir('/etc/yunohost/apps'):
+            hook = '/etc/yunohost/apps/'+ app_id +'/scripts/backup'
+            with open(hook, 'r') as f:
+                hook_add(app_id, hook)
+    except IOError:
+        pass
+
     # Run hook
     hook_callback('backup', [backup_dir])
 
@@ -64,6 +74,7 @@ def backup_restore(path):
 
     """
     from yunohost.tools import tools_postinstall
+    from yunohost.hook import hook_add
     from yunohost.hook import hook_callback
 
     path = os.path.abspath(path)
@@ -81,6 +92,15 @@ def backup_restore(path):
             raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_already_installed'))
     except IOError:
         tools_postinstall(domain, 'yunohost', True)
+
+    # Add app's restore hooks
+    try:
+        for app_id in os.listdir('/etc/yunohost/apps'):
+            hook = '/etc/yunohost/apps/'+ app_id +'/scripts/restore'
+            with open(hook, 'r') as f:
+                hook_add(app_id, hook)
+    except IOError:
+        pass
 
     # Run hook
     hook_callback('restore', [path])
