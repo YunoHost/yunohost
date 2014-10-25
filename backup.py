@@ -26,6 +26,7 @@
 import os
 import sys
 import json
+import errno
 import time
 
 from moulinette.core import MoulinetteError
