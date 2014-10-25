@@ -52,3 +52,38 @@ def backup_backup():
     #TODO: Compress & encrypt
 
     msignals.display(m18n.n('backup_complete'), 'success')
+
+
+def backup_restore(path):
+    """
+    Restore from an encrypted backup tarball
+
+    Keyword argument:
+        path -- Path to the restore directory
+
+    """
+    from yunohost.tools import tools_postinstall
+    from yunohost.hook import hook_callback
+
+    path = os.path.abspath(path)
+
+    try:
+        with open("%s/yunohost/current_host" % path, 'r') as f:
+            domain = f.readline().rstrip()
+    except IOError:
+        raise MoulinetteError(errno.EINVAL, m18n.n('invalid_restore_package'))
+
+    #TODO Decrypt & extract tarball
+
+    try:
+        with open('/etc/yunohost/installed') as f:
+            raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_already_installed'))
+    except IOError:
+        tools_postinstall(domain, 'yunohost', True)
+
+    # Run hook
+    hook_callback('restore', [path])
+
+    msignals.display(m18n.n('restore_complete'), 'success')
+
+

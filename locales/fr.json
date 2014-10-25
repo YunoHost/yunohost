@@ -129,6 +129,8 @@
     "system_upgraded" : "Système mis à jour avec succès",
 
     "backup_complete" : "Sauvegarde terminée",
+    "invalid_restore_package" : "Dossier de restauration invalide",
+    "restore_complete" : "Restauration terminée",
 
     "field_invalid" : "Champ incorrect : {:s}",
     "mail_domain_unknown" : "Domaine '{:s}' de l'adresse mail inconnu",

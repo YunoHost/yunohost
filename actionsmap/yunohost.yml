@@ -562,6 +562,17 @@ backup:
             action_help: Create an encrypted backup tarball
             api: POST /backup
 
+        ### backup_restore()
+        restore:
+            action_help: Restore from an encrypted backup tarball
+            api: POST /restore
+            configuration:
+                authenticate: false
+                lock: false
+            arguments:
+                path:
+                    help: Path of the restauration package
+
 
 #############################
 #          Monitor          #
