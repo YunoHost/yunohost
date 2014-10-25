@@ -37,6 +37,7 @@ def backup_backup():
     Create an encrypted backup tarball
 
     """
+    from yunohost.hook import hook_add
     from yunohost.hook import hook_callback
 
     backup_dirname = int(time.time())
