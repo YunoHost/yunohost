@@ -561,6 +561,8 @@ backup:
         backup:
             action_help: Create an encrypted backup tarball
             api: POST /backup
+            configuration:
+                lock: false
 
         ### backup_restore()
         restore:
