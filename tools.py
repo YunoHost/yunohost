@@ -124,7 +124,6 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         '/etc/metronome/metronome.cfg.lua',
         '/etc/dovecot/dovecot.conf',
         '/usr/share/yunohost/yunohost-config/others/startup',
-        '/home/yunohost.backup/tahoe/tahoe.cfg',
         '/etc/amavis/conf.d/05-node_id',
         '/etc/amavis/conf.d/50-user'
     ]
@@ -219,7 +218,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     """
     from moulinette.core import init_authenticator
 
-    from yunohost.backup import backup_init
     from yunohost.app import app_ssowatconf
     from yunohost.firewall import firewall_upnp, firewall_reload
 
