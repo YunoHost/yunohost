@@ -53,8 +53,12 @@ def backup_backup():
     try:
         for app_id in os.listdir('/etc/yunohost/apps'):
             hook = '/etc/yunohost/apps/'+ app_id +'/scripts/backup'
-            with open(hook, 'r') as f:
+            if os.path.isfile(hook):
                 hook_add(app_id, hook)
+            else:
+                msignals.display(m18n.n('unbackup_app', app_id),
+                                 'warning')
+
     except IOError:
         pass
 
@@ -91,6 +95,8 @@ def backup_restore(path):
     try:
         with open('/etc/yunohost/installed') as f:
             #raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_already_installed'))
+            msignals.display(m18n.n('restoring_installed_system'), 'warning')
+            time.sleep(5)
             pass
     except IOError:
         tools_postinstall(domain, 'yunohost', True)
@@ -99,8 +105,11 @@ def backup_restore(path):
     try:
         for app_id in os.listdir('/etc/yunohost/apps'):
             hook = '/etc/yunohost/apps/'+ app_id +'/scripts/restore'
-            with open(hook, 'r') as f:
+            if os.path.isfile(hook):
                 hook_add(app_id, hook)
+            else:
+                msignals.display(m18n.n('unrestore_app', app_id),
+                                 'warning')
     except IOError:
         pass
 
