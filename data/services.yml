@@ -39,3 +39,6 @@ yunohost-api:
 postgrey:
    status: service
    log: /var/log/mail.log
+amavis:
+   status: service
+   log: /var/log/mail.log
