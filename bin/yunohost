@@ -4,53 +4,147 @@
 import sys
 import os
 
-from_source = False
+# Either we are in a development environment or not
+IN_DEVEL = False
 
-# Run from source
-basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-if os.path.isdir('%s/moulinette' % basedir):
-    sys.path.insert(0, basedir)
-    from_source = True
+# Either cache has to be used inside the moulinette or not
+USE_CACHE = True
 
-from moulinette import init, cli
-from moulinette.interfaces.cli import colorize
+# Either the output has to be encoded as a JSON encoded string or not
+PRINT_JSON = False
+
+# Level for which loggers will log
+LOGGERS_LEVEL = 'INFO'
+
+# Handlers that will be used by loggers
+#  - file: log to the file LOG_DIR/LOG_FILE
+#  - console: log to stdout
+LOGGERS_HANDLERS = ['file']
+
+# Directory and file to be used by logging
+LOG_DIR = '/var/log/yunohost'
+LOG_FILE = 'yunohost-cli.log'
 
 
-## Main action
+# Initialization & helpers functions -----------------------------------
+
+def _die(message, title='Error:'):
+    """Print error message and exit"""
+    try:
+        from moulinette.interfaces.cli import colorize
+    except ImportError:
+        colorize = lambda msg, c: msg
+    print('%s %s' % (colorize(title, 'red'), message))
+    sys.exit(1)
+
+def _check_in_devel():
+    """Check and load if needed development environment"""
+    global IN_DEVEL, LOG_DIR
+    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
+    if os.path.isdir('%s/moulinette' % basedir) and not IN_DEVEL:
+        # Add base directory to python path
+        sys.path.insert(0, basedir)
+
+        # Update global variables
+        IN_DEVEL = True
+        LOG_DIR = '%s/log' % basedir
+
+def _parse_argv():
+    """Parse additional arguments and return remaining ones"""
+    argv = list(sys.argv)
+    argv.pop(0)
+
+    if '--no-cache' in argv:
+        global USE_CACHE
+        USE_CACHE = False
+        argv.remove('--no-cache')
+    if '--json' in argv:
+        global PRINT_JSON
+        PRINT_JSON = True
+        argv.remove('--json')
+    if '--debug' in argv:
+        global LOGGERS_LEVEL
+        LOGGERS_LEVEL = 'DEBUG'
+        argv.remove('--debug')
+    if '--verbose' in argv:
+        global LOGGERS_HANDLERS
+        if 'console' not in LOGGERS_HANDLERS:
+            LOGGERS_HANDLERS.append('console')
+        argv.remove('--verbose')
+    return argv
+
+def _init_moulinette():
+    """Configure logging and initialize the moulinette"""
+    from moulinette import init
+
+    # Custom logging configuration
+    logging = {
+        'version': 1,
+        'disable_existing_loggers': True,
+        'formatters': {
+            'simple': {
+                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s - %(message)s'
+            },
+            'precise': {
+                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(message)s'
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'simple',
+                'stream': 'ext://sys.stdout',
+            },
+            'file': {
+                'class': 'logging.FileHandler',
+                'formatter': 'precise',
+                'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+            },
+        },
+        'loggers': {
+            'moulinette': {
+                'level': LOGGERS_LEVEL,
+                'handlers': LOGGERS_HANDLERS,
+            },
+            'yunohost': {
+                'level': LOGGERS_LEVEL,
+                'handlers': LOGGERS_HANDLERS,
+            },
+        },
+    }
+
+    # Create log directory
+    if not os.path.isdir(LOG_DIR):
+        try:
+            os.makedirs(LOG_DIR, 0750)
+        except os.error as e:
+            _die(str(e))
+
+    # Initialize moulinette
+    init(logging_config=logging, _from_source=IN_DEVEL)
+
+
+# Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
-    # Run from source
-    init(_from_source=from_source)
-
-    # Additional arguments
-    cache = True
-    json = False
-    if '--no-cache' in sys.argv:
-        cache = False
-        sys.argv.remove('--no-cache')
-    if '--json' in sys.argv:
-        json = True
-        sys.argv.remove('--json')
-
-    # Retrieve remaining arguments
-    args = list(sys.argv)
-    args.pop(0)
+    _check_in_devel()
+    args = _parse_argv()
+    _init_moulinette()
 
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
        (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
                           args[0] +' '+ args[1] != 'backup restore')):
-        from moulinette.interfaces.cli import colorize, get_locale
+        from moulinette.interfaces.cli import get_locale
 
         # Init i18n
         m18n.load_namespace('yunohost')
         m18n.set_locale(get_locale())
 
         # Print error and exit
-        print('%s %s' % (colorize(m18n.g('error'), 'red'),
-                         m18n.n('yunohost_not_installed')))
-        sys.exit(1)
+        _die(m18n.n('yunohost_not_installed'), m18n.g('error'))
 
     # Execute the action
-    ret = cli(['yunohost'], args, print_json=json, use_cache=cache)
+    from moulinette import cli
+    ret = cli(['yunohost'], args, print_json=PRINT_JSON, use_cache=USE_CACHE)
     sys.exit(ret)
