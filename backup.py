@@ -40,9 +40,9 @@ archives_path = '%s/archives' % backup_path
 logger = getActionLogger('yunohost.backup')
 
 
-def backup_backup(ignore_apps=False):
+def backup_create(ignore_apps=False):
     """
-    Create an encrypted backup tarball
+    Backup and create a local archive
 
     Keyword arguments:
         ignore_apps -- Do not backup apps

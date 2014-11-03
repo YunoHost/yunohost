@@ -557,9 +557,9 @@ backup:
     category_help: Manage backups
     actions:
 
-        ### backup_backup()
-        backup:
-            action_help: Create an encrypted backup tarball
+        ### backup_create()
+        create:
+            action_help: Backup and create a local archive
             api: POST /backup
             configuration:
                 lock: false
