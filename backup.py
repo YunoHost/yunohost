@@ -29,43 +29,92 @@ import json
 import errno
 import time
 import shutil
+import tarfile
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
 
-def backup_backup():
+backup_path   = '/home/yunohost.backup'
+archives_path = '%s/archives' % backup_path
+
+logger = getActionLogger('yunohost.backup')
+
+
+def backup_backup(ignore_apps=False):
     """
     Create an encrypted backup tarball
+
+    Keyword arguments:
+        ignore_apps -- Do not backup apps
 
     """
     from yunohost.hook import hook_add
     from yunohost.hook import hook_callback
 
-    backup_dirname = int(time.time())
-    backup_dir = "/home/yunohost.backup/tmp/%s" % backup_dirname
+    timestamp = int(time.time())
+    tmp_dir = "%s/tmp/%s" % (backup_path, timestamp)
 
-    # Create directory
-    try: os.listdir(backup_dir)
-    except OSError: os.makedirs(backup_dir)
-    os.system('chmod 755 /home/yunohost.backup /home/yunohost.backup/tmp')
-    os.system('chown -hR admin: %s' % backup_dir)
+    # Create temporary directory
+    if os.path.isdir(tmp_dir):
+        logger.warning("temporary directory for backup '%s' already exists", tmp_dir)
+        os.system('rm -rf %s' % tmp_dir)
+    try:
+        os.mkdir(tmp_dir, 0750)
+    except OSError:
+        # Create temporary directory recursively
+        os.makedirs(tmp_dir, 0750)
+        os.system('chown -hR admin: %s' % backup_path)
+    else:
+        os.system('chown -hR admin: %s' % tmp_dir)
 
     # Add app's backup hooks
+    if not ignore_apps:
+        try:
+            for app_id in os.listdir('/etc/yunohost/apps'):
+                hook = '/etc/yunohost/apps/'+ app_id +'/scripts/backup'
+                if os.path.isfile(hook):
+                    hook_add(app_id, hook)
+                else:
+                    logger.warning("unable to find app's backup hook '%s'", hook)
+                    msignals.display(m18n.n('unbackup_app', app_id),
+                                     'warning')
+        except IOError as e:
+            logger.info("unable to add app's backup hooks: %s", str(e))
+
+    # Run hooks
+    m18n.display(m18n.n('backup_running_hooks'))
+    hook_callback('backup', [tmp_dir])
+
+    # TODO: Add a backup info file
+
+    # Create the archive
+    m18n.display(m18n.n('backup_creating_archive'))
+    archive_file = "%s/%s.tar.gz" % (archives_path, timestamp)
     try:
-        for app_id in os.listdir('/etc/yunohost/apps'):
-            hook = '/etc/yunohost/apps/'+ app_id +'/scripts/backup'
-            if os.path.isfile(hook):
-                hook_add(app_id, hook)
-            else:
-                msignals.display(m18n.n('unbackup_app', app_id),
-                                 'warning')
+        tar = tarfile.open(archive_file, "w:gz")
+    except:
+        tar = None
 
-    except IOError:
-        pass
+        # Create the archives directory and retry
+        if not os.path.isdir(archives_path):
+            os.mkdir(archives_path, 0750)
+            try:
+                tar = tarfile.open(archive_file, "w:gz")
+            except:
+                logger.exception("unable to open the archive '%s' for writing " \
+                                 "after creating directory '%s'",
+                                 archive_file, archive_dir)
+                tar = None
+        else:
+            logger.exception("unable to open the archive '%s' for writing",
+                             archive_file)
+        if tar is None:
+            raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
+    tar.add(tmp_dir, arcname='')
+    tar.close()
 
-    # Run hook
-    hook_callback('backup', [backup_dir])
-
-    #TODO: Compress & encrypt
+    # Remove temporary directory
+    os.system('rm -rf %s' % tmp_dir)
 
     msignals.display(m18n.n('backup_complete'), 'success')
 

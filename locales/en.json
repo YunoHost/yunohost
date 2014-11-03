@@ -128,6 +128,9 @@
     "packages_upgrade_failed" : "Unable to upgrade all packages",
     "system_upgraded" : "System successfully upgraded",
 
+    "backup_running_hooks" : "Running backup hooks...",
+    "backup_creating_archive" : "Creating the backup archive...",
+    "backup_archive_open_failed" : "Unable to open the backup archive",
     "backup_complete" : "Backup complete",
     "invalid_restore_package" : "Invalid restore package",
     "restore_complete" : "Restore complete",

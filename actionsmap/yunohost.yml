@@ -563,6 +563,10 @@ backup:
             api: POST /backup
             configuration:
                 lock: false
+            arguments:
+                --ignore-apps:
+                    help: Do not backup apps
+                    action: store_true
 
         ### backup_restore()
         restore:
