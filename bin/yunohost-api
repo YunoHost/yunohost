@@ -3,6 +3,9 @@
 
 import sys
 import os.path
+import yaml
+from os import listdir
+from os.path import isfile, join
 
 from_source = False
 
@@ -28,6 +31,17 @@ def is_installed():
     return { 'installed': installed }
 
 
+def _get_modules():
+    """
+    Get a dict of managed services with their parameters
+
+    """
+    from os import listdir
+    from os.path import isfile, join
+    path='/usr/share/moulinette/actionsmap/'
+    onlyfiles = [ f[:-4] for f in listdir(path) if isfile(join(path,f))]
+    return onlyfiles
+
 ## Main action
 
 if __name__ == '__main__':
@@ -46,10 +60,14 @@ if __name__ == '__main__':
     # TODO: Add log argument
 
     try:
-        # Run the server
-        api(['yunohost'], port=6787,
+        # Run the server 
+        from os import listdir
+        from os.path import isfile, join
+        path='/usr/share/moulinette/actionsmap/'
+        modules = [ f[:-4] for f in listdir(path) if isfile(join(path,f))]
+        api(modules, port=6787,
             routes={('GET', '/installed'): is_installed},
-            use_cache=cache, use_websocket=websocket)
+            use_cache=False, use_websocket=websocket)
     except MoulinetteError as e:
         from moulinette.interfaces.cli import colorize
         print('%s %s' % (colorize(m18n.g('error'), 'red'), e.strerror))

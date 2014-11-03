@@ -35,7 +35,7 @@
 _global:
     configuration:
         authenticate:
-            - api
+            - cli
         authenticator:
             default:
                 vendor: ldap
@@ -549,6 +549,14 @@ app:
             arguments:
                 apps:
                     nargs: "+"
+
+        #~ ### app_listmodules()
+        listmodules:
+            action_help: List all web admin modules
+            api: GET /modules
+        configuration:        
+            authenticate:
+            authenticator: ldap-anonymous
 
 #############################
 #          Backup           #

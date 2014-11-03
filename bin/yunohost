@@ -51,5 +51,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Execute the action
-    ret = cli(['yunohost'], args, print_json=json, use_cache=cache)
+    from os import listdir
+    from os.path import isfile, join
+    path='/usr/share/moulinette/actionsmap/'
+    modules = [ f[:-4] for f in listdir(path) if isfile(join(path,f))]
+    ret = cli(modules, args, print_json=json, use_cache=cache)
     sys.exit(ret)
