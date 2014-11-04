@@ -131,6 +131,7 @@
     "backup_running_hooks" : "Running backup hooks...",
     "backup_creating_archive" : "Creating the backup archive...",
     "backup_archive_open_failed" : "Unable to open the backup archive",
+    "backup_archive_name_unknown" : "Unknown local backup archive name",
     "backup_complete" : "Backup complete",
     "invalid_restore_package" : "Invalid restore package",
     "restore_complete" : "Restore complete",
@@ -168,6 +169,8 @@
     "pattern_password" : "Must be at least 3 characters long",
     "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_listname" : "Must be alphanumeric and underscore characters only",
-    "pattern_port" : "Must be a valid port number (i.e. 0-65535)"
+    "pattern_port" : "Must be a valid port number (i.e. 0-65535)",
+
+    "format_datetime_short" : "%m/%d/%Y %I:%M %p"
 }
 

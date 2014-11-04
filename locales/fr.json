@@ -162,6 +162,7 @@
     "pattern_password" : "Doit être composé d'au moins 3 caractères",
     "pattern_domain" : "Doit être un nom de domaine valide (ex : mon-domaine.org)",
     "pattern_listname" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
-    "pattern_port" : "Doit être un numéro de port valide (0-65535)"
+    "pattern_port" : "Doit être un numéro de port valide (0-65535)",
+    "format_datetime_short" : "%d/%m/%Y %H:%M"
 }
 

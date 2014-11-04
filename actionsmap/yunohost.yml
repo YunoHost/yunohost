@@ -579,6 +579,23 @@ backup:
                 path:
                     help: Path of the restauration package
 
+        ### backup_list()
+        list:
+            action_help: List available local backup archives
+            api: GET /backup/archives
+            configuration:
+                lock: false
+
+        ### backup_info()
+        info:
+            action_help: Show info about a local backup archive
+            api: GET /backup/archives/<name>
+            configuration:
+                lock: false
+            arguments:
+                name:
+                    help: Name of the local backup archive
+
 
 #############################
 #          Monitor          #

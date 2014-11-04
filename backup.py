@@ -168,3 +168,45 @@ def backup_restore(path):
     msignals.display(m18n.n('restore_complete'), 'success')
 
 
+def backup_list():
+    """
+    List available local backup archives
+
+    """
+    result = []
+
+    try:
+        # Retrieve local archives
+        archives = os.listdir(archives_path)
+    except IOError as e:
+        logging.info("unable to iterate over local archives: %s", str(e))
+    else:
+        # Iterate over local archives
+        for f in archives:
+            try:
+                name = f[:f.rindex('.tar.gz')]
+            except ValueError:
+                continue
+            result.append(name)
+
+    return { 'archives': result }
+
+def backup_info(name):
+    """
+    Get info about a local backup archive
+
+    Keyword arguments:
+        name -- Name of the local backup archive
+
+    """
+    archive_file = '%s/%s.tar.gz' % (archives_path, name)
+    if not os.path.isfile(archive_file):
+        logger.error("no local backup archive found at '%s'", archive_file)
+        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown'))
+
+    return {
+        'path': archive_file,
+        # TODO: Retrieve created_at from the info file
+        'created_at': time.strftime(m18n.n('format_datetime_short'),
+                                    time.gmtime(int(name))),
+    }
