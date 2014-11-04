@@ -42,7 +42,7 @@ logger = getActionLogger('yunohost.backup')
 
 def backup_create(ignore_apps=False):
     """
-    Backup and create a local archive
+    Create a backup local archive
 
     Keyword arguments:
         ignore_apps -- Do not backup apps
@@ -67,7 +67,7 @@ def backup_create(ignore_apps=False):
     else:
         os.system('chown -hR admin: %s' % tmp_dir)
 
-    # Add app's backup hooks
+    # Add apps backup hook
     if not ignore_apps:
         try:
             for app_id in os.listdir('/etc/yunohost/apps'):
@@ -79,16 +79,16 @@ def backup_create(ignore_apps=False):
                     msignals.display(m18n.n('unbackup_app', app_id),
                                      'warning')
         except IOError as e:
-            logger.info("unable to add app's backup hooks: %s", str(e))
+            logger.info("unable to add apps backup hook: %s", str(e))
 
     # Run hooks
-    m18n.display(m18n.n('backup_running_hooks'))
+    msignals.display(m18n.n('backup_running_hooks'))
     hook_callback('backup', [tmp_dir])
 
     # TODO: Add a backup info file
 
     # Create the archive
-    m18n.display(m18n.n('backup_creating_archive'))
+    msignals.display(m18n.n('backup_creating_archive'))
     archive_file = "%s/%s.tar.gz" % (archives_path, timestamp)
     try:
         tar = tarfile.open(archive_file, "w:gz")
@@ -119,51 +119,89 @@ def backup_create(ignore_apps=False):
     msignals.display(m18n.n('backup_complete'), 'success')
 
 
-def backup_restore(path):
+def backup_restore(name, ignore_apps=False, force=False):
     """
-    Restore from an encrypted backup tarball
+    Restore from a local backup archive
 
     Keyword argument:
-        path -- Path to the restore directory
+        name -- Name of the local backup archive
+        ignore_apps -- Do not restore apps
+        force -- Force restauration on an already installed system
 
     """
-    from yunohost.tools import tools_postinstall
     from yunohost.hook import hook_add
     from yunohost.hook import hook_callback
 
-    path = os.path.abspath(path)
-
+    # Retrieve and open the archive
+    archive_file = backup_info(name)['path']
     try:
-        with open("%s/yunohost/current_host" % path, 'r') as f:
+        tar = tarfile.open(archive_file, "r:gz")
+    except:
+        logger.exception("unable to open the archive '%s' for reading",
+                         archive_file)
+        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
+
+    # Check temporary directory
+    tmp_dir = "%s/tmp/%s" % (backup_path, name)
+    if os.path.isdir(tmp_dir):
+        logger.warning("temporary directory for restoration '%s' already exists",
+                       tmp_dir)
+        os.system('rm -rf %s' % tmp_dir)
+
+    # Extract the tarball
+    msignals.display(m18n.n('backup_extracting_archive'))
+    tar.extractall(tmp_dir)
+    tar.close()
+
+    # Retrieve domain from the backup
+    try:
+        with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
             domain = f.readline().rstrip()
     except IOError:
-        raise MoulinetteError(errno.EINVAL, m18n.n('invalid_restore_package'))
+        logger.error("unable to retrieve domain from '%s/yunohost/current_host'",
+                     tmp_dir)
+        raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
-    #TODO Decrypt & extract tarball
-
-    try:
-        with open('/etc/yunohost/installed') as f:
-            #raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_already_installed'))
-            msignals.display(m18n.n('restoring_installed_system'), 'warning')
-            time.sleep(5)
-            pass
-    except IOError:
+    # Check if YunoHost is installed
+    if os.path.isfile('/etc/yunohost/installed'):
+        msignals.display(m18n.n('yunohost_already_installed'), 'warning')
+        if not force:
+            try:
+                # Ask confirmation for restoring
+                i = msignals.prompt(m18n.n('restore_confirm_yunohost_installed',
+                                           answers='y/N'))
+            except NotImplemented:
+                pass
+            else:
+                if i == 'y' or i == 'Y':
+                    force = True
+            if not force:
+                raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
+    else:
+        from yunohost.tools import tools_postinstall
+        logger.info("executing the post-install...")
         tools_postinstall(domain, 'yunohost', True)
 
-    # Add app's restore hooks
-    try:
-        for app_id in os.listdir('/etc/yunohost/apps'):
-            hook = '/etc/yunohost/apps/'+ app_id +'/scripts/restore'
-            if os.path.isfile(hook):
-                hook_add(app_id, hook)
-            else:
-                msignals.display(m18n.n('unrestore_app', app_id),
-                                 'warning')
-    except IOError:
-        pass
+    # Add apps restore hook
+    if not ignore_apps:
+        try:
+            # TODO: Check if the app_id is part of the backup archive
+            for app_id in os.listdir('/etc/yunohost/apps'):
+                hook = '/etc/yunohost/apps/'+ app_id +'/scripts/restore'
+                if os.path.isfile(hook):
+                    hook_add(app_id, hook)
+                else:
+                    msignals.display(m18n.n('unrestore_app', app_id),
+                                     'warning')
+        except IOError as e:
+            logger.info("unable to add apps restore hook: %s", str(e))
 
-    # Run hook
-    hook_callback('restore', [path])
+    # Run hooks
+    msignals.display(m18n.n('restore_running_hooks'))
+    hook_callback('restore', [tmp_dir])
+
+    # Remove temporary directory
+    os.system('rm -rf %s' % tmp_dir)
 
     msignals.display(m18n.n('restore_complete'), 'success')
 
