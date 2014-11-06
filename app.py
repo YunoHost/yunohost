@@ -215,7 +215,9 @@ def app_info(app, raw=False):
                 # FIXME: Temporarly allow undefined license
                 'license': app_info['manifest'].get('license',
                     m18n.n('license_undefined')),
-                #TODO: Add more infos
+                # FIXME: Temporarly allow undefined version
+                'version' :  app_info['manifest'].get('version', '-'),
+                #TODO: Add more info
             }
 
 
