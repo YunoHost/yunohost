@@ -40,12 +40,13 @@ archives_path = '%s/archives' % backup_path
 logger = getActionLogger('yunohost.backup')
 
 
-def backup_create(name=None, ignore_apps=False):
+def backup_create(name=None, description=None, ignore_apps=False):
     """
     Create a backup local archive
 
     Keyword arguments:
         name -- Name of the backup archive
+        description -- Short description of the backup
         ignore_apps -- Do not backup apps
 
     """
@@ -61,6 +62,7 @@ def backup_create(name=None, ignore_apps=False):
 
     # Initialize backup info
     info = {
+        'description': description or '',
         'created_at': timestamp,
         'apps': {},
     }
@@ -286,5 +288,6 @@ def backup_info(name):
         'path': archive_file,
         'created_at': time.strftime(m18n.n('format_datetime_short'),
                                     time.gmtime(info['created_at'])),
+        'description': info['description'],
         'apps': info['apps'],
     }

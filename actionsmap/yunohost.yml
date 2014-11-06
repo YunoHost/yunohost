@@ -571,6 +571,9 @@ backup:
                         pattern:
                             - '^[\w\-\.]{1,30}(?<!\.)$'
                             - pattern_backup_archive_name
+                -d:
+                    full: --description
+                    help: Short description of the backup
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
