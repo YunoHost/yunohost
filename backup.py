@@ -40,11 +40,12 @@ archives_path = '%s/archives' % backup_path
 logger = getActionLogger('yunohost.backup')
 
 
-def backup_create(ignore_apps=False):
+def backup_create(name=None, ignore_apps=False):
     """
     Create a backup local archive
 
     Keyword arguments:
+        name -- Name of the backup archive
         ignore_apps -- Do not backup apps
 
     """
@@ -52,7 +53,11 @@ def backup_create(ignore_apps=False):
     from yunohost.hook import hook_callback
 
     timestamp = int(time.time())
-    tmp_dir = "%s/tmp/%s" % (backup_path, timestamp)
+    if not name:
+        name = str(timestamp)
+    if name in backup_list()['archives']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('backup_archive_name_exists'))
+    tmp_dir = "%s/tmp/%s" % (backup_path, name)
 
     # Initialize backup info
     info = {
@@ -104,7 +109,7 @@ def backup_create(ignore_apps=False):
 
     # Create the archive
     msignals.display(m18n.n('backup_creating_archive'))
-    archive_file = "%s/%s.tar.gz" % (archives_path, timestamp)
+    archive_file = "%s/%s.tar.gz" % (archives_path, name)
     try:
         tar = tarfile.open(archive_file, "w:gz")
     except:
@@ -129,8 +134,7 @@ def backup_create(ignore_apps=False):
     tar.close()
 
     # Copy info file and remove temporary directory
-    os.system('mv %s/info.json %s/%s.info.json' %
-                  (tmp_dir, archives_path, timestamp))
+    os.system('mv %s/info.json %s/%s.info.json' % (tmp_dir, archives_path, name))
     os.system('rm -rf %s' % tmp_dir)
 
     msignals.display(m18n.n('backup_complete'), 'success')

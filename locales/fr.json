@@ -133,6 +133,7 @@
     "backup_extracting_archive" : "Extraction de l'archive de sauvegarde...",
     "backup_archive_open_failed" : "Impossible d'ouvrir l'archive de sauvegarde",
     "backup_archive_name_unknown" : "Nom d'archive de sauvegarde locale inconnu",
+    "backup_archive_name_exists" : "Une archive de sauvegarde avec ce nom existe déjà",
     "backup_complete" : "Sauvegarde terminée",
     "backup_invalid_archive" : "Archive de sauvegarde incorrecte",
     "restore_confirm_yunohost_installed" : "Voulez-vous vraiment restaurer un système déjà installé ? [{answers:s}]",
@@ -173,6 +174,8 @@
     "pattern_domain" : "Doit être un nom de domaine valide (ex : mon-domaine.org)",
     "pattern_listname" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
     "pattern_port" : "Doit être un numéro de port valide (0-65535)",
+    "pattern_backup_archive_name" : "Doit être un nom de fichier valide composé de caractères alphanumérique et -_. uniquement",
+
     "format_datetime_short" : "%d/%m/%Y %H:%M"
 }
 

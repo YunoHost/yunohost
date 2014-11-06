@@ -564,6 +564,13 @@ backup:
             configuration:
                 lock: false
             arguments:
+                -n:
+                    full: --name
+                    help: Name of the backup archive
+                    extra:
+                        pattern:
+                            - '^[\w\-\.]{1,30}(?<!\.)$'
+                            - pattern_backup_archive_name
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
