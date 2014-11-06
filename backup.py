@@ -54,6 +54,12 @@ def backup_create(ignore_apps=False):
     timestamp = int(time.time())
     tmp_dir = "%s/tmp/%s" % (backup_path, timestamp)
 
+    # Initialize backup info
+    info = {
+        'created_at': timestamp,
+        'apps': {},
+    }
+
     # Create temporary directory
     if os.path.isdir(tmp_dir):
         logger.warning("temporary directory for backup '%s' already exists", tmp_dir)
@@ -69,11 +75,18 @@ def backup_create(ignore_apps=False):
 
     # Add apps backup hook
     if not ignore_apps:
+        from yunohost.app import app_info
         try:
             for app_id in os.listdir('/etc/yunohost/apps'):
                 hook = '/etc/yunohost/apps/'+ app_id +'/scripts/backup'
                 if os.path.isfile(hook):
                     hook_add(app_id, hook)
+
+                    # Add app info
+                    i = app_info(app_id)
+                    info['apps'][app_id] = {
+                        'version': i['version'],
+                    }
                 else:
                     logger.warning("unable to find app's backup hook '%s'", hook)
                     msignals.display(m18n.n('unbackup_app', app_id),
@@ -85,7 +98,9 @@ def backup_create(ignore_apps=False):
     msignals.display(m18n.n('backup_running_hooks'))
     hook_callback('backup', [tmp_dir])
 
-    # TODO: Add a backup info file
+    # Create backup info file
+    with open("%s/info.json" % tmp_dir, 'w') as f:
+        f.write(json.dumps(info))
 
     # Create the archive
     msignals.display(m18n.n('backup_creating_archive'))
@@ -103,7 +118,7 @@ def backup_create(ignore_apps=False):
             except:
                 logger.exception("unable to open the archive '%s' for writing " \
                                  "after creating directory '%s'",
-                                 archive_file, archive_dir)
+                                 archive_file, archives_path)
                 tar = None
         else:
             logger.exception("unable to open the archive '%s' for writing",
@@ -113,7 +128,9 @@ def backup_create(ignore_apps=False):
     tar.add(tmp_dir, arcname='')
     tar.close()
 
-    # Remove temporary directory
+    # Copy info file and remove temporary directory
+    os.system('mv %s/info.json %s/%s.info.json' %
+                  (tmp_dir, archives_path, timestamp))
     os.system('rm -rf %s' % tmp_dir)
 
     msignals.display(m18n.n('backup_complete'), 'success')
@@ -153,6 +170,18 @@ def backup_restore(name, ignore_apps=False, force=False):
     tar.extractall(tmp_dir)
     tar.close()
 
+    # Retrieve backup info
+    try:
+        with open("%s/info.json" % tmp_dir, 'r') as f:
+            info = json.load(f)
+    except IOError:
+        logger.error("unable to retrieve backup info from '%s/info.json'",
+                     tmp_dir)
+        raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+    else:
+        logger.info("restoring from backup '%s' created on %s", name,
+                    time.ctime(info['created_at']))
+
     # Retrieve domain from the backup
     try:
         with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
@@ -184,17 +213,13 @@ def backup_restore(name, ignore_apps=False, force=False):
 
     # Add apps restore hook
     if not ignore_apps:
-        try:
-            # TODO: Check if the app_id is part of the backup archive
-            for app_id in os.listdir('/etc/yunohost/apps'):
-                hook = '/etc/yunohost/apps/'+ app_id +'/scripts/restore'
-                if os.path.isfile(hook):
-                    hook_add(app_id, hook)
-                else:
-                    msignals.display(m18n.n('unrestore_app', app_id),
-                                     'warning')
-        except IOError as e:
-            logger.info("unable to add apps restore hook: %s", str(e))
+        for app_id in info['apps'].keys():
+            hook = "/etc/yunohost/apps/%s/scripts/restore" % app_id
+            if os.path.isfile(hook):
+                hook_add(app_id, hook)
+                logger.info("app '%s' will be restored", app_id)
+            else:
+                msignals.display(m18n.n('unrestore_app', app_id), 'warning')
 
     # Run hooks
     msignals.display(m18n.n('restore_running_hooks'))
@@ -242,9 +267,20 @@ def backup_info(name):
         logger.error("no local backup archive found at '%s'", archive_file)
         raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown'))
 
+    info_file = "%s/%s.info.json" % (archives_path, name)
+    try:
+        with open(info_file) as f:
+            # Retrieve backup info
+            info = json.load(f)
+    except:
+        # TODO: Attempt to extract backup info file from tarball
+        logger.exception("unable to retrive backup info file '%s'",
+                         info_file)
+        raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+
     return {
         'path': archive_file,
-        # TODO: Retrieve created_at from the info file
         'created_at': time.strftime(m18n.n('format_datetime_short'),
-                                    time.gmtime(int(name))),
+                                    time.gmtime(info['created_at'])),
+        'apps': info['apps'],
     }
