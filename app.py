@@ -174,7 +174,8 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
                         list_dict.append({
                             'id': app_id,
                             'name': app_info['manifest']['name'],
-                            'description': app_info['manifest']['description'],
+                            'description': _value_for_locale(
+                                app_info['manifest']['description']),
                             # FIXME: Temporarly allow undefined license
                             'license': app_info['manifest'].get('license',
                                 m18n.n('license_undefined')),
