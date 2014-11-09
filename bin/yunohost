@@ -18,7 +18,7 @@ LOGGERS_LEVEL = 'INFO'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
-#  - console: log to stdout
+#  - console: log to stderr
 LOGGERS_HANDLERS = ['file']
 
 # Directory and file to be used by logging
@@ -93,7 +93,7 @@ def _init_moulinette():
             'console': {
                 'class': 'logging.StreamHandler',
                 'formatter': 'simple',
-                'stream': 'ext://sys.stdout',
+                'stream': 'ext://sys.stderr',
             },
             'file': {
                 'class': 'logging.FileHandler',
