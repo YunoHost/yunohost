@@ -254,7 +254,7 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
                 -d:
                     full: --dyndns
@@ -272,7 +272,7 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
 
         ### domain_info()
@@ -1035,13 +1035,13 @@ tools:
                     full: --old-domain
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
                 -n:
                     full: --new-domain
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
 
         ### tools_postinstall()
@@ -1058,7 +1058,7 @@ tools:
                     extra:
                         ask: ask_main_domain
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
                         required: True
                 -p:
