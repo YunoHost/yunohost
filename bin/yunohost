@@ -123,6 +123,16 @@ def _init_moulinette():
     # Initialize moulinette
     init(logging_config=logging, _from_source=IN_DEVEL)
 
+def _retrieve_namespaces():
+    """Return the list of namespaces to load"""
+    from moulinette.actionsmap import ActionsMap
+    ret = ['yunohost']
+    for n in ActionsMap.get_namespaces():
+        # Append YunoHost modules
+        if n.startswith('ynh_'):
+            ret.append(n)
+    return ret
+
 
 # Main action ----------------------------------------------------------
 
@@ -146,5 +156,6 @@ if __name__ == '__main__':
 
     # Execute the action
     from moulinette import cli
-    ret = cli(['yunohost'], args, print_json=PRINT_JSON, use_cache=USE_CACHE)
+    ret = cli(_retrieve_namespaces(), args,
+              print_json=PRINT_JSON, use_cache=USE_CACHE)
     sys.exit(ret)
