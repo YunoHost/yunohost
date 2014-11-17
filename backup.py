@@ -24,6 +24,7 @@
     Manage backups
 """
 import os
+import re
 import sys
 import json
 import errno
@@ -40,25 +41,79 @@ archives_path = '%s/archives' % backup_path
 logger = getActionLogger('yunohost.backup')
 
 
-def backup_create(name=None, description=None, ignore_apps=False):
+def backup_create(name=None, description=None, output_directory=None,
+                  no_compress=False, ignore_apps=False):
     """
     Create a backup local archive
 
     Keyword arguments:
         name -- Name of the backup archive
         description -- Short description of the backup
+        output_directory -- Output directory for the backup
+        no_compress -- Do not create an archive file
         ignore_apps -- Do not backup apps
 
     """
+    # TODO: Add a 'clean' argument to clean output directory
     from yunohost.hook import hook_add
     from yunohost.hook import hook_callback
 
+    tmp_dir = None
+
+    # Validate and define backup name
     timestamp = int(time.time())
     if not name:
         name = str(timestamp)
     if name in backup_list()['archives']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('backup_archive_name_exists'))
-    tmp_dir = "%s/tmp/%s" % (backup_path, name)
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('backup_archive_name_exists'))
+
+    # Validate additional arguments
+    if no_compress and not output_directory:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('backup_output_directory_required'))
+    if output_directory:
+        output_directory = os.path.abspath(output_directory)
+
+        # Check for forbidden folders
+        if output_directory.startswith(archives_path) or \
+           re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
+                    output_directory):
+            logger.error("forbidden output directory '%'", output_directory)
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('backup_output_directory_forbidden'))
+
+        # Create the output directory
+        if not os.path.isdir(output_directory):
+            logger.info("creating output directory '%s'", output_directory)
+            os.makedirs(output_directory, 0750)
+        # Check that output directory is empty
+        elif no_compress and os.listdir(output_directory):
+            logger.error("not empty output directory '%'", output_directory)
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('backup_output_directory_not_empty'))
+
+        # Define temporary directory
+        if no_compress:
+            tmp_dir = output_directory
+    else:
+        output_directory = archives_path
+
+    # Create temporary directory
+    if not tmp_dir:
+        tmp_dir = "%s/tmp/%s" % (backup_path, name)
+        if os.path.isdir(tmp_dir):
+            logger.warning("temporary directory for backup '%s' already exists",
+                           tmp_dir)
+            os.system('rm -rf %s' % tmp_dir)
+        try:
+            os.mkdir(tmp_dir, 0750)
+        except OSError:
+            # Create temporary directory recursively
+            os.makedirs(tmp_dir, 0750)
+            os.system('chown -hR admin: %s' % backup_path)
+        else:
+            os.system('chown -hR admin: %s' % tmp_dir)
 
     # Initialize backup info
     info = {
@@ -67,25 +122,12 @@ def backup_create(name=None, description=None, ignore_apps=False):
         'apps': {},
     }
 
-    # Create temporary directory
-    if os.path.isdir(tmp_dir):
-        logger.warning("temporary directory for backup '%s' already exists", tmp_dir)
-        os.system('rm -rf %s' % tmp_dir)
-    try:
-        os.mkdir(tmp_dir, 0750)
-    except OSError:
-        # Create temporary directory recursively
-        os.makedirs(tmp_dir, 0750)
-        os.system('chown -hR admin: %s' % backup_path)
-    else:
-        os.system('chown -hR admin: %s' % tmp_dir)
-
     # Add apps backup hook
     if not ignore_apps:
         from yunohost.app import app_info
         try:
             for app_id in os.listdir('/etc/yunohost/apps'):
-                hook = '/etc/yunohost/apps/'+ app_id +'/scripts/backup'
+                hook = '/etc/yunohost/apps/%s/scripts/backup' % app_id
                 if os.path.isfile(hook):
                     hook_add(app_id, hook)
 
@@ -95,7 +137,8 @@ def backup_create(name=None, description=None, ignore_apps=False):
                         'version': i['version'],
                     }
                 else:
-                    logger.warning("unable to find app's backup hook '%s'", hook)
+                    logger.warning("unable to find app's backup hook '%s'",
+                                   hook)
                     msignals.display(m18n.n('unbackup_app', app_id),
                                      'warning')
         except IOError as e:
@@ -110,34 +153,40 @@ def backup_create(name=None, description=None, ignore_apps=False):
         f.write(json.dumps(info))
 
     # Create the archive
-    msignals.display(m18n.n('backup_creating_archive'))
-    archive_file = "%s/%s.tar.gz" % (archives_path, name)
-    try:
-        tar = tarfile.open(archive_file, "w:gz")
-    except:
-        tar = None
+    if not no_compress:
+        msignals.display(m18n.n('backup_creating_archive'))
+        archive_file = "%s/%s.tar.gz" % (output_directory, name)
+        try:
+            tar = tarfile.open(archive_file, "w:gz")
+        except:
+            tar = None
 
-        # Create the archives directory and retry
-        if not os.path.isdir(archives_path):
-            os.mkdir(archives_path, 0750)
-            try:
-                tar = tarfile.open(archive_file, "w:gz")
-            except:
-                logger.exception("unable to open the archive '%s' for writing " \
-                                 "after creating directory '%s'",
-                                 archive_file, archives_path)
-                tar = None
-        else:
-            logger.exception("unable to open the archive '%s' for writing",
-                             archive_file)
-        if tar is None:
-            raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
-    tar.add(tmp_dir, arcname='')
-    tar.close()
+            # Create the archives directory and retry
+            if not os.path.isdir(archives_path):
+                os.mkdir(archives_path, 0750)
+                try:
+                    tar = tarfile.open(archive_file, "w:gz")
+                except:
+                    logger.exception("unable to open the archive '%s' for writing "
+                                     "after creating directory '%s'",
+                                     archive_file, archives_path)
+                    tar = None
+            else:
+                logger.exception("unable to open the archive '%s' for writing",
+                                 archive_file)
+            if tar is None:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('backup_archive_open_failed'))
+        tar.add(tmp_dir, arcname='')
+        tar.close()
 
-    # Copy info file and remove temporary directory
-    os.system('mv %s/info.json %s/%s.info.json' % (tmp_dir, archives_path, name))
-    os.system('rm -rf %s' % tmp_dir)
+        # Copy info file
+        os.system('mv %s/info.json %s/%s.info.json' %
+                  (tmp_dir, archives_path, name))
+
+    # Clean temporary directory
+    if tmp_dir != output_directory:
+        os.system('rm -rf %s' % tmp_dir)
 
     msignals.display(m18n.n('backup_complete'), 'success')
 
@@ -259,6 +308,7 @@ def backup_list():
             result.append(name)
 
     return { 'archives': result }
+
 
 def backup_info(name):
     """

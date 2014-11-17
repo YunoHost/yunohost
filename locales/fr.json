@@ -128,6 +128,9 @@
     "packages_upgrade_failed" : "Impossible de mettre à jour tous les paquets",
     "system_upgraded" : "Système mis à jour avec succès",
 
+    "backup_output_directory_required" : "Vous devez spécifier un dossier de sortie pour la sauvegarde",
+    "backup_output_directory_forbidden" : "Dossier de sortie interdit",
+    "backup_output_directory_not_empty" : "Le dossier de sortie n'est pas vide",
     "backup_running_hooks" : "Exécution des scripts de sauvegarde...",
     "backup_creating_archive" : "Création de l'archive de sauvegarde...",
     "backup_extracting_archive" : "Extraction de l'archive de sauvegarde...",

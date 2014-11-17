@@ -574,6 +574,13 @@ backup:
                 -d:
                     full: --description
                     help: Short description of the backup
+                -o:
+                    full: --output-directory
+                    help: Output directory for the backup
+                -r:
+                    full: --no-compress
+                    help: Do not create an archive file
+                    action: store_true
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
