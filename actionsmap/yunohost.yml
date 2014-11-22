@@ -1016,12 +1016,9 @@ tools:
         adminpw:
             action_help: Change admin password
             api: PUT /adminpw
+            configuration:
+                authenticate: all
             arguments:
-                -o:
-                    full: --old-password
-                    extra:
-                        password: ask_current_admin_password
-                        required: True
                 -n:
                     full: --new-password
                     extra:

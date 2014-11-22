@@ -73,26 +73,22 @@ def tools_ldapinit(auth):
     msignals.display(m18n.n('ldap_initialized'), 'success')
 
 
-def tools_adminpw(old_password, new_password):
+def tools_adminpw(auth, new_password):
     """
     Change admin password
 
     Keyword argument:
         new_password
-        old_password
 
     """
-    old_password.replace('"', '\\"')
-    old_password.replace('&', '\\&')
-    new_password.replace('"', '\\"')
-    new_password.replace('&', '\\&')
-    result = os.system('ldappasswd -h localhost -D cn=admin,dc=yunohost,dc=org -w "%s" -a "%s" -s "%s"' % (old_password, old_password, new_password))
-
-    if result == 0:
-        msignals.display(m18n.n('admin_password_changed'), 'success')
-    else:
+    try:
+        auth.con.passwd_s('cn=admin,dc=yunohost,dc=org', None, new_password)
+    except:
+        logger.exception('unable to change admin password')
         raise MoulinetteError(errno.EPERM,
                               m18n.n('admin_password_change_failed'))
+    else:
+        msignals.display(m18n.n('admin_password_changed'), 'success')
 
 
 def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
