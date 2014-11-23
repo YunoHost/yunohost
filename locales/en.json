@@ -169,7 +169,7 @@
     "ask_new_admin_password" : "New administration password",
     "ask_main_domain" : "Main domain",
     "ask_list_to_remove" : "List to remove",
-    "pattern_username" : "Must be alphanumeric and underscore characters only",
+    "pattern_username" : "Must be lower-case alphanumeric and underscore characters only",
     "pattern_firstname" : "Must be a valid first name",
     "pattern_lastname" : "Must be a valid last name",
     "pattern_email" : "Must be a valid email address (e.g. someone@domain.org)",

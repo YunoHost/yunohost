@@ -169,7 +169,7 @@
     "ask_new_admin_password" : "Nouveau mot de passe d'administration",
     "ask_main_domain" : "Domaine principal",
     "ask_list_to_remove" : "Liste à supprimer",
-    "pattern_username" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
+    "pattern_username" : "Doit être composé uniquement de caractères alphanumérique minuscule et de tiret bas",
     "pattern_firstname" : "Doit être un prénom valide",
     "pattern_lastname" : "Doit être un nom valide",
     "pattern_email" : "Doit être une adresse mail valide (ex. : someone@domain.org)",
