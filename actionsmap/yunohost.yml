@@ -1134,6 +1134,14 @@ hook:
                 app:
                     help: Scripts related to app will be removed
 
+        ### hook_list()
+        list:
+            action_help: List available hooks for an action
+            api: GET /hooks/<action>
+            arguments:
+                action:
+                    help: Action name
+
         ### hook_callback()
         callback:
             action_help: Execute all scripts binded to an action

@@ -32,8 +32,13 @@ import subprocess
 from shlex import split as arg_split
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
 
 hook_folder = '/usr/share/yunohost/hooks/'
+custom_hook_folder = '/etc/yunohost/hooks.d/'
+
+logger = getActionLogger('yunohost.hook')
+
 
 def hook_add(app, file):
     """
@@ -45,11 +50,7 @@ def hook_add(app, file):
 
     """
     path, filename = os.path.split(file)
-    if '-' in filename:
-        priority, action = filename.split('-')
-    else:
-        priority = '50'
-        action = filename
+    priority, action = _extract_filename_parts(filename)
 
     try: os.listdir(hook_folder + action)
     except OSError: os.makedirs(hook_folder + action)
@@ -75,6 +76,42 @@ def hook_remove(app):
                 if script.endswith(app):
                     os.remove(hook_folder + action +'/'+ script)
     except OSError: pass
+
+
+def hook_list(action):
+    """
+    List available hooks for an action
+
+    Keyword argument:
+        action -- Action name
+
+    """
+    hooks = {}
+
+    def _append_folder(folder):
+        for f in os.listdir(folder + action):
+            path = '%s%s/%s' % (folder, action, f)
+            priority, name = _extract_filename_parts(f)
+            try:
+                hooks[priority][name] = path
+            except KeyError:
+                hooks[priority] = {name: path}
+
+    try:
+        # Append system hooks first
+        _append_folder(hook_folder)
+    except OSError:
+        logger.debug("system hook folder not found for action '%s' in %s",
+                     action, hook_folder)
+
+    try:
+        # Append custom hooks
+        _append_folder(custom_hook_folder)
+    except OSError:
+        logger.debug("custom hook folder not found for action '%s' in %s",
+                     action, custom_hook_folder)
+
+    return hooks
 
 
 def hook_callback(action, args=None):
@@ -206,3 +243,13 @@ def hook_exec(file, args=None):
     stream.close()
 
     return returncode
+
+
+def _extract_filename_parts(filename):
+    """Extract hook parts from filename"""
+    if '-' in filename:
+        priority, action = filename.split('-', 1)
+    else:
+        priority = '50'
+        action = filename
+    return priority, action
