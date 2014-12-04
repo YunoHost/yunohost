@@ -36,8 +36,12 @@ import apt
 import apt.progress
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
 
 apps_setting_path= '/etc/yunohost/apps/'
+
+logger = getActionLogger('yunohost.tools')
+
 
 def tools_ldapinit(auth):
     """
