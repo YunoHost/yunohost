@@ -52,10 +52,10 @@ def hook_add(app, file):
     path, filename = os.path.split(file)
     priority, action = _extract_filename_parts(filename)
 
-    try: os.listdir(hook_folder + action)
-    except OSError: os.makedirs(hook_folder + action)
+    try: os.listdir(custom_hook_folder + action)
+    except OSError: os.makedirs(custom_hook_folder + action)
 
-    finalpath = hook_folder + action +'/'+ priority +'-'+ app
+    finalpath = custom_hook_folder + action +'/'+ priority +'-'+ app
     os.system('cp %s %s' % (file, finalpath))
     os.system('chown -hR admin: %s' % hook_folder)
 
@@ -71,10 +71,10 @@ def hook_remove(app):
 
     """
     try:
-        for action in os.listdir(hook_folder):
-            for script in os.listdir(hook_folder + action):
+        for action in os.listdir(custom_hook_folder):
+            for script in os.listdir(custom_hook_folder + action):
                 if script.endswith(app):
-                    os.remove(hook_folder + action +'/'+ script)
+                    os.remove(custom_hook_folder + action +'/'+ script)
     except OSError: pass
 
 
