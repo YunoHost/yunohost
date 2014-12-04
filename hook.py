@@ -163,18 +163,31 @@ def hook_callback(action, args=None):
         args -- Ordered list of arguments to pass to the script
 
     """
-    try: os.listdir(hook_folder + action)
-    except OSError: pass
-    else:
-        if args is None:
-            args = []
-        elif not isinstance(args, list):
-            args = [args]
+    result = { 'succeed': list(), 'failed': list() }
 
-        for hook in sorted(os.listdir(hook_folder + action)):
+    # Retrieve hooks by priority
+    hooks = hook_list(action, list_by='priority', show_info=True)['hooks']
+    if not hooks:
+        return result
+
+    # Format arguments
+    if args is None:
+        args = []
+    elif not isinstance(args, list):
+        args = [args]
+
+    # Iterate over hooks and execute them
+    for priority in sorted(hooks):
+        for name, info in iter(hooks[priority].items()):
             try:
-                hook_exec(file=hook_folder + action +'/'+ hook, args=args)
-            except: pass
+                hook_exec(info['path'], args=args)
+            except:
+                logger.exception("error while executing hook '%s'",
+                                 info['path'])
+                result['failed'].append(name)
+            else:
+                result['succeed'].append(name)
+    return result
 
 
 def hook_check(file):
