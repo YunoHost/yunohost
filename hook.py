@@ -78,40 +78,80 @@ def hook_remove(app):
     except OSError: pass
 
 
-def hook_list(action):
+def hook_list(action, list_by='name', show_info=False):
     """
     List available hooks for an action
 
     Keyword argument:
         action -- Action name
+        list_by -- Property to list hook by
+        show_info -- Show hook information
 
     """
-    hooks = {}
+    result = {}
 
-    def _append_folder(folder):
+    # Process the property to list hook by
+    if list_by == 'priority':
+        if show_info:
+            def _append_hook(d, priority, name, path):
+                # Use the priority as key and a dict of hooks names
+                # with their info as value
+                value = { 'path': path }
+                try:
+                    d[priority][name] = value
+                except KeyError:
+                    d[priority] = { name: value }
+        else:
+            def _append_hook(d, priority, name, path):
+                # Use the priority as key and the name as value
+                try:
+                    d[priority].add(name)
+                except KeyError:
+                    d[priority] = set([name])
+    elif list_by == 'name' or list_by == 'folder':
+        if show_info:
+            def _append_hook(d, priority, name, path):
+                # Use the name as key and hook info as value
+                d[name] = { 'priority': priority, 'path': path }
+        else:
+            if list_by == 'name':
+                result = set()
+            def _append_hook(d, priority, name, path):
+                # Add only the name
+                d.add(name)
+    else:
+        raise MoulinetteError(errno.EINVAL, m18n.n('hook_list_by_invalid'))
+
+    def _append_folder(d, folder):
+        # Iterate over and add hook from a folder
         for f in os.listdir(folder + action):
             path = '%s%s/%s' % (folder, action, f)
             priority, name = _extract_filename_parts(f)
-            try:
-                hooks[priority][name] = path
-            except KeyError:
-                hooks[priority] = {name: path}
+            _append_hook(d, priority, name, path)
 
     try:
         # Append system hooks first
-        _append_folder(hook_folder)
+        if list_by == 'folder':
+            result['system'] = dict() if show_info else set()
+            _append_folder(result['system'], hook_folder)
+        else:
+            _append_folder(result, hook_folder)
     except OSError:
         logger.debug("system hook folder not found for action '%s' in %s",
                      action, hook_folder)
 
     try:
         # Append custom hooks
-        _append_folder(custom_hook_folder)
+        if list_by == 'folder':
+            result['custom'] = dict() if show_info else set()
+            _append_folder(result['custom'], custom_hook_folder)
+        else:
+            _append_folder(result, custom_hook_folder)
     except OSError:
         logger.debug("custom hook folder not found for action '%s' in %s",
                      action, custom_hook_folder)
 
-    return hooks
+    return { 'hooks': result }
 
 
 def hook_callback(action, args=None):

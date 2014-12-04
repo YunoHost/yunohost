@@ -1141,6 +1141,18 @@ hook:
             arguments:
                 action:
                     help: Action name
+                -l:
+                    full: --list-by
+                    help: Property to list hook by
+                    choices:
+                        - name
+                        - priority
+                        - folder
+                    default: name
+                -i:
+                    full: --show-info
+                    help: Show hook information
+                    action: store_true
 
         ### hook_callback()
         callback:

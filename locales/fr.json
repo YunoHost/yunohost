@@ -77,6 +77,7 @@
     "upnp_disabled" : "uPnP désactivé avec succès",
     "firewall_reloaded" : "Pare-feu rechargé avec succès",
 
+    "hook_list_by_invalid" : "Propriété pour lister les scripts incorrecte",
     "hook_choice_invalid" : "Choix incorrect : '{:s}'",
     "hook_argument_missing" : "Argument manquant : '{:s}'",
 
