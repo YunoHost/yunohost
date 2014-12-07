@@ -147,46 +147,33 @@ def domain_add(auth, domain, dyndns=False):
 
         attr_dict['virtualdomain'] = domain
 
+        dnsmasq_config_path='/etc/dnsmasq.d'
         try:
-            with open('/var/lib/bind/%s.zone' % domain) as f: pass
+            os.listdir(dnsmasq_config_path)
+        except OSError:
+            msignals.display(m18n.n('dnsmasq_isnt_installed'),
+                                  'warning')
+            os.makedirs(dnsmasq_config_path)
+
+        try:
+            with open('%s/%s' % (dnsmasq_config_path, domain)) as f: pass
         except IOError as e:
             zone_lines = [
-             '$TTL    38400',
-             '%s.      IN   SOA   ns.%s. root.%s. %s 10800 3600 604800 38400' % (domain, domain, domain, timestamp),
-             '%s.      IN   NS    ns.%s.'                         % (domain, domain),
-             '%s.      IN   A     %s'                             % (domain, ip),
-             '%s.      IN   MX    5 %s.'                          % (domain, domain),
-             '%s.      IN   TXT   "v=spf1 mx a -all"'             % domain,
-             'ns.%s.   IN   A     %s'                             % (domain, ip),
-             '_xmpp-client._tcp.%s.  IN   SRV   0  5   5222  %s.' % (domain, domain),
-             '_xmpp-server._tcp.%s.  IN   SRV   0  5   5269  %s.' % (domain, domain),
-             '_jabber._tcp.%s.       IN   SRV   0  5   5269  %s.' % (domain, domain),
+             'address=/%s/%s' % (domain, ip),
+             'txt-record=%s,"v=spf1 mx a -all"' % domain,
+             'mx-host=%s,%s,5' % (domain, domain),
+             'srv-host=_xmpp-client._tcp.%s,%s,5222,0,5' % (domain, domain),
+             'srv-host=_xmpp-server._tcp.%s,%s,5269,0,5' % (domain, domain),
+             'srv-host=_jabber._tcp.%s,%s,5269,0,5' % (domain, domain),
             ]
-            with open('/var/lib/bind/%s.zone' % domain, 'w') as zone:
+            with open('%s/%s' % (dnsmasq_config_path, domain), 'w') as zone:
                 for line in zone_lines:
                     zone.write(line + '\n')
-
-            os.system('chown bind /var/lib/bind/%s.zone' % domain)
+            os.system('service dnsmasq restart')
 
         else:
-            raise MoulinetteError(errno.EEXIST,
-                                  m18n.n('domain_zone_exists'))
-
-        conf_lines = [
-            'zone "%s" {' % domain,
-            '    type master;',
-            '    file "/var/lib/bind/%s.zone";' % domain,
-            '    allow-transfer {',
-            '        127.0.0.1;',
-            '        localnets;',
-            '    };',
-            '};'
-        ]
-        with open('/etc/bind/named.conf.local', 'a') as conf:
-            for line in conf_lines:
-               conf.write(line + '\n')
-
-        os.system('service bind9 reload')
+            msignals.display(m18n.n('domain_zone_exists'),
+                                 'warning')
 
         # XMPP
         try:
@@ -265,7 +252,7 @@ def domain_remove(auth, domain, force=False):
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
         command_list = [
             'rm -rf /etc/yunohost/certs/%s' % domain,
-            'rm -f  /var/lib/bind/%s.zone' % domain,
+            'rm -f  /etc/dnsmasq.d/%s' % domain,
             'rm -rf /var/lib/metronome/%s' % domain.replace('.', '%2e'),
             'rm -f  /etc/metronome/conf.d/%s.cfg.lua' % domain,
             'rm -rf /etc/nginx/conf.d/%s.d' % domain,
@@ -275,18 +262,6 @@ def domain_remove(auth, domain, force=False):
             if os.system(command) != 0:
                 msignals.display(m18n.n('path_removal_failed', command[7:]),
                                  'warning')
-        with open('/etc/bind/named.conf.local', 'r') as conf:
-            conf_lines = conf.readlines()
-        with open('/etc/bind/named.conf.local', 'w') as conf:
-            in_block = False
-            for line in conf_lines:
-                if re.search(r'^zone "%s' % domain, line):
-                    in_block = True
-                if in_block:
-                    if re.search(r'^};$', line):
-                        in_block = False
-                else:
-                    conf.write(line)
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 

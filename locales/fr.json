@@ -47,6 +47,7 @@
     "domain_dyndns_root_unknown" : "Domaine DynDNS principal inconnu",
     "domain_cert_gen_failed" : "Impossible de générer le certificat",
     "domain_exists" : "Le domaine existe déjà",
+    "dnsmasq_isnt_installed" : "dnsmasq ne semble pas être installé, veuillez lancer 'apt-get remove bind9 && apt-get install dnsmasq'"
     "domain_zone_exists" : "Le fichier de zone DNS existe déjà",
     "domain_zone_not_found" : "Fichier de zone DNS introuvable pour le domaine {:s}",
     "domain_creation_failed" : "Impossible de créer le domaine",
