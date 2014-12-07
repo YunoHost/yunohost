@@ -267,7 +267,7 @@ def domain_remove(auth, domain, force=False):
 
     os.system('yunohost app ssowatconf > /dev/null 2>&1')
     os.system('service nginx reload')
-    os.system('service bind9 reload')
+    os.system('service dnsmasq restart')
     os.system('service metronome restart')
 
     msignals.display(m18n.n('domain_deleted'), 'success')
