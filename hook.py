@@ -111,8 +111,19 @@ def hook_list(action, list_by='name', show_info=False):
     elif list_by == 'name' or list_by == 'folder':
         if show_info:
             def _append_hook(d, priority, name, path):
-                # Use the name as key and hook info as value
-                d[name] = { 'priority': priority, 'path': path }
+                # Use the name as key and a list of hooks info - the
+                # executed ones with this name - as value
+                l = d.get(name, list())
+                for h in l:
+                    # Only one priority for the hook is accepted
+                    if h['priority'] == priority:
+                        # Custom hooks overwrite system ones and they
+                        # are appended at the end - so overwite it
+                        if h['path'] != path:
+                            h['path'] = path
+                        return
+                l.append({ 'priority': priority, 'path': path })
+                d[name] = l
         else:
             if list_by == 'name':
                 result = set()
