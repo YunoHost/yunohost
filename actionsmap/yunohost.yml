@@ -1161,6 +1161,10 @@ hook:
             arguments:
                 action:
                     help: Action name
+                -n:
+                    full: --hooks
+                    help: List of hooks names to execute
+                    nargs: '*'
                 -a:
                     full: --args
                     help: Ordered list of arguments to pass to the script

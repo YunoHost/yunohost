@@ -146,7 +146,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Run hooks
     msignals.display(m18n.n('backup_running_hooks'))
-    hook_callback('backup', [tmp_dir])
+    hook_callback('backup', args=[tmp_dir])
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -278,7 +278,7 @@ def backup_restore(name, ignore_apps=False, force=False):
 
     # Run hooks
     msignals.display(m18n.n('restore_running_hooks'))
-    hook_callback('restore', [tmp_dir])
+    hook_callback('restore', args=[tmp_dir])
 
     # Remove temporary directory
     os.system('rm -rf %s' % tmp_dir)

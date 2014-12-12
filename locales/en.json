@@ -79,6 +79,7 @@
     "firewall_reloaded" : "Firewall successfully reloaded",
 
     "hook_list_by_invalid" : "Invalid property to list hook by",
+    "hook_name_unknown" : "Unknown hook name '{:s}'",
     "hook_choice_invalid" : "Invalid choice '{:s}'",
     "hook_argument_missing" : "Missing argument '{:s}'",
 

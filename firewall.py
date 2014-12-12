@@ -186,7 +186,8 @@ def firewall_reload():
         for port in firewall['ipv4'][protocol]:
             os.system("iptables -A INPUT -p %s --dport %d -j ACCEPT" % (protocol, port))
 
-    hook_callback('post_iptable_rules', [upnp, os.path.exists("/proc/net/if_inet6")])
+    hook_callback('post_iptable_rules',
+                  args=[upnp, os.path.exists("/proc/net/if_inet6")])
 
     os.system("iptables -A INPUT -i lo -j ACCEPT")
     os.system("iptables -A INPUT -p icmp -j ACCEPT")

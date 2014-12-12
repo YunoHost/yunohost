@@ -591,7 +591,7 @@ def app_addaccess(auth, apps, users):
                         new_users = new_users +','+ allowed_user
 
             app_setting(app, 'allowed_users', new_users.strip())
-            hook_callback('post_app_addaccess', [app, new_users])
+            hook_callback('post_app_addaccess', args=[app, new_users])
 
     app_ssowatconf(auth)
 
@@ -644,7 +644,7 @@ def app_removeaccess(auth, apps, users):
                         new_users=new_users+','+user['username']
 
             app_setting(app, 'allowed_users', new_users.strip())
-            hook_callback('post_app_removeaccess', [app, new_users])
+            hook_callback('post_app_removeaccess', args=[app, new_users])
 
     app_ssowatconf(auth)
 
@@ -677,7 +677,7 @@ def app_clearaccess(auth, apps):
         if 'allowed_users' in app_settings:
             app_setting(app, 'allowed_users', delete=True)
 
-        hook_callback('post_app_clearaccess', [app])
+        hook_callback('post_app_clearaccess', args=[app])
 
     app_ssowatconf(auth)
 

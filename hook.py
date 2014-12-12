@@ -165,20 +165,40 @@ def hook_list(action, list_by='name', show_info=False):
     return { 'hooks': result }
 
 
-def hook_callback(action, args=None):
+def hook_callback(action, hooks=[], args=None):
     """
     Execute all scripts binded to an action
 
     Keyword argument:
         action -- Action name
+        hooks -- List of hooks names to execute
         args -- Ordered list of arguments to pass to the script
 
     """
     result = { 'succeed': list(), 'failed': list() }
+    hooks_dict = {}
 
-    # Retrieve hooks by priority
-    hooks = hook_list(action, list_by='priority', show_info=True)['hooks']
+    # Retrieve hooks
     if not hooks:
+        hooks_dict = hook_list(action, list_by='priority',
+                               show_info=True)['hooks']
+    else:
+        hooks_names = hook_list(action, list_by='name',
+                                show_info=True)['hooks']
+        # Iterate over given hooks names list
+        for n in hooks:
+            try:
+                hl = hooks_names[n]
+            except KeyError:
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('hook_name_unknown', n))
+            # Iterate over hooks with this name
+            for h in hl:
+                # Update hooks dict
+                d = hooks_dict.get(h['priority'], dict())
+                d.update({ n: { 'path': h['path'] }})
+                hooks_dict[h['priority']] = d
+    if not hooks_dict:
         return result
 
     # Format arguments
@@ -188,16 +208,17 @@ def hook_callback(action, args=None):
         args = [args]
 
     # Iterate over hooks and execute them
-    for priority in sorted(hooks):
-        for name, info in iter(hooks[priority].items()):
+    for priority in sorted(hooks_dict):
+        for name, info in iter(hooks_dict[priority].items()):
+            filename = '%s-%s' % (priority, name)
             try:
                 hook_exec(info['path'], args=args)
             except:
                 logger.exception("error while executing hook '%s'",
                                  info['path'])
-                result['failed'].append(name)
+                result['failed'].append(filename)
             else:
-                result['succeed'].append(name)
+                result['succeed'].append(filename)
     return result
 
 
