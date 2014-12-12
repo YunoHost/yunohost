@@ -42,7 +42,7 @@ logger = getActionLogger('yunohost.backup')
 
 
 def backup_create(name=None, description=None, output_directory=None,
-                  no_compress=False, ignore_apps=False):
+                  no_compress=False, hooks=[], ignore_apps=False):
     """
     Create a backup local archive
 
@@ -51,6 +51,7 @@ def backup_create(name=None, description=None, output_directory=None,
         description -- Short description of the backup
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
+        hooks -- List of backup hooks names to execute
         ignore_apps -- Do not backup apps
 
     """
@@ -146,7 +147,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Run hooks
     msignals.display(m18n.n('backup_running_hooks'))
-    hook_callback('backup', args=[tmp_dir])
+    hook_callback('backup', hooks, args=[tmp_dir])
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -191,12 +192,13 @@ def backup_create(name=None, description=None, output_directory=None,
     msignals.display(m18n.n('backup_complete'), 'success')
 
 
-def backup_restore(name, ignore_apps=False, force=False):
+def backup_restore(name, hooks=[], ignore_apps=False, force=False):
     """
     Restore from a local backup archive
 
     Keyword argument:
         name -- Name of the local backup archive
+        hooks -- List of restoration hooks names to execute
         ignore_apps -- Do not restore apps
         force -- Force restauration on an already installed system
 
@@ -278,7 +280,7 @@ def backup_restore(name, ignore_apps=False, force=False):
 
     # Run hooks
     msignals.display(m18n.n('restore_running_hooks'))
-    hook_callback('restore', args=[tmp_dir])
+    hook_callback('restore', hooks, args=[tmp_dir])
 
     # Remove temporary directory
     os.system('rm -rf %s' % tmp_dir)

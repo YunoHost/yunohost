@@ -581,6 +581,9 @@ backup:
                     full: --no-compress
                     help: Do not create an archive file
                     action: store_true
+                --hooks:
+                    help: List of backup hooks names to execute
+                    nargs: '*'
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
@@ -594,6 +597,9 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
+                --hooks:
+                    help: List of restauration hooks names to execute
+                    nargs: '*'
                 --ignore-apps:
                     help: Do not restore apps
                     action: store_true
