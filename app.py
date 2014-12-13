@@ -284,8 +284,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
     upgraded_apps = []
 
     # If no app is specified, upgrade all apps
-    if not app and (not url or file):
-        app = os.listdir(apps_setting_path)
+    if not app:
+        if (not url and not file):
+            app = os.listdir(apps_setting_path)
     elif not isinstance(app, list):
         app = [ app ]
 
