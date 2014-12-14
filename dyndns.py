@@ -50,9 +50,9 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     # Verify if domain is available
     try:
-        if requests.get('http://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
+        if requests.get('https://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
             raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
-    except ConnectionError:
+    except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
 
     if key is None:
@@ -71,7 +71,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     # Send subscription
     try:
-        r = requests.post('http://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={ 'subdomain': domain })
+        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={ 'subdomain': domain })
     except ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:

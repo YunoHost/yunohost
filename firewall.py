@@ -186,7 +186,8 @@ def firewall_reload():
         for port in firewall['ipv4'][protocol]:
             os.system("iptables -A INPUT -p %s --dport %d -j ACCEPT" % (protocol, port))
 
-    hook_callback('post_iptable_rules', [upnp, os.path.exists("/proc/net/if_inet6")])
+    hook_callback('post_iptable_rules',
+                  args=[upnp, os.path.exists("/proc/net/if_inet6")])
 
     os.system("iptables -A INPUT -i lo -j ACCEPT")
     os.system("iptables -A INPUT -p icmp -j ACCEPT")
@@ -235,8 +236,7 @@ def firewall_upnp(action=None):
 
         with open('/etc/cron.d/yunohost-firewall', 'w+') as f:
             f.write('PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-            \n*/50 * * * * root yunohost firewall upnp reload >>/dev/null \
-            \n*/50 * * * * root iptables -L | grep ^fail2ban-dovecot > /dev/null 2>&1; if [ $? != 0 ]; then yunohost firewall reload; fi >>/dev/null')
+            \n*/50 * * * * root yunohost firewall upnp reload >>/dev/null')
 
         msignals.display(m18n.n('upnp_enabled'), 'success')
 

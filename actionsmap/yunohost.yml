@@ -254,7 +254,7 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
                 -d:
                     full: --dyndns
@@ -272,7 +272,7 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
 
         ### domain_info()
@@ -565,14 +565,72 @@ backup:
     category_help: Manage backups
     actions:
 
-        ### backup_init()
-        init:
-            action_help: Init Tahoe-LAFS configuration
-            # api: POST /backup/init
+        ### backup_create()
+        create:
+            action_help: Create a backup local archive
+            api: POST /backup
+            configuration:
+                lock: false
             arguments:
-                --helper:
-                    help: Init as a helper node rather than a "helped" one
+                -n:
+                    full: --name
+                    help: Name of the backup archive
+                    extra:
+                        pattern:
+                            - '^[\w\-\.]{1,30}(?<!\.)$'
+                            - pattern_backup_archive_name
+                -d:
+                    full: --description
+                    help: Short description of the backup
+                -o:
+                    full: --output-directory
+                    help: Output directory for the backup
+                -r:
+                    full: --no-compress
+                    help: Do not create an archive file
                     action: store_true
+                --hooks:
+                    help: List of backup hooks names to execute
+                    nargs: '*'
+                --ignore-apps:
+                    help: Do not backup apps
+                    action: store_true
+
+        ### backup_restore()
+        restore:
+            action_help: Restore from a local backup archive
+            api: POST /restore
+            configuration:
+                authenticate: false
+            arguments:
+                name:
+                    help: Name of the local backup archive
+                --hooks:
+                    help: List of restauration hooks names to execute
+                    nargs: '*'
+                --ignore-apps:
+                    help: Do not restore apps
+                    action: store_true
+                --force:
+                    help: Force restauration on an already installed system
+                    action: store_true
+
+        ### backup_list()
+        list:
+            action_help: List available local backup archives
+            api: GET /backup/archives
+            configuration:
+                lock: false
+
+        ### backup_info()
+        info:
+            action_help: Show info about a local backup archive
+            api: GET /backup/archives/<name>
+            configuration:
+                lock: false
+            arguments:
+                name:
+                    help: Name of the local backup archive
 
 
 #############################
@@ -972,12 +1030,9 @@ tools:
         adminpw:
             action_help: Change admin password
             api: PUT /adminpw
+            configuration:
+                authenticate: all
             arguments:
-                -o:
-                    full: --old-password
-                    extra:
-                        password: ask_current_admin_password
-                        required: True
                 -n:
                     full: --new-password
                     extra:
@@ -998,13 +1053,13 @@ tools:
                     full: --old-domain
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
                 -n:
                     full: --new-domain
                     extra:
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
 
         ### tools_postinstall()
@@ -1021,7 +1076,7 @@ tools:
                     extra:
                         ask: ask_main_domain
                         pattern:
-                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
+                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
                             - pattern_domain
                         required: True
                 -p:
@@ -1033,8 +1088,8 @@ tools:
                         pattern:
                             - '^.{3,}$'
                             - pattern_password
-                --dyndns:
-                    help: Subscribe domain to a DynDNS service
+                --ignore-dyndns:
+                    help: Do not subscribe domain to a DynDNS service
                     action: store_true
 
         ### tools_update()
@@ -1093,6 +1148,26 @@ hook:
                 app:
                     help: Scripts related to app will be removed
 
+        ### hook_list()
+        list:
+            action_help: List available hooks for an action
+            api: GET /hooks/<action>
+            arguments:
+                action:
+                    help: Action name
+                -l:
+                    full: --list-by
+                    help: Property to list hook by
+                    choices:
+                        - name
+                        - priority
+                        - folder
+                    default: name
+                -i:
+                    full: --show-info
+                    help: Show hook information
+                    action: store_true
+
         ### hook_callback()
         callback:
             action_help: Execute all scripts binded to an action
@@ -1100,6 +1175,10 @@ hook:
             arguments:
                 action:
                     help: Action name
+                -n:
+                    full: --hooks
+                    help: List of hooks names to execute
+                    nargs: '*'
                 -a:
                     full: --args
                     help: Ordered list of arguments to pass to the script

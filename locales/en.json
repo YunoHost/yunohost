@@ -20,6 +20,7 @@
     "custom_app_url_required" : "You must provide an URL to upgrade your custom app {:s}",
     "app_recent_version_required" : "{:s} requires a more recent version of the moulinette",
     "app_upgraded" : "{:s} successfully upgraded",
+    "app_upgrade_failed" : "Unable to upgrade all apps",
     "app_id_invalid" : "Invalid app id",
     "app_already_installed" : "{:s} is already installed",
     "app_removed" : "{:s} successfully removed",
@@ -46,6 +47,7 @@
     "domain_dyndns_root_unknown" : "Unknown DynDNS root domain",
     "domain_cert_gen_failed" : "Unable to generate certificate",
     "domain_exists" : "Domain already exists",
+    "dnsmasq_isnt_installed" : "dnsmasq does not seem to be installed, please run 'apt-get remove bind9 && apt-get install dnsmasq'",
     "domain_zone_exists" : "DNS zone file already exists",
     "domain_zone_not_found" : "DNS zone file not found for domain {:s}",
     "domain_creation_failed" : "Unable to create domain",
@@ -76,6 +78,8 @@
     "upnp_disabled" : "uPnP successfully disabled",
     "firewall_reloaded" : "Firewall successfully reloaded",
 
+    "hook_list_by_invalid" : "Invalid property to list hook by",
+    "hook_name_unknown" : "Unknown hook name '{:s}'",
     "hook_choice_invalid" : "Invalid choice '{:s}'",
     "hook_argument_missing" : "Missing argument '{:s}'",
 
@@ -127,6 +131,24 @@
     "packages_upgrade_failed" : "Unable to upgrade all packages",
     "system_upgraded" : "System successfully upgraded",
 
+    "backup_output_directory_required" : "You must provide an output directory for the backup",
+    "backup_output_directory_forbidden" : "Forbidden output directory",
+    "backup_output_directory_not_empty" : "Output directory is not empty",
+    "backup_running_hooks" : "Running backup hooks...",
+    "backup_creating_archive" : "Creating the backup archive...",
+    "backup_extracting_archive" : "Extracting the backup archive...",
+    "backup_archive_open_failed" : "Unable to open the backup archive",
+    "backup_archive_name_unknown" : "Unknown local backup archive name",
+    "backup_archive_name_exists" : "Backup archive name already exists",
+    "backup_complete" : "Backup complete",
+    "backup_invalid_archive" : "Invalid backup archive",
+    "restore_confirm_yunohost_installed" : "Do you really want to restore an already installed system? [{answers:s}]",
+    "restore_running_hooks" : "Running restoration hooks...",
+    "restore_failed" : "Unable to restore the system",
+    "restore_complete" : "Restore complete",
+    "unbackup_app" : "App '{:s}' will not be saved",
+    "unrestore_app" : "App '{:s}' will not be restored",
+
     "field_invalid" : "Invalid field '{:s}'",
     "mail_domain_unknown" : "Unknown mail address domain '{:s}'",
     "mail_alias_remove_failed" : "Unable to remove mail alias '{:s}'",
@@ -150,13 +172,16 @@
     "ask_new_admin_password" : "New administration password",
     "ask_main_domain" : "Main domain",
     "ask_list_to_remove" : "List to remove",
-    "pattern_username" : "Must be alphanumeric and underscore characters only",
+    "pattern_username" : "Must be lower-case alphanumeric and underscore characters only",
     "pattern_firstname" : "Must be a valid first name",
     "pattern_lastname" : "Must be a valid last name",
     "pattern_email" : "Must be a valid email address (e.g. someone@domain.org)",
     "pattern_password" : "Must be at least 3 characters long",
     "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_listname" : "Must be alphanumeric and underscore characters only",
-    "pattern_port" : "Must be a valid port number (i.e. 0-65535)"
+    "pattern_port" : "Must be a valid port number (i.e. 0-65535)",
+    "pattern_backup_archive_name" : "Must be a valid filename with alphanumeric and -_. characters only",
+
+    "format_datetime_short" : "%m/%d/%Y %I:%M %p"
 }
 

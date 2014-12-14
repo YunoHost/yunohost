@@ -186,7 +186,8 @@ def user_create(auth, username, firstname, lastname, mail, password):
             app_ssowatconf(auth)
             #TODO: Send a welcome mail to user
             msignals.display(m18n.n('user_created'), 'success')
-            hook_callback('post_user_create', [username, mail, password, firstname, lastname])
+            hook_callback('post_user_create',
+                          args=[username, mail, password, firstname, lastname])
 
             return { 'fullname' : fullname, 'username' : username, 'mail' : mail }
 

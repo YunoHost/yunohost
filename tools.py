@@ -31,12 +31,17 @@ import getpass
 import requests
 import json
 import errno
+import logging
 import apt
 import apt.progress
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
 
 apps_setting_path= '/etc/yunohost/apps/'
+
+logger = getActionLogger('yunohost.tools')
+
 
 def tools_ldapinit(auth):
     """
@@ -72,26 +77,22 @@ def tools_ldapinit(auth):
     msignals.display(m18n.n('ldap_initialized'), 'success')
 
 
-def tools_adminpw(old_password, new_password):
+def tools_adminpw(auth, new_password):
     """
     Change admin password
 
     Keyword argument:
         new_password
-        old_password
 
     """
-    old_password.replace('"', '\\"')
-    old_password.replace('&', '\\&')
-    new_password.replace('"', '\\"')
-    new_password.replace('&', '\\&')
-    result = os.system('ldappasswd -h localhost -D cn=admin,dc=yunohost,dc=org -w "%s" -a "%s" -s "%s"' % (old_password, old_password, new_password))
-
-    if result == 0:
-        msignals.display(m18n.n('admin_password_changed'), 'success')
-    else:
+    try:
+        auth.con.passwd_s('cn=admin,dc=yunohost,dc=org', None, new_password)
+    except:
+        logger.exception('unable to change admin password')
         raise MoulinetteError(errno.EPERM,
                               m18n.n('admin_password_change_failed'))
+    else:
+        msignals.display(m18n.n('admin_password_changed'), 'success')
 
 
 def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
@@ -123,7 +124,6 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         '/etc/metronome/metronome.cfg.lua',
         '/etc/dovecot/dovecot.conf',
         '/usr/share/yunohost/yunohost-config/others/startup',
-        '/home/yunohost.backup/tahoe/tahoe.cfg',
         '/etc/amavis/conf.d/05-node_id',
         '/etc/amavis/conf.d/50-user'
     ]
@@ -174,6 +174,8 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     os.system('rm /etc/ssl/certs/yunohost_crt.pem')
 
     command_list = [
+        'rm -f /etc/nginx/conf.d/%s.d/yunohost_local.conf' % old_domain,
+        'cp /usr/share/yunohost/yunohost-config/nginx/yunohost_local.conf /etc/nginx/conf.d/%s.d/' % new_domain,
         'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
         'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
         'echo %s > /etc/yunohost/current_host' % new_domain,
@@ -189,10 +191,9 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('maindomain_change_failed'))
 
-    if dyndns: dyndns_subscribe(domain=new_domain)
-    elif len(new_domain.split('.')) >= 3:
+    if dyndns and len(new_domain.split('.')) >= 3:
         try:
-            r = requests.get('http://dyndns.yunohost.org/domains')
+            r = requests.get('https://dyndns.yunohost.org/domains')
         except ConnectionError:
             pass
         else:
@@ -204,21 +205,22 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     msignals.display(m18n.n('maindomain_changed'), 'success')
 
 
-def tools_postinstall(domain, password, dyndns=False):
+def tools_postinstall(domain, password, ignore_dyndns=False):
     """
     YunoHost post-install
 
     Keyword argument:
         domain -- YunoHost main domain
-        dyndns -- Subscribe domain to a DynDNS service
+        ignore_dyndns -- Do not subscribe domain to a DynDNS service
         password -- YunoHost admin password
 
     """
     from moulinette.core import init_authenticator
 
-    from yunohost.backup import backup_init
     from yunohost.app import app_ssowatconf
     from yunohost.firewall import firewall_upnp, firewall_reload
+
+    dyndns = not ignore_dyndns
 
     try:
         with open('/etc/yunohost/installed') as f: pass
@@ -227,16 +229,16 @@ def tools_postinstall(domain, password, dyndns=False):
     else:
         raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
 
-    if len(domain.split('.')) >= 3:
+    if len(domain.split('.')) >= 3 and not ignore_dyndns:
         try:
-            r = requests.get('http://dyndns.yunohost.org/domains')
+            r = requests.get('https://dyndns.yunohost.org/domains')
         except ConnectionError:
             pass
         else:
             dyndomains = json.loads(r.text)
             dyndomain  = '.'.join(domain.split('.')[1:])
             if dyndomain in dyndomains:
-                if requests.get('http://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
+                if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
                     dyndns=True
                 else:
                     raise MoulinetteError(errno.EEXIST,
@@ -254,6 +256,9 @@ def tools_postinstall(domain, password, dyndns=False):
     for folder in folders_to_create:
         try: os.listdir(folder)
         except OSError: os.makedirs(folder)
+
+    # Change folders permissions
+    os.system('chmod 755 /home/yunohost.app')
 
     # Set hostname to avoid amavis bug
     if os.system('hostname -d') != 0:
@@ -304,9 +309,6 @@ def tools_postinstall(domain, password, dyndns=False):
     # Initialize YunoHost LDAP base
     tools_ldapinit(auth)
 
-    # Initialize backup system
-    backup_init()
-
     # New domain config
     tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain, dyndns=dyndns)
 
@@ -322,6 +324,9 @@ def tools_postinstall(domain, password, dyndns=False):
         firewall_reload()
     except MoulinetteError:
         firewall_upnp(action=['disable'])
+
+    # Enable iptables at boot time
+    os.system('update-rc.d yunohost-firewall defaults')
 
     os.system('touch /etc/yunohost/installed')
 
@@ -408,6 +413,9 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     """
     from yunohost.app import app_upgrade
 
+    failure = False
+
+    # Retrieve interface
     is_api = True if msettings.get('interface') == 'api' else False
 
     if not ignore_packages:
@@ -441,6 +449,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                 cache.commit(apt.progress.text.AcquireProgress(),
                              apt.progress.base.InstallProgress())
             except Exception as e:
+                failure = True
                 logging.warning('unable to upgrade packages: %s' % str(e))
                 msignals.display(m18n.n('packages_upgrade_failed'), 'error')
             else:
@@ -451,11 +460,15 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     if not ignore_apps:
         try:
             app_upgrade(auth)
-        except: pass
+        except Exception as e:
+            failure = True
+            logging.warning('unable to upgrade apps: %s' % str(e))
+            msignals.display(m18n.n('app_upgrade_failed'), 'error')
 
-    msignals.display(m18n.n('system_upgraded'), 'success')
+    if not failure:
+        msignals.display(m18n.n('system_upgraded'), 'success')
 
     # Return API logs if it is an API call
-    if msettings.get('interface') == 'api':
+    if is_api:
         from yunohost.service import service_log
         return { "log": service_log('yunohost-api', number="100").values()[0] }

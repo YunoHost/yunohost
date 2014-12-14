@@ -7,18 +7,137 @@ import yaml
 from os import listdir
 from os.path import isfile, join
 
-from_source = False
+# Either we are in a development environment or not
+IN_DEVEL = False
 
-# Run from source
-basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-if os.path.isdir('%s/moulinette' % basedir):
-    sys.path.insert(0, basedir)
-    from_source = True
+# Either cache has to be used inside the moulinette or not
+USE_CACHE = True
 
-from moulinette import init, api, MoulinetteError
+# Either WebSocket has to be installed by the moulinette or not
+USE_WEBSOCKET = True
+
+# Level for which loggers will log
+LOGGERS_LEVEL = 'INFO'
+
+# Handlers that will be used by loggers
+#  - file: log to the file LOG_DIR/LOG_FILE
+#  - console: log to stderr
+LOGGERS_HANDLERS = ['file']
+
+# Directory and file to be used by logging
+LOG_DIR = '/var/log/yunohost'
+LOG_FILE = 'yunohost-api.log'
 
 
-## Callbacks for additional routes
+# Initialization & helpers functions -----------------------------------
+
+def _die(message, title='Error:'):
+    """Print error message and exit"""
+    try:
+        from moulinette.interfaces.cli import colorize
+    except ImportError:
+        colorize = lambda msg, c: msg
+    print('%s %s' % (colorize(title, 'red'), message))
+    sys.exit(1)
+
+def _check_in_devel():
+    """Check and load if needed development environment"""
+    global IN_DEVEL, LOG_DIR
+    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
+    if os.path.isdir('%s/moulinette' % basedir) and not IN_DEVEL:
+        # Add base directory to python path
+        sys.path.insert(0, basedir)
+
+        # Update global variables
+        IN_DEVEL = True
+        LOG_DIR = '%s/log' % basedir
+
+def _parse_argv():
+    """Parse additional arguments and return remaining ones"""
+    argv = list(sys.argv)
+    argv.pop(0)
+
+    if '--no-cache' in argv:
+        global USE_CACHE
+        USE_CACHE = False
+        argv.remove('--no-cache')
+    if '--no-websocket' in argv:
+        global USE_WEBSOCKET
+        USE_WEBSOCKET = False
+        argv.remove('--no-websocket')
+    if '--debug' in argv:
+        global LOGGERS_LEVEL
+        LOGGERS_LEVEL = 'DEBUG'
+        argv.remove('--debug')
+    if '--verbose' in argv:
+        global LOGGERS_HANDLERS
+        if 'console' not in LOGGERS_HANDLERS:
+            LOGGERS_HANDLERS.append('console')
+        argv.remove('--verbose')
+    return argv
+
+def _init_moulinette():
+    """Configure logging and initialize the moulinette"""
+    from moulinette import init
+
+    # Custom logging configuration
+    logging = {
+        'version': 1,
+        'disable_existing_loggers': True,
+        'formatters': {
+            'simple': {
+                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s - %(message)s'
+            },
+            'precise': {
+                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(message)s'
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'simple',
+                'stream': 'ext://sys.stderr',
+            },
+            'file': {
+                'class': 'logging.handlers.WatchedFileHandler',
+                'formatter': 'precise',
+                'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+            },
+        },
+        'loggers': {
+            'moulinette': {
+                'level': LOGGERS_LEVEL,
+                'handlers': LOGGERS_HANDLERS,
+            },
+            'yunohost': {
+                'level': LOGGERS_LEVEL,
+                'handlers': LOGGERS_HANDLERS,
+            },
+        },
+    }
+
+    # Create log directory
+    if not os.path.isdir(LOG_DIR):
+        try:
+            os.makedirs(LOG_DIR, 0750)
+        except os.error as e:
+            _die(str(e))
+
+    # Initialize moulinette
+    init(logging_config=logging, _from_source=IN_DEVEL)
+
+def _retrieve_namespaces():
+    """Return the list of namespaces to load"""
+    from moulinette.actionsmap import ActionsMap
+    ret = ['yunohost']
+    for n in ActionsMap.get_namespaces():
+        # Append YunoHost modules
+        if n.startswith('ynh_'):
+            ret.append(n)
+    return ret
+
+
+# Callbacks for additional routes --------------------------------------
 
 def is_installed():
     """
@@ -31,45 +150,20 @@ def is_installed():
     return { 'installed': installed }
 
 
-def _get_modules():
-    """
-    Get a dict of managed services with their parameters
+# Main action ----------------------------------------------------------
 
-    """
-    from os import listdir
-    from os.path import isfile, join
-    path='/usr/share/moulinette/actionsmap/'
-    onlyfiles = [ f[:-4] for f in listdir(path) if isfile(join(path,f))]
-    return onlyfiles
-
-## Main action
 
 if __name__ == '__main__':
-    # Run from source
-    init(_from_source=from_source)
+    _check_in_devel()
+    _parse_argv()
+    _init_moulinette()
 
-    # Additional arguments
-    cache = True
-    websocket = True
-    if '--no-cache' in sys.argv:
-        cache = False
-        sys.argv.remove('--no-cache')
-    if '--no-websocket' in sys.argv:
-        websocket = False
-        sys.argv.remove('--no-websocket')
-    # TODO: Add log argument
-
+    from moulinette import (api, MoulinetteError)
     try:
-        # Run the server 
-        from os import listdir
-        from os.path import isfile, join
-        path='/usr/share/moulinette/actionsmap/'
-        modules = [ f[:-4] for f in listdir(path) if isfile(join(path,f))]
-        api(modules, port=6787,
+        # Run the server
+        api(_retrieve_namespaces(), port=6787,
             routes={('GET', '/installed'): is_installed},
-            use_cache=False, use_websocket=websocket)
+            use_cache=USE_CACHE, use_websocket=USE_WEBSOCKET)
     except MoulinetteError as e:
-        from moulinette.interfaces.cli import colorize
-        print('%s %s' % (colorize(m18n.g('error'), 'red'), e.strerror))
-        sys.exit(e.errno)
+        _die(e.strerror, m18n.g('error'))
     sys.exit(0)

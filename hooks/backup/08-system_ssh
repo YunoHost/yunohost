@@ -1,0 +1,6 @@
+#!/bin/bash
+
+backup_dir="$1/ssh"
+mkdir -p $backup_dir
+
+sudo cp -a /etc/ssh/. $backup_dir

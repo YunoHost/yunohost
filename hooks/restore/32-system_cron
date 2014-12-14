@@ -1,0 +1,8 @@
+#!/bin/bash
+
+backup_dir="$1/cron"
+
+sudo cp -a $backup_dir/. /etc/cron.d
+
+# Restart just in case
+sudo service cron restart

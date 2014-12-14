@@ -175,7 +175,8 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
                         list_dict.append({
                             'id': app_id,
                             'name': app_info['manifest']['name'],
-                            'description': app_info['manifest']['description'],
+                            'description': _value_for_locale(
+                                app_info['manifest']['description']),
                             # FIXME: Temporarly allow undefined license
                             'license': app_info['manifest'].get('license',
                                 m18n.n('license_undefined')),
@@ -216,7 +217,9 @@ def app_info(app, raw=False):
                 # FIXME: Temporarly allow undefined license
                 'license': app_info['manifest'].get('license',
                     m18n.n('license_undefined')),
-                #TODO: Add more infos
+                # FIXME: Temporarly allow undefined version
+                'version' :  app_info['manifest'].get('version', '-'),
+                #TODO: Add more info
             }
 
 
@@ -262,7 +265,7 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
-def app_upgrade(auth, app, url=None, file=None):
+def app_upgrade(auth, app=[], url=None, file=None):
     """
     Upgrade app
 
@@ -283,7 +286,8 @@ def app_upgrade(auth, app, url=None, file=None):
 
     # If no app is specified, upgrade all apps
     if not app:
-        app = os.listdir(apps_setting_path)
+        if (not url and not file):
+            app = os.listdir(apps_setting_path)
     elif not isinstance(app, list):
         app = [ app ]
 
@@ -393,8 +397,10 @@ def app_install(auth, app, label=None, args=None):
 
     if app in app_list(raw=True) or ('@' in app) or ('http://' in app) or ('https://' in app):
         manifest = _fetch_app_from_git(app)
-    else:
+    elif os.path.exists(app):
         manifest = _extract_app_from_file(app)
+    else:
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
 
     # Check ID
     if 'id' not in manifest or '__' in manifest['id']:
@@ -587,7 +593,7 @@ def app_addaccess(auth, apps, users):
                         new_users = new_users +','+ allowed_user
 
             app_setting(app, 'allowed_users', new_users.strip())
-            hook_callback('post_app_addaccess', [app, new_users])
+            hook_callback('post_app_addaccess', args=[app, new_users])
 
     app_ssowatconf(auth)
 
@@ -640,7 +646,7 @@ def app_removeaccess(auth, apps, users):
                         new_users=new_users+','+user['username']
 
             app_setting(app, 'allowed_users', new_users.strip())
-            hook_callback('post_app_removeaccess', [app, new_users])
+            hook_callback('post_app_removeaccess', args=[app, new_users])
 
     app_ssowatconf(auth)
 
@@ -673,7 +679,7 @@ def app_clearaccess(auth, apps):
         if 'allowed_users' in app_settings:
             app_setting(app, 'allowed_users', delete=True)
 
-        hook_callback('post_app_clearaccess', [app])
+        hook_callback('post_app_clearaccess', args=[app])
 
     app_ssowatconf(auth)
 
@@ -923,10 +929,7 @@ def app_ssowatconf(auth):
     for domain in domains:
         skipped_urls.extend(['/yunohost/admin', '/yunohost/api'])
 
-    with open('/etc/ssowat/conf.json') as f:
-        conf_dict = json.load(f)
-
-    conf_dict.update({
+    conf_dict = {
         'portal_domain': main_domain,
         'portal_path': '/yunohost/sso/',
         'additional_headers': {
@@ -944,7 +947,7 @@ def app_ssowatconf(auth):
         'protected_regex': protected_regex,
         'redirected_regex': redirected_regex,
         'users': users,
-    })
+    }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+backup_dir="$1/ldap"
+
+if [ -z "$2" ]; then
+
+    # We need to execute this script as root, since the ldap
+    # service will be shut down during the operation (and sudo
+    # won't be available)
+    sudo bash $(pwd)/$0 $1 sudoed
+
+else
+    service slapd stop
+
+    # Backup old configuration
+    mv /var/lib/ldap /var/lib/ldap.old
+
+    # Recreate new DB folder
+    mkdir /var/lib/ldap
+    chown openldap: /var/lib/ldap
+    chmod go-rwx  /var/lib/ldap
+
+    # Restore LDAP configuration (just to be sure)
+    cp -a $backup_dir/slapd.conf /etc/ldap/slapd.conf
+
+    # Regenerate the configuration
+    rm -rf /etc/ldap/slapd.d/*
+    slaptest -u -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d
+    cp -rfp /var/lib/ldap.old/DB_CONFIG /var/lib/ldap
+
+    # Import the database
+    slapadd -l $backup_dir/slapcat.ldif
+
+    # Change permissions and restart slapd
+    chown openldap: /var/lib/ldap/*
+    service slapd start
+    rm -rf /var/lib/ldap.old
+fi
