@@ -934,17 +934,20 @@ firewall:
 
         ### firewall_upnp()
         upnp:
-            action_help: Add uPnP cron and enable uPnP in firewall.yml, or the opposite.
+            action_help: Manage port forwarding using UPnP
             api: GET /firewall/upnp
             arguments:
                 action:
-                    help: enable/disable
                     choices:
                         - enable
                         - disable
+                        - status
                         - reload
-                        - []
-                    nargs: "*"
+                    nargs: "?"
+                    default: status
+                --no-refresh:
+                    help: Do not refresh port forwarding
+                    action: store_true
 
         ### firewall_stop()
         stop:

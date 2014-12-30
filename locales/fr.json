@@ -6,6 +6,7 @@
     "installation_complete" : "Installation terminée",
     "installation_failed" : "Échec de l'installation",
     "unexpected_error" : "Une erreur inattendue est survenue",
+    "action_invalid" : "Action '{:s}' incorrecte",
 
     "license_undefined" : "indéfinie",
     "no_appslist_found" : "Aucune liste d'applications trouvée",
@@ -72,10 +73,10 @@
     "port_already_opened" : "Le port {:d} est déjà ouvert",
     "port_already_closed" : "Le port {:d} est déjà fermé",
     "iptables_unavailable" : "Vous ne pouvez pas faire joujou avec iptables ici. Vous êtes sûrement dans un conteneur, autrement votre noyau ne le supporte pas.",
-    "upnp_dev_not_found" : "Aucun périphérique compatible uPnP trouvé",
-    "upnp_port_open_failed" : "Impossible d'ouvrir les ports avec uPnP",
-    "upnp_enabled" : "uPnP activé avec succès",
-    "upnp_disabled" : "uPnP désactivé avec succès",
+    "upnp_dev_not_found" : "Aucun périphérique compatible UPnP trouvé",
+    "upnp_port_open_failed" : "Impossible d'ouvrir les ports avec UPnP",
+    "upnp_enabled" : "UPnP activé avec succès",
+    "upnp_disabled" : "UPnP désactivé avec succès",
     "firewall_reloaded" : "Pare-feu rechargé avec succès",
 
     "hook_list_by_invalid" : "Propriété pour lister les scripts incorrecte",

@@ -6,6 +6,7 @@
     "installation_complete" : "Installation complete",
     "installation_failed" : "Installation failed",
     "unexpected_error" : "An unexpected error occured",
+    "action_invalid" : "Invalid action '{:s}'",
 
     "license_undefined" : "undefined",
     "no_appslist_found" : "No apps list found",
@@ -72,10 +73,10 @@
     "port_already_opened" : "Port {:d} is already opened",
     "port_already_closed" : "Port {:d} is already closed",
     "iptables_unavailable" : "You cannot play with iptables here. You are either in a container or your kernel does not support it.",
-    "upnp_dev_not_found" : "No uPnP device found",
-    "upnp_port_open_failed" : "Unable to open uPnP ports",
-    "upnp_enabled" : "uPnP successfully enabled",
-    "upnp_disabled" : "uPnP successfully disabled",
+    "upnp_dev_not_found" : "No UPnP device found",
+    "upnp_port_open_failed" : "Unable to open UPnP ports",
+    "upnp_enabled" : "UPnP successfully enabled",
+    "upnp_disabled" : "UPnP successfully disabled",
     "firewall_reloaded" : "Firewall successfully reloaded",
 
     "hook_list_by_invalid" : "Invalid property to list hook by",
