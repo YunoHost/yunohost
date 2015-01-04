@@ -36,27 +36,6 @@ except ImportError:
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-""" Search the ssh port in ssh config file
-    If we don't find the ssh port we define 22"""
-
-try:
-  with open('/etc/ssh/sshd_config') as ssh_config_file:
-    for line in ssh_config_file:
-      line0 = line.split(" ")[0]
-
-      if line0 == 'Port':
-        ssh_port = line.split(' ')[1]
-        ssh_port = ssh_port.rstrip('\n\r')
-
-  ssh_config_file.close()
-
-  if ssh_port == '':
-    ssh_port = '22'
-
-except:
-  ssh_port = '22'
-
-ssh_port = int(ssh_port)
 firewall_file = '/etc/yunohost/firewall.yml'
 upnp_cron_job = '/etc/cron.d/yunohost-firewall-upnp'
 
@@ -173,6 +152,7 @@ def firewall_reload():
 
     firewall = firewall_list(raw=True)
     upnp = firewall['uPnP']['enabled']
+    ssh_port = _get_ssh_port()
 
     # IPv4
     if os.system("iptables -P INPUT ACCEPT") != 0:
@@ -352,3 +332,20 @@ def firewall_stop():
 
     if os.path.exists(upnp_cron_job):
         firewall_upnp('disable')
+
+
+def _get_ssh_port(default=22):
+    """Return the SSH port to use
+
+    Retrieve the SSH port from the sshd_config file or used the default
+    one if it's not defined.
+    """
+    from moulinette.utils.text import searchf
+    try:
+        m = searchf(r'^Port[ \t]+([0-9]+)$',
+                    '/etc/ssh/sshd_config', count=-1)
+        if m:
+            return int(m)
+    except:
+        pass
+    return default
