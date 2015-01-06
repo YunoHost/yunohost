@@ -98,43 +98,43 @@ user:
                 username:
                     help: The unique username to create
                     extra:
-                        pattern:
-                            - '^[a-z0-9_]+$'
-                            - pattern_username
+                        pattern: &pattern_username
+                            - !!str ^[a-z0-9_]+$
+                            - "pattern_username"
                 -f:
                     full: --firstname
                     extra:
                         ask: ask_firstname
                         required: True
-                        pattern:
-                            - "^([^\\W\\d_]{2,30}[ ,.'-]{0,3})+$"
-                            - pattern_firstname
+                        pattern: &pattern_firstname
+                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - "pattern_firstname"
                 -l:
                     full: --lastname
                     extra:
                         ask: ask_lastname
                         required: True
-                        pattern:
-                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
-                            - pattern_lastname
+                        pattern: &pattern_lastname
+                            - !!str ^([^\W\d_]{2,30}[ ,.']{0,3})+$
+                            - "pattern_lastname"
                 -m:
                     full: --mail
                     help: Main unique email address
                     extra:
                         ask: ask_email
                         required: True
-                        pattern:
-                            - '^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$'
-                            - pattern_email
+                        pattern: &pattern_email
+                            - !!str ^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$
+                            - "pattern_email"
                 -p:
                     full: --password
                     help: User password
                     extra:
                         password: ask_password
                         required: True
-                        pattern:
-                            - '^.{3,}$'
-                            - pattern_password
+                        pattern: &pattern_password
+                            - !!str ^.{3,}$
+                            - "pattern_password"
 
         ### user_delete()
         delete:
@@ -146,9 +146,7 @@ user:
                 username:
                     help: Username to delete
                     extra:
-                        pattern:
-                            - '^[a-z0-9_]+$'
-                            - pattern_username
+                        pattern: *pattern_username
                 --purge:
                     action: store_true
 
@@ -164,33 +162,27 @@ user:
                 -f:
                     full: --firstname
                     extra:
-                        pattern:
-                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
-                            - pattern_firstname
+                        pattern: *pattern_firstname
                 -l:
                     full: --lastname
                     extra:
-                        pattern:
-                            - "^([^\\W\\d_]{2,30}[ ,.']{0,3})+$"
-                            - pattern_lastname
+                        pattern: *pattern_lastname
                 -m:
                     full: --mail
                     extra:
-                        pattern:
-                            - '^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$'
-                            - pattern_email
+                        pattern: *pattern_email
                 -p:
                     full: --change-password
                     help: New password to set
                     metavar: PASSWORD
                     extra:
-                        pattern:
-                            - '^.{3,}$'
-                            - pattern_password
+                        pattern: *pattern_password
                 --add-mailforward:
                     help: Mailforward addresses to add
                     nargs: "*"
                     metavar: MAIL
+                    extra:
+                        pattern: *pattern_email
                 --remove-mailforward:
                     help: Mailforward addresses to remove
                     nargs: "*"
@@ -199,6 +191,8 @@ user:
                     help: Mail aliases to add
                     nargs: "*"
                     metavar: MAIL
+                    extra:
+                        pattern: *pattern_email
                 --remove-mailalias:
                     help: Mail aliases to remove
                     nargs: "*"
@@ -253,9 +247,9 @@ domain:
                 domain:
                     help: Domain name to add
                     extra:
-                        pattern:
-                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
-                            - pattern_domain
+                        pattern: &pattern_domain
+                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$
+                            - "pattern_domain"
                 -d:
                     full: --dyndns
                     help: Subscribe to the DynDNS service
@@ -271,9 +265,7 @@ domain:
                 domain:
                     help: Domain to delete
                     extra:
-                        pattern:
-                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
-                            - pattern_domain
+                        pattern: *pattern_domain
 
         ### domain_info()
 #        info:
@@ -307,9 +299,9 @@ app:
                     full: --name
                     help: Name of the list (default fapp)
                     extra:
-                        pattern:
-                            - '^[a-z0-9_]+$'
-                            - pattern_listname
+                        pattern: &pattern_listname
+                            - !!str ^[a-z0-9_]+$
+                            - "pattern_listname"
 
         ### app_listlists()
         listlists:
@@ -325,9 +317,7 @@ app:
                     help: Name of the list to remove
                     extra:
                         ask: ask_list_to_remove
-                        pattern:
-                            - '^[a-z0-9_]+$'
-                            - pattern_listname
+                        pattern: *pattern_listname
 
         ### app_list()
         list:
@@ -376,9 +366,7 @@ app:
                     full: --user
                     help: Allowed app map for a user
                     extra:
-                        pattern:
-                            - '^[a-z0-9_]+$'
-                            - pattern_username
+                        pattern: *pattern_username
 
         ### app_install()
         install:
@@ -454,9 +442,9 @@ app:
                 port:
                     help: Port to check
                     extra:
-                        pattern:
-                            - '^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
-                            - pattern_port
+                        pattern: &pattern_port
+                            - !!str ^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$
+                            - "pattern_port"
 
         ### app_checkurl()
         checkurl:
@@ -568,9 +556,9 @@ backup:
                     full: --name
                     help: Name of the backup archive
                     extra:
-                        pattern:
-                            - '^[\w\-\.]{1,30}(?<!\.)$'
-                            - pattern_backup_archive_name
+                        pattern: &pattern_backup_archive_name
+                            - !!str ^[\w\-\.]{1,30}(?<!\.)$
+                            - "pattern_backup_archive_name"
                 -d:
                     full: --description
                     help: Short description of the backup
@@ -583,7 +571,7 @@ backup:
                     action: store_true
                 --hooks:
                     help: List of backup hooks names to execute
-                    nargs: '*'
+                    nargs: "*"
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
@@ -599,7 +587,7 @@ backup:
                     help: Name of the local backup archive
                 --hooks:
                     help: List of restauration hooks names to execute
-                    nargs: '*'
+                    nargs: "*"
                 --ignore-apps:
                     help: Do not restore apps
                     action: store_true
@@ -780,7 +768,7 @@ service:
                 -l:
                     full: --log
                     help: Absolute path to log file to display
-                    nargs: +
+                    nargs: "+"
                 -r:
                     full: --runlevel
                     help: Runlevel priority of the service
@@ -801,7 +789,7 @@ service:
             arguments:
                 names:
                     help: Service name to start
-                    nargs: +
+                    nargs: "+"
                     metavar: NAME
 
         ### service_stop()
@@ -811,7 +799,7 @@ service:
             arguments:
                 names:
                     help: Service name to stop
-                    nargs: +
+                    nargs: "+"
                     metavar: NAME
 
         ### service_enable()
@@ -821,7 +809,7 @@ service:
             arguments:
                 names:
                     help: Service name to enable
-                    nargs: +
+                    nargs: "+"
                     metavar: NAME
 
         ### service_disable()
@@ -831,7 +819,7 @@ service:
             arguments:
                 names:
                     help: Service name to disable
-                    nargs: +
+                    nargs: "+"
                     metavar: NAME
 
         ### service_status()
@@ -890,9 +878,7 @@ firewall:
                 port:
                     help: Port to open
                     extra:
-                        pattern:
-                            - '^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
-                            - pattern_port
+                        pattern: *pattern_port
                 protocol:
                     help: Protocol associated with port
                     choices:
@@ -916,9 +902,7 @@ firewall:
                 port:
                     help: Port to close
                     extra:
-                        pattern:
-                            - '^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$'
-                            - pattern_port
+                        pattern: *pattern_port
                 protocol:
                     help: Protocol associated with port
                     choices:
@@ -974,6 +958,8 @@ dyndns:
                 -d:
                     full: --domain
                     help: Full domain to subscribe with
+                    extra:
+                        pattern: *pattern_domain
                 -k:
                     full: --key
                     help: Public DNS key
@@ -989,6 +975,8 @@ dyndns:
                 -d:
                     full: --domain
                     help: Full domain to subscribe with
+                    extra:
+                        pattern: *pattern_domain
                 -k:
                     full: --key
                     help: Public DNS key
@@ -1032,10 +1020,8 @@ tools:
                     full: --new-password
                     extra:
                         password: ask_new_admin_password
+                        pattern: *pattern_password
                         required: True
-                        pattern:
-                            - '^.{3,}$'
-                            - pattern_password
 
         ### tools_maindomain()
         maindomain:
@@ -1047,15 +1033,11 @@ tools:
                 -o:
                     full: --old-domain
                     extra:
-                        pattern:
-                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
-                            - pattern_domain
+                        pattern: *pattern_domain
                 -n:
                     full: --new-domain
                     extra:
-                        pattern:
-                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
-                            - pattern_domain
+                        pattern: *pattern_domain
 
         ### tools_postinstall()
         postinstall:
@@ -1070,19 +1052,15 @@ tools:
                     help: YunoHost main domain
                     extra:
                         ask: ask_main_domain
-                        pattern:
-                            - '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$'
-                            - pattern_domain
+                        pattern: *pattern_domain
                         required: True
                 -p:
                     full: --password
                     help: YunoHost admin password
                     extra:
                         password: ask_new_admin_password
+                        pattern: *pattern_password
                         required: True
-                        pattern:
-                            - '^.{3,}$'
-                            - pattern_password
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
                     action: store_true
@@ -1173,11 +1151,11 @@ hook:
                 -n:
                     full: --hooks
                     help: List of hooks names to execute
-                    nargs: '*'
+                    nargs: "*"
                 -a:
                     full: --args
                     help: Ordered list of arguments to pass to the script
-                    nargs: '*'
+                    nargs: "*"
 
         ### hook_check()
         check:
