@@ -68,15 +68,18 @@
     "dyndns_cron_remove_failed" : "Impossible d'enlever la tâche cron pour DynDNS",
     "dyndns_cron_removed" : "Tâche cron pour DynDNS enlevée avec succès",
 
-    "port_available" : "Le port {:d} est disponible",
-    "port_unavailable" : "Le port {:d} est indisponible",
-    "port_already_opened" : "Le port {:d} est déjà ouvert",
-    "port_already_closed" : "Le port {:d} est déjà fermé",
+    "port_available" : "Le port {} est disponible",
+    "port_unavailable" : "Le port {} est indisponible",
+    "port_already_opened" : "Le port {} est déjà ouvert pour l'{:s}",
+    "port_already_closed" : "Le port {} est déjà fermé pour l'{:s}",
     "iptables_unavailable" : "Vous ne pouvez pas faire joujou avec iptables ici. Vous êtes sûrement dans un conteneur, autrement votre noyau ne le supporte pas.",
+    "ip6tables_unavailable" : "Vous ne pouvez pas faire joujou avec ip6tables ici. Vous êtes sûrement dans un conteneur, autrement votre noyau ne le supporte pas.",
     "upnp_dev_not_found" : "Aucun périphérique compatible UPnP trouvé",
     "upnp_port_open_failed" : "Impossible d'ouvrir les ports avec UPnP",
     "upnp_enabled" : "UPnP activé avec succès",
     "upnp_disabled" : "UPnP désactivé avec succès",
+    "firewall_rules_cmd_failed" : "Des commandes de règles du pare-feu ont échoués. Plus d'informations sont disponibles dans le journal d'erreurs.",
+    "firewall_reload_failed" : "Impossible de recharger le pare-feu",
     "firewall_reloaded" : "Pare-feu rechargé avec succès",
 
     "hook_list_by_invalid" : "Propriété pour lister les scripts incorrecte",
@@ -181,6 +184,7 @@
     "pattern_domain" : "Doit être un nom de domaine valide (ex : mon-domaine.org)",
     "pattern_listname" : "Doit être composé uniquement de caractères alphanumérique et de tiret bas",
     "pattern_port" : "Doit être un numéro de port valide (0-65535)",
+    "pattern_port_or_range" : "Doit être un numéro de port valide (0-65535) ou une gamme de ports (ex : 100:200)",
     "pattern_backup_archive_name" : "Doit être un nom de fichier valide composé de caractères alphanumérique et -_. uniquement",
 
     "format_datetime_short" : "%d/%m/%Y %H:%M"
