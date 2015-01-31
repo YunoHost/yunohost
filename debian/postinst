@@ -1,0 +1,56 @@
+#!/bin/bash
+
+TMP=/usr/share/yunohost/yunohost-config/moulinette
+
+if [ ! -d /etc/yunohost ];
+then
+	mkdir -p /etc/yunohost
+fi
+
+# Allow users to access /media directory
+if [ ! -d /etc/skel/media ];
+then
+        mkdir -p /media
+	ln -s /media /etc/skel/
+fi
+
+#Firewall
+grep -q "UPNP:" /etc/yunohost/firewall.yml > /dev/null 2>&1
+if [[ $? -eq 0 ]] || [ ! -f /etc/yunohost/firewall.yml ];
+then
+	cp $TMP/firewall.yml /etc/yunohost/
+fi
+
+# App fetchlist
+if [ -f /etc/cron.d/yunohost-applist-yunohost ];
+then
+    sed -i "s/--no-ldap //g" /etc/cron.d/yunohost-applist-yunohost
+fi
+
+# Service list
+if [ ! -f /etc/yunohost/services.yml ];
+then
+	cp $TMP/services.yml /etc/yunohost/
+fi
+
+# Stop old API
+ps aux | grep "yunohost.tac" | grep -qv grep
+if [[ $? -eq 0 ]];
+then
+    killall twistd
+fi
+
+rm -rf /var/cache/moulinette/*
+update-rc.d yunohost-api defaults
+service yunohost-api restart
+
+# Reload SSOwat conf if obsolete
+if [ -f /etc/yunohost/installed ];
+then
+    yunohost firewall upnp | grep -qi "true"
+    if [[ $? -eq 0 ]];
+    then
+        yunohost firewall upnp enable
+    fi
+    yunohost app ssowatconf
+fi

@@ -1,0 +1,74 @@
+#! /bin/bash
+### BEGIN INIT INFO
+# Provides:          yunohost-api
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop YunoHost API
+### END INIT INFO
+
+DAEMON=/usr/bin/yunohost-api
+DAEMON_OPTS=""
+
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
+
+logger "YunoHost API: Start script executed"
+
+case "$1" in
+  start)
+    logger "YunoHost API: Starting"
+    log_daemon_msg "Starting API: YunoHost"
+    if [[ -f /etc/nginx/conf.d/openresty.conf ]];
+    then
+        DAEMON_OPTS="--no-websocket"
+    fi
+    start-stop-daemon --start --background --pidfile /var/run/yunohost-api.pid --make-pidfile \
+        --exec /bin/bash -- -c "$DAEMON $DAEMON_OPTS >> /var/log/yunohost.log 2>&1"
+    log_end_msg $?
+    ;;
+  stop)
+    logger "YunoHost API: Stopping"
+    log_daemon_msg "Stopping API: YunoHost"
+    if [ -f /var/run/yunohost-api.pid ]; then
+        kill `cat /var/run/yunohost-api.pid` > /dev/null 2>&1
+        rm -f /var/run/yunohost-api.pid
+    fi
+    kill `ps aux | grep 'python /usr/bin/yunohost-api' | grep -v grep | awk '{print $2}'` > /dev/null 2>&1
+    kill `ps aux | grep 'yunohost-api' | grep -v grep | grep -v stop | awk '{print $2}'` > /dev/null 2>&1
+    log_end_msg 0
+    ;;
+  restart)
+    logger "YunoHost API: Restarting"
+    log_daemon_msg "Restarting API: YunoHost"
+    if [ -f /var/run/yunohost-api.pid ]; then
+        kill `cat /var/run/yunohost-api.pid` > /dev/null 2>&1
+        rm -f /var/run/yunohost-api.pid
+    fi
+    kill `ps aux | grep 'python /usr/bin/yunohost-api' | grep -v grep | awk '{print $2}'` > /dev/null 2>&1
+    kill `ps aux | grep 'yunohost-api' | grep -v grep | grep -v restart | awk '{print $2}'` > /dev/null 2>&1
+    kill `ps aux | grep 'yunohost.tac' | grep -v grep | awk '{print $2}'` > /dev/null 2>&1
+    if [[ -f /etc/nginx/conf.d/openresty.conf ]];
+    then
+        DAEMON_OPTS="--no-websocket"
+    fi
+    start-stop-daemon --start --background --pidfile /var/run/yunohost-api.pid --make-pidfile \
+        --exec /bin/bash -- -c "$DAEMON $DAEMON_OPTS >> /var/log/yunohost.log 2>&1"
+    log_end_msg $?
+    ;;
+  status)
+    logger "YunoHost API: Running"
+    log_daemon_msg "YunoHost API: Running"
+    cat /var/run/yunohost-api.pid > /dev/null 2>&1
+    log_end_msg $?
+    ;;
+  *)
+    logger "YunoHost API: Invalid usage"
+    echo "Usage: /etc/init.d/yunohost-api {start|stop|restart|status}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
