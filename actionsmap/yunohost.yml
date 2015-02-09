@@ -554,9 +554,8 @@ app:
         listmodules:
             action_help: List all web admin modules
             api: GET /modules
-        configuration:        
-            authenticate:
-            authenticator: ldap-anonymous
+            configuration:        
+                authenticate: false
 
 #############################
 #          Backup           #
