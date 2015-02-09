@@ -18,9 +18,6 @@ mysql:
    log: [/var/log/mysql.log,/var/log/mysql.err]
 glances:
    status: service
-tahoe-lafs:
-   status: ps aux | grep tahoe |grep -v grep
-   log: /home/yunohost.backup/tahoe/logs/twistd.log
 ssh:
    status: service
    log: /var/log/auth.log

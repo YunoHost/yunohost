@@ -1,0 +1,21 @@
+Source: moulinette-yunohost
+Section: net
+Priority: extra
+Maintainer: Jérôme Lebleu <jerome.lebleu@mailoo.org>
+Build-Depends: debhelper (>=8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://yunohost.org/
+
+Package: moulinette-yunohost
+Architecture: all
+Depends: moulinette,
+    python-psutil,
+    python-requests,
+    glances,
+    python-pip,
+    rubygems,
+    pyminiupnpc,
+    dnsutils
+Description: YunoHost Python scripts
+ Python functions to manage a YunoHost instance
+

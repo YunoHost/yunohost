@@ -1,0 +1,6 @@
+bin/* /usr/bin/
+data/actionsmap/* /usr/share/moulinette/actionsmap/
+data/hooks/* /usr/share/yunohost/hooks/
+data/other/* /usr/share/yunohost/yunohost-config/moulinette/
+lib/yunohost/*.py /usr/lib/moulinette/yunohost/
+locales/* /usr/lib/moulinette/yunohost/locales/

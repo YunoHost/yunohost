@@ -316,14 +316,11 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     app_ssowatconf(auth)
 
     # Change LDAP admin password
-    tools_adminpw(old_password='yunohost', new_password=password)
+    tools_adminpw(auth, password)
 
-    # Enable uPnP
-    firewall_upnp(action=['enable'])
-    try:
-        firewall_reload()
-    except MoulinetteError:
-        firewall_upnp(action=['disable'])
+    # Enable UPnP silently and reload firewall
+    firewall_upnp('enable', no_refresh=True)
+    firewall_reload()
 
     # Enable iptables at boot time
     os.system('update-rc.d yunohost-firewall defaults')

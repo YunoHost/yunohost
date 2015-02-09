@@ -6,6 +6,7 @@
     "installation_complete" : "Installation complete",
     "installation_failed" : "Installation failed",
     "unexpected_error" : "An unexpected error occured",
+    "action_invalid" : "Invalid action '{:s}'",
 
     "license_undefined" : "undefined",
     "no_appslist_found" : "No apps list found",
@@ -67,15 +68,18 @@
     "dyndns_cron_remove_failed" : "Unable to remove DynDNS cron job",
     "dyndns_cron_removed" : "DynDNS cron job successfully removed",
 
-    "port_available" : "Port {:d} is available",
-    "port_unavailable" : "Port {:d} is not available",
-    "port_already_opened" : "Port {:d} is already opened",
-    "port_already_closed" : "Port {:d} is already closed",
+    "port_available" : "Port {} is available",
+    "port_unavailable" : "Port {} is not available",
+    "port_already_opened" : "Port {} is already opened for {:s} connections",
+    "port_already_closed" : "Port {} is already closed for {:s} connections",
     "iptables_unavailable" : "You cannot play with iptables here. You are either in a container or your kernel does not support it.",
-    "upnp_dev_not_found" : "No uPnP device found",
-    "upnp_port_open_failed" : "Unable to open uPnP ports",
-    "upnp_enabled" : "uPnP successfully enabled",
-    "upnp_disabled" : "uPnP successfully disabled",
+    "ip6tables_unavailable" : "You cannot play with ip6tables here. You are either in a container or your kernel does not support it.",
+    "upnp_dev_not_found" : "No UPnP device found",
+    "upnp_port_open_failed" : "Unable to open UPnP ports",
+    "upnp_enabled" : "UPnP successfully enabled",
+    "upnp_disabled" : "UPnP successfully disabled",
+    "firewall_rules_cmd_failed" : "Some firewall rules commands have failed. For more information, see the log.",
+    "firewall_reload_failed" : "Unable to reload firewall",
     "firewall_reloaded" : "Firewall successfully reloaded",
 
     "hook_list_by_invalid" : "Invalid property to list hook by",
@@ -180,6 +184,7 @@
     "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_listname" : "Must be alphanumeric and underscore characters only",
     "pattern_port" : "Must be a valid port number (i.e. 0-65535)",
+    "pattern_port_or_range" : "Must be a valid port number (i.e. 0-65535) or range of ports (e.g. 100:200)",
     "pattern_backup_archive_name" : "Must be a valid filename with alphanumeric and -_. characters only",
 
     "format_datetime_short" : "%m/%d/%Y %I:%M %p"

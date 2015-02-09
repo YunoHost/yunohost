@@ -252,7 +252,7 @@ def hook_exec(file, args=None):
         args -- Arguments to pass to the script
 
     """
-    from moulinette.helpers import NonBlockingStreamReader
+    from moulinette.utils.stream import NonBlockingStreamReader
     from yunohost.app import _value_for_locale
 
     if isinstance(args, list):
