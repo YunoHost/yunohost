@@ -35,7 +35,7 @@
 _global:
     configuration:
         authenticate:
-            - cli
+            - api
         authenticator:
             default:
                 vendor: ldap
