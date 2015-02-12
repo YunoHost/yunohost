@@ -1,3 +1,9 @@
+moulinette-yunohost (2.1.1) testing; urgency=low
+
+  * Bump version to 2.1.1 to bootstrap new build workflow
+
+ -- Julien Malik <julien.malik@paraiso.me>  Thu, 12 Feb 2015 13:32:37 +0100
+
 moulinette-yunohost (2.0-rc~megusta33) test; urgency=low
 
   * Test build: [enh] Use dnsmasq
