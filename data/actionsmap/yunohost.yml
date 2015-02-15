@@ -124,7 +124,7 @@ user:
                         ask: ask_email
                         required: True
                         pattern: &pattern_email
-                            - !!str ^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,6}$
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
                             - "pattern_email"
                 -p:
                     full: --password
@@ -248,7 +248,7 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern: &pattern_domain
-                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+[a-z]{2,}$
+                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
                             - "pattern_domain"
                 -d:
                     full: --dyndns
