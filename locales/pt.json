@@ -139,5 +139,5 @@
     "pattern_password": "Deve ter no mínimo 3 caracteres",
     "pattern_domain": "Deve ser um nome de domínio válido (p.e. meu-dominio.org)",
     "pattern_listname": "Apenas são permitidos caracteres alfanuméricos e travessões",
-    "pattern_port": "Deve ser um número de porta válido (entre 0-65535)",
+    "pattern_port": "Deve ser um número de porta válido (entre 0-65535)"
 }

@@ -172,5 +172,5 @@
     "pattern_listname": "Los caracteres deben ser alfanuméricos o el guion bajo.",
     "pattern_port": "El numéro del puerto debe ser válido (i.e. 0-65535)",
     "pattern_port_or_range": "El numéro del puerto debe ser válido (i.e. 0-65535) o un intervalo de puertos (e.g. 100:200)",
-    "pattern_backup_archive_name": "Debe que ser un nombre de archivo válido con los caracteres alfanumericos, o los -_.",
+    "pattern_backup_archive_name": "Debe que ser un nombre de archivo válido con los caracteres alfanumericos, o los -_."
 }

@@ -71,5 +71,5 @@
     "service_enabled": "'{:s}' -dienst erfolgreich aktiviert",
     "service_disable_failed": "Kann nicht '{:s}' -dienst deaktivieren",
     "service_disabled": "'{:s}' -dienst erfolgreich deaktiviert",
-    "service_status_failed": "Kann nicht '{:s}' -dienststatus feststellen",
+    "service_status_failed": "Kann nicht '{:s}' -dienststatus feststellen"
 }
