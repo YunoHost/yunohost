@@ -1,5 +1,4 @@
 {
-    "yunohost" : "YunoHost",
     "yunohost_not_installed" : "YunoHost is not or not correctly installed. Please execute 'yunohost tools postinstall'.",
 
     "upgrade_complete" : "Upgrade complete",
