@@ -756,12 +756,15 @@ def app_setting(app, key, value=None, delete=False):
         if app_settings is not None and key in app_settings:
             return app_settings[key]
     else:
+        yaml_settings=['redirected_urls','redirected_regex']
         # Set the value
         if app_settings is None:
             app_settings = {}
         if delete and key in app_settings:
             del app_settings[key]
         else:
+            if key in yaml_settings:
+                value=yaml.load(value)
             app_settings[key] = value
 
         with open(settings_file, 'w') as f:
@@ -889,6 +892,7 @@ def app_ssowatconf(auth):
     protected_urls = []
     protected_regex = []
     redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
+    redirected_urls ={}
 
     apps = {}
     try:
@@ -924,6 +928,10 @@ def app_ssowatconf(auth):
                 if 'protected_regex' in app_settings:
                     for item in app_settings['protected_regex'].split(','):
                         protected_regex.append(item)
+                if 'redirected_urls' in app_settings:
+                    redirected_urls.update(app_settings['redirected_urls'])
+                if 'redirected_regex' in app_settings:
+                    redirected_regex.update(app_settings['redirected_regex'])
 
     for domain in domains:
         skipped_urls.extend(['/yunohost/admin', '/yunohost/api'])
@@ -944,6 +952,7 @@ def app_ssowatconf(auth):
         'skipped_regex': skipped_regex,
         'unprotected_regex': unprotected_regex,
         'protected_regex': protected_regex,
+        'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
         'users': users,
     }
