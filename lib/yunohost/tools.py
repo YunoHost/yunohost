@@ -194,7 +194,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     if dyndns and len(new_domain.split('.')) >= 3:
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
-        except ConnectionError:
+        except requests.ConnectionError:
             pass
         else:
             dyndomains = json.loads(r.text)
@@ -232,7 +232,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     if len(domain.split('.')) >= 3 and not ignore_dyndns:
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
-        except ConnectionError:
+        except requests.ConnectionError:
             pass
         else:
             dyndomains = json.loads(r.text)
