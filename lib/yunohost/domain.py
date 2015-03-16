@@ -131,7 +131,8 @@ def domain_add(auth, domain, dyndns=False):
             'chmod 640 %s/crt.pem'                               % ssl_domain_path,
             'chmod 600 %s/openssl.cnf'                           % ssl_domain_path,
             'chown root:metronome %s/key.pem'                    % ssl_domain_path,
-            'chown root:metronome %s/crt.pem'                    % ssl_domain_path
+            'chown root:metronome %s/crt.pem'                    % ssl_domain_path,
+            'cat %s/ca.pem >> %s/crt.pem'                        % (ssl_domain_path, ssl_domain_path)
         ]
 
         for command in command_list:
