@@ -1,3 +1,23 @@
+moulinette-yunohost (2.1.2) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Ooops, so much yolo kills yolo and actionsmap
+  * [fix] Consider new gTLDs in email and domain regex (fix #46)
+  * [fix] Open TCP port 587 for mail submission
+  * [i18n] Update translations from Transifex
+  * [i18n] Remove unused 'yunohost' translation key
+  * [i18n] Fix JSON syntax errors
+  * [fix] Catch ConnectionError from requests package
+
+  [ zamentur ]
+  * [enh] Add app settings to redirect request
+
+  [ Julien Malik ]
+  * [fix] concatenate CA certificate with domain certificate
+  * [fix] Block XMPP Bosh port 5290
+
+ -- Julien Malik <julien.malik@paraiso.me>  Tue, 17 Mar 2015 16:44:04 +0100
+
 moulinette-yunohost (2.1.1) testing; urgency=low
 
   * Bump version to 2.1.1 to bootstrap new build workflow
