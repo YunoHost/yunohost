@@ -135,6 +135,15 @@ user:
                         pattern: &pattern_password
                             - !!str ^.{3,}$
                             - "pattern_password"
+                -q:
+                    full: --mailbox-quota
+                    help: Mailbox size quota
+                    default: "0"
+                    metavar: "{SIZE|0}"
+                    extra:
+                        pattern: &pattern_mailbox_quota
+                            - !!str ^(\d+[bkMGT])|0$
+                            - "pattern_mailbox_quota"
 
         ### user_delete()
         delete:
@@ -197,6 +206,13 @@ user:
                     help: Mail aliases to remove
                     nargs: "*"
                     metavar: MAIL
+                -q:
+                    full: --mailbox-quota
+                    help: Mailbox size quota
+                    default: "0"
+                    metavar: "{SIZE|0}"
+                    extra:
+                        pattern: *pattern_mailbox_quota
 
         ### user_info()
         info:

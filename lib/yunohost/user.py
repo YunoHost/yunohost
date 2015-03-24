@@ -48,7 +48,8 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
     user_attrs = { 'uid': 'username',
                    'cn': 'fullname',
                    'mail': 'mail',
-                   'maildrop': 'mail-forward' }
+                   'maildrop': 'mail-forward',
+                   'mailuserquota': 'mailbox-quota' }
     attrs = []
     result_list = []
 
@@ -68,7 +69,7 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('field_invalid', attr))
     else:
-        attrs = [ 'uid', 'cn', 'mail' ]
+        attrs = [ 'uid', 'cn', 'mail', 'mailuserquota' ]
 
     result = auth.search('ou=users,dc=yunohost,dc=org', filter, attrs)
 
@@ -84,7 +85,8 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
     return { 'users' : result_list }
 
 
-def user_create(auth, username, firstname, lastname, mail, password):
+def user_create(auth, username, firstname, lastname, mail, password,
+        mailbox_quota=0):
     """
     Create user
 
@@ -94,6 +96,7 @@ def user_create(auth, username, firstname, lastname, mail, password):
         username -- Must be unique
         mail -- Main mail address must be unique
         password
+        mailbox_quota -- Mailbox size quota
 
     """
     import pwd
@@ -144,6 +147,7 @@ def user_create(auth, username, firstname, lastname, mail, password):
         'uid'           : username,
         'mail'          : mail,
         'maildrop'      : username,
+        'mailuserquota' : mailbox_quota,
         'userPassword'  : pwd,
         'gidNumber'     : uid,
         'uidNumber'     : uid,
@@ -220,7 +224,9 @@ def user_delete(auth, username, purge=False):
     msignals.display(m18n.n('user_deleted'), 'success')
 
 
-def user_update(auth, username, firstname=None, lastname=None, mail=None, change_password=None, add_mailforward=None, remove_mailforward=None, add_mailalias=None, remove_mailalias=None):
+def user_update(auth, username, firstname=None, lastname=None, mail=None,
+        change_password=None, add_mailforward=None, remove_mailforward=None,
+        add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
     """
     Update user informations
 
@@ -319,6 +325,9 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None, change
                                       m18n.n('mail_forward_remove_failed', mail))
         new_attr_dict['maildrop'] = user['maildrop']
 
+    if mailbox_quota is not None:
+        new_attr_dict['mailuserquota'] = mailbox_quota
+
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
        msignals.display(m18n.n('user_updated'), 'success')
        app_ssowatconf(auth)
@@ -335,7 +344,9 @@ def user_info(auth, username):
         username -- Username or mail to get informations
 
     """
-    user_attrs = ['cn', 'mail', 'uid', 'maildrop', 'givenName', 'sn']
+    user_attrs = [
+        'cn', 'mail', 'uid', 'maildrop', 'givenName', 'sn', 'mailuserquota'
+    ]
 
     if len(username.split('@')) is 2:
         filter = 'mail='+ username
@@ -362,6 +373,9 @@ def user_info(auth, username):
 
     if len(user['maildrop']) > 1:
         result_dict['mail-forward'] = user['maildrop'][1:]
+
+    if 'mailuserquota' in user:
+        result_dict['mailbox-quota'] = user['mailuserquota'][0]
 
     if result:
         return result_dict

@@ -180,6 +180,7 @@
     "pattern_lastname" : "Must be a valid last name",
     "pattern_email" : "Must be a valid email address (e.g. someone@domain.org)",
     "pattern_password" : "Must be at least 3 characters long",
+    "pattern_mailbox_quota" : "Must be a size with b/k/M/G/T suffix or 0 to disable the quota",
     "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_listname" : "Must be alphanumeric and underscore characters only",
     "pattern_port" : "Must be a valid port number (i.e. 0-65535)",
