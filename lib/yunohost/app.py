@@ -555,9 +555,7 @@ def app_addaccess(auth, apps, users):
     from yunohost.hook import hook_callback
 
     if not users:
-        users = []
-        for user in user_list(auth)['users']:
-            users.append(user['username'])
+        users = user_list(auth)['users'].keys()
 
     if not isinstance(users, list): users = [users]
     if not isinstance(apps, list): apps = [apps]
@@ -637,12 +635,12 @@ def app_removeaccess(auth, apps, users):
                         else:
                             new_users = new_users +','+ allowed_user
             else:
-                new_users=''
-                for user in user_list(auth)['users']:
-                    if user['username'] not in users:
+                new_users = ''
+                for username in user_list(auth)['users'].keys():
+                    if username not in users:
                         if new_users == '':
-                            new_users = user['username']
-                        new_users=new_users+','+user['username']
+                            new_users = username
+                        new_users += ',' + username
 
             app_setting(app, 'allowed_users', new_users.strip())
             hook_callback('post_app_removeaccess', args=[app, new_users])
@@ -882,8 +880,8 @@ def app_ssowatconf(auth):
     domains = domain_list(auth)['domains']
 
     users = {}
-    for user in user_list(auth)['users']:
-        users[user['username']] = app_map(user=user['username'])
+    for username in user_list(auth)['users'].keys():
+        users[username] = app_map(user=username)
 
     skipped_urls = []
     skipped_regex = []
