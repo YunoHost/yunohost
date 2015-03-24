@@ -50,8 +50,8 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                    'mail': 'mail',
                    'maildrop': 'mail-forward',
                    'mailuserquota': 'mailbox-quota' }
-    attrs = []
-    result_list = []
+    attrs = [ 'uid' ]
+    users = {}
 
     # Set default arguments values
     if offset is None:
@@ -81,8 +81,9 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                     entry[user_attrs[attr]] = values[0]
                 except:
                     pass
-            result_list.append(entry)
-    return { 'users' : result_list }
+            uid = entry.pop(user_attrs['uid'])
+            users[uid] = entry
+    return { 'users' : users }
 
 
 def user_create(auth, username, firstname, lastname, mail, password,
