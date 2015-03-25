@@ -527,7 +527,7 @@ app:
                     nargs: "+"
                 -u:
                     full: --users
-                    nargs: "+"
+                    nargs: "*"
 
         ### app_removeaccess() TODO: Write help
         removeaccess:
@@ -541,7 +541,7 @@ app:
                     nargs: "+"
                 -u:
                     full: --users
-                    nargs: "+"
+                    nargs: "*"
 
         ### app_clearaccess()
         clearaccess:
