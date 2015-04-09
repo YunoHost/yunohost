@@ -34,7 +34,6 @@ import os.path
 import errno
 import os
 import cPickle as pickle
-from subprocess import Popen, PIPE
 from urllib import urlopen
 from datetime import datetime, timedelta
 
