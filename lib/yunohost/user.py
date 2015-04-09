@@ -384,7 +384,8 @@ def user_info(auth, username):
            userquota = subprocess.check_output(cmd,stderr=subprocess.STDOUT,
                                              shell=True)
            quotavalue = re.findall(r'\d+', userquota)
-           result = '%s / %s (%s%s)' % ( _convertSize(eval(quotavalue[0])), user['mailuserquota'][0], quotavalue[2], '%')
+           result = '%s / %s (%s%s)' % ( _convertSize(eval(quotavalue[0])), 
+                                             user['mailuserquota'][0], quotavalue[2], '%')
            result_dict['mailbox-quota'] = result
         else:
            result_dict['mailbox-quota'] = m18n.n('unlimit')
