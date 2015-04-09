@@ -542,7 +542,7 @@ def app_remove(auth, app):
     msignals.display(m18n.n('app_removed', app), 'success')
 
 
-def app_addaccess(auth, apps, users):
+def app_addaccess(auth, apps, users=[]):
     """
     Grant access right to users (everyone by default)
 
@@ -597,7 +597,7 @@ def app_addaccess(auth, apps, users):
     return { 'allowed_users': new_users.split(',') }
 
 
-def app_removeaccess(auth, apps, users):
+def app_removeaccess(auth, apps, users=[]):
     """
     Revoke access right to users (everyone by default)
 
