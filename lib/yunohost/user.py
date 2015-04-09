@@ -30,6 +30,9 @@ import random
 import string
 import json
 import errno
+import subprocess
+import math
+import re
 
 from moulinette.core import MoulinetteError
 
@@ -376,9 +379,24 @@ def user_info(auth, username):
         result_dict['mail-forward'] = user['maildrop'][1:]
 
     if 'mailuserquota' in user:
-        result_dict['mailbox-quota'] = user['mailuserquota'][0]
-
+        if user['mailuserquota'][0] != '0': 
+           cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
+           userquota = subprocess.check_output(cmd,stderr=subprocess.STDOUT,
+                                             shell=True)
+           quotavalue = re.findall(r'\d+', userquota)
+           result = '%s / %s (%s%s)' % ( _convertSize(eval(quotavalue[0])), user['mailuserquota'][0], quotavalue[2], '%')
+           result_dict['mailbox-quota'] = result
+        else:
+           result_dict['mailbox-quota'] = m18n.n('unlimit')
+ 
     if result:
         return result_dict
     else:
         raise MoulinetteError(167, m18n.n('user_info_failed'))
+
+def _convertSize(num, suffix=''):
+    for unit in ['K','M','G','T','P','E','Z']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
