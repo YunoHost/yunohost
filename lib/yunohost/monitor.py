@@ -32,9 +32,12 @@ import subprocess
 import xmlrpclib
 import os.path
 import errno
+import os
 import cPickle as pickle
+from subprocess import Popen, PIPE
 from urllib import urlopen
 from datetime import datetime, timedelta
+
 
 from moulinette.core import MoulinetteError
 
@@ -151,6 +154,12 @@ def monitor_network(units=None, human_readable=False):
     glances = _get_glances_api()
     result = {}
 
+    cmd_check_smtp = os.system('/bin/nc -z -w1 yunohost.org 25')
+    if cmd_check_smtp == 0:
+        smtp_check = m18n.n('network_check_smtp_ok')
+    else:
+        smtp_check = m18n.n('network_check_smtp_ko')
+
     if units is None:
         units = ['usage', 'infos']
 
@@ -201,7 +210,8 @@ def monitor_network(units=None, human_readable=False):
             result[u] = {
                 'public_ip': p_ip,
                 'local_ip': l_ip,
-                'gateway': gateway
+                'gateway': gateway,
+                'smtp_check' : smtp_check
             }
         else:
             raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', u))

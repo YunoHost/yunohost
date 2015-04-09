@@ -116,6 +116,9 @@
     "service_no_log" : "No log to display for service '{:s}'",
     "service_cmd_exec_failed" : "Unable to execute command '{:s}'",
 
+    "network_check_smtp_ok" : "Outbound mail (SMTP port 25) is not blocked",
+    "network_check_smtp_ko" : "Outbound mail (SMTP port 25) seems to be blocked by your network",
+
     "ldap_initialized" : "LDAP successfully initialized",
     "admin_password_change_failed" : "Unable to change password",
     "admin_password_changed" : "Administration password successfully changed",
