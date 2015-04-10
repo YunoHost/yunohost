@@ -33,6 +33,7 @@ import xmlrpclib
 import os.path
 import errno
 import os
+import dns.resolver
 import cPickle as pickle
 from urllib import urlopen
 from datetime import datetime, timedelta
@@ -160,7 +161,7 @@ def monitor_network(units=None, human_readable=False):
         smtp_check = m18n.n('network_check_smtp_ko')
 
     if units is None:
-        units = ['usage', 'infos']
+        units = ['check', 'usage', 'infos']
 
     # Get network devices and their addresses
     devices = {}
@@ -173,7 +174,30 @@ def monitor_network(units=None, human_readable=False):
 
     # Retrieve monitoring for unit(s)
     for u in units:
-        if u == 'usage':
+        if u == 'check':
+            result[u] = {}
+            with open('/etc/yunohost/current_host', 'r') as f:
+                domain = f.readline().rstrip()
+            cmd_check_smtp = os.system('/bin/nc -z -w1 yunohost.org 25')
+            if cmd_check_smtp == 0:
+                smtp_check = m18n.n('network_check_smtp_ok')
+            else:
+                smtp_check = m18n.n('network_check_smtp_ko')
+
+            try:
+                answers = dns.resolver.query(domain,'MX')
+                mx_check = {}
+                i = 0
+                for server in answers:
+                    mx_check[i] = server
+                    i = i + 1
+            except:
+                mx_check = m18n.n('network_check_mx_ko')
+            result[u] = {
+                'smtp_check': smtp_check,
+                'mx_check': mx_check
+            }
+        elif u == 'usage':
             result[u] = {}
             for i in json.loads(glances.getNetwork()):
                 iname = i['interface_name']
@@ -210,7 +234,6 @@ def monitor_network(units=None, human_readable=False):
                 'public_ip': p_ip,
                 'local_ip': l_ip,
                 'gateway': gateway,
-                'smtp_check' : smtp_check
             }
         else:
             raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', u))

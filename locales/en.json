@@ -118,6 +118,7 @@
 
     "network_check_smtp_ok" : "Outbound mail (SMTP port 25) is not blocked",
     "network_check_smtp_ko" : "Outbound mail (SMTP port 25) seems to be blocked by your network",
+    "network_check_mx_ko" : "DNS MX record is not set",
 
     "ldap_initialized" : "LDAP successfully initialized",
     "admin_password_change_failed" : "Unable to change password",

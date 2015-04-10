@@ -679,6 +679,12 @@ monitor:
                     action: append_const
                     const: infos
                     dest: units
+                -c:
+                    full: --check
+                    help: Check network configuration
+                    action: append_const
+                    const: check
+                    dest: units
                 -H:
                     full: --human-readable
                     help: Print sizes in human readable format
