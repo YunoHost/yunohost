@@ -178,6 +178,7 @@ def monitor_network(units=None, human_readable=False):
             result[u] = {}
             with open('/etc/yunohost/current_host', 'r') as f:
                 domain = f.readline().rstrip()
+            domain = 'beudi.nohost.com'
             cmd_check_smtp = os.system('/bin/nc -z -w1 yunohost.org 25')
             if cmd_check_smtp == 0:
                 smtp_check = m18n.n('network_check_smtp_ok')
@@ -189,7 +190,8 @@ def monitor_network(units=None, human_readable=False):
                 mx_check = {}
                 i = 0
                 for server in answers:
-                    mx_check[i] = server
+                    mx_id = 'mx%s' %i
+                    mx_check[mx_id] = server
                     i = i + 1
             except:
                 mx_check = m18n.n('network_check_mx_ko')
