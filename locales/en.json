@@ -193,5 +193,18 @@
     "pattern_backup_archive_name" : "Must be a valid filename with alphanumeric and -_. characters only",
 
     "format_datetime_short" : "%m/%d/%Y %I:%M %p"
+    
+    "ask_alias_name" : "Alias name",
+    "ask_alias_mailforward" : "List of email to forward",
+    "pattern_listemail" : "Must be a valid email address list delimited by commas",
+    "pattern_name" : "Must be a valid name",
+    "alias_created" : "Alias successfully created",
+    "alias_creation_failed" : "Unable to create alias",
+    "alias_deletion_failed" : "Unable to delete alias",
+    "alias_deleted" : "Alias successfully deleted",
+    "alias_unknown" : "Unknown alias",
+    "alias_updated" : "Alias successfully updated",
+    "alias_update_failed" : "Unable to update alias",
+    "alias_info_failed" : "Unable to retrieve alias information"
 }
 
