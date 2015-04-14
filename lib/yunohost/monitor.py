@@ -154,12 +154,6 @@ def monitor_network(units=None, human_readable=False):
     glances = _get_glances_api()
     result = {}
 
-    cmd_check_smtp = os.system('/bin/nc -z -w1 yunohost.org 25')
-    if cmd_check_smtp == 0:
-        smtp_check = m18n.n('network_check_smtp_ok')
-    else:
-        smtp_check = m18n.n('network_check_smtp_ko')
-
     if units is None:
         units = ['check', 'usage', 'infos']
 
