@@ -9,3 +9,4 @@
 
 override_dh_installinit:
 	dh_installinit --name=yunohost-api
+	dh_installinit --name=yunohost-firewall
