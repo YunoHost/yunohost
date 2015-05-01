@@ -16,13 +16,12 @@ Depends: moulinette,
     rubygems,
     pyminiupnpc,
     dnsutils,
+    yunohost-firewall,
     python-dnspython
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
 
 Package: yunohost-firewall
 Architecture: all
-Depends: moulinette,
-    moulinette-yunohost
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
