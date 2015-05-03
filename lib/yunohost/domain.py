@@ -160,6 +160,7 @@ def domain_add(auth, domain, dyndns=False):
             with open('%s/%s' % (dnsmasq_config_path, domain)) as f: pass
         except IOError as e:
             zone_lines = [
+             'resolv-file=',
              'address=/%s/%s' % (domain, ip),
              'txt-record=%s,"v=spf1 mx a -all"' % domain,
              'mx-host=%s,%s,5' % (domain, domain),
