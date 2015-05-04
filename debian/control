@@ -17,7 +17,6 @@ Depends: moulinette,
     pyminiupnpc,
     dnsutils,
     bind9utils,
-    yunohost-firewall,
     python-dnspython
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
