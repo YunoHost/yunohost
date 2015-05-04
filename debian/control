@@ -21,8 +21,3 @@ Depends: moulinette,
     python-dnspython
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
-
-Package: yunohost-firewall
-Architecture: all
-Description: YunoHost Python scripts
- Python functions to manage a YunoHost instance
