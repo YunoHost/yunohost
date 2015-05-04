@@ -1,3 +1,13 @@
+moulinette-yunohost (2.1.5) testing; urgency=low
+
+  [ Adrien Beudin ]
+  * [fix] add bind9utils
+
+  [ Julien VAUBOURG ]
+  * Disable DNS forwarding
+
+ -- kload <kload@kload.fr>  Mon, 04 May 2015 16:26:02 +0200
+
 moulinette-yunohost (2.1.4) testing; urgency=low
 
   [ Adrien Beudin ]
