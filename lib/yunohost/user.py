@@ -84,7 +84,7 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                     entry[user_attrs[attr]] = values[0]
                 except:
                     pass
-            uid = entry.pop(user_attrs['uid'])
+            uid = entry[user_attrs['uid']]
             users[uid] = entry
     return { 'users' : users }
 
