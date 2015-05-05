@@ -311,7 +311,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             manifest = _extract_app_from_file(file)
         elif url:
             manifest = _fetch_app_from_git(url)
-        elif 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
+        elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
             msignals.display(m18n.n('custom_app_url_required', app_id), 'warning')
             continue
         elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
