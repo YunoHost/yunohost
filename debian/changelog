@@ -1,3 +1,11 @@
+moulinette-yunohost (2.1.6) testing; urgency=low
+
+  [ Adrien Beudin ]
+  * remove yunohost-firewall package
+  * fix depends of yunohost-firewall
+
+ -- kload <kload@kload.fr>  Tue, 05 May 2015 11:29:12 +0200
+
 moulinette-yunohost (2.1.5) testing; urgency=low
 
   [ Adrien Beudin ]
