@@ -905,20 +905,19 @@ firewall:
             action_help: Allow connections on a port
             api: POST /firewall/port
             arguments:
+                protocol:
+                    help: "Protocol type to allow (TCP/UDP/Both)"
+                    choices:
+                        - TCP
+                        - UDP
+                        - Both
+                    default: TCP
                 port:
                     help: Port or range of ports to open
                     extra:
                         pattern: &pattern_port_or_range
                             - !!str ((^|(?!\A):)([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])){1,2}?$
                             - "pattern_port_or_range"
-                -p:
-                    full: --protocol
-                    help: "Protocol type to allow (default: TCP)"
-                    choices:
-                        - TCP
-                        - UDP
-                        - Both
-                    default: TCP
                 -4:
                     full: --ipv4-only
                     help: Only add a rule for IPv4 connections
@@ -940,18 +939,17 @@ firewall:
             action_help: Disallow connections on a port
             api: DELETE /firewall/port
             arguments:
-                port:
-                    help: Port or range of ports to close
-                    extra:
-                        pattern: *pattern_port_or_range
-                -p:
-                    full: --protocol
-                    help: "Protocol type to allow (default: TCP)"
+                protocol:
+                    help: "Protocol type to allow (TCP/UDP/Both)"
                     choices:
                         - TCP
                         - UDP
                         - Both
                     default: TCP
+                port:
+                    help: Port or range of ports to close
+                    extra:
+                        pattern: *pattern_port_or_range
                 -4:
                     full: --ipv4-only
                     help: Only remove the rule for IPv4 connections

@@ -44,14 +44,14 @@ upnp_cron_job = '/etc/cron.d/yunohost-firewall-upnp'
 logger = getActionLogger('yunohost.firewall')
 
 
-def firewall_allow(port, protocol='TCP', ipv4_only=False, ipv6_only=False,
+def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
                    no_upnp=False, no_reload=False):
     """
     Allow connections on a port
 
     Keyword arguments:
+        protocol -- Protocol type to allow (TCP/UDP/Both)
         port -- Port or range of ports to open
-        protocol -- Protocol type to allow (default: TCP)
         ipv4_only -- Only add a rule for IPv4 connections
         ipv6_only -- Only add a rule for IPv6 connections
         no_upnp -- Do not add forwarding of this port with UPnP
@@ -95,14 +95,14 @@ def firewall_allow(port, protocol='TCP', ipv4_only=False, ipv6_only=False,
         return firewall_reload()
 
 
-def firewall_disallow(port, protocol='TCP', ipv4_only=False, ipv6_only=False,
+def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
                       upnp_only=False, no_reload=False):
     """
     Disallow connections on a port
 
     Keyword arguments:
+        protocol -- Protocol type to disallow (TCP/UDP/Both)
         port -- Port or range of ports to close
-        protocol -- Protocol type to disallow (default: TCP)
         ipv4_only -- Only remove the rule for IPv4 connections
         ipv6_only -- Only remove the rule for IPv6 connections
         upnp_only -- Only remove forwarding of this port with UPnP
