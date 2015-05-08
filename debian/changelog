@@ -1,3 +1,9 @@
+moulinette-yunohost (2.1.11) testing; urgency=low
+
+  * [fix] Include ca-certificates in dependencies
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 19:07:57 +0000
+
 moulinette-yunohost (2.1.10) testing; urgency=low
 
   * [fix] Add python-apt to requirements and remove rubygems
