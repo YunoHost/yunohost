@@ -1,3 +1,9 @@
+moulinette-yunohost (2.1.9) testing; urgency=low
+
+  * [fix] Allow SSH port in TCP only
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 16:13:07 +0000
+
 moulinette-yunohost (2.1.8) testing; urgency=low
 
   * [fix] Allow old custom applications compatibility
