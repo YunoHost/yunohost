@@ -1,3 +1,9 @@
+moulinette-yunohost (2.1.10) testing; urgency=low
+
+  * [fix] Add python-apt to requirements and remove rubygems
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 18:05:37 +0000
+
 moulinette-yunohost (2.1.9) testing; urgency=low
 
   * [fix] Allow SSH port in TCP only
