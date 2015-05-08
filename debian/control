@@ -17,6 +17,7 @@ Depends: moulinette,
     dnsutils,
     bind9utils,
     python-apt,
+    ca-certificates,
     python-dnspython
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
