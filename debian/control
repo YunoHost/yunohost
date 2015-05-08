@@ -13,10 +13,10 @@ Depends: moulinette,
     python-requests,
     glances,
     python-pip,
-    rubygems,
     pyminiupnpc,
     dnsutils,
     bind9utils,
+    python-apt,
     python-dnspython
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
