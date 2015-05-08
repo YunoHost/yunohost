@@ -1,3 +1,10 @@
+moulinette-yunohost (2.1.8) testing; urgency=low
+
+  * [fix] Allow old custom applications compatibility
+  * [fix] Mandatory protocol for backward compatibility
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 00:52:50 +0000
+
 moulinette-yunohost (2.1.7) testing; urgency=low
 
   * [fix] Keep username in user list for compatibility
