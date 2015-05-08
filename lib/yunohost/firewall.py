@@ -202,7 +202,7 @@ def firewall_reload():
     # Check if SSH port is allowed
     ssh_port = _get_ssh_port()
     if ssh_port not in firewall_list()['opened_ports']:
-        firewall_allow(ssh_port, no_reload=True)
+        firewall_allow('TCP', ssh_port, no_reload=True)
 
     # Retrieve firewall rules and UPnP status
     firewall = firewall_list(raw=True)
