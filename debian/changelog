@@ -1,3 +1,9 @@
+moulinette-yunohost (2.2.0) stable; urgency=low
+
+  * Bumping version to 2.2.0
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 19:15:07 +0000
+
 moulinette-yunohost (2.1.11) testing; urgency=low
 
   * [fix] Include ca-certificates in dependencies
