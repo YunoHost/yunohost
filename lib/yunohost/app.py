@@ -898,34 +898,32 @@ def app_ssowatconf(auth):
     except:
         apps_list = []
 
+    def _get_setting(settings, name):
+        s = settings.get(name, None)
+        return s.split(',') if s else []
+
     for app in apps_list:
         if _is_installed(app['id']):
             with open(apps_setting_path + app['id'] +'/settings.yml') as f:
                 app_settings = yaml.load(f)
-                if 'skipped_uris' in app_settings:
-                    for item in app_settings['skipped_uris'].split(','):
-                        if item[-1:] == '/':
-                            item = item[:-1]
-                        skipped_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
-                if 'skipped_regex' in app_settings:
-                    for item in app_settings['skipped_regex'].split(','):
-                        skipped_regex.append(item)
-                if 'unprotected_uris' in app_settings:
-                    for item in app_settings['unprotected_uris'].split(','):
-                        if item[-1:] == '/':
-                            item = item[:-1]
-                        unprotected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
-                if 'unprotected_regex' in app_settings:
-                    for item in app_settings['unprotected_regex'].split(','):
-                        unprotected_regex.append(item)
-                if 'protected_uris' in app_settings:
-                    for item in app_settings['protected_uris'].split(','):
-                        if item[-1:] == '/':
-                            item = item[:-1]
-                        protected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
-                if 'protected_regex' in app_settings:
-                    for item in app_settings['protected_regex'].split(','):
-                        protected_regex.append(item)
+                for item in _get_setting(app_settings, 'skipped_uris'):
+                    if item[-1:] == '/':
+                        item = item[:-1]
+                    skipped_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                for item in _get_setting(app_settings, 'skipped_regex'):
+                    skipped_regex.append(item)
+                for item in _get_setting(app_settings, 'unprotected_uris'):
+                    if item[-1:] == '/':
+                        item = item[:-1]
+                    unprotected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                for item in _get_setting(app_settings, 'unprotected_regex'):
+                    unprotected_regex.append(item)
+                for item in _get_setting(app_settings, 'protected_uris'):
+                    if item[-1:] == '/':
+                        item = item[:-1]
+                    protected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                for item in _get_setting(app_settings, 'protected_regex'):
+                    protected_regex.append(item)
                 if 'redirected_urls' in app_settings:
                     redirected_urls.update(app_settings['redirected_urls'])
                 if 'redirected_regex' in app_settings:
