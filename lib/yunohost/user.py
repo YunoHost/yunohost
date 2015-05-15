@@ -212,6 +212,7 @@ def user_delete(auth, username, purge=False):
 
     """
     from yunohost.app import app_ssowatconf
+    from yunohost.hook import hook_callback
 
     if auth.remove('uid=%s,ou=users' % username):
         # Update SFTP user group
@@ -225,6 +226,9 @@ def user_delete(auth, username, purge=False):
         raise MoulinetteError(169, m18n.n('user_deletion_failed'))
 
     app_ssowatconf(auth)
+
+    hook_callback('post_user_delete', args=[username, purge])
+
     msignals.display(m18n.n('user_deleted'), 'success')
 
 
