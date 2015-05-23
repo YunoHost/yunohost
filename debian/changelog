@@ -1,3 +1,11 @@
+moulinette-yunohost (2.2.1) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Retrieve apps settings in a safer way (fix #61)
+  * [enh] Add post_user_delete hook
+
+ -- kload <kload@kload.fr>  Sat, 23 May 2015 15:14:54 +0200
+
 moulinette-yunohost (2.2.0) stable; urgency=low
 
   * Bumping version to 2.2.0
