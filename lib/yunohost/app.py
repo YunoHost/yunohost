@@ -332,45 +332,44 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         if original_app_id != app_id:
             # Replace original_app_id with the forked one in scripts
-            for file in os.listdir(app_tmp_folder +'/scripts'):
+            for script in os.listdir(app_tmp_folder +'/scripts'):
                 #TODO: do it with sed ?
-                if file[:1] != '.':
-                    with open(app_tmp_folder +'/scripts/'+ file, "r") as sources:
+                if script[:1] != '.':
+                    with open(app_tmp_folder +'/scripts/'+ script, "r") as sources:
                         lines = sources.readlines()
-                    with open(app_tmp_folder +'/scripts/'+ file, "w") as sources:
+                    with open(app_tmp_folder +'/scripts/'+ script, "w") as sources:
                         for line in lines:
                             sources.write(re.sub(r''+ original_app_id +'', app_id, line))
 
             if 'hooks' in os.listdir(app_tmp_folder):
-                for file in os.listdir(app_tmp_folder +'/hooks'):
+                for hook in os.listdir(app_tmp_folder +'/hooks'):
                     #TODO: do it with sed ?
-                    if file[:1] != '.':
-                        with open(app_tmp_folder +'/hooks/'+ file, "r") as sources:
+                    if hook[:1] != '.':
+                        with open(app_tmp_folder +'/hooks/'+ hook, "r") as sources:
                             lines = sources.readlines()
-                        with open(app_tmp_folder +'/hooks/'+ file, "w") as sources:
+                        with open(app_tmp_folder +'/hooks/'+ hook, "w") as sources:
                             for line in lines:
                                 sources.write(re.sub(r''+ original_app_id +'', app_id, line))
 
         # Add hooks
         if 'hooks' in os.listdir(app_tmp_folder):
-            for file in os.listdir(app_tmp_folder +'/hooks'):
-                hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
+            for hook in os.listdir(app_tmp_folder +'/hooks'):
+                hook_add(app_id, app_tmp_folder +'/hooks/'+ hook)
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
         if hook_exec(app_tmp_folder +'/scripts/upgrade') != 0:
-            #TODO: display fail messages from script
-            pass
+            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
         else:
             app_setting(app_id, 'update_time', int(time.time()))
 
-        # Replace scripts and manifest
-        os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
-        os.system('mv "%s/manifest.json" "%s/scripts" %s' % (app_tmp_folder, app_tmp_folder, app_setting_path))
+            # Replace scripts and manifest
+            os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
+            os.system('mv "%s/manifest.json" "%s/scripts" %s' % (app_tmp_folder, app_tmp_folder, app_setting_path))
 
-        # So much win
-        upgraded_apps.append(app_id)
-        msignals.display(m18n.n('app_upgraded', app_id), 'success')
+            # So much win
+            upgraded_apps.append(app_id)
+            msignals.display(m18n.n('app_upgraded', app_id), 'success')
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
@@ -422,22 +421,22 @@ def app_install(auth, app, label=None, args=None):
         app_id_forked = app_id + '__' + str(instance_number)
 
         # Replace app_id with the new one in scripts
-        for file in os.listdir(app_tmp_folder +'/scripts'):
+        for script in os.listdir(app_tmp_folder +'/scripts'):
             #TODO: do it with sed ?
-            if file[:1] != '.':
-                with open(app_tmp_folder +'/scripts/'+ file, "r") as sources:
+            if script[:1] != '.':
+                with open(app_tmp_folder +'/scripts/'+ script, "r") as sources:
                     lines = sources.readlines()
-                with open(app_tmp_folder +'/scripts/'+ file, "w") as sources:
+                with open(app_tmp_folder +'/scripts/'+ script, "w") as sources:
                     for line in lines:
                         sources.write(re.sub(r''+ app_id +'', app_id_forked, line))
 
         if 'hooks' in os.listdir(app_tmp_folder):
-            for file in os.listdir(app_tmp_folder +'/hooks'):
+            for hook in os.listdir(app_tmp_folder +'/hooks'):
                 #TODO: do it with sed ?
                 if file[:1] != '.':
-                    with open(app_tmp_folder +'/hooks/'+ file, "r") as sources:
+                    with open(app_tmp_folder +'/hooks/'+ hook, "r") as sources:
                         lines = sources.readlines()
-                    with open(app_tmp_folder +'/hooks/'+ file, "w") as sources:
+                    with open(app_tmp_folder +'/hooks/'+ hook, "w") as sources:
                         for line in lines:
                             sources.write(re.sub(r''+ app_id +'', app_id_forked, line))
 
@@ -532,14 +531,13 @@ def app_remove(auth, app):
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove') != 0:
-        pass
+    if hook_exec('/tmp/yunohost_remove/scripts/remove') == 0:
+        msignals.display(m18n.n('app_removed', app), 'success')
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
     app_ssowatconf(auth)
-    msignals.display(m18n.n('app_removed', app), 'success')
 
 
 def app_addaccess(auth, apps, users=[]):
@@ -978,17 +976,19 @@ def _extract_app_from_file(path, remove=False):
     if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
     os.makedirs(app_tmp_folder)
 
+    path = os.path.abspath(path)
+
     if ".zip" in path:
-        extract_result = os.system('cd %s && unzip %s -d %s > /dev/null 2>&1' % (os.getcwd(), path, app_tmp_folder))
+        extract_result = os.system('unzip %s -d %s > /dev/null 2>&1' % (path, app_tmp_folder))
         if remove: os.remove(path)
     elif ".tar" in path:
-        extract_result = os.system('cd %s && tar -xf %s -C %s > /dev/null 2>&1' % (os.getcwd(), path, app_tmp_folder))
+        extract_result = os.system('tar -xf %s -C %s > /dev/null 2>&1' % (path, app_tmp_folder))
         if remove: os.remove(path)
-    elif (path[:1] == '/' and os.path.exists(path)) or (os.system('cd %s/%s' % (os.getcwd(), path)) == 0):
+    elif os.path.isdir(path):
         shutil.rmtree(app_tmp_folder)
         if path[len(path)-1:] != '/':
             path = path + '/'
-        extract_result = os.system('cd %s && cp -a "%s" %s' % (os.getcwd(), path, app_tmp_folder))
+        extract_result = os.system('cp -a "%s" %s' % (path, app_tmp_folder))
     else:
         extract_result = 1
 
