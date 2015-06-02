@@ -1,3 +1,9 @@
+moulinette-yunohost (2.2.2) stable; urgency=low
+
+  * [fix] Avoid cd errors
+
+ -- kload <kload@kload.fr>  Tue, 02 Jun 2015 15:19:07 +0000
+
 moulinette-yunohost (2.2.1) stable; urgency=low
 
   [ Jérôme Lebleu ]
