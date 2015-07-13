@@ -54,9 +54,11 @@ _global:
     arguments:
         -v:
             full: --version
-            help: Display moulinette version
-            action: version
-            version: moulinette %version%
+            help: Display YunoHost packages versions
+            action: callback
+            callback:
+                method: yunohost.get_versions
+                return: true
 
 #############################
 #           User            #

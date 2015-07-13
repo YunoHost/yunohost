@@ -155,10 +155,14 @@ if __name__ == '__main__':
     _init_moulinette()
 
     from moulinette import (api, MoulinetteError)
+    from yunohost import get_versions
     try:
         # Run the server
         api(_retrieve_namespaces(), port=6787,
-            routes={('GET', '/installed'): is_installed},
+            routes={
+                ('GET', '/installed'): is_installed,
+                ('GET', '/version'): get_versions,
+            },
             use_cache=USE_CACHE, use_websocket=USE_WEBSOCKET)
     except MoulinetteError as e:
         _die(e.strerror, m18n.g('error'))
