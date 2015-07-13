@@ -469,7 +469,7 @@ def app_install(auth, app, label=None, args=None):
     try:
         if args is None:
             args = ''
-        args_dict = dict(urlparse.parse_qsl(args))
+        args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True))
     except:
         args_dict = {}
 
