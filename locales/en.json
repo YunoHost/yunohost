@@ -169,6 +169,7 @@
     "user_update_failed" : "Unable to update user",
     "user_updated" : "User successfully updated",
     "user_info_failed" : "Unable to retrieve user information",
+    "user_home_creation_failed" : "Unable to create user home folder",
 
     "admin_password" : "Administration password",
     "ask_firstname" : "First name",

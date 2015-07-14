@@ -24,7 +24,6 @@
     Manage users
 """
 import os
-import sys
 import crypt
 import random
 import string
@@ -35,6 +34,9 @@ import math
 import re
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
+
+logger = getActionLogger('yunohost.user')
 
 
 def user_list(auth, fields=None, filter=None, limit=None, offset=None):
@@ -141,7 +143,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
     char_set = string.ascii_uppercase + string.digits
     salt = ''.join(random.sample(char_set,8))
     salt = '$1$' + salt + '$'
-    pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
+    user_pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
     attr_dict = {
         'objectClass'   : ['mailAccount', 'inetOrgPerson', 'posixAccount'],
         'givenName'     : firstname,
@@ -152,7 +154,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
         'mail'          : mail,
         'maildrop'      : username,
         'mailuserquota' : mailbox_quota,
-        'userPassword'  : pwd,
+        'userPassword'  : user_pwd,
         'gidNumber'     : uid,
         'uidNumber'     : uid,
         'homeDirectory' : '/home/' + username,
@@ -186,11 +188,23 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
 
     if auth.add(rdn, attr_dict):
+        # Invalidate passwd to take user creation into account
+        subprocess.call(['nscd', '-i', 'passwd'])
+
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
         memberlist.append(username)
         if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
-            os.system("su - %s -c ''" % username)
+            try:
+                # Attempt to create user home folder
+                subprocess.check_call(
+                    ['su', '-', username, '-c', "''"])
+            except subprocess.CalledProcessError:
+                if not os.path.isdir('/home/{0}'.format(username)):
+                    logger.exception('cannot create user home folder')
+                    msignals.display(
+                        m18n.n('user_home_creation_failed'), 'warning')
+
             app_ssowatconf(auth)
             #TODO: Send a welcome mail to user
             msignals.display(m18n.n('user_created'), 'success')
@@ -215,13 +229,16 @@ def user_delete(auth, username, purge=False):
     from yunohost.hook import hook_callback
 
     if auth.remove('uid=%s,ou=users' % username):
+        # Invalidate passwd to take user deletion into account
+        subprocess.call(['nscd', '-i', 'passwd'])
+
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
         try: memberlist.remove(username)
         except: pass
         if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
             if purge:
-                os.system('rm -rf /home/%s' % username)
+                subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
     else:
         raise MoulinetteError(169, m18n.n('user_deletion_failed'))
 
