@@ -8,7 +8,7 @@ Homepage: https://yunohost.org/
 
 Package: moulinette-yunohost
 Architecture: all
-Depends: moulinette,
+Depends: moulinette (>= 2.2.1),
     python-psutil,
     python-requests,
     glances,

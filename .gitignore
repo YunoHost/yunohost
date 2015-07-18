@@ -29,3 +29,6 @@ pip-log.txt
 
 # Mr Developer
 .mr.developer.cfg
+
+# moulinette lib
+lib/yunohost/locales
