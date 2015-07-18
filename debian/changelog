@@ -1,3 +1,13 @@
+moulinette-yunohost (2.2.3) stable; urgency=low
+
+  * [fix] Catch proper exception in backup_list (fix #65)
+  * [fix] Display YunoHost packages versions (fix #11)
+  * [fix] Allow empty app arguments in app_install
+  * [fix] Invalidate passwd at user creation/deletion (fix #70)
+  * [fix] Add minimum moulinette version in debian/control
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sat, 18 Jul 2015 16:42:59 +0200
+
 moulinette-yunohost (2.2.2) stable; urgency=low
 
   * [fix] Avoid cd errors
