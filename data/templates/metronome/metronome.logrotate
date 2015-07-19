@@ -1,0 +1,11 @@
+/var/log/metronome/metronome.log /var/log/metronome/metronome.err {
+        daily
+        rotate 14
+        compress
+        create 640 metronome adm
+        postrotate
+                /etc/init.d/metronome reload > /dev/null
+        endscript
+        sharedscripts
+        missingok
+}

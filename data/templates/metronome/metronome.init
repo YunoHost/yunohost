@@ -1,0 +1,101 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:             metronome
+# Required-Start:       $network $local_fs $remote_fs
+# Required-Stop:        $remote_fs
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Metronome XMPP Server
+### END INIT INFO
+
+set -e
+
+# /etc/init.d/metronome: start and stop Metronome XMPP server
+
+DAEMON=/usr/bin/metronome
+PIDPATH=/var/run/metronome
+PIDFILE="$PIDPATH"/metronome.pid
+RUNTIME=/usr/bin/lua5.1
+
+NICE=
+MAXFDS=
+CPUSCHED=
+IOSCHED=
+
+test -x "$DAEMON" || exit 0
+
+if [ -f /etc/default/metronome ] ; then
+    . /etc/default/metronome
+fi
+
+if [ ! -d "$PIDPATH" ]; then
+        mkdir "$PIDPATH";
+        chown metronome:adm "$PIDPATH";
+fi
+
+# Check that user 'metronome' exists
+check_user() {
+        if ! getent passwd metronome >/dev/null; then
+                exit 1;
+        fi
+}
+
+start_opts() {
+        test -z "$NICE"     || echo -n " --nicelevel $NICE"
+        test -z "$CPUSCHED" || echo -n " --procsched $CPUSCHED"
+        test -z "$IOSCHED"  || echo -n " --iosched $IOSCHED"
+}
+
+. /lib/lsb/init-functions
+
+test -z "$MAXFDS" || ulimit -n "$MAXFDS"
+
+case "$1" in
+  start)
+        check_user
+        log_daemon_msg "Starting Metronome XMPP Server" "metronome"
+
+        if start-stop-daemon --start --quiet --oknodo --pidfile "$PIDFILE" --chuid metronome $(start_opts) --exec "$RUNTIME" -- "$DAEMON"; then
+                log_end_msg 0
+        else
+                log_end_msg 1
+        fi
+        ;;
+  stop)
+        log_daemon_msg "Stopping Metronome XMPP Server" "metronome"
+        if start-stop-daemon --stop --retry 30 --quiet --oknodo --pidfile "$PIDFILE"; then
+                log_end_msg 0
+        else
+                log_end_msg 1
+        fi
+        ;;
+  force-reload|restart)
+        log_daemon_msg "Restarting Metronome XMPP Server" "metronome"
+        
+        start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile "$PIDFILE"
+        
+        check_user log_end_msg
+        
+        if start-stop-daemon --start --quiet --oknodo --pidfile "$PIDFILE" --chuid metronome $(start_opts) --exec "$RUNTIME" -- "$DAEMON"; then
+                log_end_msg 0
+        else
+                log_end_msg 1
+        fi
+        ;;
+  reload)
+        log_daemon_msg "Reloading Metronome XMPP Server" "metronome"
+        
+        if start-stop-daemon --stop --quiet --pidfile "$PIDFILE" --signal 1; then
+                log_end_msg 0
+        else
+                log_end_msg 1
+        fi
+        ;;
+  *)
+        log_action_msg "Usage: /etc/init.d/metronome {start|stop|restart|reload}"
+        exit 1
+esac
+
+exit 0
+

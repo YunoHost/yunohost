@@ -23,14 +23,27 @@
 
     Manage services
 """
+import os
+import time
 import yaml
 import glob
 import subprocess
 import errno
-import os.path
+import shutil
+import jinja2
+import difflib
+import hashlib
 
 from moulinette.core import MoulinetteError
 
+template_dir = os.getenv(
+    'YUNOHOST_TEMPLATE_DIR',
+    '/usr/share/yunohost/templates'
+)
+conf_backup_dir = os.getenv(
+    'YUNOHOST_CONF_BACKUP_DIR',
+    '/home/yunohost.backup/conffiles'
+)
 
 def service_add(name, status=None, log=None, runlevel=None):
     """
@@ -257,9 +270,31 @@ def service_log(name, number=50):
     return result
 
 
+def service_regenconf(auth, name=None, force=False, keep=False):
+    """
+    Regenerate the configuration file(s) for a service and compare the result
+    with the existing configuration file.
+    Prints the differences between files if any.
+
+    Keyword argument:
+        name -- Regenerate configuration for a specfic service
+        force -- Override the current configuration with the newly generated
+                 one, even if it has been modified
+        keep -- Save the current configuration to avoid further notifications
+
+    """
+    if name is not None:
+        _regenerate_configuration_for(auth, name, force, keep)
+        
+    
+    #TODO: Raise error when force + keep
+    #TODO: Loop through all the services
+    #TODO: Win message with regenerated configurations
+
+
 def _run_service_command(action, service):
     """
-    Run services management command (start, stop,  enable, disable)
+    Run services management command (start, stop, enable, disable, restart, reload)
 
     Keyword argument:
         action -- Action to perform
@@ -271,7 +306,7 @@ def _run_service_command(action, service):
                                                    service))
 
     cmd = None
-    if action in ['start', 'stop']:
+    if action in ['start', 'stop', 'restart', 'reload']:
         cmd = 'service %s %s' % (service, action)
     elif action in ['enable', 'disable']:
         arg = 'defaults' if action == 'enable' else 'remove'
@@ -302,6 +337,7 @@ def _get_services():
     else:
         return services
 
+
 def _save_services(services):
     """
     Save managed services to files
@@ -313,6 +349,7 @@ def _save_services(services):
     # TODO: Save to custom services.yml
     with open('/etc/yunohost/services.yml', 'w') as f:
         yaml.safe_dump(services, f, default_flow_style=False)
+
 
 def _tail(file, n, offset=None):
     """
@@ -340,3 +377,268 @@ def _tail(file, n, offset=None):
                 avg_line_length *= 1.3
 
     except IOError: return []
+
+
+def _get_diff(string, filename):
+    """
+    Show differences between a string and a file's content
+
+    Keyword argument:
+        string -- The string
+        filename -- The file to compare with
+
+    """
+    try:
+        with open(filename, 'r') as f:
+            file_lines = f.readlines()
+
+        string = string + '\n'
+        new_lines = string.splitlines(1)
+        return difflib.unified_diff(file_lines, new_lines)
+    except IOError: return []
+
+
+def _hash(filename):
+    """
+    Calculate a MD5 hash of a file
+
+    Keyword argument:
+        filename -- The file to hash
+
+    """
+    hasher = hashlib.md5()
+    try:
+        with open(filename, 'rb') as f:
+            buf = f.read()
+            hasher.update(buf)
+
+        return hasher.hexdigest()
+    except IOError:
+        return 'no hash yet'
+
+
+def _safe_remove(conf_file, service=None, force=False, keep=False):
+    """
+    Check if the specific file has been modified before removing it.
+    Backup the file in /home/yunohost.backup
+
+    Keyword argument:
+        conf_file -- The file to write
+        service -- Service name of the file to delete
+        force -- Force file deletion
+        keep -- Keep the current file and save its hash
+
+    """
+    deleted = False
+
+    if not os.path.exists(conf_file):
+        try:
+            del services[service]['conffiles'][conf_file]
+        except KeyError: pass
+        return True
+
+    services = _get_services()
+
+    # Backup existing file
+    date = time.strftime("%Y%m%d.%H%M%S")
+    conf_backup_file = conf_backup_dir + conf_file +'-'+ date
+    process = subprocess.Popen(
+        ['install', '-D', conf_file, conf_backup_file]
+    )
+    process.wait()
+
+    # Retrieve hashes
+    if not 'conffiles' in services[service]:
+        services[service]['conffiles'] = {}
+
+    if conf_file in services[service]['conffiles']:
+        previous_hash = services[service]['conffiles'][conf_file]
+    else:
+        previous_hash = 'no hash yet'
+
+    current_hash = _hash(conf_file)
+
+    # Handle conflicts
+    if force or previous_hash == current_hash:
+	os.remove(conf_file)
+        try:
+            del services[service]['conffiles'][conf_file]
+        except KeyError: pass
+        deleted = True
+        msignals.display(m18n.n('service_configuration_backup', conf_backup_file),
+                         'info')
+    elif keep:
+        services[service]['conffiles'][conf_file] = \
+            previous_hash[0:32] + ', but keep ' + current_hash
+        msignals.display(m18n.n('service_configuration_backup', conf_backup_file),
+                         'info')
+    else:
+        services[service]['conffiles'][conf_file] = previous_hash
+        os.remove(conf_backup_file)
+        if os.isatty(1) and \
+           (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
+            msignals.display(
+                m18n.n('service_configuration_changed', conf_file),
+                'warning'
+            )
+
+    _save_services(services)
+
+    return deleted
+
+
+def _safe_write(conf_file, new_conf='', service=None, force=False, keep=False):
+    """
+    Check if the specific file has been modified and display differences.
+    Stores the file hash in the services.yml file
+
+    Keyword argument:
+        conf_file -- The file to write
+        new_conf -- String containing the new content
+        service -- Service name of the file to write
+        force -- Force file overriding
+        keep -- Keep the current file and save its hash
+
+    """
+    regenerated = False
+    services = _get_services()
+
+    if os.path.exists(new_conf):
+        filename = new_conf
+        with open(filename, 'r') as f:
+            new_conf = ''.join(f.readlines()).rstrip()
+
+    # Backup existing file
+    date = time.strftime("%Y%m%d.%H%M%S")
+    conf_backup_file = conf_backup_dir + conf_file +'-'+ date
+    if os.path.exists(conf_file):
+        process = subprocess.Popen(
+            ['install', '-D', conf_file, conf_backup_file]
+        )
+        process.wait()
+    else:
+        msignals.display(m18n.n('service_add_configuration', conf_file),
+                         'info')
+
+    # Retrieve hashes
+    if not 'conffiles' in services[service]:
+        services[service]['conffiles'] = {}
+
+    if conf_file in services[service]['conffiles']:
+        previous_hash = services[service]['conffiles'][conf_file]
+    else:
+        previous_hash = 'no hash yet'
+
+    current_hash = _hash(conf_file)
+    diff = list(_get_diff(new_conf, conf_file))
+
+    # Handle conflicts
+    if force or previous_hash == current_hash:
+        with open(conf_file, 'w') as f: f.write(new_conf)
+        regenerated = True
+        new_hash = _hash(conf_file)
+    elif keep:
+        new_hash = previous_hash[0:32] + ', but keep ' + current_hash
+    elif len(diff) == 0:
+        new_hash = _hash(conf_file)
+    else:
+        new_hash = previous_hash
+        if os.isatty(1) and \
+           (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
+            msignals.display(
+                m18n.n('service_configuration_conflict', conf_file),
+                'warning'
+            )
+            print('\n' + conf_file)
+            for line in diff:
+                print(line.strip())
+            print('')
+      
+    # Remove the backup file if the configuration has not changed
+    if new_hash == previous_hash:
+        os.remove(conf_backup_file)
+    elif os.path.exists(conf_backup_file):
+        msignals.display(m18n.n('service_configuration_backup', conf_backup_file),
+                         'info')
+
+    services[service]['conffiles'][conf_file] = new_hash
+    _save_services(services)
+
+    return regenerated
+
+
+def _regenerate_configuration_for(auth, service, force=False, keep=False):
+    """
+    Handle all the different services' configurations of YunoHost
+
+    Keyword argument:
+        service -- Service name to take care of
+        force -- Force configuration overriding
+        keep -- Keep the current configuration and save its hash
+
+    """
+    from yunohost.domain import domain_list
+
+    if service not in _get_services().keys() \
+       or not os.path.isdir("%s/%s" % (template_dir, service)):
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service))
+
+    # Set the service's template directory as Jinja Environment in order
+    # to ease the template loading
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader("%s/%s" % (template_dir, service))
+    )
+
+    domains = domain_list(auth)['domains']
+
+    with open('/etc/yunohost/current_host', 'r') as f:
+        main_domain = f.readline().rstrip()
+
+    if service == 'nginx':
+
+        need_restart = False
+
+        # Copy plain files
+        for filename in [
+            'ssowat.conf',
+            'yunohost_admin.conf',
+            'yunohost_admin.conf.inc',
+            'yunohost_api.conf.inc',
+            'yunohost_panel.conf.inc',
+        ]:
+            conf_file = '/etc/nginx/conf.d/%s' % filename
+            new_conf = '%s/%s/%s' % (template_dir, service, filename)
+            _safe_write(conf_file, new_conf, service, force, keep)
+
+        # We need one file and one folder per virtualhost
+        for domain in domains: 
+            conf_file = '/etc/nginx/conf.d/%s.conf' % domain
+            new_conf = env.get_template('server.conf.j2').render(domain=domain)
+            need_restart = _safe_write(conf_file, new_conf, service, force, keep) \
+                or need_restart
+            try:
+                os.makedirs('/etc/nginx/conf.d/%s.d' % domain)
+            except OSError: pass
+
+        # Copy yunohost_local.conf for the main domain
+        filename = 'yunohost_local.conf'
+        conf_file = '/etc/nginx/conf.d/%s.d/%s' % (main_domain, filename)
+        new_conf = '%s/%s/%s' % (template_dir, service, filename)
+        _safe_write(conf_file, new_conf, service, force, keep)
+
+        # Backup and remove configuration for unexisting domains
+        for conf_file in os.listdir('/etc/nginx/conf.d/'):
+            if conf_file.endswith('.conf') and len(conf_file.split('.')) > 2 \
+               and conf_file.replace('.conf', '') not in domains:
+                _safe_remove('/etc/nginx/conf.d/'+ conf_file, service, force, keep)
+
+        # Restart Nginx
+        if need_restart:
+	    _run_service_command('restart', service)
+        else:
+            _run_service_command('reload', service)
+
+        msignals.display(m18n.n('service_configured', service), 'success')
+
+    if service == 'postfix':
+        pass

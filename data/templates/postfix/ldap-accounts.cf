@@ -1,0 +1,5 @@
+server_host = localhost
+server_port = 389
+search_base = dc=yunohost,dc=org
+query_filter = (&(objectClass=mailAccount)(mail=%s))
+result_attribute = uid

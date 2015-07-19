@@ -1,0 +1,12 @@
+# postgrey startup options, created for Debian
+
+# you may want to set
+#   --delay=N   how long to greylist, seconds (default: 300)
+#   --max-age=N delete old entries after N days (default: 35)
+# see also the postgrey(8) manpage
+
+POSTGREY_OPTS="--inet=10023 --delay=30"
+
+# the --greylist-text commandline argument can not be easily passed through
+# POSTGREY_OPTS when it contains spaces.  So, insert your text here:
+#POSTGREY_TEXT="Your customized rejection message here"

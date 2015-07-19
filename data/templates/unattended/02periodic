@@ -1,0 +1,6 @@
+02periodic  50unattended-upgrades
+root@65ba01d0c078:/usr/share/yunohost/yunohost-config/unattended# cat 02periodic 
+APT::Periodic::Enable "1";
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::Verbose "1";

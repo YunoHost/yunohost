@@ -869,6 +869,26 @@ service:
                     default: 50
                     type: int
 
+        ### service_regenconf()
+        regenconf:
+            action_help: >
+                Regenerate the configuration file(s) for a service and compare the result
+                with the existing configuration file.
+                Prints the differences between files if any.
+            api: PUT /services/regenconf
+            arguments:
+                -n:
+                    full: --name
+                    help: Regenerate configuration for a specfic service
+                -f:
+                    full: --force
+                    help: Override the current configuration with the newly generated one, even if it has been modified
+                    action: store_true
+                -k:
+                    full: --keep
+                    help: Save the current configuration to avoid further notifications
+                    action: store_true
+
 
 #############################
 #         Firewall          #
