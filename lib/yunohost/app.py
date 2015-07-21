@@ -928,7 +928,7 @@ def app_ssowatconf(auth):
                     redirected_regex.update(app_settings['redirected_regex'])
 
     for domain in domains:
-        skipped_urls.extend(['/yunohost/admin', '/yunohost/api'])
+        skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
 
     conf_dict = {
         'portal_domain': main_domain,
