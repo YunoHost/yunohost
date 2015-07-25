@@ -437,7 +437,7 @@ app:
 
         ### app_setting()
         setting:
-            action_help: Set ou get an app setting value
+            action_help: Set or get an app setting value
             api: GET /apps/<app>/settings
             arguments:
                 app:
