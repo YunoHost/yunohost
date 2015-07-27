@@ -299,7 +299,7 @@ def backup_list():
         # Retrieve local archives
         archives = os.listdir(archives_path)
     except OSError as e:
-        logging.info("unable to iterate over local archives: %s", str(e))
+        logger.info("unable to iterate over local archives: %s", str(e))
     else:
         # Iterate over local archives
         for f in archives:
