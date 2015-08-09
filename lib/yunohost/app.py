@@ -433,7 +433,7 @@ def app_install(auth, app, label=None, args=None):
         if 'hooks' in os.listdir(app_tmp_folder):
             for hook in os.listdir(app_tmp_folder +'/hooks'):
                 #TODO: do it with sed ?
-                if file[:1] != '.':
+                if hook[:1] != '.':
                     with open(app_tmp_folder +'/hooks/'+ hook, "r") as sources:
                         lines = sources.readlines()
                     with open(app_tmp_folder +'/hooks/'+ hook, "w") as sources:
