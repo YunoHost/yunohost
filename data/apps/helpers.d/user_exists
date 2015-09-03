@@ -1,0 +1,3 @@
+ynh_user_exists() {
+    sudo yunohost user list --json | grep -q "\"username\": \"${1}\""
+}
