@@ -18,6 +18,7 @@ Depends: moulinette (>= 2.2.1),
     bind9utils,
     python-apt,
     ca-certificates,
-    python-dnspython
+    python-dnspython,
+    netcat-openbsd
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
