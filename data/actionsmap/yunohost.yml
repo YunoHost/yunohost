@@ -495,6 +495,21 @@ app:
                     full: --sql
                     help: Initial SQL file
 
+        ### app_dropdb()
+        dropdb:
+            action_help: Drop database
+            # api: POST /tools/dropdb
+            arguments:
+                db:
+                    help: Name of the database
+                -k:
+                    full: --keep-user
+                    help: Do not drop corresponding user
+                    action: store_true
+                -u:
+                    full: --user
+                    help: DB user name (db unless set)
+
         ### app_makedefault()
         makedefault:
             action_help: Redirect domain root to an app
