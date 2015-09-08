@@ -1,3 +1,32 @@
+moulinette-yunohost (2.3.0) testing; urgency=low
+
+  [ M5oul ]
+  * Add AGPL license
+
+  [ ZeHiro ]
+  * [fix] Fix skipped_urls for each domain and #68
+
+  [ nahoj ]
+  * typo
+
+  [ Jérôme Lebleu ]
+  * [fix] Correct logger object in backup_list (fix #75)
+
+  [ zamentur ]
+  * [fix] 2nd installation of apps with a hooks directory
+
+  [ Julien Malik ]
+  * Add helper bash functions for apps developers
+
+  [ opi ]
+  * [enh] Add ynh_user_exists helper.
+  * [fix] Use one file for all user related helpers.
+
+  [ Adrien Beudin ]
+  * [fix] add netcat-openbsd packages in depends
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 08 Sep 2015 14:19:28 +0200
+
 moulinette-yunohost (2.2.3) stable; urgency=low
 
   * [fix] Catch proper exception in backup_list (fix #65)
