@@ -31,7 +31,7 @@ case "$1" in
     /usr/bin/yunohost firewall stop
     log_end_msg $?
     ;;
-  restart)
+  restart|force-reload)
     logger "YunoHost firewall: Restarting"
     log_daemon_msg "Restarting firewall: YunoHost"
     /usr/bin/yunohost firewall reload
@@ -45,7 +45,7 @@ case "$1" in
     ;;
   *)
     logger "YunoHost API: Invalid usage"
-    echo "Usage: /etc/init.d/yunohost-api {start|stop|restart|status}" >&2
+    echo "Usage: /etc/init.d/yunohost-api {start|stop|restart|force-reload|status}" >&2
     exit 1
     ;;
 esac
