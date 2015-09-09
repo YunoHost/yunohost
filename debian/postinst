@@ -49,6 +49,9 @@ do_configure() {
   update-rc.d yunohost-api defaults > /dev/null
   service yunohost-api restart
 
+  # Firewall
+  update-rc.d yunohost-firewall defaults > /dev/null
+
   # Reload SSOwat conf if obsolete
   if [ -f /etc/yunohost/installed ];
   then
