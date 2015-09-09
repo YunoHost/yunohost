@@ -4,21 +4,21 @@ TMP=/usr/share/yunohost/yunohost-config/moulinette
 
 if [ ! -d /etc/yunohost ];
 then
-	mkdir -p /etc/yunohost
+    mkdir -p /etc/yunohost
 fi
 
 # Allow users to access /media directory
 if [ ! -d /etc/skel/media ];
 then
-        mkdir -p /media
-	ln -s /media /etc/skel/
+    mkdir -p /media
+    ln -s /media /etc/skel/
 fi
 
 #Firewall
 grep -q "UPNP:" /etc/yunohost/firewall.yml > /dev/null 2>&1
 if [[ $? -eq 0 ]] || [ ! -f /etc/yunohost/firewall.yml ];
 then
-	cp $TMP/firewall.yml /etc/yunohost/
+    cp $TMP/firewall.yml /etc/yunohost/
 fi
 
 # App fetchlist
@@ -30,7 +30,7 @@ fi
 # Service list
 if [ ! -f /etc/yunohost/services.yml ];
 then
-	cp $TMP/services.yml /etc/yunohost/
+    cp $TMP/services.yml /etc/yunohost/
 fi
 
 # Stop old API
