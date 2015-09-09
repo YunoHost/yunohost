@@ -41,7 +41,7 @@ case "$1" in
     kill `ps aux | grep 'yunohost-api' | grep -v grep | grep -v stop | awk '{print $2}'` > /dev/null 2>&1
     log_end_msg 0
     ;;
-  restart)
+  restart|force-reload)
     logger "YunoHost API: Restarting"
     log_daemon_msg "Restarting API: YunoHost"
     if [ -f /var/run/yunohost-api.pid ]; then
@@ -67,7 +67,7 @@ case "$1" in
     ;;
   *)
     logger "YunoHost API: Invalid usage"
-    echo "Usage: /etc/init.d/yunohost-api {start|stop|restart|status}" >&2
+    echo "Usage: /etc/init.d/yunohost-api {start|stop|restart|force-reload|status}" >&2
     exit 1
     ;;
 esac
