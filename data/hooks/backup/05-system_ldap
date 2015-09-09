@@ -1,5 +1,3 @@
-#!/bin/bash
-
 backup_dir="$1/ldap"
 mkdir -p $backup_dir
 
