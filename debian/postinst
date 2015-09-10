@@ -1,6 +1,4 @@
 #!/bin/bash
-#!/bin/sh
-# postinst script for yunohost-config-metronome
 
 set -e
 
