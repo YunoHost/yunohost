@@ -169,17 +169,22 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             'update delete _xmpp-client._tcp.%s. SRV' % domain,
             'update delete _xmpp-server._tcp.%s. SRV' % domain,
             'update add %s. 1800 A %s'      % (domain, new_ip),
-            'update add %s. 1800 AAAA %s'   % (domain, new_ipv6),
             'update add %s. 14400 MX 5 %s.' % (domain, domain),
             'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
             'update add pubsub.%s. 1800 A %s'    % (domain, new_ip),
-            'update add pubsub.%s. 1800 AAAA %s' % (domain, new_ipv6),
             'update add muc.%s. 1800 A %s'       % (domain, new_ip),
-            'update add muc.%s. 1800 AAAA %s'    % (domain, new_ipv6),
             'update add vjud.%s. 1800 A %s'      % (domain, new_ip),
-            'update add vjud.%s. 1800 AAAA %s'   % (domain, new_ipv6),
             'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
             'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain),
+        ]
+        if new_ipv6 != '0000:0000:0000:0000:0000:0000:0000:0000':
+            lines += [
+                'update add %s. 1800 AAAA %s'   % (domain, new_ipv6),
+                'update add pubsub.%s. 1800 AAAA %s' % (domain, new_ipv6),
+                'update add muc.%s. 1800 AAAA %s'    % (domain, new_ipv6),
+                'update add vjud.%s. 1800 AAAA %s'   % (domain, new_ipv6),
+            ]
+        lines += [
             'show',
             'send'
         ]
