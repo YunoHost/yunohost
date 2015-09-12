@@ -25,6 +25,7 @@
 """
 import os
 import sys
+import re
 import requests
 import json
 import glob
@@ -32,6 +33,58 @@ import base64
 import errno
 
 from moulinette.core import MoulinetteError
+
+
+class IfInet6Line(object):
+    """ Utility class to parse a /proc/net/if_inet6 line
+
+    >>> a = IfInet6Line("00000000000000000000000000000001 01 80 10 80 lo")
+    >>> a.hex_addr
+    "00000000000000000000000000000001"
+    """
+    regexp = re.compile(
+        r'^(?P<hex_addr>[0-9a-f]{32}) (?P<devnum>[0-9a-f]{2}) '
+        r'(?P<prefix_length>[0-9a-f]{2}) (?P<scope>[0-9a-f]{2}) '
+        r'(?P<iface_flags>[0-9a-f]{2})\s+(?P<iface_name>\w+)$')
+
+    re_leadingzero = re.compile(r':0+')
+    re_multisemicolons = re.compile(r':::+')
+
+    SCOPE_NODELOCAL = '10'
+    SCOPE_LINKLOCAL = '20'
+    SCOPE_SITELOCAL = '50'
+    SCOPE_ORGLOCAL = '80'
+    SCOPE_GLOBAL = '00'
+
+    def __init__(self, line):
+        self.m = self.regexp.match(line)
+        if not self.m:
+            raise ValueError("Not a valid /proc/net/if_inet6 line")
+        # make regexp group available as object attributes
+        for k, v in self.m.groupdict().items():
+            setattr(self, k, v)
+
+        self.addr = self._compact_quad(self._quad_notation(self.hex_addr))
+
+    @staticmethod
+    def _quad_notation(hex_addr):
+        """ Transform IPv6 hex form in quad notation
+
+        >>> IfNet6Line._quad_notation('00000000000000000000000000000001')
+        "0000:0000:0000:0000:0000:0000:0000:0001"
+        """
+        return ':'.join(map(''.join, zip(*[iter(hex_addr)]*4)))
+
+    @classmethod
+    def _compact_quad(cls, quad_addr):
+        """ Remove leading zeroes
+
+        >>>> IfNet6Line._compact_quad('0000:0000:0000:0000:0000:0000:0000:0001')
+        "::0"
+        """
+        wo_zeroes = cls.re_leadingzero.sub(':', quad_addr)
+        compact_quad = cls.re_multisemicolons.sub('::', wo_zeroes)
+        return compact_quad
 
 
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
@@ -115,7 +168,6 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         old_ip = '0.0.0.0'
 
     # IPv6
-    # TODO: Put global IPv6 in the DNS zone instead of ULA
     new_ipv6 = None
     try:
         with open('/etc/yunohost/ipv6') as f:
@@ -127,29 +179,20 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         # Get the interface
         with open('/etc/yunohost/interface') as f:
             interface = f.readline().rstrip()
-        # Get the ULA
-        with open('/etc/yunohost/ula') as f:
-            ula = f.readline().rstrip()
-        # Get the IPv6 address given by radvd and sanitize it
         with open('/proc/net/if_inet6') as f:
-            plain_ula = ''
-            for hextet in ula.split(':')[0:3]:
-                if len(hextet) < 4:
-                    hextet = '0000'+ hextet
-                    hextet = hextet[-4:]
-                plain_ula = plain_ula + hextet
             for line in f.readlines():
-                if interface in line and plain_ula == line[0:12]:
-                    new_ipv6 = ':'.join([line[0:32][i:i+4] for i in range(0, 32, 4)])
+                addr_line = IfInet6Line(line)
+                # stop at the first globally routable address
+                if ((addr_line.iface_name == interface) and
+                        (addr_line.scope == addr_line.SCOPE_GLOBAL)):
+                    new_ipv6 = addr_line.addr
                     with open('/etc/yunohost/ipv6', 'w+') as f:
                         f.write(new_ipv6)
                     break
     except IOError:
         pass
-
-    if new_ipv6 is None:
-        new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
-
+    except ValueError:
+        raise MoulinetteError(None, "Invalid /proc/net/if_inet6 format")
     if old_ip != new_ip or old_ipv6 != new_ipv6 and new_ipv6 is not None:
         host = domain.split('.')[1:]
         host = '.'.join(host)
@@ -177,7 +220,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
             'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain),
         ]
-        if new_ipv6 != '0000:0000:0000:0000:0000:0000:0000:0000':
+        if new_ipv6 is not None:
             lines += [
                 'update add %s. 1800 AAAA %s'   % (domain, new_ipv6),
                 'update add pubsub.%s. 1800 AAAA %s' % (domain, new_ipv6),
