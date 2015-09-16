@@ -225,6 +225,13 @@ def service_status(names=[]):
     return result
 
 
+def _get_log_file_list_in_dir(log_path):
+	return [
+		f for f in os.listdir(log_path)
+		if os.path.isfile(os.path.join(log_path, f)) and f[-4:] == '.log'
+	]
+
+
 def service_log(name, number=50):
     """
     Log every log files of a service
@@ -247,7 +254,7 @@ def service_log(name, number=50):
 
         for log_path in log_list:
             if os.path.isdir(log_path):
-                for log in [ f for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f)) and f[-4:] == '.log' ]:
+                for log in _get_log_file_list_in_dir(log_path):
                     result[os.path.join(log_path, log)] = _tail(os.path.join(log_path, log), int(number))
             else:
                 result[log_path] = _tail(log_path, int(number))

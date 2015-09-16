@@ -1,6 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+""" License
+
+    Copyright (C) 2015 YunoHost
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program; if not, see https://www.gnu.org/licenses
+
+"""
+
 import sys
 import os.path
 
@@ -58,6 +77,10 @@ def _parse_argv():
         global USE_CACHE
         USE_CACHE = False
         argv.remove('--no-cache')
+    if '--no-cache' in argv:
+        global USE_CACHE
+        USE_CACHE = False
+        argv.remove('--no-cache')
     if '--no-websocket' in argv:
         global USE_WEBSOCKET
         USE_WEBSOCKET = False
@@ -66,6 +89,10 @@ def _parse_argv():
         global LOGGERS_LEVEL
         LOGGERS_LEVEL = 'DEBUG'
         argv.remove('--debug')
+    if '--no-debug' in argv:
+        global LOGGERS_LEVEL
+        LOGGERS_LEVEL = 'INFO'
+        argv.remove('--no-debug')
     if '--verbose' in argv:
         global LOGGERS_HANDLERS
         if 'console' not in LOGGERS_HANDLERS:
