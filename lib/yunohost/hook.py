@@ -303,6 +303,7 @@ def hook_exec(file, args=None):
     if arg_list:
         # Concatenate arguments and escape them with double quotes to prevent
         # bash related issue if an argument is empty and is not the last
+        arg_list = [str(s) for s in arg_list]
         arg_str = '\\"{:s}\\"'.format('\\" \\"'.join(arg_list))
 
     msignals.display(m18n.n('executing_script'))
