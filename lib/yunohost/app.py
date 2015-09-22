@@ -1034,7 +1034,7 @@ def _fetch_app_from_git(app):
             if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
                 return _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
 
-        git_result   = os.system('git clone %s %s' % (app, app_tmp_folder))
+        git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
         git_result_2 = 0
         try:
             with open(app_tmp_folder + '/manifest.json') as json_manifest:
@@ -1064,7 +1064,7 @@ def _fetch_app_from_git(app):
         app_tmp_folder = install_tmp +'/'+ app
         if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
 
-        git_result   = os.system('git clone %s -b %s %s' % (app_info['git']['url'], app_info['git']['branch'], app_tmp_folder))
+        git_result   = os.system('git clone --depth=1 %s -b %s %s' % (app_info['git']['url'], app_info['git']['branch'], app_tmp_folder))
         git_result_2 = os.system('cd %s && git reset --hard %s' % (app_tmp_folder, str(app_info['git']['revision'])))
 
     if not git_result == git_result_2 == 0:
