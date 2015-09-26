@@ -53,6 +53,7 @@
     "domain_deletion_failed": "Impossible de supprimer le domaine",
     "domain_deleted": "Domaine supprimé avec succès",
     "no_internet_connection": "Le serveur n'est pas connecté à Internet",
+    "no_ipv6_connectivity": "IPv6 n'est pas disponible",
     "dyndns_key_generating": "La clé DNS est en cours de génération, cela peut prendre du temps...",
     "dyndns_unavailable": "Sous-domaine DynDNS indisponible",
     "dyndns_registration_failed": "Impossible d'enregistrer le domaine DynDNS : {:s}",

@@ -85,7 +85,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     dyndns_installcron()
 
 
-def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=None):
+def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=None, ipv6=None):
     """
     Update IP on DynDNS platform
 
@@ -94,12 +94,14 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         dyn_host -- Dynette DNS server to inform
         key -- Public DNS key
         ip -- IP address to send
+        ipv6 -- IPv6 address to send
 
     """
     if domain is None:
         with open('/etc/yunohost/current_host', 'r') as f:
             domain = f.readline().rstrip()
 
+    # IPv4
     if ip is None:
         try:
             new_ip = requests.get('http://ip.yunohost.org').text
@@ -115,42 +117,22 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         old_ip = '0.0.0.0'
 
     # IPv6
-    # TODO: Put global IPv6 in the DNS zone instead of ULA
-    new_ipv6 = None
+    if ipv6 is None:
+        try:
+            new_ipv6 = requests.get('http://ip6.yunohost.org').text
+        except ConnectionError:
+            msignals.display(m18n.n('no_ipv6_connectivity'),
+                                 'warning')
+    else:
+        new_ipv6 = ipv6
+
     try:
-        with open('/etc/yunohost/ipv6') as f:
+        with open('/etc/yunohost/dyndns/old_ipv6', 'r') as f:
             old_ipv6 = f.readline().rstrip()
     except IOError:
         old_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
 
-    try:
-        # Get the interface
-        with open('/etc/yunohost/interface') as f:
-            interface = f.readline().rstrip()
-        # Get the ULA
-        with open('/etc/yunohost/ula') as f:
-            ula = f.readline().rstrip()
-        # Get the IPv6 address given by radvd and sanitize it
-        with open('/proc/net/if_inet6') as f:
-            plain_ula = ''
-            for hextet in ula.split(':')[0:3]:
-                if len(hextet) < 4:
-                    hextet = '0000'+ hextet
-                    hextet = hextet[-4:]
-                plain_ula = plain_ula + hextet
-            for line in f.readlines():
-                if interface in line and plain_ula == line[0:12]:
-                    new_ipv6 = ':'.join([line[0:32][i:i+4] for i in range(0, 32, 4)])
-                    with open('/etc/yunohost/ipv6', 'w+') as f:
-                        f.write(new_ipv6)
-                    break
-    except IOError:
-        pass
-
-    if new_ipv6 is None:
-        new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
-
-    if old_ip != new_ip or old_ipv6 != new_ipv6 and new_ipv6 is not None:
+    if old_ip != new_ip or old_ipv6 != new_ipv6:
         host = domain.split('.')[1:]
         host = '.'.join(host)
         lines = [
@@ -161,22 +143,30 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             'update delete %s. MX'       % domain,
             'update delete %s. TXT'      % domain,
             'update delete pubsub.%s. A' % domain,
+            'update delete pubsub.%s. AAAA' % domain,
             'update delete muc.%s. A'    % domain,
+            'update delete muc.%s. AAAA' % domain,
             'update delete vjud.%s. A'   % domain,
+            'update delete vjud.%s. AAAA' % domain,
             'update delete _xmpp-client._tcp.%s. SRV' % domain,
             'update delete _xmpp-server._tcp.%s. SRV' % domain,
             'update add %s. 1800 A %s'      % (domain, new_ip),
-            'update add %s. 1800 AAAA %s'   % (domain, new_ipv6),
             'update add %s. 14400 MX 5 %s.' % (domain, domain),
             'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
             'update add pubsub.%s. 1800 A %s'    % (domain, new_ip),
-            'update add pubsub.%s. 1800 AAAA %s' % (domain, new_ipv6),
             'update add muc.%s. 1800 A %s'       % (domain, new_ip),
-            'update add muc.%s. 1800 AAAA %s'    % (domain, new_ipv6),
             'update add vjud.%s. 1800 A %s'      % (domain, new_ip),
-            'update add vjud.%s. 1800 AAAA %s'   % (domain, new_ipv6),
             'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
-            'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain),
+            'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain)
+        ]
+        if new_ipv6 is not None:
+            lines += [
+                'update add %s. 1800 AAAA %s'   % (domain, new_ipv6),
+                'update add pubsub.%s. 1800 AAAA %s' % (domain, new_ipv6),
+                'update add muc.%s. 1800 AAAA %s'    % (domain, new_ipv6),
+                'update add vjud.%s. 1800 AAAA %s'   % (domain, new_ipv6),
+            ]
+        lines += [
             'show',
             'send'
         ]
@@ -192,8 +182,12 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             msignals.display(m18n.n('dyndns_ip_updated'), 'success')
             with open('/etc/yunohost/dyndns/old_ip', 'w') as f:
                 f.write(new_ip)
+            if new_ipv6 is not None:
+                with open('/etc/yunohost/dyndns/old_ipv6', 'w') as f:
+                    f.write(new_ipv6)
         else:
-            os.system('rm /etc/yunohost/dyndns/old_ip > /dev/null 2>&1')
+            os.system('rm -f /etc/yunohost/dyndns/old_ip')
+            os.system('rm -f /etc/yunohost/dyndns/old_ipv6')
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('dyndns_ip_update_failed'))
 
