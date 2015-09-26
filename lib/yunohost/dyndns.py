@@ -118,6 +118,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
 
     # IPv6
     if ipv6 is None:
+        new_ipv6 = None
         try:
             new_ipv6 = requests.get('http://ip6.yunohost.org').text
         except ConnectionError:
