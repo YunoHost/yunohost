@@ -26,12 +26,37 @@
 import os
 import sys
 import requests
+import re
 import json
 import glob
 import base64
 import errno
+import subprocess
 
 from moulinette.core import MoulinetteError
+
+
+class IPRouteLine(object):
+    """ Utility class to parse an ip route output line
+
+    The output of ip ro is variable and hard to parse completly, it would
+    require a real parser, not just a regexp, so do minimal parsing here...
+
+    >>> a = IPRouteLine('2001:: from :: via fe80::c23f:fe:1e:cafe dev eth0  src 2000:de:beef:ca:0:fe:1e:cafe  metric 0')
+    >>> a.src_addr
+    "2000:de:beef:ca:0:fe:1e:cafe"
+    """
+    regexp = re.compile(
+        r'(?P<unreachable>unreachable)?.*src\s+(?P<src_addr>[0-9a-f:]+).*')
+
+    def __init__(self, line):
+        self.m = self.regexp.match(line)
+        if not self.m:
+            raise ValueError("Not a valid ip route get line")
+
+        # make regexp group available as object attributes
+        for k, v in self.m.groupdict().items():
+            setattr(self, k, v)
 
 
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
@@ -120,10 +145,23 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
     if ipv6 is None:
         new_ipv6 = None
         try:
-            new_ipv6 = requests.get('http://ip6.yunohost.org').text
-        except ConnectionError:
-            msignals.display(m18n.n('no_ipv6_connectivity'),
-                                 'warning')
+            ip_route_out = subprocess.check_output(
+                ['ip', 'route', 'get', '2000::']).split('\n')
+
+            if len(ip_route_out) > 0:
+                route = IPRouteLine(ip_route_out[0])
+                if not route.unreachable:
+                    new_ipv6 = route.src_addr
+
+        except (OSError, ValueError) as e:
+            # Unlikely case "ip route" does not return status 0
+            # or produces unexpected output
+            raise MoulinetteError(errno.EBADMSG,
+                                  "ip route cmd error : {}".format(e))
+
+        if new_ipv6 is None:
+            msignals.display(m18n.n('no_ipv6_connectivity'), 'warning')
+
     else:
         new_ipv6 = ipv6
 
