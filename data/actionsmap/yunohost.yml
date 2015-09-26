@@ -1035,6 +1035,9 @@ dyndns:
                 -i:
                     full: --ip
                     help: IP address to send
+                -6:
+                    full: --ipv6
+                    help: IPv6 address to send
 
         ### dyndns_installcron()
         installcron:

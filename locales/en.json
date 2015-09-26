@@ -56,6 +56,7 @@
     "domain_deletion_failed" : "Unable to delete domain",
     "domain_deleted" : "Domain successfully deleted",
     "no_internet_connection": "Server not connected to the Internet",
+    "no_ipv6_connectivity": "IPv6 connectivity is not available",
 
     "dyndns_key_generating" : "DNS key is being generated, it may take a while...",
     "dyndns_unavailable" : "Unavailable DynDNS subdomain",
