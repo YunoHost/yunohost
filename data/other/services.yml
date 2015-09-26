@@ -4,7 +4,7 @@ nginx:
 avahi-daemon:
    status: service
    log: /var/log/daemon.log
-bind9:
+dnsmasq:
    status: service
    log: /var/log/daemon.log
 dovecot:
