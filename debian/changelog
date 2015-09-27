@@ -1,3 +1,35 @@
+moulinette-yunohost (2.3.1) testing; urgency=low
+
+  [ Julien Malik ]
+  * [fix] Indent postinst script uniformly
+  * [enh] postinst : only respond to configure
+  * [lintian] fix output-of-updaterc.d-not-redirected-to-dev-null yunohost-api postinst
+  * [lintian] fix postrm-contains-additional-updaterc.d-calls etc/init.d/yunohost-firewall
+  * [lintian] fix init.d-script-missing-lsb-description
+  * [lintian] fix init.d-script-does-not-implement-required-option etc/init.d/yunohost-api force-reload
+  * [lintian] fix init.d-script-does-not-implement-required-option etc/init.d/yunohost-firewall force-reload
+  * [lintian] fix executable-not-elf-or-script usr/lib/moulinette/yunohost/__init__.py
+  * [lintian] fix script-not-executable for backup/restore hooks
+  * [fix] remove copy-pasted comments
+
+  [ Le Kload ]
+  * [fix] Ensure that arguments are passed to the hook as string
+
+  [ opi ]
+  * [fix] Use SSL/TLS to fetch app list
+
+  [ Jérôme Lebleu ]
+  * [fix] Replace bind9 by dnsmasq in services definition
+
+  [ kload ]
+  * [fix] IPv6 record in DynDNS
+
+  [ Jocelyn Delande ]
+  * [fix] fix UnboundLocalError on ConnectionError
+  * [enh] Determine the public IPv6 locally
+
+ -- kload <kload@kload.fr>  Sun, 27 Sep 2015 10:36:34 +0000
+
 moulinette-yunohost (2.3.0) testing; urgency=low
 
   [ M5oul ]
