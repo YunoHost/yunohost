@@ -20,6 +20,6 @@ Depends: moulinette (>= 2.2.1),
     ca-certificates,
     python-dnspython,
     netcat-openbsd,
-    iproute2
+    iproute
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance
