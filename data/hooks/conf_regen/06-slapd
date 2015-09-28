@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [ $force ]; then
+        sudo yunohost service safecopy \
+          -s slapd \
+          $1 $2 \
+          --force
+    else
+        sudo yunohost service safecopy \
+          -s slapd \
+          $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/slapd
+
+safe_copy mailserver.schema /etc/ldap/schema/mailserver.schema
+safe_copy ldap.conf /etc/ldap/ldap.conf
+safe_copy slapd.default /etc/default/slapd
+
+# Compatibility: change from HDB to MDB on Jessie
+version=$(sed 's/\..*//' /etc/debian_version)
+if [[ "$version" == '8' ]]; then
+    sudo sed -i "s/  hdb/  mdb/g" slapd.conf
+fi
+
+safe_copy slapd.conf /etc/ldap/slapd.conf
+sudo chown root:openldap /etc/ldap/slapd.conf
+sudo rm -Rf /etc/ldap/slapd.d
+sudo mkdir /etc/ldap/slapd.d
+sudo chown -R openldap:openldap /etc/ldap/schema/
+sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+
+sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/
+
+sudo service slapd force-reload

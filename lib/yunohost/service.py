@@ -511,10 +511,11 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
     regenerated = False
     services = _get_services()
 
-    if os.path.exists(new_conf_file):
-        filename = new_conf_file
-        with open(filename, 'r') as f:
-            new_conf = ''.join(f.readlines()).rstrip()
+    if not os.path.exists(new_conf_file):
+        raise MoulinetteError(errno.EIO, m18n.n('no_such_conf_file', new_conf_file))
+
+    with open(new_conf_file, 'r') as f:
+        new_conf = ''.join(f.readlines()).rstrip()
 
     # Backup existing file
     date = time.strftime("%Y%m%d.%H%M%S")
