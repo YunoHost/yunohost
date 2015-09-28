@@ -882,6 +882,8 @@ service:
                 with the existing configuration file.
                 Prints the differences between files if any.
             api: PUT /services/regenconf
+            configuration:
+                lock: false
             arguments:
                 -s:
                     full: --service
@@ -898,12 +900,15 @@ service:
                 Stores the file hash in the services.yml file
             api: PUT /services/safecopy
             arguments:
-                service:
-                    help: Service name attached to the conf file
                 new_conf_file:
                     help: Path to the desired conf file
                 conf_file:
                     help: Path to the targeted conf file
+                -s:
+                    full: --service
+                    help: Service name attached to the conf file
+                    extra:
+                        required: True
                 -f:
                     full: --force
                     help: Override the current configuration with the newly generated one, even if it has been modified
@@ -916,10 +921,13 @@ service:
                 Backup the file in /home/yunohost.backup
             api: PUT /services/safecopy
             arguments:
-                service:
-                    help: Service name attached to the conf file
                 conf_file:
                     help: Path to the targeted conf file
+                -s:
+                    full: --service
+                    help: Service name attached to the conf file
+                    extra:
+                        required: True
                 -f:
                     full: --force
                     help: Force file deletion

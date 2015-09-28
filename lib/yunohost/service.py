@@ -281,10 +281,12 @@ def service_regenconf(service=None, force=False):
                  one, even if it has been modified
 
     """
+    from yunohost.hook import hook_callback
+
     if force:
-        arg_force = 1
-    else:
         arg_force = 0
+    else:
+        arg_force = 1
 
     if service is None:
         # Regen ALL THE CONFIGURATIONS
