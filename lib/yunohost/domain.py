@@ -36,11 +36,12 @@ from urllib import urlopen
 from moulinette.core import MoulinetteError
 
 
-def domain_list(auth, filter=None, limit=None, offset=None):
+def domain_list(auth, raw=False, filter=None, limit=None, offset=None):
     """
     List domains
 
     Keyword argument:
+        raw -- Return domains as a bash-usable list instead of JSON
         filter -- LDAP filter used to search
         offset -- Starting number for domain fetching
         limit -- Maximum number of domain fetched
@@ -61,7 +62,12 @@ def domain_list(auth, filter=None, limit=None, offset=None):
     if len(result) > offset and limit > 0:
         for domain in result[offset:offset+limit]:
             result_list.append(domain['virtualdomain'][0])
-    return { 'domains': result_list }
+
+    if raw:
+        for domain in result_list:
+            print domain
+    else:
+        return { 'domains': result_list }
 
 
 def domain_add(auth, domain, dyndns=False):

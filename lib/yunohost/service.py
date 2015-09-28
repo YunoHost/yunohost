@@ -30,7 +30,6 @@ import glob
 import subprocess
 import errno
 import shutil
-import jinja2
 import difflib
 import hashlib
 
@@ -270,26 +269,35 @@ def service_log(name, number=50):
     return result
 
 
-def service_regenconf(auth, name=None, force=False, keep=False):
+def service_regenconf(service=None, force=False):
     """
     Regenerate the configuration file(s) for a service and compare the result
     with the existing configuration file.
     Prints the differences between files if any.
 
     Keyword argument:
-        name -- Regenerate configuration for a specfic service
+        service -- Regenerate configuration for a specfic service
         force -- Override the current configuration with the newly generated
                  one, even if it has been modified
-        keep -- Save the current configuration to avoid further notifications
 
     """
-    if name is not None:
-        _regenerate_configuration_for(auth, name, force, keep)
-        
-    
-    #TODO: Raise error when force + keep
-    #TODO: Loop through all the services
-    #TODO: Win message with regenerated configurations
+    if force:
+        arg_force = 1
+    else:
+        arg_force = 0
+
+    if service is None:
+        # Regen ALL THE CONFIGURATIONS
+        hook_callback('conf_regen', args=[arg_force])
+
+        msignals.display(m18n.n('services_configured'), 'success')
+    else:
+        if service not in _get_services().keys():
+            raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service))
+
+        hook_callback('conf_regen', [service] , args=[arg_force])
+
+        msignals.display(m18n.n('service_configured', service), 'success')
 
 
 def _run_service_command(action, service):
@@ -417,16 +425,15 @@ def _hash(filename):
         return 'no hash yet'
 
 
-def _safe_remove(conf_file, service=None, force=False, keep=False):
+def service_saferemove(service, conf_file, force=False):
     """
     Check if the specific file has been modified before removing it.
     Backup the file in /home/yunohost.backup
 
     Keyword argument:
-        conf_file -- The file to write
         service -- Service name of the file to delete
+        conf_file -- The file to write
         force -- Force file deletion
-        keep -- Keep the current file and save its hash
 
     """
     deleted = False
@@ -487,24 +494,23 @@ def _safe_remove(conf_file, service=None, force=False, keep=False):
     return deleted
 
 
-def _safe_write(conf_file, new_conf='', service=None, force=False, keep=False):
+def service_safecopy(service, new_conf_file, conf_file, force=False):
     """
     Check if the specific file has been modified and display differences.
     Stores the file hash in the services.yml file
 
     Keyword argument:
-        conf_file -- The file to write
-        new_conf -- String containing the new content
-        service -- Service name of the file to write
+        service -- Service name attached to the conf file
+        new_conf_file -- Path to the desired conf file
+        conf_file -- Path to the targeted conf file
         force -- Force file overriding
-        keep -- Keep the current file and save its hash
 
     """
     regenerated = False
     services = _get_services()
 
-    if os.path.exists(new_conf):
-        filename = new_conf
+    if os.path.exists(new_conf_file):
+        filename = new_conf_file
         with open(filename, 'r') as f:
             new_conf = ''.join(f.readlines()).rstrip()
 
@@ -537,8 +543,6 @@ def _safe_write(conf_file, new_conf='', service=None, force=False, keep=False):
         with open(conf_file, 'w') as f: f.write(new_conf)
         regenerated = True
         new_hash = _hash(conf_file)
-    elif keep:
-        new_hash = previous_hash[0:32] + ', but keep ' + current_hash
     elif len(diff) == 0:
         new_hash = _hash(conf_file)
     else:
@@ -565,80 +569,3 @@ def _safe_write(conf_file, new_conf='', service=None, force=False, keep=False):
     _save_services(services)
 
     return regenerated
-
-
-def _regenerate_configuration_for(auth, service, force=False, keep=False):
-    """
-    Handle all the different services' configurations of YunoHost
-
-    Keyword argument:
-        service -- Service name to take care of
-        force -- Force configuration overriding
-        keep -- Keep the current configuration and save its hash
-
-    """
-    from yunohost.domain import domain_list
-
-    if service not in _get_services().keys() \
-       or not os.path.isdir("%s/%s" % (template_dir, service)):
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service))
-
-    # Set the service's template directory as Jinja Environment in order
-    # to ease the template loading
-    env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader("%s/%s" % (template_dir, service))
-    )
-
-    domains = domain_list(auth)['domains']
-
-    with open('/etc/yunohost/current_host', 'r') as f:
-        main_domain = f.readline().rstrip()
-
-    if service == 'nginx':
-
-        need_restart = False
-
-        # Copy plain files
-        for filename in [
-            'ssowat.conf',
-            'yunohost_admin.conf',
-            'yunohost_admin.conf.inc',
-            'yunohost_api.conf.inc',
-            'yunohost_panel.conf.inc',
-        ]:
-            conf_file = '/etc/nginx/conf.d/%s' % filename
-            new_conf = '%s/%s/%s' % (template_dir, service, filename)
-            _safe_write(conf_file, new_conf, service, force, keep)
-
-        # We need one file and one folder per virtualhost
-        for domain in domains: 
-            conf_file = '/etc/nginx/conf.d/%s.conf' % domain
-            new_conf = env.get_template('server.conf.j2').render(domain=domain)
-            need_restart = _safe_write(conf_file, new_conf, service, force, keep) \
-                or need_restart
-            try:
-                os.makedirs('/etc/nginx/conf.d/%s.d' % domain)
-            except OSError: pass
-
-        # Copy yunohost_local.conf for the main domain
-        filename = 'yunohost_local.conf'
-        conf_file = '/etc/nginx/conf.d/%s.d/%s' % (main_domain, filename)
-        new_conf = '%s/%s/%s' % (template_dir, service, filename)
-        _safe_write(conf_file, new_conf, service, force, keep)
-
-        # Backup and remove configuration for unexisting domains
-        for conf_file in os.listdir('/etc/nginx/conf.d/'):
-            if conf_file.endswith('.conf') and len(conf_file.split('.')) > 2 \
-               and conf_file.replace('.conf', '') not in domains:
-                _safe_remove('/etc/nginx/conf.d/'+ conf_file, service, force, keep)
-
-        # Restart Nginx
-        if need_restart:
-	    _run_service_command('restart', service)
-        else:
-            _run_service_command('reload', service)
-
-        msignals.display(m18n.n('service_configured', service), 'success')
-
-    if service == 'postfix':
-        pass

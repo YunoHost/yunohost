@@ -243,6 +243,10 @@ domain:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
+                -r:
+                    full: --raw
+                    help: Return domains as a bash-usable list instead of JSON
+                    action: store_true
                 -f:
                     full: --filter
                     help: LDAP filter used to search
@@ -879,18 +883,47 @@ service:
                 Prints the differences between files if any.
             api: PUT /services/regenconf
             arguments:
-                -n:
-                    full: --name
+                -s:
+                    full: --service
                     help: Regenerate configuration for a specfic service
                 -f:
                     full: --force
                     help: Override the current configuration with the newly generated one, even if it has been modified
                     action: store_true
-                -k:
-                    full: --keep
-                    help: Save the current configuration to avoid further notifications
+
+        ### service_safecopy()
+        safecopy:
+            action_help: >
+                Check if the specific file has been modified and display differences.
+                Stores the file hash in the services.yml file
+            api: PUT /services/safecopy
+            arguments:
+                service:
+                    help: Service name attached to the conf file
+                new_conf_file:
+                    help: Path to the desired conf file
+                conf_file:
+                    help: Path to the targeted conf file
+                -f:
+                    full: --force
+                    help: Override the current configuration with the newly generated one, even if it has been modified
                     action: store_true
 
+        ### service_saferemove()
+        saferemove:
+            action_help: >
+                Check if the specific file has been modified before removing it.
+                Backup the file in /home/yunohost.backup
+            api: PUT /services/safecopy
+            arguments:
+                service:
+                    help: Service name attached to the conf file
+                conf_file:
+                    help: Path to the targeted conf file
+                -f:
+                    full: --force
+                    help: Force file deletion
+                    action: store_true
 
 #############################
 #         Firewall          #

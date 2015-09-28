@@ -1,0 +1,57 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if $force; then
+        sudo yunohost service safecopy \
+          -s nginx \
+          --force \
+          $1 $2
+    else
+        sudo yunohost service safecopy \
+          -s nginx \
+          $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/nginx
+
+# Copy plain single configuration files
+$files="ssowat.conf
+yunohost_admin.conf
+yunohost_admin.conf.inc
+yunohost_api.conf.inc
+yunohost_panel.conf.inc"
+
+for file in files; do
+    safe_copy $file /etc/nginx/conf.d/$file
+done
+
+
+# Copy 'yunohost.local' to the main domain conf directory
+main_domain=$(sudo yunohost tools maindomain)
+safe_copy yunohost_local.conf \
+  /etc/nginx/conf.d/$main_domain.d/yunohost_local.conf
+
+
+need_restart=0
+
+# Copy a configuration file for each YunoHost domain 
+for domain in $(sudo yunohost domain list --raw); do
+    sudo mkdir /etc/nginx/conf.d/$domain.d
+    cat server.conf.sed \
+      | sed "s/{{ domain }}/$domain/g" \
+      | sudo tee $domain.conf
+    if $(safe_copy $domain.conf /etc/nginx/conf.d/$domain.conf); then
+        need_restart=1
+    fi
+done
+
+# Restart if need be
+if $need_restart; then
+    service nginx restart
+else
+    service nginx reload
+fi
