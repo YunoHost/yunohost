@@ -189,14 +189,15 @@ def hook_callback(action, hooks=[], args=None):
         # Add similar hooks to the list
         # For example: Having a 16-postfix hook in the list will execute a
         # xx-postfix_dkim as well
+        all_hooks = []
         for n in hooks:
-            for key in hooks.keys():
-                if key.startswith("%s_" % n) \
-                  and n not in hooks:
-                    hooks.append(n)
+            for key in hooks_names.keys():
+                if key == n or key.startswith("%s_" % n) \
+                  and key not in all_hooks:
+                    all_hooks.append(key)
                         
         # Iterate over given hooks names list
-        for n in hooks:
+        for n in all_hooks:
             try:
                 hl = hooks_names[n]
             except KeyError:

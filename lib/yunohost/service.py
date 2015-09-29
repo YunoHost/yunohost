@@ -292,7 +292,7 @@ def service_regenconf(service=None, force=False):
         if service not in _get_services().keys():
             raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service))
 
-        hook_callback('conf_regen', [service] , args=[arg_force])
+        hook_callback('conf_regen', [service] , args=[force])
 
         msignals.display(m18n.n('service_configured', service), 'success')
 
