@@ -1,7 +1,7 @@
 # Default location of the slapd.conf file or slapd.d cn=config directory. If
 # empty, use the compiled-in default (/etc/ldap/slapd.d with a fallback to
 # /etc/ldap/slapd.conf).
-SLAPD_CONF=/etc/ldap/slapd.conf
+SLAPD_CONF=
 
 # System account to run the slapd server under. If empty the server
 # will run as root.
@@ -21,7 +21,7 @@ SLAPD_PIDFILE=
 # sockets.
 # Example usage:
 # SLAPD_SERVICES="ldap://127.0.0.1:389/ ldaps:/// ldapi:///"
-SLAPD_SERVICES="ldap://127.0.0.1/ ldapi://127.0.0.1/"
+SLAPD_SERVICES="ldap:/// ldapi:///"
 
 # If SLAPD_NO_START is set, the init script will not start or restart
 # slapd (but stop will still work).  Uncomment this if you are
