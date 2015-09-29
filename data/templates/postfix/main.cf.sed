@@ -6,7 +6,7 @@
 # is /etc/mailname.
 #myorigin = /etc/mailname
 
-smtpd_banner = $myhostname ESMTP $mail_name (Debian/GNU)
+smtpd_banner = $myhostname Service ready
 biff = no
 
 # appending .domain is the MUA's job.
@@ -17,22 +17,39 @@ append_dot_mydomain = no
 
 readme_directory = no
 
-# TLS parameters
+# -- TLS for incoming connections
+# By default, TLS is disabled in the Postfix SMTP server, so no difference to
+# plain Postfix is visible. Explicitly switch it on with "smtpd_tls_security_level = may".
+smtpd_tls_security_level=may
+
+# Sending AUTH data over an unencrypted channel poses a security risk.
+# When TLS layer encryption is optional ("smtpd_tls_security_level = may"), it
+# may however still be useful to only offer AUTH when TLS is active. To maintain
+# compatibility with non-TLS clients, the default is to accept AUTH without
+# encryption. In order to change this behavior, we set "smtpd_tls_auth_only = yes".
+smtpd_tls_auth_only=yes
 smtpd_tls_cert_file=/etc/ssl/certs/yunohost_crt.pem
 smtpd_tls_key_file=/etc/ssl/private/yunohost_key.pem
 smtpd_tls_CAfile = /etc/ssl/certs/ca-yunohost_crt.pem
-smtpd_use_tls=yes
-smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH
+smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtpd_tls_loglevel=1
+smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3
+smtpd_tls_mandatory_ciphers=high
+
+# -- TLS for outgoing connections
+# Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
+smtp_tls_security_level=may
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtp_tls_loglevel=1
 
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
 # information on enabling SSL in the smtp client.
 
-myhostname = {{ domain }}
+myhostname = {{ main_domain }}
 alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
-mydomain = {{ domain }}
+mydomain = {{ main_domain }}
 mydestination = localhost
 relayhost = 
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
@@ -41,8 +58,8 @@ mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 
-#### add yunohost ####
-message_size_limit = 10240000
+#### Fit to the maximum message size allowed by GMail or Yahoo ####
+message_size_limit = 26214400
 
 # Virtual Domains Control 
 virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf 
@@ -85,7 +102,7 @@ smtpd_client_restrictions =
     permit_sasl_authenticated, 
     reject_rbl_client bl.spamcop.net, 
     reject_rbl_client cbl.abuseat.org, 
-    reject_rbl_client sbl-xbl.spamhaus.org, 
+    reject_rbl_client zen.spamhaus.org, 
     permit 
  
 # Requirements for the HELO statement 
@@ -115,7 +132,7 @@ smtpd_recipient_restrictions =
     check_policy_service inet:127.0.0.1:10023
     permit
 
-#Use SPF
+# Use SPF
 policy-spf_time_limit = 3600s
 
 # SRS
@@ -124,3 +141,5 @@ sender_canonical_classes = envelope_sender
 
 # Ignore some headers
 smtp_header_checks = regexp:/etc/postfix/header_checks
+
+smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
