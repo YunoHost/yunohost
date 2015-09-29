@@ -26,6 +26,8 @@ safe_copy slapd.default /etc/default/slapd
 version=$(sed 's/\..*//' /etc/debian_version)
 if [[ "$version" == '8' ]]; then
     sudo sed -i "s/  hdb/  mdb/g" slapd.conf
+    sudo sed -i "s/back_hdb/back_mdb/g" slapd.conf
+    sudo sed -i "s/dbconfig set_/#dbconfig set_/g" slapd.conf
 fi
 
 safe_copy slapd.conf /etc/ldap/slapd.conf

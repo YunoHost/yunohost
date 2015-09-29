@@ -529,6 +529,10 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
         msignals.display(m18n.n('service_add_configuration', conf_file),
                          'info')
 
+    # Add the service if it does not exist
+    if service not in services.keys():
+        services[service] = {}
+
     # Retrieve hashes
     if not 'conffiles' in services[service]:
         services[service]['conffiles'] = {}
