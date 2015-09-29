@@ -397,7 +397,10 @@ def _get_diff(string, filename):
         with open(filename, 'r') as f:
             file_lines = f.readlines()
 
-        new_lines = string.splitlines(1)
+        string = string + '\n'
+        new_lines = string.splitlines(True)
+        while '\n' == file_lines[-1]:
+            del file_lines[-1]
         return difflib.unified_diff(file_lines, new_lines)
     except IOError: return []
 
@@ -543,14 +546,13 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
     if force or previous_hash == current_hash:
         with open(conf_file, 'w') as f: f.write(new_conf)
         new_hash = _hash(conf_file)
-        if current_hash != new_hash:
+        if previous_hash != new_hash:
             regenerated = True
     elif len(diff) == 0:
         new_hash = _hash(conf_file)
     else:
         new_hash = previous_hash
-        if os.isatty(1) and \
-           (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
+        if (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
             msignals.display(
                 m18n.n('service_configuration_conflict', conf_file),
                 'warning'
