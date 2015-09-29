@@ -29,7 +29,6 @@ import re
 import json
 import errno
 import subprocess
-from shlex import split as arg_split
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -314,15 +313,13 @@ def hook_exec(file, args=None):
     if arg_list:
         # Concatenate arguments and escape them with double quotes to prevent
         # bash related issue if an argument is empty and is not the last
-        arg_list = [str(s) for s in arg_list]
-        arg_str = '\\"{:s}\\"'.format('\\" \\"'.join(arg_list))
+        arg_str = '"{:s}"'.format('" "'.join(str(s) for s in arg_list))
 
     msignals.display(m18n.n('executing_script'))
 
     p = subprocess.Popen(
-            arg_split('su - admin -c "cd \\"{:s}\\" && ' \
-                '/bin/bash -x \\"{:s}\\" {:s}"'.format(
-                    file_path, file, arg_str)),
+            ['sudo', '-u', 'admin', '-H', 'sh', '-c', 'cd "{:s}" && ' \
+                '/bin/bash "{:s}" {:s}'.format(file_path, file, arg_str)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             shell=False)
 
