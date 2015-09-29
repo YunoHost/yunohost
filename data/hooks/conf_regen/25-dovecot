@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s dovecot $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s dovecot $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/dovecot
+
+# Create vmail user
+sudo id vmail > /dev/null 2>&1 \
+  || sudo adduser --system --ingroup mail --uid 500 vmail
+
+
+# Replace main domain in the main configuration file
+main_domain=$(cat /etc/yunohost/current_host)
+cat dovecot.conf.sed \
+  | sed "s/{{ main_domain }}/$main_domain/g" \
+  | sudo tee dovecot.conf
+
+
+# Handle IPv4 only systems
+if [ ! -f /proc/net/if_inet6 ];
+then
+  sudo sed -i 's/^listen.*/listen = \*/' dovecot.conf
+fi
+
+
+safe_copy dovecot.conf /etc/dovecot/dovecot.conf
+safe_copy dovecot-ldap.conf /etc/dovecot/dovecot-ldap.conf
+
+
+# Setup Sieve
+sudo rm -rf /etc/dovecot/global_script
+sudo mkdir -p -m 0770 /etc/dovecot/global_script
+safe_copy sa-learn-pipe.sh /usr/bin/sa-learn-pipe.sh
+sudo chmod 755 /usr/bin/sa-learn-pipe.sh
+safe_copy dovecot.sieve /etc/dovecot/global_script/dovecot.sieve
+sudo chmod 660 /etc/dovecot/global_script/dovecot.sieve
+sudo sievec /etc/dovecot/global_script/dovecot.sieve
+sudo chmod 660 /etc/dovecot/global_script/dovecot.svbin
+
+
+service dovecot reload
