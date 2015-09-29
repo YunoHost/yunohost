@@ -319,7 +319,8 @@ def hook_exec(file, args=None):
 
     p = subprocess.Popen(
             ['sudo', '-u', 'admin', '-H', 'sh', '-c', 'cd "{:s}" && ' \
-                '/bin/bash "{:s}" {:s}'.format(file_path, file, arg_str)],
+                '/bin/bash -x "{:s}" {:s}'.format(
+                    file_path, file, arg_str)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             shell=False)
 
