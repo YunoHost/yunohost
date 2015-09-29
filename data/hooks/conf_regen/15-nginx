@@ -4,7 +4,7 @@ set -e
 force=$1
 
 function safe_copy () {
-    if [ $force ]; then
+    if [[ "$force" == "True" ]]; then
         sudo yunohost service safecopy \
           -s nginx \
           $1 $2 \
@@ -36,7 +36,7 @@ safe_copy yunohost_local.conf \
   /etc/nginx/conf.d/$main_domain.d/yunohost_local.conf
 
 
-need_restart=1
+need_restart=False
 
 # Copy a configuration file for each YunoHost domain 
 for domain in $(sudo yunohost domain list --raw); do
@@ -45,12 +45,12 @@ for domain in $(sudo yunohost domain list --raw); do
       | sed "s/{{ domain }}/$domain/g" \
       | sudo tee $domain.conf
     if [[ $(safe_copy $domain.conf /etc/nginx/conf.d/$domain.conf) == "True" ]]; then
-        need_restart=0
+        need_restart=True
     fi
 done
 
 # Restart if need be
-if [ $need_restart ]; then
+if [[ "$need_restart" == "True" ]]; then
     sudo service nginx restart
 else
     sudo service nginx reload

@@ -283,14 +283,9 @@ def service_regenconf(service=None, force=False):
     """
     from yunohost.hook import hook_callback
 
-    if force:
-        arg_force = 0
-    else:
-        arg_force = 1
-
     if service is None:
         # Regen ALL THE CONFIGURATIONS
-        hook_callback('conf_regen', args=[arg_force])
+        hook_callback('conf_regen', args=[force])
 
         msignals.display(m18n.n('services_configured'), 'success')
     else:
@@ -402,7 +397,6 @@ def _get_diff(string, filename):
         with open(filename, 'r') as f:
             file_lines = f.readlines()
 
-        string = string + '\n'
         new_lines = string.splitlines(1)
         return difflib.unified_diff(file_lines, new_lines)
     except IOError: return []
@@ -548,8 +542,9 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
     # Handle conflicts
     if force or previous_hash == current_hash:
         with open(conf_file, 'w') as f: f.write(new_conf)
-        regenerated = True
         new_hash = _hash(conf_file)
+        if current_hash != new_hash:
+            regenerated = True
     elif len(diff) == 0:
         new_hash = _hash(conf_file)
     else:

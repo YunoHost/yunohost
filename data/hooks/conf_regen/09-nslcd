@@ -4,7 +4,7 @@ set -e
 force=$1
 
 function safe_copy () {
-    if [ $force ]; then
+    if [[ "$force" == "True" ]]; then
         sudo yunohost service safecopy \
           -s nslcd \
           $1 $2 \
