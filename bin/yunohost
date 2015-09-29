@@ -13,6 +13,9 @@ USE_CACHE = True
 # Either the output has to be encoded as a JSON encoded string or not
 PRINT_JSON = False
 
+# Either the output has to printed for scripting usage or not
+PRINT_PLAIN = False
+
 # Level for which loggers will log
 LOGGERS_LEVEL = 'INFO'
 
@@ -62,6 +65,10 @@ def _parse_argv():
         global PRINT_JSON
         PRINT_JSON = True
         argv.remove('--json')
+    if '--plain' in argv:
+        global PRINT_PLAIN
+        PRINT_PLAIN = True
+        argv.remove('--plain')
     if '--debug' in argv:
         global LOGGERS_LEVEL
         LOGGERS_LEVEL = 'DEBUG'
@@ -156,6 +163,6 @@ if __name__ == '__main__':
 
     # Execute the action
     from moulinette import cli
-    ret = cli(_retrieve_namespaces(), args,
-              print_json=PRINT_JSON, use_cache=USE_CACHE)
+    ret = cli(_retrieve_namespaces(), args, use_cache=USE_CACHE,
+              print_json=PRINT_JSON, print_plain=PRINT_PLAIN)
     sys.exit(ret)
