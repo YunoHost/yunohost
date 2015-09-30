@@ -199,7 +199,8 @@ def service_status(names=[]):
                                   m18n.n('service_unknown', name))
 
         status = None
-        if services[name]['status'] == 'service':
+        if 'status' not in services[name] or \
+          services[name]['status'] == 'service':
             status = 'service %s status' % name
         else:
             status = str(services[name]['status'])
@@ -283,18 +284,11 @@ def service_regenconf(service=None, force=False):
     """
     from yunohost.hook import hook_callback
 
-    if service is None:
-        # Regen ALL THE CONFIGURATIONS
-        hook_callback('conf_regen', args=[force])
-
-        msignals.display(m18n.n('services_configured'), 'success')
+    if service is not None:
+        hook_callback('conf_regen', [service], args=[force])
     else:
-        if service not in _get_services().keys():
-            raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service))
-
-        hook_callback('conf_regen', [service] , args=[force])
-
-        msignals.display(m18n.n('service_configured', service), 'success')
+        hook_callback('conf_regen', args=[force])
+    msignals.display(m18n.n('services_configured'), 'success')
 
 
 def _run_service_command(action, service):
@@ -436,14 +430,13 @@ def service_saferemove(service, conf_file, force=False):
 
     """
     deleted = False
+    services = _get_services()
 
     if not os.path.exists(conf_file):
         try:
             del services[service]['conffiles'][conf_file]
         except KeyError: pass
         return True
-
-    services = _get_services()
 
     # Backup existing file
     date = time.strftime("%Y%m%d.%H%M%S")
