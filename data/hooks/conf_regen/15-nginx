@@ -49,6 +49,16 @@ for domain in $(sudo yunohost domain list --raw); do
     fi
 done
 
+# Remove old domains files
+for file in /etc/nginx/conf.d/*.*.conf; do
+    domain=$(echo $file \
+              | sed 's|/etc/nginx/conf.d/||' \
+              | sed 's|.conf||')
+    [[ $domain_list =~ $domain ]] \
+      || $(sudo yunohost service saferemove -s nginx $file) == "True" \
+      && (rm -r /etc/nginx/conf.d/$domain.d || true)
+done
+
 # Restart if need be
 if [[ "$need_restart" == "True" ]]; then
     sudo service nginx restart

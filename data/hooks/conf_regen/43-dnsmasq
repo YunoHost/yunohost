@@ -38,4 +38,11 @@ for domain in $(sudo yunohost domain list --raw); do
     safe_copy $domain /etc/dnsmasq.d/$domain
 done
 
+# Remove old domains files
+for file in /etc/dnsmasq.d/*.*; do
+    domain=$(echo $file | sed 's|/etc/dnsmasq.d/||')
+    [[ $domain_list =~ $domain ]] \
+      || sudo yunohost service saferemove -s dnsmasq $file
+done
+
 sudo service dnsmasq reload

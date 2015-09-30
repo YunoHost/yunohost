@@ -41,8 +41,13 @@ safe_copy metronome.logrotate /etc/logrotate.d/metronome
 need_restart=False
 sudo mkdir -p /etc/metronome/conf.d
 
+domain_list=$(sudo yunohost domain list --raw)
+
 # Copy a configuration file for each YunoHost domain 
-for domain in $(sudo yunohost domain list --raw); do
+for domain in $domain_list; do
+    sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
+    sudo mkdir -p /var/lib/metronome/$sanitzed_domain/pep
+
     cat domain.cfg.lua.sed \
       | sed "s/{{ domain }}/$domain/g" \
       | sudo tee $domain.cfg.lua
@@ -50,6 +55,22 @@ for domain in $(sudo yunohost domain list --raw); do
         need_restart=True
     fi
 done
+
+# Remove old domains files
+for file in /etc/metronome/conf.d/*; do
+    domain=$(echo $file \
+             | sed 's|/etc/metronome/conf.d/||' \
+             | sed 's|.cfg.lua||')
+    sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
+    [[ $domain_list =~ $domain ]] \
+      || $(sudo yunohost service saferemove -s metronome $file) == "True" \
+      && rm -rf /var/lib/metronome/$sanitzed_domain
+
+done
+
+# Create domain directory
+sudo chown -R metronome: /var/lib/metronome/
+sudo chown -R metronome: /etc/metronome/conf.d/
 
 # Restart if need be
 if [[ "$need_restart" == "True" ]]; then
