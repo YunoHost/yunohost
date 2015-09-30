@@ -255,15 +255,6 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
         logger.info("restoring from backup '%s' created on %s", name,
                     time.ctime(info['created_at']))
 
-    # Retrieve domain from the backup
-    try:
-        with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
-            domain = f.readline().rstrip()
-    except IOError:
-        logger.error("unable to retrieve domain from '%s/yunohost/current_host'",
-                     tmp_dir)
-        raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
-
     # Check if YunoHost is installed
     if os.path.isfile('/etc/yunohost/installed'):
         msignals.display(m18n.n('yunohost_already_installed'), 'warning')
@@ -281,6 +272,16 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
     else:
         from yunohost.tools import tools_postinstall
+
+        # Retrieve the domain from the backup
+        try:
+            with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
+                domain = f.readline().rstrip()
+        except IOError:
+            logger.error("unable to retrieve domain from '%s/yunohost/current_host'",
+                         tmp_dir)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+
         logger.info("executing the post-install...")
         tools_postinstall(domain, 'yunohost', True)
 
@@ -337,6 +338,7 @@ def backup_list():
             except ValueError:
                 continue
             result.append(name)
+        result.sort()
 
     return { 'archives': result }
 
