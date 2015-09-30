@@ -119,8 +119,8 @@ $banned_filename_re = new_RE(
   qr'^application/x-msdos-program$'i,
   qr'^application/hta$'i,
 
-# qr'^application/x-msmetafile$'i,      # Windows Metafile MIME type
-# qr'^\.wmf$',                          # Windows Metafile file(1) type
+# qr'^application/x-msmetafile$'i,	# Windows Metafile MIME type
+# qr'^\.wmf$',				# Windows Metafile file(1) type
 
 # qr'^message/partial$'i, qr'^message/external-body$'i, # rfc2046 MIME types
 

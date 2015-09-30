@@ -8,9 +8,9 @@ use strict;
 # the directives you can use in this file
 #
 
-$myhostname = "{{ domain }}";
+$myhostname = "{{ main_domain }}";
 
-$mydomain = "{{ domain }}";
+$mydomain = "{{ main_domain }}";
 
 # Enable LDAP support 
 $enable_ldap  = 1;
