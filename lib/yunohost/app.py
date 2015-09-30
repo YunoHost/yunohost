@@ -351,7 +351,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
                             for line in lines:
                                 sources.write(re.sub(r''+ original_app_id +'', app_id, line))
 
-        # Add hooks
+        # Clean hooks and add new ones
+        hook_remove(app_id)
         if 'hooks' in os.listdir(app_tmp_folder):
             for hook in os.listdir(app_tmp_folder +'/hooks'):
                 hook_add(app_id, app_tmp_folder +'/hooks/'+ hook)
@@ -451,7 +452,8 @@ def app_install(auth, app, label=None, args=None):
     os.makedirs(app_setting_path)
     os.system('touch %s/settings.yml' % app_setting_path)
 
-    # Add hooks
+    # Clean hooks and add new ones
+    hook_remove(app_id)
     if 'hooks' in os.listdir(app_tmp_folder):
         for file in os.listdir(app_tmp_folder +'/hooks'):
             hook_add(app_id, app_tmp_folder +'/hooks/'+ file)

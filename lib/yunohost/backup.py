@@ -57,8 +57,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     """
     # TODO: Add a 'clean' argument to clean output directory
-    from yunohost.hook import hook_add
-    from yunohost.hook import hook_callback
+    from yunohost.hook import hook_callback, hook_exec
 
     tmp_dir = None
 
@@ -117,6 +116,10 @@ def backup_create(name=None, description=None, output_directory=None,
         else:
             os.system('chown -hR admin: %s' % tmp_dir)
 
+    # Run system hooks
+    msignals.display(m18n.n('backup_running_hooks'))
+    hook_callback('backup', hooks, args=[tmp_dir])
+
     # Initialize backup info
     info = {
         'description': description or '',
@@ -124,7 +127,7 @@ def backup_create(name=None, description=None, output_directory=None,
         'apps': {},
     }
 
-    # Add apps backup hook
+    # Backup apps
     if not ignore_apps:
         from yunohost.app import app_info
 
@@ -141,28 +144,28 @@ def backup_create(name=None, description=None, output_directory=None,
         else:
             apps_filtered = apps_list
 
-        try:
-            for app_id in apps_filtered:
-                hook = '/etc/yunohost/apps/%s/scripts/backup' % app_id
-                if os.path.isfile(hook):
-                    hook_add(app_id, hook)
+        # Run apps backup scripts
+        for app_id in apps_filtered:
+            script = '/etc/yunohost/apps/{:s}/scripts/backup'.format(app_id)
+            if not os.path.isfile(script):
+                logger.warning("backup script '%s' not found", script)
+                msignals.display(m18n.n('unbackup_app', app_id),
+                                 'warning')
+                continue
 
-                    # Add app info
-                    i = app_info(app_id)
-                    info['apps'][app_id] = {
-                        'version': i['version'],
-                    }
-                else:
-                    logger.warning("unable to find app's backup hook '%s'",
-                                   hook)
-                    msignals.display(m18n.n('unbackup_app', app_id),
-                                     'warning')
-        except IOError as e:
-            logger.info("unable to add apps backup hook: %s", str(e))
-
-    # Run hooks
-    msignals.display(m18n.n('backup_running_hooks'))
-    hook_callback('backup', hooks, args=[tmp_dir])
+            try:
+                msignals.display(m18n.n('backup_running_app_script', app_id))
+                hook_exec(script, args=[tmp_dir])
+            except:
+                logger.exception("error while executing script '%s'", script)
+                msignals.display(m18n.n('unbackup_app', app_id),
+                                 'error')
+            else:
+                # Add app info
+                i = app_info(app_id)
+                info['apps'][app_id] = {
+                    'version': i['version'],
+                }
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -367,6 +370,7 @@ def backup_info(name):
                          info_file)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
+    # TODO: TAILLE!
     return {
         'path': archive_file,
         'created_at': time.strftime(m18n.n('format_datetime_short'),
