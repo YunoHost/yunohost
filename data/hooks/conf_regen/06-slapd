@@ -18,6 +18,10 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/slapd
 
+# Remove legacy configuration file
+sudo yunohost service saferemove -s slapd \
+  /etc/ldap/slapd-yuno.conf
+
 safe_copy mailserver.schema /etc/ldap/schema/mailserver.schema
 safe_copy ldap.conf /etc/ldap/ldap.conf
 safe_copy slapd.default /etc/default/slapd
@@ -25,9 +29,11 @@ safe_copy slapd.default /etc/default/slapd
 # Compatibility: change from HDB to MDB on Jessie
 version=$(sed 's/\..*//' /etc/debian_version)
 if [[ "$version" == '8' ]]; then
-    sudo sed -i "s/  hdb/  mdb/g" slapd.conf
-    sudo sed -i "s/back_hdb/back_mdb/g" slapd.conf
-    sudo sed -i "s/dbconfig set_/#dbconfig set_/g" slapd.conf
+    cat slapd.conf \
+      | sed "s/hdb$/mdb/g" \
+      | sed "s/back_hdb/back_mdb/g" \
+      | sed "s/^dbconfig set_/#dbconfig set_/g" \
+      | sudo tee slapd.conf
 fi
 
 safe_copy slapd.conf /etc/ldap/slapd.conf
