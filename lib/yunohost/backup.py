@@ -42,7 +42,7 @@ logger = getActionLogger('yunohost.backup')
 
 
 def backup_create(name=None, description=None, output_directory=None,
-                  no_compress=False, hooks=[], ignore_apps=False):
+                  no_compress=False, hooks=[], apps=[], ignore_apps=False):
     """
     Create a backup local archive
 
@@ -52,6 +52,7 @@ def backup_create(name=None, description=None, output_directory=None,
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
         hooks -- List of backup hooks names to execute
+        apps -- List of application names to backup
         ignore_apps -- Do not backup apps
 
     """
@@ -126,8 +127,22 @@ def backup_create(name=None, description=None, output_directory=None,
     # Add apps backup hook
     if not ignore_apps:
         from yunohost.app import app_info
+
+        # Filter applications to backup
+        apps_list = set(os.listdir('/etc/yunohost/apps'))
+        apps_filtered = set()
+        if apps:
+            for a in apps:
+                if a not in apps_list:
+                    logger.warning("app '%s' not found", a)
+                    msignals.display(m18n.n('unbackup_app', a), 'warning')
+                else:
+                    apps_filtered.add(a)
+        else:
+            apps_filtered = apps_list
+
         try:
-            for app_id in os.listdir('/etc/yunohost/apps'):
+            for app_id in apps_filtered:
                 hook = '/etc/yunohost/apps/%s/scripts/backup' % app_id
                 if os.path.isfile(hook):
                     hook_add(app_id, hook)
@@ -192,13 +207,14 @@ def backup_create(name=None, description=None, output_directory=None,
     msignals.display(m18n.n('backup_complete'), 'success')
 
 
-def backup_restore(name, hooks=[], ignore_apps=False, force=False):
+def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
     """
     Restore from a local backup archive
 
     Keyword argument:
         name -- Name of the local backup archive
         hooks -- List of restoration hooks names to execute
+        apps -- List of application names to restore
         ignore_apps -- Do not restore apps
         force -- Force restauration on an already installed system
 
@@ -270,7 +286,20 @@ def backup_restore(name, hooks=[], ignore_apps=False, force=False):
 
     # Add apps restore hook
     if not ignore_apps:
-        for app_id in info['apps'].keys():
+        # Filter applications to restore
+        apps_list = set(info['apps'].keys())
+        apps_filtered = set()
+        if apps:
+            for a in apps:
+                if a not in apps_list:
+                    logger.warning("app '%s' not found", a)
+                    msignals.display(m18n.n('unrestore_app', a), 'warning')
+                else:
+                    apps_filtered.add(a)
+        else:
+            apps_filtered = apps_list
+
+        for app_id in apps_filtered:
             hook = "/etc/yunohost/apps/%s/scripts/restore" % app_id
             if os.path.isfile(hook):
                 hook_add(app_id, hook)

@@ -590,6 +590,9 @@ backup:
                 --hooks:
                     help: List of backup hooks names to execute
                     nargs: "*"
+                --apps:
+                    help: List of application names to backup
+                    nargs: "*"
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
@@ -605,6 +608,9 @@ backup:
                     help: Name of the local backup archive
                 --hooks:
                     help: List of restauration hooks names to execute
+                    nargs: "*"
+                --apps:
+                    help: List of application names to restore
                     nargs: "*"
                 --ignore-apps:
                     help: Do not restore apps
