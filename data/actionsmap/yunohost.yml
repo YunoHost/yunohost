@@ -556,6 +556,12 @@ app:
                 apps:
                     nargs: "+"
 
+        ### app_listmodules()
+        listmodules:
+            action_help: List all web admin modules
+            api: GET /modules
+            configuration:        
+                authenticate: False
 #############################
 #          Backup           #
 #############################

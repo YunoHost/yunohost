@@ -42,6 +42,7 @@ apps_path        = '/usr/share/yunohost/apps'
 apps_setting_path= '/etc/yunohost/apps/'
 install_tmp      = '/var/cache/yunohost'
 app_tmp_folder   = install_tmp + '/from_file'
+modules_path     = '/usr/share/yunohost/admin/modules/'
 
 def app_listlists():
     """
@@ -956,6 +957,18 @@ def app_ssowatconf(auth):
 
     msignals.display(m18n.n('ssowat_conf_generated'), 'success')
 
+
+def app_listmodules():
+    """
+    List all modules set up in modules directory 
+    /usr/share/yunohost/admin/modules/
+    """
+    try:
+        modules=os.walk(modules_path).next()[1] #[x[0] for x in os.walk(modules_path)]
+    except OSError:
+        modules = []
+    return { 'modules' : modules }
+    
 
 def _extract_app_from_file(path, remove=False):
     """
