@@ -1,5 +1,5 @@
 backup_dir="$1/mysql"
 
 mysqlpwd=$(sudo cat /etc/yunohost/mysql)
-sudo mysql -uroot -p"$mysqlpwd" mysql < $backup_dir/mysql.sql
+#sudo mysql -uroot -p"$mysqlpwd" mysql < $backup_dir/mysql.sql
 sudo mysqladmin flush-privileges -p"$mysqlpwd"
