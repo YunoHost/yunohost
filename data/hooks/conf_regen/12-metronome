@@ -63,8 +63,8 @@ for file in /etc/metronome/conf.d/*; do
              | sed 's|.cfg.lua||')
     sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
     [[ $domain_list =~ $domain ]] \
-      || $(sudo yunohost service saferemove -s metronome $file) == "True" \
-      && rm -rf /var/lib/metronome/$sanitzed_domain
+      || ($(sudo yunohost service saferemove -s metronome $file) == "True" \
+        && rm -rf /var/lib/metronome/$sanitzed_domain)
 
 done
 

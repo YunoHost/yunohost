@@ -264,6 +264,7 @@ domain:
             action_help: Create a custom domain
             api: POST /domains
             configuration:
+                lock: false
                 authenticate: all
             arguments:
                 domain:
@@ -282,6 +283,7 @@ domain:
             action_help: Delete domains
             api: DELETE /domains/<domain>
             configuration:
+                lock: false
                 authenticate: all
             arguments:
                 domain:

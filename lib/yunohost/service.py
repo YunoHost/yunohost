@@ -466,11 +466,6 @@ def service_saferemove(service, conf_file, force=False):
         deleted = True
         msignals.display(m18n.n('service_configuration_backup', conf_backup_file),
                          'info')
-    elif keep:
-        services[service]['conffiles'][conf_file] = \
-            previous_hash[0:32] + ', but keep ' + current_hash
-        msignals.display(m18n.n('service_configuration_backup', conf_backup_file),
-                         'info')
     else:
         services[service]['conffiles'][conf_file] = previous_hash
         os.remove(conf_backup_file)
