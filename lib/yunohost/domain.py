@@ -79,6 +79,8 @@ def domain_add(auth, domain, dyndns=False):
         dyndns -- Subscribe to DynDNS
 
     """
+    from yunohost.service import service_regenconf
+
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
     try:
         ip = str(urlopen('http://ip.yunohost.org').read())
@@ -154,75 +156,12 @@ def domain_add(auth, domain, dyndns=False):
 
         attr_dict['virtualdomain'] = domain
 
-        dnsmasq_config_path='/etc/dnsmasq.d'
-        try:
-            os.listdir(dnsmasq_config_path)
-        except OSError:
-            msignals.display(m18n.n('dnsmasq_isnt_installed'),
-                                  'warning')
-            os.makedirs(dnsmasq_config_path)
-
-        try:
-            with open('%s/%s' % (dnsmasq_config_path, domain)) as f: pass
-        except IOError as e:
-            zone_lines = [
-             'resolv-file=',
-             'address=/%s/%s' % (domain, ip),
-             'txt-record=%s,"v=spf1 mx a -all"' % domain,
-             'mx-host=%s,%s,5' % (domain, domain),
-             'srv-host=_xmpp-client._tcp.%s,%s,5222,0,5' % (domain, domain),
-             'srv-host=_xmpp-server._tcp.%s,%s,5269,0,5' % (domain, domain),
-             'srv-host=_jabber._tcp.%s,%s,5269,0,5' % (domain, domain),
-            ]
-            with open('%s/%s' % (dnsmasq_config_path, domain), 'w') as zone:
-                for line in zone_lines:
-                    zone.write(line + '\n')
-            os.system('service dnsmasq restart')
-
-        else:
-            msignals.display(m18n.n('domain_zone_exists'),
-                                 'warning')
-
-        # XMPP
-        try:
-            with open('/etc/metronome/conf.d/%s.cfg.lua' % domain) as f: pass
-        except IOError as e:
-            conf_lines = [
-                'VirtualHost "%s"' % domain,
-                '  ssl = {',
-                '        key = "%s/key.pem";' % ssl_domain_path,
-                '        certificate = "%s/crt.pem";' % ssl_domain_path,
-                '  }',
-                '  authentication = "ldap2"',
-                '  ldap = {',
-                '     hostname      = "localhost",',
-                '     user = {',
-                '       basedn        = "ou=users,dc=yunohost,dc=org",',
-                '       filter        = "(&(objectClass=posixAccount)(mail=*@%s))",' % domain,
-                '       usernamefield = "mail",',
-                '       namefield     = "cn",',
-                '       },',
-                '  }',
-            ]
-            with open('/etc/metronome/conf.d/%s.cfg.lua' % domain, 'w') as conf:
-                for line in conf_lines:
-                    conf.write(line + '\n')
-
-        os.system('mkdir -p /var/lib/metronome/%s/pep' % domain.replace('.', '%2e'))
-        os.system('chown -R metronome: /var/lib/metronome/')
-        os.system('chown -R metronome: /etc/metronome/conf.d/')
-        os.system('service metronome restart')
-
-
-        # Nginx
-        os.system('cp /usr/share/yunohost/yunohost-config/nginx/template.conf /etc/nginx/conf.d/%s.conf' % domain)
-        os.system('mkdir /etc/nginx/conf.d/%s.d/' % domain)
-        os.system('sed -i s/yunohost.org/%s/g /etc/nginx/conf.d/%s.conf' % (domain, domain))
-        os.system('service nginx reload')
-
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
 
+        service_regenconf(service='nginx')
+        service_regenconf(service='metronome')
+        service_regenconf(service='dnsmasq')
         os.system('yunohost app ssowatconf > /dev/null 2>&1')
     except:
         # Force domain removal silently
@@ -242,6 +181,8 @@ def domain_remove(auth, domain, force=False):
         force -- Force the domain removal
 
     """
+    from yunohost.service import service_regenconf
+
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
@@ -258,24 +199,13 @@ def domain_remove(auth, domain, force=False):
                                           m18n.n('domain_uninstall_app_first'))
 
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        command_list = [
-            'rm -rf /etc/yunohost/certs/%s' % domain,
-            'rm -f  /etc/dnsmasq.d/%s' % domain,
-            'rm -rf /var/lib/metronome/%s' % domain.replace('.', '%2e'),
-            'rm -f  /etc/metronome/conf.d/%s.cfg.lua' % domain,
-            'rm -rf /etc/nginx/conf.d/%s.d' % domain,
-            'rm -f  /etc/nginx/conf.d/%s.conf' % domain,
-        ]
-        for command in command_list:
-            if os.system(command) != 0:
-                msignals.display(m18n.n('path_removal_failed', command[7:]),
-                                 'warning')
+        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
+    service_regenconf(service='nginx')
+    service_regenconf(service='metronome')
+    service_regenconf(service='dnsmasq')
     os.system('yunohost app ssowatconf > /dev/null 2>&1')
-    os.system('service nginx reload')
-    os.system('service dnsmasq restart')
-    os.system('service metronome restart')
 
     msignals.display(m18n.n('domain_deleted'), 'success')
