@@ -9,17 +9,22 @@ Homepage: https://yunohost.org/
 Package: moulinette-yunohost
 Architecture: all
 Depends: moulinette (>= 2.2.1),
-    python-psutil,
-    python-requests,
-    glances,
-    python-pip,
-    pyminiupnpc,
-    dnsutils,
-    bind9utils,
-    python-apt,
-    ca-certificates,
-    python-dnspython,
-    netcat-openbsd,
-    iproute
+ python-psutil,
+ python-requests,
+ glances,
+ python-pip,
+ pyminiupnpc,
+ dnsutils,
+ bind9utils,
+ python-apt,
+ ca-certificates,
+ python-dnspython,
+ netcat-openbsd,
+ iproute,
+ unzip,
+ git-core,
+ curl,
+ mariadb-server | mysql-server, php5-mysql | php5-mysqlnd
+Conflicts: iptables-persistent
 Description: YunoHost Python scripts
  Python functions to manage a YunoHost instance

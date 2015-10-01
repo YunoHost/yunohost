@@ -596,6 +596,9 @@ backup:
                 --hooks:
                     help: List of backup hooks names to execute
                     nargs: "*"
+                --apps:
+                    help: List of application names to backup
+                    nargs: "*"
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
@@ -603,14 +606,15 @@ backup:
         ### backup_restore()
         restore:
             action_help: Restore from a local backup archive
-            api: POST /restore
-            configuration:
-                authenticate: false
+            api: POST /backup/restore/<name>
             arguments:
                 name:
                     help: Name of the local backup archive
                 --hooks:
                     help: List of restauration hooks names to execute
+                    nargs: "*"
+                --apps:
+                    help: List of application names to restore
                     nargs: "*"
                 --ignore-apps:
                     help: Do not restore apps
@@ -625,6 +629,15 @@ backup:
             api: GET /backup/archives
             configuration:
                 lock: false
+            arguments:
+                -i:
+                    full: --with-info
+                    help: Show backup information for each archive
+                    action: store_true
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
 
         ### backup_info()
         info:
@@ -635,6 +648,14 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
+                -d:
+                    full: --with-details
+                    help: Show additional backup information
+                    action: store_true
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
 
 
 #############################

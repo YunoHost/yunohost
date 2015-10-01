@@ -143,6 +143,7 @@
     "backup_output_directory_forbidden" : "Forbidden output directory",
     "backup_output_directory_not_empty" : "Output directory is not empty",
     "backup_running_hooks" : "Running backup hooks...",
+    "backup_running_app_script" : "Running backup script of app '{:s}'...",
     "backup_creating_archive" : "Creating the backup archive...",
     "backup_extracting_archive" : "Extracting the backup archive...",
     "backup_archive_open_failed" : "Unable to open the backup archive",

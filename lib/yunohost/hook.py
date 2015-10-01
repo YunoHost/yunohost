@@ -174,7 +174,7 @@ def hook_callback(action, hooks=[], args=None):
         args -- Ordered list of arguments to pass to the script
 
     """
-    result = { 'succeed': list(), 'failed': list() }
+    result = { 'succeed': {}, 'failed': {} }
     hooks_dict = {}
 
     # Retrieve hooks
@@ -220,15 +220,18 @@ def hook_callback(action, hooks=[], args=None):
     # Iterate over hooks and execute them
     for priority in sorted(hooks_dict):
         for name, info in iter(hooks_dict[priority].items()):
+            state = 'succeed'
             filename = '%s-%s' % (priority, name)
             try:
                 hook_exec(info['path'], args=args)
             except:
                 logger.exception("error while executing hook '%s'",
                                  info['path'])
-                result['failed'].append(filename)
-            else:
-                result['succeed'].append(filename)
+                state = 'failed'
+            try:
+                result[state][name].append(info['path'])
+            except KeyError:
+                result[state][name] = [info['path']]
     return result
 
 

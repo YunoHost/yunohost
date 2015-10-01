@@ -29,8 +29,9 @@ import sys
 import json
 import errno
 import time
-import shutil
 import tarfile
+import subprocess
+from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -42,7 +43,7 @@ logger = getActionLogger('yunohost.backup')
 
 
 def backup_create(name=None, description=None, output_directory=None,
-                  no_compress=False, hooks=[], ignore_apps=False):
+                  no_compress=False, hooks=[], apps=[], ignore_apps=False):
     """
     Create a backup local archive
 
@@ -52,12 +53,12 @@ def backup_create(name=None, description=None, output_directory=None,
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
         hooks -- List of backup hooks names to execute
+        apps -- List of application names to backup
         ignore_apps -- Do not backup apps
 
     """
     # TODO: Add a 'clean' argument to clean output directory
-    from yunohost.hook import hook_add
-    from yunohost.hook import hook_callback
+    from yunohost.hook import hook_callback, hook_exec
 
     tmp_dir = None
 
@@ -121,33 +122,58 @@ def backup_create(name=None, description=None, output_directory=None,
         'description': description or '',
         'created_at': timestamp,
         'apps': {},
+        'hooks': {},
     }
 
-    # Add apps backup hook
+    # Run system hooks
+    msignals.display(m18n.n('backup_running_hooks'))
+    hooks_ret = hook_callback('backup', hooks, args=[tmp_dir])
+
+    # Add hooks results to the info
+    info['hooks'] = hooks_ret['succeed']
+
+    # Backup apps
     if not ignore_apps:
         from yunohost.app import app_info
-        try:
-            for app_id in os.listdir('/etc/yunohost/apps'):
-                hook = '/etc/yunohost/apps/%s/scripts/backup' % app_id
-                if os.path.isfile(hook):
-                    hook_add(app_id, hook)
 
-                    # Add app info
-                    i = app_info(app_id)
-                    info['apps'][app_id] = {
-                        'version': i['version'],
-                    }
+        # Filter applications to backup
+        apps_list = set(os.listdir('/etc/yunohost/apps'))
+        apps_filtered = set()
+        if apps:
+            for a in apps:
+                if a not in apps_list:
+                    logger.warning("app '%s' not found", a)
+                    msignals.display(m18n.n('unbackup_app', a), 'warning')
                 else:
-                    logger.warning("unable to find app's backup hook '%s'",
-                                   hook)
-                    msignals.display(m18n.n('unbackup_app', app_id),
-                                     'warning')
-        except IOError as e:
-            logger.info("unable to add apps backup hook: %s", str(e))
+                    apps_filtered.add(a)
+        else:
+            apps_filtered = apps_list
 
-    # Run hooks
-    msignals.display(m18n.n('backup_running_hooks'))
-    hook_callback('backup', hooks, args=[tmp_dir])
+        # Run apps backup scripts
+        tmp_script = '/tmp/backup_' + str(timestamp)
+        for app_id in apps_filtered:
+            script = '/etc/yunohost/apps/{:s}/scripts/backup'.format(app_id)
+            if not os.path.isfile(script):
+                logger.warning("backup script '%s' not found", script)
+                msignals.display(m18n.n('unbackup_app', app_id),
+                                 'warning')
+                continue
+
+            try:
+                msignals.display(m18n.n('backup_running_app_script', app_id))
+                subprocess.call(['install', '-Dm555', script, tmp_script])
+                hook_exec(tmp_script, args=[tmp_dir])
+            except:
+                logger.exception("error while executing script '%s'", script)
+                msignals.display(m18n.n('unbackup_app', app_id),
+                                 'error')
+            else:
+                # Add app info
+                i = app_info(app_id)
+                info['apps'][app_id] = {
+                    'version': i['version'],
+                }
+        subprocess.call(['rm', '-f', tmp_script])
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -191,14 +217,19 @@ def backup_create(name=None, description=None, output_directory=None,
 
     msignals.display(m18n.n('backup_complete'), 'success')
 
+    # Return backup info
+    info['name'] = name
+    return { 'archive': info }
 
-def backup_restore(name, hooks=[], ignore_apps=False, force=False):
+
+def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
     """
     Restore from a local backup archive
 
     Keyword argument:
         name -- Name of the local backup archive
         hooks -- List of restoration hooks names to execute
+        apps -- List of application names to restore
         ignore_apps -- Do not restore apps
         force -- Force restauration on an already installed system
 
@@ -239,15 +270,6 @@ def backup_restore(name, hooks=[], ignore_apps=False, force=False):
         logger.info("restoring from backup '%s' created on %s", name,
                     time.ctime(info['created_at']))
 
-    # Retrieve domain from the backup
-    try:
-        with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
-            domain = f.readline().rstrip()
-    except IOError:
-        logger.error("unable to retrieve domain from '%s/yunohost/current_host'",
-                     tmp_dir)
-        raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
-
     # Check if YunoHost is installed
     if os.path.isfile('/etc/yunohost/installed'):
         msignals.display(m18n.n('yunohost_already_installed'), 'warning')
@@ -265,12 +287,35 @@ def backup_restore(name, hooks=[], ignore_apps=False, force=False):
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
     else:
         from yunohost.tools import tools_postinstall
+
+        # Retrieve the domain from the backup
+        try:
+            with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
+                domain = f.readline().rstrip()
+        except IOError:
+            logger.error("unable to retrieve domain from '%s/yunohost/current_host'",
+                         tmp_dir)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+
         logger.info("executing the post-install...")
         tools_postinstall(domain, 'yunohost', True)
 
     # Add apps restore hook
     if not ignore_apps:
-        for app_id in info['apps'].keys():
+        # Filter applications to restore
+        apps_list = set(info['apps'].keys())
+        apps_filtered = set()
+        if apps:
+            for a in apps:
+                if a not in apps_list:
+                    logger.warning("app '%s' not found", a)
+                    msignals.display(m18n.n('unrestore_app', a), 'warning')
+                else:
+                    apps_filtered.add(a)
+        else:
+            apps_filtered = apps_list
+
+        for app_id in apps_filtered:
             hook = "/etc/yunohost/apps/%s/scripts/restore" % app_id
             if os.path.isfile(hook):
                 hook_add(app_id, hook)
@@ -288,9 +333,13 @@ def backup_restore(name, hooks=[], ignore_apps=False, force=False):
     msignals.display(m18n.n('restore_complete'), 'success')
 
 
-def backup_list():
+def backup_list(with_info=False, human_readable=False):
     """
     List available local backup archives
+
+    Keyword arguments:
+        with_info -- Show backup information for each archive
+        human_readable -- Print sizes in human readable format
 
     """
     result = []
@@ -308,18 +357,29 @@ def backup_list():
             except ValueError:
                 continue
             result.append(name)
+        result.sort()
+
+    if result and with_info:
+        d = OrderedDict()
+        for a in result:
+            d[a] = backup_info(a, human_readable=human_readable)
+        result = d
 
     return { 'archives': result }
 
 
-def backup_info(name):
+def backup_info(name, with_details=False, human_readable=False):
     """
     Get info about a local backup archive
 
     Keyword arguments:
         name -- Name of the local backup archive
+        with_details -- Show additional backup information
+        human_readable -- Print sizes in human readable format
 
     """
+    from yunohost.monitor import binary_to_human
+
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
     if not os.path.isfile(archive_file):
         logger.error("no local backup archive found at '%s'", archive_file)
@@ -336,10 +396,19 @@ def backup_info(name):
                          info_file)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
-    return {
+    size = os.path.getsize(archive_file)
+    if human_readable:
+        size = binary_to_human(size) + 'B'
+
+    result = {
         'path': archive_file,
         'created_at': time.strftime(m18n.n('format_datetime_short'),
                                     time.gmtime(info['created_at'])),
         'description': info['description'],
-        'apps': info['apps'],
+        'size': size,
     }
+
+    if with_details:
+        for d in ['apps', 'hooks']:
+            result[d] = info[d]
+    return result

@@ -351,7 +351,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
                             for line in lines:
                                 sources.write(re.sub(r''+ original_app_id +'', app_id, line))
 
-        # Add hooks
+        # Clean hooks and add new ones
+        hook_remove(app_id)
         if 'hooks' in os.listdir(app_tmp_folder):
             for hook in os.listdir(app_tmp_folder +'/hooks'):
                 hook_add(app_id, app_tmp_folder +'/hooks/'+ hook)
@@ -451,7 +452,8 @@ def app_install(auth, app, label=None, args=None):
     os.makedirs(app_setting_path)
     os.system('touch %s/settings.yml' % app_setting_path)
 
-    # Add hooks
+    # Clean hooks and add new ones
+    hook_remove(app_id)
     if 'hooks' in os.listdir(app_tmp_folder):
         for file in os.listdir(app_tmp_folder +'/hooks'):
             hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
@@ -1034,7 +1036,7 @@ def _fetch_app_from_git(app):
             if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
                 return _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
 
-        git_result   = os.system('git clone %s %s' % (app, app_tmp_folder))
+        git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
         git_result_2 = 0
         try:
             with open(app_tmp_folder + '/manifest.json') as json_manifest:
