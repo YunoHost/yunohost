@@ -7,6 +7,10 @@ cd /usr/share/yunohost/templates/yunohost
 
 sudo mkdir -p /etc/yunohost
 
+if [ ! -f /etc/yunohost/current_host ]; then
+    echo "yunohost.org" | sudo tee /etc/yunohost/current_host
+fi
+
 if [ ! -f /etc/yunohost/firewall.yml ]; then
     sudo cp firewall.yml /etc/yunohost/firewall.yml
 fi

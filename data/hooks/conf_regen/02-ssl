@@ -29,8 +29,10 @@ if [ ! -f $ssl_dir/serial ]; then
     echo "01" | sudo tee $ssl_dir/serial
 fi
 
-if [ ! -f /etc/yunohost/current_host ]; then
-    echo "yunohost.org" | sudo tee /etc/yunohost/current_host
+if [ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ]; then
+    sudo openssl req -x509 -new -config $ssl_dir/openssl.cnf \
+      -days 3650 -out $ssl_dir/ca/cacert.pem \
+      -keyout $ssl_dir/ca/cakey.pem -nodes -batch
 fi
 
 if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
