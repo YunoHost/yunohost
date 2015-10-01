@@ -600,9 +600,7 @@ backup:
         ### backup_restore()
         restore:
             action_help: Restore from a local backup archive
-            api: POST /restore
-            configuration:
-                authenticate: false
+            api: POST /backup/restore/<name>
             arguments:
                 name:
                     help: Name of the local backup archive
