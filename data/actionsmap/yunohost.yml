@@ -625,6 +625,15 @@ backup:
             api: GET /backup/archives
             configuration:
                 lock: false
+            arguments:
+                -i:
+                    full: --with-info
+                    help: Show backup information for each archive
+                    action: store_true
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
 
         ### backup_info()
         info:
@@ -635,6 +644,10 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
+                -d:
+                    full: --with-details
+                    help: Show additional backup information
+                    action: store_true
                 -H:
                     full: --human-readable
                     help: Print sizes in human readable format

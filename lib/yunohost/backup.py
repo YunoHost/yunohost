@@ -31,6 +31,7 @@ import errno
 import time
 import tarfile
 import subprocess
+from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -332,9 +333,13 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
     msignals.display(m18n.n('restore_complete'), 'success')
 
 
-def backup_list():
+def backup_list(with_info=False, human_readable=False):
     """
     List available local backup archives
+
+    Keyword arguments:
+        with_info -- Show backup information for each archive
+        human_readable -- Print sizes in human readable format
 
     """
     result = []
@@ -354,15 +359,22 @@ def backup_list():
             result.append(name)
         result.sort()
 
+    if result and with_info:
+        d = OrderedDict()
+        for a in result:
+            d[a] = backup_info(a, human_readable=human_readable)
+        result = d
+
     return { 'archives': result }
 
 
-def backup_info(name, human_readable=False):
+def backup_info(name, with_details=False, human_readable=False):
     """
     Get info about a local backup archive
 
     Keyword arguments:
         name -- Name of the local backup archive
+        with_details -- Show additional backup information
         human_readable -- Print sizes in human readable format
 
     """
@@ -388,12 +400,15 @@ def backup_info(name, human_readable=False):
     if human_readable:
         size = binary_to_human(size) + 'B'
 
-    return {
+    result = {
         'path': archive_file,
         'created_at': time.strftime(m18n.n('format_datetime_short'),
                                     time.gmtime(info['created_at'])),
         'description': info['description'],
-        'apps': info['apps'],
-        'hooks': info['hooks'],
         'size': size,
     }
+
+    if with_details:
+        for d in ['apps', 'hooks']:
+            result[d] = info[d]
+    return result
