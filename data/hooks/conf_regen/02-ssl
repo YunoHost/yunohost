@@ -25,6 +25,13 @@ sudo mkdir -p $ssl_dir/{ca,certs,crl,newcerts}
 
 safe_copy openssl.cnf $ssl_dir/openssl.cnf
 
+if [ ! -f /etc/yunohost/installed ]; then
+    sudo rm -f $ssl_dir/index.txt
+    sudo touch $ssl_dir/index.txt
+    sudo rm -f $ssl_dir/serial
+    sudo rm -f /etc/yunohost/certs/yunohost.org/*
+fi
+
 if [ ! -f $ssl_dir/serial ]; then
     echo "01" | sudo tee $ssl_dir/serial
 fi
@@ -42,6 +49,10 @@ if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
     sudo openssl ca -config $ssl_dir/openssl.cnf \
       -days 730 -in $ssl_dir/certs/yunohost_csr.pem \
       -out $ssl_dir/certs/yunohost_crt.pem -batch
+
+    sudo chmod 640 $ssl_dir/certs/yunohost_key.pem
+    sudo chmod 640 $ssl_dir/newcerts/01.pem
+
     sudo cp $ssl_dir/ca/cacert.pem \
       /etc/yunohost/certs/yunohost.org/ca.pem
     sudo cp $ssl_dir/certs/yunohost_key.pem \

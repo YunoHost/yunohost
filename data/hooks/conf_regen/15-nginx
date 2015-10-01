@@ -72,6 +72,8 @@ if [ -f /etc/yunohost/installed ]; then
     done
 
 else
+    [ ! -f /etc/nginx/sites-available/default ] \
+      || rm -f /etc/nginx/sites-enabled/default
     need_restart=True
 fi
 
