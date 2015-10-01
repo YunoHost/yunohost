@@ -106,6 +106,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     """
     from yunohost.domain import domain_add, domain_list
     from yunohost.dyndns import dyndns_subscribe
+    from yunohost.service import service_regenconf
 
     if not old_domain:
         with open('/etc/yunohost/current_host', 'r') as f:
@@ -119,71 +120,13 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     if new_domain not in domain_list(auth)['domains']:
         domain_add(auth, new_domain)
 
-    config_files = [
-        '/etc/postfix/main.cf',
-        '/etc/metronome/metronome.cfg.lua',
-        '/etc/dovecot/dovecot.conf',
-        '/usr/share/yunohost/yunohost-config/others/startup',
-        '/etc/amavis/conf.d/05-node_id',
-        '/etc/amavis/conf.d/50-user'
-    ]
-
-    config_dir = []
-
-    for dir in config_dir:
-        for file in os.listdir(dir):
-            config_files.append(dir + '/' + file)
-
-    for file in config_files:
-        with open(file, "r") as sources:
-            lines = sources.readlines()
-        with open(file, "w") as sources:
-            for line in lines:
-                sources.write(re.sub(r''+ old_domain +'', new_domain, line))
-
-    ## Update DNS zone file for old and new domains
-    main_subdomains = ['pubsub', 'muc', 'vjud']
-    try:
-        with open('/var/lib/bind/%s.zone' % old_domain, 'r') as f:
-            old_zone = f.read()
-    except IOError:
-        pass
-    else:
-        # Remove unneeded subdomains entries
-        for sub in main_subdomains:
-            old_zone = re.sub(
-                r'^({sub}.{domain}.|{sub})[\ \t]+(IN).*$[\n]?'.format(
-                    sub=sub, domain=old_domain),
-                '', old_zone, 1, re.MULTILINE)
-        with open('/var/lib/bind/%s.zone' % old_domain, 'w') as f:
-            f.write(old_zone)
-    try:
-        with open('/var/lib/bind/%s.zone' % new_domain, 'r') as f:
-            new_zone = f.read()
-    except IOError:
-        msignals.display(m18n.n('domain_zone_not_found', new_domain), 'warning')
-    else:
-        # Add main subdomains entries
-        for sub in main_subdomains:
-            new_zone += '{sub}  IN  CNAME   {domain}.\n'.format(
-                sub=sub, domain=new_domain)
-        with open('/var/lib/bind/%s.zone' % new_domain, 'w') as f:
-            f.write(new_zone)
-
     os.system('rm /etc/ssl/private/yunohost_key.pem')
     os.system('rm /etc/ssl/certs/yunohost_crt.pem')
 
     command_list = [
-        'rm -f /etc/nginx/conf.d/%s.d/yunohost_local.conf' % old_domain,
-        'cp /usr/share/yunohost/yunohost-config/nginx/yunohost_local.conf /etc/nginx/conf.d/%s.d/' % new_domain,
         'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
         'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
         'echo %s > /etc/yunohost/current_host' % new_domain,
-        'service metronome restart',
-        'service postfix restart',
-        'service dovecot restart',
-        'service amavis restart',
-        'service nginx restart',
     ]
 
     for command in command_list:
@@ -202,6 +145,11 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             if dyndomain in dyndomains:
                 dyndns_subscribe(domain=new_domain)
 
+    try:
+        with open('/etc/yunohost/installed', 'r') as f:
+            service_regenconf()
+    except IOError: pass
+
     msignals.display(m18n.n('maindomain_changed'), 'success')
 
 
@@ -219,6 +167,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     from yunohost.app import app_ssowatconf
     from yunohost.firewall import firewall_upnp, firewall_reload
+    from yunohost.service import service_regenconf
 
     dyndns = not ignore_dyndns
 
@@ -326,6 +275,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('update-rc.d yunohost-firewall defaults')
 
     os.system('touch /etc/yunohost/installed')
+
+    service_regenconf()
 
     msignals.display(m18n.n('yunohost_configured'), 'success')
 

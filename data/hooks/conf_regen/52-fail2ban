@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s fail2ban $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s fail2ban $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/fail2ban
+
+sudo mkdir -p /etc/fail2ban/filter.d
+safe_copy yunohost.conf /etc/fail2ban/filter.d/yunohost.conf
+
+# Compatibility: change from HDB to MDB on Jessie
+version=$(sed 's/\..*//' /etc/debian_version)
+[[ "$version" == '8' ]] \
+  && sudo cp jail-jessie.conf jail.conf \
+  || sudo cp jail-wheezy.conf jail.conf
+
+if [[ $(safe_copy jail.conf /etc/fail2ban/jail.conf) == "True" ]]; then
+    sudo service fail2ban restart
+fi
