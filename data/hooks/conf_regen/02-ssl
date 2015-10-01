@@ -46,7 +46,7 @@ if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
       /etc/yunohost/certs/yunohost.org/ca.pem
     sudo cp $ssl_dir/certs/yunohost_key.pem \
       /etc/yunohost/certs/yunohost.org/key.pem
-    sudo cp $ssl_dir/yunoCA/newcerts/01.pem \
+    sudo cp $ssl_dir/newcerts/01.pem \
       /etc/yunohost/certs/yunohost.org/crt.pem
     sudo ln -s /etc/yunohost/certs/yunohost.org/crt.pem \
       /etc/ssl/certs/yunohost_crt.pem
