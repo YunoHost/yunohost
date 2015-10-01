@@ -29,8 +29,8 @@ import sys
 import json
 import errno
 import time
-import shutil
 import tarfile
+import subprocess
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -149,6 +149,7 @@ def backup_create(name=None, description=None, output_directory=None,
             apps_filtered = apps_list
 
         # Run apps backup scripts
+        tmp_script = '/tmp/backup_' + str(timestamp)
         for app_id in apps_filtered:
             script = '/etc/yunohost/apps/{:s}/scripts/backup'.format(app_id)
             if not os.path.isfile(script):
@@ -159,7 +160,8 @@ def backup_create(name=None, description=None, output_directory=None,
 
             try:
                 msignals.display(m18n.n('backup_running_app_script', app_id))
-                hook_exec(script, args=[tmp_dir])
+                subprocess.call(['install', '-Dm555', script, tmp_script])
+                hook_exec(tmp_script, args=[tmp_dir])
             except:
                 logger.exception("error while executing script '%s'", script)
                 msignals.display(m18n.n('unbackup_app', app_id),
@@ -170,6 +172,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 info['apps'][app_id] = {
                     'version': i['version'],
                 }
+        subprocess.call(['rm', '-f', tmp_script])
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
