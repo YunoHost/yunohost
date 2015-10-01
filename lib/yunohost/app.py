@@ -173,6 +173,8 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
 
                     if raw:
                         app_info['installed'] = installed
+                        if installed:
+                            app_info['status'] = _get_app_status(app_id)
                         list_dict[app_id] = app_info
                     else:
                         list_dict.append({
@@ -193,37 +195,44 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
     return list_dict
 
 
-def app_info(app, raw=False):
+def app_info(app, show_status=False, raw=False):
     """
     Get app info
 
     Keyword argument:
         app -- Specific app ID
+        show_status -- Show app installation status
         raw -- Return the full app_dict
 
     """
-    try:
-        app_info = app_list(filter=app, raw=True)[app]
-    except:
-        app_info = {}
-
-    if _is_installed(app):
+    if not _is_installed(app):
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_not_installed', app))
+    if raw:
+        ret = app_list(filter=app, raw=True)[app]
         with open(apps_setting_path + app +'/settings.yml') as f:
-            app_info['settings'] = yaml.load(f)
+            ret['settings'] = yaml.load(f)
+        return ret
 
-        if raw:
-            return app_info
-        else:
-            return {
-                'name': app_info['manifest']['name'],
-                'description': _value_for_locale(app_info['manifest']['description']),
-                # FIXME: Temporarly allow undefined license
-                'license': app_info['manifest'].get('license',
-                    m18n.n('license_undefined')),
-                # FIXME: Temporarly allow undefined version
-                'version' :  app_info['manifest'].get('version', '-'),
-                #TODO: Add more info
-            }
+    app_setting_path = apps_setting_path + app
+
+    # Retrieve manifest and status
+    with open(app_setting_path + '/manifest.json') as f:
+        manifest = json.loads(str(f.read()))
+    status = _get_app_status(app, format_date=True)
+
+    info = {
+        'name': manifest['name'],
+        'description': _value_for_locale(manifest['description']),
+        # FIXME: Temporarly allow undefined license
+        'license': manifest.get('license', m18n.n('license_undefined')),
+        # FIXME: Temporarly allow undefined version
+        'version': manifest.get('version', '-'),
+        #TODO: Add more info
+    }
+    if show_status:
+        info['status'] = status
+    return info
 
 
 def app_map(app=None, raw=False, user=None):
@@ -335,17 +344,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         app_setting_path = apps_setting_path +'/'+ app_id
 
         # Retrieve current app status
-        status = {}
-        try:
-            with open(app_setting_path + '/status.json') as f:
-                status = json.loads(str(f.read()))
-        except IOError:
-            logger.exception("status file not found for '%s'", app_id)
-            status = {
-                'installed_at': app_setting(app_id, 'install_time'),
-            }
-        finally:
-            status['remote'] = manifest.get('remote', None)
+        status = _get_app_status(app_id)
+        status['remote'] = manifest.get('remote', None)
 
         if original_app_id != app_id:
             # Replace original_app_id with the forked one in scripts
@@ -791,9 +791,11 @@ def app_setting(app, key, value=None, delete=False):
         app_settings = {}
 
     if value is None and not delete:
-        # Get the value
-        if app_settings is not None and key in app_settings:
+        try:
             return app_settings[key]
+        except:
+            logger.exception("cannot get app setting '%s' for '%s'", key, app)
+            return None
     else:
         yaml_settings=['redirected_urls','redirected_regex']
         # Set the value
@@ -998,6 +1000,45 @@ def app_ssowatconf(auth):
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
     msignals.display(m18n.n('ssowat_conf_generated'), 'success')
+
+
+def _get_app_status(app_id, format_date=False):
+    """
+    Get app status or create it if needed
+
+    Keyword arguments:
+        app_id -- The app id
+        format_date -- Format date fields
+
+    """
+    app_setting_path = apps_setting_path + app_id
+    if not os.path.isdir(app_setting_path):
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+    status = {}
+
+    try:
+        with open(app_setting_path + '/status.json') as f:
+            status = json.loads(str(f.read()))
+    except IOError:
+        logger.exception("status file not found for '%s'", app_id)
+        # Create app status
+        status = {
+            'installed_at': app_setting(app_id, 'install_time'),
+            'upgraded_at': app_setting(app_id, 'update_time'),
+            'remote': { 'type': None },
+        }
+        with open(app_setting_path + '/status.json', 'w+') as f:
+            json.dump(status, f)
+
+    if format_date:
+        for f in ['installed_at', 'upgraded_at']:
+            v = status.get(f, None)
+            if not v:
+                status[f] = '-'
+            else:
+                status[f] = time.strftime(m18n.n('format_datetime_short'),
+                                          time.gmtime(v))
+    return status
 
 
 def _extract_app_from_file(path, remove=False):
