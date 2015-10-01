@@ -116,16 +116,20 @@ def backup_create(name=None, description=None, output_directory=None,
         else:
             os.system('chown -hR admin: %s' % tmp_dir)
 
-    # Run system hooks
-    msignals.display(m18n.n('backup_running_hooks'))
-    hook_callback('backup', hooks, args=[tmp_dir])
-
     # Initialize backup info
     info = {
         'description': description or '',
         'created_at': timestamp,
         'apps': {},
+        'hooks': {},
     }
+
+    # Run system hooks
+    msignals.display(m18n.n('backup_running_hooks'))
+    hooks_ret = hook_callback('backup', hooks, args=[tmp_dir])
+
+    # Add hooks results to the info
+    info['hooks'] = hooks_ret['succeed']
 
     # Backup apps
     if not ignore_apps:
@@ -377,4 +381,5 @@ def backup_info(name):
                                     time.gmtime(info['created_at'])),
         'description': info['description'],
         'apps': info['apps'],
+        'hooks': info['hooks'],
     }
