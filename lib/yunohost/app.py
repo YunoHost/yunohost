@@ -34,8 +34,12 @@ import re
 import socket
 import urlparse
 import errno
+import subprocess
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
+
+logger = getActionLogger('yunohost.app')
 
 repo_path        = '/var/cache/yunohost/repo'
 apps_path        = '/usr/share/yunohost/apps'
@@ -274,7 +278,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
-    from yunohost.hook import hook_add, hook_exec
+    from yunohost.hook import hook_add, hook_remove, hook_exec
 
     try:
         app_list()
@@ -330,6 +334,19 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         app_setting_path = apps_setting_path +'/'+ app_id
 
+        # Retrieve current app status
+        status = {}
+        try:
+            with open(app_setting_path + '/status.json') as f:
+                status = json.loads(str(f.read()))
+        except IOError:
+            logger.exception("status file not found for '%s'", app_id)
+            status = {
+                'installed_at': app_setting(app_id, 'install_time'),
+            }
+        finally:
+            status['remote'] = manifest.get('remote', None)
+
         if original_app_id != app_id:
             # Replace original_app_id with the forked one in scripts
             for script in os.listdir(app_tmp_folder +'/scripts'):
@@ -362,7 +379,14 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if hook_exec(app_tmp_folder +'/scripts/upgrade') != 0:
             raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
         else:
-            app_setting(app_id, 'update_time', int(time.time()))
+            now = int(time.time())
+            # TODO: Move install_time away from app_setting
+            app_setting(app_id, 'update_time', now)
+            status['upgraded_at'] = now
+
+            # Store app status
+            with open(app_setting_path + '/status.json', 'w+') as f:
+                json.dump(status, f)
 
             # Replace scripts and manifest
             os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
@@ -394,12 +418,21 @@ def app_install(auth, app, label=None, args=None):
     try: os.listdir(install_tmp)
     except OSError: os.makedirs(install_tmp)
 
+    status = {
+        'installed_at': None,
+        'upgraded_at': None,
+        'remote': {
+            'type': None,
+        },
+    }
+
     if app in app_list(raw=True) or ('@' in app) or ('http://' in app) or ('https://' in app):
         manifest = _fetch_app_from_git(app)
     elif os.path.exists(app):
         manifest = _extract_app_from_file(app)
     else:
         raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+    status['remote'] = manifest.get('remote', {})
 
     # Check ID
     if 'id' not in manifest or '__' in manifest['id']:
@@ -458,8 +491,11 @@ def app_install(auth, app, label=None, args=None):
         for file in os.listdir(app_tmp_folder +'/hooks'):
             hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
 
+    now = int(time.time())
     app_setting(app_id, 'id', app_id)
-    app_setting(app_id, 'install_time', int(time.time()))
+    # TODO: Move install_time away from app_setting
+    app_setting(app_id, 'install_time', now)
+    status['installed_at'] = now
 
     if label:
         app_setting(app_id, 'label', label)
@@ -482,6 +518,11 @@ def app_install(auth, app, label=None, args=None):
     os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
     try:
         if hook_exec(app_tmp_folder + '/scripts/install', args_dict) == 0:
+            # Store app status
+            with open(app_setting_path + '/status.json', 'w+') as f:
+                json.dump(status, f)
+
+            # Clean and set permissions
             shutil.rmtree(app_tmp_folder)
             os.system('chmod -R 400 %s' % app_setting_path)
             os.system('chown -R root: %s' % app_setting_path)
@@ -1009,7 +1050,28 @@ def _extract_app_from_file(path, remove=False):
 
     msignals.display(m18n.n('done'))
 
+    manifest['remote'] = {'type': 'file', 'path': path}
     return manifest
+
+
+def _get_git_last_commit_hash(repository):
+    """
+    Attempt to retrieve the last commit hash of a git repository
+
+    Keyword arguments:
+        repository -- The URL or path of the repository
+
+    """
+    try:
+        commit = subprocess.check_output(
+            "git ls-remote --exit-code {:s} HEAD | awk '{{print $1}}'".format(
+                repository),
+            shell=True)
+    except subprocess.CalledProcessError:
+        logger.exception("unable to get last commit from %s", repository)
+        raise ValueError("Unable to get last commit with git")
+    else:
+        return commit.strip()
 
 
 def _fetch_app_from_git(app):
@@ -1027,6 +1089,8 @@ def _fetch_app_from_git(app):
 
     msignals.display(m18n.n('downloading'))
 
+    git_result_2 = 1
+
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         if "github.com" in app:
             url = app.replace("git@github.com:", "https://github.com/")
@@ -1034,16 +1098,28 @@ def _fetch_app_from_git(app):
             if "/" in url [-1:]: url = url[:-1]
             url = url + "/archive/master.zip"
             if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
-                return _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
+                manifest = _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
+                del manifest['remote']
+        else:
+            git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
+            git_result_2 = 0
+            try:
+                with open(app_tmp_folder + '/manifest.json') as json_manifest:
+                    manifest = json.loads(str(json_manifest.read()))
+                    manifest['lastUpdate'] = int(time.time())
+            except IOError:
+                raise MoulinetteError(errno.EIO, m18n.n('app_manifest_invalid'))
 
-        git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
-        git_result_2 = 0
+        # Store remote repository info into the returned manifest
+        manifest['remote'] = {'type': 'git', 'url': app, 'branch': 'master'}
         try:
-            with open(app_tmp_folder + '/manifest.json') as json_manifest:
-                manifest = json.loads(str(json_manifest.read()))
-                manifest['lastUpdate'] = int(time.time())
-        except IOError:
-            raise MoulinetteError(errno.EIO, m18n.n('app_manifest_invalid'))
+            revision = _get_git_last_commit_hash(app)
+        except: pass
+        else:
+            manifest['remote']['revision'] = revision
+
+        if git_result_2 == 1:
+            return manifest
 
     else:
         app_dict = app_list(raw=True)
@@ -1056,12 +1132,26 @@ def _fetch_app_from_git(app):
             raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
 
         if "github.com" in app_info['git']['url']:
+            # FIXME: Retrieve branch defined in app_info
             url = app_info['git']['url'].replace("git@github.com:", "https://github.com/")
             if ".git" in url[-4:]: url = url[:-4]
             if "/" in url [-1:]: url = url[:-1]
             url = url + "/archive/"+ str(app_info['git']['revision']) + ".zip"
             if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
-                return _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
+                manifest = _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
+        else:
+            git_result_2 = 0
+
+        # Store remote repository info into the returned manifest
+        manifest['remote'] = {
+            'type': 'git',
+            'url': app_info['git']['url'],
+            'branch': app_info['git']['branch'],
+            'revision': app_info['git']['revision'],
+        }
+
+        if git_result_2 == 1:
+            return manifest
 
         app_tmp_folder = install_tmp +'/'+ app
         if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)

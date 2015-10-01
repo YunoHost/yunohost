@@ -358,7 +358,7 @@ app:
 
         ### app_info()
         info:
-            action_help: Get app info
+            action_help: Get information about an installed app
             api: GET /apps/<app>
             arguments:
                 app:
