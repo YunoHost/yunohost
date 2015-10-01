@@ -13,8 +13,24 @@ function safe_copy () {
     fi
 }
 
+function randpass () {
+    [ "$2" == "0" ] && CHAR="[:alnum:]" || CHAR="[:graph:]"
+    cat /dev/urandom | tr -cd "$CHAR" | head -c ${1:-32}
+    echo
+}
+
 cd /usr/share/yunohost/templates/mysql
 
 if [[ "$(safe_copy my.cnf /etc/mysql/my.cnf)" == "True" ]]; then
     sudo service mysql restart
+fi
+
+if [ ! -f /etc/yunohost/mysql ]; then
+    [[ $(/bin/ps aux | grep mysqld | grep -vc "grep") == "0" ]] \
+      && sudo service mysql start
+
+    mysql_password=$(randpass 10 0)
+    sudo mysqladmin -u root -pyunohost password $mysql_password
+    echo $mysql_password | sudo tee /etc/yunohost/mysql
+    sudo chmod 400 /etc/yunohost/mysql
 fi
