@@ -41,7 +41,7 @@ safe_copy metronome.logrotate /etc/logrotate.d/metronome
 need_restart=False
 sudo mkdir -p /etc/metronome/conf.d
 
-domain_list=$(sudo yunohost domain list --raw)
+domain_list=$(sudo yunohost domain list --plain)
 
 # Copy a configuration file for each YunoHost domain 
 for domain in $domain_list; do

@@ -24,7 +24,7 @@ ipv6=$(ip route get 2000:: | grep -q "unreachable" && echo '' \
 
 sudo mkdir -p /etc/dnsmasq.d
 
-domain_list=$(sudo yunohost domain list --raw)
+domain_list=$(sudo yunohost domain list --plain)
 
 # Copy a configuration file for each YunoHost domain 
 for domain in $domain_list; do

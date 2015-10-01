@@ -43,7 +43,7 @@ if [ -f /etc/yunohost/installed ]; then
 
 
     need_restart=False
-    domain_list=$(sudo yunohost domain list --raw)
+    domain_list=$(sudo yunohost domain list --plain)
 
     # Copy a configuration file for each YunoHost domain
     for domain in $domain_list; do
