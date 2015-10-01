@@ -213,6 +213,10 @@ def backup_create(name=None, description=None, output_directory=None,
 
     msignals.display(m18n.n('backup_complete'), 'success')
 
+    # Return backup info
+    info['name'] = name
+    return { 'archive': info }
+
 
 def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
     """
@@ -350,14 +354,17 @@ def backup_list():
     return { 'archives': result }
 
 
-def backup_info(name):
+def backup_info(name, human_readable=False):
     """
     Get info about a local backup archive
 
     Keyword arguments:
         name -- Name of the local backup archive
+        human_readable -- Print sizes in human readable format
 
     """
+    from yunohost.monitor import binary_to_human
+
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
     if not os.path.isfile(archive_file):
         logger.error("no local backup archive found at '%s'", archive_file)
@@ -374,7 +381,10 @@ def backup_info(name):
                          info_file)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
-    # TODO: TAILLE!
+    size = os.path.getsize(archive_file)
+    if human_readable:
+        size = binary_to_human(size) + 'B'
+
     return {
         'path': archive_file,
         'created_at': time.strftime(m18n.n('format_datetime_short'),
@@ -382,4 +392,5 @@ def backup_info(name):
         'description': info['description'],
         'apps': info['apps'],
         'hooks': info['hooks'],
+        'size': size,
     }

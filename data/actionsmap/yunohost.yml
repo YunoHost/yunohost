@@ -635,6 +635,10 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
+                -H:
+                    full: --human-readable
+                    help: Print sizes in human readable format
+                    action: store_true
 
 
 #############################

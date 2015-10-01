@@ -130,7 +130,7 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
                 else:
                     if human_readable:
                         for i in ['used', 'avail', 'size']:
-                            d[i] = _binary_to_human(d[i]) + 'B'
+                            d[i] = binary_to_human(d[i]) + 'B'
                     _set(dname, d)
             for dname in devices_names:
                 _set(dname, 'not-available')
@@ -201,7 +201,7 @@ def monitor_network(units=None, human_readable=False):
                     if human_readable:
                         for k in i.keys():
                             if k != 'time_since_update':
-                                i[k] = _binary_to_human(i[k]) + 'B'
+                                i[k] = binary_to_human(i[k]) + 'B'
                     result[u][iname] = i
         elif u == 'infos':
             try:
@@ -261,10 +261,10 @@ def monitor_system(units=None, human_readable=False):
             if human_readable:
                 for i in ram.keys():
                     if i != 'percent':
-                        ram[i] = _binary_to_human(ram[i]) + 'B'
+                        ram[i] = binary_to_human(ram[i]) + 'B'
                 for i in swap.keys():
                     if i != 'percent':
-                        swap[i] = _binary_to_human(swap[i]) + 'B'
+                        swap[i] = binary_to_human(swap[i]) + 'B'
             result[u] = {
                 'ram': ram,
                 'swap': swap
@@ -510,7 +510,7 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
     return result
 
 
-def _binary_to_human(n, customary=False):
+def binary_to_human(n, customary=False):
     """
     Convert bytes or bits into human readable format with binary prefix
 
