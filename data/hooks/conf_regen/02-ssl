@@ -4,12 +4,16 @@ set -e
 force=$1
 
 function safe_copy () {
-    if [ $force ]; then
-        sudo yunohost service safecopy \
-          -s ssl $1 $2 --force
+    if [ ! -f /etc/yunohost/installed ]; then
+        sudo cp $1 $2
     else
-        sudo yunohost service safecopy \
-          -s ssl $1 $2
+        if [ $force ]; then
+            sudo yunohost service safecopy \
+              -s ssl $1 $2 --force
+        else
+            sudo yunohost service safecopy \
+              -s ssl $1 $2
+        fi
     fi
 }
 
@@ -18,6 +22,8 @@ ssl_dir=/usr/share/yunohost/yunohost-config/ssl/yunoCA
 
 sudo mkdir -p /etc/yunohost/certs/yunohost.org
 sudo mkdir -p $ssl_dir/{ca,certs,crl,newcerts}
+
+safe_copy openssl.cnf $ssl_dir/openssl.cnf
 
 if [ ! -f $ssl_dir/serial ]; then
     echo "01" | sudo tee $ssl_dir/serial
