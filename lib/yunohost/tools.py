@@ -147,7 +147,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
     try:
         with open('/etc/yunohost/installed', 'r') as f:
-            service_regenconf()
+            service_regenconf(force=True)
     except IOError: pass
 
     msignals.display(m18n.n('maindomain_changed'), 'success')
