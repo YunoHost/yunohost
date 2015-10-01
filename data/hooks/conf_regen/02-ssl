@@ -61,7 +61,7 @@ if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
       /etc/yunohost/certs/yunohost.org/crt.pem
     sudo ln -sf /etc/yunohost/certs/yunohost.org/crt.pem \
       /etc/ssl/certs/yunohost_crt.pem
-    sudo ln -sf/etc/yunohost/certs/yunohost.org/key.pem \
+    sudo ln -sf /etc/yunohost/certs/yunohost.org/key.pem \
       /etc/ssl/private/yunohost_key.pem
     sudo ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
       /etc/ssl/certs/ca-yunohost_crt.pem
