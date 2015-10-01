@@ -1036,7 +1036,7 @@ def _fetch_app_from_git(app):
             if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
                 return _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
 
-        git_result   = os.system('git clone %s %s' % (app, app_tmp_folder))
+        git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
         git_result_2 = 0
         try:
             with open(app_tmp_folder + '/manifest.json') as json_manifest:
