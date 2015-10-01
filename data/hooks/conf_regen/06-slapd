@@ -4,23 +4,28 @@ set -e
 force=$1
 
 function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s slapd \
-          $1 $2 \
-          --force
+    if [ ! -f /etc/yunohost/installed ]; then
+        sudo cp $1 $2
     else
-        sudo yunohost service safecopy \
-          -s slapd \
-          $1 $2
+        if [[ "$force" == "True" ]]; then
+            sudo yunohost service safecopy \
+              -s slapd \
+              $1 $2 \
+              --force
+        else
+            sudo yunohost service safecopy \
+              -s slapd \
+              $1 $2
+        fi
     fi
 }
 
 cd /usr/share/yunohost/templates/slapd
 
 # Remove legacy configuration file
-sudo yunohost service saferemove -s slapd \
-  /etc/ldap/slapd-yuno.conf
+[ ! -f /etc/yunohost/installed ] \
+  || sudo yunohost service saferemove -s slapd \
+    /etc/ldap/slapd-yuno.conf
 
 safe_copy mailserver.schema /etc/ldap/schema/mailserver.schema
 safe_copy ldap.conf /etc/ldap/ldap.conf
