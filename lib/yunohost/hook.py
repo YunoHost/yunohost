@@ -217,7 +217,10 @@ def hook_callback(action, hooks=[], args=None):
                 logger.exception("error while executing hook '%s'",
                                  info['path'])
                 state = 'failed'
-            result[state][filename] = info['path']
+            try:
+                result[state][name].append(info['path'])
+            except KeyError:
+                result[state][name] = [info['path']]
     return result
 
 
