@@ -59,11 +59,11 @@ if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
       /etc/yunohost/certs/yunohost.org/key.pem
     sudo cp $ssl_dir/newcerts/01.pem \
       /etc/yunohost/certs/yunohost.org/crt.pem
-    sudo ln -s /etc/yunohost/certs/yunohost.org/crt.pem \
+    sudo ln -sf /etc/yunohost/certs/yunohost.org/crt.pem \
       /etc/ssl/certs/yunohost_crt.pem
-    sudo ln -s /etc/yunohost/certs/yunohost.org/key.pem \
+    sudo ln -sf/etc/yunohost/certs/yunohost.org/key.pem \
       /etc/ssl/private/yunohost_key.pem
-    sudo ln -s /etc/yunohost/certs/yunohost.org/ca.pem \
+    sudo ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
       /etc/ssl/certs/ca-yunohost_crt.pem
     sudo update-ca-certificates
 fi
