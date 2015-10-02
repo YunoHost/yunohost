@@ -39,6 +39,8 @@ import subprocess
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
+from .service import service_log
+
 logger = getActionLogger('yunohost.app')
 
 repo_path        = '/var/cache/yunohost/repo'
