@@ -1262,19 +1262,7 @@ def _is_installed(app):
         Boolean
 
     """
-    try:
-        installed_apps = os.listdir(apps_setting_path)
-    except OSError:
-        os.makedirs(apps_setting_path)
-        return False
-
-    for installed_app in installed_apps:
-        if app == installed_app:
-            return True
-        else:
-            continue
-
-    return False
+    return os.path.isdir(apps_setting_path + app)
 
 
 def _value_for_locale(values):
