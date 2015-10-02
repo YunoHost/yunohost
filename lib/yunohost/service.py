@@ -553,9 +553,6 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
         try:
             os.remove(conf_backup_file)
         except OSError: pass
-    elif os.path.exists(conf_backup_file):
-        msignals.display(m18n.n('service_configuration_backup', conf_backup_file),
-                         'info')
 
     services[service]['conffiles'][conf_file] = new_hash
     _save_services(services)
