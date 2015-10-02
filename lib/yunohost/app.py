@@ -731,9 +731,8 @@ def app_debug(app):
     return {
         'name': manifest['name'],
         'services_logs': [{
-                'service': x,
-                'log': service_log(x),
-            } for x in manifest.get("services", [])]
+                x: service_log(x),
+            } for x in sorted(manifest.get("services", []))]
     }
 
 
