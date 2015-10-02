@@ -147,7 +147,7 @@
     "backup_creating_archive" : "Creating the backup archive...",
     "backup_extracting_archive" : "Extracting the backup archive...",
     "backup_archive_open_failed" : "Unable to open the backup archive",
-    "backup_archive_name_unknown" : "Unknown local backup archive name",
+    "backup_archive_name_unknown" : "Unknown local backup archive named '{:s}'",
     "backup_archive_name_exists" : "Backup archive name already exists",
     "backup_complete" : "Backup complete",
     "backup_invalid_archive" : "Invalid backup archive",
@@ -157,6 +157,8 @@
     "restore_complete" : "Restore complete",
     "unbackup_app" : "App '{:s}' will not be saved",
     "unrestore_app" : "App '{:s}' will not be restored",
+    "backup_delete_error" : "Unable to delete '{:s}'",
+    "backup_deleted" : "Backup successfully deleted",
 
     "field_invalid" : "Invalid field '{:s}'",
     "mail_domain_unknown" : "Unknown mail address domain '{:s}'",

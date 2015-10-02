@@ -655,6 +655,16 @@ backup:
                     help: Print sizes in human readable format
                     action: store_true
 
+        ### backup_delete()
+        delete:
+            action_help: Delete a backup archive
+            api: DELETE /backup/archives/<name>
+            arguments:
+                name:
+                    help: Name of the archive to delete
+                    extra:
+                        pattern: *pattern_backup_archive_name
+
 
 #############################
 #          Monitor          #
