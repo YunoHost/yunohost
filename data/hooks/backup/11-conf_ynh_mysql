@@ -1,0 +1,4 @@
+backup_dir="$1/conf/ynh/mysql"
+mkdir -p $backup_dir
+
+sudo cp -a /etc/yunohost/mysql $backup_dir/
