@@ -608,6 +608,8 @@ backup:
         restore:
             action_help: Restore from a local backup archive
             api: POST /backup/restore/<name>
+            configuration:
+                lock: false
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -662,6 +664,8 @@ backup:
         delete:
             action_help: Delete a backup archive
             api: DELETE /backup/archives/<name>
+            configuration:
+                lock: false
             arguments:
                 name:
                     help: Name of the archive to delete
