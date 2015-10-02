@@ -139,6 +139,7 @@
     "packages_upgrade_failed" : "Unable to upgrade all packages",
     "system_upgraded" : "System successfully upgraded",
 
+    "backup_action_required" : "You must specify something to backup",
     "backup_output_directory_required" : "You must provide an output directory for the backup",
     "backup_output_directory_forbidden" : "Forbidden output directory",
     "backup_output_directory_not_empty" : "Output directory is not empty",

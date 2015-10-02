@@ -594,6 +594,9 @@ backup:
                 --hooks:
                     help: List of backup hooks names to execute
                     nargs: "*"
+                --ignore-hooks:
+                    help: Do not execute backup hooks
+                    action: store_true
                 --apps:
                     help: List of application names to backup
                     nargs: "*"

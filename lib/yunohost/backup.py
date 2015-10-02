@@ -43,7 +43,8 @@ logger = getActionLogger('yunohost.backup')
 
 
 def backup_create(name=None, description=None, output_directory=None,
-                  no_compress=False, hooks=[], apps=[], ignore_apps=False):
+                  no_compress=False, ignore_hooks=False, hooks=[],
+                  ignore_apps=False, apps=[]):
     """
     Create a backup local archive
 
@@ -53,6 +54,7 @@ def backup_create(name=None, description=None, output_directory=None,
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
         hooks -- List of backup hooks names to execute
+        ignore_hooks -- Do not execute backup hooks
         apps -- List of application names to backup
         ignore_apps -- Do not backup apps
 
@@ -61,6 +63,11 @@ def backup_create(name=None, description=None, output_directory=None,
     from yunohost.hook import hook_callback, hook_exec
 
     tmp_dir = None
+
+    # Validate what to backup
+    if ignore_hooks and ignore_apps:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('backup_action_required'))
 
     # Validate and define backup name
     timestamp = int(time.time())
@@ -126,11 +133,10 @@ def backup_create(name=None, description=None, output_directory=None,
     }
 
     # Run system hooks
-    msignals.display(m18n.n('backup_running_hooks'))
-    hooks_ret = hook_callback('backup', hooks, args=[tmp_dir])
-
-    # Add hooks results to the info
-    info['hooks'] = hooks_ret['succeed']
+    if not ignore_hooks:
+        msignals.display(m18n.n('backup_running_hooks'))
+        hooks_ret = hook_callback('backup', hooks, args=[tmp_dir])
+        info['hooks'] = hooks_ret['succeed']
 
     # Backup apps
     if not ignore_apps:
