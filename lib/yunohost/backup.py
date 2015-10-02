@@ -222,7 +222,7 @@ def backup_create(name=None, description=None, output_directory=None,
     return { 'archive': info }
 
 
-def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=False, force=False):
+def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
     """
     Restore from a local backup archive
 
@@ -414,7 +414,7 @@ def backup_info(name, with_details=False, human_readable=False):
     return result
     
     
-def backup_delete(auth, name):
+def backup_delete(name):
     """
     Delete a backup
 
