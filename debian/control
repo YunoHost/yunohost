@@ -8,7 +8,8 @@ Homepage: https://yunohost.org/
 
 Package: moulinette-yunohost
 Architecture: all
-Depends: moulinette (>= 2.2.1),
+Depends: ${misc:Depends}, ${shlibs:Depends},
+ moulinette (>= 2.2.1),
  python-psutil,
  python-requests,
  glances,
@@ -26,5 +27,9 @@ Depends: moulinette (>= 2.2.1),
  curl,
  mariadb-server | mysql-server, php5-mysql | php5-mysqlnd
 Conflicts: iptables-persistent
-Description: YunoHost Python scripts
- Python functions to manage a YunoHost instance
+Description: YunoHost scripts for the moulinette
+ YunoHost aims to make self-hosting accessible to everyone.
+ .
+ This package contains YunoHost scripts and binaries to be used by the
+ moulinette. It allows to manage the server with a command-line tool and
+ an API.
