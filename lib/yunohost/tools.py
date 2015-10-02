@@ -147,7 +147,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
     try:
         with open('/etc/yunohost/installed', 'r') as f:
-            service_regenconf(force=True)
+            service_regenconf()
     except IOError: pass
 
     msignals.display(m18n.n('maindomain_changed'), 'success')
@@ -276,7 +276,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     os.system('touch /etc/yunohost/installed')
 
-    service_regenconf()
+    service_regenconf(force=True)
 
     msignals.display(m18n.n('yunohost_configured'), 'success')
 
