@@ -781,8 +781,11 @@ def app_setting(app, key, value=None, delete=False):
         delete -- Delete the key
 
     """
-    settings_file = apps_setting_path + app +'/settings.yml'
+    if not _is_installed(app):
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_not_installed', app))
 
+    settings_file = apps_setting_path + app +'/settings.yml'
     try:
         with open(settings_file) as f:
             app_settings = yaml.load(f)
