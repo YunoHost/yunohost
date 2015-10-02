@@ -36,12 +36,6 @@ done
 
 if [ -f /etc/yunohost/installed ]; then
 
-    # Copy 'yunohost.local' to the main domain conf directory
-    main_domain=$(cat /etc/yunohost/current_host)
-    safe_copy yunohost_local.conf \
-      /etc/nginx/conf.d/$main_domain.d/yunohost_local.conf
-
-
     need_restart=False
     domain_list=$(sudo yunohost domain list --plain)
 
@@ -59,6 +53,12 @@ if [ -f /etc/yunohost/installed ]; then
           && sudo yunohost service saferemove -s nginx \
               /etc/nginx/conf.d/$domain.d/yunohost_local.conf
     done
+
+
+    # Copy 'yunohost.local' to the main domain conf directory
+    main_domain=$(cat /etc/yunohost/current_host)
+    safe_copy yunohost_local.conf \
+      /etc/nginx/conf.d/$main_domain.d/yunohost_local.conf
 
 
     # Remove old domains files

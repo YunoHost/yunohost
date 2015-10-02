@@ -26,7 +26,7 @@ sudo mkdir -p $ssl_dir/{ca,certs,crl,newcerts}
 safe_copy openssl.cnf $ssl_dir/openssl.cnf
 
 [ -f $ssl_dir/serial ] \
-  || (echo "01" | sudo tee $ssl_dir/serial)
+  || (echo "00" | sudo tee $ssl_dir/serial)
 
 [ -f $ssl_dir/index.txt ] \
   || sudo touch $ssl_dir/index.txt
