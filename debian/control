@@ -1,9 +1,9 @@
 Source: moulinette-yunohost
 Section: net
 Priority: extra
-Maintainer: Jérôme Lebleu <jerome.lebleu@mailoo.org>
-Build-Depends: debhelper (>=8.0.0)
-Standards-Version: 3.9.4
+Maintainer: YunoHost Contributors <contrib@yunohost.org>
+Build-Depends: debhelper (>=9), dh-systemd
+Standards-Version: 3.9.6
 Homepage: https://yunohost.org/
 
 Package: moulinette-yunohost

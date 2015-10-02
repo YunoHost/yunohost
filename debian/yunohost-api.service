@@ -1,0 +1,11 @@
+[Unit]
+Description=YunoHost API Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/yunohost-api
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target
