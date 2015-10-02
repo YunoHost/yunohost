@@ -139,7 +139,7 @@
     "packages_upgrade_failed" : "Unable to upgrade all packages",
     "system_upgraded" : "System successfully upgraded",
 
-    "backup_action_required" : "You must specify something to backup",
+    "backup_action_required" : "You must specify something to save",
     "backup_output_directory_required" : "You must provide an output directory for the backup",
     "backup_output_directory_forbidden" : "Forbidden output directory",
     "backup_output_directory_not_empty" : "Output directory is not empty",
@@ -151,6 +151,7 @@
     "backup_archive_name_unknown" : "Unknown local backup archive named '{:s}'",
     "backup_archive_name_exists" : "Backup archive name already exists",
     "backup_app_failed" : "Unable to back up the app '{app:s}'",
+    "backup_nothings_done" : "There is nothing to save",
     "backup_complete" : "Backup complete",
     "backup_invalid_archive" : "Invalid backup archive",
     "restore_confirm_yunohost_installed" : "Do you really want to restore an already installed system? [{answers:s}]",

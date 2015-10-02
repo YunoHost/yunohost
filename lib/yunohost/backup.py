@@ -35,6 +35,7 @@ import subprocess
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
+from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 
 backup_path   = '/home/yunohost.backup'
@@ -115,15 +116,11 @@ def backup_create(name=None, description=None, output_directory=None,
         if os.path.isdir(tmp_dir):
             logger.warning("temporary directory for backup '%s' already exists",
                            tmp_dir)
-            os.system('rm -rf %s' % tmp_dir)
-        try:
-            os.mkdir(tmp_dir, 0750)
-        except OSError:
-            # Create temporary directory recursively
-            os.makedirs(tmp_dir, 0750)
-            os.system('chown -hR admin: %s' % backup_path)
-        else:
-            os.system('chown -hR admin: %s' % tmp_dir)
+            filesystem.rm(tmp_dir, recursive=True)
+        filesystem.mkdir(tmp_dir, 0750, parents=True, uid='admin')
+
+    def _clean_tmp_dir():
+        filesystem.rm(tmp_dir, True, True)
 
     # Initialize backup info
     info = {
@@ -169,17 +166,17 @@ def backup_create(name=None, description=None, output_directory=None,
                                  'warning')
                 continue
 
-            tmp_app_dir = '{:s}/{:s}'.format(tmp_dir, app_id)
+            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
+            tmp_app_bkp_dir = tmp_app_dir + '/backup'
             msignals.display(m18n.n('backup_running_app_script', app_id))
             try:
                 # Prepare backup directory for the app
-                os.mkdir(tmp_app_dir, 0750)
-                os.mkdir(tmp_app_dir + '/backup', 0750)
+                filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
                 shutil.copytree(app_setting_path, tmp_app_dir + '/settings')
 
                 # Copy app backup script in a temporary folder and execute it
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
-                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_id])
+                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id])
             except:
                 logger.exception("error while executing backup of '%s'", app_id)
                 msignals.display(m18n.n('backup_app_failed', app=app_id),
@@ -193,10 +190,12 @@ def backup_create(name=None, description=None, output_directory=None,
                     'version': i['version'],
                 }
             finally:
-                try:
-                    os.unlink(tmp_script)
-                except OSError:
-                    pass
+                filesystem.rm(tmp_script, force=True)
+
+        # Check if something has been saved
+        if ignore_hooks and not info['apps']:
+            _clean_tmp_dir()
+            raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -217,7 +216,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 try:
                     tar = tarfile.open(archive_file, "w:gz")
                 except:
-                    logger.exception("unable to open the archive '%s' for writing "
+                    logger.exception("unable to open '%s' for writing "
                                      "after creating directory '%s'",
                                      archive_file, archives_path)
                     tar = None
@@ -225,18 +224,19 @@ def backup_create(name=None, description=None, output_directory=None,
                 logger.exception("unable to open the archive '%s' for writing",
                                  archive_file)
             if tar is None:
+                _clean_tmp_dir()
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('backup_archive_open_failed'))
         tar.add(tmp_dir, arcname='')
         tar.close()
 
-        # Copy info file
-        os.system('mv %s/info.json %s/%s.info.json' %
-                  (tmp_dir, archives_path, name))
+        # Move info file
+        os.rename(tmp_dir + '/info.json',
+                  '{:s}/{:s}.info.json'.format(archives_path, name))
 
     # Clean temporary directory
     if tmp_dir != output_directory:
-        os.system('rm -rf %s' % tmp_dir)
+        _clean_tmp_dir()
 
     msignals.display(m18n.n('backup_complete'), 'success')
 
