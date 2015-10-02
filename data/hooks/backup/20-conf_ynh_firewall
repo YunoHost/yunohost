@@ -1,0 +1,4 @@
+backup_dir="$1/conf/ynh/firewall"
+mkdir -p $backup_dir
+
+sudo cp -a /etc/yunohost/firewall* $backup_dir

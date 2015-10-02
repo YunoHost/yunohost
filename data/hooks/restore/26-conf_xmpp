@@ -1,4 +1,4 @@
-backup_dir="$1/xmpp"
+backup_dir="$1/conf/xmpp"
 
 sudo cp -a $backup_dir/etc/. /etc/metronome
 sudo cp -a $backup_dir/var/. /var/lib/metronome

@@ -1,4 +1,4 @@
-backup_dir="$1/ldap"
+backup_dir="$1/conf/ldap"
 
 if [ -z "$2" ]; then
 

@@ -1,5 +1,5 @@
-backup_dir="$1/mysql"
+backup_dir="$1/conf/mysql"
 
+service mysql restart
 mysqlpwd=$(sudo cat /etc/yunohost/mysql)
-#sudo mysql -uroot -p"$mysqlpwd" mysql < $backup_dir/mysql.sql
 sudo mysqladmin flush-privileges -p"$mysqlpwd"

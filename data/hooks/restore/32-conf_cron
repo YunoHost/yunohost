@@ -1,4 +1,4 @@
-backup_dir="$1/cron"
+backup_dir="$1/conf/cron"
 
 sudo cp -a $backup_dir/. /etc/cron.d
 

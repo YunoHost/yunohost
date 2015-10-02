@@ -1,4 +1,4 @@
-backup_dir="$1/home"
+backup_dir="$1/data/home"
 mkdir -p $backup_dir
 
 sudo rsync -a --exclude='/yunohost*' /home/ $backup_dir/
