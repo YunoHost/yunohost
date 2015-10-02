@@ -1,4 +1,4 @@
-backup_dir="$1/ldap"
+backup_dir="$1/conf/ldap"
 mkdir -p $backup_dir
 
 sudo cp -a /etc/ldap/slapd.conf $backup_dir/

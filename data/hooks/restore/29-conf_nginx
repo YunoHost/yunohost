@@ -1,4 +1,4 @@
-backup_dir="$1/nginx"
+backup_dir="$1/conf/nginx"
 
 sudo cp -a $backup_dir/. /etc/nginx/conf.d
 

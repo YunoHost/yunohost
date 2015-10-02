@@ -1,5 +1,0 @@
-backup_dir="$1/mysql"
-mkdir -p $backup_dir
-
-mysqlpwd=$(sudo cat /etc/yunohost/mysql)
-sudo mysqldump -uroot -p"$mysqlpwd" mysql > $backup_dir/mysql.sql

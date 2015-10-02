@@ -1,4 +1,4 @@
-backup_dir="$1/mail"
+backup_dir="$1/data/mail"
 
 sudo cp -a $backup_dir/. /var/mail
 
