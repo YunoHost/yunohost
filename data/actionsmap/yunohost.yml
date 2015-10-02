@@ -600,7 +600,7 @@ backup:
         ### backup_restore()
         restore:
             action_help: Restore from a local backup archive
-            api: POST /restore
+            api: POST /backup/restore/<name>
             configuration:
                 authenticate: false
             arguments:
@@ -614,6 +614,9 @@ backup:
                     nargs: "*"
                 --ignore-apps:
                     help: Do not restore apps
+                    action: store_true
+                --ignore-hooks:
+                    help: Do not restore hooks
                     action: store_true
                 --force:
                     help: Force restauration on an already installed system
@@ -652,6 +655,18 @@ backup:
                     full: --human-readable
                     help: Print sizes in human readable format
                     action: store_true
+
+        ### backup_delete()
+        delete:
+            action_help: Delete a backup archive
+            api: DELETE /backup/archives/<name>
+            configuration:
+                authenticate: all
+            arguments:
+                name:
+                    help: Name of the archive to delete
+                    extra:
+                        pattern: *pattern_backup_archive_name
 
 
 #############################

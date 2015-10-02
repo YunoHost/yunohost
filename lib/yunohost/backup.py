@@ -222,7 +222,7 @@ def backup_create(name=None, description=None, output_directory=None,
     return { 'archive': info }
 
 
-def backup_restore(name, hooks=[], apps=[], ignore_apps=False, force=False):
+def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=False, force=False):
     """
     Restore from a local backup archive
 
@@ -383,7 +383,7 @@ def backup_info(name, with_details=False, human_readable=False):
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
     if not os.path.isfile(archive_file):
         logger.error("no local backup archive found at '%s'", archive_file)
-        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown'))
+        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown',name))
 
     info_file = "%s/%s.info.json" % (archives_path, name)
     try:
@@ -412,3 +412,32 @@ def backup_info(name, with_details=False, human_readable=False):
         for d in ['apps', 'hooks']:
             result[d] = info[d]
     return result
+    
+    
+def backup_delete(auth, name):
+    """
+    Delete a backup
+
+    Keyword arguments:
+        name -- Name of the local backup archive
+
+    """    
+    from yunohost.hook import hook_callback
+    hook_callback('pre_backup_delete', args=[name])
+    
+    archive_file = '%s/%s.tar.gz' % (archives_path, name)
+        
+    info_file = "%s/%s.info.json" % (archives_path, name)
+    for backup_file in [archive_file,info_file]:
+        if not os.path.isfile(backup_file):
+            logger.error("no local backup archive found at '%s'", backup_file)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown', backup_file))
+        try:
+            os.remove(backup_file)
+        except:
+            logger.exception("unable to delete '%s'", backup_file)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_delete_error',backup_file))        
+        
+    hook_callback('post_backup_delete', args=[name])
+
+    msignals.display(m18n.n('backup_deleted'), 'success')
