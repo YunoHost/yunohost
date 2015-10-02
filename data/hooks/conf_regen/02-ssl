@@ -25,21 +25,21 @@ sudo mkdir -p $ssl_dir/{ca,certs,crl,newcerts}
 
 safe_copy openssl.cnf $ssl_dir/openssl.cnf
 
-if [ ! -f /etc/yunohost/installed ]; then
-    sudo rm -f $ssl_dir/index.txt
-    sudo touch $ssl_dir/index.txt
-    sudo rm -f $ssl_dir/serial
-    sudo rm -f /etc/yunohost/certs/yunohost.org/*
-fi
+[ -f $ssl_dir/serial ] \
+  || (echo "01" | sudo tee $ssl_dir/serial)
 
-if [ ! -f $ssl_dir/serial ]; then
-    echo "01" | sudo tee $ssl_dir/serial
-fi
+[ -f $ssl_dir/index.txt ] \
+  || sudo touch $ssl_dir/index.txt
 
 if [ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ]; then
     sudo openssl req -x509 -new -config $ssl_dir/openssl.cnf \
       -days 3650 -out $ssl_dir/ca/cacert.pem \
       -keyout $ssl_dir/ca/cakey.pem -nodes -batch
+    sudo cp $ssl_dir/ca/cacert.pem \
+      /etc/yunohost/certs/yunohost.org/ca.pem
+    sudo ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
+      /etc/ssl/certs/ca-yunohost_crt.pem
+    sudo update-ca-certificates
 fi
 
 if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
@@ -50,20 +50,16 @@ if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
       -days 730 -in $ssl_dir/certs/yunohost_csr.pem \
       -out $ssl_dir/certs/yunohost_crt.pem -batch
 
+    last_cert=$(ls *.pem | sort -V | tail -n 1)
     sudo chmod 640 $ssl_dir/certs/yunohost_key.pem
-    sudo chmod 640 $ssl_dir/newcerts/01.pem
+    sudo chmod 640 $ssl_dir/newcerts/$last_cert
 
-    sudo cp $ssl_dir/ca/cacert.pem \
-      /etc/yunohost/certs/yunohost.org/ca.pem
     sudo cp $ssl_dir/certs/yunohost_key.pem \
       /etc/yunohost/certs/yunohost.org/key.pem
-    sudo cp $ssl_dir/newcerts/01.pem \
+    sudo cp $ssl_dir/newcerts/$last_cert \
       /etc/yunohost/certs/yunohost.org/crt.pem
     sudo ln -sf /etc/yunohost/certs/yunohost.org/crt.pem \
       /etc/ssl/certs/yunohost_crt.pem
     sudo ln -sf /etc/yunohost/certs/yunohost.org/key.pem \
       /etc/ssl/private/yunohost_key.pem
-    sudo ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
-      /etc/ssl/certs/ca-yunohost_crt.pem
-    sudo update-ca-certificates
 fi
