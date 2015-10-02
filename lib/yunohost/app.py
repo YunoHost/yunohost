@@ -722,6 +722,19 @@ def app_clearaccess(auth, apps):
     app_ssowatconf(auth)
 
 
+def app_debug(app):
+    with open(apps_setting_path + app + '/manifest.json') as f:
+        manifest = json.loads(f.read())
+
+    return {
+        'name': manifest['name'],
+        'services_logs': [{
+                'service': x,
+                'log': service_log(x),
+            } for x in manifest.get("services", [])]
+    }
+
+
 def app_makedefault(auth, app, domain=None):
     """
     Redirect domain root to an app
