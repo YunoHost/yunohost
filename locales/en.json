@@ -150,6 +150,7 @@
     "backup_archive_open_failed" : "Unable to open the backup archive",
     "backup_archive_name_unknown" : "Unknown local backup archive named '{:s}'",
     "backup_archive_name_exists" : "Backup archive name already exists",
+    "backup_app_failed" : "Unable to back up the app '{app:s}'",
     "backup_complete" : "Backup complete",
     "backup_invalid_archive" : "Invalid backup archive",
     "restore_confirm_yunohost_installed" : "Do you really want to restore an already installed system? [{answers:s}]",

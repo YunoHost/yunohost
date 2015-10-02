@@ -30,6 +30,7 @@ import json
 import errno
 import time
 import tarfile
+import shutil
 import subprocess
 from collections import OrderedDict
 
@@ -158,28 +159,44 @@ def backup_create(name=None, description=None, output_directory=None,
         # Run apps backup scripts
         tmp_script = '/tmp/backup_' + str(timestamp)
         for app_id in apps_filtered:
-            script = '/etc/yunohost/apps/{:s}/scripts/backup'.format(app_id)
-            if not os.path.isfile(script):
-                logger.warning("backup script '%s' not found", script)
+            app_setting_path = '/etc/yunohost/apps/' + app_id
+
+            # Check if the app has a backup script
+            app_script = app_setting_path + '/scripts/backup'
+            if not os.path.isfile(app_script):
+                logger.warning("backup script '%s' not found", app_script)
                 msignals.display(m18n.n('unbackup_app', app_id),
                                  'warning')
                 continue
 
+            tmp_app_dir = '{:s}/{:s}'.format(tmp_dir, app_id)
+            msignals.display(m18n.n('backup_running_app_script', app_id))
             try:
-                msignals.display(m18n.n('backup_running_app_script', app_id))
-                subprocess.call(['install', '-Dm555', script, tmp_script])
-                hook_exec(tmp_script, args=[tmp_dir])
+                # Prepare backup directory for the app
+                os.mkdir(tmp_app_dir, 0750)
+                os.mkdir(tmp_app_dir + '/backup', 0750)
+                shutil.copytree(app_setting_path, tmp_app_dir + '/settings')
+
+                # Copy app backup script in a temporary folder and execute it
+                subprocess.call(['install', '-Dm555', app_script, tmp_script])
+                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_id])
             except:
-                logger.exception("error while executing script '%s'", script)
-                msignals.display(m18n.n('unbackup_app', app_id),
+                logger.exception("error while executing backup of '%s'", app_id)
+                msignals.display(m18n.n('backup_app_failed', app=app_id),
                                  'error')
+                # Cleaning app backup directory
+                shutil.rmtree(tmp_app_dir, ignore_errors=True)
             else:
                 # Add app info
                 i = app_info(app_id)
                 info['apps'][app_id] = {
                     'version': i['version'],
                 }
-        subprocess.call(['rm', '-f', tmp_script])
+            finally:
+                try:
+                    os.unlink(tmp_script)
+                except OSError:
+                    pass
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
