@@ -119,8 +119,12 @@ def backup_create(name=None, description=None, output_directory=None,
             filesystem.rm(tmp_dir, recursive=True)
         filesystem.mkdir(tmp_dir, 0750, parents=True, uid='admin')
 
-    def _clean_tmp_dir():
-        filesystem.rm(tmp_dir, True, True)
+    def _clean_tmp_dir(retcode=0):
+        ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
+        if not ret['failed']:
+            filesystem.rm(tmp_dir, True, True)
+        else:
+            msignals.display(m18n.n('backup_cleaning_failed'), 'warning')
 
     # Initialize backup info
     info = {
@@ -194,7 +198,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
         # Check if something has been saved
         if ignore_hooks and not info['apps']:
-            _clean_tmp_dir()
+            _clean_tmp_dir(1)
             raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
     # Create backup info file
@@ -224,7 +228,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 logger.exception("unable to open the archive '%s' for writing",
                                  archive_file)
             if tar is None:
-                _clean_tmp_dir()
+                _clean_tmp_dir(2)
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('backup_archive_open_failed'))
         tar.add(tmp_dir, arcname='')
@@ -435,8 +439,8 @@ def backup_info(name, with_details=False, human_readable=False):
         for d in ['apps', 'hooks']:
             result[d] = info[d]
     return result
-    
-    
+
+
 def backup_delete(name):
     """
     Delete a backup
@@ -444,12 +448,12 @@ def backup_delete(name):
     Keyword arguments:
         name -- Name of the local backup archive
 
-    """    
+    """
     from yunohost.hook import hook_callback
     hook_callback('pre_backup_delete', args=[name])
-    
+
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
-        
+
     info_file = "%s/%s.info.json" % (archives_path, name)
     for backup_file in [archive_file,info_file]:
         if not os.path.isfile(backup_file):
@@ -459,8 +463,9 @@ def backup_delete(name):
             os.remove(backup_file)
         except:
             logger.exception("unable to delete '%s'", backup_file)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_delete_error',backup_file))        
-        
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('backup_delete_error',backup_file))
+
     hook_callback('post_backup_delete', args=[name])
 
     msignals.display(m18n.n('backup_deleted'), 'success')

@@ -1,0 +1,29 @@
+CAN_BIND=1
+
+# Bind a directory or copy it on error
+#
+# usage: ynh_bind_or_cp srcdir destdir as_root
+# | arg: srcdir - directory to bind or copy
+# | arg: destdir - mountpoint or destination directory
+# | arg: as_root - 1 to execute commands as root
+ynh_bind_or_cp() {
+    SRCDIR=$1
+    DESTDIR=$2
+    SUDO_CMD="sudo"
+    [[ "$3" != "1" ]] && SUDO_CMD=""
+
+    if [[ $CAN_BIND == 1 ]]; then
+        $SUDO_CMD mkdir -p $DESTDIR
+        $SUDO_CMD mount --bind "$SRCDIR" "$DESTDIR"
+        if [[ $? == 0 ]]; then
+            for m in $(mount | grep " $SRCDIR" | awk '{ print $3 }'); do
+                $SUDO_CMD mount --bind "$m" "${DESTDIR}${m#${SRCDIR}}"
+            done
+            return
+        fi
+        echo "Error: bind mounting seems to be disabled on your system."
+        echo "You have maybe to check your apparmor configuration."
+        CAN_BIND=0
+    fi
+    $SUDO_CMD cp -r "$SRCDIR" "$DESTDIR"
+}

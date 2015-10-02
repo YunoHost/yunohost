@@ -212,10 +212,14 @@ def hook_callback(action, hooks=[], args=None):
             state = 'succeed'
             filename = '%s-%s' % (priority, name)
             try:
-                hook_exec(info['path'], args=args)
+                ret = hook_exec(info['path'], args=args)
             except:
                 logger.exception("error while executing hook '%s'",
                                  info['path'])
+                state = 'failed'
+            if ret != 0:
+                logger.error("error while executing hook '%s', retcode: %d",
+                             info['path'], ret)
                 state = 'failed'
             try:
                 result[state][name].append(info['path'])

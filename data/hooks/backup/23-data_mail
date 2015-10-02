@@ -1,3 +1,5 @@
 backup_dir="$1/data/mail"
 
-sudo cp -a /var/mail/. $backup_dir
+. /usr/share/yunohost/apps/helpers
+
+ynh_bind_or_cp /var/mail $backup_dir 1
