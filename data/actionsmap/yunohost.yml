@@ -358,11 +358,15 @@ app:
 
         ### app_info()
         info:
-            action_help: Get app info
+            action_help: Get information about an installed app
             api: GET /apps/<app>
             arguments:
                 app:
                     help: Specific app ID
+                -s:
+                    full: --show-status
+                    help: Show app installation status
+                    action: store_true
                 -r:
                     full: --raw
                     help: Return the full app_dict
@@ -601,8 +605,6 @@ backup:
         restore:
             action_help: Restore from a local backup archive
             api: POST /backup/restore/<name>
-            configuration:
-                authenticate: false
             arguments:
                 name:
                     help: Name of the local backup archive
