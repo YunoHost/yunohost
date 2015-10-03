@@ -1,6 +1,6 @@
 backup_dir="$1/conf/ynh/certs"
 
-mkdir -p /etc/yunohost/certs/
+sudo mkdir -p /etc/yunohost/certs/
 
 sudo cp -a $backup_dir/. /etc/yunohost/certs/
 sudo yunohost app ssowatconf

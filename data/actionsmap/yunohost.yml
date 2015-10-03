@@ -628,6 +628,9 @@ backup:
                 --ignore-apps:
                     help: Do not restore apps
                     action: store_true
+                --ignore-hooks:
+                    help: Do not restore hooks
+                    action: store_true
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true
