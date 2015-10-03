@@ -420,3 +420,11 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     if is_api:
         from yunohost.service import service_log
         return { "log": service_log('yunohost-api', number="100").values()[0] }
+
+
+def tools_reboot_server():
+    """
+    Simple function to reboot the server. 
+    Interesting to use via the web interface.
+    """
+    os.system('reboot')
