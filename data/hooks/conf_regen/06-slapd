@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [ ! -f /etc/yunohost/installed ]; then
+        sudo cp $1 $2
+    else
+        if [[ "$force" == "True" ]]; then
+            sudo yunohost service safecopy \
+              -s slapd $1 $2 --force
+        else
+            sudo yunohost service safecopy \
+              -s slapd $1 $2
+        fi
+    fi
+}
+
+cd /usr/share/yunohost/templates/slapd
+
+# Remove legacy configuration file
+[ ! -f /etc/yunohost/installed ] \
+  || sudo yunohost service saferemove -s slapd \
+    /etc/ldap/slapd-yuno.conf
+
+safe_copy sudo.schema /etc/ldap/schema/sudo.schema
+safe_copy mailserver.schema /etc/ldap/schema/mailserver.schema
+safe_copy ldap.conf /etc/ldap/ldap.conf
+safe_copy slapd.default /etc/default/slapd
+
+# Compatibility: change from HDB to MDB on Jessie
+version=$(sed 's/\..*//' /etc/debian_version)
+if [[ "$version" == '8' ]]; then
+    cat slapd.conf \
+      | sed "s/hdb$/mdb/g" \
+      | sed "s/back_hdb/back_mdb/g" \
+      | sed "s/^dbconfig set_/#dbconfig set_/g" \
+      | sudo tee slapd.conf
+fi
+
+safe_copy slapd.conf /etc/ldap/slapd.conf
+sudo chown root:openldap /etc/ldap/slapd.conf
+sudo rm -Rf /etc/ldap/slapd.d
+sudo mkdir /etc/ldap/slapd.d
+sudo chown -R openldap:openldap /etc/ldap/schema/
+sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+
+sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/
+sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+
+sudo service slapd force-reload

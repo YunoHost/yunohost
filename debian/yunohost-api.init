@@ -1,75 +1,127 @@
-#! /bin/bash
+#! /bin/sh
+
 ### BEGIN INIT INFO
 # Provides:          yunohost-api
 # Required-Start:    $local_fs $remote_fs $network $syslog
 # Required-Stop:     $local_fs $remote_fs $network $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Start/stop YunoHost API
-# Description:       Start/stop YunoHost API
+# Short-Description: Manage YunoHost API Server
+# Description:       Manage YunoHost API Server
 ### END INIT INFO
 
-DAEMON=/usr/bin/yunohost-api
+set -e
+
+DESC="YunoHost API Server"
+NAME="yunohost-api"
+DAEMON=/usr/bin/$NAME
 DAEMON_OPTS=""
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+LOGFILE=/var/log/$NAME.log
 
-test -x $DAEMON || exit 0
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
 
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
 . /lib/lsb/init-functions
 
-logger "YunoHost API: Start script executed"
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+    # Return
+    #   0 if daemon has been started
+    #   1 if daemon was already running
+    #   2 if daemon could not be started
+    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
+        || return 1
+    start-stop-daemon --start --background --make-pidfile --quiet --no-close \
+        --pidfile $PIDFILE --exec $DAEMON -- \
+        $DAEMON_ARGS >>$LOGFILE 2>&1 \
+        || return 2
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+    # Return
+    #   0 if daemon has been stopped
+    #   1 if daemon was already stopped
+    #   2 if daemon could not be stopped
+    #   other if a failure occurred
+    start-stop-daemon --stop --oknodo --pidfile $PIDFILE
+    RETVAL="$?"
+
+    sleep 1
+    return "$RETVAL"
+}
+
+#
+# Function that sends a SIGHUP to the daemon/service
+#
+do_reload() {
+    # Send a SIGHUP to reload the daemon.
+    start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+    return 0
+}
 
 case "$1" in
   start)
-    logger "YunoHost API: Starting"
-    log_daemon_msg "Starting API: YunoHost"
-    if [[ -f /etc/nginx/conf.d/openresty.conf ]];
-    then
-        DAEMON_OPTS="--no-websocket"
-    fi
-    start-stop-daemon --start --background --pidfile /var/run/yunohost-api.pid --make-pidfile \
-        --exec /bin/bash -- -c "$DAEMON $DAEMON_OPTS >> /var/log/yunohost.log 2>&1"
-    log_end_msg $?
-    ;;
+      [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+      do_start
+      case "$?" in
+          0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+          2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+      esac
+      ;;
   stop)
-    logger "YunoHost API: Stopping"
-    log_daemon_msg "Stopping API: YunoHost"
-    if [ -f /var/run/yunohost-api.pid ]; then
-        kill `cat /var/run/yunohost-api.pid` > /dev/null 2>&1
-        rm -f /var/run/yunohost-api.pid
-    fi
-    kill `ps aux | grep 'python /usr/bin/yunohost-api' | grep -v grep | awk '{print $2}'` > /dev/null 2>&1
-    kill `ps aux | grep 'yunohost-api' | grep -v grep | grep -v stop | awk '{print $2}'` > /dev/null 2>&1
-    log_end_msg 0
-    ;;
-  restart|force-reload)
-    logger "YunoHost API: Restarting"
-    log_daemon_msg "Restarting API: YunoHost"
-    if [ -f /var/run/yunohost-api.pid ]; then
-        kill `cat /var/run/yunohost-api.pid` > /dev/null 2>&1
-        rm -f /var/run/yunohost-api.pid
-    fi
-    kill `ps aux | grep 'python /usr/bin/yunohost-api' | grep -v grep | awk '{print $2}'` > /dev/null 2>&1
-    kill `ps aux | grep 'yunohost-api' | grep -v grep | grep -v restart | awk '{print $2}'` > /dev/null 2>&1
-    kill `ps aux | grep 'yunohost.tac' | grep -v grep | awk '{print $2}'` > /dev/null 2>&1
-    if [[ -f /etc/nginx/conf.d/openresty.conf ]];
-    then
-        DAEMON_OPTS="--no-websocket"
-    fi
-    start-stop-daemon --start --background --pidfile /var/run/yunohost-api.pid --make-pidfile \
-        --exec /bin/bash -- -c "$DAEMON $DAEMON_OPTS >> /var/log/yunohost.log 2>&1"
-    log_end_msg $?
-    ;;
+      [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+      do_stop
+      case "$?" in
+          0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+          2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+      esac
+      ;;
   status)
-    logger "YunoHost API: Running"
-    log_daemon_msg "YunoHost API: Running"
-    cat /var/run/yunohost-api.pid > /dev/null 2>&1
-    log_end_msg $?
-    ;;
+      status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+      ;;
+  reload)
+      log_daemon_msg "Reloading $DESC" "$NAME"
+      do_reload
+      log_end_msg $?
+      ;;
+  restart|force-reload)
+      log_daemon_msg "Restarting $DESC" "$NAME"
+      do_stop
+      case "$?" in
+        0|1)
+            do_start
+            case "$?" in
+                0) log_end_msg 0 ;;
+                1) log_end_msg 1 ;; # Old process is still running
+                *) log_end_msg 1 ;; # Failed to start
+            esac
+            ;;
+        *)
+            # Failed to stop
+            log_end_msg 1
+            ;;
+      esac
+      ;;
   *)
-    logger "YunoHost API: Invalid usage"
-    echo "Usage: /etc/init.d/yunohost-api {start|stop|restart|force-reload|status}" >&2
-    exit 1
-    ;;
+      echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload}" >&2
+      exit 3
+      ;;
 esac
 
-exit 0
+:

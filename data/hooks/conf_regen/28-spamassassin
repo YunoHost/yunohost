@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s spamassassin $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s spamassassin $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/spamassassin
+
+safe_copy spamassassin.default /etc/default/spamassassin
+safe_copy local.cf /etc/spamassassin/local.cf
+
+sudo service spamassassin restart

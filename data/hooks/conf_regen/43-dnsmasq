@@ -1,0 +1,50 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s dnsmasq $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s dnsmasq $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/dnsmasq
+
+# Get IP address
+ip=$(curl ip.yunohost.org || echo '0.0.0.0')
+
+# Get IPv6 IP address
+ipv6=$(ip route get 2000:: | grep -q "unreachable" && echo '' \
+  || ip route get 2000:: | grep -v ' fe80:' | grep -v 'cache' | awk '{print $9}')
+
+sudo mkdir -p /etc/dnsmasq.d
+
+domain_list=$(sudo yunohost domain list --plain)
+
+# Copy a configuration file for each YunoHost domain 
+for domain in $domain_list; do
+    cat domain.sed \
+      | sed "s/{{ domain }}/$domain/g" \
+      | sed "s/{{ ip }}/$ip/g" \
+      | sudo tee $domain
+
+    if [[ "$ipv6" != "" ]]; then
+        echo "address=/$domain/$ipv6" | sudo tee -a $domain
+    fi
+
+    safe_copy $domain /etc/dnsmasq.d/$domain
+done
+
+# Remove old domains files
+for file in /etc/dnsmasq.d/*.*; do
+    domain=$(echo $file | sed 's|/etc/dnsmasq.d/||')
+    [[ $domain_list =~ $domain ]] \
+      || sudo yunohost service saferemove -s dnsmasq $file
+done
+
+sudo service dnsmasq reload

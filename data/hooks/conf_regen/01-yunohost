@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+cd /usr/share/yunohost/templates/yunohost
+
+sudo mkdir -p /etc/yunohost
+
+if [ ! -f /etc/yunohost/current_host ]; then
+    echo "yunohost.org" | sudo tee /etc/yunohost/current_host
+fi
+
+if [ ! -f /etc/yunohost/firewall.yml ]; then
+    sudo cp firewall.yml /etc/yunohost/firewall.yml
+fi
+
+if [ ! -f /etc/yunohost/services.yml ]; then
+    sudo cp services.yml /etc/yunohost/services.yml
+fi
+
+# Allow users to access /media directory
+if [ ! -d /etc/skel/media ]; then
+    mkdir -p /media
+    ln -s /media /etc/skel/
+fi

@@ -1,0 +1,145 @@
+# See /usr/share/postfix/main.cf.dist for a commented, more complete version
+
+
+# Debian specific:  Specifying a file name will cause the first
+# line of that file to be used as the name.  The Debian default
+# is /etc/mailname.
+#myorigin = /etc/mailname
+
+smtpd_banner = $myhostname Service ready
+biff = no
+
+# appending .domain is the MUA's job.
+append_dot_mydomain = no
+
+# Uncomment the next line to generate "delayed mail" warnings
+#delay_warning_time = 4h
+
+readme_directory = no
+
+# -- TLS for incoming connections
+# By default, TLS is disabled in the Postfix SMTP server, so no difference to
+# plain Postfix is visible. Explicitly switch it on with "smtpd_tls_security_level = may".
+smtpd_tls_security_level=may
+
+# Sending AUTH data over an unencrypted channel poses a security risk.
+# When TLS layer encryption is optional ("smtpd_tls_security_level = may"), it
+# may however still be useful to only offer AUTH when TLS is active. To maintain
+# compatibility with non-TLS clients, the default is to accept AUTH without
+# encryption. In order to change this behavior, we set "smtpd_tls_auth_only = yes".
+smtpd_tls_auth_only=yes
+smtpd_tls_cert_file=/etc/ssl/certs/yunohost_crt.pem
+smtpd_tls_key_file=/etc/ssl/private/yunohost_key.pem
+smtpd_tls_CAfile = /etc/ssl/certs/ca-yunohost_crt.pem
+smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtpd_tls_loglevel=1
+smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3
+smtpd_tls_mandatory_ciphers=high
+
+# -- TLS for outgoing connections
+# Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
+smtp_tls_security_level=may
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtp_tls_loglevel=1
+
+# See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
+# information on enabling SSL in the smtp client.
+
+myhostname = {{ main_domain }}
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+mydomain = {{ main_domain }}
+mydestination = localhost
+relayhost = 
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+mailbox_command = procmail -a "$EXTENSION"
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = all
+
+#### Fit to the maximum message size allowed by GMail or Yahoo ####
+message_size_limit = 26214400
+
+# Virtual Domains Control 
+virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf 
+virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf 
+virtual_mailbox_base = 
+virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf 
+virtual_alias_domains = 
+virtual_minimum_uid = 100 
+virtual_uid_maps = static:vmail 
+virtual_gid_maps = static:mail
+
+# Dovecot LDA 
+virtual_transport = dovecot 
+dovecot_destination_recipient_limit = 1
+
+# Enable SASL authentication for the smtpd daemon 
+smtpd_sasl_auth_enable = yes 
+smtpd_sasl_type = dovecot 
+smtpd_sasl_path = private/auth 
+# Fix some outlook's bugs 
+broken_sasl_auth_clients = yes 
+# Reject anonymous connections 
+smtpd_sasl_security_options = noanonymous 
+smtpd_sasl_local_domain =
+
+
+# Use AMaVis 
+content_filter = amavis:[127.0.0.1]:10024
+
+# Wait until the RCPT TO command before evaluating restrictions 
+smtpd_delay_reject = yes 
+ 
+# Basics Restrictions 
+smtpd_helo_required = yes 
+strict_rfc821_envelopes = yes 
+ 
+# Requirements for the connecting server 
+smtpd_client_restrictions = 
+    permit_mynetworks, 
+    permit_sasl_authenticated, 
+    reject_rbl_client bl.spamcop.net, 
+    reject_rbl_client cbl.abuseat.org, 
+    reject_rbl_client zen.spamhaus.org, 
+    permit 
+ 
+# Requirements for the HELO statement 
+smtpd_helo_restrictions = 
+    permit_mynetworks, 
+    permit_sasl_authenticated, 
+    reject_non_fqdn_hostname, 
+    reject_invalid_hostname, 
+    permit 
+ 
+# Requirements for the sender address 
+smtpd_sender_restrictions = 
+    permit_mynetworks, 
+    permit_sasl_authenticated, 
+    reject_non_fqdn_sender, 
+    reject_unknown_sender_domain,
+    permit 
+ 
+# Requirement for the recipient address 
+smtpd_recipient_restrictions = 
+    permit_mynetworks, 
+    permit_sasl_authenticated, 
+    reject_non_fqdn_recipient, 
+    reject_unknown_recipient_domain, 
+    reject_unauth_destination,
+    check_policy_service unix:private/policy-spf
+    check_policy_service inet:127.0.0.1:10023
+    permit
+
+# Use SPF
+policy-spf_time_limit = 3600s
+
+# SRS
+sender_canonical_maps = regexp:/etc/postfix/sender_canonical
+sender_canonical_classes = envelope_sender
+
+# Ignore some headers
+smtp_header_checks = regexp:/etc/postfix/header_checks
+
+smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter

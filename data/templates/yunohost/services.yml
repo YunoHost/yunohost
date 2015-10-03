@@ -39,3 +39,13 @@ postgrey:
 amavis:
    status: service
    log: /var/log/mail.log
+nslcd:
+   status: service
+   log: /var/log/syslog
+nsswitch:
+   status: service
+spamassassin:
+   status: service
+   log: /var/log/mail.log
+udisks-glue:
+   status: service

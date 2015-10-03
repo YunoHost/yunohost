@@ -1,0 +1,80 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s metronome \
+          $1 $2 \
+          --force
+    else
+        sudo yunohost service safecopy \
+          -s metronome \
+          $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/metronome
+
+# Copy additional modules
+files="ldap.lib.lua
+mod_auth_ldap2.lua
+mod_legacyauth.lua
+mod_storage_ldap.lua
+vcard.lib.lua"
+
+for file in $files; do
+    safe_copy modules/$file /usr/lib/metronome/modules/$file
+done
+
+# Copy configuration files
+main_domain=$(cat /etc/yunohost/current_host)
+cat metronome.cfg.lua.sed \
+  | sed "s/{{ main_domain }}/$main_domain/g" \
+  | sudo tee metronome.cfg.lua
+safe_copy metronome.cfg.lua /etc/metronome/metronome.cfg.lua
+safe_copy metronome.init /etc/init.d/metronome
+safe_copy metronome.logrotate /etc/logrotate.d/metronome
+
+need_restart=False
+sudo mkdir -p /etc/metronome/conf.d
+
+domain_list=$(sudo yunohost domain list --plain)
+
+# Copy a configuration file for each YunoHost domain 
+for domain in $domain_list; do
+    sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
+    sudo mkdir -p /var/lib/metronome/$sanitzed_domain/pep
+
+    cat domain.cfg.lua.sed \
+      | sed "s/{{ domain }}/$domain/g" \
+      | sudo tee $domain.cfg.lua
+    if [[ $(safe_copy $domain.cfg.lua /etc/metronome/conf.d/$domain.cfg.lua) == "True" ]]; then
+        need_restart=True
+    fi
+done
+
+# Remove old domains files
+for file in /etc/metronome/conf.d/*; do
+    domain=$(echo $file \
+             | sed 's|/etc/metronome/conf.d/||' \
+             | sed 's|.cfg.lua||')
+    sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
+    [[ $domain_list =~ $domain ]] \
+      || ($(sudo yunohost service saferemove -s metronome $file) == "True" \
+        && rm -rf /var/lib/metronome/$sanitzed_domain)
+
+done
+
+# Create domain directory
+sudo chown -R metronome: /var/lib/metronome/
+sudo chown -R metronome: /etc/metronome/conf.d/
+
+# Restart if need be
+if [[ "$need_restart" == "True" ]]; then
+    sudo service metronome restart
+else
+    sudo service metronome reload
+fi

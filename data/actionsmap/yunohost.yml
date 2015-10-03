@@ -243,6 +243,10 @@ domain:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
+                -r:
+                    full: --raw
+                    help: Return domains as a bash-usable list instead of JSON
+                    action: store_true
                 -f:
                     full: --filter
                     help: LDAP filter used to search
@@ -260,6 +264,7 @@ domain:
             action_help: Create a custom domain
             api: POST /domains
             configuration:
+                lock: false
                 authenticate: all
             arguments:
                 domain:
@@ -278,6 +283,7 @@ domain:
             action_help: Delete domains
             api: DELETE /domains/<domain>
             configuration:
+                lock: false
                 authenticate: all
             arguments:
                 domain:
@@ -913,6 +919,63 @@ service:
                     default: 50
                     type: int
 
+        ### service_regenconf()
+        regenconf:
+            action_help: >
+                Regenerate the configuration file(s) for a service and compare the result
+                with the existing configuration file.
+                Prints the differences between files if any.
+            api: PUT /services/regenconf
+            configuration:
+                lock: false
+            arguments:
+                -s:
+                    full: --service
+                    help: Regenerate configuration for a specfic service
+                -f:
+                    full: --force
+                    help: Override the current configuration with the newly generated one, even if it has been modified
+                    action: store_true
+
+        ### service_safecopy()
+        safecopy:
+            action_help: >
+                Check if the specific file has been modified and display differences.
+                Stores the file hash in the services.yml file
+            api: PUT /services/safecopy
+            arguments:
+                new_conf_file:
+                    help: Path to the desired conf file
+                conf_file:
+                    help: Path to the targeted conf file
+                -s:
+                    full: --service
+                    help: Service name attached to the conf file
+                    extra:
+                        required: True
+                -f:
+                    full: --force
+                    help: Override the current configuration with the newly generated one, even if it has been modified
+                    action: store_true
+
+        ### service_saferemove()
+        saferemove:
+            action_help: >
+                Check if the specific file has been modified before removing it.
+                Backup the file in /home/yunohost.backup
+            api: PUT /services/safecopy
+            arguments:
+                conf_file:
+                    help: Path to the targeted conf file
+                -s:
+                    full: --service
+                    help: Service name attached to the conf file
+                    extra:
+                        required: True
+                -f:
+                    full: --force
+                    help: Force file deletion
+                    action: store_true
 
 #############################
 #         Firewall          #

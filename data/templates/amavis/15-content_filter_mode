@@ -1,0 +1,23 @@
+use strict;
+
+# You can modify this file to re-enable SPAM checking through spamassassin
+# and to re-enable antivirus checking.
+
+#
+# Default antivirus checking mode
+# Uncomment the two lines below to enable it back
+#
+
+#@bypass_virus_checks_maps = (
+#   \%bypass_virus_checks, \@bypass_virus_checks_acl, \$bypass_virus_checks_re);
+
+
+#
+# Default SPAM checking mode
+# Uncomment the two lines below to enable it back
+#
+
+@bypass_spam_checks_maps = (
+   \%bypass_spam_checks, \@bypass_spam_checks_acl, \$bypass_spam_checks_re);
+
+1;  # ensure a defined return

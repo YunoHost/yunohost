@@ -1,0 +1,88 @@
+## LDAP Schema Yunohost EMAIL
+## Version 0.1
+## Adrien Beudin
+
+# Attributes
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.1
+        NAME 'maildrop'
+        DESC 'Mail addresses where mails are forwarded -- ie forwards'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{512})
+
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.2
+        NAME 'mailalias'
+        DESC 'Mail addresses accepted by this account -- ie aliases'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{512})
+
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.3
+        NAME 'mailenable'
+        DESC 'Mail Account validity'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{8})
+
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.4
+        NAME 'mailbox'
+        DESC 'Mailbox path where mails are delivered'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{512})
+
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.5
+        NAME 'virtualdomain'
+        DESC 'A mail domain name'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{512})
+
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.6
+        NAME 'virtualdomaindescription'
+        DESC 'Virtual domain description'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{512})
+
+attributetype ( 1.3.6.1.4.1.40328.1.20.2.7
+        NAME 'mailuserquota'
+        DESC 'Mailbox quota for a user'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{16} SINGLE-VALUE )
+
+# Mail Account Objectclass
+objectclass ( 1.3.6.1.4.1.40328.1.1.2.1
+        NAME 'mailAccount'
+        DESC 'Mail Account'
+        SUP top
+        AUXILIARY
+        MUST (
+            mail
+            )
+        MAY (
+            mailalias $ maildrop $ mailenable $ mailbox $ mailuserquota 
+            )
+        )
+
+# Mail Domain Objectclass
+objectclass ( 1.3.6.1.4.1.40328.1.1.2.2
+        NAME 'mailDomain'
+        DESC 'Domain mail entry'
+        SUP top
+        STRUCTURAL
+        MUST (
+            virtualdomain
+            )
+        MAY (
+            virtualdomaindescription $ mailuserquota
+            )
+        )
+
+# Mail Group Objectclass
+objectclass ( 1.3.6.1.4.1.40328.1.1.2.3
+        NAME 'mailGroup' SUP top AUXILIARY
+        DESC 'Mail Group'
+        MUST ( mail )
+        )

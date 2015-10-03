@@ -23,14 +23,26 @@
 
     Manage services
 """
+import os
+import time
 import yaml
 import glob
 import subprocess
 import errno
-import os.path
+import shutil
+import difflib
+import hashlib
 
 from moulinette.core import MoulinetteError
 
+template_dir = os.getenv(
+    'YUNOHOST_TEMPLATE_DIR',
+    '/usr/share/yunohost/templates'
+)
+conf_backup_dir = os.getenv(
+    'YUNOHOST_CONF_BACKUP_DIR',
+    '/home/yunohost.backup/conffiles'
+)
 
 def service_add(name, status=None, log=None, runlevel=None):
     """
@@ -187,7 +199,8 @@ def service_status(names=[]):
                                   m18n.n('service_unknown', name))
 
         status = None
-        if services[name]['status'] == 'service':
+        if 'status' not in services[name] or \
+          services[name]['status'] == 'service':
             status = 'service %s status' % name
         else:
             status = str(services[name]['status'])
@@ -257,9 +270,30 @@ def service_log(name, number=50):
     return result
 
 
+def service_regenconf(service=None, force=False):
+    """
+    Regenerate the configuration file(s) for a service and compare the result
+    with the existing configuration file.
+    Prints the differences between files if any.
+
+    Keyword argument:
+        service -- Regenerate configuration for a specfic service
+        force -- Override the current configuration with the newly generated
+                 one, even if it has been modified
+
+    """
+    from yunohost.hook import hook_callback
+
+    if service is not None:
+        hook_callback('conf_regen', [service], args=[force])
+    else:
+        hook_callback('conf_regen', args=[force])
+    msignals.display(m18n.n('services_configured'), 'success')
+
+
 def _run_service_command(action, service):
     """
-    Run services management command (start, stop,  enable, disable)
+    Run services management command (start, stop, enable, disable, restart, reload)
 
     Keyword argument:
         action -- Action to perform
@@ -271,7 +305,7 @@ def _run_service_command(action, service):
                                                    service))
 
     cmd = None
-    if action in ['start', 'stop']:
+    if action in ['start', 'stop', 'restart', 'reload']:
         cmd = 'service %s %s' % (service, action)
     elif action in ['enable', 'disable']:
         arg = 'defaults' if action == 'enable' else 'remove'
@@ -302,6 +336,7 @@ def _get_services():
     else:
         return services
 
+
 def _save_services(services):
     """
     Save managed services to files
@@ -313,6 +348,7 @@ def _save_services(services):
     # TODO: Save to custom services.yml
     with open('/etc/yunohost/services.yml', 'w') as f:
         yaml.safe_dump(services, f, default_flow_style=False)
+
 
 def _tail(file, n, offset=None):
     """
@@ -340,3 +376,185 @@ def _tail(file, n, offset=None):
                 avg_line_length *= 1.3
 
     except IOError: return []
+
+
+def _get_diff(string, filename):
+    """
+    Show differences between a string and a file's content
+
+    Keyword argument:
+        string -- The string
+        filename -- The file to compare with
+
+    """
+    try:
+        with open(filename, 'r') as f:
+            file_lines = f.readlines()
+
+        string = string + '\n'
+        new_lines = string.splitlines(True)
+        while '\n' == file_lines[-1]:
+            del file_lines[-1]
+        return difflib.unified_diff(file_lines, new_lines)
+    except IOError: return []
+
+
+def _hash(filename):
+    """
+    Calculate a MD5 hash of a file
+
+    Keyword argument:
+        filename -- The file to hash
+
+    """
+    hasher = hashlib.md5()
+    try:
+        with open(filename, 'rb') as f:
+            buf = f.read()
+            hasher.update(buf)
+
+        return hasher.hexdigest()
+    except IOError:
+        return 'no hash yet'
+
+
+def service_saferemove(service, conf_file, force=False):
+    """
+    Check if the specific file has been modified before removing it.
+    Backup the file in /home/yunohost.backup
+
+    Keyword argument:
+        service -- Service name of the file to delete
+        conf_file -- The file to write
+        force -- Force file deletion
+
+    """
+    deleted = False
+    services = _get_services()
+
+    if not os.path.exists(conf_file):
+        try:
+            del services[service]['conffiles'][conf_file]
+        except KeyError: pass
+        return True
+
+    # Backup existing file
+    date = time.strftime("%Y%m%d.%H%M%S")
+    conf_backup_file = conf_backup_dir + conf_file +'-'+ date
+    process = subprocess.Popen(
+        ['install', '-D', conf_file, conf_backup_file]
+    )
+    process.wait()
+
+    # Retrieve hashes
+    if not 'conffiles' in services[service]:
+        services[service]['conffiles'] = {}
+
+    if conf_file in services[service]['conffiles']:
+        previous_hash = services[service]['conffiles'][conf_file]
+    else:
+        previous_hash = 'no hash yet'
+
+    current_hash = _hash(conf_file)
+
+    # Handle conflicts
+    if force or previous_hash == current_hash:
+	os.remove(conf_file)
+        try:
+            del services[service]['conffiles'][conf_file]
+        except KeyError: pass
+        deleted = True
+    else:
+        services[service]['conffiles'][conf_file] = previous_hash
+        os.remove(conf_backup_file)
+        if os.isatty(1) and \
+           (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
+            msignals.display(
+                m18n.n('service_configuration_changed', conf_file),
+                'warning'
+            )
+
+    _save_services(services)
+
+    return deleted
+
+
+def service_safecopy(service, new_conf_file, conf_file, force=False):
+    """
+    Check if the specific file has been modified and display differences.
+    Stores the file hash in the services.yml file
+
+    Keyword argument:
+        service -- Service name attached to the conf file
+        new_conf_file -- Path to the desired conf file
+        conf_file -- Path to the targeted conf file
+        force -- Force file overriding
+
+    """
+    regenerated = False
+    services = _get_services()
+
+    if not os.path.exists(new_conf_file):
+        raise MoulinetteError(errno.EIO, m18n.n('no_such_conf_file', new_conf_file))
+
+    with open(new_conf_file, 'r') as f:
+        new_conf = ''.join(f.readlines()).rstrip()
+
+    # Backup existing file
+    date = time.strftime("%Y%m%d.%H%M%S")
+    conf_backup_file = conf_backup_dir + conf_file +'-'+ date
+    if os.path.exists(conf_file):
+        process = subprocess.Popen(
+            ['install', '-D', conf_file, conf_backup_file]
+        )
+        process.wait()
+    else:
+        msignals.display(m18n.n('service_add_configuration', conf_file),
+                         'info')
+
+    # Add the service if it does not exist
+    if service not in services.keys():
+        services[service] = {}
+
+    # Retrieve hashes
+    if not 'conffiles' in services[service]:
+        services[service]['conffiles'] = {}
+
+    if conf_file in services[service]['conffiles']:
+        previous_hash = services[service]['conffiles'][conf_file]
+    else:
+        previous_hash = 'no hash yet'
+
+    current_hash = _hash(conf_file)
+    diff = list(_get_diff(new_conf, conf_file))
+
+    # Handle conflicts
+    if force or previous_hash == current_hash:
+        with open(conf_file, 'w') as f: f.write(new_conf)
+        new_hash = _hash(conf_file)
+        if previous_hash != new_hash:
+            regenerated = True
+    elif len(diff) == 0:
+        new_hash = _hash(conf_file)
+    else:
+        new_hash = previous_hash
+        if (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
+            msignals.display(
+                m18n.n('service_configuration_conflict', conf_file),
+                'warning'
+            )
+            print('\n' + conf_file)
+            for line in diff:
+                print(line.strip())
+            print('')
+      
+    # Remove the backup file if the configuration has not changed
+    if new_hash == previous_hash:
+        try:
+            os.remove(conf_backup_file)
+        except OSError: pass
+
+    services[service]['conffiles'][conf_file] = new_hash
+    _save_services(services)
+
+    return regenerated

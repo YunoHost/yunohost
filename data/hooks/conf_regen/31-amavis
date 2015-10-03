@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s amavis $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s amavis $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/amavis
+
+sudo mkdir -p /etc/amavis/conf.d/
+
+# Copy plain single configuration files
+files="05-domain_id
+05-node_id
+15-content_filter_mode
+20-debian_defaults"
+
+for file in $files; do
+    safe_copy $file /etc/amavis/conf.d/$file
+done
+
+main_domain=$(cat /etc/yunohost/current_host)
+cat 50-user.sed \
+  | sed "s/{{ main_domain }}/$main_domain/g" \
+  | sudo tee 50-user
+safe_copy 50-user /etc/amavis/conf.d/50-user
+
+
+sudo service amavis restart

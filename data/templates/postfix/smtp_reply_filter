@@ -1,0 +1,8 @@
+# Google Mail bounces email sent via IPv6, while this works ok with IPv4.
+#
+# Convert Google Mail IPv6 complaint permanent error into a temporary error.
+# Turn 550 error containing gsmtp in the message into 450 error.
+# This way Postfix will attempt to deliver this e-mail using another MX
+# (via IPv4).
+#
+/^5(\d\d )5(.*information. \S+ - gsmtp.*)/ 4${1}4$2

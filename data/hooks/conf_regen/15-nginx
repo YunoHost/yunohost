@@ -1,0 +1,83 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [ ! -f /etc/yunohost/installed ]; then
+        sudo cp $1 $2
+    else
+        if [[ "$force" == "True" ]]; then
+            sudo yunohost service safecopy \
+              -s nginx \
+              $1 $2 \
+              --force
+        else
+            sudo yunohost service safecopy \
+              -s nginx \
+              $1 $2
+        fi
+    fi
+}
+
+cd /usr/share/yunohost/templates/nginx
+
+# Copy plain single configuration files
+files="ssowat.conf
+yunohost_admin.conf
+yunohost_admin.conf.inc
+yunohost_api.conf.inc
+yunohost_panel.conf.inc"
+
+for file in $files; do
+    safe_copy $file /etc/nginx/conf.d/$file
+done
+
+
+if [ -f /etc/yunohost/installed ]; then
+
+    need_restart=False
+    domain_list=$(sudo yunohost domain list --plain)
+
+    # Copy a configuration file for each YunoHost domain
+    for domain in $domain_list; do
+        sudo mkdir -p /etc/nginx/conf.d/$domain.d
+        cat server.conf.sed \
+          | sed "s/{{ domain }}/$domain/g" \
+          | sudo tee $domain.conf
+        [[ $(safe_copy $domain.conf /etc/nginx/conf.d/$domain.conf) == "True" ]] \
+          && need_restart=True
+
+        [ -f /etc/nginx/conf.d/$domain.d/yunohost_local.conf ] \
+          && [[ $main_domain != $domain ]] \
+          && sudo yunohost service saferemove -s nginx \
+              /etc/nginx/conf.d/$domain.d/yunohost_local.conf
+    done
+
+
+    # Copy 'yunohost.local' to the main domain conf directory
+    main_domain=$(cat /etc/yunohost/current_host)
+    safe_copy yunohost_local.conf \
+      /etc/nginx/conf.d/$main_domain.d/yunohost_local.conf
+
+
+    # Remove old domains files
+    for file in /etc/nginx/conf.d/*.*.conf; do
+        domain=$(echo $file \
+                  | sed 's|/etc/nginx/conf.d/||' \
+                  | sed 's|.conf||')
+        [[ $domain_list =~ $domain ]] \
+          || ($(sudo yunohost service saferemove -s nginx $file) == "True" \
+            && (rm -r /etc/nginx/conf.d/$domain.d || true))
+    done
+
+else
+    [ ! -f /etc/nginx/sites-available/default ] \
+      || rm -f /etc/nginx/sites-enabled/default
+    need_restart=True
+fi
+
+# Restart if need be
+[[ "$need_restart" == "True" ]] \
+  && sudo service nginx restart \
+  || sudo service nginx reload
