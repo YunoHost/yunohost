@@ -1,4 +1,4 @@
 backup_dir="$1/conf/ynh/certs"
-mkdir -p $backup_dir
+sudo mkdir -p $backup_dir
 
 sudo cp -a /etc/yunohost/certs/. $backup_dir
