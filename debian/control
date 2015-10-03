@@ -40,6 +40,11 @@ Recommends: yunohost-admin,
  libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base
 Conflicts: iptables-persistent
+Replaces: moulinette-yunohost, yunohost-config,
+ yunohost-config-others, yunohost-config-postfix,
+ yunohost-config-dovecot, yunohost-config-slapd,
+ yunohost-config-nginx, yunohost-config-amavis,
+ yunohost-config-mysql, yunohost-predepends
 Description: YunoHost installation package
  YunoHost aims to make self-hosting accessible to everyone.
  .
