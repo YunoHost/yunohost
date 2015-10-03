@@ -192,6 +192,8 @@ def backup_create(name=None, description=None, output_directory=None,
                 i = app_info(app_id)
                 info['apps'][app_id] = {
                     'version': i['version'],
+                    'name': i['name'],
+                    'description': i['description'],
                 }
             finally:
                 filesystem.rm(tmp_script, force=True)
