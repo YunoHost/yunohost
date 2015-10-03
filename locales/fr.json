@@ -174,5 +174,17 @@
     "pattern_port": "Doit être un numéro de port valide (0-65535)",
     "pattern_port_or_range": "Doit être un numéro de port valide (0-65535) ou une gamme de ports (ex : 100:200)",
     "pattern_backup_archive_name": "Doit être un nom de fichier valide composé de caractères alphanumérique et -_. uniquement",
-    "format_datetime_short": "%d/%m/%Y %H:%M"
+    "format_datetime_short": "%d/%m/%Y %H:%M",
+    "ask_alias_name" : "Nom d'alias",
+    "ask_alias_mailforward" : "Liste d'emails vers lesquels l'alias sera transféré",
+    "pattern_listemail" : "Doit être une liste d'adresses mails valides, séparés par des virgules",
+    "pattern_name" : "Doit être un nom valide",
+    "alias_created" : "Alias créé avec succès",
+    "alias_creation_failed" : "Impossible de créer l'alias",
+    "alias_deletion_failed" : "Impossible de supprimer l'alias",
+    "alias_deleted" : "Alias supprimé avec succès",
+    "alias_unknown" : "Alias inconnu",
+    "alias_updated" : "Alias modifié avec succès",
+    "alias_update_failed" : "Impossible de modifier l'alias",
+    "alias_info_failed" : "Impossible de récupérer les informations de l'alias"
 }

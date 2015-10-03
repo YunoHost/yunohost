@@ -1335,3 +1335,118 @@ hook:
                 -a:
                     full: --args
                     help: Arguments to pass to the script
+
+
+#############################
+#           Alias            #
+#############################
+alias:
+    category_help: Manage alias
+    actions:
+
+        ### alias_init()
+        init:
+            action_help: Init alias
+            api: GET /alias/init
+            configuration:
+                authenticate: all
+
+        ### alias_list()
+        list:
+            action_help: List alias
+            api: GET /alias
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+               --fields:
+                    help: fields to fetch
+                    nargs: "+"
+               -f:
+                    full: --filter
+                    help: LDAP filter used to search
+               -l:
+                    full: --limit
+                    help: Maximum number of alias fetched
+                    type: int
+               -o:
+                    full: --offset
+                    help: Starting number for alias fetching
+                    type: int
+
+        ### alias_create()
+        create:
+            action_help: Create alias
+            api: POST /alias
+            configuration:
+                authenticate: all
+            arguments:
+                alias:
+                    help: The unique alias name to create
+                    extra:
+                        required: True
+                        pattern: *pattern_email
+                -n:
+                    full: --name
+                    extra:
+                        ask: ask_alias_name
+                        help: A name for the alias
+                        required: True
+                        pattern: &pattern_name
+                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - "pattern_name"
+                -f:
+                    full: --mailforward
+                    help: List of email to forward, separated by commas without space
+                    extra:
+                        ask: ask_alias_mailforward
+                        required: True
+                        pattern: &pattern_listemail
+                            - !!str ^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,}),?)+$
+                            - "pattern_listemail"
+
+        ### alias_delete()
+        delete:
+            action_help: Delete alias
+            api: DELETE /alias/<alias>
+            configuration:
+                authenticate: all
+            arguments:
+                alias:
+                    help: Alias to delete
+                    extra:
+                        pattern: *pattern_email
+
+        ### alias_update()
+        update:
+            action_help: Update alias informations
+            api: PUT /alias/<alias>
+            configuration:
+                authenticate: all
+            arguments:
+                alias:
+                    help: Alias to update
+                -n:
+                    full: --name
+                    help: Unique name for the alias
+                    extra:
+                        pattern: *pattern_name
+                --add-mailforward:
+                    help: List of mailforward addresses to add, separated by commas without space
+                    extra:
+                        pattern: *pattern_listemail
+                --remove-mailforward:
+                    help: List of mailforward addresses to remove, separated by commas without space
+                    extra:
+                        pattern: *pattern_listemail
+
+        ### alias_info()
+        info:
+            action_help: Get alias information
+            api: GET /alias/<alias>
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                alias:
+                    help: Alias to get information

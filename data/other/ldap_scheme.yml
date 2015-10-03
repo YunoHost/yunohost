@@ -28,6 +28,12 @@ parents:
             - organizationalUnit
             - top
 
+    ou=alias:
+        ou: alias
+        objectClass:
+            - organizationalUnit
+            - top
+
 children:
     cn=admins,ou=groups:
         cn: admins
