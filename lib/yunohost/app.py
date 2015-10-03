@@ -725,6 +725,12 @@ def app_clearaccess(auth, apps):
 
 
 def app_debug(app):
+    """
+    Display debug informations for an app
+
+    Keyword argument:
+        app
+    """
     with open(apps_setting_path + app + '/manifest.json') as f:
         manifest = json.loads(f.read())
 
