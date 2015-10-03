@@ -856,6 +856,7 @@ def app_checkurl(auth, url, app=None):
 
     domain = url[:url.index('/')]
     path = url[url.index('/'):]
+    installed = False
 
     if path[-1:] != '/':
         path = path + '/'
@@ -866,14 +867,19 @@ def app_checkurl(auth, url, app=None):
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
     if domain in apps_map:
-        if path in apps_map[domain]:
-            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_already_used'))
-        for app_path, v in apps_map[domain].items():
-            if app_path in path and app_path.count('/') < path.count('/'):
+        for p, a in apps_map[domain].items():
+            # Skip requested app checking
+            if app is not None and a['id'] == app:
+                installed = True
+                continue
+            if path == p:
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('app_location_already_used'))
+            elif path.startswith(p) and p.count('/') < path.count('/'):
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('app_location_install_failed'))
 
-    if app is not None:
+    if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
         app_setting(app, 'path', value=path)
 
