@@ -39,6 +39,8 @@ import subprocess
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
+from .service import service_log
+
 logger = getActionLogger('yunohost.app')
 
 repo_path        = '/var/cache/yunohost/repo'
@@ -720,6 +722,29 @@ def app_clearaccess(auth, apps):
         hook_callback('post_app_clearaccess', args=[app])
 
     app_ssowatconf(auth)
+
+
+def app_debug(app):
+    """
+    Display debug informations for an app
+
+    Keyword argument:
+        app
+    """
+    with open(apps_setting_path + app + '/manifest.json') as f:
+        manifest = json.loads(f.read())
+
+    return {
+        'name': manifest['id'],
+        'label': manifest['name'],
+        'services': [{
+                "name": x,
+                "logs": [{
+                    "file_name": y,
+                    "file_content": "\n".join(z),
+                } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
+            } for x in sorted(manifest.get("services", []))]
+    }
 
 
 def app_makedefault(auth, app, domain=None):

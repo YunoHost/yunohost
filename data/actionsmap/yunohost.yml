@@ -505,6 +505,14 @@ app:
                     full: --sql
                     help: Initial SQL file
 
+        ### app_debug()
+        debug:
+            action_help: Display all debug informations for an application
+            api: GET /apps/<app>/debug
+            arguments:
+                app:
+                    help: App name
+
         ### app_makedefault()
         makedefault:
             action_help: Redirect domain root to an app
