@@ -284,7 +284,8 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     from yunohost.hook import hook_exec
 
     # Retrieve and open the archive
-    archive_file = backup_info(name)['path']
+    info = backup_info(name)
+    archive_file = info['path']
     try:
         tar = tarfile.open(archive_file, "r:gz")
     except:
@@ -348,8 +349,16 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
     # Run hooks
     if not ignore_hooks:
+        if hooks is None or len(hooks)==0:
+            hooks=info['hooks'].keys()
+        
+        hooks_filtered=list(set(hooks) & set(info['hooks'].keys()))
+        hooks_unexecuted=set(hooks) - set(info['hooks'].keys())
+        for hook in hooks_unexecuted:
+            logger.warning("hook '%s' not in this backup", hook)
+            msignals.display(m18n.n('backup_hook_unavailable', hook), 'warning')
         msignals.display(m18n.n('restore_running_hooks'))
-        hook_callback('restore', hooks, args=[tmp_dir])
+        hook_callback('restore', hooks_filtered, args=[tmp_dir])
     
     # Add apps restore hook
     if not ignore_apps:

@@ -155,6 +155,7 @@
     "backup_cleaning_failed" : "Unable to clean backup directory",
     "backup_complete" : "Backup complete",
     "backup_invalid_archive" : "Invalid backup archive",
+    "backup_hook_unavailable" : "The hook '{:s}' is not in this backup",
     "restore_confirm_yunohost_installed" : "Do you really want to restore an already installed system? [{answers:s}]",
     "restore_app_failed" : "Unable to restore the app '{app:s}'",
     "restore_running_hooks" : "Running restoration hooks...",
