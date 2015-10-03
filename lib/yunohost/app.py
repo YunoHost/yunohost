@@ -729,9 +729,14 @@ def app_debug(app):
         manifest = json.loads(f.read())
 
     return {
-        'name': manifest['name'],
-        'services_logs': [{
-                x: service_log(x),
+        'name': manifest['id'],
+        'label': manifest['name'],
+        'services': [{
+                "name": x,
+                "logs": [{
+                    "file_name": y,
+                    "file_content": "\n".join(z),
+                } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
             } for x in sorted(manifest.get("services", []))]
     }
 
