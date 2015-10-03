@@ -39,7 +39,12 @@ Recommends: yunohost-admin,
  udisks-glue, unattended-upgrades,
  libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base
-Conflicts: iptables-persistent
+Conflicts: iptables-persistent,
+ moulinette-yunohost, yunohost-config,
+ yunohost-config-others, yunohost-config-postfix,
+ yunohost-config-dovecot, yunohost-config-slapd,
+ yunohost-config-nginx, yunohost-config-amavis,
+ yunohost-config-mysql, yunohost-predepends
 Replaces: moulinette-yunohost, yunohost-config,
  yunohost-config-others, yunohost-config-postfix,
  yunohost-config-dovecot, yunohost-config-slapd,
