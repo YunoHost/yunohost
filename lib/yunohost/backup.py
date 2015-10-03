@@ -378,13 +378,13 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
             try:
                 # Copy app settings
                 app_setting_path = '/etc/yunohost/apps/' + app_id
-                shutil.copytree(app_bkp_dir + '/settings', app_setting_path + '/settings')
+                shutil.copytree(app_bkp_dir + '/settings', app_setting_path )
                 
                 # Execute app restore script
                 app_restore_script=app_bkp_dir+'/restore'
                 tmp_script = '/tmp/restore_%s_%s' % (name,app_id)
                 subprocess.call(['install', '-Dm555', app_restore_script, tmp_script])
-                hook_exec(tmp_script, args=[app_bkp_dir, app_id]) 
+                hook_exec(tmp_script, args=[app_bkp_dir+'/backup', app_id]) 
 
             except:
                 logger.exception("error while restoring backup of '%s'", app_id)
