@@ -917,6 +917,29 @@ def app_initdb(user, password=None, db=None, sql=None):
     msignals.display(m18n.n('mysql_db_initialized'), 'success')
 
 
+def app_dropdb(db, keep_user=False, user=None):
+    """
+    Drop database
+
+    Keyword argument:
+        db -- DB name
+
+    """
+    mysql_root_pwd = open('/etc/yunohost/mysql').read().rstrip()
+    mysql_command = 'mysql -u root -p%s -e "DROP DATABASE %s ;"' % (mysql_root_pwd, db)
+    if os.system(mysql_command) != 0:
+        raise MoulinetteError(errno.EIO, m18n.n('mysql_db_drop_failed'))
+    if not keep_user:
+        if user is None:
+            user=db
+        mysql_command = 'mysql -u root -p%s -e "DROP USER \'%s\'@localhost ;"' % (mysql_root_pwd, user)
+        if os.system(mysql_command) != 0:
+            raise MoulinetteError(errno.EIO, m18n.n('mysql_dbuser_drop_failed'))
+        msignals.display(m18n.n('mysql_dbuser_dropped'), 'success')
+
+    msignals.display(m18n.n('mysql_db_dropped'), 'success')
+
+
 def app_ssowatconf(auth):
     """
     Regenerate SSOwat configuration file
