@@ -74,7 +74,7 @@ def backup_create(name=None, description=None, output_directory=None,
     # Validate and define backup name
     timestamp = int(time.time())
     if not name:
-        name = str(timestamp)
+        name = time.strftime('%Y%m%d-%H%M%S')
     if name in backup_list()['archives']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('backup_archive_name_exists'))
