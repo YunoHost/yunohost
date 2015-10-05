@@ -162,31 +162,21 @@ def backup_create(name=None, description=None, output_directory=None,
         for app_id in apps_filtered:
             app_setting_path = '/etc/yunohost/apps/' + app_id
 
-            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
-            
-            # Check if the app has a backup script
+            # Check if the app has a backup and restore script
             app_script = app_setting_path + '/scripts/backup'
+            app_restore_script = app_setting_path + '/scripts/restore'
             if not os.path.isfile(app_script):
                 logger.warning("backup script '%s' not found", app_script)
-                msignals.display(m18n.n('unbackup_app', app_id),
+                msignals.display(m18n.n('unbackup_app', app=app_id),
                                  'warning')
                 continue
-                
-            # Copy the app restore script
-            app_restore_script = app_setting_path + '/scripts/restore'
-            if os.path.isfile(app_script):
-                try:
-                    filesystem.mkdir(tmp_app_dir, 0750, True, uid='admin')
-                    shutil.copy(app_restore_script, tmp_app_dir)
-                except:
-                    logger.exception("error while copying restore script of '%s'", app_id)
-                    msignals.display(m18n.n('restore_app_copy_failed', app=app_id),
-                                 'warning')
-            else:
-                logger.warning("restore script '%s' not found", app_script)
-                msignals.display(m18n.n('unrestorable_app', app_id),
+            elif not os.path.isfile(app_restore_script):
+                logger.warning("restore script '%s' not found",
+                               app_restore_script)
+                msignals.display(m18n.n('unrestore_app', app=app_id),
                                  'warning')
 
+            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
             tmp_app_bkp_dir = tmp_app_dir + '/backup'
             msignals.display(m18n.n('backup_running_app_script', app_id))
             try:
@@ -196,7 +186,8 @@ def backup_create(name=None, description=None, output_directory=None,
 
                 # Copy app backup script in a temporary folder and execute it
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
-                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id])
+                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id],
+                          raise_on_error=True)
             except:
                 logger.exception("error while executing backup of '%s'", app_id)
                 msignals.display(m18n.n('backup_app_failed', app=app_id),
@@ -351,7 +342,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     if not ignore_hooks:
         if hooks is None or len(hooks)==0:
             hooks=info['hooks'].keys()
-        
+
         hooks_filtered=list(set(hooks) & set(info['hooks'].keys()))
         hooks_unexecuted=set(hooks) - set(info['hooks'].keys())
         for hook in hooks_unexecuted:
@@ -359,49 +350,67 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
             msignals.display(m18n.n('backup_hook_unavailable', hook), 'warning')
         msignals.display(m18n.n('restore_running_hooks'))
         hook_callback('restore', hooks_filtered, args=[tmp_dir])
-    
+
     # Add apps restore hook
     if not ignore_apps:
+        from yunohost.app import _is_installed
+
         # Filter applications to restore
         apps_list = set(info['apps'].keys())
         apps_filtered = set()
-        if not apps:
-            apps=apps_list
-            
-        from yunohost.app import _is_installed
-        for app_id in apps:
-            if app_id not in apps_list:
-                logger.warning("app '%s' not found", app_id)
-                msignals.display(m18n.n('unrestore_app', app_id), 'warning')
-            elif _is_installed(app_id):
+        if apps:
+            for a in apps:
+                if a not in apps_list:
+                    logger.warning("app '%s' not found in the backup '%s'",
+                                   a, archive_file)
+                    msignals.display(m18n.n('backup_archive_app_not_found',
+                                            app=a),
+                                     'error')
+                else:
+                    apps_filtered.add(a)
+        else:
+            apps_filtered = apps_list
+
+        for app_id in apps_filtered:
+            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
+
+            # Check if the app is not already installed
+            if _is_installed(app_id):
                 logger.warning("app '%s' already installed", app_id)
-                msignals.display(m18n.n('restore_already_installed_app', app=app_id), 'warning')  
-            elif not os.path.isfile('{:s}/apps/{:s}/restore'.format(tmp_dir, app_id)):
-                logger.warning("backup for '%s' doesn't contain a restore script", app_id)
-                msignals.display(m18n.n('no_restore_script', app=app_id), 'warning')                 
-            else:
-                apps_filtered.add(app_id)
+                msignals.display(m18n.n('restore_already_installed_app',
+                                        app=app_id),
+                                'error')
+                continue
 
-        for app_id in apps_filtered:  
-            app_bkp_dir='{:s}/apps/{:s}'.format(tmp_dir, app_id)
+            # Check if the app has a restore script
+            app_script = tmp_app_dir + '/settings/scripts/restore'
+            if not os.path.isfile(app_script):
+                logger.warning("restore script for the app '%s' not found " \
+                               "in the backup '%s'", app_id, archive_file)
+                msignals.display(m18n.n('unrestore_app', app=app_id), 'warning')
+                continue
+
+            tmp_script = '/tmp/restore_' + app_id
+            app_setting_path = '/etc/yunohost/apps/' + app_id
+            msignals.display(m18n.n('restore_running_app_script', app=app_id))
             try:
-                # Copy app settings
-                app_setting_path = '/etc/yunohost/apps/' + app_id
-                shutil.copytree(app_bkp_dir + '/settings', app_setting_path )
-                
-                # Execute app restore script
-                app_restore_script=app_bkp_dir+'/restore'
-                tmp_script = '/tmp/restore_%s_%s' % (name,app_id)
-                subprocess.call(['install', '-Dm555', app_restore_script, tmp_script])
-                hook_exec(tmp_script, args=[app_bkp_dir+'/backup', app_id]) 
+                # Copy app settings and set permissions
+                shutil.copytree(tmp_app_dir + '/settings', app_setting_path)
+                filesystem.chmod(app_setting_path, 0555, 0444, True)
+                filesystem.chmod(app_setting_path + '/settings.yml', 0400)
 
+                # Execute app restore script
+                subprocess.call(['install', '-Dm555', app_script, tmp_script])
+                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_id],
+                          raise_on_error=True)
             except:
                 logger.exception("error while restoring backup of '%s'", app_id)
                 msignals.display(m18n.n('restore_app_failed', app=app_id),
                                  'error')
-                # Cleaning settings directory
-                shutil.rmtree(app_setting_path + '/settings', ignore_errors=True)
-
+                # Cleaning app directory
+                shutil.rmtree(app_setting_path, ignore_errors=True)
+            finally:
+                filesystem.rm(tmp_script, force=True)
 
     # Remove temporary directory
     os.system('rm -rf %s' % tmp_dir)

@@ -1346,3 +1346,6 @@ hook:
                 -a:
                     full: --args
                     help: Arguments to pass to the script
+                --raise-on-error:
+                    help: Raise if the script returns a non-zero exit code
+                    action: store_true

@@ -260,13 +260,14 @@ def hook_check(file):
         return {}
 
 
-def hook_exec(file, args=None):
+def hook_exec(file, args=None, raise_on_error=False):
     """
     Execute hook from a file with arguments
 
     Keyword argument:
         file -- Script to execute
         args -- Arguments to pass to the script
+        raise_on_error -- Raise if the script returns a non-zero exit code
 
     """
     from moulinette.utils.stream import NonBlockingStreamReader
@@ -344,6 +345,8 @@ def hook_exec(file, args=None):
             msignals.display(line.rstrip(), 'log')
     stream.close()
 
+    if raise_on_error and returncode != 0:
+        raise MoulinetteError(m18n.n('hook_exec_failed'))
     return returncode
 
 
