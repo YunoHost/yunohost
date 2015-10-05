@@ -62,7 +62,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     """
     # TODO: Add a 'clean' argument to clean output directory
-    from yunohost.hook import hook_callback, hook_exec
+    from yunohost.hook import hook_list, hook_callback, hook_exec
 
     tmp_dir = None
 
@@ -136,9 +136,24 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Run system hooks
     if not ignore_hooks:
-        msignals.display(m18n.n('backup_running_hooks'))
-        hooks_ret = hook_callback('backup', hooks, args=[tmp_dir])
-        info['hooks'] = hooks_ret['succeed']
+        # Check hooks availibility
+        hooks_available = hook_list('backup')['hooks']
+        hooks_filtered = set()
+        if hooks:
+            for hook in hooks:
+                if hook not in hooks_available:
+                    logger.exception("backup hook '%s' not found", hook)
+                    msignals.display(m18n.n('backup_hook_unknown', hook=hook),
+                                     'error')
+                else:
+                    hooks_filtered.add(hook)
+        else:
+            hooks_filtered = hooks_available
+
+        if hooks_filtered:
+            msignals.display(m18n.n('backup_running_hooks'))
+            ret = hook_callback('backup', hooks_filtered, args=[tmp_dir])
+            info['hooks'] = ret['succeed']
 
     # Backup apps
     if not ignore_apps:
@@ -205,10 +220,10 @@ def backup_create(name=None, description=None, output_directory=None,
             finally:
                 filesystem.rm(tmp_script, force=True)
 
-        # Check if something has been saved
-        if ignore_hooks and not info['apps']:
-            _clean_tmp_dir(1)
-            raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
+    # Check if something has been saved
+    if not info['hooks'] and not info['apps']:
+        _clean_tmp_dir(1)
+        raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -270,9 +285,12 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         force -- Force restauration on an already installed system
 
     """
-    from yunohost.hook import hook_add
-    from yunohost.hook import hook_callback
-    from yunohost.hook import hook_exec
+    from yunohost.hook import hook_add, hook_list, hook_callback, hook_exec
+
+    # Validate what to restore
+    if ignore_hooks and ignore_apps:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('restore_action_required'))
 
     # Retrieve and open the archive
     info = backup_info(name)
@@ -291,6 +309,13 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
                        tmp_dir)
         os.system('rm -rf %s' % tmp_dir)
 
+    def _clean_tmp_dir(retcode=0):
+        ret = hook_callback('post_backup_restore', args=[tmp_dir, retcode])
+        if not ret['failed']:
+            filesystem.rm(tmp_dir, True, True)
+        else:
+            msignals.display(m18n.n('restore_cleaning_failed'), 'warning')
+
     # Extract the tarball
     msignals.display(m18n.n('backup_extracting_archive'))
     tar.extractall(tmp_dir)
@@ -307,6 +332,12 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     else:
         logger.info("restoring from backup '%s' created on %s", name,
                     time.ctime(info['created_at']))
+
+    # Initialize restauration summary result
+    result = {
+        'apps': [],
+        'hooks': {},
+    }
 
     # Check if YunoHost is installed
     if os.path.isfile('/etc/yunohost/installed'):
@@ -338,18 +369,40 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         logger.info("executing the post-install...")
         tools_postinstall(domain, 'yunohost', True)
 
-    # Run hooks
+    # Run system hooks
     if not ignore_hooks:
-        if hooks is None or len(hooks)==0:
-            hooks=info['hooks'].keys()
+        # Filter hooks to execute
+        hooks_list = set(info['hooks'].keys())
+        _is_hook_in_backup = lambda h: True
+        if hooks:
+            def _is_hook_in_backup(h):
+                if h in hooks_list:
+                    return True
+                logger.warning("hook '%s' not executed in the backup '%s'",
+                               h, archive_file)
+                msignals.display(m18n.n('backup_archive_hook_not_exec', hook=h),
+                                 'error')
+                return False
+        else:
+            hooks = hooks_list
 
-        hooks_filtered=list(set(hooks) & set(info['hooks'].keys()))
-        hooks_unexecuted=set(hooks) - set(info['hooks'].keys())
-        for hook in hooks_unexecuted:
-            logger.warning("hook '%s' not in this backup", hook)
-            msignals.display(m18n.n('backup_hook_unavailable', hook), 'warning')
-        msignals.display(m18n.n('restore_running_hooks'))
-        hook_callback('restore', hooks_filtered, args=[tmp_dir])
+        # Check hooks availibility
+        hooks_available = hook_list('restore')['hooks']
+        hooks_filtered = set()
+        for hook in hooks:
+            if not _is_hook_in_backup(hook):
+                continue
+            if hook not in hooks_available:
+                logger.exception("restoration hook '%s' not found", hook)
+                msignals.display(m18n.n('restore_hook_unavailable', hook=hook),
+                                 'error')
+                continue
+            hooks_filtered.add(hook)
+
+        if hooks_filtered:
+            msignals.display(m18n.n('restore_running_hooks'))
+            ret = hook_callback('restore', hooks_filtered, args=[tmp_dir])
+            result['hooks'] = ret['succeed']
 
     # Add apps restore hook
     if not ignore_apps:
@@ -409,13 +462,20 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
                                  'error')
                 # Cleaning app directory
                 shutil.rmtree(app_setting_path, ignore_errors=True)
+            else:
+                result['apps'].append(app_id)
             finally:
                 filesystem.rm(tmp_script, force=True)
 
-    # Remove temporary directory
-    os.system('rm -rf %s' % tmp_dir)
+    # Check if something has been restored
+    if not result['hooks'] and not result['apps']:
+        _clean_tmp_dir(1)
+        raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
 
+    _clean_tmp_dir()
     msignals.display(m18n.n('restore_complete'), 'success')
+
+    return result
 
 
 def backup_list(with_info=False, human_readable=False):
