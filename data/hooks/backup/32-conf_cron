@@ -1,4 +1,4 @@
 backup_dir="$1/conf/cron"
-mkdir -p $backup_dir
+sudo mkdir -p $backup_dir
 
 sudo cp -a /etc/cron.d/yunohost* $backup_dir/
