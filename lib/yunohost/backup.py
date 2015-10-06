@@ -32,6 +32,7 @@ import time
 import tarfile
 import shutil
 import subprocess
+from glob import glob
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -62,7 +63,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     """
     # TODO: Add a 'clean' argument to clean output directory
-    from yunohost.hook import hook_list, hook_callback, hook_exec
+    from yunohost.hook import hook_info, hook_callback, hook_exec
 
     tmp_dir = None
 
@@ -137,11 +138,12 @@ def backup_create(name=None, description=None, output_directory=None,
     # Run system hooks
     if not ignore_hooks:
         # Check hooks availibility
-        hooks_available = hook_list('backup')['hooks']
         hooks_filtered = set()
         if hooks:
             for hook in hooks:
-                if hook not in hooks_available:
+                try:
+                    hook_info('backup', hook)
+                except:
                     logger.exception("backup hook '%s' not found", hook)
                     msignals.display(m18n.n('backup_hook_unknown', hook=hook),
                                      'error')
@@ -153,7 +155,23 @@ def backup_create(name=None, description=None, output_directory=None,
         if hooks_filtered:
             msignals.display(m18n.n('backup_running_hooks'))
             ret = hook_callback('backup', hooks_filtered, args=[tmp_dir])
-            info['hooks'] = ret['succeed']
+            if ret['succeed']:
+                info['hooks'] = ret['succeed']
+
+                # Save relevant restoration hooks
+                tmp_hooks_dir = tmp_dir + '/hooks/restore'
+                filesystem.mkdir(tmp_hooks_dir, 0750, True, uid='admin')
+                for h in ret['succeed'].keys():
+                    try:
+                        i = hook_info('restore', h)
+                    except:
+                        logger.exception("no restoration hook for '%s'", h)
+                        msignals.display(m18n.n('restore_hook_unavailable',
+                                                hook=h),
+                                         'warning')
+                    else:
+                        for f in i['hooks']:
+                            shutil.copy(f['path'], tmp_hooks_dir)
 
     # Backup apps
     if not ignore_apps:
@@ -285,7 +303,8 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         force -- Force restauration on an already installed system
 
     """
-    from yunohost.hook import hook_add, hook_list, hook_callback, hook_exec
+    from yunohost.hook import hook_info, hook_callback, hook_exec
+    from yunohost.hook import custom_hook_folder
 
     # Validate what to restore
     if ignore_hooks and ignore_apps:
@@ -387,17 +406,28 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
             hooks = hooks_list
 
         # Check hooks availibility
-        hooks_available = hook_list('restore')['hooks']
         hooks_filtered = set()
-        for hook in hooks:
-            if not _is_hook_in_backup(hook):
+        for h in hooks:
+            if not _is_hook_in_backup(h):
                 continue
-            if hook not in hooks_available:
-                logger.exception("restoration hook '%s' not found", hook)
-                msignals.display(m18n.n('restore_hook_unavailable', hook=hook),
+            try:
+                hook_info('restore', h)
+            except:
+                tmp_hooks = glob('{:s}/hooks/restore/*-{:s}'.format(tmp_dir, h))
+                if not tmp_hooks:
+                    logger.exception("restoration hook '%s' not found", h)
+                    msignals.display(m18n.n('restore_hook_unavailable', hook=h),
                                  'error')
-                continue
-            hooks_filtered.add(hook)
+                    continue
+                # Add restoration hook from the backup to the system
+                # FIXME: Refactor hook_add and use it instead
+                restore_hook_folder = custom_hook_folder + 'restore'
+                filesystem.mkdir(restore_hook_folder, 755, True)
+                for f in tmp_hooks:
+                    logger.info("adding restoration hook '%s' to the system " \
+                                "from the backup archive '%s'", f, archive_file)
+                    shutil.copy(f, restore_hook_folder)
+            hooks_filtered.add(h)
 
         if hooks_filtered:
             msignals.display(m18n.n('restore_running_hooks'))
