@@ -1292,6 +1292,16 @@ hook:
                 app:
                     help: Scripts related to app will be removed
 
+        ### hook_info()
+        info:
+            action_help: Get information about a given hook
+            api: GET /hooks/<action>/<name>
+            arguments:
+                action:
+                    help: Action name
+                name:
+                    help: Hook name
+
         ### hook_list()
         list:
             action_help: List available hooks for an action

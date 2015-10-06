@@ -29,6 +29,7 @@ import re
 import json
 import errno
 import subprocess
+from glob import iglob
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -75,6 +76,46 @@ def hook_remove(app):
                 if script.endswith(app):
                     os.remove(custom_hook_folder + action +'/'+ script)
     except OSError: pass
+
+
+def hook_info(action, name):
+    """
+    Get information about a given hook
+
+    Keyword argument:
+        action -- Action name
+        name -- Hook name
+
+    """
+    hooks = []
+    priorities = set()
+
+    # Search in custom folder first
+    for h in iglob('{:s}{:s}/*-{:s}'.format(
+            custom_hook_folder, action, name)):
+        priority, _ = _extract_filename_parts(os.path.basename(h))
+        priorities.add(priority)
+        hooks.append({
+            'priority': priority,
+            'path': h,
+        })
+    # Append non-overwritten system hooks
+    for h in iglob('{:s}{:s}/*-{:s}'.format(
+            hook_folder, action, name)):
+        priority, _ = _extract_filename_parts(os.path.basename(h))
+        if priority not in priorities:
+            hooks.append({
+                'priority': priority,
+                'path': h,
+            })
+
+    if not hooks:
+        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name))
+    return {
+        'action': action,
+        'name': name,
+        'hooks': hooks,
+    }
 
 
 def hook_list(action, list_by='name', show_info=False):
@@ -194,7 +235,7 @@ def hook_callback(action, hooks=[], args=None):
                 if key == n or key.startswith("%s_" % n) \
                   and key not in all_hooks:
                     all_hooks.append(key)
-                        
+
         # Iterate over given hooks names list
         for n in all_hooks:
             try:
