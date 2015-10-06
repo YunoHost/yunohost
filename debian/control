@@ -2,13 +2,14 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), dh-systemd
+Build-Depends: debhelper (>=9), dh-systemd, dh-python
 Standards-Version: 3.9.6
+X-Python-Version: >= 2.7
 Homepage: https://yunohost.org/
 
 Package: yunohost
 Architecture: all
-Depends: ${misc:Depends}, ${shlibs:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends}, ${python:Depends},
  moulinette (>= 2.2.1),
  python-psutil,
  python-requests,
@@ -51,8 +52,10 @@ Replaces: moulinette-yunohost, yunohost-config,
  yunohost-config-nginx, yunohost-config-amavis,
  yunohost-config-mysql, yunohost-predepends
 Description: YunoHost installation package
- YunoHost aims to make self-hosting accessible to everyone.
+ The goal of YunoHost is to make self-hosting accessible to everyone. It
+ configures an email, Web and IM server alongside a LDAP base. It also
+ provides facilities to manage users, domains, apps and so.
  .
  This package contains YunoHost scripts and binaries to be used by the
- moulinette. It allows to manage the server with a command-line tool and
- an API.
+ moulinette. It allows one to manage the server with a command-line tool
+ and an API.
