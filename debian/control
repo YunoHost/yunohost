@@ -52,9 +52,9 @@ Replaces: moulinette-yunohost, yunohost-config,
  yunohost-config-nginx, yunohost-config-amavis,
  yunohost-config-mysql, yunohost-predepends
 Description: manageable and configured self-hosting server
- YunoHost aims to to make self-hosting accessible to everyone. It
- configures an email, Web and IM server alongside a LDAP base. It also
- provides facilities to manage users, domains, apps and so.
+ YunoHost aims to make self-hosting accessible to everyone. It configures
+ an email, Web and IM server alongside a LDAP base. It also provides
+ facilities to manage users, domains, apps and so.
  .
  This package contains YunoHost scripts and binaries to be used by the
  moulinette. It allows one to manage the server with a command-line tool
