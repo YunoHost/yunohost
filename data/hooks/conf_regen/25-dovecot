@@ -43,6 +43,7 @@ sudo rm -rf /etc/dovecot/global_script
 sudo mkdir -p -m 0770 /etc/dovecot/global_script
 safe_copy sa-learn-pipe.sh /usr/bin/sa-learn-pipe.sh
 sudo chmod 755 /usr/bin/sa-learn-pipe.sh
+sudo chown vmail:mail /etc/dovecot/global_script
 
 safe_copy dovecot.sieve /etc/dovecot/global_script/dovecot.sieve
 sudo chmod 660 /etc/dovecot/global_script/dovecot.sieve > /dev/null 2>&1 \
