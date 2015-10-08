@@ -33,6 +33,6 @@ def get_versions(*args, **kwargs):
     from collections import OrderedDict
     return OrderedDict([
         ('moulinette', get_version('moulinette')),
-        ('moulinette-yunohost', get_version('moulinette-yunohost')),
+        ('yunohost', get_version('yunohost')),
         ('yunohost-admin', get_version('yunohost-admin')),
     ])
