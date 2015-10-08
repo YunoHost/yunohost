@@ -149,10 +149,8 @@ def backup_create(name=None, description=None, output_directory=None,
                                      'error')
                 else:
                     hooks_filtered.add(hook)
-        else:
-            hooks_filtered = hooks_available
 
-        if hooks_filtered:
+        if not hooks or hooks_filtered:
             msignals.display(m18n.n('backup_running_hooks'))
             ret = hook_callback('backup', hooks_filtered, args=[tmp_dir])
             if ret['succeed']:
