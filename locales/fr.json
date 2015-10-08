@@ -36,6 +36,7 @@
     "backup_complete": "Sauvegarde terminée", 
     "backup_creating_archive": "Création de l'archive de sauvegarde...", 
     "backup_extracting_archive": "Extraction de l'archive de sauvegarde...", 
+    "backup_hook_unknown": "Script de sauvegarde '{hook:s}' inconnu", 
     "backup_invalid_archive": "Archive de sauvegarde incorrecte", 
     "backup_output_directory_forbidden": "Dossier de sortie interdit", 
     "backup_output_directory_not_empty": "Le dossier de sortie n'est pas vide", 
