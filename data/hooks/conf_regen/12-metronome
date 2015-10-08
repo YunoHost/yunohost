@@ -18,17 +18,6 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/metronome
 
-# Copy additional modules
-files="ldap.lib.lua
-mod_auth_ldap2.lua
-mod_legacyauth.lua
-mod_storage_ldap.lua
-vcard.lib.lua"
-
-for file in $files; do
-    safe_copy modules/$file /usr/lib/metronome/modules/$file
-done
-
 # Copy configuration files
 main_domain=$(cat /etc/yunohost/current_host)
 cat metronome.cfg.lua.sed \
