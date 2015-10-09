@@ -5,11 +5,8 @@
 #export DH_VERBOSE=1
 
 %:
-	dh ${@} --with=python2
+	dh ${@} --with=python2,systemd
 
 override_dh_installinit:
-	dh_systemd_enable --name yunohost-api
-	dh_systemd_enable --name yunohost-firewall --no-enable
 	dh_installinit --name=yunohost-api
 	dh_installinit --name=yunohost-firewall
-	dh_systemd_start

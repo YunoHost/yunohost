@@ -270,11 +270,11 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
+    os.system('touch /etc/yunohost/installed')
+
     # Enable and start YunoHost firewall at boot time
     os.system('update-rc.d yunohost-firewall enable')
     os.system('service yunohost-firewall start')
-
-    os.system('touch /etc/yunohost/installed')
 
     service_regenconf(force=True)
 
