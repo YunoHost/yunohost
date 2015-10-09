@@ -9,6 +9,3 @@ ExecStart=/usr/bin/yunohost firewall reload
 ExecReload=/usr/bin/yunohost firewall reload
 ExecStop=/usr/bin/yunohost firewall stop
 RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
