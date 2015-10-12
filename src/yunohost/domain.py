@@ -80,6 +80,7 @@ def domain_add(auth, domain, dyndns=False):
 
     """
     from yunohost.service import service_regenconf
+    from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
     try:
@@ -172,6 +173,8 @@ def domain_add(auth, domain, dyndns=False):
         except: pass
         raise
 
+    hook_callback('post_domain_add', args=[domain])
+
     msignals.display(m18n.n('domain_created'), 'success')
 
 
@@ -185,6 +188,7 @@ def domain_remove(auth, domain, force=False):
 
     """
     from yunohost.service import service_regenconf
+    from yunohost.hook import hook_callback
 
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
@@ -210,5 +214,7 @@ def domain_remove(auth, domain, force=False):
     service_regenconf(service='metronome')
     service_regenconf(service='dnsmasq')
     os.system('yunohost app ssowatconf > /dev/null 2>&1')
+
+    hook_callback('post_domain_remove', args=[domain])
 
     msignals.display(m18n.n('domain_deleted'), 'success')
