@@ -318,10 +318,10 @@ app:
             arguments:
                 -u:
                     full: --url
-                    help: URL of remote JSON list (default http://fapp.yunohost.org/app/list/raw)
+                    help: URL of remote JSON list (default https://yunohost.org/official.json)
                 -n:
                     full: --name
-                    help: Name of the list (default fapp)
+                    help: Name of the list (default yunohost)
                     extra:
                         pattern: &pattern_listname
                             - !!str ^[a-z0-9_]+$
