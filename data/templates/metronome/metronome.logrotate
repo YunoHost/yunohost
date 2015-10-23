@@ -2,6 +2,7 @@
 	daily
 	rotate 14
 	compress
+	delaycompress
 	create 640 metronome adm
 	postrotate
 		/etc/init.d/metronome reload > /dev/null
