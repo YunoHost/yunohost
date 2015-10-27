@@ -24,8 +24,6 @@ cat metronome.cfg.lua.sed \
   | sed "s/{{ main_domain }}/$main_domain/g" \
   | sudo tee metronome.cfg.lua
 safe_copy metronome.cfg.lua /etc/metronome/metronome.cfg.lua
-safe_copy metronome.init /etc/init.d/metronome
-safe_copy metronome.logrotate /etc/logrotate.d/metronome
 
 need_restart=False
 sudo mkdir -p /etc/metronome/conf.d
