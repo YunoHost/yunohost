@@ -1017,6 +1017,9 @@ firewall:
         reload:
             action_help: Reload all firewall rules
             api: PUT /firewall
+            configuration:
+                authenticate: false
+                lock: false
 
         ### firewall_allow()
         allow:
