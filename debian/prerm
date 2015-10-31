@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+if [ -x "/etc/init.d/yunohost-firewall" ]; then
+    invoke-rc.d yunohost-firewall stop || exit $?
+fi
+
+#DEBHELPER#
+
+exit 0
