@@ -15,6 +15,6 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/glances
 
-if [[ "$(safe_copy glances.default /etc/default/glances)" == "True" ]]; then
+if [[ "$(safe_copy glances.default /etc/default/glances | tail -n1)" == "True" ]]; then
     sudo service glances restart
 fi

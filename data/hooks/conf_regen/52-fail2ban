@@ -24,6 +24,6 @@ version=$(sed 's/\..*//' /etc/debian_version)
   && sudo cp jail-jessie.conf jail.conf \
   || sudo cp jail-wheezy.conf jail.conf
 
-if [[ $(safe_copy jail.conf /etc/fail2ban/jail.conf) == "True" ]]; then
+if [[ $(safe_copy jail.conf /etc/fail2ban/jail.conf | tail -n1) == "True" ]]; then
     sudo service fail2ban restart
 fi

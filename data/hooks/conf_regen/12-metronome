@@ -38,7 +38,7 @@ for domain in $domain_list; do
     cat domain.cfg.lua.sed \
       | sed "s/{{ domain }}/$domain/g" \
       | sudo tee $domain.cfg.lua
-    if [[ $(safe_copy $domain.cfg.lua /etc/metronome/conf.d/$domain.cfg.lua) == "True" ]]; then
+    if [[ $(safe_copy $domain.cfg.lua /etc/metronome/conf.d/$domain.cfg.lua | tail -n1) == "True" ]]; then
         need_restart=True
     fi
 done
@@ -50,7 +50,7 @@ for file in /etc/metronome/conf.d/*; do
              | sed 's|.cfg.lua||')
     sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
     [[ $domain_list =~ $domain ]] \
-      || ($(sudo yunohost service saferemove -s metronome $file) == "True" \
+      || ($(sudo yunohost service saferemove -s metronome $file | tail -n1) == "True" \
         && rm -rf /var/lib/metronome/$sanitzed_domain)
 
 done
