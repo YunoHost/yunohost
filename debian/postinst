@@ -12,6 +12,10 @@ do_configure() {
       bash /usr/share/yunohost/hooks/conf_regen/15-nginx True
   else
       yunohost service regenconf
+
+      # restart yunohost-firewall if it's running
+      service yunohost-firewall status > /dev/null \
+        && service yunohost-firewall restart
   fi
 }
 
