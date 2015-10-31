@@ -15,7 +15,8 @@ do_configure() {
 
       # restart yunohost-firewall if it's running
       service yunohost-firewall status > /dev/null \
-        && service yunohost-firewall restart
+        && service yunohost-firewall restart \
+        || echo "Firewall stopped"
   fi
 }
 
