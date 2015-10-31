@@ -21,7 +21,7 @@ function randpass () {
 
 cd /usr/share/yunohost/templates/mysql
 
-if [[ "$(safe_copy my.cnf /etc/mysql/my.cnf)" == "True" ]]; then
+if [[ "$(safe_copy my.cnf /etc/mysql/my.cnf | tail -n1)" == "True" ]]; then
     sudo service mysql restart
 fi
 
