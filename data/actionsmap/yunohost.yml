@@ -1017,9 +1017,6 @@ firewall:
         reload:
             action_help: Reload all firewall rules
             api: PUT /firewall
-            configuration:
-                authenticate: false
-                lock: false
             arguments:
                 --skip-upnp:
                     help: Do not refresh port forwarding using UPnP

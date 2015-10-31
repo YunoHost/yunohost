@@ -201,10 +201,6 @@ def firewall_reload(skip_upnp=False):
     reloaded = False
     errors = False
 
-    # Do not continue if YunoHost is not configured
-    try: open('/etc/yunohost/installed')
-    except IOError: return True
-
     # Check if SSH port is allowed
     ssh_port = _get_ssh_port()
     if ssh_port not in firewall_list()['opened_ports']:
