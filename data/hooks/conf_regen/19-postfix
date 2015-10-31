@@ -19,7 +19,7 @@ function safe_copy () {
 cd /usr/share/yunohost/templates/postfix
 
 # Copy plain single configuration files
-files="header_check
+files="header_checks
 ldap-accounts.cf
 ldap-aliases.cf
 ldap-domains.cf
