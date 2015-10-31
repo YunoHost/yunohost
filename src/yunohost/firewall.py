@@ -112,7 +112,7 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
     firewall = firewall_list(raw=True)
 
     # Validate port
-    if ':' not in port:
+    if not isinstance(port, int) and ':' not in port:
         port = int(port)
 
     # Validate protocols
@@ -188,10 +188,12 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
     return ret
 
 
-def firewall_reload():
+def firewall_reload(skip_upnp=False):
     """
     Reload all firewall rules
 
+    Keyword arguments:
+        skip_upnp -- Do not refresh port forwarding using UPnP
 
     """
     from yunohost.hook import hook_callback
@@ -210,7 +212,7 @@ def firewall_reload():
 
     # Retrieve firewall rules and UPnP status
     firewall = firewall_list(raw=True)
-    upnp = firewall_upnp()['enabled']
+    upnp = firewall_upnp()['enabled'] if not skip_upnp else False
 
     # IPv4
     try:
@@ -324,6 +326,11 @@ def firewall_upnp(action='status', no_refresh=False):
         with open(upnp_cron_job, 'w+') as f:
             f.write('*/50 * * * * root '
                     '/usr/bin/yunohost firewall upnp status >>/dev/null\n')
+        # Open port 1900 to receive discovery message
+        if 1900 not in firewall['ipv4']['UDP']:
+            firewall_allow('UDP', 1900, no_upnp=True, no_reload=True)
+            if not enabled:
+                firewall_reload(skip_upnp=True)
         enabled = True
     elif action == 'disable' or (not enabled and action == 'status'):
         try:
@@ -376,6 +383,7 @@ def firewall_upnp(action='status', no_refresh=False):
                             enabled = False
 
     if enabled != firewall['uPnP']['enabled']:
+        firewall = firewall_list(raw=True)
         firewall['uPnP']['enabled'] = enabled
 
         # Make a backup and update firewall file
@@ -392,6 +400,12 @@ def firewall_upnp(action='status', no_refresh=False):
             # Make sure to disable UPnP
             elif action != 'disable' and not enabled:
                 firewall_upnp('disable', no_refresh=True)
+
+    if not enabled and (action == 'enable' or 1900 in firewall['ipv4']['UDP']):
+        # Close unused port 1900
+        firewall_disallow('UDP', 1900, no_reload=True)
+        if not no_refresh:
+            firewall_reload(skip_upnp=True)
 
     if action == 'enable' and not enabled:
         raise MoulinetteError(errno.ENXIO, m18n.n('upnp_port_open_failed'))

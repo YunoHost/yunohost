@@ -1020,6 +1020,10 @@ firewall:
             configuration:
                 authenticate: false
                 lock: false
+            arguments:
+                --skip-upnp:
+                    help: Do not refresh port forwarding using UPnP
+                    action: store_true
 
         ### firewall_allow()
         allow:
