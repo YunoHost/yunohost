@@ -12,18 +12,14 @@ sudo yunohost service add memcached \
   || echo "Memcached is already listed in services"
 
 # Remove previous email services
-sudo yunohost service disable spamassassin \
+sudo yunohost service remove spamassassin \
   || echo "Spamassassin is already removed" \
-  && systemctl disable spamassassin || true
+  && sudo systemctl disable spamassassin || true
 
-sudo yunohost service disable amavis \
+sudo yunohost service remove amavis \
   || echo "Amavis is already removed" \
-  && systemctl disable spamassassin || true
+  && sudo systemctl disable amavis || true
 
-sudo yunohost service disable postgrey \
+sudo yunohost service remove postgrey \
   || echo "Postgrey is already removed" \
-  && systemctl disable postgrey || true
-
-sudo yunohost service disable postgrey \
-  && sudo yunohost service remove amavis \
-  || echo "Amavis is already removed"
+  && sudo systemctl disable postgrey || true
