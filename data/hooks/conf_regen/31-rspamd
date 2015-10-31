@@ -24,4 +24,5 @@ sudo sievec /etc/dovecot/global_script/rspamd.sieve
 sudo chmod 660 /etc/dovecot/global_script/rspamd.svbin
 sudo chown -R vmail:mail /etc/dovecot/global_script
 
-sudo service rspamd restart
+sudo systemctl restart rspamd.socket
+sudo systemctl restart rspamd.service
