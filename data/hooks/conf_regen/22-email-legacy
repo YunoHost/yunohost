@@ -8,6 +8,9 @@ sudo yunohost service add rspamd -l /var/log/mail.log \
 sudo yunohost service add rmilter -l /var/log/mail.log \
   || echo "Rspamd is already listed in services"
 
+sudo yunohost service add memcached \
+  || echo "Memcached is already listed in services"
+
 # Remove previous email services
 sudo yunohost service disable spamassassin \
   || echo "Spamassassin is already removed" \
