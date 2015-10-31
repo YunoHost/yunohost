@@ -6,10 +6,10 @@ do_configure() {
   rm -rf /var/cache/moulinette/*
 
   if [ ! -f /etc/yunohost/installed ]; then
-      bash /usr/share/yunohost/hooks/conf_regen/01-yunohost
-      bash /usr/share/yunohost/hooks/conf_regen/02-ssl
-      bash /usr/share/yunohost/hooks/conf_regen/06-slapd
-      bash /usr/share/yunohost/hooks/conf_regen/15-nginx
+      bash /usr/share/yunohost/hooks/conf_regen/01-yunohost True
+      bash /usr/share/yunohost/hooks/conf_regen/02-ssl True
+      bash /usr/share/yunohost/hooks/conf_regen/06-slapd True
+      bash /usr/share/yunohost/hooks/conf_regen/15-nginx True
   else
       yunohost service regenconf
   fi
