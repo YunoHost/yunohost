@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s rmilter $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s rmilter $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/rmilter
+
+# Copy Rmilter configuration
+safe_copy rmilter.conf /etc/rmilter/rmilter.conf
+
+# Create the PID directory
+sudo mkdir -p /var/run/rmilter
+sudo chown _rmilter: /var/run/rmilter
+
+# Create DKIM key for each YunoHost domain
+sudo mkdir -p /etc/dkim
+domain_list=$(sudo yunohost domain list --plain)
+
+for domain in $domain_list; do
+    [ -f /etc/dkim/$domain.mail.key ] \
+      || sudo opendkim-genkey --domain=$domain --selector=mail
+
+    sudo chown _rmilter /etc/dkim/$domain.mail.key
+    sudo chmod 400      /etc/dkim/$domain.mail.key
+done
+
+sudo service rmilter restart
