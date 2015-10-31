@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e 
+
+# Add new email services
+sudo yunohost service add rspamd -l /var/log/mail.log \
+  || echo "Rspamd is already listed in services"
+
+sudo yunohost service add rmilter -l /var/log/mail.log \
+  || echo "Rspamd is already listed in services"
+
+# Remove previous email services
+sudo yunohost service disable spamassassin \
+  || echo "Spamassassin is already removed" \
+  && systemctl disable spamassassin || true
+
+sudo yunohost service disable amavis \
+  || echo "Amavis is already removed" \
+  && systemctl disable spamassassin || true
+
+sudo yunohost service disable postgrey \
+  || echo "Postgrey is already removed" \
+  && systemctl disable postgrey || true
+
+sudo yunohost service disable postgrey \
+  && sudo yunohost service remove amavis \
+  || echo "Amavis is already removed"

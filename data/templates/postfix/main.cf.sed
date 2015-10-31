@@ -86,9 +86,6 @@ smtpd_sasl_security_options = noanonymous
 smtpd_sasl_local_domain =
 
 
-# Use AMaVis 
-content_filter = amavis:[127.0.0.1]:10024
-
 # Wait until the RCPT TO command before evaluating restrictions 
 smtpd_delay_reject = yes 
  
@@ -128,8 +125,6 @@ smtpd_recipient_restrictions =
     reject_non_fqdn_recipient, 
     reject_unknown_recipient_domain, 
     reject_unauth_destination,
-    check_policy_service unix:private/policy-spf
-    check_policy_service inet:127.0.0.1:10023
     permit
 
 # Use SPF
@@ -143,3 +138,11 @@ sender_canonical_classes = envelope_sender
 smtp_header_checks = regexp:/etc/postfix/header_checks
 
 smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
+
+# Rmilter
+milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
+milter_protocol = 6
+smtpd_milters = inet:localhost:11000
+
+# Skip email without checking if milter has died
+milter_default_action = accept
