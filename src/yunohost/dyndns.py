@@ -24,7 +24,6 @@
     Subscribe and Update DynDNS Hosts
 """
 import os
-import sys
 import requests
 import re
 import json
