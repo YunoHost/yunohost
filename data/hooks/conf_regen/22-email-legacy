@@ -19,6 +19,8 @@ if [[ "$1" == "True" ]]; then
       || echo "Spamassassin is already removed" \
       && sudo systemctl disable spamassassin || true
 
+    sudo rm -f etc/cron.daily/spamassassin
+
     sudo yunohost service remove amavis \
       || echo "Amavis is already removed" \
       && sudo systemctl disable amavis || true
@@ -27,7 +29,7 @@ if [[ "$1" == "True" ]]; then
       || echo "Postgrey is already removed" \
       && sudo systemctl disable postgrey || true
 
-    systemctl stop spamassassin
-    systemctl stop amavis
-    systemctl stop postgrey
+    sudo systemctl stop spamassassin
+    sudo systemctl stop amavis
+    sudo systemctl stop postgrey
 fi
