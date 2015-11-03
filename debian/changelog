@@ -1,3 +1,45 @@
+yunohost (2.3.0) testing; urgency=low
+
+  [ breaking changes ]
+  * Merge all packages into one
+  * Wheezy compatibility drop
+
+  [ features ]
+  * Implement a regenconf command
+  * Implement local backup/restore functions
+  * Allow to filter which app to backup/restore
+  * Replace the email stack by Rspamd/Rmilter
+  * Create shallow clone to increase app installation time
+  * Add helper bash functions for apps developers
+  * Update app_info to show app installation status
+  * Implement an app_debug function
+  * IPv6 compatibility enhancement
+
+  [ bugfixes ]
+  * Display YunoHost packages versions (fix #11)
+  * Allow empty app arguments in app_install
+  * Invalidate passwd at user creation/deletion (fix #70)
+  * Fix skipped_urls for each domain and #68
+  * Correct logger object in backup_list (fix #75)
+  * 2nd installation of apps with a hooks directory
+  * Add netcat-openbsd dependency
+  * Ensure that arguments are passed to the hook as string
+  * Use SSL/TLS to fetch app list
+  * IPv6 record in DynDNS
+  * Use sudo to execute hook script
+  * Debian postinst script : only respond to configure
+  * Handle SSL generation better
+  * Ensure that the service yunohost-api is always running
+  * Sieve permission denied
+  * Do not enable yunohost-firewall service at install
+  * Open port 1900 when enabling UPnP (fixes #30)
+
+  [ other ]
+  * Add AGPL license
+  * French translation using Weblate
+
+ -- kload <kload@kload.fr>  Tue, 03 Nov 2015 11:55:19 +0000
+
 moulinette-yunohost (2.3.1) testing; urgency=low
 
   [ Julien Malik ]
