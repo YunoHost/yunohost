@@ -277,6 +277,10 @@ domain:
                     full: --dyndns
                     help: Subscribe to the DynDNS service
                     action: store_true
+                -l:
+                    full: --noletsencrypt
+                    help: Subscribe to the DynDNS service
+                    action: store_true
 
         ### domain_remove()
         remove:
@@ -290,6 +294,30 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern: *pattern_domain
+
+        ### domain_letsencrypt()
+        letsencrypt:
+            action_help: Manage let's encrypt certificate for a domain
+            api: POST /letsencrypt
+            configuration:
+                authenticate: all
+            arguments:
+                domain:
+                    help: Domain to manage
+                    extra:
+                        pattern: *pattern_domain
+                -c:
+                    full: --create
+                    help: Create a Let's encrypt certificate
+                    action: store_true
+                -r:
+                    full: --renew
+                    help: Force renewal of a Let's encrypt certificate
+                    action: store_true
+                -d:
+                    full: --revoke
+                    help: Revoke a Let's encrypt certificate
+                    action: store_true
 
         ### domain_info()
 #        info:

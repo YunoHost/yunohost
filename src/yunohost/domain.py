@@ -69,8 +69,7 @@ def domain_list(auth, raw=False, filter=None, limit=None, offset=None):
     else:
         return { 'domains': result_list }
 
-
-def domain_add(auth, domain, dyndns=False):
+def domain_add(auth, domain, dyndns=False, noletsencrypt=False):
     """
     Create a custom domain
 
@@ -125,24 +124,29 @@ def domain_add(auth, domain, dyndns=False):
         try: os.listdir(ssl_domain_path)
         except OSError: os.makedirs(ssl_domain_path)
 
-        command_list = [
-            'cp %s/openssl.cnf %s'                               % (ssl_dir, ssl_domain_path),
-            'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf'        % (domain, ssl_domain_path),
-            'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch'
-            % (ssl_domain_path, ssl_dir, ssl_dir),
-            'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch'
-            % (ssl_domain_path, ssl_dir, ssl_dir),
-            'ln -s /etc/ssl/certs/ca-yunohost_crt.pem %s/ca.pem' % ssl_domain_path,
-            'cp %s/certs/yunohost_key.pem    %s/key.pem'         % (ssl_dir, ssl_domain_path),
-            'cp %s/newcerts/%s.pem %s/crt.pem'                   % (ssl_dir, serial, ssl_domain_path),
-            'chmod 755 %s'                                       % ssl_domain_path,
-            'chmod 640 %s/key.pem'                               % ssl_domain_path,
-            'chmod 640 %s/crt.pem'                               % ssl_domain_path,
-            'chmod 600 %s/openssl.cnf'                           % ssl_domain_path,
-            'chown root:metronome %s/key.pem'                    % ssl_domain_path,
-            'chown root:metronome %s/crt.pem'                    % ssl_domain_path,
-            'cat %s/ca.pem >> %s/crt.pem'                        % (ssl_domain_path, ssl_domain_path)
-        ]
+        if noletsencrypt:
+            command_list = [
+                'cp %s/openssl.cnf %s'                               % (ssl_dir, ssl_domain_path),
+                'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf'        % (domain, ssl_domain_path),
+                'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch'
+                % (ssl_domain_path, ssl_dir, ssl_dir),
+                'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch'
+                % (ssl_domain_path, ssl_dir, ssl_dir),
+                'ln -s /etc/ssl/certs/ca-yunohost_crt.pem %s/ca.pem' % ssl_domain_path,
+                'cp %s/certs/yunohost_key.pem    %s/key.pem'         % (ssl_dir, ssl_domain_path),
+                'cp %s/newcerts/%s.pem %s/crt.pem'                   % (ssl_dir, serial, ssl_domain_path),
+                'chmod 755 %s'                                       % ssl_domain_path,
+                'chmod 640 %s/key.pem'                               % ssl_domain_path,
+                'chmod 640 %s/crt.pem'                               % ssl_domain_path,
+                'chmod 600 %s/openssl.cnf'                           % ssl_domain_path,
+                'chown root:metronome %s/key.pem'                    % ssl_domain_path,
+                'chown root:metronome %s/crt.pem'                    % ssl_domain_path,
+                'cat %s/ca.pem >> %s/crt.pem'                        % (ssl_domain_path, ssl_domain_path)
+            ]
+        else:
+            command_list = [
+                'yunohost domain letsencrypt -c %s' % domain
+            ]
 
         for command in command_list:
             if os.system(command) != 0:
@@ -206,7 +210,22 @@ def domain_remove(auth, domain, force=False):
                                           m18n.n('domain_uninstall_app_first'))
 
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+        command_list = [
+            'rm -rf /etc/yunohost/certs/%s' % domain,
+        ]
+
+        if os.path.exists('/etc/letsencrypt/live/%s' % domain):
+            command_list.extend([
+                'yunohost domain letsencrypt revoke %s' % domain,
+                'rm -rf /etc/letsencrypt/archive/%s /etc/letsencrypt/live/%s' % domain,
+                'rm -f /etc/letsencrypt/renewal/%s.conf' % domain,
+                'rm -f /etc/cron.d/letsencrypt-{domain}' % domain
+            ])
+
+        for command in command_list:
+            if os.system(command) != 0:
+                msignals.display(m18n.n('path_removal_failed', command[7:]),
+                                 'warning')
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
@@ -218,3 +237,57 @@ def domain_remove(auth, domain, force=False):
     hook_callback('post_domain_remove', args=[domain])
 
     msignals.display(m18n.n('domain_deleted'), 'success')
+
+
+def domain_letsencrypt(auth, domain, create=False, renew=False, revoke=False):
+    """
+    Manage let's encrypt certificate for a domain
+
+    Keyword argument:
+        domain -- Domain to delete
+        create -- Create a Let's encrypt certificate
+        renew -- Force renewal of a Let's encrypt certificate
+        revoke -- Revoke a Let's encrypt certificate
+
+    """
+    if domain not in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    if create and not renew and not revoke:
+
+        # backup self signed certificate if exist
+        if os.path.exists('/etc/yunohost/certs/%s/cert.pem' % domain):
+            os.system('mkdir -p /etc/yunohost/certs/%s/yunohost_self_signed' % domain)
+            os.system('mv /etc/yunohost/certs/%s/*.pem /etc/yunohost/certs/%s/*.cnf /etc/yunohost/certs/%s/yunohost_self_signed/' % domain)
+            os.system('rm -f /etc/yunohost/certs/%s/*.pem /etc/yunohost/certs/%s/*.cnf' % domain)
+
+        # create certificate
+        try:
+            os.system('/root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
+            # restore right for metronome
+            os.system('chown root:metronome /etc/letsencrypt/archive/%s/*' % domain)
+            # create cron
+            os.system('echo "@monthly root yunohost domain letsencrypt -r %s" > /etc/cron.d/letsencrypt-%s' % domain)
+            # symbolic link for cert and key
+            os.system('ln -s /etc/letsencrypt/live/%s/privkey.pem /etc/yunohost/certs/%s/key.pem' % domain)
+            os.system('ln -s /etc/letsencrypt/live/%s/fullchain.pem /etc/yunohost/certs/%s/crt.pem' % domain)
+            msignals.display(m18n.n('domain_letsencrypt_created'), 'success')
+        except:
+            raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_create_failed'))
+
+    elif renew and not create and not revoke:
+        try:
+            os.system('/root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
+            # restore right for metronome
+            os.system('chown root:metronome /etc/letsencrypt/archive/%s/*' % domain)
+            msignals.display(m18n.n('domain_letsencrypt_renewed'), 'success')
+        except:
+            raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_renew_failed'))
+    elif revoke and not create and not renew:
+        try:
+            os.system('/root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
+            msignals.display(m18n.n('domain_letsencrypt_revoked'), 'success')
+        except:
+            raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_revoke_failed'))
+    else:
+        raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_revoke_unknown'))
