@@ -258,14 +258,14 @@ def domain_letsencrypt(auth, domain, create=False, renew=False, revoke=False):
         # backup self signed certificate if exist
         if os.path.exists('/etc/yunohost/certs/%s/cert.pem' % domain):
             os.system('mkdir -p /etc/yunohost/certs/%s/yunohost_self_signed' % domain)
-            os.system('mv /etc/yunohost/certs/%s/*.pem /etc/yunohost/certs/%s/*.cnf /etc/yunohost/certs/%s/yunohost_self_signed/' % domain)
-            os.system('rm -f /etc/yunohost/certs/%s/*.pem /etc/yunohost/certs/%s/*.cnf' % domain)
+            os.system('sudo mv /etc/yunohost/certs/%s/*.pem /etc/yunohost/certs/%s/*.cnf /etc/yunohost/certs/%s/yunohost_self_signed/' % domain)
+            os.system('sudo rm -f /etc/yunohost/certs/%s/*.pem /etc/yunohost/certs/%s/*.cnf' % domain)
 
         # create certificate
         try:
-            os.system('/root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
+            os.system('sudo /root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
             # restore right for metronome
-            os.system('chown root:metronome /etc/letsencrypt/archive/%s/*' % domain)
+            os.system('sudo chown root:metronome /etc/letsencrypt/archive/%s/*' % domain)
             # create cron
             os.system('echo "@monthly root yunohost domain letsencrypt -r %s" > /etc/cron.d/letsencrypt-%s' % domain)
             # symbolic link for cert and key
@@ -277,17 +277,17 @@ def domain_letsencrypt(auth, domain, create=False, renew=False, revoke=False):
 
     elif renew and not create and not revoke:
         try:
-            os.system('/root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
+            os.system('sudo /root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
             # restore right for metronome
-            os.system('chown root:metronome /etc/letsencrypt/archive/%s/*' % domain)
+            os.system('sudo chown root:metronome /etc/letsencrypt/archive/%s/*' % domain)
             msignals.display(m18n.n('domain_letsencrypt_renewed'), 'success')
         except:
             raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_renew_failed'))
     elif revoke and not create and not renew:
         try:
-            os.system('/root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
+            os.system('sudo /root/letsencrypt/letsencrypt-auto -a webroot --renew-by-default --agree-dev-preview --agree-tos --webroot-path /etc/letsencrypt/webrootauth -m root@%s -d %s auth' % domain)
             msignals.display(m18n.n('domain_letsencrypt_revoked'), 'success')
         except:
             raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_revoke_failed'))
     else:
-        raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_revoke_unknown'))
+        raise MoulinetteError(errno.EIO, m18n.n('domain_letsencrypt_badarg'))
