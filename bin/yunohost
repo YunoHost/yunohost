@@ -18,11 +18,12 @@ PRINT_PLAIN = False
 
 # Level for which loggers will log
 LOGGERS_LEVEL = 'INFO'
+TTY_LOG_LEVEL = 'SUCCESS'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
-#  - console: log to stderr
-LOGGERS_HANDLERS = ['file']
+#  - tty: log to current tty
+LOGGERS_HANDLERS = ['file', 'tty']
 
 # Directory and file to be used by logging
 LOG_DIR = '/var/log/yunohost'
@@ -54,30 +55,30 @@ def _check_in_devel():
 
 def _parse_argv():
     """Parse additional arguments and return remaining ones"""
+    global USE_CACHE, PRINT_JSON, PRINT_PLAIN
+    global TTY_LOG_LEVEL, LOGGERS_LEVEL, LOGGERS_HANDLERS
     argv = list(sys.argv)
     argv.pop(0)
 
     if '--no-cache' in argv:
-        global USE_CACHE
         USE_CACHE = False
         argv.remove('--no-cache')
     if '--json' in argv:
-        global PRINT_JSON
         PRINT_JSON = True
         argv.remove('--json')
     if '--plain' in argv:
-        global PRINT_PLAIN
         PRINT_PLAIN = True
         argv.remove('--plain')
     if '--debug' in argv:
-        global LOGGERS_LEVEL
-        LOGGERS_LEVEL = 'DEBUG'
+        LOGGERS_LEVEL = TTY_LOG_LEVEL = 'DEBUG'
         argv.remove('--debug')
     if '--verbose' in argv:
-        global LOGGERS_HANDLERS
-        if 'console' not in LOGGERS_HANDLERS:
-            LOGGERS_HANDLERS.append('console')
+        TTY_LOG_LEVEL = 'INFO'
         argv.remove('--verbose')
+    if '--quiet' in argv:
+        if 'tty' in LOGGERS_HANDLERS:
+            LOGGERS_HANDLERS.remove('tty')
+        argv.remove('--quiet')
     return argv
 
 def _init_moulinette():
@@ -89,33 +90,35 @@ def _init_moulinette():
         'version': 1,
         'disable_existing_loggers': True,
         'formatters': {
-            'simple': {
-                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s - %(message)s'
-            },
             'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(message)s'
+                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
+            },
+        },
+        'filters': {
+            'action': {
+                '()': 'moulinette.utils.log.ActionFilter',
             },
         },
         'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'simple',
-                'stream': 'ext://sys.stderr',
+            'tty': {
+                'level': TTY_LOG_LEVEL,
+                'class': 'moulinette.interfaces.cli.TTYHandler',
             },
             'file': {
                 'class': 'logging.FileHandler',
                 'formatter': 'precise',
                 'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+                'filters': ['action'],
             },
         },
         'loggers': {
             'moulinette': {
-                'level': LOGGERS_LEVEL,
                 'handlers': LOGGERS_HANDLERS,
+                'level': LOGGERS_LEVEL,
             },
             'yunohost': {
-                'level': LOGGERS_LEVEL,
                 'handlers': LOGGERS_HANDLERS,
+                'level': LOGGERS_LEVEL,
             },
         },
     }
