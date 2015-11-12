@@ -21,6 +21,11 @@ PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 LOGFILE=/var/log/$NAME.log
 
+# Include yunohost-api defaults if available
+if [ -r /etc/default/yunohost-api ]; then
+    . /etc/default/yunohost-api
+fi
+
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
@@ -45,7 +50,7 @@ do_start()
         || return 1
     start-stop-daemon --start --background --make-pidfile --quiet --no-close \
         --pidfile $PIDFILE --exec $DAEMON -- \
-        $DAEMON_ARGS >>$LOGFILE 2>&1 \
+        $DAEMON_OPTS >>$LOGFILE 2>&1 \
         || return 2
 }
 
