@@ -1,0 +1,11 @@
+/var/log/yunohost/*.log {
+        weekly
+        rotate 4
+        delaycompress
+        compress
+        notifempty
+        missingok
+        postrotate
+                invoke-rc.d yunohost-api rotate >/dev/null 2>&1
+        endscript
+}

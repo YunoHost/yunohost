@@ -75,6 +75,14 @@ do_reload() {
     return 0
 }
 
+#
+# Function called when rotating logs
+#
+do_rotate() {
+    start-stop-daemon --stop --signal USR1 --quiet --pidfile $PID --name $NAME
+    return 0
+}
+
 case "$1" in
   start)
       [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
@@ -117,6 +125,11 @@ case "$1" in
             log_end_msg 1
             ;;
       esac
+      ;;
+  rotate)
+      log_daemon_msg "Re-opening $DESC log files" "$NAME"
+      do_rotate
+      log_end_msg $?
       ;;
   *)
       echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload}" >&2
