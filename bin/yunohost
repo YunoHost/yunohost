@@ -7,14 +7,6 @@ import os
 # Either we are in a development environment or not
 IN_DEVEL = False
 
-# Either cache has to be used inside the moulinette or not
-USE_CACHE = True
-
-# Output result in another format. Possible values are:
-# - json: return a JSON encoded string
-# - plain: return a script-readable output
-OUTPUT_AS = None
-
 # Level for which loggers will log
 LOGGERS_LEVEL = 'INFO'
 TTY_LOG_LEVEL = 'SUCCESS'
@@ -55,11 +47,11 @@ def _parse_cli_args():
 
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--no-cache',
-        action='store_false', default=USE_CACHE, dest='use_cache',
+        action='store_false', default=True, dest='use_cache',
         help="Don't use actions map cache",
     )
     parser.add_argument('--output-as',
-        choices=['json', 'plain'], default=OUTPUT_AS,
+        choices=['json', 'plain'], default=None,
         help="Output result in another format",
     )
     parser.add_argument('--debug',
@@ -97,18 +89,20 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
     from moulinette import init
 
     # Define loggers handlers
-    global LOGGERS_HANDLERS
-    if quiet and 'tty' in LOGGERS_HANDLERS:
-        LOGGERS_HANDLERS.remove('tty')
-    elif verbose and 'tty' not in LOGGERS_HANDLERS:
-        LOGGERS_HANDLERS.append('tty')
+    handlers = set(LOGGERS_HANDLERS)
+    if quiet and 'tty' in handlers:
+        handlers.remove('tty')
+    elif verbose and 'tty' not in handlers:
+        handlers.append('tty')
+    root_handlers = handlers - set(['tty'])
 
     # Define loggers level
-    global LOGGERS_LEVEL, TTY_LOG_LEVEL
+    level = LOGGERS_LEVEL
+    tty_level = TTY_LOG_LEVEL
     if verbose:
-        TTY_LOG_LEVEL = 'INFO'
+        tty_level = 'INFO'
     if debug:
-        LOGGERS_LEVEL = TTY_LOG_LEVEL = 'DEBUG'
+        tty_level = level = 'DEBUG'
 
     # Custom logging configuration
     logging = {
@@ -126,7 +120,7 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
         },
         'handlers': {
             'tty': {
-                'level': TTY_LOG_LEVEL,
+                'level': tty_level,
                 'class': 'moulinette.interfaces.cli.TTYHandler',
             },
             'file': {
@@ -138,13 +132,19 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
         },
         'loggers': {
             'moulinette': {
-                'handlers': LOGGERS_HANDLERS,
-                'level': LOGGERS_LEVEL,
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
             },
             'yunohost': {
-                'handlers': LOGGERS_HANDLERS,
-                'level': LOGGERS_LEVEL,
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
             },
+        },
+        'root': {
+            'level': level,
+            'handlers': root_handlers,
         },
     }
 
@@ -191,6 +191,7 @@ if __name__ == '__main__':
     # Execute the action
     from moulinette import cli
     ret = cli(_retrieve_namespaces(), args,
-              use_cache=opts.use_cache, output_as=opts.output_as,
-              parser_kwargs={'top_parser': parser})
+            use_cache=opts.use_cache, output_as=opts.output_as,
+            parser_kwargs={'top_parser': parser}
+    )
     sys.exit(ret)
