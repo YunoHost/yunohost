@@ -18,6 +18,9 @@ do_configure() {
         && service yunohost-firewall restart \
         || echo "Firewall stopped"
   fi
+
+  # update PAM configs
+  pam-auth-update --package
 }
 
 # summary of how this script can be called:
