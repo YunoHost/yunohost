@@ -7,23 +7,31 @@ import os.path
 # Either we are in a development environment or not
 IN_DEVEL = False
 
-# Either cache has to be used inside the moulinette or not
-USE_CACHE = True
-
-# Either WebSocket has to be installed by the moulinette or not
-USE_WEBSOCKET = True
+# Default server configuration
+DEFAULT_HOST = 'localhost'
+DEFAULT_PORT = 6787
 
 # Level for which loggers will log
 LOGGERS_LEVEL = 'INFO'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
+#  - api: serve logs through the api
 #  - console: log to stderr
-LOGGERS_HANDLERS = ['file']
+LOGGERS_HANDLERS = ['file', 'api']
 
 # Directory and file to be used by logging
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-api.log'
+
+# Check and load - as needed - development environment
+if not __file__.startswith('/usr/'):
+    IN_DEVEL = True
+if IN_DEVEL:
+    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
+    if os.path.isdir(os.path.join(basedir, 'moulinette')):
+        sys.path.insert(0, basedir)
+    LOG_DIR = os.path.join(basedir, 'log')
 
 
 # Initialization & helpers functions -----------------------------------
@@ -37,79 +45,112 @@ def _die(message, title='Error:'):
     print('%s %s' % (colorize(title, 'red'), message))
     sys.exit(1)
 
-def _check_in_devel():
-    """Check and load if needed development environment"""
-    global IN_DEVEL, LOG_DIR
-    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-    if os.path.isdir('%s/moulinette' % basedir) and not IN_DEVEL:
-        # Add base directory to python path
-        sys.path.insert(0, basedir)
+def _parse_api_args():
+    """Parse main arguments for the api"""
+    import argparse
 
-        # Update global variables
-        IN_DEVEL = True
-        LOG_DIR = '%s/log' % basedir
+    parser = argparse.ArgumentParser(add_help=False,
+        description="Run the YunoHost API to manage your server.",
+    )
+    srv_group = parser.add_argument_group('server configuration')
+    srv_group.add_argument('-h', '--host',
+        action='store', default=DEFAULT_HOST,
+        help="Host to listen on (default: %s)" % DEFAULT_HOST,
+    )
+    srv_group.add_argument('-p', '--port',
+        action='store', default=DEFAULT_PORT, type=int,
+        help="Port to listen on (default: %d)" % DEFAULT_PORT,
+    )
+    srv_group.add_argument('--no-websocket',
+        action='store_true', default=True, dest='use_websocket',
+        help="Serve without WebSocket support, used to handle "
+        "asynchronous responses such as the messages",
+    )
+    glob_group = parser.add_argument_group('global arguments')
+    glob_group.add_argument('--no-cache',
+        action='store_false', default=True, dest='use_cache',
+        help="Don't use actions map cache",
+    )
+    glob_group.add_argument('--debug',
+        action='store_true', default=False,
+        help="Set log level to DEBUG",
+    )
+    glob_group.add_argument('--verbose',
+        action='store_true', default=False,
+        help="Be verbose in the output",
+    )
+    glob_group.add_argument('--help',
+        action='help', help="Show this help message and exit",
+    )
 
-def _parse_argv():
-    """Parse additional arguments and return remaining ones"""
-    argv = list(sys.argv)
-    argv.pop(0)
+    return parser.parse_args()
 
-    if '--no-cache' in argv:
-        global USE_CACHE
-        USE_CACHE = False
-        argv.remove('--no-cache')
-    if '--no-websocket' in argv:
-        global USE_WEBSOCKET
-        USE_WEBSOCKET = False
-        argv.remove('--no-websocket')
-    if '--debug' in argv:
-        global LOGGERS_LEVEL
-        LOGGERS_LEVEL = 'DEBUG'
-        argv.remove('--debug')
-    if '--verbose' in argv:
-        global LOGGERS_HANDLERS
-        if 'console' not in LOGGERS_HANDLERS:
-            LOGGERS_HANDLERS.append('console')
-        argv.remove('--verbose')
-    return argv
-
-def _init_moulinette():
+def _init_moulinette(use_websocket=True, debug=False, verbose=False):
     """Configure logging and initialize the moulinette"""
     from moulinette import init
+
+    # Define loggers handlers
+    handlers = set(LOGGERS_HANDLERS)
+    if not use_websocket and 'api' in handlers:
+        handlers.remove('api')
+    if verbose and 'console' not in handlers:
+        handlers.add('console')
+    root_handlers = handlers - set(['api'])
+
+    # Define loggers level
+    level = LOGGERS_LEVEL
+    if debug:
+        level = 'DEBUG'
 
     # Custom logging configuration
     logging = {
         'version': 1,
         'disable_existing_loggers': True,
         'formatters': {
-            'simple': {
-                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s - %(message)s'
+            'console': {
+                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
             },
             'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(message)s'
+                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
+            },
+        },
+        'filters': {
+            'action': {
+                '()': 'moulinette.utils.log.ActionFilter',
             },
         },
         'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'simple',
-                'stream': 'ext://sys.stderr',
+            'api': {
+                'class': 'moulinette.interfaces.api.APIQueueHandler',
             },
             'file': {
                 'class': 'logging.handlers.WatchedFileHandler',
                 'formatter': 'precise',
                 'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+                'filters': ['action'],
+            },
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'console',
+                'stream': 'ext://sys.stdout',
+                'filters': ['action'],
             },
         },
         'loggers': {
             'moulinette': {
-                'level': LOGGERS_LEVEL,
-                'handlers': LOGGERS_HANDLERS,
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
             },
             'yunohost': {
-                'level': LOGGERS_LEVEL,
-                'handlers': LOGGERS_HANDLERS,
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
             },
+        },
+        'root': {
+            'level': level,
+            'handlers': root_handlers,
         },
     }
 
@@ -150,20 +191,18 @@ def is_installed():
 # Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
-    _check_in_devel()
-    _parse_argv()
-    _init_moulinette()
+    opts = _parse_api_args()
+    _init_moulinette(opts.use_websocket, opts.debug, opts.verbose)
 
-    from moulinette import (api, MoulinetteError)
+    # Run the server
+    from moulinette import api, MoulinetteError
     from yunohost import get_versions
-    try:
-        # Run the server
-        api(_retrieve_namespaces(), port=6787,
+    ret = api(_retrieve_namespaces(),
+            host=opts.host, port=opts.port,
             routes={
                 ('GET', '/installed'): is_installed,
                 ('GET', '/version'): get_versions,
             },
-            use_cache=USE_CACHE, use_websocket=USE_WEBSOCKET)
-    except MoulinetteError as e:
-        _die(e.strerror, m18n.g('error'))
-    sys.exit(0)
+            use_cache=opts.use_cache, use_websocket=opts.use_websocket
+    )
+    sys.exit(ret)
