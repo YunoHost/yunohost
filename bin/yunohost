@@ -74,8 +74,23 @@ def _parse_cli_args():
         action='store_true', default=False,
         help="Don't produce any output",
     )
+    # deprecated arguments
+    parser.add_argument('--plain',
+        action='store_true', default=False, help=argparse.SUPPRESS
+    )
+    parser.add_argument('--json',
+        action='store_true', default=False, help=argparse.SUPPRESS
+    )
 
-    return (parser,) + parser.parse_known_args()
+    opts, args = parser.parse_known_args()
+
+    # output compatibility
+    if opts.plain:
+        opts.output_as = 'plain'
+    elif opts.json:
+        opts.output_as = 'json'
+
+    return (parser, opts, args)
 
 def _init_moulinette(debug=False, verbose=False, quiet=False):
     """Configure logging and initialize the moulinette"""
