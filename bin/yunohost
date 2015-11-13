@@ -10,11 +10,10 @@ IN_DEVEL = False
 # Either cache has to be used inside the moulinette or not
 USE_CACHE = True
 
-# Either the output has to be encoded as a JSON encoded string or not
-PRINT_JSON = False
-
-# Either the output has to printed for scripting usage or not
-PRINT_PLAIN = False
+# Output result in another format. Possible values are:
+# - json: return a JSON encoded string
+# - plain: return a script-readable output
+OUTPUT_AS = None
 
 # Level for which loggers will log
 LOGGERS_LEVEL = 'INFO'
@@ -29,6 +28,15 @@ LOGGERS_HANDLERS = ['file', 'tty']
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-cli.log'
 
+# Check and load - as needed - development environment
+if not __file__.startswith('/usr/'):
+    IN_DEVEL = True
+if IN_DEVEL:
+    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
+    if os.path.isdir(os.path.join(basedir, 'moulinette')):
+        sys.path.insert(0, basedir)
+    LOG_DIR = os.path.join(basedir, 'log')
+
 
 # Initialization & helpers functions -----------------------------------
 
@@ -41,49 +49,51 @@ def _die(message, title='Error:'):
     print('%s %s' % (colorize(title, 'red'), message))
     sys.exit(1)
 
-def _check_in_devel():
-    """Check and load if needed development environment"""
-    global IN_DEVEL, LOG_DIR
-    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-    if os.path.isdir('%s/moulinette' % basedir) and not IN_DEVEL:
-        # Add base directory to python path
-        sys.path.insert(0, basedir)
+def _parse_cli_args():
+    """Parse additional arguments for the cli"""
+    import argparse
 
-        # Update global variables
-        IN_DEVEL = True
-        LOG_DIR = '%s/log' % basedir
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--no-cache',
+        action='store_false', default=USE_CACHE, dest='use_cache',
+        help="Don't use actions map cache",
+    )
+    parser.add_argument('--output-as',
+        choices=['json', 'plain'], default=OUTPUT_AS,
+        help="Output result in another format",
+    )
+    parser.add_argument('--debug',
+        action='store_true', default=False,
+        help="Log and print debug messages",
+    )
+    parser.add_argument('--verbose',
+        action='store_true', default=False,
+        help="Be more verbose in the output",
+    )
+    parser.add_argument('--quiet',
+        action='store_true', default=False,
+        help="Don't produce any output",
+    )
 
-def _parse_argv():
-    """Parse additional arguments and return remaining ones"""
-    global USE_CACHE, PRINT_JSON, PRINT_PLAIN
-    global TTY_LOG_LEVEL, LOGGERS_LEVEL, LOGGERS_HANDLERS
-    argv = list(sys.argv)
-    argv.pop(0)
+    return (parser,) + parser.parse_known_args()
 
-    if '--no-cache' in argv:
-        USE_CACHE = False
-        argv.remove('--no-cache')
-    if '--json' in argv:
-        PRINT_JSON = True
-        argv.remove('--json')
-    if '--plain' in argv:
-        PRINT_PLAIN = True
-        argv.remove('--plain')
-    if '--debug' in argv:
-        LOGGERS_LEVEL = TTY_LOG_LEVEL = 'DEBUG'
-        argv.remove('--debug')
-    if '--verbose' in argv:
-        TTY_LOG_LEVEL = 'INFO'
-        argv.remove('--verbose')
-    if '--quiet' in argv:
-        if 'tty' in LOGGERS_HANDLERS:
-            LOGGERS_HANDLERS.remove('tty')
-        argv.remove('--quiet')
-    return argv
-
-def _init_moulinette():
+def _init_moulinette(debug=False, verbose=False, quiet=False):
     """Configure logging and initialize the moulinette"""
     from moulinette import init
+
+    # Define loggers handlers
+    global LOGGERS_HANDLERS
+    if quiet and 'tty' in LOGGERS_HANDLERS:
+        LOGGERS_HANDLERS.remove('tty')
+    elif verbose and 'tty' not in LOGGERS_HANDLERS:
+        LOGGERS_HANDLERS.append('tty')
+
+    # Define loggers level
+    global LOGGERS_LEVEL, TTY_LOG_LEVEL
+    if verbose:
+        TTY_LOG_LEVEL = 'INFO'
+    if debug:
+        LOGGERS_LEVEL = TTY_LOG_LEVEL = 'DEBUG'
 
     # Custom logging configuration
     logging = {
@@ -147,9 +157,8 @@ def _retrieve_namespaces():
 # Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
-    _check_in_devel()
-    args = _parse_argv()
-    _init_moulinette()
+    parser, opts, args = _parse_cli_args()
+    _init_moulinette(opts.debug, opts.verbose, opts.quiet)
 
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
@@ -166,6 +175,7 @@ if __name__ == '__main__':
 
     # Execute the action
     from moulinette import cli
-    ret = cli(_retrieve_namespaces(), args, use_cache=USE_CACHE,
-              print_json=PRINT_JSON, print_plain=PRINT_PLAIN)
+    ret = cli(_retrieve_namespaces(), args,
+              use_cache=opts.use_cache, output_as=opts.output_as,
+              parser_kwargs={'top_parser': parser})
     sys.exit(ret)
