@@ -469,8 +469,7 @@ def service_saferemove(service, conf_file, force=False):
     else:
         services[service]['conffiles'][conf_file] = previous_hash
         os.remove(conf_backup_file)
-        if os.isatty(1) and \
-           (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
+        if len(previous_hash) == 32 or previous_hash[-32:] != current_hash:
             logger.warning(m18n.n('service_configuration_conflict',
                 file=conf_file))
 
