@@ -150,7 +150,7 @@
     "service_stopped": "Service '{:s}' arrêté avec succès", 
     "service_unknown": "Service '{:s}' inconnu", 
     "services_configured": "La configuration a été générée avec succès",
-    "service_configuration_conflict": "Le fichier {file:s} a été modifié depuis sa dernière génération. Veuillez y appliquer les modifications manuellement ou utiliser l’option --force (ce qui écrasera toutes les modifications effectuées sur le fichier)",
+    "service_configuration_conflict": "Le fichier {file:s} a été modifié depuis sa dernière génération. Veuillez y appliquer les modifications manuellement ou utiliser l’option --force (ce qui écrasera toutes les modifications effectuées sur le fichier). Voici les différences:\n{diff:s}",
     "no_such_conf_file": "Le fichier {file:s} n’existe pas, il ne peut pas être copié",
     "service_add_configuration": "Ajout du fichier de configuration {file:s}",
     "ssowat_conf_generated": "Configuration de SSOwat générée avec succès", 
