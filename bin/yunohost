@@ -7,26 +7,27 @@ import os
 # Either we are in a development environment or not
 IN_DEVEL = False
 
-# Either cache has to be used inside the moulinette or not
-USE_CACHE = True
-
-# Either the output has to be encoded as a JSON encoded string or not
-PRINT_JSON = False
-
-# Either the output has to printed for scripting usage or not
-PRINT_PLAIN = False
-
 # Level for which loggers will log
 LOGGERS_LEVEL = 'INFO'
+TTY_LOG_LEVEL = 'SUCCESS'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
-#  - console: log to stderr
-LOGGERS_HANDLERS = ['file']
+#  - tty: log to current tty
+LOGGERS_HANDLERS = ['file', 'tty']
 
 # Directory and file to be used by logging
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-cli.log'
+
+# Check and load - as needed - development environment
+if not __file__.startswith('/usr/'):
+    IN_DEVEL = True
+if IN_DEVEL:
+    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
+    if os.path.isdir(os.path.join(basedir, 'moulinette')):
+        sys.path.insert(0, basedir)
+    LOG_DIR = os.path.join(basedir, 'log')
 
 
 # Initialization & helpers functions -----------------------------------
@@ -40,83 +41,114 @@ def _die(message, title='Error:'):
     print('%s %s' % (colorize(title, 'red'), message))
     sys.exit(1)
 
-def _check_in_devel():
-    """Check and load if needed development environment"""
-    global IN_DEVEL, LOG_DIR
-    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-    if os.path.isdir('%s/moulinette' % basedir) and not IN_DEVEL:
-        # Add base directory to python path
-        sys.path.insert(0, basedir)
+def _parse_cli_args():
+    """Parse additional arguments for the cli"""
+    import argparse
 
-        # Update global variables
-        IN_DEVEL = True
-        LOG_DIR = '%s/log' % basedir
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--no-cache',
+        action='store_false', default=True, dest='use_cache',
+        help="Don't use actions map cache",
+    )
+    parser.add_argument('--output-as',
+        choices=['json', 'plain'], default=None,
+        help="Output result in another format",
+    )
+    parser.add_argument('--debug',
+        action='store_true', default=False,
+        help="Log and print debug messages",
+    )
+    parser.add_argument('--verbose',
+        action='store_true', default=False,
+        help="Be more verbose in the output",
+    )
+    parser.add_argument('--quiet',
+        action='store_true', default=False,
+        help="Don't produce any output",
+    )
+    # deprecated arguments
+    parser.add_argument('--plain',
+        action='store_true', default=False, help=argparse.SUPPRESS
+    )
+    parser.add_argument('--json',
+        action='store_true', default=False, help=argparse.SUPPRESS
+    )
 
-def _parse_argv():
-    """Parse additional arguments and return remaining ones"""
-    argv = list(sys.argv)
-    argv.pop(0)
+    opts, args = parser.parse_known_args()
 
-    if '--no-cache' in argv:
-        global USE_CACHE
-        USE_CACHE = False
-        argv.remove('--no-cache')
-    if '--json' in argv:
-        global PRINT_JSON
-        PRINT_JSON = True
-        argv.remove('--json')
-    if '--plain' in argv:
-        global PRINT_PLAIN
-        PRINT_PLAIN = True
-        argv.remove('--plain')
-    if '--debug' in argv:
-        global LOGGERS_LEVEL
-        LOGGERS_LEVEL = 'DEBUG'
-        argv.remove('--debug')
-    if '--verbose' in argv:
-        global LOGGERS_HANDLERS
-        if 'console' not in LOGGERS_HANDLERS:
-            LOGGERS_HANDLERS.append('console')
-        argv.remove('--verbose')
-    return argv
+    # output compatibility
+    if opts.plain:
+        opts.output_as = 'plain'
+    elif opts.json:
+        opts.output_as = 'json'
 
-def _init_moulinette():
+    return (parser, opts, args)
+
+def _init_moulinette(debug=False, verbose=False, quiet=False):
     """Configure logging and initialize the moulinette"""
     from moulinette import init
+
+    # Define loggers handlers
+    handlers = set(LOGGERS_HANDLERS)
+    if quiet and 'tty' in handlers:
+        handlers.remove('tty')
+    elif verbose and 'tty' not in handlers:
+        handlers.append('tty')
+    root_handlers = handlers - set(['tty'])
+
+    # Define loggers level
+    level = LOGGERS_LEVEL
+    tty_level = TTY_LOG_LEVEL
+    if verbose:
+        tty_level = 'INFO'
+    if debug:
+        tty_level = level = 'DEBUG'
 
     # Custom logging configuration
     logging = {
         'version': 1,
         'disable_existing_loggers': True,
         'formatters': {
-            'simple': {
-                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s - %(message)s'
+            'tty-debug': {
+                'format': '%(relativeCreated)-4d %(fmessage)s'
             },
             'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(message)s'
+                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
+            },
+        },
+        'filters': {
+            'action': {
+                '()': 'moulinette.utils.log.ActionFilter',
             },
         },
         'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'simple',
-                'stream': 'ext://sys.stderr',
+            'tty': {
+                'level': tty_level,
+                'class': 'moulinette.interfaces.cli.TTYHandler',
+                'formatter': 'tty-debug' if debug else '',
             },
             'file': {
                 'class': 'logging.FileHandler',
                 'formatter': 'precise',
                 'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+                'filters': ['action'],
             },
         },
         'loggers': {
-            'moulinette': {
-                'level': LOGGERS_LEVEL,
-                'handlers': LOGGERS_HANDLERS,
-            },
             'yunohost': {
-                'level': LOGGERS_LEVEL,
-                'handlers': LOGGERS_HANDLERS,
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
             },
+            'moulinette': {
+                'level': level,
+                'handlers': [],
+                'propagate': True,
+            },
+        },
+        'root': {
+            'level': level,
+            'handlers': root_handlers,
         },
     }
 
@@ -144,9 +176,8 @@ def _retrieve_namespaces():
 # Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
-    _check_in_devel()
-    args = _parse_argv()
-    _init_moulinette()
+    parser, opts, args = _parse_cli_args()
+    _init_moulinette(opts.debug, opts.verbose, opts.quiet)
 
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
@@ -163,6 +194,8 @@ if __name__ == '__main__':
 
     # Execute the action
     from moulinette import cli
-    ret = cli(_retrieve_namespaces(), args, use_cache=USE_CACHE,
-              print_json=PRINT_JSON, print_plain=PRINT_PLAIN)
+    ret = cli(_retrieve_namespaces(), args,
+            use_cache=opts.use_cache, output_as=opts.output_as,
+            parser_kwargs={'top_parser': parser}
+    )
     sys.exit(ret)

@@ -34,6 +34,7 @@ import difflib
 import hashlib
 
 from moulinette.core import MoulinetteError
+from moulinette.utils import log
 
 template_dir = os.getenv(
     'YUNOHOST_TEMPLATE_DIR',
@@ -43,6 +44,9 @@ conf_backup_dir = os.getenv(
     'YUNOHOST_CONF_BACKUP_DIR',
     '/home/yunohost.backup/conffiles'
 )
+
+logger = log.getActionLogger('yunohost.service')
+
 
 def service_add(name, status=None, log=None, runlevel=None):
     """
@@ -73,7 +77,7 @@ def service_add(name, status=None, log=None, runlevel=None):
     except:
         raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', name))
 
-    msignals.display(m18n.n('service_added'), 'success')
+    logger.success(m18n.n('service_added'))
 
 
 def service_remove(name):
@@ -96,7 +100,7 @@ def service_remove(name):
     except:
         raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', name))
 
-    msignals.display(m18n.n('service_removed'), 'success')
+    logger.success(m18n.n('service_removed'))
 
 
 def service_start(names):
@@ -111,12 +115,12 @@ def service_start(names):
         names = [names]
     for name in names:
         if _run_service_command('start', name):
-            msignals.display(m18n.n('service_started', name), 'success')
+            logger.success(m18n.n('service_started', name))
         else:
             if service_status(name)['status'] != 'running':
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('service_start_failed', name))
-            msignals.display(m18n.n('service_already_started', name))
+            logger.info(m18n.n('service_already_started', name))
 
 
 def service_stop(names):
@@ -131,12 +135,12 @@ def service_stop(names):
         names = [names]
     for name in names:
         if _run_service_command('stop', name):
-            msignals.display(m18n.n('service_stopped', name), 'success')
+            logger.success(m18n.n('service_stopped', name))
         else:
             if service_status(name)['status'] != 'inactive':
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('service_stop_failed', name))
-            msignals.display(m18n.n('service_already_stopped', name))
+            logger.info(m18n.n('service_already_stopped', name))
 
 
 def service_enable(names):
@@ -151,7 +155,7 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command('enable', name):
-            msignals.display(m18n.n('service_enabled', name), 'success')
+            logger.success(m18n.n('service_enabled', name))
         else:
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('service_enable_failed', name))
@@ -169,7 +173,7 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command('disable', name):
-            msignals.display(m18n.n('service_disabled', name), 'success')
+            logger.success(m18n.n('service_disabled', name))
         else:
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('service_disable_failed', name))
@@ -217,8 +221,7 @@ def service_status(names=[]):
                                           shell=True)
         except subprocess.CalledProcessError as e:
             if 'usage:' in e.output.lower():
-                msignals.display(m18n.n('service_status_failed', name),
-                                 'warning')
+                logger.warning(m18n.n('service_status_failed', name))
             else:
                 result[name]['status'] = 'inactive'
         else:
@@ -288,7 +291,7 @@ def service_regenconf(service=None, force=False):
         hook_callback('conf_regen', [service], args=[force])
     else:
         hook_callback('conf_regen', args=[force])
-    msignals.display(m18n.n('services_configured'), 'success')
+    logger.success(m18n.n('services_configured'))
 
 
 def _run_service_command(action, service):
@@ -317,8 +320,7 @@ def _run_service_command(action, service):
         ret = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         # TODO: Log output?
-        msignals.display(m18n.n('service_cmd_exec_failed', ' '.join(e.cmd)),
-                         'warning')
+        logger.warning(m18n.n('service_cmd_exec_failed', ' '.join(e.cmd)))
         return False
     return True
 
@@ -467,12 +469,9 @@ def service_saferemove(service, conf_file, force=False):
     else:
         services[service]['conffiles'][conf_file] = previous_hash
         os.remove(conf_backup_file)
-        if os.isatty(1) and \
-           (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
-            msignals.display(
-                m18n.n('service_configuration_conflict', file=conf_file),
-                'warning'
-            )
+        if len(previous_hash) == 32 or previous_hash[-32:] != current_hash:
+            logger.warning(m18n.n('service_configuration_conflict',
+                file=conf_file))
 
     _save_services(services)
 
@@ -509,8 +508,7 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
         )
         process.wait()
     else:
-        msignals.display(m18n.n('service_add_configuration', file=conf_file),
-                         'info')
+        logger.info(m18n.n('service_add_configuration', file=conf_file))
 
     # Add the service if it does not exist
     if service not in services.keys():
@@ -539,15 +537,9 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
     else:
         new_hash = previous_hash
         if (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
-            msignals.display(
-                m18n.n('service_configuration_conflict', file=conf_file),
-                'warning'
-            )
-            print('\n' + conf_file)
-            for line in diff:
-                print(line.strip())
-            print('')
-      
+            logger.warning(m18n.n('service_configuration_conflict',
+                file=conf_file, diff=''.join(diff)))
+
     # Remove the backup file if the configuration has not changed
     if new_hash == previous_hash:
         try:

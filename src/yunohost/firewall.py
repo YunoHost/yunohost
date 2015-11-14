@@ -83,8 +83,7 @@ def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
                 firewall[i][p].append(port)
             else:
                 ipv = "IPv%s" % i[3]
-                msignals.display(m18n.n('port_already_opened', port, ipv),
-                                 'warning')
+                logger.warning(m18n.n('port_already_opened', port, ipv))
         # Add port forwarding with UPnP
         if not no_upnp and port not in firewall['uPnP'][p]:
             firewall['uPnP'][p].append(port)
@@ -141,8 +140,7 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
                 firewall[i][p].remove(port)
             else:
                 ipv = "IPv%s" % i[3]
-                msignals.display(m18n.n('port_already_closed', port, ipv),
-                                 'warning')
+                logger.warning(m18n.n('port_already_closed', port, ipv))
         # Remove port forwarding with UPnP
         if upnp and port in firewall['uPnP'][p]:
             firewall['uPnP'][p].remove(port)
@@ -214,9 +212,9 @@ def firewall_reload(skip_upnp=False):
     try:
         process.check_output("iptables -L")
     except process.CalledProcessError as e:
-        logger.info('iptables seems to be not available, it outputs:\n%s',
-                    prependlines(e.output.rstrip(), '> '))
-        msignals.display(m18n.n('iptables_unavailable'), 'info')
+        logger.debug('iptables seems to be not available, it outputs:\n%s',
+                     prependlines(e.output.rstrip(), '> '))
+        logger.warning(m18n.n('iptables_unavailable'))
     else:
         rules = [
             "iptables -F",
@@ -243,9 +241,9 @@ def firewall_reload(skip_upnp=False):
     try:
         process.check_output("ip6tables -L")
     except process.CalledProcessError as e:
-        logger.info('ip6tables seems to be not available, it outputs:\n%s',
-                    prependlines(e.output.rstrip(), '> '))
-        msignals.display(m18n.n('ip6tables_unavailable'), 'info')
+        logger.debug('ip6tables seems to be not available, it outputs:\n%s',
+                     prependlines(e.output.rstrip(), '> '))
+        logger.warning(m18n.n('ip6tables_unavailable'))
     else:
         rules = [
             "ip6tables -F",
@@ -282,9 +280,9 @@ def firewall_reload(skip_upnp=False):
     os.system("service fail2ban restart")
 
     if errors:
-        msignals.display(m18n.n('firewall_rules_cmd_failed'), 'warning')
+        logger.warning(m18n.n('firewall_rules_cmd_failed'))
     else:
-        msignals.display(m18n.n('firewall_reloaded'), 'success')
+        logger.success(m18n.n('firewall_reloaded'))
     return firewall_list()
 
 
@@ -306,7 +304,7 @@ def firewall_upnp(action='status', no_refresh=False):
 
     # Compatibility with previous version
     if action == 'reload':
-        logger.warning("'reload' action is deprecated and will be removed")
+        logger.info("'reload' action is deprecated and will be removed")
         try:
             # Remove old cron job
             os.remove('/etc/cron.d/yunohost-firewall')
@@ -349,14 +347,14 @@ def firewall_upnp(action='status', no_refresh=False):
         nb_dev = upnpc.discover()
         logger.debug('found %d UPnP device(s)', int(nb_dev))
         if nb_dev < 1:
-            msignals.display(m18n.n('upnp_dev_not_found'), 'error')
+            logger.error(m18n.n('upnp_dev_not_found'))
             enabled = False
         else:
             try:
                 # Select UPnP device
                 upnpc.selectigd()
             except:
-                logger.exception('unable to select UPnP device')
+                logger.info('unable to select UPnP device', exc_info=1)
                 enabled = False
             else:
                 # Iterate over ports
@@ -374,8 +372,8 @@ def firewall_upnp(action='status', no_refresh=False):
                             upnpc.addportmapping(port, protocol, upnpc.lanaddr,
                                 port, 'yunohost firewall: port %d' % port, '')
                         except:
-                            logger.exception('unable to add port %d using UPnP',
-                                             port)
+                            logger.info('unable to add port %d using UPnP',
+                                        port, exc_info=1)
                             enabled = False
 
     if enabled != firewall['uPnP']['enabled']:
@@ -390,9 +388,9 @@ def firewall_upnp(action='status', no_refresh=False):
         if not no_refresh:
             # Display success message if needed
             if action == 'enable' and enabled:
-                msignals.display(m18n.n('upnp_enabled'), 'success')
+                logger.success(m18n.n('upnp_enabled'))
             elif action == 'disable' and not enabled:
-                msignals.display(m18n.n('upnp_disabled'), 'success')
+                logger.success(m18n.n('upnp_disabled'))
             # Make sure to disable UPnP
             elif action != 'disable' and not enabled:
                 firewall_upnp('disable', no_refresh=True)
@@ -455,6 +453,6 @@ def _update_firewall_file(rules):
 def _on_rule_command_error(returncode, cmd, output):
     """Callback for rules commands error"""
     # Log error and continue commands execution
-    logger.error('"%s" returned non-zero exit status %d:\n%s',
-                 cmd, returncode, prependlines(output.rstrip(), '> '))
+    logger.info('"%s" returned non-zero exit status %d:\n%s',
+                cmd, returncode, prependlines(output.rstrip(), '> '))
     return True

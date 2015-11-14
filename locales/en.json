@@ -37,7 +37,8 @@
     "mysql_db_initialized" : "MySQL database successfully initialized",
     "extracting" : "Extracting...",
     "downloading" : "Downloading...",
-    "executing_script": "Executing script...",
+    "executing_script": "Executing script '{script:s}'...",
+    "executing_command": "Executing command '{command:s}'...",
     "done" : "Done.",
 
     "path_removal_failed" : "Unable to remove path {:s}",
@@ -87,6 +88,7 @@
     "hook_choice_invalid" : "Invalid choice '{:s}'",
     "hook_argument_missing" : "Missing argument '{:s}'",
     "hook_exec_failed" : "Script execution failed",
+    "hook_exec_not_terminated" : "Script execution hasn’t terminated",
 
     "mountpoint_unknown" : "Unknown mountpoint",
     "unit_unknown" : "Unknown unit '{:s}'",
@@ -118,7 +120,7 @@
     "service_no_log" : "No log to display for service '{:s}'",
     "service_cmd_exec_failed" : "Unable to execute command '{:s}'",
     "services_configured": "Configuration successfully generated",
-    "service_configuration_conflict": "The file {file:s} has been changed since its last generation. Please apply the modifications manually or use the option --force (it will erase all the modifications previously done to the file)",
+    "service_configuration_conflict": "The file {file:s} has been changed since its last generation. Please apply the modifications manually or use the option --force (it will erase all the modifications previously done to the file). Here are the differences:\n{diff:s}",
     "no_such_conf_file": "Unable to copy the file {file:s}: the file does not exist",
     "service_add_configuration": "Adding the configuration file {file:s}",
 
