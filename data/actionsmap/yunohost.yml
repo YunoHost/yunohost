@@ -1355,11 +1355,15 @@ hook:
             action_help: Execute hook from a file with arguments
             api: GET /hook
             arguments:
-                file:
-                    help: Script to execute
+                path:
+                    help: Path of the script to execute
                 -a:
                     full: --args
                     help: Arguments to pass to the script
                 --raise-on-error:
                     help: Raise if the script returns a non-zero exit code
+                    action: store_true
+                -q:
+                    full: --no-trace
+                    help: Do not print each command that will be executed
                     action: store_true
