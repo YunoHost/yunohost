@@ -470,7 +470,7 @@ def service_saferemove(service, conf_file, force=False):
         if os.isatty(1) and \
            (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
             msignals.display(
-                m18n.n('service_configuration_changed', conf_file),
+                m18n.n('service_configuration_conflict', file=conf_file),
                 'warning'
             )
 
@@ -495,7 +495,7 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
     services = _get_services()
 
     if not os.path.exists(new_conf_file):
-        raise MoulinetteError(errno.EIO, m18n.n('no_such_conf_file', new_conf_file))
+        raise MoulinetteError(errno.EIO, m18n.n('no_such_conf_file', file=new_conf_file))
 
     with open(new_conf_file, 'r') as f:
         new_conf = ''.join(f.readlines()).rstrip()
@@ -509,7 +509,7 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
         )
         process.wait()
     else:
-        msignals.display(m18n.n('service_add_configuration', conf_file),
+        msignals.display(m18n.n('service_add_configuration', file=conf_file),
                          'info')
 
     # Add the service if it does not exist
@@ -540,7 +540,7 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
         new_hash = previous_hash
         if (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
             msignals.display(
-                m18n.n('service_configuration_conflict', conf_file),
+                m18n.n('service_configuration_conflict', file=conf_file),
                 'warning'
             )
             print('\n' + conf_file)
