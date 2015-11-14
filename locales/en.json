@@ -37,7 +37,8 @@
     "mysql_db_initialized" : "MySQL database successfully initialized",
     "extracting" : "Extracting...",
     "downloading" : "Downloading...",
-    "executing_script": "Executing script...",
+    "executing_script": "Executing script '{script:s}'...",
+    "executing_command": "Executing command '{command:s}'...",
     "done" : "Done.",
 
     "path_removal_failed" : "Unable to remove path {:s}",

@@ -32,12 +32,12 @@ import subprocess
 from glob import iglob
 
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
+from moulinette.utils import log
 
 hook_folder = '/usr/share/yunohost/hooks/'
 custom_hook_folder = '/etc/yunohost/hooks.d/'
 
-logger = getActionLogger('yunohost.hook')
+logger = log.getActionLogger('yunohost.hook')
 
 
 def hook_add(app, file):
@@ -264,14 +264,9 @@ def hook_callback(action, hooks=[], args=None):
             state = 'succeed'
             filename = '%s-%s' % (priority, name)
             try:
-                ret = hook_exec(info['path'], args=args)
-            except:
-                logger.exception("error while executing hook '%s'",
-                                 info['path'])
-                state = 'failed'
-            if ret != 0:
-                logger.error("error while executing hook '%s', retcode: %d",
-                             info['path'], ret)
+                hook_exec(info['path'], args=args, raise_on_error=True)
+            except MoulinetteError as e:
+                logger.error(e.strerror)
                 state = 'failed'
             try:
                 result[state][name].append(info['path'])
@@ -364,12 +359,19 @@ def hook_exec(file, args=None, raise_on_error=False):
         # bash related issue if an argument is empty and is not the last
         arg_str = '"{:s}"'.format('" "'.join(str(s) for s in arg_list))
 
-    msignals.display(m18n.n('executing_script'))
+    # Construct command to execute
+    command = [
+        'sudo', '-u', 'admin', '-H', 'sh', '-c',
+        'cd "{:s}" && /bin/bash -x "{:s}" {:s}'.format(
+            file_path, file, arg_str),
+    ]
+    if logger.isEnabledFor(log.DEBUG):
+        logger.info(m18n.n('executing_command', command=' '.join(command)))
+    else:
+        logger.info(m18n.n('executing_script', script='{0}/{1}'.format(
+                file_path, file)))
 
-    p = subprocess.Popen(
-            ['sudo', '-u', 'admin', '-H', 'sh', '-c', 'cd "{:s}" && ' \
-                '/bin/bash -x "{:s}" {:s}'.format(
-                    file_path, file, arg_str)],
+    p = subprocess.Popen(command,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             shell=False)
 
@@ -383,7 +385,7 @@ def hook_exec(file, args=None, raise_on_error=False):
             if returncode is not None:
                 break
         else:
-            msignals.display(line.rstrip(), 'log')
+            logger.info(line.rstrip())
     stream.close()
 
     if raise_on_error and returncode != 0:
