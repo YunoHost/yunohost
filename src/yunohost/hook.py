@@ -296,23 +296,31 @@ def hook_check(file):
         return {}
 
 
-def hook_exec(file, args=None, raise_on_error=False):
+def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
     """
     Execute hook from a file with arguments
 
     Keyword argument:
-        file -- Script to execute
+        path -- Path of the script to execute
         args -- Arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
+        no_trace -- Do not print each command that will be executed
 
     """
-    from moulinette.utils.stream import NonBlockingStreamReader
+    import time
+    from moulinette.utils.stream import start_async_file_reading
     from yunohost.app import _value_for_locale
+
+    # Validate hook path
+    if path[0] != '/':
+        path = os.path.realpath(path)
+    if not os.path.isfile(path):
+        raise MoulinetteError(errno.EIO, m18n.g('file_not_exist'))
 
     if isinstance(args, list):
         arg_list = args
     else:
-        required_args = hook_check(file)
+        required_args = hook_check(path)
         if args is None:
             args = {}
 
@@ -346,49 +354,60 @@ def hook_exec(file, args=None, raise_on_error=False):
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('hook_argument_missing', arg['name']))
 
-    file_path = "./"
-    if "/" in file and file[0:2] != file_path:
-        file_path = os.path.dirname(file)
-        file = file.replace(file_path +"/", "")
+    # Construct command variables
+    cmd_fdir, cmd_fname = os.path.split(path)
+    cmd_fname = './{0}'.format(cmd_fname)
 
-    #TODO: Allow python script
-
-    arg_str = ''
+    cmd_args = ''
     if arg_list:
         # Concatenate arguments and escape them with double quotes to prevent
         # bash related issue if an argument is empty and is not the last
-        arg_str = '"{:s}"'.format('" "'.join(str(s) for s in arg_list))
+        cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in arg_list))
 
     # Construct command to execute
-    command = [
-        'sudo', '-u', 'admin', '-H', 'sh', '-c',
-        'cd "{:s}" && /bin/bash -x "{:s}" {:s}'.format(
-            file_path, file, arg_str),
-    ]
+    command = ['sudo', '-u', 'admin', '-H', 'sh', '-c']
+    if no_trace:
+        cmd = 'cd "{0:s}" && /bin/bash "{1:s}" {2:s}'
+    else:
+        # use xtrace on fd 7 which is redirected to stdout
+        cmd = 'cd "{0:s}" && BASH_XTRACEFD=7 /bin/bash -x "{1:s}" {2:s} 7>&1'
+    command.append(cmd.format(cmd_fdir, cmd_fname, cmd_args))
+
     if logger.isEnabledFor(log.DEBUG):
         logger.info(m18n.n('executing_command', command=' '.join(command)))
     else:
         logger.info(m18n.n('executing_script', script='{0}/{1}'.format(
-                file_path, file)))
+                cmd_fdir, cmd_fname)))
 
-    p = subprocess.Popen(command,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    process = subprocess.Popen(command,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             shell=False)
 
-    # Wrap and get process ouput
-    stream = NonBlockingStreamReader(p.stdout)
-    while True:
-        line = stream.readline(True, 0.1)
-        if not line:
-            # Check if process has terminated
-            returncode = p.poll()
-            if returncode is not None:
-                break
-        else:
+    # Wrap and get process outputs
+    stdout_reader, stdout_queue = start_async_file_reading(process.stdout)
+    stderr_reader, stderr_queue = start_async_file_reading(process.stderr)
+    while not stdout_reader.eof() or not stderr_reader.eof():
+        while not stdout_queue.empty():
+            line = stdout_queue.get()
             logger.info(line.rstrip())
-    stream.close()
+        while not stderr_queue.empty():
+            line = stderr_queue.get()
+            logger.warning(line.rstrip())
+        time.sleep(.1)
 
-    if raise_on_error and returncode != 0:
+    # Terminate outputs readers
+    stdout_reader.join()
+    stderr_reader.join()
+
+    # Get and return process' return code
+    returncode = process.poll()
+    if returncode is None:
+        if raise_on_error:
+            raise MoulinetteError(m18n.n('hook_exec_not_terminated'))
+        else:
+            logger.error(m18n.n('hook_exec_not_terminated'))
+            return 1
+    elif raise_on_error and returncode != 0:
         raise MoulinetteError(m18n.n('hook_exec_failed'))
     return returncode
 

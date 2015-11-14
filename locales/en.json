@@ -88,6 +88,7 @@
     "hook_choice_invalid" : "Invalid choice '{:s}'",
     "hook_argument_missing" : "Missing argument '{:s}'",
     "hook_exec_failed" : "Script execution failed",
+    "hook_exec_not_terminated" : "Script execution hasn’t terminated",
 
     "mountpoint_unknown" : "Unknown mountpoint",
     "unit_unknown" : "Unknown unit '{:s}'",
