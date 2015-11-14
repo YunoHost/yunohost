@@ -137,15 +137,15 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
             },
         },
         'loggers': {
-            'moulinette': {
-                'level': level,
-                'handlers': handlers,
-                'propagate': False,
-            },
             'yunohost': {
                 'level': level,
                 'handlers': handlers,
                 'propagate': False,
+            },
+            'moulinette': {
+                'level': level,
+                'handlers': [],
+                'propagate': True,
             },
         },
         'root': {
