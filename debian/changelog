@@ -1,3 +1,24 @@
+yunohost (2.3.1) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Add logrotate configuration
+  * [enh] Allow to set default options for yunohost-api service
+  * [enh] Add bash completion for bin/yunohost
+  * [enh] Make use of new logging facilities in firewall, hook and service
+  * [enh] Refactor bin/yunohost and bin/yunohost-api to follow moulinette
+    changes and provide help for global arguments
+  * [enh] Split stdout/stderr wrapping in hook_exec and add a no_trace option
+  * [fix] Create home directory during login (fixbug #80)
+  * [fix] Keep compat with deprecated --plain and --json in the cli
+  * [fix] Do not restrict warning to tty in service_saferemove
+  * [fix] Enable yunohost-api systemd service manually
+
+  [ kload ]
+  * [fix] Restart Dovecot at the end of Rspamd configuration script
+  * [fix] Translate regenconf messages in English and French
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 00:23:27 +0100
+
 yunohost (2.3.0) testing; urgency=low
 
   [ breaking changes ]
