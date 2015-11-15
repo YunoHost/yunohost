@@ -1,3 +1,9 @@
+yunohost (2.3.3) testing; urgency=low
+
+  * [fix] Do not modify handlers with root_handlers in bin/yunohost
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 15:00:04 +0100
+
 yunohost (2.3.2) testing; urgency=low
 
   [ Jérôme Lebleu ]
