@@ -307,8 +307,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
         no_trace -- Do not print each command that will be executed
 
     """
-    import time
-    from moulinette.utils.stream import start_async_file_reading
+    from moulinette.utils.process import call_async_output
     from yunohost.app import _value_for_locale
 
     # Validate hook path
@@ -379,28 +378,14 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
         logger.info(m18n.n('executing_script', script='{0}/{1}'.format(
                 cmd_fdir, cmd_fname)))
 
-    process = subprocess.Popen(command,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            shell=False)
+    # Define output callbacks and call command
+    callbacks = (
+        lambda l: logger.info(l.rstrip()),
+        lambda l: logger.warning(l.rstrip()),
+    )
+    returncode = call_async_output(command, callbacks, shell=False)
 
-    # Wrap and get process outputs
-    stdout_reader, stdout_queue = start_async_file_reading(process.stdout)
-    stderr_reader, stderr_queue = start_async_file_reading(process.stderr)
-    while not stdout_reader.eof() and not stderr_reader.eof():
-        while not stdout_queue.empty():
-            line = stdout_queue.get()
-            logger.info(line.rstrip())
-        while not stderr_queue.empty():
-            line = stderr_queue.get()
-            logger.warning(line.rstrip())
-        time.sleep(.1)
-
-    # Terminate outputs readers
-    stdout_reader.join()
-    stderr_reader.join()
-
-    # Get and return process' return code
-    returncode = process.poll()
+    # Check and return process' return code
     if returncode is None:
         if raise_on_error:
             raise MoulinetteError(m18n.n('hook_exec_not_terminated'))
