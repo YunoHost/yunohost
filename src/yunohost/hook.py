@@ -266,7 +266,7 @@ def hook_callback(action, hooks=[], args=None):
             try:
                 hook_exec(info['path'], args=args, raise_on_error=True)
             except MoulinetteError as e:
-                logger.error(e.strerror)
+                logger.error(str(e))
                 state = 'failed'
             try:
                 result[state][name].append(info['path'])
