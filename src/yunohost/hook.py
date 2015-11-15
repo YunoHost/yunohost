@@ -386,7 +386,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
     # Wrap and get process outputs
     stdout_reader, stdout_queue = start_async_file_reading(process.stdout)
     stderr_reader, stderr_queue = start_async_file_reading(process.stderr)
-    while not stdout_reader.eof() or not stderr_reader.eof():
+    while not stdout_reader.eof() and not stderr_reader.eof():
         while not stdout_queue.empty():
             line = stdout_queue.get()
             logger.info(line.rstrip())
