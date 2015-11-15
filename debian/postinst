@@ -47,6 +47,15 @@ case "$1" in
     ;;
 esac
 
+if [ -x /etc/init.d/yunohost-api ]; then
+    update-rc.d yunohost-api defaults >/dev/null
+    if [ -d /run/systemd/system ]; then
+        systemctl --system daemon-reload >/dev/null || true
+    else
+        invoke-rc.d yunohost-api start || exit $?
+    fi
+fi
+
 #DEBHELPER#
 
 exit 0
