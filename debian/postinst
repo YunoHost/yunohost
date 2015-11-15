@@ -48,13 +48,10 @@ case "$1" in
     ;;
 esac
 
-if [ -x /etc/init.d/yunohost-api ]; then
+# Enable and start yunohost-api service for non-systemd system
+if [ -x /etc/init.d/yunohost-api ] && [ ! -d /run/systemd/system ]; then
     update-rc.d yunohost-api defaults >/dev/null
-    if [ -d /run/systemd/system ]; then
-        systemctl --system daemon-reload >/dev/null || true
-    else
-        invoke-rc.d yunohost-api start || exit $?
-    fi
+    invoke-rc.d yunohost-api start || exit $?
 fi
 
 #DEBHELPER#
