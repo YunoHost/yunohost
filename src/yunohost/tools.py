@@ -373,8 +373,8 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
         # If API call
         if is_api:
-            critical_packages = ("moulinette", "moulinette-yunohost",
-                "yunohost-admin", "yunohost-config-nginx", "ssowat", "python")
+            critical_packages = ("moulinette", "yunohost",
+                "yunohost-admin", "ssowat", "python")
             critical_upgrades = set()
 
             for pkg in cache.get_changes():
