@@ -95,7 +95,7 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
     elif verbose and 'tty' not in handlers:
         handlers.append('tty')
 
-    root_handlers = handlers
+    root_handlers = set(handlers)
     if not debug:
         root_handlers.remove('tty')
 
