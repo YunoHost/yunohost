@@ -46,7 +46,7 @@ sudo mkdir /etc/ldap/slapd.d
 sudo chown -R openldap:openldap /etc/ldap/schema/
 sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 
-sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/
+sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
 sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 
 sudo service slapd force-reload
