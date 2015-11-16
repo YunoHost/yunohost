@@ -29,7 +29,7 @@ if [[ "$1" == "True" ]]; then
       || echo "Postgrey is already removed" \
       && sudo systemctl disable postgrey || true
 
-    sudo systemctl stop spamassassin
-    sudo systemctl stop amavis
-    sudo systemctl stop postgrey
+    sudo systemctl stop spamassassin || true
+    sudo systemctl stop amavis || true
+    sudo systemctl stop postgrey || true
 fi
