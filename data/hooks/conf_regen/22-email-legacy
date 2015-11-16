@@ -9,7 +9,7 @@ if [[ "$1" == "True" ]]; then
       || echo "Rspamd is already listed in services"
 
     sudo yunohost service add rmilter -l /var/log/mail.log \
-      || echo "Rspamd is already listed in services"
+      || echo "Rmilter is already listed in services"
 
     sudo yunohost service add memcached \
       || echo "Memcached is already listed in services"
