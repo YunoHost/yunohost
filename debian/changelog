@@ -1,3 +1,18 @@
+yunohost (2.3.4) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Make use of call_async_output in hook_exec to get output in real time
+  * [fix] Display a more detailed message when yunohost-firewall is stopped
+  * [fix] Prevent insserv warning when using systemd at package postinst
+  * [fix] Log real exception string error in hook_callback
+  * [fix] Add yunohost-firewall.service but do not enable it
+
+  [ julienmalik ]
+  * [fix] Log for rmilter instead of rspamd
+  * [fix] Do not exit at first service which can't be stopped
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 17 Nov 2015 11:10:42 +0100
+
 yunohost (2.3.3) testing; urgency=low
 
   * [fix] Do not modify handlers with root_handlers in bin/yunohost
