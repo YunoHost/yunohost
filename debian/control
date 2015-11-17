@@ -10,7 +10,7 @@ Homepage: https://yunohost.org/
 Package: yunohost
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends},
- moulinette (>= 2.3.2),
+ moulinette (>= 2.3.3),
  python-psutil,
  python-requests,
  glances,
