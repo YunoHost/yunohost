@@ -168,24 +168,29 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
             sorted_app_dict[sorted_keys] = app_dict[sorted_keys]
 
         i = 0
-        for app_id, app_info in sorted_app_dict.items():
+        for app_id, app_info_dict in sorted_app_dict.items():
             if i < limit:
-                if (filter and ((filter in app_id) or (filter in app_info['manifest']['name']))) or not filter:
+                if (filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter:
                     installed = _is_installed(app_id)
 
                     if raw:
-                        app_info['installed'] = installed
+                        app_info_dict['installed'] = installed
                         if installed:
-                            app_info['status'] = _get_app_status(app_id)
-                        list_dict[app_id] = app_info
+                            app_info_dict['status'] = _get_app_status(app_id)
+                        list_dict[app_id] = app_info_dict
                     else:
+                        label = None
+                        if installed:
+                            app_info_dict_raw = app_info(app=app_id, raw=True)
+                            label = app_info_dict_raw['settings']['label']
                         list_dict.append({
                             'id': app_id,
-                            'name': app_info['manifest']['name'],
+                            'name': app_info_dict['manifest']['name'],
+                            'label': label,
                             'description': _value_for_locale(
-                                app_info['manifest']['description']),
+                                app_info_dict['manifest']['description']),
                             # FIXME: Temporarly allow undefined license
-                            'license': app_info['manifest'].get('license',
+                            'license': app_info_dict['manifest'].get('license',
                                 m18n.n('license_undefined')),
                             'installed': installed
                         })
