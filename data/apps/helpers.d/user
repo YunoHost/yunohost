@@ -3,7 +3,7 @@
 # usage: ynh_user_exists username
 # | ret: retcode - 0 if user exists, 1 otherwise
 ynh_user_exists() {
-    sudo yunohost user list --json | grep -q "\"username\": \"${1}\""
+    sudo yunohost user list --output-as json | grep -q "\"username\": \"${1}\""
 }
 
 # Retrieve a user information
@@ -11,5 +11,5 @@ ynh_user_exists() {
 # usage: ynh_user_info username key
 # | ret: string - the key's value
 ynh_user_get_info() {
-    sudo yunohost user info "${1}" --plain | ynh_get_plain_key "${2}"
+    sudo yunohost user info "${1}" --output-as plain | ynh_get_plain_key "${2}"
 }

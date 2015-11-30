@@ -28,7 +28,7 @@ safe_copy metronome.cfg.lua /etc/metronome/metronome.cfg.lua
 need_restart=False
 sudo mkdir -p /etc/metronome/conf.d
 
-domain_list=$(sudo yunohost domain list --plain)
+domain_list=$(sudo yunohost domain list --output-as plain)
 
 # Copy a configuration file for each YunoHost domain 
 for domain in $domain_list; do
