@@ -24,7 +24,7 @@ sudo chown _rmilter: /var/run/rmilter
 
 # Create DKIM key for each YunoHost domain
 sudo mkdir -p /etc/dkim
-domain_list=$(sudo yunohost domain list --plain)
+domain_list=$(sudo yunohost domain list --output-as plain)
 
 for domain in $domain_list; do
     [ -f /etc/dkim/$domain.mail.key ] \
