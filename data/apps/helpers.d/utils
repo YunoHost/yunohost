@@ -12,7 +12,7 @@ ynh_get_plain_key() {
             [[ "$line" =~ ^${prefix}[^#] ]] && return
             echo $line
         elif [[ "$line" =~ ^${prefix}${key}$ ]]; then
-            if [[ -n "$1" ]]; then
+            if [[ -n "${1:-}" ]]; then
                 prefix+="#"
                 key=$1
                 shift
