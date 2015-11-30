@@ -1,6 +1,9 @@
 # Check if a user exists
 #
+# example: ynh_user_exists 'toto' || exit 1
+#
 # usage: ynh_user_exists username
+# | arg: username - the username to check
 # | ret: retcode - 0 if user exists, 1 otherwise
 ynh_user_exists() {
     sudo yunohost user list --output-as json | grep -q "\"username\": \"${1}\""
@@ -8,7 +11,11 @@ ynh_user_exists() {
 
 # Retrieve a user information
 #
-# usage: ynh_user_info username key
+# example: mail=$(ynh_user_get_info 'toto' 'mail')
+#
+# usage: ynh_user_get_info username key
+# | arg: username - the username to retrieve info from
+# | arg: key - the key to retrieve
 # | ret: string - the key's value
 ynh_user_get_info() {
     sudo yunohost user info "${1}" --output-as plain | ynh_get_plain_key "${2}"
