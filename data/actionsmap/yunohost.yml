@@ -243,10 +243,6 @@ domain:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                -r:
-                    full: --raw
-                    help: Return domains as a bash-usable list instead of JSON
-                    action: store_true
                 -f:
                     full: --filter
                     help: LDAP filter used to search

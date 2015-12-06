@@ -39,12 +39,11 @@ from moulinette.utils.log import getActionLogger
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list(auth, raw=False, filter=None, limit=None, offset=None):
+def domain_list(auth, filter=None, limit=None, offset=None):
     """
     List domains
 
     Keyword argument:
-        raw -- Return domains as a bash-usable list instead of JSON
         filter -- LDAP filter used to search
         offset -- Starting number for domain fetching
         limit -- Maximum number of domain fetched
@@ -66,11 +65,7 @@ def domain_list(auth, raw=False, filter=None, limit=None, offset=None):
         for domain in result[offset:offset+limit]:
             result_list.append(domain['virtualdomain'][0])
 
-    if raw:
-        for domain in result_list:
-            print domain
-    else:
-        return { 'domains': result_list }
+    return { 'domains': result_list }
 
 
 def domain_add(auth, domain, dyndns=False):
