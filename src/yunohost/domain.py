@@ -34,6 +34,9 @@ import errno
 from urllib import urlopen
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
+
+logger = getActionLogger('yunohost.domain')
 
 
 def domain_list(auth, raw=False, filter=None, limit=None, offset=None):
@@ -175,7 +178,7 @@ def domain_add(auth, domain, dyndns=False):
 
     hook_callback('post_domain_add', args=[domain])
 
-    msignals.display(m18n.n('domain_created'), 'success')
+    logger.success(m18n.n('domain_created'))
 
 
 def domain_remove(auth, domain, force=False):
@@ -217,7 +220,7 @@ def domain_remove(auth, domain, force=False):
 
     hook_callback('post_domain_remove', args=[domain])
 
-    msignals.display(m18n.n('domain_deleted'), 'success')
+    logger.success(m18n.n('domain_deleted'))
 
 
 def domain_dns_conf(domain, ttl=None):
