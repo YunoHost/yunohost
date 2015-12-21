@@ -24,15 +24,26 @@
 ## Packages versions
 
 def get_version(package):
+    """Get the version of package"""
     from moulinette.utils import process
     return process.check_output(
         "dpkg-query -W -f='${{Version}}' {0}".format(package)
     ).strip()
 
 def get_versions(*args, **kwargs):
+    """Get the version of each YunoHost package"""
     from collections import OrderedDict
     return OrderedDict([
         ('moulinette', get_version('moulinette')),
         ('yunohost', get_version('yunohost')),
         ('yunohost-admin', get_version('yunohost-admin')),
     ])
+
+def has_min_version(min_version, package='yunohost', strict=False):
+    """Check if a package has minimum version"""
+    from distutils.version import LooseVersion, StrictVersion
+    cmp_cls = StrictVersion if strict else LooseVersion
+    version = cmp_cls(get_version(package))
+    if version >= cmp_cls(min_version):
+        return True
+    return False
