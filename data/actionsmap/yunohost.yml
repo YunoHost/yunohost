@@ -1201,7 +1201,9 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Main domain change tool
-            api: PUT /domains/main
+            api:
+                - GET /domains/main
+                - PUT /domains/main
             configuration:
                 authenticate: all
             arguments:
