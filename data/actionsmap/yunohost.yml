@@ -1200,13 +1200,6 @@ tools:
 
         ### tools_maindomain()
         maindomain:
-            action_help: Get main domain
-            api: GET /domains/main
-            configuration:
-                authenticate: all
-
-        ### tools_maindomain()
-        maindomain:
             action_help: Main domain change tool
             api: PUT /domains/main
             configuration:
