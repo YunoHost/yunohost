@@ -1,3 +1,22 @@
+yunohost (2.3.5) testing; urgency=low
+
+  [ opi ]
+  * [enh] Get app label for installed app in app list
+  * [enh] Short cache on handlebars templates
+
+  [ Jérôme Lebleu ]
+  * [enh] Allow to pass the admin password as argument in the cli
+  * [enh] Add main domain GET route
+  * [enh] Provide bash helpers for MySQL databases and app settings (wip #97)
+  * [enh] Rename ynh_password bash helper to ynh_string_random
+  * [fix] Check app min_version with yunohost package (fixbug #113)
+  * [fix] Use --output-as instead of deprecated options
+  * [fix] Prevent error if unset variable is treated in utils helper
+  * [doc] Improve usage and add examples for user helpers
+  * [i18n] Update translations from Transifex belatedly
+
+ -- Jérôme Lebleu <jerome@maroufle.fr>  Thu, 24 Dec 2015 10:55:36 +0100
+
 yunohost (2.3.4) testing; urgency=low
 
   [ Jérôme Lebleu ]
