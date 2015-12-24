@@ -1,0 +1,18 @@
+# Get an application setting
+#
+# usage: ynh_app_setting_get app key
+# | arg: app - the application id
+# | arg: key - the setting to get
+ynh_app_setting_get() {
+    sudo yunohost app setting "$1" "$2" --output-as plain
+}
+
+# Set an application setting
+#
+# usage: ynh_app_setting_set app key value
+# | arg: app - the application id
+# | arg: key - the setting name to set
+# | arg: value - the setting value to set
+ynh_app_setting_set() {
+    sudo yunohost app setting "$1" "$2" -v "$3"
+}

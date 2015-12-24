@@ -66,6 +66,10 @@ def _parse_cli_args():
         action='store_true', default=False,
         help="Don't produce any output",
     )
+    parser.add_argument('--admin-password',
+        default=None, dest='password', metavar='PASSWORD',
+        help="The admin password to use to authenticate",
+    )
     # deprecated arguments
     parser.add_argument('--plain',
         action='store_true', default=False, help=argparse.SUPPRESS
@@ -199,6 +203,6 @@ if __name__ == '__main__':
     from moulinette import cli
     ret = cli(_retrieve_namespaces(), args,
             use_cache=opts.use_cache, output_as=opts.output_as,
-            parser_kwargs={'top_parser': parser}
+            password=opts.password, parser_kwargs={'top_parser': parser}
     )
     sys.exit(ret)
