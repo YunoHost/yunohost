@@ -383,9 +383,14 @@ def app_upgrade(auth, app=[], url=None, file=None):
             for hook in os.listdir(app_tmp_folder +'/hooks'):
                 hook_add(app_id, app_tmp_folder +'/hooks/'+ hook)
 
+        # Retrieve arguments list for upgrade script
+        # TODO: Allow to specify arguments
+        args_list = _parse_args_from_manifest(manifest, 'upgrade')
+        args_list.append(app_id)
+
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
-        if hook_exec(app_tmp_folder +'/scripts/upgrade') != 0:
+        if hook_exec(app_tmp_folder +'/scripts/upgrade', args_list) != 0:
             raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
         else:
             now = int(time.time())
@@ -514,12 +519,11 @@ def app_install(auth, app, label=None, args=None):
 
     os.system('chown -R admin: '+ app_tmp_folder)
 
-    try:
-        if args is None:
-            args = ''
-        args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True))
-    except:
-        args_dict = {}
+    # Retrieve arguments list for install script
+    args_dict = {} if not args else \
+        dict(urlparse.parse_qsl(args, keep_blank_values=True))
+    args_list = _parse_args_from_manifest(manifest, 'install', args_dict)
+    args_list.append(app_id)
 
     # Execute App install script
     os.system('chown -hR admin: %s' % install_tmp)
@@ -527,7 +531,7 @@ def app_install(auth, app, label=None, args=None):
     os.system('cp %s/manifest.json %s' % (app_tmp_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
     try:
-        if hook_exec(app_tmp_folder + '/scripts/install', args_dict) == 0:
+        if hook_exec(app_tmp_folder + '/scripts/install', args_list) == 0:
             # Store app status
             with open(app_setting_path + '/status.json', 'w+') as f:
                 json.dump(status, f)
@@ -584,7 +588,9 @@ def app_remove(auth, app):
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove') == 0:
+    args_list = [app]
+
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args_list) == 0:
         msignals.display(m18n.n('app_removed', app), 'success')
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
@@ -1335,6 +1341,57 @@ def _encode_string(value):
     if isinstance(value, unicode):
         return value.encode('utf8')
     return value
+
+
+def _parse_args_from_manifest(manifest, action, args={}):
+    """Parse arguments needed for an action from the manifest
+
+    Retrieve specified arguments for the action from the manifest, and parse
+    given args according to that. If some required arguments are not provided,
+    its values will be asked if interaction is possible.
+    Parsed arguments will be returned as a list of strings to pass directly
+    to the proper script.
+
+    Keyword arguments:
+        manifest -- The app manifest to use
+        action -- The action to retrieve arguments for
+        args -- A dictionnary of arguments to parse
+
+    """
+    args_list = []
+    try:
+        action_args = manifest['arguments'][action]
+    except KeyError:
+        logger.debug("no arguments found for '%s' in '%s'", action, path)
+    else:
+        for arg in action_args:
+            if arg['name'] in args:
+                if 'choices' in arg and args[arg['name']] not in arg['choices']:
+                    raise MoulinetteError(errno.EINVAL,
+                        m18n.n('hook_choice_invalid', args[arg['name']]))
+                args_list.append(args[arg['name']])
+            else:
+                if os.isatty(1) and 'ask' in arg:
+                    # Retrieve proper ask string
+                    ask_string = _value_for_locale(arg['ask'])
+
+                    # Append extra strings
+                    if 'choices' in arg:
+                        ask_string += ' ({:s})'.format('|'.join(arg['choices']))
+                    if 'default' in arg:
+                        ask_string += ' (default: {:s})'.format(arg['default'])
+
+                    input_string = msignals.prompt(ask_string)
+                    if not input_string and 'default' in arg:
+                        input_string = arg['default']
+
+                    args_list.append(input_string)
+                elif 'default' in arg:
+                    args_list.append(arg['default'])
+                else:
+                    raise MoulinetteError(errno.EINVAL,
+                        m18n.n('hook_argument_missing', arg['name']))
+    return args_list
 
 
 def is_true(arg):
