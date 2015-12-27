@@ -1345,14 +1345,6 @@ hook:
                     help: Ordered list of arguments to pass to the script
                     nargs: "*"
 
-        ### hook_check()
-        check:
-            action_help: Parse the script file and get arguments
-            api: GET /hook/check
-            arguments:
-                file:
-                    help: File to check
-
         ### hook_exec()
         exec:
             action_help: Execute hook from a file with arguments

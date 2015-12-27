@@ -275,34 +275,13 @@ def hook_callback(action, hooks=[], args=None):
     return result
 
 
-def hook_check(file):
-    """
-    Parse the script file and get arguments
-
-    Keyword argument:
-        file -- File to check
-
-    """
-    try:
-        with open(file[:file.index('scripts/')] + 'manifest.json') as f:
-            manifest = json.loads(str(f.read()))
-    except:
-        raise MoulinetteError(errno.EIO, m18n.n('app_manifest_invalid'))
-
-    action = file[file.index('scripts/') + 8:]
-    if 'arguments' in manifest and action in manifest['arguments']:
-        return manifest['arguments'][action]
-    else:
-        return {}
-
-
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
     """
     Execute hook from a file with arguments
 
     Keyword argument:
         path -- Path of the script to execute
-        args -- Arguments to pass to the script
+        args -- A list of arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
         no_trace -- Do not print each command that will be executed
 
@@ -316,52 +295,15 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
     if not os.path.isfile(path):
         raise MoulinetteError(errno.EIO, m18n.g('file_not_exist'))
 
-    if isinstance(args, list):
-        arg_list = args
-    else:
-        required_args = hook_check(path)
-        if args is None:
-            args = {}
-
-        arg_list = []
-        for arg in required_args:
-            if arg['name'] in args:
-                if 'choices' in arg and args[arg['name']] not in arg['choices']:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('hook_choice_invalid', args[arg['name']]))
-                arg_list.append(args[arg['name']])
-            else:
-                if os.isatty(1) and 'ask' in arg:
-                    # Retrieve proper ask string
-                    ask_string = _value_for_locale(arg['ask'])
-
-                    # Append extra strings
-                    if 'choices' in arg:
-                        ask_string += ' ({:s})'.format('|'.join(arg['choices']))
-                    if 'default' in arg:
-                        ask_string += ' (default: {:s})'.format(arg['default'])
-
-                    input_string = msignals.prompt(ask_string)
-
-                    if input_string == '' and 'default' in arg:
-                        input_string = arg['default']
-
-                    arg_list.append(input_string)
-                elif 'default' in arg:
-                    arg_list.append(arg['default'])
-                else:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('hook_argument_missing', arg['name']))
-
     # Construct command variables
     cmd_fdir, cmd_fname = os.path.split(path)
     cmd_fname = './{0}'.format(cmd_fname)
 
     cmd_args = ''
-    if arg_list:
+    if args and isinstance(args, list):
         # Concatenate arguments and escape them with double quotes to prevent
         # bash related issue if an argument is empty and is not the last
-        cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in arg_list))
+        cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in args))
 
     # Construct command to execute
     command = ['sudo', '-u', 'admin', '-H', 'sh', '-c']
