@@ -320,13 +320,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if app_id in upgraded_apps:
             continue
 
-        if '__' in app_id:
-            original_app_id = app_id[:app_id.index('__')]
-        else:
-            original_app_id = app_id
-
         current_app_dict = app_info(app_id,  raw=True)
-        new_app_dict     = app_info(original_app_id, raw=True)
+        new_app_dict     = app_info(app_id, raw=True)
 
         if file:
             manifest = _extract_app_from_file(file)
@@ -355,27 +350,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Retrieve current app status
         status = _get_app_status(app_id)
         status['remote'] = manifest.get('remote', None)
-
-        if original_app_id != app_id:
-            # Replace original_app_id with the forked one in scripts
-            for script in os.listdir(app_tmp_folder +'/scripts'):
-                #TODO: do it with sed ?
-                if script[:1] != '.':
-                    with open(app_tmp_folder +'/scripts/'+ script, "r") as sources:
-                        lines = sources.readlines()
-                    with open(app_tmp_folder +'/scripts/'+ script, "w") as sources:
-                        for line in lines:
-                            sources.write(re.sub(r''+ original_app_id +'', app_id, line))
-
-            if 'hooks' in os.listdir(app_tmp_folder):
-                for hook in os.listdir(app_tmp_folder +'/hooks'):
-                    #TODO: do it with sed ?
-                    if hook[:1] != '.':
-                        with open(app_tmp_folder +'/hooks/'+ hook, "r") as sources:
-                            lines = sources.readlines()
-                        with open(app_tmp_folder +'/hooks/'+ hook, "w") as sources:
-                            for line in lines:
-                                sources.write(re.sub(r''+ original_app_id +'', app_id, line))
 
         # Clean hooks and add new ones
         hook_remove(app_id)
@@ -467,30 +441,8 @@ def app_install(auth, app, label=None, args=None):
             raise MoulinetteError(errno.EEXIST,
                                   m18n.n('app_already_installed', app_id))
 
-        app_id_forked = app_id + '__' + str(instance_number)
-
-        # Replace app_id with the new one in scripts
-        for script in os.listdir(app_tmp_folder +'/scripts'):
-            #TODO: do it with sed ?
-            if script[:1] != '.':
-                with open(app_tmp_folder +'/scripts/'+ script, "r") as sources:
-                    lines = sources.readlines()
-                with open(app_tmp_folder +'/scripts/'+ script, "w") as sources:
-                    for line in lines:
-                        sources.write(re.sub(r''+ app_id +'', app_id_forked, line))
-
-        if 'hooks' in os.listdir(app_tmp_folder):
-            for hook in os.listdir(app_tmp_folder +'/hooks'):
-                #TODO: do it with sed ?
-                if hook[:1] != '.':
-                    with open(app_tmp_folder +'/hooks/'+ hook, "r") as sources:
-                        lines = sources.readlines()
-                    with open(app_tmp_folder +'/hooks/'+ hook, "w") as sources:
-                        for line in lines:
-                            sources.write(re.sub(r''+ app_id +'', app_id_forked, line))
-
-        # Change app_id for the rest of the process
-        app_id = app_id_forked
+        # Change app_id to the forked app id
+        app_id = app_id + '__' + str(instance_number)
 
     # Prepare App settings
     app_setting_path = apps_setting_path +'/'+ app_id
