@@ -1320,14 +1320,16 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         logger.debug("no arguments found for '%s' in '%s'", action, path)
     else:
         for arg in action_args:
+            arg_name = arg['name']
             arg_value = None
 
             # Attempt to retrieve argument value
-            if arg['name'] in args:
-                if 'choices' in arg and args[arg['name']] not in arg['choices']:
+            if arg_name in args:
+                arg_value = args[arg_name]
+                if 'choices' in arg and arg_value not in arg['choices']:
                     raise MoulinetteError(errno.EINVAL,
-                        m18n.n('hook_choice_invalid', args[arg['name']]))
-                arg_value = args[arg['name']]
+                        m18n.n('app_argument_choice_invalid',
+                            name=arg_name, choices=', '.join(arg['choices'])))
             else:
                 if os.isatty(1) and 'ask' in arg:
                     # Retrieve proper ask string
@@ -1348,7 +1350,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     arg_value = arg['default']
                 else:
                     raise MoulinetteError(errno.EINVAL,
-                        m18n.n('hook_argument_missing', arg['name']))
+                        m18n.n('app_argument_missing', name=arg_name))
 
             # Validate argument value
             # TODO: Add more type, e.g. boolean
@@ -1357,19 +1359,19 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                 if arg_value not in domain_list(auth)['domains']:
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('app_argument_invalid',
-                            name=arg['name'], error=m18n.n('domain_unknown')))
+                            name=arg_name, error=m18n.n('domain_unknown')))
             elif arg_type == 'user':
                 try:
                     user_info(auth, arg_value)
                 except MoulinetteError as e:
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('app_argument_invalid',
-                            name=arg['name'], error=e.strerror))
+                            name=arg_name, error=e.strerror))
             elif arg_type == 'app':
                 if not _is_installed(arg_value):
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('app_argument_invalid',
-                            name=arg['name'], error=m18n.n('app_unknown')))
+                            name=arg_name, error=m18n.n('app_unknown')))
             args_list.append(arg_value)
     return args_list
 

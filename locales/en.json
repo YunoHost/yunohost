@@ -29,7 +29,9 @@
     "app_extraction_failed" : "Unable to extract installation files",
     "app_install_files_invalid" : "Invalid installation files",
     "app_manifest_invalid" : "Invalid app manifest",
+    "app_argument_choice_invalid" : "Invalid choice for argument '{name:s}', it must be one of {choices:s}",
     "app_argument_invalid" : "Invalid value for argument '{name:s}': {error:s}",
+    "app_argument_missing" : "Missing argument '{:s}'",
     "app_sources_fetch_failed" : "Unable to fetch sources files",
     "ssowat_conf_updated" : "SSOwat persistent configuration successfully updated",
     "ssowat_conf_generated" : "SSOwat configuration successfully generated",
@@ -86,8 +88,6 @@
 
     "hook_list_by_invalid" : "Invalid property to list hook by",
     "hook_name_unknown" : "Unknown hook name '{:s}'",
-    "hook_choice_invalid" : "Invalid choice '{:s}'",
-    "hook_argument_missing" : "Missing argument '{:s}'",
     "hook_exec_failed" : "Script execution failed",
     "hook_exec_not_terminated" : "Script execution hasn’t terminated",
 
