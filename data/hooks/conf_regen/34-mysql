@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e 
+set -e
 
 force=$1
 
@@ -26,7 +26,7 @@ if [[ "$(safe_copy my.cnf /etc/mysql/my.cnf | tail -n1)" == "True" ]]; then
 fi
 
 if [ ! -f /etc/yunohost/mysql ]; then
-    [[ $(/bin/ps aux | grep mysqld | grep -vc "grep") == "0" ]] \
+    [[ $(/bin/ps aux | grep '[m]ysqld') == "0" ]] \
       && sudo service mysql start
 
     mysql_password=$(randpass 10 0)
