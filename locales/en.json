@@ -29,6 +29,7 @@
     "app_extraction_failed" : "Unable to extract installation files",
     "app_install_files_invalid" : "Invalid installation files",
     "app_manifest_invalid" : "Invalid app manifest",
+    "app_argument_invalid" : "Invalid value for argument '{name:s}': {error:s}",
     "app_sources_fetch_failed" : "Unable to fetch sources files",
     "ssowat_conf_updated" : "SSOwat persistent configuration successfully updated",
     "ssowat_conf_generated" : "SSOwat configuration successfully generated",

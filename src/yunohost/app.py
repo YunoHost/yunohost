@@ -359,7 +359,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
-        args_list = _parse_args_from_manifest(manifest, 'upgrade')
+        args_list = _parse_args_from_manifest(manifest, 'upgrade', auth=auth)
         args_list.append(app_id)
 
         # Execute App upgrade script
@@ -474,7 +474,7 @@ def app_install(auth, app, label=None, args=None):
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
-    args_list = _parse_args_from_manifest(manifest, 'install', args_dict)
+    args_list = _parse_args_from_manifest(manifest, 'install', args_dict, auth)
     args_list.append(app_id)
 
     # Execute App install script
@@ -1295,7 +1295,7 @@ def _encode_string(value):
     return value
 
 
-def _parse_args_from_manifest(manifest, action, args={}):
+def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     """Parse arguments needed for an action from the manifest
 
     Retrieve specified arguments for the action from the manifest, and parse
@@ -1310,6 +1310,9 @@ def _parse_args_from_manifest(manifest, action, args={}):
         args -- A dictionnary of arguments to parse
 
     """
+    from yunohost.domain import domain_list
+    from yunohost.user import user_info
+
     args_list = []
     try:
         action_args = manifest['arguments'][action]
@@ -1317,11 +1320,14 @@ def _parse_args_from_manifest(manifest, action, args={}):
         logger.debug("no arguments found for '%s' in '%s'", action, path)
     else:
         for arg in action_args:
+            arg_value = None
+
+            # Attempt to retrieve argument value
             if arg['name'] in args:
                 if 'choices' in arg and args[arg['name']] not in arg['choices']:
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('hook_choice_invalid', args[arg['name']]))
-                args_list.append(args[arg['name']])
+                arg_value = args[arg['name']]
             else:
                 if os.isatty(1) and 'ask' in arg:
                     # Retrieve proper ask string
@@ -1335,14 +1341,36 @@ def _parse_args_from_manifest(manifest, action, args={}):
 
                     input_string = msignals.prompt(ask_string)
                     if not input_string and 'default' in arg:
-                        input_string = arg['default']
-
-                    args_list.append(input_string)
+                        arg_value = arg['default']
+                    else:
+                        arg_value = input_string
                 elif 'default' in arg:
-                    args_list.append(arg['default'])
+                    arg_value = arg['default']
                 else:
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('hook_argument_missing', arg['name']))
+
+            # Validate argument value
+            # TODO: Add more type, e.g. boolean
+            arg_type = arg.get('type', 'string')
+            if arg_type == 'domain':
+                if arg_value not in domain_list(auth)['domains']:
+                    raise MoulinetteError(errno.EINVAL,
+                        m18n.n('app_argument_invalid',
+                            name=arg['name'], error=m18n.n('domain_unknown')))
+            elif arg_type == 'user':
+                try:
+                    user_info(auth, arg_value)
+                except MoulinetteError as e:
+                    raise MoulinetteError(errno.EINVAL,
+                        m18n.n('app_argument_invalid',
+                            name=arg['name'], error=e.strerror))
+            elif arg_type == 'app':
+                if not _is_installed(arg_value):
+                    raise MoulinetteError(errno.EINVAL,
+                        m18n.n('app_argument_invalid',
+                            name=arg['name'], error=m18n.n('app_unknown')))
+            args_list.append(arg_value)
     return args_list
 
 
