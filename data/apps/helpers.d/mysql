@@ -46,9 +46,9 @@ ynh_mysql_create_db() {
 
     # grant all privilegies to user
     if [[ $# -gt 1 ]]; then
-        sql+="GRANT ALL PRIVILEGES ON ${db}.* TO '${2}'@'localhost'"
+        sql+=" GRANT ALL PRIVILEGES ON ${db}.* TO '${2}'@'localhost'"
         [[ -n ${3:-} ]] && sql+=" IDENTIFIED BY '${3}'"
-        sql+=";"
+        sql+=" WITH GRANT OPTION;"
     fi
 
     ynh_mysql_execute_as_root "$sql"
