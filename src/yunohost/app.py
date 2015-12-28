@@ -1326,10 +1326,6 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             # Attempt to retrieve argument value
             if arg_name in args:
                 arg_value = args[arg_name]
-                if 'choices' in arg and arg_value not in arg['choices']:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('app_argument_choice_invalid',
-                            name=arg_name, choices=', '.join(arg['choices'])))
             else:
                 if os.isatty(1) and 'ask' in arg:
                     # Retrieve proper ask string
@@ -1337,7 +1333,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
 
                     # Append extra strings
                     if 'choices' in arg:
-                        ask_string += ' ({:s})'.format('|'.join(arg['choices']))
+                        ask_string += ' [{:s}]'.format(' | '.join(arg['choices']))
                     if 'default' in arg:
                         ask_string += ' (default: {:s})'.format(arg['default'])
 
@@ -1353,6 +1349,10 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                         m18n.n('app_argument_missing', name=arg_name))
 
             # Validate argument value
+            if 'choices' in arg and arg_value not in arg['choices']:
+                raise MoulinetteError(errno.EINVAL,
+                    m18n.n('app_argument_choice_invalid',
+                        name=arg_name, choices=', '.join(arg['choices'])))
             # TODO: Add more type, e.g. boolean
             arg_type = arg.get('type', 'string')
             if arg_type == 'domain':
