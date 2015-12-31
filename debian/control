@@ -37,6 +37,7 @@ Depends: ${python:Depends}, ${misc:Depends},
  rspamd, rmilter, memcached, opendkim-tools
 Recommends: yunohost-admin,
  bash-completion, rsyslog, ntp, openssh-server,
+ inetutils-ping | iputils-ping,
  php5-gd, php5-curl, php-gettext, php5-mcrypt,
  udisks-glue, unattended-upgrades,
  libdbd-ldap-perl, libnet-dns-perl
