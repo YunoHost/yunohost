@@ -444,6 +444,12 @@ def app_install(auth, app, label=None, args=None):
         # Change app_id to the forked app id
         app_id = app_id + '__' + str(instance_number)
 
+    # Retrieve arguments list for install script
+    args_dict = {} if not args else \
+        dict(urlparse.parse_qsl(args, keep_blank_values=True))
+    args_list = _parse_args_from_manifest(manifest, 'install', args_dict, auth)
+    args_list.append(app_id)
+
     # Prepare App settings
     app_setting_path = apps_setting_path +'/'+ app_id
 
@@ -470,12 +476,6 @@ def app_install(auth, app, label=None, args=None):
         app_setting(app_id, 'label', manifest['name'])
 
     os.system('chown -R admin: '+ app_tmp_folder)
-
-    # Retrieve arguments list for install script
-    args_dict = {} if not args else \
-        dict(urlparse.parse_qsl(args, keep_blank_values=True))
-    args_list = _parse_args_from_manifest(manifest, 'install', args_dict, auth)
-    args_list.append(app_id)
 
     # Execute App install script
     os.system('chown -hR admin: %s' % install_tmp)
