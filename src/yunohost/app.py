@@ -788,7 +788,7 @@ def app_setting(app, key, value=None, delete=False):
         try:
             return app_settings[key]
         except:
-            logger.exception("cannot get app setting '%s' for '%s'", key, app)
+            logger.info("cannot get app setting '%s' for '%s'", key, app)
             return None
     else:
         yaml_settings=['redirected_urls','redirected_regex']
