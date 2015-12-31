@@ -18,9 +18,12 @@ cd /usr/share/yunohost/templates/rmilter
 # Copy Rmilter configuration
 safe_copy rmilter.conf /etc/rmilter.conf
 
+# Override socket configuration
+safe_copy rmilter.socket /etc/systemd/system/rmilter.socket
+
 # Create the PID directory
-sudo mkdir -p /var/run/rmilter
-sudo chown _rmilter: /var/run/rmilter
+sudo mkdir -p /run/rmilter
+sudo chown -hR _rmilter: /run/rmilter
 
 # Create DKIM key for each YunoHost domain
 sudo mkdir -p /etc/dkim
@@ -38,4 +41,7 @@ for domain in $domain_list; do
     sudo chmod 400      /etc/dkim/$domain.mail.key
 done
 
-sudo service rmilter restart
+# Reload systemd daemon and stop rmilter service to take into account the
+# new configuration. It will be started again by the socket as needed.
+sudo systemctl daemon-reload
+sudo systemctl stop rmilter.service 2>&1 || true
