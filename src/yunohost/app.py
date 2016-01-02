@@ -1344,15 +1344,22 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                         arg_value = input_string
                 elif 'default' in arg:
                     arg_value = arg['default']
-                else:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('app_argument_missing', name=arg_name))
 
             # Validate argument value
+            if not arg_value and not arg.get('optional', False):
+                raise MoulinetteError(errno.EINVAL,
+                    m18n.n('app_argument_required', name=arg_name))
+            elif not arg_value:
+                args_list.append('')
+                continue
+
+            # Validate argument choice
             if 'choices' in arg and arg_value not in arg['choices']:
                 raise MoulinetteError(errno.EINVAL,
                     m18n.n('app_argument_choice_invalid',
                         name=arg_name, choices=', '.join(arg['choices'])))
+
+            # Validate argument type
             # TODO: Add more type, e.g. boolean
             arg_type = arg.get('type', 'string')
             if arg_type == 'domain':
