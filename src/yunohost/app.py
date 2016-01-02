@@ -1317,7 +1317,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     try:
         action_args = manifest['arguments'][action]
     except KeyError:
-        logger.debug("no arguments found for '%s' in '%s'", action, path)
+        logger.debug("no arguments found for '%s' in manifest", action)
     else:
         for arg in action_args:
             arg_name = arg['name']
