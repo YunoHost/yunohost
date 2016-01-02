@@ -537,8 +537,9 @@ def service_safecopy(service, new_conf_file, conf_file, force=False):
     else:
         new_hash = previous_hash
         if (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
-            logger.warning(m18n.n('service_configuration_conflict',
-                file=conf_file, diff=''.join(diff)))
+            logger.warning('{0} {1}'.format(
+                m18n.n('service_configuration_conflict', file=conf_file),
+                m18n.n('show_diff', diff=''.join(diff))))
 
     # Remove the backup file if the configuration has not changed
     if new_hash == previous_hash:
