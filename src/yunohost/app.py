@@ -1321,6 +1321,9 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     else:
         for arg in action_args:
             arg_name = arg['name']
+            arg_type = arg.get('type', 'string')
+            arg_default = arg.get('default', None)
+            arg_choices = arg.get('choices', [])
             arg_value = None
 
             # Attempt to retrieve argument value
@@ -1332,18 +1335,23 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     ask_string = _value_for_locale(arg['ask'])
 
                     # Append extra strings
-                    if 'choices' in arg:
-                        ask_string += ' [{:s}]'.format(' | '.join(arg['choices']))
-                    if 'default' in arg:
-                        ask_string += ' (default: {:s})'.format(arg['default'])
+                    if arg_type == 'boolean':
+                        ask_string += ' [0 | 1]'
+                        if arg_default is not None:
+                            arg_default = 1 if arg_default else 0
+                    elif arg_choices:
+                        ask_string += ' [{0}]'.format(' | '.join(arg_choices))
+                    if arg_default is not None:
+                        ask_string += ' (default: {0})'.format(arg_default)
 
                     input_string = msignals.prompt(ask_string)
-                    if not input_string and 'default' in arg:
-                        arg_value = arg['default']
+                    if (input_string == '' or input_string is None) \
+                            and arg_default is not None:
+                        arg_value = arg_default
                     else:
                         arg_value = input_string
-                elif 'default' in arg:
-                    arg_value = arg['default']
+                elif arg_default is not None:
+                    arg_value = arg_default
 
             # Validate argument value
             if not arg_value and not arg.get('optional', False):
@@ -1354,14 +1362,12 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                 continue
 
             # Validate argument choice
-            if 'choices' in arg and arg_value not in arg['choices']:
+            if arg_choices and arg_value not in arg_choices:
                 raise MoulinetteError(errno.EINVAL,
                     m18n.n('app_argument_choice_invalid',
-                        name=arg_name, choices=', '.join(arg['choices'])))
+                        name=arg_name, choices=', '.join(arg_choices)))
 
             # Validate argument type
-            # TODO: Add more type, e.g. boolean
-            arg_type = arg.get('type', 'string')
             if arg_type == 'domain':
                 if arg_value not in domain_list(auth)['domains']:
                     raise MoulinetteError(errno.EINVAL,
@@ -1379,6 +1385,18 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('app_argument_invalid',
                             name=arg_name, error=m18n.n('app_unknown')))
+            elif arg_type == 'boolean':
+                if isinstance(arg_value, bool):
+                    arg_value = 1 if arg_value else 0
+                else:
+                    try:
+                        arg_value = int(arg_value)
+                        if arg_value not in [0, 1]:
+                            raise ValueError()
+                    except (TypeError, ValueError):
+                        raise MoulinetteError(errno.EINVAL,
+                            m18n.n('app_argument_choice_invalid',
+                                name=arg_name, choices='0, 1'))
             args_list.append(arg_value)
     return args_list
 
