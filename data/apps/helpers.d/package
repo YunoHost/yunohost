@@ -1,0 +1,78 @@
+# Check either a package is installed or not
+#
+# example: ynh_package_is_installed 'yunohost' && echo "ok"
+#
+# usage: ynh_package_is_installed name
+# | arg: name - the package name to check
+ynh_package_is_installed() {
+    dpkg-query -W -f '${Status}' "$1" 2>/dev/null \
+        | grep -c "ok installed" &>/dev/null
+}
+
+# Get the version of an installed package
+#
+# example: version=$(ynh_package_version 'yunohost')
+#
+# usage: ynh_package_version name
+# | arg: name - the package name to get version
+# | ret: the version or an empty string
+ynh_package_version() {
+    if ynh_package_is_installed "$1"; then
+        dpkg-query -W -f '${Version}' "$1" 2>/dev/null
+    else
+        echo ''
+    fi
+}
+
+# Install package(s)
+#
+# usage: ynh_package_install name [name [...]]
+# | arg: name - the package name to install
+ynh_package_install() {
+    sudo apt-get -y -qq install $@
+}
+
+# Build and install a package from an equivs control file
+#
+# example: generate an empty control file with `equivs-control`, adjust its
+#          content and use helper to build and install the package:
+#              ynh_package_install_from_equivs /path/to/controlfile
+#
+# usage: ynh_package_install_from_equivs controlfile
+# | arg: controlfile - path of the equivs control file
+ynh_package_install_from_equivs() {
+    ynh_package_is_installed 'equivs' \
+        || ynh_package_install equivs
+
+    # retrieve package information
+    pkgname=$(grep '^Package: ' $1 | cut -d' ' -f 2)
+    pkgversion=$(grep '^Version: ' $1 | cut -d' ' -f 2)
+    [[ -z "$pkgname" || -z "$pkgversion" ]] \
+        && echo "Invalid control file" && exit 1
+    controlfile=$(readlink -f "$1")
+
+    # build and install the package
+    TMPDIR=$(ynh_mkdir_tmp)
+    (cd $TMPDIR \
+     && equivs-build "$controlfile" 1>/dev/null \
+     && sudo dpkg --force-depends \
+          -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
+     && sudo apt-get -f -y -qq install) \
+        && ([[ -n "$TMPDIR" ]] && rm -rf $TMPDIR)
+}
+
+# Remove package(s)
+#
+# usage: ynh_package_remove name [name [...]]
+# | arg: name - the package name to remove
+ynh_package_remove() {
+    sudo apt-get -y -qq remove $@
+}
+
+# Remove package(s) and their uneeded dependencies
+#
+# usage: ynh_package_autoremove name [name [...]]
+# | arg: name - the package name to remove
+ynh_package_autoremove() {
+    sudo apt-get -y -qq autoremove $@
+}
