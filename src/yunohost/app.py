@@ -1326,6 +1326,11 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             arg_choices = arg.get('choices', [])
             arg_value = None
 
+            # Transpose default value for boolean type and set it to
+            # false if not defined.
+            if arg_type == 'boolean':
+                arg_default = 1 if arg_default else 0
+
             # Attempt to retrieve argument value
             if arg_name in args:
                 arg_value = args[arg_name]
@@ -1337,8 +1342,6 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     # Append extra strings
                     if arg_type == 'boolean':
                         ask_string += ' [0 | 1]'
-                        if arg_default is not None:
-                            arg_default = 1 if arg_default else 0
                     elif arg_choices:
                         ask_string += ' [{0}]'.format(' | '.join(arg_choices))
                     if arg_default is not None:
