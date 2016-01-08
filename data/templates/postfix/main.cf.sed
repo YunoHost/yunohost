@@ -127,9 +127,6 @@ smtpd_recipient_restrictions =
     reject_unauth_destination,
     permit
 
-# Use SPF
-policy-spf_time_limit = 3600s
-
 # SRS
 sender_canonical_maps = regexp:/etc/postfix/sender_canonical
 sender_canonical_classes = envelope_sender
