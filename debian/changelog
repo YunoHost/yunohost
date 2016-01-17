@@ -1,36 +1,32 @@
 yunohost (2.3.6) testing; urgency=low
 
   [ Jérôme Lebleu ]
-  * [fix] Update moulinette dependency minimum version
-  * [fix] Do not block while set main domain
   * [enh] Pass app id to scripts and remove hook_check action
-  * [fix] Add GRANT OPTION in ynh_mysql_create_db helper
   * [enh] Rely only on app_id argument for multi-instances apps
   * [enh] Add support for app argument 'type' defined in the manifest
-  * [i18n] Review translations and keys related to app arguments
-  * [fix] Validate app argument choice for input value too
-
-  [ Sebastien Badia ]
-  * hooks: Use a more elegant grep command for mysql process check
-
-  [ Jérôme Lebleu ]
-  * [fix] Log rotation is already handled by WatchedFileHandler (fixbug #137)
+  * [enh] Integrate 'optional' key of arguments in app manifest
+  * [enh] Implement 'boolean' argument type support in app manifest
   * [enh] Add ping util as recommended package
+  * [enh] Add a helper to check if a user exists on the system
+  * [enh] Provide bash helpers for packages manipulation (wip #97)
+  * [enh] Add ynh_package_update helper and call it in install_from_equivs
+  * [fix] Do not block while set main domain
+  * [fix] Add GRANT OPTION in ynh_mysql_create_db helper
+  * [fix] Validate app argument choice for input value too
+  * [fix] Log rotation is already handled by WatchedFileHandler (fixbug #137)
   * [fix] Use rmilter as a socket-activated service
   * [fix] Parse app arguments before creating app folder and settings
   * [fix] Use INFO logging level if app setting is not found
   * [fix] Split service_configuration_conflict translation key (fixbug #136)
-  * [enh] Integrate 'optional' key of arguments in app manifest
-  * [fix] Correct debug message when no arguments found in the manifest
-  * [enh] Add a helper to check if a user exists on the system
-  * [enh] Provide bash helpers for packages manipulation (wip #97)
-  * [enh] Implement 'boolean' argument type support in app manifest
   * [fix] Set default value of boolean argument type to false if unset
   * [fix] Remove useless SPF setting in Postfix configuration (fixbug #150)
   * [fix] Add procmail to packages dependencies
-  * [enh] Add ynh_package_update helper and call it in install_from_equivs
+  * [i18n] Review translations and keys related to app arguments
 
- -- Jérôme Lebleu <jerome@maroufle.fr>  Sun, 17 Jan 2016 02:57:53 +0100
+  [ Sebastien Badia ]
+  * hooks: Use a more elegant grep command for mysql process check
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 17 Jan 2016 02:57:53 +0100
 
 yunohost (2.3.5) testing; urgency=low
 
@@ -49,7 +45,7 @@ yunohost (2.3.5) testing; urgency=low
   * [doc] Improve usage and add examples for user helpers
   * [i18n] Update translations from Transifex belatedly
 
- -- Jérôme Lebleu <jerome@maroufle.fr>  Thu, 24 Dec 2015 10:55:36 +0100
+ -- Jérôme Lebleu <jerome@yunohost.org>  Thu, 24 Dec 2015 10:55:36 +0100
 
 yunohost (2.3.4) testing; urgency=low
 
