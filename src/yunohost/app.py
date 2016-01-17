@@ -1357,7 +1357,8 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     arg_value = arg_default
 
             # Validate argument value
-            if not arg_value and not arg.get('optional', False):
+            if (arg_value is None or arg_value == '') \
+                    and not arg.get('optional', False):
                 raise MoulinetteError(errno.EINVAL,
                     m18n.n('app_argument_required', name=arg_name))
             elif not arg_value:
