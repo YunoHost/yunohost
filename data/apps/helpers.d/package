@@ -24,6 +24,13 @@ ynh_package_version() {
     fi
 }
 
+# Update package index files
+#
+# usage: ynh_package_update
+ynh_package_update() {
+    sudo apt-get -y -qq update
+}
+
 # Install package(s)
 #
 # usage: ynh_package_install name [name [...]]
@@ -50,6 +57,9 @@ ynh_package_install_from_equivs() {
     [[ -z "$pkgname" || -z "$pkgversion" ]] \
         && echo "Invalid control file" && exit 1
     controlfile=$(readlink -f "$1")
+
+    # update packages cache
+    ynh_package_update
 
     # build and install the package
     TMPDIR=$(ynh_mkdir_tmp)
