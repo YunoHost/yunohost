@@ -21,10 +21,6 @@ safe_copy rmilter.conf /etc/rmilter.conf
 # Override socket configuration
 safe_copy rmilter.socket /etc/systemd/system/rmilter.socket
 
-# Create the PID directory
-sudo mkdir -p /run/rmilter
-sudo chown -hR _rmilter: /run/rmilter
-
 # Create DKIM key for each YunoHost domain
 sudo mkdir -p /etc/dkim
 domain_list=$(sudo yunohost domain list --output-as plain)

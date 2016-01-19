@@ -34,7 +34,7 @@ Depends: ${python:Depends}, ${misc:Depends},
  nginx-extras (>=1.6.2), php5-fpm, php5-ldap, php5-intl,
  dnsmasq, openssl, avahi-daemon,
  ssowat, metronome,
- rspamd, rmilter, memcached, opendkim-tools
+ rspamd, rmilter (>=1.7.0), redis-server, opendkim-tools
 Recommends: yunohost-admin,
  bash-completion, rsyslog, ntp, openssh-server,
  inetutils-ping | iputils-ping,
