@@ -16,3 +16,12 @@ ynh_app_setting_get() {
 ynh_app_setting_set() {
     sudo yunohost app setting "$1" "$2" -v "$3"
 }
+
+# Delete an application setting
+#
+# usage: ynh_app_setting_delete app key
+# | arg: app - the application id
+# | arg: key - the setting to delete
+ynh_app_setting_delete() {
+    sudo yunohost app setting -d "$1" "$2"
+}
