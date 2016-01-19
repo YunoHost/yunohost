@@ -70,7 +70,7 @@ def backup_create(name=None, description=None, output_directory=None,
     # Validate what to backup
     if ignore_hooks and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_action_required'))
+            m18n.n('backup_action_required'))
 
     # Validate and define backup name
     timestamp = int(time.time())
@@ -78,12 +78,12 @@ def backup_create(name=None, description=None, output_directory=None,
         name = time.strftime('%Y%m%d-%H%M%S')
     if name in backup_list()['archives']:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_archive_name_exists'))
+            m18n.n('backup_archive_name_exists'))
 
     # Validate additional arguments
     if no_compress and not output_directory:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_output_directory_required'))
+            m18n.n('backup_output_directory_required'))
     if output_directory:
         output_directory = os.path.abspath(output_directory)
 
@@ -91,19 +91,17 @@ def backup_create(name=None, description=None, output_directory=None,
         if output_directory.startswith(archives_path) or \
            re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
                     output_directory):
-            logger.error("forbidden output directory '%'", output_directory)
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('backup_output_directory_forbidden'))
+                m18n.n('backup_output_directory_forbidden'))
 
         # Create the output directory
         if not os.path.isdir(output_directory):
-            logger.info("creating output directory '%s'", output_directory)
+            logger.debug("creating output directory '%s'", output_directory)
             os.makedirs(output_directory, 0750)
         # Check that output directory is empty
         elif no_compress and os.listdir(output_directory):
-            logger.error("not empty output directory '%'", output_directory)
             raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_output_directory_not_empty'))
+                m18n.n('backup_output_directory_not_empty'))
 
         # Define temporary directory
         if no_compress:
@@ -115,8 +113,8 @@ def backup_create(name=None, description=None, output_directory=None,
     if not tmp_dir:
         tmp_dir = "%s/tmp/%s" % (backup_path, name)
         if os.path.isdir(tmp_dir):
-            logger.warning("temporary directory for backup '%s' already exists",
-                           tmp_dir)
+            logger.debug("temporary directory for backup '%s' already exists",
+                tmp_dir)
             filesystem.rm(tmp_dir, recursive=True)
         filesystem.mkdir(tmp_dir, 0750, parents=True, uid='admin')
 
@@ -125,7 +123,7 @@ def backup_create(name=None, description=None, output_directory=None,
         if not ret['failed']:
             filesystem.rm(tmp_dir, True, True)
         else:
-            msignals.display(m18n.n('backup_cleaning_failed'), 'warning')
+            logger.warning(m18n.n('backup_cleaning_failed'))
 
     # Initialize backup info
     info = {
@@ -144,14 +142,12 @@ def backup_create(name=None, description=None, output_directory=None,
                 try:
                     hook_info('backup', hook)
                 except:
-                    logger.exception("backup hook '%s' not found", hook)
-                    msignals.display(m18n.n('backup_hook_unknown', hook=hook),
-                                     'error')
+                    logger.error(m18n.n('backup_hook_unknown', hook=hook))
                 else:
                     hooks_filtered.add(hook)
 
         if not hooks or hooks_filtered:
-            msignals.display(m18n.n('backup_running_hooks'))
+            logger.info(m18n.n('backup_running_hooks'))
             ret = hook_callback('backup', hooks_filtered, args=[tmp_dir])
             if ret['succeed']:
                 info['hooks'] = ret['succeed']
@@ -163,10 +159,8 @@ def backup_create(name=None, description=None, output_directory=None,
                     try:
                         i = hook_info('restore', h)
                     except:
-                        logger.exception("no restoration hook for '%s'", h)
-                        msignals.display(m18n.n('restore_hook_unavailable',
-                                                hook=h),
-                                         'warning')
+                        logger.warning(m18n.n('restore_hook_unavailable',
+                                hook=h), exc_info=1)
                     else:
                         for f in i['hooks']:
                             shutil.copy(f['path'], tmp_hooks_dir)
@@ -181,8 +175,7 @@ def backup_create(name=None, description=None, output_directory=None,
         if apps:
             for a in apps:
                 if a not in apps_list:
-                    logger.warning("app '%s' not found", a)
-                    msignals.display(m18n.n('unbackup_app', a), 'warning')
+                    logger.warning(m18n.n('unbackup_app', app=a))
                 else:
                     apps_filtered.add(a)
         else:
@@ -197,19 +190,14 @@ def backup_create(name=None, description=None, output_directory=None,
             app_script = app_setting_path + '/scripts/backup'
             app_restore_script = app_setting_path + '/scripts/restore'
             if not os.path.isfile(app_script):
-                logger.warning("backup script '%s' not found", app_script)
-                msignals.display(m18n.n('unbackup_app', app=app_id),
-                                 'warning')
+                logger.warning(m18n.n('unbackup_app', app=app_id))
                 continue
             elif not os.path.isfile(app_restore_script):
-                logger.warning("restore script '%s' not found",
-                               app_restore_script)
-                msignals.display(m18n.n('unrestore_app', app=app_id),
-                                 'warning')
+                logger.warning(m18n.n('unrestore_app', app=app_id))
 
             tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
             tmp_app_bkp_dir = tmp_app_dir + '/backup'
-            msignals.display(m18n.n('backup_running_app_script', app_id))
+            logger.info(m18n.n('backup_running_app_script', app=app_id))
             try:
                 # Prepare backup directory for the app
                 filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
@@ -220,9 +208,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id],
                           raise_on_error=True)
             except:
-                logger.exception("error while executing backup of '%s'", app_id)
-                msignals.display(m18n.n('backup_app_failed', app=app_id),
-                                 'error')
+                logger.exception(m18n.n('backup_app_failed', app=app_id))
                 # Cleaning app backup directory
                 shutil.rmtree(tmp_app_dir, ignore_errors=True)
             else:
@@ -247,7 +233,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Create the archive
     if not no_compress:
-        msignals.display(m18n.n('backup_creating_archive'))
+        logger.info(m18n.n('backup_creating_archive'))
         archive_file = "%s/%s.tar.gz" % (output_directory, name)
         try:
             tar = tarfile.open(archive_file, "w:gz")
@@ -260,17 +246,16 @@ def backup_create(name=None, description=None, output_directory=None,
                 try:
                     tar = tarfile.open(archive_file, "w:gz")
                 except:
-                    logger.exception("unable to open '%s' for writing "
-                                     "after creating directory '%s'",
-                                     archive_file, archives_path)
+                    logger.debug("unable to open '%s' for writing",
+                        archive_file, exc_info=1)
                     tar = None
             else:
-                logger.exception("unable to open the archive '%s' for writing",
-                                 archive_file)
+                logger.debug("unable to open '%s' for writing",
+                    archive_file, exc_info=1)
             if tar is None:
                 _clean_tmp_dir(2)
                 raise MoulinetteError(errno.EIO,
-                                      m18n.n('backup_archive_open_failed'))
+                    m18n.n('backup_archive_open_failed'))
         tar.add(tmp_dir, arcname='')
         tar.close()
 
@@ -282,7 +267,7 @@ def backup_create(name=None, description=None, output_directory=None,
     if tmp_dir != output_directory:
         _clean_tmp_dir()
 
-    msignals.display(m18n.n('backup_complete'), 'success')
+    logger.success(m18n.n('backup_complete'))
 
     # Return backup info
     info['name'] = name
@@ -307,7 +292,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     # Validate what to restore
     if ignore_hooks and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('restore_action_required'))
+            m18n.n('restore_action_required'))
 
     # Retrieve and open the archive
     info = backup_info(name)
@@ -315,15 +300,15 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     try:
         tar = tarfile.open(archive_file, "r:gz")
     except:
-        logger.exception("unable to open the archive '%s' for reading",
-                         archive_file)
+        logger.debug("cannot open backup archive '%s'",
+            archive_file, exc_info=1)
         raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
 
     # Check temporary directory
     tmp_dir = "%s/tmp/%s" % (backup_path, name)
     if os.path.isdir(tmp_dir):
-        logger.warning("temporary directory for restoration '%s' already exists",
-                       tmp_dir)
+        logger.debug("temporary directory for restoration '%s' already exists",
+            tmp_dir)
         os.system('rm -rf %s' % tmp_dir)
 
     def _clean_tmp_dir(retcode=0):
@@ -331,24 +316,24 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         if not ret['failed']:
             filesystem.rm(tmp_dir, True, True)
         else:
-            msignals.display(m18n.n('restore_cleaning_failed'), 'warning')
+            logger.warning(m18n.n('restore_cleaning_failed'))
 
     # Extract the tarball
-    msignals.display(m18n.n('backup_extracting_archive'))
+    logger.info(m18n.n('backup_extracting_archive'))
     tar.extractall(tmp_dir)
     tar.close()
 
     # Retrieve backup info
+    info_file = "%s/info.json" % tmp_dir
     try:
-        with open("%s/info.json" % tmp_dir, 'r') as f:
+        with open(info_file, 'r') as f:
             info = json.load(f)
     except IOError:
-        logger.error("unable to retrieve backup info from '%s/info.json'",
-                     tmp_dir)
+        logger.debug("unable to load '%s'", info_file, exc_info=1)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
     else:
-        logger.info("restoring from backup '%s' created on %s", name,
-                    time.ctime(info['created_at']))
+        logger.debug("restoring from backup '%s' created on %s", name,
+            time.ctime(info['created_at']))
 
     # Initialize restauration summary result
     result = {
@@ -358,7 +343,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
     # Check if YunoHost is installed
     if os.path.isfile('/etc/yunohost/installed'):
-        msignals.display(m18n.n('yunohost_already_installed'), 'warning')
+        logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
                 # Ask confirmation for restoring
@@ -379,11 +364,11 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
             with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
                 domain = f.readline().rstrip()
         except IOError:
-            logger.error("unable to retrieve domain from '%s/yunohost/current_host'",
-                         tmp_dir)
+            logger.debug("unable to retrieve domain from "
+                "'%s/yunohost/current_host'", tmp_dir, exc_info=1)
             raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
-        logger.info("executing the post-install...")
+        logger.debug("executing the post-install...")
         tools_postinstall(domain, 'yunohost', True)
 
     # Run system hooks
@@ -395,10 +380,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
             def _is_hook_in_backup(h):
                 if h in hooks_list:
                     return True
-                logger.warning("hook '%s' not executed in the backup '%s'",
-                               h, archive_file)
-                msignals.display(m18n.n('backup_archive_hook_not_exec', hook=h),
-                                 'error')
+                logger.error(m18n.n('backup_archive_hook_not_exec', hook=h))
                 return False
         else:
             hooks = hooks_list
@@ -413,22 +395,20 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
             except:
                 tmp_hooks = glob('{:s}/hooks/restore/*-{:s}'.format(tmp_dir, h))
                 if not tmp_hooks:
-                    logger.exception("restoration hook '%s' not found", h)
-                    msignals.display(m18n.n('restore_hook_unavailable', hook=h),
-                                 'error')
+                    logger.exception(m18n.n('restore_hook_unavailable', hook=h))
                     continue
                 # Add restoration hook from the backup to the system
                 # FIXME: Refactor hook_add and use it instead
                 restore_hook_folder = custom_hook_folder + 'restore'
                 filesystem.mkdir(restore_hook_folder, 755, True)
                 for f in tmp_hooks:
-                    logger.info("adding restoration hook '%s' to the system " \
-                                "from the backup archive '%s'", f, archive_file)
+                    logger.debug("adding restoration hook '%s' to the system "
+                        "from the backup archive '%s'", f, archive_file)
                     shutil.copy(f, restore_hook_folder)
             hooks_filtered.add(h)
 
         if hooks_filtered:
-            msignals.display(m18n.n('restore_running_hooks'))
+            logger.info(m18n.n('restore_running_hooks'))
             ret = hook_callback('restore', hooks_filtered, args=[tmp_dir])
             result['hooks'] = ret['succeed']
 
@@ -442,11 +422,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         if apps:
             for a in apps:
                 if a not in apps_list:
-                    logger.warning("app '%s' not found in the backup '%s'",
-                                   a, archive_file)
-                    msignals.display(m18n.n('backup_archive_app_not_found',
-                                            app=a),
-                                     'error')
+                    logger.error(m18n.n('backup_archive_app_not_found', app=a))
                 else:
                     apps_filtered.add(a)
         else:
@@ -457,23 +433,19 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
             # Check if the app is not already installed
             if _is_installed(app_id):
-                logger.warning("app '%s' already installed", app_id)
-                msignals.display(m18n.n('restore_already_installed_app',
-                                        app=app_id),
-                                'error')
+                logger.error(m18n.n('restore_already_installed_app',
+                        app=app_id))
                 continue
 
             # Check if the app has a restore script
             app_script = tmp_app_dir + '/settings/scripts/restore'
             if not os.path.isfile(app_script):
-                logger.warning("restore script for the app '%s' not found " \
-                               "in the backup '%s'", app_id, archive_file)
-                msignals.display(m18n.n('unrestore_app', app=app_id), 'warning')
+                logger.warning(m18n.n('unrestore_app', app=app_id))
                 continue
 
             tmp_script = '/tmp/restore_' + app_id
             app_setting_path = '/etc/yunohost/apps/' + app_id
-            msignals.display(m18n.n('restore_running_app_script', app=app_id))
+            logger.info(m18n.n('restore_running_app_script', app=app_id))
             try:
                 # Copy app settings and set permissions
                 shutil.copytree(tmp_app_dir + '/settings', app_setting_path)
@@ -485,9 +457,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
                 hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_id],
                           raise_on_error=True)
             except:
-                logger.exception("error while restoring backup of '%s'", app_id)
-                msignals.display(m18n.n('restore_app_failed', app=app_id),
-                                 'error')
+                logger.exception(m18n.n('restore_app_failed', app=app_id))
                 # Cleaning app directory
                 shutil.rmtree(app_setting_path, ignore_errors=True)
             else:
@@ -501,7 +471,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
 
     _clean_tmp_dir()
-    msignals.display(m18n.n('restore_complete'), 'success')
+    logger.success(m18n.n('restore_complete'))
 
     return result
 
@@ -520,8 +490,8 @@ def backup_list(with_info=False, human_readable=False):
     try:
         # Retrieve local archives
         archives = os.listdir(archives_path)
-    except OSError as e:
-        logger.info("unable to iterate over local archives: %s", str(e))
+    except OSError:
+        logger.debug("unable to iterate over local archives", exc_info=1)
     else:
         # Iterate over local archives
         for f in archives:
@@ -555,8 +525,8 @@ def backup_info(name, with_details=False, human_readable=False):
 
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
     if not os.path.isfile(archive_file):
-        logger.error("no local backup archive found at '%s'", archive_file)
-        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown',name))
+        raise MoulinetteError(errno.EIO,
+            m18n.n('backup_archive_name_unknown', name=name))
 
     info_file = "%s/%s.info.json" % (archives_path, name)
     try:
@@ -565,8 +535,7 @@ def backup_info(name, with_details=False, human_readable=False):
             info = json.load(f)
     except:
         # TODO: Attempt to extract backup info file from tarball
-        logger.exception("unable to retrive backup info file '%s'",
-                         info_file)
+        logger.debug("unable to load '%s'", info_file, exc_info=1)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
     size = os.path.getsize(archive_file)
@@ -603,15 +572,15 @@ def backup_delete(name):
     info_file = "%s/%s.info.json" % (archives_path, name)
     for backup_file in [archive_file,info_file]:
         if not os.path.isfile(backup_file):
-            logger.error("no local backup archive found at '%s'", backup_file)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown', backup_file))
+            raise MoulinetteError(errno.EIO,
+                m18n.n('backup_archive_name_unknown', name=backup_file))
         try:
             os.remove(backup_file)
         except:
-            logger.exception("unable to delete '%s'", backup_file)
+            logger.debug("unable to delete '%s'", backup_file, exc_info=1)
             raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_delete_error',backup_file))
+                m18n.n('backup_delete_error', path=backup_file))
 
     hook_callback('post_backup_delete', args=[name])
 
-    msignals.display(m18n.n('backup_deleted'), 'success')
+    logger.success(m18n.n('backup_deleted'))
