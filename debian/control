@@ -39,9 +39,9 @@ Recommends: yunohost-admin,
  bash-completion, rsyslog, ntp, openssh-server,
  inetutils-ping | iputils-ping,
  php5-gd, php5-curl, php-gettext, php5-mcrypt,
- udisks-glue, unattended-upgrades,
+ unattended-upgrades,
  libdbd-ldap-perl, libnet-dns-perl
-Suggests: htop, vim, rsync, acpi-support-base
+Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent,
  moulinette-yunohost, yunohost-config,
  yunohost-config-others, yunohost-config-postfix,
