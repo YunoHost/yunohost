@@ -1,36 +1,59 @@
-backup_dir="$1/conf/ldap"
+#!/bin/bash
 
-if [ -z "$2" ]; then
+backup_dir="${1}/conf/ldap"
+
+if [[ $EUID -ne 0 ]]; then
 
     # We need to execute this script as root, since the ldap
     # service will be shut down during the operation (and sudo
     # won't be available)
-    sudo bash $(pwd)/$0 $1 sudoed
+    sudo /bin/bash $(readlink -f $0) $1
 
 else
-    service slapd stop
+    service slapd stop || true
 
-    # Backup old configuration
-    mv /var/lib/ldap /var/lib/ldap.old
+    # Create a directory for backup
+    TMPDIR="/tmp/$(date +%s)"
+    mkdir -p "$TMPDIR"
 
-    # Recreate new DB folder
-    mkdir /var/lib/ldap
-    chown openldap: /var/lib/ldap
-    chmod go-rwx  /var/lib/ldap
+    die() {
+        state=$1
+        error=$2
 
-    # Restore LDAP configuration (just to be sure)
-    cp -a $backup_dir/slapd.conf /etc/ldap/slapd.conf
+        # Restore saved configuration and database
+        [[ $state -ge 1 ]] \
+          && (rm -rf /etc/ldap/slapd.d &&
+              mv "${TMPDIR}/slapd.d" /etc/ldap/slapd.d)
+        [[ $state -ge 2 ]] \
+          && (rm -rf /var/lib/ldap &&
+              mv "${TMPDIR}/ldap" /var/lib/ldap)
+        chown -R openldap: /etc/ldap/slapd.d /var/lib/ldap
 
-    # Regenerate the configuration
-    rm -rf /etc/ldap/slapd.d/*
-    slaptest -u -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d
-    cp -rfp /var/lib/ldap.old/DB_CONFIG /var/lib/ldap
+        service slapd start
+        rm -rf "$TMPDIR"
 
-    # Import the database
-    slapadd -l $backup_dir/slapcat.ldif
+        # Print an error message and exit
+        printf "%s" "$error" 1>&2
+        exit 1
+    }
 
-    # Change permissions and restart slapd
-    chown openldap: /var/lib/ldap/*
+    # Restore the configuration
+    mv /etc/ldap/slapd.d "$TMPDIR"
+    mkdir -p /etc/ldap/slapd.d
+    cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf
+    slapadd -F /etc/ldap/slapd.d -b cn=config \
+        -l "${backup_dir}/cn=config.master.ldif" \
+      || die 1 "Unable to restore LDAP configuration"
+    chown -R openldap: /etc/ldap/slapd.d
+
+    # Restore the database
+    mv /var/lib/ldap "$TMPDIR"
+    mkdir -p /var/lib/ldap
+    slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
+        -l "${backup_dir}/dc=yunohost-dc=org.ldif" \
+      || die 2 "Unable to restore LDAP database"
+    chown -R openldap: /var/lib/ldap
+
     service slapd start
-    rm -rf /var/lib/ldap.old
+    rm -rf "$TMPDIR"
 fi
