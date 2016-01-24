@@ -245,7 +245,7 @@ def domain_generate_dns_configuration(auth, domain):
 
     result += "muc 1800 IN CNAME @\npubsub 1800 IN CNAME @\nvjud 1800 IN CNAME @\n\n"
 
-    result += "@ 1400 IN MX 10 {domain}.tld.\n".format(domain=domain)
+    result += "@ 1400 IN MX 10 {domain}.\n".format(domain=domain)
 
     if ip6 is None:
         result += '@ 1400 IN TXT "v=spf1 a mx ip4:{ip4} -all"\n'.format(ip4=ip4)
