@@ -291,8 +291,8 @@ domain:
                     extra:
                         pattern: *pattern_domain
 
-        ### domain_generate_dns_config()
-        generate_dns_configuration:
+        ### dns_conf()
+        dns-conf:
             action_help: Generate DNS configuration for a domain
             api: GET /domains/<domain>/dns
             configuration:
