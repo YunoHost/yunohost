@@ -294,7 +294,7 @@ domain:
         ### domain_generate_dns_config()
         generate_dns_configuration:
             action_help: Generate DNS configuration for a domain
-            api: GET /domains/<domain>/dns_config
+            api: GET /domains/<domain>/dns
             configuration:
                 lock: false
                 authenticate: all
