@@ -239,7 +239,7 @@ def domain_generate_dns_configuration(auth, domain):
     except Exception:
         pass
     else:
-        result += "@ 1400 IN A {ip6}\n* 900 IN AAAA {ip6}\n".format(ip6=ip6)
+        result += "@ 1400 IN AAAA {ip6}\n* 900 IN AAAA {ip6}\n".format(ip6=ip6)
 
     result += "\n_xmpp-client._tcp 14400 IN SRV 0 5 5222 {domain}.\n_xmpp-server._tcp 14400 IN SRV 0 5 5269 {domain}.\n".format(domain=domain)
 
