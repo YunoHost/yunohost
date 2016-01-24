@@ -243,6 +243,8 @@ def domain_generate_dns_configuration(auth, domain):
 
     result += "\n_xmpp-client._tcp 14400 IN SRV 0 5 5222 {domain}.\n_xmpp-server._tcp 14400 IN SRV 0 5 5269 {domain}.\n".format(domain=domain)
 
+    result += "muc 1800 IN CNAME @\npubsub 1800 IN CNAME @\nvjud 1800 IN CNAME @\n\n"
+
     result += "@ 1400 IN MX 10 {domain}.tld.\n".format(domain=domain)
 
     if ip6 is None:
