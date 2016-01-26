@@ -297,7 +297,8 @@ domain:
             api: GET /domains/<domain>/dns
             configuration:
                 lock: false
-                authenticate: all
+                authenticate:
+                    - api
             arguments:
                 domain:
                     help: Target domain
