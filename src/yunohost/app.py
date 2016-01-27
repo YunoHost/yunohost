@@ -218,8 +218,7 @@ def app_info(app, show_status=False, raw=False):
                               m18n.n('app_not_installed', app))
     if raw:
         ret = app_list(filter=app, raw=True)[app]
-        with open(apps_setting_path + app +'/settings.yml') as f:
-            ret['settings'] = yaml.load(f)
+        ret['settings'] = _get_app_settings(app)
         return ret
 
     app_setting_path = apps_setting_path + app
@@ -265,9 +264,8 @@ def app_map(app=None, raw=False, user=None):
         apps = os.listdir(apps_setting_path)
 
     for app_id in apps:
-        with open(apps_setting_path + app_id +'/settings.yml') as f:
-            app_settings = yaml.load(f)
-        if not isinstance(app_settings, dict):
+        app_settings = _get_app_settings(app_id)
+        if not app_settings:
             continue
         if 'domain' not in app_settings:
             continue
@@ -734,12 +732,7 @@ def app_makedefault(auth, app, domain=None):
     """
     from yunohost.domain import domain_list
 
-    if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_not_installed', app))
-
-    with open(apps_setting_path + app +'/settings.yml') as f:
-        app_settings = yaml.load(f)
-
+    app_settings = _get_app_settings(app)
     app_domain = app_settings['domain']
     app_path   = app_settings['path']
 
@@ -782,17 +775,7 @@ def app_setting(app, key, value=None, delete=False):
         delete -- Delete the key
 
     """
-    if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app))
-
-    settings_file = apps_setting_path + app +'/settings.yml'
-    try:
-        with open(settings_file) as f:
-            app_settings = yaml.load(f)
-    except IOError:
-        # Do not fail if setting file is not there
-        app_settings = {}
+    app_settings = _get_app_settings(app)
 
     if value is None and not delete:
         try:
@@ -812,7 +795,8 @@ def app_setting(app, key, value=None, delete=False):
                 value=yaml.load(value)
             app_settings[key] = value
 
-        with open(settings_file, 'w') as f:
+        with open(os.path.join(
+                apps_setting_path, app, 'settings.yml'), 'w') as f:
             yaml.safe_dump(app_settings, f, default_flow_style=False)
 
 
@@ -1010,6 +994,29 @@ def app_ssowatconf(auth):
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
     msignals.display(m18n.n('ssowat_conf_generated'), 'success')
+
+
+def _get_app_settings(app_id):
+    """
+    Get settings of an installed app
+
+    Keyword arguments:
+        app_id -- The app id
+
+    """
+    if not _is_installed(app_id):
+        raise MoulinetteError(errno.EINVAL,
+            m18n.n('app_not_installed', app_id))
+    try:
+        with open(os.path.join(
+                apps_setting_path, app_id, 'settings.yml')) as f:
+            settings = yaml.load(f)
+        if app_id == settings['id']:
+            return settings
+    except (IOError, KeyError):
+        logger.exception(m18n.n('app_not_correctly_installed',
+                app=app_id))
+    return {}
 
 
 def _get_app_status(app_id, format_date=False):

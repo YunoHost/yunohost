@@ -17,6 +17,7 @@
     "app_unknown" : "Unknown app",
     "app_no_upgrade" : "No app to upgrade",
     "app_not_installed" : "{:s} is not installed",
+    "app_not_correctly_installed" : "{app:s} seems to be not correctly installed",
     "custom_app_url_required" : "You must provide an URL to upgrade your custom app {:s}",
     "app_recent_version_required" : "{:s} requires a more recent version of the moulinette",
     "app_upgraded" : "{:s} successfully upgraded",
