@@ -253,34 +253,44 @@ def app_map(app=None, raw=False, user=None):
         app -- Specific app to map
 
     """
-
+    apps = []
     result = {}
 
-    for app_id in os.listdir(apps_setting_path):
-        if app and (app != app_id):
-            continue
+    if app is not None:
+        if not _is_installed(app):
+            raise MoulinetteError(errno.EINVAL,
+                m18n.n('app_not_installed', app))
+        apps = [app,]
+    else:
+        apps = os.listdir(apps_setting_path)
 
-        if user is not None:
-            app_dict = app_info(app=app_id, raw=True)
-            if ('mode' not in app_dict['settings']) or ('mode' in app_dict['settings'] and app_dict['settings']['mode'] == 'private'):
-                if 'allowed_users' in app_dict['settings'] and user not in app_dict['settings']['allowed_users'].split(','):
-                    continue
-
+    for app_id in apps:
         with open(apps_setting_path + app_id +'/settings.yml') as f:
             app_settings = yaml.load(f)
-
+        if not isinstance(app_settings, dict):
+            continue
         if 'domain' not in app_settings:
             continue
+        if user is not None:
+            if ('mode' not in app_settings \
+                    or ('mode' in app_settings \
+                        and app_settings['mode'] == 'private')) \
+                and 'allowed_users' in app_settings \
+                and user not in app_settings['allowed_users'].split(','):
+                continue
+
+        domain = app_settings['domain']
+        path = app_settings.get('path', '/')
 
         if raw:
-            if app_settings['domain'] not in result:
-                result[app_settings['domain']] = {}
-            result[app_settings['domain']][app_settings['path']] = {
-                    'label': app_settings['label'],
-                    'id': app_settings['id']
+            if domain not in result:
+                result[domain] = {}
+            result[domain][path] = {
+                'label': app_settings['label'],
+                'id': app_settings['id']
             }
         else:
-            result[app_settings['domain']+app_settings['path']] = app_settings['label']
+            result[domain + path] = app_settings['label']
 
     return result
 
