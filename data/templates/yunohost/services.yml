@@ -47,5 +47,5 @@ nsswitch:
 spamassassin:
    status: service
    log: /var/log/mail.log
-udisks-glue:
+udisks2:
    status: service
