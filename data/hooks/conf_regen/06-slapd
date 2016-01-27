@@ -30,7 +30,7 @@ backend=$(sudo slapcat -n 0 | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1
 # Save current database in case of a backend change
 BACKEND_CHANGE=0
 BACKUP_DIR="/var/backups/dc=yunohost,dc=org-${backend}-$(date +%s)"
-if [[ "$backend" != "mdb" && "$force" == "True" ]]; then
+if [[ -n "$backend" && "$backend" != "mdb" && "$force" == "True" ]]; then
     BACKEND_CHANGE=1
     sudo mkdir -p "$BACKUP_DIR"
     sudo slapcat -b dc=yunohost,dc=org \
