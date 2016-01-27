@@ -48,8 +48,11 @@ sudo chown root:openldap /etc/ldap/slapd.conf
 sudo chown -R openldap:openldap /etc/ldap/schema/
 sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 
+# Check the slapd config file at first
+sudo slaptest -u -f /etc/ldap/slapd.conf
+
 if [[ $BACKEND_CHANGE -eq 1 ]]; then
-    # Regenerate LDAP configuration and import database as root
+    # Regenerate LDAP config directory and import database as root
     # since the admin user may be unavailable
     sudo sh -c "rm -Rf /etc/ldap/slapd.d;
 mkdir /etc/ldap/slapd.d;
@@ -59,11 +62,10 @@ slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
   -l '${BACKUP_DIR}/dc=yunohost-dc=org.ldif';
 chown -R openldap:openldap /var/lib/ldap" 2>&1
 else
-    # Regenerate LDAP configuration from slapd.conf if it is valid
-    sudo slaptest -u -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ \
-      && (sudo rm -Rf /etc/ldap/slapd.d \
-          && sudo mkdir /etc/ldap/slapd.d \
-          && sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1)
+    # Regenerate LDAP config directory from slapd.conf
+    sudo rm -Rf /etc/ldap/slapd.d
+    sudo mkdir /etc/ldap/slapd.d
+    sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
     sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 fi
 
