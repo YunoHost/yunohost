@@ -571,47 +571,50 @@ def app_addaccess(auth, apps, users=[]):
     from yunohost.user import user_list, user_info
     from yunohost.hook import hook_callback
 
+    result = {}
+
     if not users:
         users = user_list(auth)['users'].keys()
-
-    if not isinstance(users, list): users = [users]
-    if not isinstance(apps, list): apps = [apps]
+    elif not isinstance(users, list):
+        users = [users,]
+    if not isinstance(apps, list):
+        apps = [apps,]
 
     for app in apps:
-        if not _is_installed(app):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed', app))
-
-        with open(apps_setting_path + app +'/settings.yml') as f:
-            app_settings = yaml.load(f)
+        app_settings = _get_app_settings(app)
+        if not app_settings:
+            continue
 
         if 'mode' not in app_settings:
             app_setting(app, 'mode', 'private')
             app_settings['mode'] = 'private'
 
         if app_settings['mode'] == 'private':
+            allowed_users = set()
             if 'allowed_users' in app_settings:
-                new_users = app_settings['allowed_users']
-            else:
-                new_users = ''
+                allowed_users = set(app_settings['allowed_users'].split(','))
 
             for allowed_user in users:
-                if allowed_user not in new_users.split(','):
+                if allowed_user not in allowed_users:
                     try:
                         user_info(auth, allowed_user)
                     except MoulinetteError:
+                        # FIXME: Add username keyword in user_unknown
+                        logger.warning('{0}{1}'.format(
+                                m18n.g('colon', m18n.n('user_unknown')),
+                                allowed_user))
                         continue
-                    if new_users == '':
-                        new_users = allowed_user
-                    else:
-                        new_users = new_users +','+ allowed_user
+                    allowed_users.add(allowed_user)
 
-            app_setting(app, 'allowed_users', new_users.strip())
+            new_users = ','.join(allowed_users)
+            app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_addaccess', args=[app, new_users])
+
+            result[app] = allowed_users
 
     app_ssowatconf(auth)
 
-    return { 'allowed_users': new_users.split(',') }
+    return { 'allowed_users': result }
 
 
 def app_removeaccess(auth, apps, users=[]):
@@ -626,45 +629,43 @@ def app_removeaccess(auth, apps, users=[]):
     from yunohost.user import user_list
     from yunohost.hook import hook_callback
 
+    result = {}
+
     remove_all = False
     if not users:
         remove_all = True
-    if not isinstance(users, list): users = [users]
-    if not isinstance(apps, list): apps = [apps]
+    elif not isinstance(users, list):
+        users = [users,]
+    if not isinstance(apps, list):
+        apps = [apps,]
+
     for app in apps:
-        new_users = ''
+        app_settings = _get_app_settings(app)
+        if not app_settings:
+            continue
+        allowed_users = set()
 
-        if not _is_installed(app):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed', app))
-
-        with open(apps_setting_path + app +'/settings.yml') as f:
-            app_settings = yaml.load(f)
-
-        if 'skipped_uris' not in app_settings or app_settings['skipped_uris'] != '/':
+        if app_settings.get('skipped_uris', '') != '/':
             if remove_all:
-                new_users = ''
+                pass
             elif 'allowed_users' in app_settings:
                 for allowed_user in app_settings['allowed_users'].split(','):
                     if allowed_user not in users:
-                        if new_users == '':
-                            new_users = allowed_user
-                        else:
-                            new_users = new_users +','+ allowed_user
+                        allowed_users.add(allowed_user)
             else:
-                new_users = ''
-                for username in user_list(auth)['users'].keys():
-                    if username not in users:
-                        if new_users == '':
-                            new_users = username
-                        new_users += ',' + username
+                for allowed_user in user_list(auth)['users'].keys():
+                    if allowed_user not in users:
+                        allowed_users.add(allowed_user)
 
-            app_setting(app, 'allowed_users', new_users.strip())
+            new_users = ','.join(allowed_users)
+            app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_removeaccess', args=[app, new_users])
+
+            result[app] = allowed_users
 
     app_ssowatconf(auth)
 
-    return { 'allowed_users': new_users.split(',') }
+    return { 'allowed_users': result }
 
 
 def app_clearaccess(auth, apps):
@@ -680,12 +681,9 @@ def app_clearaccess(auth, apps):
     if not isinstance(apps, list): apps = [apps]
 
     for app in apps:
-        if not _is_installed(app):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed', app))
-
-        with open(apps_setting_path + app +'/settings.yml') as f:
-            app_settings = yaml.load(f)
+        app_settings = _get_app_settings(app)
+        if not app_settings:
+            continue
 
         if 'mode' in app_settings:
             app_setting(app, 'mode', delete=True)
