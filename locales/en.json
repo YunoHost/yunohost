@@ -62,6 +62,13 @@
     "domain_deleted" : "Domain successfully deleted",
     "no_internet_connection": "Server not connected to the Internet",
     "no_ipv6_connectivity": "IPv6 connectivity is not available",
+    "domain_letsencrypt_created" : "Let's encrypt certificate successfully created.",
+    "domain_letsencrypt_create_failed" : "Unable to create Let's encrypt certificate.",
+    "domain_letsencrypt_renewed" : "Let's encrypt certificate successfully renewed.",
+    "domain_letsencrypt_renew_failed" : "Unable to renew Let's encrypt certificate.",
+    "domain_letsencrypt_revoked" : "Let's encrypt certificate successfully revoked.",
+    "domain_letsencrypt_revoke_failed" : "Unable to revoke Let's encrypt certificate.",
+    "domain_letsencrypt_badarg" : "Bad argument, choose between create, renew or revoke.",
 
     "dyndns_key_generating" : "DNS key is being generated, it may take a while...",
     "dyndns_unavailable" : "Unavailable DynDNS subdomain",

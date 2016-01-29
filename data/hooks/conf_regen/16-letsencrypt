@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [ $force ]; then
+        sudo yunohost service safecopy \
+          -s letsencrypt \
+          $1 $2 \
+          --force
+    else
+        sudo yunohost service safecopy \
+          -s letsencrypt \
+          $1 $2
+    fi
+}
+
+# Install let's encrypt if not present
+if [ ! -d /etc/letsencrypt ]; then
+    cd /root
+    git clone https://github.com/letsencrypt/letsencrypt /root
+    mkdir -p /etc/letsencrypt/webrootauth
+fi
+
+domain_list=$(sudo yunohost domain list --plain)
+for domain in $domain_list; do
+    if [ ! -d /etc/letsencrypt/live/$domain ]; then
+        yunohost domain letsencrypt -c $domain
+    fi
+done

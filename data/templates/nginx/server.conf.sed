@@ -11,6 +11,14 @@ server {
         rewrite ^ https://$http_host$request_uri? permanent;
     }
 
+    root /etc/letsencrypt/webrootauth;
+    location /.well-known/acme-challenge {
+      alias /etc/letsencrypt/webrootauth/.well-known/acme-challenge;
+      location ~ /.well-known/acme-challenge/(.*) {
+        add_header Content-Type application/jose+json;
+      }
+    }
+
     access_log /var/log/nginx/{{ domain }}-access.log;
     error_log /var/log/nginx/{{ domain }}-error.log;
 }
