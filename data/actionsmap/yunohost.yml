@@ -291,6 +291,18 @@ domain:
                     extra:
                         pattern: *pattern_domain
 
+        ### domain_dns_conf()
+        dns-conf:
+            action_help: Generate DNS configuration for a domain
+            api: GET /domains/<domain>/dns
+            configuration:
+                lock: false
+                authenticate:
+                    - api
+            arguments:
+                domain:
+                    help: Target domain
+
         ### domain_info()
 #        info:
 #            action_help: Get domain informations
