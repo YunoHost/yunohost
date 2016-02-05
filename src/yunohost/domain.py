@@ -218,3 +218,38 @@ def domain_remove(auth, domain, force=False):
     hook_callback('post_domain_remove', args=[domain])
 
     msignals.display(m18n.n('domain_deleted'), 'success')
+
+
+def domain_dns_conf(domain):
+    """
+    Generate DNS configuration for a domain
+
+    Keyword argument:
+        domain -- Domain name
+    """
+
+    ip4 = urlopen("http://ip.yunohost.org").read().strip()
+
+    result = "@ 1400 IN A {ip4}\n* 1400 IN A {ip4}\n".format(ip4=ip4)
+
+    ip6 = None
+
+    try:
+        ip6 = urlopen("http://ip6.yunohost.org").read().strip()
+    except Exception:
+        pass
+    else:
+        result += "@ 1400 IN AAAA {ip6}\n* 1400 IN AAAA {ip6}\n".format(ip6=ip6)
+
+    result += "\n_xmpp-client._tcp 14400 IN SRV 0 5 5222 {domain}.\n_xmpp-server._tcp 14400 IN SRV 0 5 5269 {domain}.\n".format(domain=domain)
+
+    result += "muc 1800 IN CNAME @\npubsub 1800 IN CNAME @\nvjud 1800 IN CNAME @\n\n"
+
+    result += "@ 1400 IN MX 10 {domain}.\n".format(domain=domain)
+
+    if ip6 is None:
+        result += '@ 1400 IN TXT "v=spf1 a mx ip4:{ip4} -all"\n'.format(ip4=ip4)
+    else:
+        result += '@ 1400 IN TXT "v=spf1 a mx ip4:{ip4} ip6:{ip6} -all"\n'.format(ip4=ip4, ip6=ip6)
+
+    return result
