@@ -215,7 +215,7 @@ def app_info(app, show_status=False, raw=False):
     """
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app))
+                              m18n.n('app_not_installed', app=app))
     if raw:
         ret = app_list(filter=app, raw=True)[app]
         ret['settings'] = _get_app_settings(app)
@@ -258,7 +258,7 @@ def app_map(app=None, raw=False, user=None):
     if app is not None:
         if not _is_installed(app):
             raise MoulinetteError(errno.EINVAL,
-                m18n.n('app_not_installed', app))
+                                  m18n.n('app_not_installed', app=app))
         apps = [app,]
     else:
         apps = os.listdir(apps_setting_path)
@@ -323,7 +323,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         installed = _is_installed(app_id)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
-                                  m18n.n('app_not_installed', app_id))
+                                  m18n.n('app_not_installed', app=app_id))
 
         if app_id in upgraded_apps:
             continue
@@ -351,7 +351,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if 'min_version' in manifest \
                 and not has_min_version(manifest['min_version']):
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('app_recent_version_required', app_id))
+                                  m18n.n('app_recent_version_required',
+                                         app=app_id))
 
         app_setting_path = apps_setting_path +'/'+ app_id
 
@@ -390,7 +391,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
             # So much win
             upgraded_apps.append(app_id)
-            msignals.display(m18n.n('app_upgraded', app_id), 'success')
+            msignals.display(m18n.n('app_upgraded', app=app_id), 'success')
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
@@ -440,7 +441,8 @@ def app_install(auth, app, label=None, args=None):
     if 'min_version' in manifest \
             and not has_min_version(manifest['min_version']):
         raise MoulinetteError(errno.EPERM,
-                              m18n.n('app_recent_version_required', app_id))
+                              m18n.n('app_recent_version_required',
+                                     app=app_id))
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -535,7 +537,8 @@ def app_remove(auth, app):
     from yunohost.hook import hook_exec, hook_remove
 
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_not_installed', app))
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_not_installed', app=app))
 
     app_setting_path = apps_setting_path + app
 
@@ -551,7 +554,7 @@ def app_remove(auth, app):
     args_list = [app]
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args_list) == 0:
-        msignals.display(m18n.n('app_removed', app), 'success')
+        msignals.display(m18n.n('app_removed', app=app), 'success')
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
     shutil.rmtree('/tmp/yunohost_remove')
@@ -1004,7 +1007,7 @@ def _get_app_settings(app_id):
     """
     if not _is_installed(app_id):
         raise MoulinetteError(errno.EINVAL,
-            m18n.n('app_not_installed', app_id))
+                              m18n.n('app_not_installed', app=app_id))
     try:
         with open(os.path.join(
                 apps_setting_path, app_id, 'settings.yml')) as f:
