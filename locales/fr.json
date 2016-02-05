@@ -15,6 +15,7 @@
     "app_location_install_failed": "Impossible d'installer l'application à cet emplacement", 
     "app_manifest_invalid": "Manifeste d'application incorrect", 
     "app_no_upgrade": "Aucune application à mettre à jour", 
+    "app_not_correctly_installed": "{app:s} semble être mal installé", 
     "app_not_installed": "{:s} n'est pas installé", 
     "app_recent_version_required": "{:s} nécessite une version plus récente de la moulinette", 
     "app_removed": "{:s} supprimé avec succès", 
