@@ -37,6 +37,8 @@ php5-fpm:
 yunohost-api:
    status: service
    log: /var/log/yunohost/yunohost-api.log
+yunohost-firewall:
+   status: service
 postgrey:
    status: service
    log: /var/log/mail.log
