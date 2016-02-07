@@ -1014,7 +1014,7 @@ def _get_app_settings(app_id):
             settings = yaml.load(f)
         if app_id == settings['id']:
             return settings
-    except (IOError, KeyError):
+    except (IOError, TypeError, KeyError):
         logger.exception(m18n.n('app_not_correctly_installed',
                 app=app_id))
     return {}
