@@ -23,7 +23,8 @@ else
 
     # Regenerate the configuration
     rm -rf /etc/ldap/slapd.d/*
-    slaptest -u -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d
+    slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d
+    chown -R openldap:openldap /etc/ldap/slapd.d
     cp -rfp /var/lib/ldap.old/DB_CONFIG /var/lib/ldap
 
     # Import the database
