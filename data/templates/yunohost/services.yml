@@ -13,6 +13,10 @@ dovecot:
 postfix:
    status: service
    log: [/var/log/mail.log,/var/log/mail.err]
+rmilter:
+   status: systemctl status rmilter.socket
+rspamd:
+   status: systemctl status rspamd.socket
 mysql:
    status: service
    log: [/var/log/mysql.log,/var/log/mysql.err]
@@ -32,11 +36,10 @@ php5-fpm:
    log: /var/log/php5-fpm.log
 yunohost-api:
    status: service
-   log: /var/log/yunohost.log
-postgrey:
+   log: /var/log/yunohost/yunohost-api.log
+yunohost-firewall:
    status: service
-   log: /var/log/mail.log
-amavis:
+postgrey:
    status: service
    log: /var/log/mail.log
 nslcd:
@@ -44,8 +47,5 @@ nslcd:
    log: /var/log/syslog
 nsswitch:
    status: service
-spamassassin:
-   status: service
-   log: /var/log/mail.log
-udisks-glue:
+udisks2:
    status: service

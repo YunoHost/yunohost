@@ -291,6 +291,18 @@ domain:
                     extra:
                         pattern: *pattern_domain
 
+        ### domain_dns_conf()
+        dns-conf:
+            action_help: Generate DNS configuration for a domain
+            api: GET /domains/<domain>/dns
+            configuration:
+                lock: false
+                authenticate:
+                    - api
+            arguments:
+                domain:
+                    help: Target domain
+
         ### domain_info()
 #        info:
 #            action_help: Get domain informations
@@ -318,10 +330,10 @@ app:
             arguments:
                 -u:
                     full: --url
-                    help: URL of remote JSON list (default http://fapp.yunohost.org/app/list/raw)
+                    help: URL of remote JSON list (default https://yunohost.org/official.json)
                 -n:
                     full: --name
-                    help: Name of the list (default fapp)
+                    help: Name of the list (default yunohost)
                     extra:
                         pattern: &pattern_listname
                             - !!str ^[a-z0-9_]+$
@@ -504,6 +516,14 @@ app:
                 -s:
                     full: --sql
                     help: Initial SQL file
+
+        ### app_debug()
+        debug:
+            action_help: Display all debug informations for an application
+            api: GET /apps/<app>/debug
+            arguments:
+                app:
+                    help: App name
 
         ### app_makedefault()
         makedefault:
@@ -1009,6 +1029,10 @@ firewall:
         reload:
             action_help: Reload all firewall rules
             api: PUT /firewall
+            arguments:
+                --skip-upnp:
+                    help: Do not refresh port forwarding using UPnP
+                    action: store_true
 
         ### firewall_allow()
         allow:
@@ -1189,9 +1213,12 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Main domain change tool
-            api: PUT /domains/main
+            api:
+                - GET /domains/main
+                - PUT /domains/main
             configuration:
                 authenticate: all
+                lock: false
             arguments:
                 -o:
                     full: --old-domain
@@ -1284,6 +1311,16 @@ hook:
                 app:
                     help: Scripts related to app will be removed
 
+        ### hook_info()
+        info:
+            action_help: Get information about a given hook
+            api: GET /hooks/<action>/<name>
+            arguments:
+                action:
+                    help: Action name
+                name:
+                    help: Hook name
+
         ### hook_list()
         list:
             action_help: List available hooks for an action
@@ -1320,21 +1357,20 @@ hook:
                     help: Ordered list of arguments to pass to the script
                     nargs: "*"
 
-        ### hook_check()
-        check:
-            action_help: Parse the script file and get arguments
-            api: GET /hook/check
-            arguments:
-                file:
-                    help: File to check
-
         ### hook_exec()
         exec:
             action_help: Execute hook from a file with arguments
             api: GET /hook
             arguments:
-                file:
-                    help: Script to execute
+                path:
+                    help: Path of the script to execute
                 -a:
                     full: --args
                     help: Arguments to pass to the script
+                --raise-on-error:
+                    help: Raise if the script returns a non-zero exit code
+                    action: store_true
+                -q:
+                    full: --no-trace
+                    help: Do not print each command that will be executed
+                    action: store_true

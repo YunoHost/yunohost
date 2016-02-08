@@ -16,7 +16,7 @@ function safe_copy () {
 cd /usr/share/yunohost/templates/dnsmasq
 
 # Get IP address
-ip=$(curl ip.yunohost.org || echo '0.0.0.0')
+ip=$(curl ip.yunohost.org 2>/dev/null || echo '0.0.0.0')
 
 # Get IPv6 IP address
 ipv6=$(ip route get 2000:: | grep -q "unreachable" && echo '' \
@@ -24,7 +24,7 @@ ipv6=$(ip route get 2000:: | grep -q "unreachable" && echo '' \
 
 sudo mkdir -p /etc/dnsmasq.d
 
-domain_list=$(sudo yunohost domain list --plain)
+domain_list=$(sudo yunohost domain list --output-as plain)
 
 # Copy a configuration file for each YunoHost domain 
 for domain in $domain_list; do

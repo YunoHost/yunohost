@@ -1,0 +1,4 @@
+# Override yunohost-api options.
+#  Example to log debug: DAEMON_OPTS="--debug"
+#
+#DAEMON_OPTS=""

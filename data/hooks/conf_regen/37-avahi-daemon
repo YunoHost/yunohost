@@ -15,6 +15,6 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/avahi-daemon
 
-if [[ "$(safe_copy avahi-daemon.conf /etc/avahi/avahi-daemon.conf)" == "True" ]]; then
+if [[ "$(safe_copy avahi-daemon.conf /etc/avahi/avahi-daemon.conf | tail -n1)" == "True" ]]; then
     sudo service avahi-daemon restart
 fi

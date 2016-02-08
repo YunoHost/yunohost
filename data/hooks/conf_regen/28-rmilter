@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e 
+
+force=$1
+
+function safe_copy () {
+    if [[ "$force" == "True" ]]; then
+        sudo yunohost service safecopy \
+          -s rmilter $1 $2 --force
+    else
+        sudo yunohost service safecopy \
+          -s rmilter $1 $2
+    fi
+}
+
+cd /usr/share/yunohost/templates/rmilter
+
+# Copy Rmilter configuration
+safe_copy rmilter.conf /etc/rmilter.conf
+
+# Override socket configuration
+safe_copy rmilter.socket /etc/systemd/system/rmilter.socket
+
+# Create DKIM key for each YunoHost domain
+sudo mkdir -p /etc/dkim
+domain_list=$(sudo yunohost domain list --output-as plain)
+
+for domain in $domain_list; do
+    [ -f /etc/dkim/$domain.mail.key ] \
+      || (sudo opendkim-genkey --domain=$domain \
+                               --selector=mail\
+                               --directory=/etc/dkim \
+          && sudo mv /etc/dkim/mail.private /etc/dkim/$domain.mail.key \
+          && sudo mv /etc/dkim/mail.txt /etc/dkim/$domain.mail.txt)
+
+    sudo chown _rmilter /etc/dkim/$domain.mail.key
+    sudo chmod 400      /etc/dkim/$domain.mail.key
+done
+
+# Reload systemd daemon and stop rmilter service to take into account the
+# new configuration. It will be started again by the socket as needed.
+sudo systemctl daemon-reload
+sudo systemctl stop rmilter.service 2>&1 || true

@@ -18,30 +18,17 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/metronome
 
-# Copy additional modules
-files="ldap.lib.lua
-mod_auth_ldap2.lua
-mod_legacyauth.lua
-mod_storage_ldap.lua
-vcard.lib.lua"
-
-for file in $files; do
-    safe_copy modules/$file /usr/lib/metronome/modules/$file
-done
-
 # Copy configuration files
 main_domain=$(cat /etc/yunohost/current_host)
 cat metronome.cfg.lua.sed \
   | sed "s/{{ main_domain }}/$main_domain/g" \
   | sudo tee metronome.cfg.lua
 safe_copy metronome.cfg.lua /etc/metronome/metronome.cfg.lua
-safe_copy metronome.init /etc/init.d/metronome
-safe_copy metronome.logrotate /etc/logrotate.d/metronome
 
 need_restart=False
 sudo mkdir -p /etc/metronome/conf.d
 
-domain_list=$(sudo yunohost domain list --plain)
+domain_list=$(sudo yunohost domain list --output-as plain)
 
 # Copy a configuration file for each YunoHost domain 
 for domain in $domain_list; do
@@ -51,7 +38,7 @@ for domain in $domain_list; do
     cat domain.cfg.lua.sed \
       | sed "s/{{ domain }}/$domain/g" \
       | sudo tee $domain.cfg.lua
-    if [[ $(safe_copy $domain.cfg.lua /etc/metronome/conf.d/$domain.cfg.lua) == "True" ]]; then
+    if [[ $(safe_copy $domain.cfg.lua /etc/metronome/conf.d/$domain.cfg.lua | tail -n1) == "True" ]]; then
         need_restart=True
     fi
 done
@@ -63,9 +50,8 @@ for file in /etc/metronome/conf.d/*; do
              | sed 's|.cfg.lua||')
     sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
     [[ $domain_list =~ $domain ]] \
-      || ($(sudo yunohost service saferemove -s metronome $file) == "True" \
+      || ([[ $(sudo yunohost service saferemove -s metronome $file | tail -n1) == "True" ]] \
         && rm -rf /var/lib/metronome/$sanitzed_domain)
-
 done
 
 # Create domain directory

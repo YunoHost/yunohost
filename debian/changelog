@@ -1,3 +1,175 @@
+yunohost (2.3.7) testing; urgency=low
+
+  [ Laurent Peuch ]
+  * [enh] new command to generate DNS configuration for a given domain name
+
+  [ Jérôme Lebleu ]
+  * [fix] Save LDAP database when switching to MDB (bugfix #169)
+  * [fix] Review LDAP backup and restore hooks
+  * [enh] Replace msignals.display by logging in backup category
+  * [enh] Add a ynh_app_setting_delete helper
+  * [enh] Update rmilter hook and dependencies for 1.7 release
+  * [enh] Set minimum uid and ignore local users in nslcd.conf
+  * [enh] Use a common function to retrieve app settings
+  * [enh] Check the slapd config file at first in conf_regen
+  * [fix] Validate arguments and app settings in app_map (bugfix #168)
+  * [fix] Replace udisks-glue by udisks2 and only suggest it
+  * [fix] Correct condition syntax in metronome conf_regen hook
+  * [fix] Allow false and 0 as non-empty values for an app argument
+  * [fix] Some improvements and fixes to actions related to app access
+  * [fix] Remove old services and add rmilter/rspamd
+  * [fix] Correct log file of yunohost-api in services.yml
+  * [i18n] Use named variables in app category translations
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 07 Feb 2016 18:56:13 +0100
+
+yunohost (2.3.6) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Pass app id to scripts and remove hook_check action
+  * [enh] Rely only on app_id argument for multi-instances apps
+  * [enh] Add support for app argument 'type' defined in the manifest
+  * [enh] Integrate 'optional' key of arguments in app manifest
+  * [enh] Implement 'boolean' argument type support in app manifest
+  * [enh] Add ping util as recommended package
+  * [enh] Add a helper to check if a user exists on the system
+  * [enh] Provide bash helpers for packages manipulation (wip #97)
+  * [enh] Add ynh_package_update helper and call it in install_from_equivs
+  * [fix] Do not block while set main domain
+  * [fix] Add GRANT OPTION in ynh_mysql_create_db helper
+  * [fix] Validate app argument choice for input value too
+  * [fix] Log rotation is already handled by WatchedFileHandler (fixbug #137)
+  * [fix] Use rmilter as a socket-activated service
+  * [fix] Parse app arguments before creating app folder and settings
+  * [fix] Use INFO logging level if app setting is not found
+  * [fix] Split service_configuration_conflict translation key (fixbug #136)
+  * [fix] Set default value of boolean argument type to false if unset
+  * [fix] Remove useless SPF setting in Postfix configuration (fixbug #150)
+  * [fix] Add procmail to packages dependencies
+  * [i18n] Review translations and keys related to app arguments
+
+  [ Sebastien Badia ]
+  * hooks: Use a more elegant grep command for mysql process check
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 17 Jan 2016 02:57:53 +0100
+
+yunohost (2.3.5) testing; urgency=low
+
+  [ opi ]
+  * [enh] Get app label for installed app in app list
+  * [enh] Short cache on handlebars templates
+
+  [ Jérôme Lebleu ]
+  * [enh] Allow to pass the admin password as argument in the cli
+  * [enh] Add main domain GET route
+  * [enh] Provide bash helpers for MySQL databases and app settings (wip #97)
+  * [enh] Rename ynh_password bash helper to ynh_string_random
+  * [fix] Check app min_version with yunohost package (fixbug #113)
+  * [fix] Use --output-as instead of deprecated options
+  * [fix] Prevent error if unset variable is treated in utils helper
+  * [doc] Improve usage and add examples for user helpers
+  * [i18n] Update translations from Transifex belatedly
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Thu, 24 Dec 2015 10:55:36 +0100
+
+yunohost (2.3.4) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Make use of call_async_output in hook_exec to get output in real time
+  * [fix] Display a more detailed message when yunohost-firewall is stopped
+  * [fix] Prevent insserv warning when using systemd at package postinst
+  * [fix] Log real exception string error in hook_callback
+  * [fix] Add yunohost-firewall.service but do not enable it
+
+  [ julienmalik ]
+  * [fix] Log for rmilter instead of rspamd
+  * [fix] Do not exit at first service which can't be stopped
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 17 Nov 2015 11:10:42 +0100
+
+yunohost (2.3.3) testing; urgency=low
+
+  * [fix] Do not modify handlers with root_handlers in bin/yunohost
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 15:00:04 +0100
+
+yunohost (2.3.2) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Do not rely on dh_installinit and restart service after upgrade
+  * [fix] Add tty in root handlers if debug is set in bin/yunohost
+
+  [ kload ]
+  * [fix] Do not remove the global_script directory
+  * [fix] Unexpected warnings comming from stderr
+  * [enh] Warn the user about the waiting at the configuration generation
+  * [fix] Delayed upgrade of the package 'yunohost'
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 14:03:39 +0100
+
+yunohost (2.3.1) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Add logrotate configuration
+  * [enh] Allow to set default options for yunohost-api service
+  * [enh] Add bash completion for bin/yunohost
+  * [enh] Make use of new logging facilities in firewall, hook and service
+  * [enh] Refactor bin/yunohost and bin/yunohost-api to follow moulinette
+    changes and provide help for global arguments
+  * [enh] Split stdout/stderr wrapping in hook_exec and add a no_trace option
+  * [fix] Create home directory during login (fixbug #80)
+  * [fix] Keep compat with deprecated --plain and --json in the cli
+  * [fix] Do not restrict warning to tty in service_saferemove
+  * [fix] Enable yunohost-api systemd service manually
+
+  [ kload ]
+  * [fix] Restart Dovecot at the end of Rspamd configuration script
+  * [fix] Translate regenconf messages in English and French
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 00:23:27 +0100
+
+yunohost (2.3.0) testing; urgency=low
+
+  [ breaking changes ]
+  * Merge all packages into one
+  * Wheezy compatibility drop
+
+  [ features ]
+  * Implement a regenconf command
+  * Implement local backup/restore functions
+  * Allow to filter which app to backup/restore
+  * Replace the email stack by Rspamd/Rmilter
+  * Create shallow clone to increase app installation time
+  * Add helper bash functions for apps developers
+  * Update app_info to show app installation status
+  * Implement an app_debug function
+  * IPv6 compatibility enhancement
+
+  [ bugfixes ]
+  * Display YunoHost packages versions (fix #11)
+  * Allow empty app arguments in app_install
+  * Invalidate passwd at user creation/deletion (fix #70)
+  * Fix skipped_urls for each domain and #68
+  * Correct logger object in backup_list (fix #75)
+  * 2nd installation of apps with a hooks directory
+  * Add netcat-openbsd dependency
+  * Ensure that arguments are passed to the hook as string
+  * Use SSL/TLS to fetch app list
+  * IPv6 record in DynDNS
+  * Use sudo to execute hook script
+  * Debian postinst script : only respond to configure
+  * Handle SSL generation better
+  * Ensure that the service yunohost-api is always running
+  * Sieve permission denied
+  * Do not enable yunohost-firewall service at install
+  * Open port 1900 when enabling UPnP (fixes #30)
+
+  [ other ]
+  * Add AGPL license
+  * French translation using Weblate
+
+ -- kload <kload@kload.fr>  Tue, 03 Nov 2015 11:55:19 +0000
+
 moulinette-yunohost (2.3.1) testing; urgency=low
 
   [ Julien Malik ]

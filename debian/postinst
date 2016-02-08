@@ -4,16 +4,25 @@ set -e
 
 do_configure() {
   rm -rf /var/cache/moulinette/*
-  service yunohost-api restart
 
   if [ ! -f /etc/yunohost/installed ]; then
-      bash /usr/share/yunohost/hooks/conf_regen/01-yunohost
-      bash /usr/share/yunohost/hooks/conf_regen/02-ssl
-      bash /usr/share/yunohost/hooks/conf_regen/06-slapd
-      bash /usr/share/yunohost/hooks/conf_regen/15-nginx
+      bash /usr/share/yunohost/hooks/conf_regen/01-yunohost True
+      bash /usr/share/yunohost/hooks/conf_regen/02-ssl True
+      bash /usr/share/yunohost/hooks/conf_regen/06-slapd True
+      bash /usr/share/yunohost/hooks/conf_regen/15-nginx True
   else
+      echo "Regenerating configuration, this might take a while..."
       yunohost service regenconf
+
+      # restart yunohost-firewall if it's running
+      service yunohost-firewall status > /dev/null \
+        && service yunohost-firewall restart \
+        || echo "Service yunohost-firewall is not running, you should " \
+            "consider to start it."
   fi
+
+  # update PAM configs
+  pam-auth-update --package
 }
 
 # summary of how this script can be called:
@@ -38,3 +47,13 @@ case "$1" in
         exit 1
     ;;
 esac
+
+# Enable and start yunohost-api service for non-systemd system
+if [ -x /etc/init.d/yunohost-api ] && [ ! -d /run/systemd/system ]; then
+    update-rc.d yunohost-api defaults >/dev/null
+    invoke-rc.d yunohost-api start || exit $?
+fi
+
+#DEBHELPER#
+
+exit 0

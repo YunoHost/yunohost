@@ -27,3 +27,15 @@ ynh_bind_or_cp() {
     fi
     $SUDO_CMD cp -r "$SRCDIR" "$DESTDIR"
 }
+
+# Create a directory under /tmp
+#
+# usage: ynh_mkdir_tmp
+# | ret: the created directory path
+ynh_mkdir_tmp() {
+    TMPDIR="/tmp/$(ynh_string_random 6)"
+    while [ -d $TMPDIR ]; do
+        TMPDIR="/tmp/$(ynh_string_random 6)"
+    done
+    mkdir -p "$TMPDIR" && echo "$TMPDIR"
+}

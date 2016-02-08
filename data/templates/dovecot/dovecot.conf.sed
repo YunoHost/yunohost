@@ -57,12 +57,12 @@ plugin {
   antispam_debug_target = syslog
   antispam_verbose_debug = 0
   antispam_backend = pipe
+  antispam_spam = Junk;SPAM
   antispam_trash = Trash
-  antispam_spam = SPAM;Junk
-  antispam_allow_append_to_spam = no
-  antispam_pipe_program = /usr/bin/sa-learn-pipe.sh
-  antispam_pipe_program_spam_arg = --spam
-  antispam_pipe_program_notspam_arg = --ham
+  antispam_pipe_program = /usr/bin/rspamc
+  antispam_pipe_program_args = -h;localhost:11334;-P;q1
+  antispam_pipe_program_spam_arg = learn_spam
+  antispam_pipe_program_notspam_arg = learn_ham
 }
 
 plugin {

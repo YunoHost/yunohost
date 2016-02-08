@@ -1,0 +1,92 @@
+MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
+
+# Open a connection as a user
+#
+# example: ynh_mysql_connect_as 'user' 'pass' <<< "UPDATE ...;"
+# example: ynh_mysql_connect_as 'user' 'pass' < /path/to/file.sql
+#
+# usage: ynh_mysql_connect_as user pwd [db]
+# | arg: user - the user name to connect as
+# | arg: pwd - the user password
+# | arg: db - the database to connect to
+ynh_mysql_connect_as() {
+    mysql -u "$1" --password="$2" -B "${3:-}"
+}
+
+# Execute a command as root user
+#
+# usage: ynh_mysql_execute_as_root sql [db]
+# | arg: sql - the SQL command to execute
+# | arg: db - the database to connect to
+ynh_mysql_execute_as_root() {
+    ynh_mysql_connect_as "root" "$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
+        "${2:-}" <<< "$1"
+}
+
+# Execute a command from a file as root user
+#
+# usage: ynh_mysql_execute_file_as_root sql [db]
+# | arg: file - the file containing SQL commands
+# | arg: db - the database to connect to
+ynh_mysql_execute_file_as_root() {
+    ynh_mysql_connect_as "root" "$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
+        "${2:-}" < "$1"
+}
+
+# Create a database and grant optionnaly privilegies to a user
+#
+# usage: ynh_mysql_create_db db [user [pwd]]
+# | arg: db - the database name to create
+# | arg: user - the user to grant privilegies
+# | arg: pwd - the password to identify user by
+ynh_mysql_create_db() {
+    db=$1
+
+    sql="CREATE DATABASE ${db};"
+
+    # grant all privilegies to user
+    if [[ $# -gt 1 ]]; then
+        sql+=" GRANT ALL PRIVILEGES ON ${db}.* TO '${2}'@'localhost'"
+        [[ -n ${3:-} ]] && sql+=" IDENTIFIED BY '${3}'"
+        sql+=" WITH GRANT OPTION;"
+    fi
+
+    ynh_mysql_execute_as_root "$sql"
+}
+
+# Drop a database
+#
+# usage: ynh_mysql_drop_db db
+# | arg: db - the database name to drop
+ynh_mysql_drop_db() {
+    ynh_mysql_execute_as_root "DROP DATABASE ${1};"
+}
+
+# Dump a database
+#
+# example: ynh_mysql_dump_db 'roundcube' > ./dump.sql
+#
+# usage: ynh_mysql_dump_db db
+# | arg: db - the database name to dump
+# | ret: the mysqldump output
+ynh_mysql_dump_db() {
+    mysqldump -u "root" -p"$(sudo cat $MYSQL_ROOT_PWD_FILE)" "$1"
+}
+
+# Create a user
+#
+# usage: ynh_mysql_create_user user pwd [host]
+# | arg: user - the user name to create
+# | arg: pwd - the password to identify user by
+ynh_mysql_create_user() {
+    ynh_mysql_execute_as_root \
+        "CREATE USER '${1}'@'localhost' IDENTIFIED BY '${2}';"
+}
+
+# Drop a user
+#
+# usage: ynh_mysql_drop_user user
+# | arg: user - the user name to drop
+ynh_mysql_drop_user() {
+    ynh_mysql_execute_as_root "DROP USER '${1}'@'localhost';"
+}

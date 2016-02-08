@@ -1,0 +1,8 @@
+/var/log/yunohost/*.log {
+        weekly
+        rotate 4
+        delaycompress
+        compress
+        notifempty
+        missingok
+}
