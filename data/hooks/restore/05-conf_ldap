@@ -10,6 +10,7 @@ if [[ $EUID -ne 0 ]]; then
     sudo /bin/bash $(readlink -f $0) $1
 
 else
+
     service slapd stop || true
 
     # Create a directory for backup
