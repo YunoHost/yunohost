@@ -1,0 +1,7 @@
+backup_dir="$1/conf/ynh/"
+backup_dir_legacy="$1/yunohost/"
+sudo mkdir -p $backup_dir
+sudo mkdir -p $backup_dir_legacy
+
+sudo cp -a /etc/yunohost/current_host $backup_dir
+sudo cp -a /etc/yunohost/current_host $backup_dir_legacy
