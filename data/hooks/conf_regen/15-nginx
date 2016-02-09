@@ -24,6 +24,7 @@ cd /usr/share/yunohost/templates/nginx
 
 # Copy plain single configuration files
 files="ssowat.conf
+global.conf
 yunohost_admin.conf
 yunohost_admin.conf.inc
 yunohost_api.conf.inc
