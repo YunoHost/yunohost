@@ -1,3 +1,17 @@
+yunohost (2.3.8) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Add yunohost-firewall to services.yml
+  * [fix] Handle empty app settings error when it's not correctly installed
+
+  [ opi ]
+  * [fix] head opening tag may have attributes.
+
+  [ zamentur ]
+  * [fix] Add backup/restore hooks for ynh_conf_currenthost
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 13 Feb 2016 19:28:51 +0100
+
 yunohost (2.3.7) testing; urgency=low
 
   [ Laurent Peuch ]
