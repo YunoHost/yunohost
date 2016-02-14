@@ -148,8 +148,12 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
 
     for applist in applists:
         if '.json' in applist:
+            list_name=applist.split('.json', 1)[0]
             with open(repo_path +'/'+ applist) as json_list:
-                app_dict.update(json.loads(str(json_list.read())))
+                list_content=json.loads(str(json_list.read()))
+                for k in list_content.keys():
+                    list_content[k]['store']=list_name
+                app_dict.update(list_content)
 
     for app in os.listdir(apps_setting_path):
         if app not in app_dict:
@@ -1026,7 +1030,7 @@ def _set_app_settings(app_id, app_settings):
 
     Keyword arguments:
         app_id -- The app id
-        app_settings -- A dictionary of app settings 
+        app_settings -- A dictionary of app settings
 
     """
     with open(os.path.join(
