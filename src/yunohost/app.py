@@ -475,7 +475,10 @@ def app_install(auth, app, label=None, args=None):
             hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
 
     now = int(time.time())
-    app_setting(app_id, 'id', app_id)
+
+    # We can't use app_setting cause it creates an 'app_not_correctly_installed'
+    # message. See https://dev.yunohost.org/issues/206#note-3
+    _set_app_settings(app, {'id':app_id})
     # TODO: Move install_time away from app_setting
     app_setting(app_id, 'install_time', now)
     status['installed_at'] = now
@@ -796,9 +799,7 @@ def app_setting(app, key, value=None, delete=False):
                 value=yaml.load(value)
             app_settings[key] = value
 
-        with open(os.path.join(
-                apps_setting_path, app, 'settings.yml'), 'w') as f:
-            yaml.safe_dump(app_settings, f, default_flow_style=False)
+        _set_app_settings(app, app_settings)
 
 
 def app_checkport(port):
@@ -1019,6 +1020,18 @@ def _get_app_settings(app_id):
                 app=app_id))
     return {}
 
+def _set_app_settings(app_id, app_settings):
+    """
+    Set settings of an app
+
+    Keyword arguments:
+        app_id -- The app id
+        app_settings -- A dictionary of app settings 
+
+    """
+    with open(os.path.join(
+            apps_setting_path, app_id, 'settings.yml'), 'w') as f:
+        yaml.safe_dump(app_settings, f, default_flow_style=False)
 
 def _get_app_status(app_id, format_date=False):
     """
