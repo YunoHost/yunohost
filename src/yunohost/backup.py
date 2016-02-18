@@ -227,6 +227,11 @@ def backup_create(name=None, description=None, output_directory=None,
         _clean_tmp_dir(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
+    # Calculate total size
+    size = subprocess.check_output(
+        ['du','-sb', tmp_dir]).split()[0].decode('utf-8')
+    info['size'] = int(size)
+
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
         f.write(json.dumps(info))
@@ -310,6 +315,14 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         logger.debug("temporary directory for restoration '%s' already exists",
             tmp_dir)
         os.system('rm -rf %s' % tmp_dir)
+
+    # Check available disk space
+    statvfs = os.statvfs(backup_path)
+    free_space = statvfs.f_frsize * statvfs.f_bavail
+    if free_space < info['size']:
+        logger.debug("%dB left but %dB is needed", free_space, info['size'])
+        raise MoulinetteError(
+            errno.EIO, m18n.n('not_enough_disk_space', path=backup_path))
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_restore', args=[tmp_dir, retcode])
@@ -538,7 +551,13 @@ def backup_info(name, with_details=False, human_readable=False):
         logger.debug("unable to load '%s'", info_file, exc_info=1)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
-    size = os.path.getsize(archive_file)
+    # Retrieve backup size
+    size = info.get('size', 0)
+    if not size:
+        tar = tarfile.open(archive_file, "r:gz")
+        size = reduce(lambda x,y: getattr(x, 'size', x)+getattr(y, 'size', y),
+                      tar.getmembers())
+        tar.close()
     if human_readable:
         size = binary_to_human(size) + 'B'
 

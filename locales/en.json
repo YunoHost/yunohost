@@ -6,6 +6,7 @@
     "installation_failed" : "Installation failed",
     "unexpected_error" : "An unexpected error occured",
     "action_invalid" : "Invalid action '{:s}'",
+    "not_enough_disk_space" : "Not enough free disk space on '{path:s}'",
 
     "license_undefined" : "undefined",
     "no_appslist_found" : "No apps list found",
