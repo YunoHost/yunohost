@@ -368,6 +368,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
                 if i == 'y' or i == 'Y':
                     force = True
             if not force:
+                _clean_tmp_dir()
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
     else:
         from yunohost.tools import tools_postinstall
