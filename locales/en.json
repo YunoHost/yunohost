@@ -35,6 +35,7 @@
     "app_argument_invalid" : "Invalid value for argument '{name:s}': {error:s}",
     "app_argument_required" : "Argument '{name:s}' is required",
     "app_sources_fetch_failed" : "Unable to fetch sources files",
+    "app_unsupported_remote_type" : "Unsupported remote type used for the app",
     "ssowat_conf_updated" : "SSOwat persistent configuration successfully updated",
     "ssowat_conf_generated" : "SSOwat configuration successfully generated",
     "mysql_db_creation_failed" : "MySQL database creation failed",

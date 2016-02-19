@@ -50,6 +50,13 @@ apps_setting_path= '/etc/yunohost/apps/'
 install_tmp      = '/var/cache/yunohost'
 app_tmp_folder   = install_tmp + '/from_file'
 
+re_github_repo = re.compile(
+    r'^(http[s]?://|git@)github.com[/:]'
+    '(?P<owner>[\w\-_]+)/(?P<repo>[\w\-_]+)(.git)?'
+    '(/tree/(?P<tree>.+))?'
+)
+
+
 def app_listlists():
     """
     List fetched lists
@@ -1113,7 +1120,7 @@ def _extract_app_from_file(path, remove=False):
     return manifest
 
 
-def _get_git_last_commit_hash(repository):
+def _get_git_last_commit_hash(repository, reference='HEAD'):
     """
     Attempt to retrieve the last commit hash of a git repository
 
@@ -1123,8 +1130,8 @@ def _get_git_last_commit_hash(repository):
     """
     try:
         commit = subprocess.check_output(
-            "git ls-remote --exit-code {:s} HEAD | awk '{{print $1}}'".format(
-                repository),
+            "git ls-remote --exit-code {0} {1} | awk '{{print $1}}'".format(
+                repository, reference),
             shell=True)
     except subprocess.CalledProcessError:
         logger.exception("unable to get last commit from %s", repository)
@@ -1151,15 +1158,33 @@ def _fetch_app_from_git(app):
     git_result_2 = 1
 
     if ('@' in app) or ('http://' in app) or ('https://' in app):
-        if "github.com" in app:
-            url = app.replace("git@github.com:", "https://github.com/")
-            if ".git" in url[-4:]: url = url[:-4]
-            if "/" in url [-1:]: url = url[:-1]
-            url = url + "/archive/master.zip"
-            if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
-                manifest = _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
+        url = app
+        branch = 'master'
+        github_repo = re_github_repo.match(app)
+        if github_repo:
+            if github_repo.group('tree'):
+                branch = github_repo.group('tree')
+            url = "https://github.com/{owner}/{repo}".format(
+                owner=github_repo.group('owner'),
+                repo=github_repo.group('repo'),
+            )
+            tarball_url = "{url}/archive/{tree}.zip".format(
+                url=url, tree=branch
+            )
+            if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (
+                    tarball_url, app_tmp_folder)) == 0:
+                manifest = _extract_app_from_file(
+                    app_tmp_folder +'.zip', remove=True)
                 del manifest['remote']
+            else:
+                logger.debug('unable to download %s', tarball_url)
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('app_sources_fetch_failed'))
         else:
+            tree_index = url.rfind('/tree/')
+            if tree_index > 0:
+                url = url[:tree_index]
+                branch = app[tree_index+6:]
             git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
             git_result_2 = 0
             try:
@@ -1170,9 +1195,9 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO, m18n.n('app_manifest_invalid'))
 
         # Store remote repository info into the returned manifest
-        manifest['remote'] = {'type': 'git', 'url': app, 'branch': 'master'}
+        manifest['remote'] = {'type': 'git', 'url': app, 'branch': branch}
         try:
-            revision = _get_git_last_commit_hash(app)
+            revision = _get_git_last_commit_hash(url, branch)
         except: pass
         else:
             manifest['remote']['revision'] = revision
@@ -1190,14 +1215,22 @@ def _fetch_app_from_git(app):
         else:
             raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
 
-        if "github.com" in app_info['git']['url']:
-            # FIXME: Retrieve branch defined in app_info
-            url = app_info['git']['url'].replace("git@github.com:", "https://github.com/")
-            if ".git" in url[-4:]: url = url[:-4]
-            if "/" in url [-1:]: url = url[:-1]
-            url = url + "/archive/"+ str(app_info['git']['revision']) + ".zip"
-            if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (url, app_tmp_folder)) == 0:
-                manifest = _extract_app_from_file(app_tmp_folder +'.zip', remove=True)
+        if not 'git' in app_info:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('app_unsupported_remote_type'))
+        url = app_info['git']['url']
+
+        if 'github.com' in url:
+            tarball_url = "{url}/archive/{tree}.zip".format(
+                url=url, tree=app_info['git']['revision']
+            )
+            if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (
+                    tarball_url, app_tmp_folder)) == 0:
+                manifest = _extract_app_from_file(
+                    app_tmp_folder +'.zip', remove=True)
+            else:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('app_sources_fetch_failed'))
         else:
             git_result_2 = 0
 
@@ -1215,6 +1248,7 @@ def _fetch_app_from_git(app):
         app_tmp_folder = install_tmp +'/'+ app
         if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
 
+        # FIXME: maybe store the fetched manifest??
         git_result   = os.system('git clone %s -b %s %s' % (app_info['git']['url'], app_info['git']['branch'], app_tmp_folder))
         git_result_2 = os.system('cd %s && git reset --hard %s' % (app_tmp_folder, str(app_info['git']['revision'])))
 
