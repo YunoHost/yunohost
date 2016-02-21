@@ -1151,11 +1151,10 @@ def _fetch_app_from_git(app):
         Dict manifest
 
     """
-    global app_tmp_folder
+    if os.path.exists(app_tmp_folder):
+        shutil.rmtree(app_tmp_folder)
 
     msignals.display(m18n.n('downloading'))
-
-    git_result_2 = 1
 
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
@@ -1185,26 +1184,30 @@ def _fetch_app_from_git(app):
             if tree_index > 0:
                 url = url[:tree_index]
                 branch = app[tree_index+6:]
-            git_result   = os.system('git clone --depth=1 %s %s' % (app, app_tmp_folder))
-            git_result_2 = 0
             try:
-                with open(app_tmp_folder + '/manifest.json') as json_manifest:
-                    manifest = json.loads(str(json_manifest.read()))
-                    manifest['lastUpdate'] = int(time.time())
+                subprocess.check_call([
+                    'git', 'clone', '--depth=1', url, app_tmp_folder])
+                subprocess.check_call([
+                        'git', 'reset', '--hard', branch
+                    ], cwd=app_tmp_folder)
+                with open(app_tmp_folder + '/manifest.json') as f:
+                    manifest = json.loads(str(f.read()))
+            except subprocess.CalledProcessError:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('app_sources_fetch_failed'))
             except IOError:
-                raise MoulinetteError(errno.EIO, m18n.n('app_manifest_invalid'))
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('app_manifest_invalid'))
+            else:
+                msignals.display(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
-        manifest['remote'] = {'type': 'git', 'url': app, 'branch': branch}
+        manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
         try:
             revision = _get_git_last_commit_hash(url, branch)
         except: pass
         else:
             manifest['remote']['revision'] = revision
-
-        if git_result_2 == 1:
-            return manifest
-
     else:
         app_dict = app_list(raw=True)
 
@@ -1232,30 +1235,32 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
         else:
-            git_result_2 = 0
+            try:
+                subprocess.check_call([
+                    'git', 'clone', app_info['git']['url'],
+                    '-b', app_info['git']['branch'], app_tmp_folder])
+                subprocess.check_call([
+                        'git', 'reset', '--hard',
+                        str(app_info['git']['revision'])
+                    ], cwd=app_tmp_folder)
+                with open(app_tmp_folder + '/manifest.json') as f:
+                    manifest = json.loads(str(f.read()))
+            except subprocess.CalledProcessError:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('app_sources_fetch_failed'))
+            except IOError:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('app_manifest_invalid'))
+            else:
+                msignals.display(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {
             'type': 'git',
-            'url': app_info['git']['url'],
+            'url': url,
             'branch': app_info['git']['branch'],
             'revision': app_info['git']['revision'],
         }
-
-        if git_result_2 == 1:
-            return manifest
-
-        app_tmp_folder = install_tmp +'/'+ app
-        if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
-
-        # FIXME: maybe store the fetched manifest??
-        git_result   = os.system('git clone %s -b %s %s' % (app_info['git']['url'], app_info['git']['branch'], app_tmp_folder))
-        git_result_2 = os.system('cd %s && git reset --hard %s' % (app_tmp_folder, str(app_info['git']['revision'])))
-
-    if not git_result == git_result_2 == 0:
-        raise MoulinetteError(errno.EIO, m18n.n('app_sources_fetch_failed'))
-
-    msignals.display(m18n.n('done'))
 
     return manifest
 
