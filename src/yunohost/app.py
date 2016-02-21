@@ -423,7 +423,7 @@ def app_install(auth, app, label=None, args=None):
     except OSError: os.makedirs(install_tmp)
 
     status = {
-        'installed_at': None,
+        'installed_at': int(time.time()),
         'upgraded_at': None,
         'remote': {
             'type': None,
@@ -467,13 +467,11 @@ def app_install(auth, app, label=None, args=None):
     args_list = _parse_args_from_manifest(manifest, 'install', args_dict, auth)
     args_list.append(app_id)
 
-    # Prepare App settings
-    app_setting_path = apps_setting_path +'/'+ app_id
-
-    #TMP: Remove old settings
-    if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
+    # Create app directory
+    app_setting_path = os.path.join(apps_setting_path, app_id)
+    if os.path.exists(app_setting_path):
+        shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
-    os.system('touch %s/settings.yml' % app_setting_path)
 
     # Clean hooks and add new ones
     hook_remove(app_id)
@@ -481,16 +479,14 @@ def app_install(auth, app, label=None, args=None):
         for file in os.listdir(app_tmp_folder +'/hooks'):
             hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
 
-    now = int(time.time())
-    app_setting(app_id, 'id', app_id)
-    # TODO: Move install_time away from app_setting
-    app_setting(app_id, 'install_time', now)
-    status['installed_at'] = now
-
-    if label:
-        app_setting(app_id, 'label', label)
-    else:
-        app_setting(app_id, 'label', manifest['name'])
+    # Set initial app settings
+    app_settings = {
+        'id': app_id,
+        'label': label if label else manifest['name'],
+    }
+    # TODO: Move install_time away from app settings
+    app_settings['install_time'] = status['installed_at']
+    _set_app_settings(app_id, app_settings)
 
     os.system('chown -R admin: '+ app_tmp_folder)
 
@@ -783,7 +779,7 @@ def app_setting(app, key, value=None, delete=False):
         delete -- Delete the key
 
     """
-    app_settings = _get_app_settings(app)
+    app_settings = _get_app_settings(app) or {}
 
     if value is None and not delete:
         try:
@@ -792,20 +788,14 @@ def app_setting(app, key, value=None, delete=False):
             logger.info("cannot get app setting '%s' for '%s'", key, app)
             return None
     else:
-        yaml_settings=['redirected_urls','redirected_regex']
-        # Set the value
-        if app_settings is None:
-            app_settings = {}
         if delete and key in app_settings:
             del app_settings[key]
         else:
-            if key in yaml_settings:
-                value=yaml.load(value)
+            # FIXME: Allow multiple values for some keys?
+            if key in ['redirected_urls','redirected_regex']:
+                value = yaml.load(value)
             app_settings[key] = value
-
-        with open(os.path.join(
-                apps_setting_path, app, 'settings.yml'), 'w') as f:
-            yaml.safe_dump(app_settings, f, default_flow_style=False)
+        _set_app_settings(app, app_settings)
 
 
 def app_checkport(port):
@@ -1025,6 +1015,20 @@ def _get_app_settings(app_id):
         logger.exception(m18n.n('app_not_correctly_installed',
                 app=app_id))
     return {}
+
+
+def _set_app_settings(app_id, settings):
+    """
+    Set settings of an app
+
+    Keyword arguments:
+        app_id -- The app id
+        settings -- Dict with app settings
+
+    """
+    with open(os.path.join(
+            apps_setting_path, app_id, 'settings.yml'), 'w') as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
 
 
 def _get_app_status(app_id, format_date=False):
