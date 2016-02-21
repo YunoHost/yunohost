@@ -62,5 +62,6 @@ sudo chown -R metronome: /etc/metronome/conf.d/
 if [[ "$need_restart" == "True" ]]; then
     sudo service metronome restart
 else
-    sudo service metronome reload
+    sudo service metronome reload \
+      || sudo service metronome restart
 fi

@@ -48,9 +48,10 @@ if [ ! -f /proc/net/if_inet6 ]; then
       's/inet_interfaces = all/inet_interfaces = all\ninet_protocols = ipv4/' \
       main.cf
 fi
-    
+
 if [[ $(safe_copy main.cf /etc/postfix/main.cf) == "True" ]]; then
     sudo service postfix restart
 else
-    sudo service postfix reload
+    sudo service postfix reload \
+      || sudo service postfix restart
 fi

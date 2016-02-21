@@ -47,4 +47,5 @@ for file in /etc/dnsmasq.d/*.*; do
       || sudo yunohost service saferemove -s dnsmasq $file
 done
 
-sudo service dnsmasq reload
+sudo service dnsmasq reload \
+  || sudo service dnsmasq restart

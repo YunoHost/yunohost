@@ -78,6 +78,9 @@ else
 fi
 
 # Restart if need be
-[[ "$need_restart" == "True" ]] \
-  && sudo service nginx restart \
-  || sudo service nginx reload
+if [[ "$need_restart" == "True" ]]; then
+    sudo service nginx restart
+else
+    sudo service nginx reload \
+      || sudo service nginx restart
+fi
