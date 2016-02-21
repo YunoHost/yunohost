@@ -1151,8 +1151,11 @@ def _fetch_app_from_git(app):
         Dict manifest
 
     """
+    app_tmp_archive = '{0}.zip'.format(app_tmp_folder)
     if os.path.exists(app_tmp_folder):
         shutil.rmtree(app_tmp_folder)
+    if os.path.exists(app_tmp_archive):
+        os.remove(app_tmp_archive)
 
     msignals.display(m18n.n('downloading'))
 
@@ -1170,15 +1173,16 @@ def _fetch_app_from_git(app):
             tarball_url = "{url}/archive/{tree}.zip".format(
                 url=url, tree=branch
             )
-            if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (
-                    tarball_url, app_tmp_folder)) == 0:
-                manifest = _extract_app_from_file(
-                    app_tmp_folder +'.zip', remove=True)
-                del manifest['remote']
-            else:
-                logger.debug('unable to download %s', tarball_url)
+            try:
+                subprocess.check_call([
+                    'wget', '-qO', app_tmp_archive, tarball_url])
+            except subprocess.CalledProcessError:
+                logger.exception('unable to download %s', tarball_url)
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
+            else:
+                manifest = _extract_app_from_file(
+                    app_tmp_archive, remove=True)
         else:
             tree_index = url.rfind('/tree/')
             if tree_index > 0:
@@ -1227,13 +1231,16 @@ def _fetch_app_from_git(app):
             tarball_url = "{url}/archive/{tree}.zip".format(
                 url=url, tree=app_info['git']['revision']
             )
-            if os.system('wget "%s" -O "%s.zip" > /dev/null 2>&1' % (
-                    tarball_url, app_tmp_folder)) == 0:
-                manifest = _extract_app_from_file(
-                    app_tmp_folder +'.zip', remove=True)
-            else:
+            try:
+                subprocess.check_call([
+                    'wget', '-qO', app_tmp_archive, tarball_url])
+            except subprocess.CalledProcessError:
+                logger.exception('unable to download %s', tarball_url)
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
+            else:
+                manifest = _extract_app_from_file(
+                    app_tmp_archive, remove=True)
         else:
             try:
                 subprocess.check_call([
