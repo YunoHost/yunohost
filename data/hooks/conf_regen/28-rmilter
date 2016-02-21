@@ -37,7 +37,8 @@ for domain in $domain_list; do
     sudo chmod 400      /etc/dkim/$domain.mail.key
 done
 
-# Reload systemd daemon and stop rmilter service to take into account the
-# new configuration. It will be started again by the socket as needed.
+# Reload systemd daemon, ensure that the socket is listening and stop
+# the service. It will be started again by the socket as needed.
 sudo systemctl daemon-reload
+sudo systemctl start rmilter.socket
 sudo systemctl stop rmilter.service 2>&1 || true
