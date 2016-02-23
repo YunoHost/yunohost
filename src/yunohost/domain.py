@@ -220,7 +220,7 @@ def domain_remove(auth, domain, force=False):
     msignals.display(m18n.n('domain_deleted'), 'success')
 
 
-def domain_dns_conf(domain, ttl):
+def domain_dns_conf(domain, ttl=None):
     """
     Generate DNS configuration for a domain
 
