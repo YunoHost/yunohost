@@ -220,7 +220,7 @@ def domain_remove(auth, domain, force=False):
     msignals.display(m18n.n('domain_deleted'), 'success')
 
 
-def domain_dns_conf(domain, time_to_live):
+def domain_dns_conf(domain, ttl):
     """
     Generate DNS configuration for a domain
 
@@ -229,7 +229,7 @@ def domain_dns_conf(domain, time_to_live):
         time to live -- Time to live
     """
 
-    ttl = 3600 if time_to_live is None else time_to_live
+    ttl = 3600 if ttl is None else ttl
 
     ip4 = urlopen("http://ip.yunohost.org").read().strip()
 

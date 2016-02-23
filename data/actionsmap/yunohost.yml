@@ -302,9 +302,9 @@ domain:
             arguments:
                 domain:
                     help: Target domain
-                -ttl:
-                    full: --time-to-live
-                    help: Time to live in secound before DNS servers update this information. Without this option, ttl is set to 3600s, one hour.
+                -t:
+                    full: --ttl
+                    help: Time To Live (TTL) is second before DNS servers update. Default is 3600 second (i.e. 1 hour).
                     extra:
                         pattern: &pattern_ttl
                             - !!str ^[0-9]+$
