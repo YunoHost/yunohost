@@ -308,7 +308,7 @@ domain:
                     extra:
                         pattern:
                             - !!str ^[0-9]+$
-                            - "pattern_number"
+                            - "pattern_positive_number"
 
 
         ### domain_info()

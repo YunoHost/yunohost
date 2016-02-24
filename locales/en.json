@@ -220,7 +220,7 @@
     "unlimit" : "No quota",
     "pattern_domain" : "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_listname" : "Must be alphanumeric and underscore characters only",
-    "pattern_number": "Must be a positive number",
+    "pattern_positive_number": "Must be a positive number",
     "pattern_port" : "Must be a valid port number (i.e. 0-65535)",
     "pattern_port_or_range" : "Must be a valid port number (i.e. 0-65535) or range of ports (e.g. 100:200)",
     "pattern_backup_archive_name" : "Must be a valid filename with alphanumeric and -_. characters only",
