@@ -304,9 +304,9 @@ domain:
                     help: Target domain
                 -t:
                     full: --ttl
-                    help: Time To Live (TTL) in second before DNS servers update. Default is 3600 second (i.e. 1 hour).
+                    help: Time To Live (TTL) in second before DNS servers update. Default is 3600 seconds (i.e. 1 hour).
                     extra:
-                        pattern: &pattern_ttl
+                        pattern:
                             - !!str ^[0-9]+$
                             - "pattern_number"
 
