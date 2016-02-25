@@ -51,7 +51,7 @@ for file in /etc/metronome/conf.d/*; do
     sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
     [[ $domain_list =~ $domain ]] \
       || ([[ $(sudo yunohost service saferemove -s metronome $file | tail -n1) == "True" ]] \
-        && rm -rf /var/lib/metronome/$sanitzed_domain)
+        && sudo rm -rf /var/lib/metronome/$sanitzed_domain)
 done
 
 # Create domain directory
