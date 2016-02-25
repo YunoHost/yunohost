@@ -67,7 +67,7 @@ if [ -f /etc/yunohost/installed ]; then
                   | sed 's|/etc/nginx/conf.d/||' \
                   | sed 's|.conf||')
         [[ $domain_list =~ $domain ]] \
-          || ($(sudo yunohost service saferemove -s nginx $file) == "True" \
+          || ([[ $(sudo yunohost service saferemove -s nginx $file) == "True" ]] \
             && (rm -r /etc/nginx/conf.d/$domain.d || true))
     done
 
