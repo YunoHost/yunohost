@@ -381,7 +381,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
         if hook_exec(app_tmp_folder +'/scripts/upgrade', args_list) != 0:
-            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+            logger.error(m18n.n('app_upgrade_failed', app=app_id))
         else:
             now = int(time.time())
             # TODO: Move install_time away from app_setting
@@ -402,6 +402,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
+
+    app_ssowatconf(auth)
 
     msignals.display(m18n.n('upgrade_complete'), 'success')
 
