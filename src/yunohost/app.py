@@ -1049,7 +1049,8 @@ def _get_app_status(app_id, format_date=False):
         with open(app_setting_path + '/status.json') as f:
             status = json.loads(str(f.read()))
     except IOError:
-        logger.exception("status file not found for '%s'", app_id)
+        logger.debug("status file not found for '%s'", app_id,
+                     exc_info=1)
         # Create app status
         status = {
             'installed_at': app_setting(app_id, 'install_time'),
