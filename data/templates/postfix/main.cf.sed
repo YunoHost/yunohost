@@ -43,6 +43,7 @@ smtpd_tls_eecdh_grade = ultra
 smtp_tls_security_level=may
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 smtp_tls_exclude_ciphers = $smtpd_tls_exclude_ciphers
+smtp_tls_mandatory_ciphers= $smtpd_tls_mandatory_ciphers
 smtp_tls_loglevel=1
 
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
