@@ -226,7 +226,7 @@ def domain_dns_conf(domain, ttl=None):
 
     Keyword argument:
         domain -- Domain name
-        time to live -- Time to live
+        ttl -- Time to live
     """
 
     ttl = 3600 if ttl is None else ttl
