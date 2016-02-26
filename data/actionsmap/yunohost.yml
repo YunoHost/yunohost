@@ -302,6 +302,14 @@ domain:
             arguments:
                 domain:
                     help: Target domain
+                -t:
+                    full: --ttl
+                    help: Time To Live (TTL) in second before DNS servers update. Default is 3600 seconds (i.e. 1 hour).
+                    extra:
+                        pattern:
+                            - !!str ^[0-9]+$
+                            - "pattern_positive_number"
+
 
         ### domain_info()
 #        info:
