@@ -158,7 +158,7 @@ Component "localhost" "http"
 
 ---Set up a MUC (multi-user chat) room server
 Component "muc.{{ main_domain }}" "muc"
-    name = "YunoHost Chatrooms"
+    name = "{{ main_domain }} Chatrooms"
 
     modules_enabled = {
         "muc_limits";
@@ -176,13 +176,13 @@ Component "muc.{{ main_domain }}" "muc"
 
 ---Set up a PubSub server
 Component "pubsub.{{ main_domain }}" "pubsub"
-    name = "YunoHost Publish/Subscribe"
+    name = "{{ main_domain }} Publish/Subscribe"
 
     unrestricted_node_creation = true -- Anyone can create a PubSub node (from any server)
 
 ---Set up a VJUD service
 Component "vjud.{{ main_domain }}" "vjud"
-    ud_disco_name = "Jappix User Directory"
+    ud_disco_name = "{{ main_domain }} User Directory"
 
 
 ----------- Virtual hosts -----------
