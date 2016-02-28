@@ -255,4 +255,22 @@ def domain_dns_conf(domain, ttl=None):
     else:
         result += '@ {ttl} IN TXT "v=spf1 a mx ip4:{ip4} ip6:{ip6} -all"\n'.format(ttl=ttl, ip4=ip4, ip6=ip6)
 
+    try:
+        with open('/etc/dkim/{domain}.mail.txt'.format(domain=domain)) as f:
+            dkim_content = f.read()
+    except IOError:
+        pass
+    else:
+        dkim = re.match((
+            r'^(?P<domain>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
+            '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
+            '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
+            '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M|re.S
+        )
+        if dkim:
+            result += '{domain} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
+                domain=dkim.group('domain'), ttl=ttl,
+                v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')
+            )
+
     return result
