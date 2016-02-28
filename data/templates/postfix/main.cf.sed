@@ -31,16 +31,19 @@ smtpd_tls_auth_only=yes
 smtpd_tls_cert_file=/etc/ssl/certs/yunohost_crt.pem
 smtpd_tls_key_file=/etc/ssl/private/yunohost_key.pem
 smtpd_tls_CAfile = /etc/ssl/certs/ca-yunohost_crt.pem
-smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4
+smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtpd_tls_loglevel=1
 smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3
 smtpd_tls_mandatory_ciphers=high
+smtpd_tls_eecdh_grade = ultra
 
 # -- TLS for outgoing connections
 # Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
 smtp_tls_security_level=may
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtp_tls_exclude_ciphers = $smtpd_tls_exclude_ciphers
+smtp_tls_mandatory_ciphers= $smtpd_tls_mandatory_ciphers
 smtp_tls_loglevel=1
 
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
