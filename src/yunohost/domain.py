@@ -163,6 +163,7 @@ def domain_add(auth, domain, dyndns=False):
                 service_regenconf(service='nginx')
                 service_regenconf(service='metronome')
                 service_regenconf(service='dnsmasq')
+                service_regenconf(service='rmilter')
                 os.system('yunohost app ssowatconf > /dev/null 2>&1')
         except IOError: pass
     except:
