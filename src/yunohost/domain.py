@@ -262,14 +262,14 @@ def domain_dns_conf(domain, ttl=None):
         pass
     else:
         dkim = re.match((
-            r'^(?P<domain>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
             '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
             '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
             '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M|re.S
         )
         if dkim:
-            result += '{domain} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
-                domain=dkim.group('domain'), ttl=ttl,
+            result += '{host} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
+                host='{0}.{1}'.format(dkim.group('host'), domain), ttl=ttl,
                 v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')
             )
 
