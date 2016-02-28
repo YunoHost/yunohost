@@ -225,33 +225,49 @@ def domain_dns_conf(domain, ttl=None):
     Keyword argument:
         domain -- Domain name
         ttl -- Time to live
+
     """
-
     ttl = 3600 if ttl is None else ttl
+    ip4 = ip6 = None
 
-    ip4 = urlopen("http://ip.yunohost.org").read().strip()
-
-    result = "@ {ttl} IN A {ip4}\n* {ttl} IN A {ip4}\n".format(ttl=ttl, ip4=ip4)
-
-    ip6 = None
+    # A/AAAA records
+    try:
+        ip4 = urlopen("http://ip.yunohost.org").read().strip()
+    except IOError:
+        raise MoulinetteError(errno.ENETUNREACH,
+                              m18n.n('no_internet_connection'))
+    result = (
+        "@ {ttl} IN A {ip4}\n"
+        "* {ttl} IN A {ip4}\n"
+    ).format(ttl=ttl, ip4=ip4)
 
     try:
         ip6 = urlopen("http://ip6.yunohost.org").read().strip()
-    except Exception:
-        pass
+    except IOError:
+        logger.debug('cannot retrieve IPv6', exc_info=1)
     else:
-        result += "@ {ttl} IN AAAA {ip6}\n* {ttl} IN AAAA {ip6}\n".format(ttl=ttl, ip6=ip6)
+        result += (
+            "@ {ttl} IN AAAA {ip6}\n"
+            "* {ttl} IN AAAA {ip6}\n"
+        ).format(ttl=ttl, ip6=ip6)
 
-    result += "\n_xmpp-client._tcp {ttl} IN SRV 0 5 5222 {domain}.\n_xmpp-server._tcp {ttl} IN SRV 0 5 5269 {domain}.\n".format(ttl=ttl, domain=domain)
+    # Jabber/XMPP
+    result += ("\n"
+        "_xmpp-client._tcp {ttl} IN SRV 0 5 5222 {domain}.\n"
+        "_xmpp-server._tcp {ttl} IN SRV 0 5 5269 {domain}.\n"
+        "muc {ttl} IN CNAME @\n"
+        "pubsub {ttl} IN CNAME @\n"
+        "vjud {ttl} IN CNAME @\n"
+    ).format(ttl=ttl, domain=domain)
 
-    result += "muc {ttl} IN CNAME @\npubsub {ttl} IN CNAME @\nvjud {ttl} IN CNAME @\n\n".format(ttl=ttl)
-
-    result += "@ {ttl} IN MX 10 {domain}.\n".format(ttl=ttl, domain=domain)
-
-    if ip6 is None:
-        result += '@ {ttl} IN TXT "v=spf1 a mx ip4:{ip4} -all"\n'.format(ttl=ttl, ip4=ip4)
-    else:
-        result += '@ {ttl} IN TXT "v=spf1 a mx ip4:{ip4} ip6:{ip6} -all"\n'.format(ttl=ttl, ip4=ip4, ip6=ip6)
+    # Email
+    result += ('\n'
+        '@ {ttl} IN MX 10 {domain}.\n'
+        '@ {ttl} IN TXT "v=spf1 a mx ip4:{ip4}'
+    ).format(ttl=ttl, domain=domain, ip4=ip4)
+    if ip6 is not None:
+        result += ' ip6:{ip6}'.format(ip6=ip6)
+    result += ' -all"'
 
     try:
         with open('/etc/dkim/{domain}.mail.txt'.format(domain=domain)) as f:
@@ -266,7 +282,7 @@ def domain_dns_conf(domain, ttl=None):
             '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M|re.S
         )
         if dkim:
-            result += '{host} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
+            result += '\n{host} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
                 host='{0}.{1}'.format(dkim.group('host'), domain), ttl=ttl,
                 v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')
             )
