@@ -37,6 +37,7 @@ def get_versions(*args, **kwargs):
         ('moulinette', get_version('moulinette')),
         ('yunohost', get_version('yunohost')),
         ('yunohost-admin', get_version('yunohost-admin')),
+        ('ssowat', get_version('ssowat')),
     ])
 
 def has_min_version(min_version, package='yunohost', strict=False):
