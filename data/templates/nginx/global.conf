@@ -1,0 +1,1 @@
+server_tokens off;
