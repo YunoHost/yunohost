@@ -142,21 +142,25 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
     if limit: limit = int(limit)
     else: limit = 1000
 
-    applists = os.listdir(repo_path)
-    app_dict  = {}
+    app_dict = {}
     if raw:
         list_dict = {}
     else:
-        list_dict=[]
+        list_dict = []
 
-    if not applists:
-        app_fetchlist()
-        applists = os.listdir(repo_path)
+    try:
+        applists = app_listlists()['lists']
+        applists[0]
+    except IOError, IndexError:
+        app_fetchlists()
+        applists = app_listlists()['lists']
 
     for applist in applists:
-        if '.json' in applist:
-            with open(repo_path +'/'+ applist) as json_list:
-                app_dict.update(json.loads(str(json_list.read())))
+        with open(os.path.join(repo_path, applist + '.json')) as json_list:
+            for app, info in json.loads(str(json_list.read())).items():
+                if app not in app_dict:
+                    info['repository'] = applist
+                    app_dict[app] = info
 
     for app in os.listdir(apps_setting_path):
         if app not in app_dict:
@@ -168,7 +172,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
                     continue
             with open( apps_setting_path + app +'/manifest.json') as json_manifest:
                 app_dict[app] = {"manifest":json.loads(str(json_manifest.read()))}
-            app_dict[app]['manifest']['orphan']=True
+            app_dict[app]['repository'] = None
 
     if len(app_dict) > (0 + offset) and limit > 0:
         sorted_app_dict = {}
