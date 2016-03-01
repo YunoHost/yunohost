@@ -33,6 +33,9 @@ import errno
 import subprocess
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
+
+logger = getActionLogger('yunohost.dyndns')
 
 
 class IPRouteLine(object):
@@ -83,7 +86,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
             os.makedirs('/etc/yunohost/dyndns')
 
-            msignals.display(m18n.n('dyndns_key_generating'))
+            logger.info(m18n.n('dyndns_key_generating'))
 
             os.system('cd /etc/yunohost/dyndns && ' \
                       'dnssec-keygen -a hmac-md5 -b 128 -n USER %s' % domain)
@@ -104,7 +107,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_registration_failed', error))
 
-    msignals.display(m18n.n('dyndns_registered'), 'success')
+    logger.success(m18n.n('dyndns_registered'))
 
     dyndns_installcron()
 
@@ -159,7 +162,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
                                   "ip route cmd error : {}".format(e))
 
         if new_ipv6 is None:
-            msignals.display(m18n.n('no_ipv6_connectivity'), 'warning')
+            logger.warning(m18n.n('no_ipv6_connectivity'))
 
     else:
         new_ipv6 = ipv6
@@ -217,7 +220,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         else:
             private_key_file = key
         if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % private_key_file) == 0:
-            msignals.display(m18n.n('dyndns_ip_updated'), 'success')
+            logger.success(m18n.n('dyndns_ip_updated'))
             with open('/etc/yunohost/dyndns/old_ip', 'w') as f:
                 f.write(new_ip)
             if new_ipv6 is not None:
@@ -239,7 +242,7 @@ def dyndns_installcron():
     with open('/etc/cron.d/yunohost-dyndns', 'w+') as f:
         f.write('*/2 * * * * root yunohost dyndns update >> /dev/null\n')
 
-    msignals.display(m18n.n('dyndns_cron_installed'), 'success')
+    logger.success(m18n.n('dyndns_cron_installed'))
 
 
 def dyndns_removecron():
@@ -253,4 +256,4 @@ def dyndns_removecron():
     except:
         raise MoulinetteError(errno.EIO, m18n.n('dyndns_cron_remove_failed'))
 
-    msignals.display(m18n.n('dyndns_cron_removed'), 'success')
+    logger.success(m18n.n('dyndns_cron_removed'))
