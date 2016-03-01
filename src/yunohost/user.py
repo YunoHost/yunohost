@@ -201,13 +201,11 @@ def user_create(auth, username, firstname, lastname, mail, password,
                     ['su', '-', username, '-c', "''"])
             except subprocess.CalledProcessError:
                 if not os.path.isdir('/home/{0}'.format(username)):
-                    logger.exception('cannot create user home folder')
-                    msignals.display(
-                        m18n.n('user_home_creation_failed'), 'warning')
-
+                    logger.warning(m18n.n('user_home_creation_failed'),
+                                   exc_info=1)
             app_ssowatconf(auth)
             #TODO: Send a welcome mail to user
-            msignals.display(m18n.n('user_created'), 'success')
+            logger.success(m18n.n('user_created'))
             hook_callback('post_user_create',
                           args=[username, mail, password, firstname, lastname])
 
@@ -246,7 +244,7 @@ def user_delete(auth, username, purge=False):
 
     hook_callback('post_user_delete', args=[username, purge])
 
-    msignals.display(m18n.n('user_deleted'), 'success')
+    logger.success(m18n.n('user_deleted'))
 
 
 def user_update(auth, username, firstname=None, lastname=None, mail=None,
@@ -354,7 +352,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         new_attr_dict['mailuserquota'] = mailbox_quota
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
-       msignals.display(m18n.n('user_updated'), 'success')
+       logger.success(m18n.n('user_updated'))
        app_ssowatconf(auth)
        return user_info(auth, username)
     else:
