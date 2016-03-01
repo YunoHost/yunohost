@@ -164,8 +164,8 @@ def monitor_network(units=None, human_readable=False):
     devices = {}
     output = subprocess.check_output('ip addr show'.split())
     for d in re.split('^(?:[0-9]+: )', output, flags=re.MULTILINE):
-        d = re.sub('\n[ ]+', ' % ', d)          # Replace new lines by %
-        m = re.match('([a-z]+[0-9]?): (.*)', d) # Extract device name (1) and its addresses (2)
+        # Extract device name (1) and its addresses (2)
+        m = re.match('([^\s@]+)(?:@[\S]+)?: (.*)', d, flags=re.DOTALL)
         if m:
             devices[m.group(1)] = m.group(2)
 
@@ -206,6 +206,8 @@ def monitor_network(units=None, human_readable=False):
                             if k != 'time_since_update':
                                 i[k] = binary_to_human(i[k]) + 'B'
                     result[u][iname] = i
+                else:
+                    logger.debug('interface name %s was not found', iname)
         elif u == 'infos':
             try:
                 p_ip = str(urlopen('http://ip.yunohost.org').read())
