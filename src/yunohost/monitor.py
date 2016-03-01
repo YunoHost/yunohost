@@ -38,8 +38,10 @@ import cPickle as pickle
 from urllib import urlopen
 from datetime import datetime, timedelta
 
-
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
+
+logger = getActionLogger('yunohost.monitor')
 
 glances_uri  = 'http://127.0.0.1:61209'
 stats_path   = '/var/lib/yunohost/stats'
@@ -419,7 +421,7 @@ def monitor_enable(no_stats=False):
         os.system("touch %s" % crontab_path)
         os.system("echo '%s' >%s" % (rules, crontab_path))
 
-    msignals.display(m18n.n('monitor_enabled'), 'success')
+    logger.success(m18n.n('monitor_enabled'))
 
 
 def monitor_disable():
@@ -437,7 +439,7 @@ def monitor_disable():
         try:
             service_disable('glances')
         except MoulinetteError as e:
-            msignals.display(e.strerror, 'warning')
+            logger.warning(e.strerror)
 
     # Remove crontab
     try:
@@ -445,7 +447,7 @@ def monitor_disable():
     except:
         pass
 
-    msignals.display(m18n.n('monitor_disabled'), 'success')
+    logger.success(m18n.n('monitor_disabled'))
 
 
 def _get_glances_api():
