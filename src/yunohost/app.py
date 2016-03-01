@@ -106,7 +106,7 @@ def app_fetchlist(url=None, name=None):
     os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
     os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
 
-    msignals.display(m18n.n('appslist_fetched'), 'success')
+    logger.success(m18n.n('appslist_fetched'))
 
 
 def app_removelist(name):
@@ -123,7 +123,7 @@ def app_removelist(name):
     except OSError:
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
 
-    msignals.display(m18n.n('appslist_removed'), 'success')
+    logger.success(m18n.n('appslist_removed'))
 
 
 def app_list(offset=None, limit=None, filter=None, raw=False):
@@ -343,7 +343,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         elif url:
             manifest = _fetch_app_from_git(url)
         elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-            msignals.display(m18n.n('custom_app_url_required', app_id), 'warning')
+            logger.warning(m18n.n('custom_app_url_required', app_id))
             continue
         elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
               or ('update_time' not in current_app_dict['settings'] \
@@ -398,14 +398,14 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
             # So much win
             upgraded_apps.append(app_id)
-            msignals.display(m18n.n('app_upgraded', app=app_id), 'success')
+            logger.success(m18n.n('app_upgraded', app=app_id))
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
 
     app_ssowatconf(auth)
 
-    msignals.display(m18n.n('upgrade_complete'), 'success')
+    logger.success(m18n.n('upgrade_complete'))
 
 
 def app_install(auth, app, label=None, args=None):
@@ -509,7 +509,7 @@ def app_install(auth, app, label=None, args=None):
             os.system('chown -R root: %s' % app_setting_path)
             os.system('chown -R admin: %s/scripts' % app_setting_path)
             app_ssowatconf(auth)
-            msignals.display(m18n.n('installation_complete'), 'success')
+            logger.success(m18n.n('installation_complete'))
         else:
             raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
     except:
@@ -526,8 +526,7 @@ def app_install(auth, app, label=None, args=None):
         except KeyboardInterrupt, EOFError:
             raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
         except Exception as e:
-            import traceback
-            msignals.display(traceback.format_exc().strip(), 'log')
+            logger.debug('app installation failed', exc_info=1)
             raise MoulinetteError(errno.EIO, m18n.n('unexpected_error'))
 
 
@@ -559,7 +558,7 @@ def app_remove(auth, app):
     args_list = [app]
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args_list) == 0:
-        msignals.display(m18n.n('app_removed', app=app), 'success')
+        logger.success(m18n.n('app_removed', app=app))
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
     shutil.rmtree('/tmp/yunohost_remove')
@@ -767,7 +766,7 @@ def app_makedefault(auth, app, domain=None):
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
-    msignals.display(m18n.n('ssowat_conf_updated'), 'success')
+    logger.success(m18n.n('ssowat_conf_updated'))
 
 
 def app_setting(app, key, value=None, delete=False):
@@ -814,7 +813,7 @@ def app_checkport(port):
         s.connect(("localhost", int(port)))
         s.close()
     except socket.error:
-        msignals.display(m18n.n('port_available', int(port)), 'success')
+        logger.success(m18n.n('port_available', int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('port_unavailable', int(port)))
@@ -899,7 +898,7 @@ def app_initdb(user, password=None, db=None, sql=None):
     if return_pwd:
         return password
 
-    msignals.display(m18n.n('mysql_db_initialized'), 'success')
+    logger.success(m18n.n('mysql_db_initialized'))
 
 
 def app_ssowatconf(auth):
@@ -993,7 +992,7 @@ def app_ssowatconf(auth):
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
-    msignals.display(m18n.n('ssowat_conf_generated'), 'success')
+    logger.success(m18n.n('ssowat_conf_generated'))
 
 
 def _get_app_settings(app_id):
@@ -1087,7 +1086,7 @@ def _extract_app_from_file(path, remove=False):
     """
     global app_tmp_folder
 
-    msignals.display(m18n.n('extracting'))
+    logger.info(m18n.n('extracting'))
 
     if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
     os.makedirs(app_tmp_folder)
@@ -1121,7 +1120,7 @@ def _extract_app_from_file(path, remove=False):
     except IOError:
         raise MoulinetteError(errno.EIO, m18n.n('app_install_files_invalid'))
 
-    msignals.display(m18n.n('done'))
+    logger.info(m18n.n('done'))
 
     manifest['remote'] = {'type': 'file', 'path': path}
     return manifest
@@ -1164,7 +1163,7 @@ def _fetch_app_from_git(app):
     if os.path.exists(app_tmp_archive):
         os.remove(app_tmp_archive)
 
-    msignals.display(m18n.n('downloading'))
+    logger.info(m18n.n('downloading'))
 
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
@@ -1210,7 +1209,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid'))
             else:
-                msignals.display(m18n.n('done'))
+                logger.info(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
@@ -1266,7 +1265,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid'))
             else:
-                msignals.display(m18n.n('done'))
+                logger.info(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {
