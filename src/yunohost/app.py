@@ -343,7 +343,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         elif url:
             manifest = _fetch_app_from_git(url)
         elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-            logger.warning(m18n.n('custom_app_url_required', app_id))
+            logger.warning(m18n.n('custom_app_url_required', app=app_id))
             continue
         elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
               or ('update_time' not in current_app_dict['settings'] \
@@ -458,7 +458,7 @@ def app_install(auth, app, label=None, args=None):
     if instance_number > 1 :
         if 'multi_instance' not in manifest or not is_true(manifest['multi_instance']):
             raise MoulinetteError(errno.EEXIST,
-                                  m18n.n('app_already_installed', app_id))
+                                  m18n.n('app_already_installed', app=app_id))
 
         # Change app_id to the forked app id
         app_id = app_id + '__' + str(instance_number)
@@ -813,10 +813,10 @@ def app_checkport(port):
         s.connect(("localhost", int(port)))
         s.close()
     except socket.error:
-        logger.success(m18n.n('port_available', int(port)))
+        logger.success(m18n.n('port_available', port=int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('port_unavailable', int(port)))
+                              m18n.n('port_unavailable', port=int(port)))
 
 
 def app_checkurl(auth, url, app=None):
@@ -1014,7 +1014,7 @@ def _get_app_settings(app_id):
             return settings
     except (IOError, TypeError, KeyError):
         logger.exception(m18n.n('app_not_correctly_installed',
-                app=app_id))
+                                app=app_id))
     return {}
 
 
