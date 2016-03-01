@@ -130,6 +130,7 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
                 except:
                     continue
                 else:
+                    d['avail'] = d['size'] - d['used']
                     if human_readable:
                         for i in ['used', 'avail', 'size']:
                             d[i] = binary_to_human(d[i]) + 'B'
