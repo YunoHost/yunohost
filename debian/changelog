@@ -1,3 +1,49 @@
+yunohost (2.3.9) testing; urgency=low
+
+  [ Cédric Félizard ]
+  * [fix] Don't emit Nginx version
+
+  [ Jérôme Lebleu ]
+  * [enh] Store backup size and check free space before restoring (bugfix #189)
+  * [enh] Allow to install a given git reference of an app
+  * [enh] Add the repository from where the app is defined in app_list
+  * [enh] Add DKIM DNS record in domain_dns_conf (close #198)
+  * [enh] Get completely rid of os.system calls in _fetch_app_from_git
+  * [enh] Attempt to improve readability of domain_dns_conf
+  * [enh] Replace msignals.display by logging
+  * [i18n] Use named arguments for remaining translations in app.py
+  * [fix] Clean tmp directory when restoration is cancelled
+  * [fix] Improve and fix app fetching other than from github
+  * [fix] Start socket and stop rspamd/rmilter services in conf_regen (bugfix #196)
+  * [fix] Restart the service if reloading fails in conf_regen (bugfix #195)
+  * [fix] Review how app settings are initialized and set
+  * [fix] Open port 1900 when enabling UPnP (fix #30)
+  * [fix] Remove useless raw argument in domain_list
+  * [fix] Regenerate Rmilter conf on domain addition for DKIM key
+  * [fix] Add an example for ynh_get_plain_key helper usage
+  * [fix] Keep 'avail' key - removed from glances - in disk fs monitoring
+  * [fix] Be less restricitve on network interfaces name in monitoring
+
+  [ julienmalik ]
+  * [fix] access to /var/lib/metronome/ needs sudo permissions
+  * [fix] missing brackets for testing saferemove output
+  * [fix] misssing sudo when removing files in /etc/nginx
+  * [fix] Set 'app status file not found' log level to debug
+  * [fix] Do not raise if one app upgrade fails and regen SSOwat conf
+
+  [ taziden ]
+  * [enh] hardening postfix tls configuration
+
+  [ Moul ]
+  * [enh] add '-ttl' parameter to 'domain dns conf' command.
+  * [enh] also get ssowat version with '-v' argement.
+
+  [ opi ]
+  * [enh] Replace msignals.display by logging in tools.py
+  * [enh] More descriptive names for XMPP services
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 02 Mar 2016 20:45:41 +0100
+
 yunohost (2.3.8) testing; urgency=low
 
   [ Jérôme Lebleu ]
