@@ -8,7 +8,7 @@ server {
     include conf.d/{{ domain }}.d/*.conf;
 
     location /yunohost/admin {
-        rewrite ^ https://$http_host$request_uri? permanent;
+        return 301 https://$http_host$request_uri;
     }
 
     access_log /var/log/nginx/{{ domain }}-access.log;
