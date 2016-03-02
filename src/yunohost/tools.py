@@ -74,7 +74,7 @@ def tools_ldapinit(auth):
 
     auth.update('cn=admin', admin_dict)
 
-    msignals.display(m18n.n('ldap_initialized'), 'success')
+    logger.success(m18n.n('ldap_initialized'))
 
 
 def tools_adminpw(auth, new_password):
@@ -92,7 +92,7 @@ def tools_adminpw(auth, new_password):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('admin_password_change_failed'))
     else:
-        msignals.display(m18n.n('admin_password_changed'), 'success')
+        logger.success(m18n.n('admin_password_changed'))
 
 
 def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
@@ -150,7 +150,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             service_regenconf()
     except IOError: pass
 
-    msignals.display(m18n.n('maindomain_changed'), 'success')
+    logger.success(m18n.n('maindomain_changed'))
 
 
 def tools_postinstall(domain, password, ignore_dyndns=False):
@@ -174,7 +174,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     try:
         with open('/etc/yunohost/installed') as f: pass
     except IOError:
-        msignals.display(m18n.n('yunohost_installing'))
+        logger.info(m18n.n('yunohost_installing'))
     else:
         raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
 
@@ -278,7 +278,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     service_regenconf(force=True)
 
-    msignals.display(m18n.n('yunohost_configured'), 'success')
+    logger.success(m18n.n('yunohost_configured'))
 
 
 def tools_update(ignore_apps=False, ignore_packages=False):
@@ -297,10 +297,10 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        msignals.display(m18n.n('updating_apt_cache'))
+        logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
-        msignals.display(m18n.n('done'))
+        logger.info(m18n.n('done'))
 
         cache.open(None)
         cache.upgrade(True)
@@ -345,7 +345,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                     })
 
     if len(apps) == 0 and len(packages) == 0:
-        msignals.display(m18n.n('packages_no_upgrade'))
+        logger.info(m18n.n('packages_no_upgrade'))
 
     return { 'packages': packages, 'apps': apps }
 
@@ -384,13 +384,13 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                     pkg.mark_keep()
             # ... and set a hourly cron up to upgrade critical packages
             if critical_upgrades:
-                msignals.display(m18n.n('packages_upgrade_critical_later',
+                logger.info(m18n.n('packages_upgrade_critical_later',
                                         ', '.join(critical_upgrades)))
                 with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
                     f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade\n' % ' '.join(critical_upgrades))
 
         if cache.get_changes():
-            msignals.display(m18n.n('upgrading_packages'))
+            logger.info(m18n.n('upgrading_packages'))
             try:
                 # Apply APT changes
                 # TODO: Logs output for the API
@@ -399,11 +399,11 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
             except Exception as e:
                 failure = True
                 logging.warning('unable to upgrade packages: %s' % str(e))
-                msignals.display(m18n.n('packages_upgrade_failed'), 'error')
+                logger.error(m18n.n('packages_upgrade_failed'))
             else:
-                msignals.display(m18n.n('done'))
+                logger.info(m18n.n('done'))
         else:
-            msignals.display(m18n.n('packages_no_upgrade'))
+            logger.info(m18n.n('packages_no_upgrade'))
 
     if not ignore_apps:
         try:
@@ -411,10 +411,10 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
         except Exception as e:
             failure = True
             logging.warning('unable to upgrade apps: %s' % str(e))
-            msignals.display(m18n.n('app_upgrade_failed'), 'error')
+            logger.error(m18n.n('app_upgrade_failed'))
 
     if not failure:
-        msignals.display(m18n.n('system_upgraded'), 'success')
+        logger.success(m18n.n('system_upgraded'))
 
     # Return API logs if it is an API call
     if is_api:
