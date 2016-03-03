@@ -32,12 +32,18 @@ import errno
 import subprocess
 import math
 import re
+import cracklib
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 logger = getActionLogger('yunohost.user')
 
+def _check_password(password):
+    try:
+      cracklib.VeryFascistCheck(password)
+    except ValueError as e:
+      raise MoulinetteError(errno.EINVAL, m18n.n('password_too_weak') + " : " + str(e) )
 
 def user_list(auth, fields=None, filter=None, limit=None, offset=None):
     """
@@ -109,6 +115,9 @@ def user_create(auth, username, firstname, lastname, mail, password,
     from yunohost.domain import domain_list
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+
+    # Ensure sufficiently complex password
+    _check_password(password)
 
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
@@ -291,6 +300,9 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
 
     if change_password:
+        # Ensure sufficiently complex password
+        _check_password(change_password)
+
         char_set = string.ascii_uppercase + string.digits
         salt = ''.join(random.sample(char_set,8))
         salt = '$1$' + salt + '$'
