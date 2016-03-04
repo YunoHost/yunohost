@@ -270,6 +270,7 @@ def domain_dns_conf(domain, ttl=None):
         result += ' ip6:{ip6}'.format(ip6=ip6)
     result += ' -all"'
 
+    # DKIM
     try:
         with open('/etc/dkim/{domain}.mail.txt'.format(domain=domain)) as f:
             dkim_content = f.read()
@@ -286,6 +287,11 @@ def domain_dns_conf(domain, ttl=None):
             result += '\n{host} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
                 host='{0}.{1}'.format(dkim.group('host'), domain), ttl=ttl,
                 v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')
+            )
+
+            # If DKIM is set, add dummy DMARC support
+            result += '\n_dmarc {ttl} IN TXT "v=DMARC1; p=none"'.format(
+                ttl=ttl
             )
 
     return result
