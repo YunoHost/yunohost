@@ -31,6 +31,7 @@ import shutil
 import json
 import yaml
 import errno
+import requests
 from urllib import urlopen
 
 from moulinette.core import MoulinetteError
@@ -95,12 +96,11 @@ def domain_add(auth, domain, dyndns=False):
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-        import requests
         from yunohost.dyndns import dyndns_subscribe
 
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
-        except ConnectionError:
+        except requests.ConnectionError:
             pass
         else:
             dyndomains = json.loads(r.text)
