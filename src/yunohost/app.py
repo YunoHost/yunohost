@@ -152,7 +152,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
         applists = app_listlists()['lists']
         applists[0]
     except (IOError, IndexError):
-        app_fetchlists()
+        app_fetchlist()
         applists = app_listlists()['lists']
 
     for applist in applists:
