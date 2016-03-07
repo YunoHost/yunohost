@@ -39,7 +39,7 @@ userdb {
 }
 protocol imap {
   imap_client_workarounds =
-  mail_plugins = $mail_plugins imap_quota antispam autocreate
+  mail_plugins = $mail_plugins imap_quota antispam
 }
 protocol lda {
   auth_socket_path = /var/run/dovecot/auth-master
@@ -66,8 +66,6 @@ plugin {
 }
 
 plugin {
-  autocreate = Trash
-  autocreate2 = Junk
   autosubscribe = Trash
   autosubscribe2 = Junk
 }
