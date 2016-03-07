@@ -151,7 +151,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
     try:
         applists = app_listlists()['lists']
         applists[0]
-    except IOError, IndexError:
+    except (IOError, IndexError):
         app_fetchlists()
         applists = app_listlists()['lists']
 
@@ -527,7 +527,7 @@ def app_install(auth, app, label=None, args=None):
             raise
         except MoulinetteError:
             raise
-        except KeyboardInterrupt, EOFError:
+        except (KeyboardInterrupt, EOFError):
             raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
         except Exception as e:
             logger.debug('app installation failed', exc_info=1)
