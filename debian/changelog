@@ -1,3 +1,32 @@
+yunohost (2.3.10) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Introduce new 'requirements' manifest key (close #113)
+  * [enh] Implement package version specifier and use it for min_version
+  * [enh] Use https to retrieve public IP address
+  * [enh] Use a common method to retrieve public IP address
+  * [enh] Rely on APT python library to retrieve packages version
+  * [fix] Use http to retrieve public IPv6 due to Let's Encrypt restriction
+
+  [ Julien Malik ]
+  * [fix] rspamd/rmilter now uses redis-server instead of memcached
+  * [fix] do not output warnings when services are already
+    uninstalled/disabled (fix #215)
+  * [enh] remove useless '|| true'. set -e does not exit for complex commands
+  * [enh] slaptest outputs on stderr, so generates a WARNING. make it quiet
+  * [enh] first stop rspamd.service, then start rspamd.socket
+  * [fix] use ip6.yunohost.org service to retrieve public IPv6
+  * [fix] Protect against empty files
+
+  [ opi ]
+  * [enh] Add dummy DMARC support if DKIM already supported. #233
+  * [fix] Remove Dovecot autocreate deprecated plugin. Fix #103
+  * [fix] Catch ConnectionError from requests package
+  * [fix] Multiple exceptions syntax.
+  * [fix] Wrong command name.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Tue, 08 Mar 2016 23:32:52 +0100
+
 yunohost (2.3.9) testing; urgency=low
 
   [ Cédric Félizard ]
