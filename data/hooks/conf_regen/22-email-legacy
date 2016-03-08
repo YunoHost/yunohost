@@ -6,10 +6,10 @@ if [[ "$1" == "True" ]]; then
 
     # Add new email services
     sudo yunohost service add rspamd -l /var/log/mail.log \
-      || echo "Rspamd is already listed in services"
+      || echo "rspamd is already listed in services"
 
     sudo yunohost service add rmilter -l /var/log/mail.log \
-      || echo "Rmilter is already listed in services"
+      || echo "rmilter is already listed in services"
 
     sudo yunohost service add redis-server -l /var/log/redis/redis-server.log \
       || echo "redis-server is already listed in services"
