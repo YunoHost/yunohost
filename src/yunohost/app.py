@@ -39,8 +39,8 @@ import subprocess
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from . import has_min_version
-from .service import service_log
+from yunohost.service import service_log
+from yunohost.utils.packages import has_min_version
 
 logger = getActionLogger('yunohost.app')
 

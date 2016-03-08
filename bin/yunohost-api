@@ -196,12 +196,12 @@ if __name__ == '__main__':
 
     # Run the server
     from moulinette import api, MoulinetteError
-    from yunohost import get_versions
+    from yunohost.utils.packages import ynh_packages_version
     ret = api(_retrieve_namespaces(),
             host=opts.host, port=opts.port,
             routes={
                 ('GET', '/installed'): is_installed,
-                ('GET', '/version'): get_versions,
+                ('GET', '/version'): ynh_packages_version,
             },
             use_cache=opts.use_cache, use_websocket=opts.use_websocket
     )

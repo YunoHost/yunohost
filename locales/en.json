@@ -202,6 +202,10 @@
     "user_info_failed" : "Unable to retrieve user information",
     "user_home_creation_failed" : "Unable to create user home folder",
 
+    "package_unexpected_error" : "An unexpected error occured with the package '{pkgname}'",
+    "package_unknown" : "Unknown package '{pkgname}'",
+    "package_not_installed" : "Package '{pkgname}' is not installed",
+
     "admin_password" : "Administration password",
     "ask_firstname" : "First name",
     "ask_lastname" : "Last name",

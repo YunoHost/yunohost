@@ -57,7 +57,7 @@ _global:
             help: Display YunoHost packages versions
             action: callback
             callback:
-                method: yunohost.get_versions
+                method: yunohost.utils.packages.ynh_packages_version
                 return: true
 
 #############################
