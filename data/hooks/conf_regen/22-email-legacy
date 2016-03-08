@@ -16,33 +16,26 @@ if [[ "$1" == "True" ]]; then
 
     # Remove previous email services
     systemctl is-enabled spamassassin > /dev/null 2>&1 \
-      && { sudo systemctl disable spamassassin || true ; } \
-      || true
+      && sudo systemctl disable spamassassin
     systemctl is-active spamassassin > /dev/null \
-      && { sudo systemctl stop spamassassin || true ; } \
-      || true
+      && sudo systemctl stop spamassassin
     sudo rm -f /etc/cron.daily/spamassassin || true
     sudo yunohost service status spamassassin > /dev/null 2>&1 \
-      && { sudo yunohost service remove spamassassin || true ; } \
-      || true
+      && sudo yunohost service remove spamassassin
 
     # 'systemctl is-enabled' does not work for service with no systemd unit file
     sudo ls /etc/rc2.d/S??amavis > /dev/null 2>&1 \
-      || sudo systemctl disable amavis || true
+      || sudo systemctl disable amavis
     sudo systemctl is-active amavis > /dev/null  \
-      && { sudo systemctl stop amavis || true ; } \
-      || true
+      && sudo systemctl stop amavis
     sudo yunohost service status amavis > /dev/null 2>&1 \
-      && { sudo yunohost service remove amavis || true ; } \
-      || true
+      && sudo yunohost service remove amavis
 
     # 'systemctl is-enabled' does not work for service with no systemd unit file
     sudo ls /etc/rc2.d/S??postgrey > /dev/null 2>&1 \
-      || sudo systemctl disable postgrey || true
+      || sudo systemctl disable postgrey
     sudo systemctl is-active postgrey > /dev/null  \
-      && { sudo systemctl stop postgrey || true ; } \
-      || true
+      && sudo systemctl stop postgrey
     sudo yunohost service status postgrey > /dev/null 2>&1 \
-      && { sudo yunohost service remove postgrey || true ; } \
-      || true
+      && sudo yunohost service remove postgrey
 fi
