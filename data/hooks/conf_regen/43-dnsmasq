@@ -15,12 +15,11 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/dnsmasq
 
-# Get IP address
-ip=$(curl https://ip.yunohost.org 2>/dev/null || echo '0.0.0.0')
+# Get IPv4 address
+ip=$(curl -4 https://ip.yunohost.org 2>/dev/null || echo '0.0.0.0')
 
 # Get IPv6 IP address
-ipv6=$(ip route get 2000:: | grep -q "unreachable" && echo '' \
-  || ip route get 2000:: | grep -v ' fe80:' | grep -v 'cache' | awk '{print $9}')
+ipv6=$(curl -6 http://ipv6.yunohost.org 2>/dev/null)
 
 sudo mkdir -p /etc/dnsmasq.d
 
