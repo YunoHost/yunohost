@@ -83,7 +83,7 @@ def domain_add(auth, domain, dyndns=False):
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
     try:
-        ip = str(urlopen('http://ip.yunohost.org').read())
+        ip = str(urlopen('https://ip.yunohost.org').read())
     except IOError:
         ip = "127.0.0.1"
     now = datetime.datetime.now()
@@ -233,7 +233,7 @@ def domain_dns_conf(domain, ttl=None):
 
     # A/AAAA records
     try:
-        ip4 = urlopen("http://ip.yunohost.org").read().strip()
+        ip4 = urlopen("https://ip.yunohost.org").read().strip()
     except IOError:
         raise MoulinetteError(errno.ENETUNREACH,
                               m18n.n('no_internet_connection'))

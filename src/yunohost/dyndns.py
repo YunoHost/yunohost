@@ -131,7 +131,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
     # IPv4
     if ip is None:
         try:
-            new_ip = requests.get('http://ip.yunohost.org').text
+            new_ip = requests.get('https://ip.yunohost.org').text
         except requests.ConnectionError:
             raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     else:

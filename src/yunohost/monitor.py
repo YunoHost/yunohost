@@ -210,7 +210,7 @@ def monitor_network(units=None, human_readable=False):
                     logger.debug('interface name %s was not found', iname)
         elif u == 'infos':
             try:
-                p_ip = str(urlopen('http://ip.yunohost.org').read())
+                p_ip = str(urlopen('https://ip.yunohost.org').read())
             except:
                 p_ip = 'unknown'
 
