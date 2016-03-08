@@ -11,8 +11,8 @@ if [[ "$1" == "True" ]]; then
     sudo yunohost service add rmilter -l /var/log/mail.log \
       || echo "Rmilter is already listed in services"
 
-    sudo yunohost service add memcached \
-      || echo "Memcached is already listed in services"
+    sudo yunohost service add redis-server -l /var/log/redis/redis-server.log \
+      || echo "redis-server is already listed in services"
 
     # Remove previous email services
     sudo yunohost service remove spamassassin \
