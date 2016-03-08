@@ -19,7 +19,7 @@ if [[ "$1" == "True" ]]; then
       && sudo systemctl disable spamassassin
     systemctl is-active spamassassin > /dev/null \
       && sudo systemctl stop spamassassin
-    sudo rm -f /etc/cron.daily/spamassassin || true
+    sudo rm -f /etc/cron.daily/spamassassin
     sudo yunohost service status spamassassin > /dev/null 2>&1 \
       && sudo yunohost service remove spamassassin
 
