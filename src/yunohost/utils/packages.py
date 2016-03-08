@@ -250,14 +250,18 @@ def get_installed_version(*pkgnames, **kwargs):
     """Get the installed version of package(s)
 
     Retrieve one or more packages named `pkgnames` and return their installed
-    version as a dict or as a string if only one is requested. If `strict` is
-    `True`, an exception will be raised if a package is unknown or not
-    installed.
+    version as a dict or as a string if only one is requested and `as_dict` is
+    `False`. If `strict` is `True`, an exception will be raised if a package
+    is unknown or not installed.
 
     """
-    cache = apt.Cache()
-    strict = kwargs.get('strict', False)
     versions = OrderedDict()
+    cache = apt.Cache()
+
+    # Retrieve options
+    as_dict = kwargs.get('as_dict', False)
+    strict = kwargs.get('strict', False)
+
     for pkgname in pkgnames:
         try:
             pkg = cache[pkgname]
@@ -272,7 +276,8 @@ def get_installed_version(*pkgnames, **kwargs):
                 raise UninstalledPackage(pkgname)
             version = None
         versions[pkgname] = version
-    if len(pkgnames) == 1:
+
+    if len(pkgnames) == 1 and not as_dict:
         return versions[pkgnames[0]]
     return versions
 

@@ -40,7 +40,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log
-from yunohost.utils.packages import meets_version_specifier
+from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
@@ -358,13 +358,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         else:
             continue
 
-        # Check min version
-        if 'min_version' in manifest \
-                and not meets_version_specifier(
-                    'yunohost', '>> {0}'.format(manifest['min_version'])):
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('app_recent_version_required',
-                                         app=app_id))
+        # Check requirements
+        _check_manifest_requirements(manifest)
 
         app_setting_path = apps_setting_path +'/'+ app_id
 
@@ -451,13 +446,8 @@ def app_install(auth, app, label=None, args=None):
 
     app_id = manifest['id']
 
-    # Check min version
-    if 'min_version' in manifest \
-            and not meets_version_specifier(
-                'yunohost', '>> {0}'.format(manifest['min_version'])):
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('app_recent_version_required',
-                                     app=app_id))
+    # Check requirements
+    _check_manifest_requirements(manifest)
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -1370,6 +1360,36 @@ def _encode_string(value):
         return value.encode('utf8')
     return value
 
+
+def _check_manifest_requirements(manifest):
+    """Check if required packages are met from the manifest"""
+    requirements = manifest.get('requirements', dict())
+    # FIXME: Deprecate min_version key
+    if 'min_version' in manifest:
+        requirements['yunohost'] = '>> {0}'.format(manifest['min_version'])
+        logger.debug("the manifest key 'min_version' is deprecated, "
+                     "use 'requirements' instead.")
+    if not requirements:
+        return
+
+    logger.info(m18n.n('app_requirements_checking'))
+
+    # Retrieve versions of each required package
+    try:
+        versions = packages.get_installed_version(
+            *requirements.keys(), strict=True, as_dict=True)
+    except packages.PackageException as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_requirements_failed', err=str(e)))
+
+    # Iterate over requirements
+    for pkgname, spec in requirements.items():
+        version = versions[pkgname]
+        if version not in packages.SpecifierSet(spec):
+            raise MoulinetteError(
+                errno.EINVAL, m18n.n('app_requirements_unmeet',
+                                     pkgname=pkgname, version=version,
+                                     spec=spec))
 
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     """Parse arguments needed for an action from the manifest
