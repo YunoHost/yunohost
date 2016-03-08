@@ -38,4 +38,7 @@ if [[ "$1" == "True" ]]; then
       && sudo systemctl stop postgrey
     sudo yunohost service status postgrey > /dev/null 2>&1 \
       && sudo yunohost service remove postgrey
+
 fi
+
+exit 0
