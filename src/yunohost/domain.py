@@ -292,12 +292,15 @@ def domain_dns_conf(domain, ttl=None):
 
 def get_public_ip(protocol=4):
     """Retrieve the public IP address from ip.yunohost.org"""
-    if protocol not in [4, 6]:
+    if protocol == 4:
+        url = 'https://ip.yunohost.org'
+    elif protocol == 6:
+        # FIXME: Let's Encrypt does not support IPv6 host only yet
+        url = 'http://ipv6.yunohost.org'
+    else:
         raise ValueError("invalid protocol version")
     try:
-        return urlopen("https://ip{protocol}.yunohost.org".format(
-            protocol=('' if protocol == 4 else 'v6')
-        )).read().strip()
+        return urlopen(url).read().strip()
     except IOError:
         logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
         raise MoulinetteError(errno.ENETUNREACH,
