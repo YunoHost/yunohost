@@ -395,8 +395,9 @@ def _get_diff(string, filename):
 
         string = string + '\n'
         new_lines = string.splitlines(True)
-        while '\n' == file_lines[-1]:
-            del file_lines[-1]
+        if file_lines:
+            while '\n' == file_lines[-1]:
+                del file_lines[-1]
         return difflib.unified_diff(file_lines, new_lines)
     except IOError: return []
 
