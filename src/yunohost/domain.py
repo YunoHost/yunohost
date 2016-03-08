@@ -295,8 +295,8 @@ def get_public_ip(protocol=4):
     if protocol == 4:
         url = 'https://ip.yunohost.org'
     elif protocol == 6:
-        # FIXME: Let's Encrypt does not support IPv6 host only yet
-        url = 'http://ipv6.yunohost.org'
+        # FIXME: Let's Encrypt does not support IPv6-only hosts yet
+        url = 'http://ip6.yunohost.org'
     else:
         raise ValueError("invalid protocol version")
     try:
