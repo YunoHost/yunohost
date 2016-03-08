@@ -1,3 +1,9 @@
+yunohost (2.3.10.1) testing; urgency=low
+
+  * [fix] Oops, debian/install prevent subpackages installation
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Tue, 08 Mar 2016 23:55:28 +0100
+
 yunohost (2.3.10) testing; urgency=low
 
   [ Jérôme Lebleu ]
