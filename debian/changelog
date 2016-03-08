@@ -291,6 +291,12 @@ moulinette-yunohost (2.3.0) testing; urgency=low
 
  -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 08 Sep 2015 14:19:28 +0200
 
+moulinette-yunohost (2.2.3-1) stable; urgency=low
+
+  * [fix] Catch ConnectionError from requests package
+
+ -- opi <opi@zeropi.net>  Sun, 06 Mar 2016 21:51:06 +0100
+
 moulinette-yunohost (2.2.3) stable; urgency=low
 
   * [fix] Catch proper exception in backup_list (fix #65)
