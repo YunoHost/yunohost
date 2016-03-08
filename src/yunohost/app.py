@@ -40,7 +40,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log
-from yunohost.utils.packages import has_min_version
+from yunohost.utils.packages import meets_version_specifier
 
 logger = getActionLogger('yunohost.app')
 
@@ -360,7 +360,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Check min version
         if 'min_version' in manifest \
-                and not has_min_version(manifest['min_version']):
+                and not meets_version_specifier(
+                    'yunohost', '>> {0}'.format(manifest['min_version'])):
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('app_recent_version_required',
                                          app=app_id))
@@ -452,7 +453,8 @@ def app_install(auth, app, label=None, args=None):
 
     # Check min version
     if 'min_version' in manifest \
-            and not has_min_version(manifest['min_version']):
+            and not meets_version_specifier(
+                'yunohost', '>> {0}'.format(manifest['min_version'])):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('app_recent_version_required',
                                      app=app_id))
