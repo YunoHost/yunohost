@@ -8,4 +8,4 @@ data/apps/* /usr/share/yunohost/apps/
 debian/conf/pam/* /usr/share/pam-configs/
 lib/metronome/modules/* /usr/lib/metronome/modules/
 locales/* /usr/lib/moulinette/yunohost/locales/
-src/yunohost/*.py /usr/lib/moulinette/yunohost/
+src/yunohost /usr/lib/moulinette
