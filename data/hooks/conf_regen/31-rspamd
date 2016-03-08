@@ -25,7 +25,7 @@ sudo chmod 660 /etc/dovecot/global_script/rspamd.svbin
 sudo chown -R vmail:mail /etc/dovecot/global_script
 
 # Ensure that the socket is listening and stop the service.
-sudo systemctl start rspamd.socket
 sudo systemctl stop rspamd.service 2>&1 || true
+sudo systemctl start rspamd.socket
 
 sudo systemctl restart dovecot
