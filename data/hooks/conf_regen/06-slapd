@@ -49,7 +49,7 @@ sudo chown -R openldap:openldap /etc/ldap/schema/
 sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 
 # Check the slapd config file at first
-sudo slaptest -u -f /etc/ldap/slapd.conf
+sudo slaptest -Q -u -f /etc/ldap/slapd.conf
 
 if [[ $BACKEND_CHANGE -eq 1 ]]; then
     # Regenerate LDAP config directory and import database as root
