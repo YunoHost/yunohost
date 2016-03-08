@@ -35,11 +35,12 @@ import errno
 import os
 import dns.resolver
 import cPickle as pickle
-from urllib import urlopen
 from datetime import datetime, timedelta
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+
+from yunohost.domain import get_public_ip
 
 logger = getActionLogger('yunohost.monitor')
 
@@ -210,9 +211,9 @@ def monitor_network(units=None, human_readable=False):
                     logger.debug('interface name %s was not found', iname)
         elif u == 'infos':
             try:
-                p_ip = str(urlopen('https://ip.yunohost.org').read())
+                p_ipv4 = get_public_ip()
             except:
-                p_ip = 'unknown'
+                p_ipv4 = 'unknown'
 
             l_ip = 'unknown'
             for name, addrs in devices.items():
@@ -231,7 +232,7 @@ def monitor_network(units=None, human_readable=False):
                     proto, gateway = addr.popitem()
 
             result[u] = {
-                'public_ip': p_ip,
+                'public_ip': p_ipv4,
                 'local_ip': l_ip,
                 'gateway': gateway,
             }

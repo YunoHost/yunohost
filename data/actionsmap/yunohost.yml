@@ -1169,7 +1169,7 @@ dyndns:
                     full: --key
                     help: Public DNS key
                 -i:
-                    full: --ip
+                    full: --ipv4
                     help: IP address to send
                 -6:
                     full: --ipv6

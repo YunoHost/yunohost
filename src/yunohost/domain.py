@@ -82,10 +82,7 @@ def domain_add(auth, domain, dyndns=False):
     from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
-    try:
-        ip = str(urlopen('https://ip.yunohost.org').read())
-    except IOError:
-        ip = "127.0.0.1"
+
     now = datetime.datetime.now()
     timestamp = str(now.year) + str(now.month) + str(now.day)
 
@@ -232,20 +229,16 @@ def domain_dns_conf(domain, ttl=None):
     ip4 = ip6 = None
 
     # A/AAAA records
-    try:
-        ip4 = urlopen("https://ip.yunohost.org").read().strip()
-    except IOError:
-        raise MoulinetteError(errno.ENETUNREACH,
-                              m18n.n('no_internet_connection'))
+    ip4 = get_public_ip()
     result = (
         "@ {ttl} IN A {ip4}\n"
         "* {ttl} IN A {ip4}\n"
     ).format(ttl=ttl, ip4=ip4)
 
     try:
-        ip6 = urlopen("http://ip6.yunohost.org").read().strip()
-    except IOError:
-        logger.debug('cannot retrieve IPv6', exc_info=1)
+        ip6 = get_public_ip(6)
+    except:
+        pass
     else:
         result += (
             "@ {ttl} IN AAAA {ip6}\n"
@@ -295,3 +288,17 @@ def domain_dns_conf(domain, ttl=None):
             )
 
     return result
+
+
+def get_public_ip(protocol=4):
+    """Retrieve the public IP address from ip.yunohost.org"""
+    if protocol not in [4, 6]:
+        raise ValueError("invalid protocol version")
+    try:
+        return urlopen("https://ip{protocol}.yunohost.org".format(
+            protocol=('' if protocol == 4 else 'v6')
+        )).read().strip()
+    except IOError:
+        logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
+        raise MoulinetteError(errno.ENETUNREACH,
+                              m18n.n('no_internet_connection'))
