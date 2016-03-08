@@ -1289,6 +1289,20 @@ tools:
                     help: Ignore APT packages upgrade
                     action: store_true
 
+        ### tools_diagnosis()
+        diagnosis:
+            action_help: YunoHost diagnosis
+            api: GET /diagnosis
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+                lock: false
+            arguments:
+                -p:
+                    full: --private
+                    help: Show private data (domain, IP)
+                    action: store_true
+
 
 #############################
 #           Hook            #

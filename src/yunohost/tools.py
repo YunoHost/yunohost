@@ -32,11 +32,20 @@ import requests
 import json
 import errno
 import logging
+from collections import OrderedDict
+
 import apt
 import apt.progress
 
-from moulinette.core import MoulinetteError
+from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
+from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
+from yunohost.domain import domain_add, domain_list, get_public_ip
+from yunohost.dyndns import dyndns_subscribe
+from yunohost.firewall import firewall_upnp, firewall_reload
+from yunohost.service import service_status, service_regenconf, service_log
+from yunohost.monitor import monitor_disk, monitor_network, monitor_system
+from yunohost.utils.packages import ynh_packages_version
 
 apps_setting_path= '/etc/yunohost/apps/'
 
@@ -104,10 +113,6 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
         old_domain
 
     """
-    from yunohost.domain import domain_add, domain_list
-    from yunohost.dyndns import dyndns_subscribe
-    from yunohost.service import service_regenconf
-
     if not old_domain:
         with open('/etc/yunohost/current_host', 'r') as f:
             old_domain = f.readline().rstrip()
@@ -163,12 +168,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         password -- YunoHost admin password
 
     """
-    from moulinette.core import init_authenticator
-
-    from yunohost.app import app_ssowatconf
-    from yunohost.firewall import firewall_upnp, firewall_reload
-    from yunohost.service import service_regenconf
-
     dyndns = not ignore_dyndns
 
     try:
@@ -290,8 +289,6 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         ignore_packages -- Ignore apt cache update and changelog
 
     """
-    from yunohost.app import app_fetchlist, app_info
-
     packages = []
     if not ignore_packages:
         cache = apt.Cache()
@@ -359,8 +356,6 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
         ignore_packages -- Ignore APT packages upgrade
 
     """
-    from yunohost.app import app_upgrade
-
     failure = False
 
     # Retrieve interface
@@ -418,5 +413,94 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
     # Return API logs if it is an API call
     if is_api:
-        from yunohost.service import service_log
         return { "log": service_log('yunohost-api', number="100").values()[0] }
+
+
+def tools_diagnosis(auth, private=False):
+    """
+    Return global info about current yunohost instance to help debugging
+
+    """
+    diagnosis = OrderedDict();
+
+    # Debian release
+    try:
+        with open('/etc/debian_version', 'r') as f:
+            debian_version = f.read().rstrip()
+    except IOError as e:
+        logger.warning(m18n.n('diagnosis_debian_version_error', error=format(e)), exc_info=1)
+    else:
+        diagnosis['host'] = "Debian %s" % debian_version
+
+    # Kernel version
+    try:
+        with open('/proc/sys/kernel/osrelease', 'r') as f:
+            kernel_version = f.read().rstrip()
+    except IOError as e:
+        logger.warning(m18n.n('diagnosis_kernel_version_error', error=format(e)), exc_info=1)
+    else:
+        diagnosis['kernel'] = kernel_version
+
+    # Packages version
+    diagnosis['packages'] = ynh_packages_version()
+
+    # Server basic monitoring
+    diagnosis['system'] = OrderedDict()
+    try:
+        disks = monitor_disk(units=['filesystem'], human_readable=True)
+    except MoulinetteError as e:
+        logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
+    else:
+        diagnosis['system']['disks'] = {}
+        for disk in disks:
+            diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
+                disks[disk]['mnt_point'],
+                disks[disk]['size'],
+                disks[disk]['avail']
+            )
+
+    try:
+        system = monitor_system(units=['cpu', 'memory'], human_readable=True)
+    except MoulinetteError as e:
+        logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
+    else:
+        diagnosis['system']['memory'] = {
+            'ram' : '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
+            'swap' : '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
+        }
+
+    # Services status
+    services = service_status()
+    diagnosis['services'] = {}
+    for service in services:
+        diagnosis['services'][service] = "%s (%s)" % (services[service]['status'], services[service]['loaded'])
+
+    # YNH Applications
+    try:
+        applications = app_list()['apps']
+    except MoulinetteError as e:
+        diagnosis['applications'] = m18n.n('diagnosis_no_apps')
+    else:
+        diagnosis['applications'] = {}
+        for application in applications:
+            if application['installed']:
+                diagnosis['applications'][application['id']] = application['label'] if application['label'] else application['name']
+
+    # Private data
+    if private:
+        diagnosis['private'] = OrderedDict()
+        # Public IP
+        diagnosis['private']['public_ip'] = {}
+        try:
+            diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
+        except MoulinetteError as e:
+            pass
+        try:
+            diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
+        except MoulinetteError as e:
+            pass
+
+        # Domains
+        diagnosis['private']['domains'] = domain_list(auth)['domains']
+
+    return diagnosis
