@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e 
+set -e
 
 # Execute this hook only if we force the configuration regeneration
 if [[ "$1" == "True" ]]; then
