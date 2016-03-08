@@ -16,20 +16,18 @@ if [[ "$1" == "True" ]]; then
 
     # Remove previous email services
     sudo yunohost service remove spamassassin \
-      || echo "Spamassassin is already removed" \
-      && sudo systemctl disable spamassassin || true
-
+      || echo "Spamassassin is already removed"
+    sudo systemctl disable spamassassin || true
+    sudo systemctl stop spamassassin || true
     sudo rm -f etc/cron.daily/spamassassin
 
     sudo yunohost service remove amavis \
-      || echo "Amavis is already removed" \
-      && sudo systemctl disable amavis || true
+      || echo "Amavis is already removed"
+    sudo systemctl disable amavis || true
+    sudo systemctl stop amavis || true
 
     sudo yunohost service remove postgrey \
       || echo "Postgrey is already removed" \
-      && sudo systemctl disable postgrey || true
-
-    sudo systemctl stop spamassassin || true
-    sudo systemctl stop amavis || true
+    sudo systemctl disable postgrey || true
     sudo systemctl stop postgrey || true
 fi
