@@ -18,7 +18,7 @@ do_configure() {
       service yunohost-firewall status > /dev/null \
         && service yunohost-firewall restart \
         || echo "Service yunohost-firewall is not running, you should " \
-            "consider to start it."
+            "consider to start it by doing 'service yunohost-firewall start'."
   fi
 
   # update PAM configs
