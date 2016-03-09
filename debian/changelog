@@ -1,3 +1,9 @@
+yunohost (2.3.10.2) testing; urgency=low
+
+  * [fix] Workaround for the bad people who are not using IPv6 yet
+
+ -- Julien Malik <julien.malik@paraiso.me>  Wed, 09 Mar 2016 08:46:41 +0100
+
 yunohost (2.3.10.1) testing; urgency=low
 
   * [fix] Oops, debian/install prevent subpackages installation
