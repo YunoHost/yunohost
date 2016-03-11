@@ -1,4 +1,3 @@
-#!/bin/bash
 set -e
 
 # Execute this hook only if we force the configuration regeneration
