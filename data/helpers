@@ -1,7 +1,7 @@
 # -*- shell-script -*-
 
 # TODO : use --regex to validate against a namespace
-for helper in $(run-parts --list /usr/share/yunohost/apps/helpers.d 2>/dev/null) ; do
+for helper in $(run-parts --list /usr/share/yunohost/helpers.d 2>/dev/null) ; do
     [ -r $helper ] && . $helper || true
 done
 

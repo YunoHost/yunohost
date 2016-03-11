@@ -3,7 +3,7 @@ set -e
 
 force=$1
 
-. /usr/share/yunohost/apps/helpers
+. /usr/share/yunohost/helpers
 
 function safe_copy () {
     if [[ "$force" == "True" ]]; then

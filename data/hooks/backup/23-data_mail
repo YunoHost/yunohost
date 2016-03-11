@@ -1,5 +1,5 @@
 backup_dir="$1/data/mail"
 
-. /usr/share/yunohost/apps/helpers
+. /usr/share/yunohost/helpers
 
 ynh_bind_or_cp /var/mail $backup_dir 1
