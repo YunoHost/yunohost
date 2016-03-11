@@ -4,7 +4,8 @@ data/actionsmap/* /usr/share/moulinette/actionsmap/
 data/hooks/* /usr/share/yunohost/hooks/
 data/other/* /usr/share/yunohost/yunohost-config/moulinette/
 data/templates/* /usr/share/yunohost/templates/
-data/apps/* /usr/share/yunohost/apps/
+data/helpers /usr/share/yunohost/helpers
+data/helpers.d/* /usr/share/yunohost/helpers.d/
 debian/conf/pam/* /usr/share/pam-configs/
 lib/metronome/modules/* /usr/lib/metronome/modules/
 locales/* /usr/lib/moulinette/yunohost/locales/
