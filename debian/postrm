@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+if [ "$1" = "purge" ]; then
+   update-rc.d yunohost-api remove >/dev/null
+   update-rc.d yunohost-firewall remove >/dev/null
+fi
+
+#DEBHELPER#
+
+exit 0

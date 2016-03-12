@@ -15,10 +15,16 @@ do_configure() {
       yunohost service regenconf
 
       # restart yunohost-firewall if it's running
-      service yunohost-firewall status > /dev/null \
-        && service yunohost-firewall restart \
-        || echo "Service yunohost-firewall is not running, you should " \
-            "consider to start it by doing 'service yunohost-firewall start'."
+      if service yunohost-firewall status >/dev/null; then
+          update-rc.d yunohost-firewall defaults >/dev/null
+          [ -d /run/systemd/system ] \
+            && systemctl --system daemon-reload >/dev/null || true
+          echo "Restarting yunohost-firewall..."
+          invoke-rc.d yunohost-firewall restart || true
+      else
+        echo "Service yunohost-firewall is not running, you should " \
+          "consider to start it by doing 'service yunohost-firewall start'."
+      fi
   fi
 
   # update PAM configs
@@ -48,10 +54,14 @@ case "$1" in
     ;;
 esac
 
-# Enable and start yunohost-api service for non-systemd system
-if [ -x /etc/init.d/yunohost-api ] && [ ! -d /run/systemd/system ]; then
+# Enable and start yunohost-api sysv service
+if [ -x /etc/init.d/yunohost-api ]; then
     update-rc.d yunohost-api defaults >/dev/null
-    invoke-rc.d yunohost-api start || exit $?
+    if [ -d /run/systemd/system ]; then
+        systemctl --system daemon-reload >/dev/null || true
+    else
+        invoke-rc.d yunohost-api start || exit $?
+    fi
 fi
 
 #DEBHELPER#
