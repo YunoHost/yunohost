@@ -15,20 +15,37 @@ do_configure() {
       yunohost service regenconf
 
       # restart yunohost-firewall if it's running
-      if service yunohost-firewall status >/dev/null; then
-          update-rc.d yunohost-firewall defaults >/dev/null
-          [ -d /run/systemd/system ] \
-            && systemctl --system daemon-reload >/dev/null || true
-          echo "Restarting yunohost-firewall..."
-          invoke-rc.d yunohost-firewall restart || true
-      else
-        echo "Service yunohost-firewall is not running, you should " \
-          "consider to start it by doing 'service yunohost-firewall start'."
-      fi
+      service yunohost-firewall status >/dev/null \
+        && restart_yunohost_firewall \
+        || echo "Service yunohost-firewall is not running, you should " \
+            "consider to start it by doing 'service yunohost-firewall start'."
   fi
 
   # update PAM configs
   pam-auth-update --package
+}
+
+restart_yunohost_firewall() {
+  echo "Restarting YunoHost firewall..."
+
+  if [ -x /etc/init.d/yunohost-firewall ]; then
+      update-rc.d yunohost-firewall defaults >/dev/null || true
+      if [ -d /run/systemd/system ]; then
+          systemctl --system daemon-reload >/dev/null || true
+      else
+          invoke-rc.d yunohost-firewall start >/dev/null || true
+      fi
+  fi
+
+  deb-systemd-helper unmask yunohost-firewall.service >/dev/null || true
+  if deb-systemd-helper --quiet was-enabled yunohost-firewall.service; then
+      deb-systemd-helper enable yunohost-firewall.service >/dev/null || true
+  fi
+  deb-systemd-helper update-state yunohost-firewall.service >/dev/null || true
+  if [ -d /run/systemd/system ]; then
+      systemctl --system daemon-reload >/dev/null || true
+      deb-systemd-invoke try-restart yunohost-firewall.service >/dev/null || true
+  fi
 }
 
 # summary of how this script can be called:
