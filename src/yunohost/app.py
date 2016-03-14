@@ -462,7 +462,7 @@ def app_install(auth, app, label=None, args=None):
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
-    args_list = _parse_args_from_manifest(manifest, 'install', args_dict, auth)
+    args_list = _parse_args_from_manifest(manifest, 'install', args=args_dict, auth=auth)
     args_list.append(app_id)
 
     # Create app directory
