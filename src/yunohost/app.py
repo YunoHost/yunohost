@@ -468,6 +468,11 @@ def app_install(auth, app, label=None, args=None):
     args_list = args_odict.values()
     args_list.append(app_id)
 
+    # Prepare env. var. to pass to script
+    env_dict = {}
+    for arg_name, arg_value in args_odict.items():
+        env_dict[ "YNH_APP_ARG_%s" % arg_name ] = arg_value
+
     # Create app directory
     app_setting_path = os.path.join(apps_setting_path, app_id)
     if os.path.exists(app_setting_path):
@@ -497,7 +502,7 @@ def app_install(auth, app, label=None, args=None):
     os.system('cp %s/manifest.json %s' % (app_tmp_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
     try:
-        if hook_exec(app_tmp_folder + '/scripts/install', args_list) == 0:
+        if hook_exec(app_tmp_folder + '/scripts/install', args=args_list, env=env_dict) == 0:
             # Store app status
             with open(app_setting_path + '/status.json', 'w+') as f:
                 json.dump(status, f)
