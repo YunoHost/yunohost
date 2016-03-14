@@ -330,7 +330,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         cmd_script = path
 
     envcli = ''
-    if env is not None and isinstance(env, dict):
+    if env is not None:
         envcli = ' '.join([ '{key}="{val}"'.format(key=key, val=val) for key,val in env.items()])
 
     # Construct command to execute
