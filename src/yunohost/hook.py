@@ -275,7 +275,7 @@ def hook_callback(action, hooks=[], args=None):
     return result
 
 
-def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
+def hook_exec(path, args=None, raise_on_error=False, no_trace=False, env=None):
     """
     Execute hook from a file with arguments
 
@@ -284,6 +284,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
         args -- A list of arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
         no_trace -- Do not print each command that will be executed
+        env -- Dictionnary of environment variables to export
 
     """
     from moulinette.utils.process import call_async_output
@@ -305,14 +306,18 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
         # bash related issue if an argument is empty and is not the last
         cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in args))
 
+    envcli = ''
+    if env is not None and isinstance(env, dict):
+        envcli = ' '.join([ '{key}="{val}"'.format(key=key, val=val) for key,val in env.items()])
+
     # Construct command to execute
     command = ['sudo', '-u', 'admin', '-H', 'sh', '-c']
     if no_trace:
-        cmd = 'cd "{0:s}" && /bin/bash "{1:s}" {2:s}'
+        cmd = 'cd "{0:s}" && {1:s} /bin/bash "{2:s}" {3:s}'
     else:
         # use xtrace on fd 7 which is redirected to stdout
-        cmd = 'cd "{0:s}" && BASH_XTRACEFD=7 /bin/bash -x "{1:s}" {2:s} 7>&1'
-    command.append(cmd.format(cmd_fdir, cmd_fname, cmd_args))
+        cmd = 'cd "{0:s}" && {1:s} BASH_XTRACEFD=7 /bin/bash -x "{2:s}" {3:s} 7>&1'
+    command.append(cmd.format(cmd_fdir, envcli, cmd_fname, cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
         logger.info(m18n.n('executing_command', command=' '.join(command)))
