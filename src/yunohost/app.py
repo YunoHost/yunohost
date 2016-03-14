@@ -375,7 +375,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
-        args_list = _parse_args_from_manifest(manifest, 'upgrade', auth=auth)
+        args_odict = _parse_args_from_manifest(manifest, 'upgrade', auth=auth)
+        args_list = args_odict.values()
         args_list.append(app_id)
 
         # Execute App upgrade script
@@ -462,7 +463,8 @@ def app_install(auth, app, label=None, args=None):
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
-    args_list = _parse_args_from_manifest(manifest, 'install', args=args_dict, auth=auth)
+    args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict, auth=auth)
+    args_list = args_odict.values()
     args_list.append(app_id)
 
     # Create app directory
@@ -1397,8 +1399,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     Retrieve specified arguments for the action from the manifest, and parse
     given args according to that. If some required arguments are not provided,
     its values will be asked if interaction is possible.
-    Parsed arguments will be returned as a list of strings to pass directly
-    to the proper script.
+    Parsed arguments will be returned as an OrderedDict
 
     Keyword arguments:
         manifest -- The app manifest to use
@@ -1409,7 +1410,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     from yunohost.domain import domain_list
     from yunohost.user import user_info
 
-    args_list = []
+    args_list = OrderedDict()
     try:
         action_args = manifest['arguments'][action]
     except KeyError:
@@ -1497,7 +1498,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                         raise MoulinetteError(errno.EINVAL,
                             m18n.n('app_argument_choice_invalid',
                                 name=arg_name, choices='0, 1'))
-            args_list.append(arg_value)
+            args_list[arg_name] = arg_value
     return args_list
 
 
