@@ -380,6 +380,11 @@ def app_upgrade(auth, app=[], url=None, file=None):
         args_list = args_odict.values()
         args_list.append(app_id)
 
+        # Prepare env. var. to pass to script
+        env_dict = _make_environment_dict(args_odict)
+        env_dict["YNH_APP_INSTANCE_NUMBER"] = app_id.split('__')[-1]
+        env_dict["YNH_APP_ID"] = app_id
+
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
         if hook_exec(app_tmp_folder +'/scripts/upgrade', args_list) != 0:
@@ -469,9 +474,9 @@ def app_install(auth, app, label=None, args=None):
     args_list.append(app_id)
 
     # Prepare env. var. to pass to script
-    env_dict = {}
-    for arg_name, arg_value in args_odict.items():
-        env_dict[ "YNH_APP_ARG_%s" % arg_name ] = arg_value
+    env_dict = _make_environment_dict(args_odict)
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+    env_dict["YNH_APP_ID"] = app_id
 
     # Create app directory
     app_setting_path = os.path.join(apps_setting_path, app_id)
@@ -1507,6 +1512,19 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             args_list[arg_name] = arg_value
     return args_list
 
+def _make_environment_dict(args_dict):
+    """
+    Convert a dictionnary containing manifest arguments
+    to a dictionnary of env. var. to be passed to scripts
+
+    Keyword arguments:
+        arg -- A key/value dictionnary of manifest arguments
+
+    """
+    env_dict = {}
+    for arg_name, arg_value in args_dict.items():
+        env_dict[ "YNH_APP_ARG_%s" % arg_name ] = arg_value
+    return env_dict
 
 def is_true(arg):
     """
