@@ -1,5 +1,0 @@
-/bin/bash
-rm /tmp/yunohost/update_status
-sudo apt-get upgrade -y > /tmp/yunohost/update_log 2>&1
-if [ $(echo $?) = 0 ]; then echo "OK" > /tmp/yunohost/upgrade_status; else echo "NOK" > /tmp/yunohost/upgrade_status; fi
-rm /tmp/yunohost/upgrade.run
