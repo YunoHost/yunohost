@@ -377,6 +377,14 @@ app:
                     full: --raw
                     help: Return the full app_dict
                     action: store_true
+                -i:
+                    full: --installed
+                    help: Return only installed apps
+                    action: store_true
+                -b:
+                    full: --with-backup
+                    help: Return only apps with backup feature (force --installed filter)
+                    action: store_true
 
         ### app_info()
         info:

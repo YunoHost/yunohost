@@ -126,7 +126,7 @@ def app_removelist(name):
     logger.success(m18n.n('appslist_removed'))
 
 
-def app_list(offset=None, limit=None, filter=None, raw=False):
+def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, with_backup=False):
     """
     List apps
 
@@ -135,12 +135,15 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
         offset -- Starting number for app fetching
         limit -- Maximum number of app fetched
         raw -- Return the full app_dict
+        installed -- Return only installed apps
+        with_backup -- Return only apps with backup feature (force --installed filter)
 
     """
     if offset: offset = int(offset)
     else: offset = 0
     if limit: limit = int(limit)
     else: limit = 1000
+    installed = with_backup or installed
 
     app_dict = {}
     if raw:
@@ -183,16 +186,27 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
         for app_id, app_info_dict in sorted_app_dict.items():
             if i < limit:
                 if (filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter:
-                    installed = _is_installed(app_id)
+                    app_installed = _is_installed(app_id)
+
+                    # Only installed apps filter
+                    if installed and not app_installed:
+                        continue
+
+                    # Filter only apps with backup and restore scripts
+                    if with_backup and (
+                        not os.path.isfile(apps_setting_path + app_id + '/scripts/backup') or
+                        not os.path.isfile(apps_setting_path + app_id + '/scripts/restore')
+                    ):
+                        continue
 
                     if raw:
-                        app_info_dict['installed'] = installed
-                        if installed:
+                        app_info_dict['installed'] = app_installed
+                        if app_installed:
                             app_info_dict['status'] = _get_app_status(app_id)
                         list_dict[app_id] = app_info_dict
                     else:
                         label = None
-                        if installed:
+                        if app_installed:
                             app_info_dict_raw = app_info(app=app_id, raw=True)
                             label = app_info_dict_raw['settings']['label']
                         list_dict.append({
@@ -204,7 +218,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
                             # FIXME: Temporarly allow undefined license
                             'license': app_info_dict['manifest'].get('license',
                                 m18n.n('license_undefined')),
-                            'installed': installed
+                            'installed': app_installed
                         })
                     i += 1
             else:
