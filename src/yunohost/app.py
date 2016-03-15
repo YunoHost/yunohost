@@ -387,7 +387,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
-        if hook_exec(app_tmp_folder +'/scripts/upgrade', args_list) != 0:
+        if hook_exec(app_tmp_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_id))
         else:
             now = int(time.time())
