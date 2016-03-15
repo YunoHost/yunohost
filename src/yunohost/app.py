@@ -1523,7 +1523,7 @@ def _make_environment_dict(args_dict):
     """
     env_dict = {}
     for arg_name, arg_value in args_dict.items():
-        env_dict[ "YNH_APP_ARG_%s" % arg_name ] = arg_value
+        env_dict[ "YNH_APP_ARG_%s" % arg_name.upper() ] = arg_value
     return env_dict
 
 def is_true(arg):
