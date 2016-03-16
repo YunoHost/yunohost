@@ -1554,8 +1554,8 @@ def _parse_appid(appid):
     True
     """
     match = re_appid.match(appid)
-    appid = m.groupdict().get('appid')
-    appinstance = int(m.groupdict().get('appinstance')) if m.groupdict().get('appinstance') is not None else 1
+    appid = match.groupdict().get('appid')
+    appinstance = int(match.groupdict().get('appinstance')) if match.groupdict().get('appinstance') is not None else 1
     return (appid, appinstance)
 
 def is_true(arg):
