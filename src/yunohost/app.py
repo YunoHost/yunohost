@@ -57,6 +57,10 @@ re_github_repo = re.compile(
     '(/tree/(?P<tree>.+))?'
 )
 
+re_appid = re.compile(
+    r'^(?P<appid>[\w]+?)(__(?P<appinstance>[1-9][0-9]*))?$'
+)
+
 
 def app_listlists():
     """
@@ -382,7 +386,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_dict(args_odict)
-        env_dict["YNH_APP_INSTANCE_NUMBER"] = app_id.split('__')[-1]
+        app_id_withoutinstance, appinstance = _parse_appid(app_id)
+        env_dict["YNH_APP_INSTANCE_NUMBER"] = str(appinstance)
         env_dict["YNH_APP_ID"] = app_id
 
         # Execute App upgrade script
@@ -1525,6 +1530,33 @@ def _make_environment_dict(args_dict):
     for arg_name, arg_value in args_dict.items():
         env_dict[ "YNH_APP_ARG_%s" % arg_name.upper() ] = arg_value
     return env_dict
+
+def _parse_appid(appid):
+    """
+    Parse a Yunohost app identifier and extracts the original appid
+    and the application instance number
+
+    >>> _parse_appid('yolo') == ('yolo', 1)
+    True
+    >>> _parse_appid('yolo1') == ('yolo1', 1)
+    True
+    >>> _parse_appid('yolo__0') == ('yolo__0', 1)
+    True
+    >>> _parse_appid('yolo__1') == ('yolo', 1)
+    True
+    >>> _parse_appid('yolo__23') == ('yolo', 23)
+    True
+    >>> _parse_appid('yolo__42__72') == ('yolo__42', 72)
+    True
+    >>> _parse_appid('yolo__23qdqsd') == ('yolo__23qdqsd', 1)
+    True
+    >>> _parse_appid('yolo__23qdqsd56') == ('yolo__23qdqsd56', 1)
+    True
+    """
+    match = re_appid.match(appid)
+    appid = m.groupdict().get('appid')
+    appinstance = int(m.groupdict().get('appinstance')) if m.groupdict().get('appinstance') is not None else 1
+    return (appid, appinstance)
 
 def is_true(arg):
     """
