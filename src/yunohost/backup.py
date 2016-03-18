@@ -168,6 +168,7 @@ def backup_create(name=None, description=None, output_directory=None,
     # Backup apps
     if not ignore_apps:
         from yunohost.app import app_info
+        from yunohost.app import _parse_app_instance_name
 
         # Filter applications to backup
         apps_list = set(os.listdir('/etc/yunohost/apps'))
@@ -183,21 +184,21 @@ def backup_create(name=None, description=None, output_directory=None,
 
         # Run apps backup scripts
         tmp_script = '/tmp/backup_' + str(timestamp)
-        for app_id in apps_filtered:
-            app_setting_path = '/etc/yunohost/apps/' + app_id
+        for app_instance_name in apps_filtered:
+            app_setting_path = '/etc/yunohost/apps/' + app_instance_name
 
             # Check if the app has a backup and restore script
             app_script = app_setting_path + '/scripts/backup'
             app_restore_script = app_setting_path + '/scripts/restore'
             if not os.path.isfile(app_script):
-                logger.warning(m18n.n('unbackup_app', app=app_id))
+                logger.warning(m18n.n('unbackup_app', app=app_instance_name))
                 continue
             elif not os.path.isfile(app_restore_script):
-                logger.warning(m18n.n('unrestore_app', app=app_id))
+                logger.warning(m18n.n('unrestore_app', app=app_instance_name))
 
-            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
+            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_instance_name)
             tmp_app_bkp_dir = tmp_app_dir + '/backup'
-            logger.info(m18n.n('backup_running_app_script', app=app_id))
+            logger.info(m18n.n('backup_running_app_script', app=app_instance_name))
             try:
                 # Prepare backup directory for the app
                 filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
@@ -205,16 +206,24 @@ def backup_create(name=None, description=None, output_directory=None,
 
                 # Copy app backup script in a temporary folder and execute it
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
-                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id],
-                          raise_on_error=True)
+
+                # Prepare env. var. to pass to script
+                env_dict = {}
+                app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
+                env_dict["YNH_APP_ID"] = app_id
+                env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
+                env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
+                          raise_on_error=True, env=env_dict)
             except:
-                logger.exception(m18n.n('backup_app_failed', app=app_id))
+                logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
                 # Cleaning app backup directory
                 shutil.rmtree(tmp_app_dir, ignore_errors=True)
             else:
                 # Add app info
-                i = app_info(app_id)
-                info['apps'][app_id] = {
+                i = app_info(app_instance_name)
+                info['apps'][app_instance_name] = {
                     'version': i['version'],
                     'name': i['name'],
                     'description': i['description'],
@@ -429,6 +438,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     # Add apps restore hook
     if not ignore_apps:
         from yunohost.app import _is_installed
+        from yunohost.app import _parse_app_instance_name
 
         # Filter applications to restore
         apps_list = set(info['apps'].keys())
@@ -442,24 +452,24 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
         else:
             apps_filtered = apps_list
 
-        for app_id in apps_filtered:
-            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
+        for app_instance_name in apps_filtered:
+            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_instance_name)
 
             # Check if the app is not already installed
-            if _is_installed(app_id):
+            if _is_installed(app_instance_name):
                 logger.error(m18n.n('restore_already_installed_app',
-                        app=app_id))
+                        app=app_instance_name))
                 continue
 
             # Check if the app has a restore script
             app_script = tmp_app_dir + '/settings/scripts/restore'
             if not os.path.isfile(app_script):
-                logger.warning(m18n.n('unrestore_app', app=app_id))
+                logger.warning(m18n.n('unrestore_app', app=app_instance_name))
                 continue
 
-            tmp_script = '/tmp/restore_' + app_id
-            app_setting_path = '/etc/yunohost/apps/' + app_id
-            logger.info(m18n.n('restore_running_app_script', app=app_id))
+            tmp_script = '/tmp/restore_' + app_instance_name
+            app_setting_path = '/etc/yunohost/apps/' + app_instance_name
+            logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
             try:
                 # Copy app settings and set permissions
                 shutil.copytree(tmp_app_dir + '/settings', app_setting_path)
@@ -468,14 +478,22 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
                 # Execute app restore script
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
-                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_id],
-                          raise_on_error=True)
+
+                # Prepare env. var. to pass to script
+                env_dict = {}
+                app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
+                env_dict["YNH_APP_ID"] = app_id
+                env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
+                env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_instance_name],
+                          raise_on_error=True, env=env_dict)
             except:
-                logger.exception(m18n.n('restore_app_failed', app=app_id))
+                logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
                 # Cleaning app directory
                 shutil.rmtree(app_setting_path, ignore_errors=True)
             else:
-                result['apps'].append(app_id)
+                result['apps'].append(app_instance_name)
             finally:
                 filesystem.rm(tmp_script, force=True)
 
