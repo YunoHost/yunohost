@@ -387,8 +387,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Prepare env. var. to pass to script
         env_dict = _make_environment_dict(args_odict)
         app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
-        env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
         env_dict["YNH_APP_ID"] = app_id
+        env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
+        env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
@@ -482,8 +483,9 @@ def app_install(auth, app, label=None, args=None):
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-    env_dict["YNH_APP_ID"] = app_instance_name
 
     # Create app directory
     app_setting_path = os.path.join(apps_setting_path, app_instance_name)
