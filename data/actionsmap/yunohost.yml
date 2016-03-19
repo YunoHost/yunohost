@@ -436,7 +436,7 @@ app:
                     help: Custom name for the app
                 -a:
                     full: --args
-                    help: Serialize arguments for app installation
+                    help: Serialized arguments for app script (i.e. "domain=domain.tld&url_path=/path")
 
         ### app_remove() TODO: Write help
         remove:
