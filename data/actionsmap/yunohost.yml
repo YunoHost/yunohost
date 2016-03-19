@@ -1366,7 +1366,7 @@ hook:
         ### hook_callback()
         callback:
             action_help: Execute all scripts binded to an action
-            api: GET /hooks
+            api: POST /hooks/<action>
             arguments:
                 action:
                     help: Action name
