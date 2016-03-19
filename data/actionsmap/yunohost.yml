@@ -977,7 +977,6 @@ service:
             action_help: >
                 Check if the specific file has been modified and display differences.
                 Stores the file hash in the services.yml file
-            api: PUT /services/safecopy
             arguments:
                 new_conf_file:
                     help: Path to the desired conf file
@@ -998,7 +997,6 @@ service:
             action_help: >
                 Check if the specific file has been modified before removing it.
                 Backup the file in /home/yunohost.backup
-            api: PUT /services/safecopy
             arguments:
                 conf_file:
                     help: Path to the targeted conf file
@@ -1322,7 +1320,6 @@ hook:
         ### hook_add()
         add:
             action_help: Store hook script to filesystem
-            api: PUT /hook
             arguments:
                 app:
                     help: App to link with
@@ -1332,7 +1329,6 @@ hook:
         ### hook_remove()
         remove:
             action_help: Remove hook scripts from filesystem
-            api: DELETE /hook
             arguments:
                 app:
                     help: Scripts related to app will be removed
@@ -1386,7 +1382,6 @@ hook:
         ### hook_exec()
         exec:
             action_help: Execute hook from a file with arguments
-            api: GET /hook
             arguments:
                 path:
                     help: Path of the script to execute
