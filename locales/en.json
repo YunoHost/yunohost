@@ -155,7 +155,7 @@
 
     "backup_action_required" : "You must specify something to save",
     "backup_output_directory_required" : "You must provide an output directory for the backup",
-    "backup_output_directory_forbidden" : "Forbidden output directory",
+    "backup_output_directory_forbidden" : "Forbidden output directory. Backups can't be created in /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var or /home/yunohost.backup/archives sub-folders.",
     "backup_output_directory_not_empty" : "Output directory is not empty",
     "backup_hook_unknown" : "Backup hook '{hook:s}' unknown",
     "backup_running_hooks" : "Running backup hooks...",
