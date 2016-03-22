@@ -114,7 +114,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     dyndns_installcron()
 
 
-def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None,
+def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """
     Update IP on DynDNS platform
