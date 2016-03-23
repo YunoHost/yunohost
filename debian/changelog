@@ -1,3 +1,41 @@
+yunohost (2.3.11) testing; urgency=low
+
+  [ Laurent Peuch ]
+  * [mod] Explain how to start yunohost-firewall service
+
+  [ Jérôme Lebleu ]
+  * [fix] Remove useless API routes for some actions
+  * [fix] Update API route for hook_callback action
+  * [deb] Attempt to improve services management in Debian packaging
+  * [deb] Add missing cron dependency
+  * [deb] Clean debian/control with cosmetic changes
+  * [deb] Fix helpers bash script installation
+
+  [ Julien Malik ]
+  * [enh] Add helper for IP address validation
+  * [enh] move /usr/share/yunohost/apps/helpers to
+    /usr/share/yunohost/helpers since it became of more general use
+  * [enh] Remove unused checkupdate and upgrade scripts
+  * [fix] Validate IP addresses returned by ipX.yunohost.org
+  * [fix] fix lintian script-not-executable
+  * [deb] dh_python2 replaces shebang during build. Using the correct one
+    in source directly
+
+  [ Moul ]
+  * [enh] Add '-a' argument's usage example for app_install
+
+  [ opi ]
+  * [enh] Add diagnosis function. #39
+  * [enh] Redirect most of 404 to maindomain.tld/yunohost/sso
+  * [enh] Add --installed and --with-backup to app_list action (wip #227)
+  * [enh] More explicit backup forbidden directory error message.
+  * [enh] Use dedicated app list domain.
+  * [fix] Use only dyndns.yunohost.org domain.
+  * [fix] Use plain text 502 error page.
+  * [fix] Cleaner Nginx redirection rules. Use permanent only when paths match.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 10:39:34 +0100
+
 yunohost (2.3.10.2) testing; urgency=low
 
   * [fix] Workaround for the bad people who are not using IPv6 yet
