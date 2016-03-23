@@ -1,3 +1,10 @@
+yunohost (2.3.11.1) testing; urgency=low
+
+  * [deb] Include sysvinit services and files in the package, thanks to
+    nthykier and pabs from #debian-mentor
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 12:38:56 +0100
+
 yunohost (2.3.11) testing; urgency=low
 
   [ Laurent Peuch ]
