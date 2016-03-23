@@ -334,7 +334,7 @@ app:
             arguments:
                 -u:
                     full: --url
-                    help: URL of remote JSON list (default https://yunohost.org/official.json)
+                    help: URL of remote JSON list (default https://app.yunohost.org/official.json)
                 -n:
                     full: --name
                     help: Name of the list (default yunohost)

@@ -80,7 +80,7 @@ def app_fetchlist(url=None, name=None):
 
     Keyword argument:
         name -- Name of the list (default yunohost)
-        url -- URL of remote JSON list (default https://yunohost.org/official.json)
+        url -- URL of remote JSON list (default https://app.yunohost.org/official.json)
 
     """
     # Create app path if not exists
@@ -88,7 +88,7 @@ def app_fetchlist(url=None, name=None):
     except OSError: os.makedirs(repo_path)
 
     if url is None:
-        url = 'https://yunohost.org/official.json'
+        url = 'https://app.yunohost.org/official.json'
         name = 'yunohost'
     else:
         if name is None:
