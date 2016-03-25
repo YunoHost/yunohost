@@ -507,37 +507,47 @@ def app_install(auth, app, label=None, args=None):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (app_tmp_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
+
+    # Execute the app install script
+    install_retcode = 1
     try:
-        if hook_exec(app_tmp_folder + '/scripts/install', args_list) == 0:
-            # Store app status
-            with open(app_setting_path + '/status.json', 'w+') as f:
-                json.dump(status, f)
-
-            # Clean and set permissions
-            shutil.rmtree(app_tmp_folder)
-            os.system('chmod -R 400 %s' % app_setting_path)
-            os.system('chown -R root: %s' % app_setting_path)
-            os.system('chown -R admin: %s/scripts' % app_setting_path)
-            app_ssowatconf(auth)
-            logger.success(m18n.n('installation_complete'))
-        else:
-            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+        install_retcode = hook_exec(
+            os.path.join(app_tmp_folder, 'scripts/install'), args_list)
+    except (KeyboardInterrupt, EOFError):
+        install_retcode = -1
     except:
-        # Execute remove script and clean folders
-        hook_remove(app_id)
-        shutil.rmtree(app_setting_path)
-        shutil.rmtree(app_tmp_folder)
+        logger.exception(m18n.n('unexpected_error'))
+    finally:
+        if install_retcode != 0:
+            # Execute remove script
+            remove_retcode = hook_exec(
+                os.path.join(app_tmp_folder, 'scripts/remove'), [app_id])
+            if remove_retcode != 0:
+                logger.warning(m18n.n('app_not_properly_removed', app=app_id))
 
-        # Reraise proper exception
-        try:
-            raise
-        except MoulinetteError:
-            raise
-        except (KeyboardInterrupt, EOFError):
-            raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
-        except Exception as e:
-            logger.debug('app installation failed', exc_info=1)
-            raise MoulinetteError(errno.EIO, m18n.n('unexpected_error'))
+            # Clean tmp folders
+            hook_remove(app_id)
+            shutil.rmtree(app_setting_path)
+            shutil.rmtree(app_tmp_folder)
+
+            if install_retcode == -1:
+                raise MoulinetteError(errno.EINTR,
+                                      m18n.g('operation_interrupted'))
+            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+
+    # Store app status
+    with open(app_setting_path + '/status.json', 'w+') as f:
+        json.dump(status, f)
+
+    # Clean and set permissions
+    shutil.rmtree(app_tmp_folder)
+    os.system('chmod -R 400 %s' % app_setting_path)
+    os.system('chown -R root: %s' % app_setting_path)
+    os.system('chown -R admin: %s/scripts' % app_setting_path)
+
+    app_ssowatconf(auth)
+
+    logger.success(m18n.n('installation_complete'))
 
 
 def app_remove(auth, app):

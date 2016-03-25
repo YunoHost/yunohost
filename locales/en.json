@@ -27,6 +27,7 @@
     "app_upgrade_failed" : "Unable to upgrade {app:s}",
     "app_id_invalid" : "Invalid app id",
     "app_already_installed" : "{app:s} is already installed",
+    "app_not_properly_removed" : "{app:s} has not been properly removed",
     "app_removed" : "{app:s} successfully removed",
     "app_location_already_used" : "An app is already installed on this location",
     "app_location_install_failed" : "Unable to install the app on this location",
