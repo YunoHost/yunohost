@@ -126,7 +126,7 @@
     "service_no_log" : "No log to display for service '{:s}'",
     "service_cmd_exec_failed" : "Unable to execute command '{:s}'",
     "services_configured": "Configuration successfully generated",
-    "service_configuration_conflict": "The file {file:s} has been changed since its last generation. Please apply the modifications manually or use the option --force (it will erase all the modifications previously done to the file).",
+    "service_configuration_conflict": "The file {file:s} has been changed since its last generation. Please apply the modifications manually or use 'sudo yunohost service regenconf --force --service {service:s}' (it will erase all the modifications previously done to the file).",
     "no_such_conf_file": "Unable to copy the file {file:s}: the file does not exist",
     "service_add_configuration": "Adding the configuration file {file:s}",
     "show_diff": "Here are the differences:\n{diff:s}",
