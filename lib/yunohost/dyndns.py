@@ -24,6 +24,7 @@
     Subscribe and Update DynDNS Hosts
 """
 import os
+import re
 import sys
 import requests
 import json
@@ -32,6 +33,10 @@ import base64
 import errno
 
 from moulinette.core import MoulinetteError
+
+re_dyndns_private_key = re.compile(
+    r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
+)
 
 
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
@@ -90,16 +95,12 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
     Update IP on DynDNS platform
 
     Keyword argument:
-        domain -- Full domain to subscribe with
+        domain -- Full domain to update
         dyn_host -- Dynette DNS server to inform
         key -- Public DNS key
         ip -- IP address to send
 
     """
-    if domain is None:
-        with open('/etc/yunohost/current_host', 'r') as f:
-            domain = f.readline().rstrip()
-
     if ip is None:
         try:
             new_ip = requests.get('http://ip.yunohost.org').text
@@ -151,6 +152,36 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
         new_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
 
     if old_ip != new_ip or old_ipv6 != new_ipv6 and new_ipv6 is not None:
+        if domain is None:
+            # Retrieve the first registered domain
+            for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+                match = re_dyndns_private_key.match(path)
+                if not match:
+                    continue
+                _domain = match.group('domain')
+                try:
+                    # Check if domain is registered
+                    if requests.get('https://{0}/test/{1}'.format(
+                            dyn_host, _domain)).status_code == 200:
+                        continue
+                except requests.ConnectionError:
+                    raise MoulinetteError(errno.ENETUNREACH,
+                                          m18n.n('no_internet_connection'))
+                domain = _domain
+                break
+            if not domain:
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('dyndns_no_domain_registered'))
+
+        if key is None:
+            keys = glob.glob(
+                '/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
+            if len(keys) > 0:
+                key = keys[0]
+        if not key or not os.path.isfile(key):
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('dyndns_key_not_found'))
+
         host = domain.split('.')[1:]
         host = '.'.join(host)
         lines = [
@@ -184,11 +215,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
             for line in lines:
                 zone.write(line + '\n')
 
-        if key is None:
-            private_key_file = glob.glob('/etc/yunohost/dyndns/*.private')[0]
-        else:
-            private_key_file = key
-        if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % private_key_file) == 0:
+        if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) == 0:
             msignals.display(m18n.n('dyndns_ip_updated'), 'success')
             with open('/etc/yunohost/dyndns/old_ip', 'w') as f:
                 f.write(new_ip)
