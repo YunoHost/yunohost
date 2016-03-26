@@ -168,6 +168,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
                     raise MoulinetteError(errno.ENETUNREACH,
                                           m18n.n('no_internet_connection'))
                 domain = _domain
+                key = path
                 break
             if not domain:
                 raise MoulinetteError(errno.EINVAL,
@@ -178,7 +179,7 @@ def dyndns_update(dyn_host="dynhost.yunohost.org", domain=None, key=None, ip=Non
                 '/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
             if len(keys) > 0:
                 key = keys[0]
-        if not key or not os.path.isfile(key):
+        if not key:
             raise MoulinetteError(errno.EIO,
                                   m18n.n('dyndns_key_not_found'))
 
