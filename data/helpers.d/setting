@@ -4,7 +4,7 @@
 # | arg: app - the application id
 # | arg: key - the setting to get
 ynh_app_setting_get() {
-    sudo yunohost app setting "$1" "$2" --output-as plain
+    sudo yunohost app setting "$1" "$2" --output-as plain --quiet
 }
 
 # Set an application setting
@@ -14,7 +14,7 @@ ynh_app_setting_get() {
 # | arg: key - the setting name to set
 # | arg: value - the setting value to set
 ynh_app_setting_set() {
-    sudo yunohost app setting "$1" "$2" -v "$3"
+    sudo yunohost app setting "$1" "$2" -v "$3" --quiet
 }
 
 # Delete an application setting
@@ -23,5 +23,5 @@ ynh_app_setting_set() {
 # | arg: app - the application id
 # | arg: key - the setting to delete
 ynh_app_setting_delete() {
-    sudo yunohost app setting -d "$1" "$2"
+    sudo yunohost app setting -d "$1" "$2" --quiet
 }
