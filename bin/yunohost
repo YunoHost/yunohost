@@ -100,7 +100,7 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
         handlers.append('tty')
 
     root_handlers = set(handlers)
-    if not debug:
+    if not debug and 'tty' in root_handlers:
         root_handlers.remove('tty')
 
     # Define loggers level
