@@ -1023,7 +1023,7 @@ dyndns:
             arguments:
                 --dyn-host:
                     help: Dynette DNS server to inform
-                    default: "dynhost.yunohost.org"
+                    default: "dyndns.yunohost.org"
                 -d:
                     full: --domain
                     help: Full domain to update
