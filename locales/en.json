@@ -195,7 +195,7 @@
     "mail_domain_unknown" : "Unknown mail address domain '{domain:s}'",
     "mail_alias_remove_failed" : "Unable to remove mail alias '{mail:s}'",
     "mail_forward_remove_failed" : "Unable to remove mail forward '{mail:s}'",
-    "user_unknown" : "Unknown user",
+    "user_unknown" : "Unknown user: {user:s}",
     "system_username_exists" : "Username already exists in the system users",
     "user_creation_failed" : "Unable to create user",
     "user_created" : "User successfully created",

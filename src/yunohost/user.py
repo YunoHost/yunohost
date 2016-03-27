@@ -275,7 +275,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
     # Populate user informations
     result = auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=' + username, attrs=attrs_to_fetch)
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
     user = result[0]
 
     # Get modifications from arguments
@@ -381,7 +381,7 @@ def user_info(auth, username):
     if result:
         user = result[0]
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
 
     result_dict = {
         'username': user['uid'][0],

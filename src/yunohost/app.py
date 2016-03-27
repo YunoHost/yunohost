@@ -626,10 +626,7 @@ def app_addaccess(auth, apps, users=[]):
                     try:
                         user_info(auth, allowed_user)
                     except MoulinetteError:
-                        # FIXME: Add username keyword in user_unknown
-                        logger.warning('{0}{1}'.format(
-                                m18n.g('colon', m18n.n('user_unknown')),
-                                allowed_user))
+                        logger.warning(m18n.n('user_unknown', user=allowed_user))
                         continue
                     allowed_users.add(allowed_user)
 
