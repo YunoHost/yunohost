@@ -75,9 +75,9 @@ def service_add(name, status=None, log=None, runlevel=None):
     try:
         _save_services(services)
     except:
-        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', name))
+        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', service=name))
 
-    logger.success(m18n.n('service_added'))
+    logger.success(m18n.n('service_added', service=name))
 
 
 def service_remove(name):
@@ -93,14 +93,14 @@ def service_remove(name):
     try:
         del services[name]
     except KeyError:
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', name))
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
 
     try:
         _save_services(services)
     except:
-        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', name))
+        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', service=name))
 
-    logger.success(m18n.n('service_removed'))
+    logger.success(m18n.n('service_removed', service=name))
 
 
 def service_start(names):
@@ -115,12 +115,12 @@ def service_start(names):
         names = [names]
     for name in names:
         if _run_service_command('start', name):
-            logger.success(m18n.n('service_started', name))
+            logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed', name))
-            logger.info(m18n.n('service_already_started', name))
+                                      m18n.n('service_start_failed', service=name))
+            logger.info(m18n.n('service_already_started', service=name))
 
 
 def service_stop(names):
@@ -135,12 +135,12 @@ def service_stop(names):
         names = [names]
     for name in names:
         if _run_service_command('stop', name):
-            logger.success(m18n.n('service_stopped', name))
+            logger.success(m18n.n('service_stopped', service=name))
         else:
             if service_status(name)['status'] != 'inactive':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed', name))
-            logger.info(m18n.n('service_already_stopped', name))
+                                      m18n.n('service_stop_failed', service=name))
+            logger.info(m18n.n('service_already_stopped', service=name))
 
 
 def service_enable(names):
@@ -155,10 +155,10 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command('enable', name):
-            logger.success(m18n.n('service_enabled', name))
+            logger.success(m18n.n('service_enabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed', name))
+                                  m18n.n('service_enable_failed', service=name))
 
 
 def service_disable(names):
@@ -173,10 +173,10 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command('disable', name):
-            logger.success(m18n.n('service_disabled', name))
+            logger.success(m18n.n('service_disabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed', name))
+                                  m18n.n('service_disable_failed', service=name))
 
 
 def service_status(names=[]):
@@ -200,7 +200,7 @@ def service_status(names=[]):
     for name in names:
         if check_names and name not in services.keys():
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('service_unknown', name))
+                                  m18n.n('service_unknown', service=name))
 
         status = None
         if 'status' not in services[name] or \
@@ -221,7 +221,7 @@ def service_status(names=[]):
                                           shell=True)
         except subprocess.CalledProcessError as e:
             if 'usage:' in e.output.lower():
-                logger.warning(m18n.n('service_status_failed', name))
+                logger.warning(m18n.n('service_status_failed', service=name))
             else:
                 result[name]['status'] = 'inactive'
         else:
@@ -253,7 +253,7 @@ def service_log(name, number=50):
     services = _get_services()
 
     if name not in services.keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', name))
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
 
     if 'log' in services[name]:
         log_list = services[name]['log']
@@ -268,7 +268,7 @@ def service_log(name, number=50):
             else:
                 result[log_path] = _tail(log_path, int(number))
     else:
-        raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', name))
+        raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', service=name))
 
     return result
 
@@ -289,7 +289,7 @@ def service_regenconf(service=None, force=False):
 
     if service is not None:
         hook_callback('conf_regen', [service], args=[force])
-        logger.success(m18n.n('service_configured', service))
+        logger.success(m18n.n('service_configured', service=service))
     else:
         hook_callback('conf_regen', args=[force])
         logger.success(m18n.n('service_configured_all'))
@@ -305,8 +305,7 @@ def _run_service_command(action, service):
 
     """
     if service not in _get_services().keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown',
-                                                   service))
+        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
 
     cmd = None
     if action in ['start', 'stop', 'restart', 'reload']:
@@ -321,7 +320,7 @@ def _run_service_command(action, service):
         ret = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         # TODO: Log output?
-        logger.warning(m18n.n('service_cmd_exec_failed', ' '.join(e.cmd)))
+        logger.warning(m18n.n('service_cmd_exec_failed', command=' '.join(e.cmd)))
         return False
     return True
 
