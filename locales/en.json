@@ -94,8 +94,8 @@
 
     "hook_list_by_invalid" : "Invalid property to list hook by",
     "hook_name_unknown" : "Unknown hook name '{:s}'",
-    "hook_exec_failed" : "Script execution failed",
-    "hook_exec_not_terminated" : "Script execution hasn’t terminated",
+    "hook_exec_failed" : "Script execution failed: {path:s}",
+    "hook_exec_not_terminated" : "Script execution hasn’t terminated: {path:s}",
 
     "mountpoint_unknown" : "Unknown mountpoint",
     "unit_unknown" : "Unknown unit '{:s}'",

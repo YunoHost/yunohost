@@ -330,12 +330,12 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
     # Check and return process' return code
     if returncode is None:
         if raise_on_error:
-            raise MoulinetteError(m18n.n('hook_exec_not_terminated'))
+            raise MoulinetteError(m18n.n('hook_exec_not_terminated', path=path))
         else:
-            logger.error(m18n.n('hook_exec_not_terminated'))
+            logger.error(m18n.n('hook_exec_not_terminated', path=path))
             return 1
     elif raise_on_error and returncode != 0:
-        raise MoulinetteError(m18n.n('hook_exec_failed'))
+        raise MoulinetteError(m18n.n('hook_exec_failed', path=path))
     return returncode
 
 
