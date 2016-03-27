@@ -1168,7 +1168,7 @@ dyndns:
                     default: "dyndns.yunohost.org"
                 -d:
                     full: --domain
-                    help: Full domain to subscribe with
+                    help: Full domain to update
                     extra:
                         pattern: *pattern_domain
                 -k:

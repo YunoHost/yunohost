@@ -69,6 +69,8 @@
     "no_ipv6_connectivity": "IPv6 connectivity is not available",
 
     "dyndns_key_generating" : "DNS key is being generated, it may take a while...",
+    "dyndns_key_not_found" : "DNS key not found for the domain",
+    "dyndns_no_domain_registered": "No domain has been registered with DynDNS",
     "dyndns_unavailable" : "Unavailable DynDNS subdomain",
     "dyndns_registration_failed" : "Unable to register DynDNS domain: {error:s}",
     "dyndns_registered" : "DynDNS domain successfully registered",
