@@ -107,7 +107,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         try:    error = json.loads(r.text)['error']
         except: error = "Server error"
         raise MoulinetteError(errno.EPERM,
-                              m18n.n('dyndns_registration_failed', error))
+                              m18n.n('dyndns_registration_failed', error=error))
 
     logger.success(m18n.n('dyndns_registered'))
 

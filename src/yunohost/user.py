@@ -128,7 +128,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
     if mail[mail.find('@')+1:] not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
-                                     mail[mail.find('@')+1:]))
+                                     domain=mail[mail.find('@')+1:]))
 
     # Get random UID/GID
     uid_check = gid_check = 0
@@ -301,7 +301,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         if mail[mail.find('@')+1:] not in domains:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('mail_domain_unknown',
-                                          mail[mail.find('@')+1:]))
+                                          domain=mail[mail.find('@')+1:]))
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
 
@@ -313,7 +313,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
             if mail[mail.find('@')+1:] not in domains:
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('mail_domain_unknown',
-                                             mail[mail.find('@')+1:]))
+                                             domain=mail[mail.find('@')+1:]))
             user['mail'].append(mail)
         new_attr_dict['mail'] = user['mail']
 
@@ -325,7 +325,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
                 user['mail'].remove(mail)
             else:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_alias_remove_failed', mail))
+                                      m18n.n('mail_alias_remove_failed', mail=mail))
         new_attr_dict['mail'] = user['mail']
 
     if add_mailforward:
@@ -345,7 +345,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
                 user['maildrop'].remove(mail)
             else:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_forward_remove_failed', mail))
+                                      m18n.n('mail_forward_remove_failed', mail=mail))
         new_attr_dict['maildrop'] = user['maildrop']
 
     if mailbox_quota is not None:

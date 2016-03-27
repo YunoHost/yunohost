@@ -110,7 +110,7 @@ def hook_info(action, name):
             })
 
     if not hooks:
-        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name))
+        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name=name))
     return {
         'action': action,
         'name': name,

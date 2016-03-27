@@ -83,7 +83,7 @@ def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
                 firewall[i][p].append(port)
             else:
                 ipv = "IPv%s" % i[3]
-                logger.warning(m18n.n('port_already_opened', port, ipv))
+                logger.warning(m18n.n('port_already_opened', port=port, ip_version=ipv))
         # Add port forwarding with UPnP
         if not no_upnp and port not in firewall['uPnP'][p]:
             firewall['uPnP'][p].append(port)
@@ -140,7 +140,7 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
                 firewall[i][p].remove(port)
             else:
                 ipv = "IPv%s" % i[3]
-                logger.warning(m18n.n('port_already_closed', port, ipv))
+                logger.warning(m18n.n('port_already_closed', port=port, ip_version=ipv))
         # Remove port forwarding with UPnP
         if upnp and port in firewall['uPnP'][p]:
             firewall['uPnP'][p].remove(port)
@@ -335,7 +335,7 @@ def firewall_upnp(action='status', no_refresh=False):
         if action == 'status':
             no_refresh = True
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('action_invalid', action))
+        raise MoulinetteError(errno.EINVAL, m18n.n('action_invalid', action=action))
 
     # Refresh port mapping using UPnP
     if not no_refresh:
