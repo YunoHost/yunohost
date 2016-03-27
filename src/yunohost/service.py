@@ -289,9 +289,10 @@ def service_regenconf(service=None, force=False):
 
     if service is not None:
         hook_callback('conf_regen', [service], args=[force])
+        logger.success(m18n.n('service_configured', service))
     else:
         hook_callback('conf_regen', args=[force])
-    logger.success(m18n.n('services_configured'))
+        logger.success(m18n.n('service_configured_all'))
 
 
 def _run_service_command(action, service):
