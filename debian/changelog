@@ -1,3 +1,15 @@
+moulinette-yunohost (2.2.4) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Update first registered domain with DynDNS instead of current_host
+  * [fix] Set found private key and don't validate it in dyndns_update
+  * [fix] Use dyndns.yunohost.org instead of dynhost.yunohost.org
+
+  [ opi ]
+  * [fix] Catch ConnectionError from requests package
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 27 Mar 2016 16:30:42 +0200
+
 yunohost (2.3.11.2) testing; urgency=low
 
   * [fix] Don't fail dnsmasq regen if IPv4/6 cannot be retrieved
@@ -382,12 +394,6 @@ moulinette-yunohost (2.3.0) testing; urgency=low
   * [fix] add netcat-openbsd packages in depends
 
  -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 08 Sep 2015 14:19:28 +0200
-
-moulinette-yunohost (2.2.3-1) stable; urgency=low
-
-  * [fix] Catch ConnectionError from requests package
-
- -- opi <opi@zeropi.net>  Sun, 06 Mar 2016 21:51:06 +0100
 
 moulinette-yunohost (2.2.3) stable; urgency=low
 
