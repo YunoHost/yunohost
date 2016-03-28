@@ -206,7 +206,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 # Copy app backup script in a temporary folder and execute it
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id],
-                          raise_on_error=True)
+                          raise_on_error=True, chdir=tmp_app_bkp_dir)
             except:
                 logger.exception(m18n.n('backup_app_failed', app=app_id))
                 # Cleaning app backup directory
@@ -444,6 +444,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
         for app_id in apps_filtered:
             tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_id)
+            tmp_app_bkp_dir = tmp_app_dir + '/backup'
 
             # Check if the app is not already installed
             if _is_installed(app_id):
@@ -468,8 +469,8 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
                 # Execute app restore script
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
-                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_id],
-                          raise_on_error=True)
+                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_id],
+                          raise_on_error=True, chdir=tmp_app_bkp_dir)
             except:
                 logger.exception(m18n.n('restore_app_failed', app=app_id))
                 # Cleaning app directory
