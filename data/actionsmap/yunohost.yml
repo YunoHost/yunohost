@@ -1395,3 +1395,6 @@ hook:
                     full: --no-trace
                     help: Do not print each command that will be executed
                     action: store_true
+                -d:
+                    full: --chdir
+                    help: The directory from where the script will be executed

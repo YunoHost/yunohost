@@ -275,7 +275,8 @@ def hook_callback(action, hooks=[], args=None):
     return result
 
 
-def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
+def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
+              chdir=None):
     """
     Execute hook from a file with arguments
 
@@ -284,6 +285,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
         args -- A list of arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
         no_trace -- Do not print each command that will be executed
+        chdir -- The directory from where the script will be executed
 
     """
     from moulinette.utils.process import call_async_output
@@ -296,36 +298,40 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False):
         raise MoulinetteError(errno.EIO, m18n.g('file_not_exist'))
 
     # Construct command variables
-    cmd_fdir, cmd_fname = os.path.split(path)
-    cmd_fname = './{0}'.format(cmd_fname)
-
     cmd_args = ''
     if args and isinstance(args, list):
         # Concatenate arguments and escape them with double quotes to prevent
         # bash related issue if an argument is empty and is not the last
         cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in args))
+    if not chdir:
+        # use the script directory as current one
+        chdir, cmd_script = os.path.split(path)
+        cmd_script = './{0}'.format(cmd_script)
+    else:
+        cmd_script = path
 
     # Construct command to execute
-    command = ['sudo', '-u', 'admin', '-H', 'sh', '-c']
+    command = ['sudo', '-n', '-u', 'admin', '-H', 'sh', '-c']
     if no_trace:
-        cmd = 'cd "{0:s}" && /bin/bash "{1:s}" {2:s}'
+        cmd = '/bin/bash "{script}" {args}'
     else:
         # use xtrace on fd 7 which is redirected to stdout
-        cmd = 'cd "{0:s}" && BASH_XTRACEFD=7 /bin/bash -x "{1:s}" {2:s} 7>&1'
-    command.append(cmd.format(cmd_fdir, cmd_fname, cmd_args))
+        cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
+    command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
         logger.info(m18n.n('executing_command', command=' '.join(command)))
     else:
-        logger.info(m18n.n('executing_script', script='{0}/{1}'.format(
-                cmd_fdir, cmd_fname)))
+        logger.info(m18n.n('executing_script', script=path))
 
     # Define output callbacks and call command
     callbacks = (
         lambda l: logger.info(l.rstrip()),
         lambda l: logger.warning(l.rstrip()),
     )
-    returncode = call_async_output(command, callbacks, shell=False)
+    returncode = call_async_output(
+        command, callbacks, shell=False, cwd=chdir
+    )
 
     # Check and return process' return code
     if returncode is None:
