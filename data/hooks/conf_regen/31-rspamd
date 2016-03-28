@@ -17,8 +17,8 @@ cd /usr/share/yunohost/templates/rspamd
 # Create configuration directories
 sudo mkdir -p /etc/rspamd/local.d /etc/rspamd/override.d
 
-# Copy specific configuration to override the defaults
-safe_copy metrics.conf.override /etc/rspamd/override.d/metrics.conf
+# Copy specific configuration to rewrite the defaults
+safe_copy metrics.conf.local /etc/rspamd/local.d/metrics.conf
 
 # Install Rspamd sieve script
 safe_copy rspamd.sieve /etc/dovecot/global_script/rspamd.sieve
