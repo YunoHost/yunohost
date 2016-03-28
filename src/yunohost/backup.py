@@ -39,6 +39,13 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 
+from yunohost.app import app_info, app_ssowatconf, _is_installed,
+from yunohost.hook import (
+    hook_info, hook_callback, hook_exec, custom_hook_folder
+)
+from yunohost.monitor import binary_to_human
+from yunohost.tools import tools_postinstall
+
 backup_path   = '/home/yunohost.backup'
 archives_path = '%s/archives' % backup_path
 
@@ -63,8 +70,6 @@ def backup_create(name=None, description=None, output_directory=None,
 
     """
     # TODO: Add a 'clean' argument to clean output directory
-    from yunohost.hook import hook_info, hook_callback, hook_exec
-
     tmp_dir = None
 
     # Validate what to backup
@@ -167,8 +172,6 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Backup apps
     if not ignore_apps:
-        from yunohost.app import app_info
-
         # Filter applications to backup
         apps_list = set(os.listdir('/etc/yunohost/apps'))
         apps_filtered = set()
@@ -293,9 +296,6 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
         force -- Force restauration on an already installed system
 
     """
-    from yunohost.hook import hook_info, hook_callback, hook_exec
-    from yunohost.hook import custom_hook_folder
-
     # Validate what to restore
     if ignore_hooks and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
@@ -373,8 +373,6 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 _clean_tmp_dir()
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
     else:
-        from yunohost.tools import tools_postinstall
-
         # Retrieve the domain from the backup
         try:
             with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
@@ -430,8 +428,6 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
     # Add apps restore hook
     if not ignore_apps:
-        from yunohost.app import _is_installed, app_ssowatconf
-
         # Filter applications to restore
         apps_list = set(info['apps'].keys())
         apps_filtered = set()
@@ -540,8 +536,6 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    from yunohost.monitor import binary_to_human
-
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
     if not os.path.isfile(archive_file):
         raise MoulinetteError(errno.EIO,
@@ -589,7 +583,6 @@ def backup_delete(name):
         name -- Name of the local backup archive
 
     """
-    from yunohost.hook import hook_callback
     hook_callback('pre_backup_delete', args=[name])
 
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
