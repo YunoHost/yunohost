@@ -647,6 +647,8 @@ backup:
             action_help: Restore from a local backup archive
             api: POST /backup/restore/<name>
             configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
                 lock: false
             arguments:
                 name:

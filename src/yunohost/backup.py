@@ -279,13 +279,15 @@ def backup_create(name=None, description=None, output_directory=None,
     return { 'archive': info }
 
 
-def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=False, force=False):
+def backup_restore(auth, name, hooks=[], ignore_hooks=False,
+                   apps=[], ignore_apps=False, force=False):
     """
     Restore from a local backup archive
 
     Keyword argument:
         name -- Name of the local backup archive
         hooks -- List of restoration hooks names to execute
+        ignore_hooks -- Do not execute backup hooks
         apps -- List of application names to restore
         ignore_apps -- Do not restore apps
         force -- Force restauration on an already installed system
@@ -428,7 +430,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
     # Add apps restore hook
     if not ignore_apps:
-        from yunohost.app import _is_installed
+        from yunohost.app import _is_installed, app_ssowatconf
 
         # Filter applications to restore
         apps_list = set(info['apps'].keys())
@@ -484,6 +486,8 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     if not result['hooks'] and not result['apps']:
         _clean_tmp_dir(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
+    if result['apps']:
+        app_ssowatconf(auth)
 
     _clean_tmp_dir()
     logger.success(m18n.n('restore_complete'))
