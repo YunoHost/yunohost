@@ -1,3 +1,66 @@
+moulinette-yunohost (2.2.4) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Update first registered domain with DynDNS instead of current_host
+  * [fix] Set found private key and don't validate it in dyndns_update
+  * [fix] Use dyndns.yunohost.org instead of dynhost.yunohost.org
+
+  [ opi ]
+  * [fix] Catch ConnectionError from requests package
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 27 Mar 2016 16:30:42 +0200
+
+yunohost (2.3.11.2) testing; urgency=low
+
+  * [fix] Don't fail dnsmasq regen if IPv4/6 cannot be retrieved
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 14:57:22 +0100
+
+yunohost (2.3.11.1) testing; urgency=low
+
+  * [deb] Include sysvinit services and files in the package, thanks to
+    nthykier and pabs from #debian-mentor
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 12:38:56 +0100
+
+yunohost (2.3.11) testing; urgency=low
+
+  [ Laurent Peuch ]
+  * [mod] Explain how to start yunohost-firewall service
+
+  [ Jérôme Lebleu ]
+  * [fix] Remove useless API routes for some actions
+  * [fix] Update API route for hook_callback action
+  * [deb] Attempt to improve services management in Debian packaging
+  * [deb] Add missing cron dependency
+  * [deb] Clean debian/control with cosmetic changes
+  * [deb] Fix helpers bash script installation
+
+  [ Julien Malik ]
+  * [enh] Add helper for IP address validation
+  * [enh] move /usr/share/yunohost/apps/helpers to
+    /usr/share/yunohost/helpers since it became of more general use
+  * [enh] Remove unused checkupdate and upgrade scripts
+  * [fix] Validate IP addresses returned by ipX.yunohost.org
+  * [fix] fix lintian script-not-executable
+  * [deb] dh_python2 replaces shebang during build. Using the correct one
+    in source directly
+
+  [ Moul ]
+  * [enh] Add '-a' argument's usage example for app_install
+
+  [ opi ]
+  * [enh] Add diagnosis function. #39
+  * [enh] Redirect most of 404 to maindomain.tld/yunohost/sso
+  * [enh] Add --installed and --with-backup to app_list action (wip #227)
+  * [enh] More explicit backup forbidden directory error message.
+  * [enh] Use dedicated app list domain.
+  * [fix] Use only dyndns.yunohost.org domain.
+  * [fix] Use plain text 502 error page.
+  * [fix] Cleaner Nginx redirection rules. Use permanent only when paths match.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 10:39:34 +0100
+
 yunohost (2.3.10.2) testing; urgency=low
 
   * [fix] Workaround for the bad people who are not using IPv6 yet
@@ -331,12 +394,6 @@ moulinette-yunohost (2.3.0) testing; urgency=low
   * [fix] add netcat-openbsd packages in depends
 
  -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 08 Sep 2015 14:19:28 +0200
-
-moulinette-yunohost (2.2.3-1) stable; urgency=low
-
-  * [fix] Catch ConnectionError from requests package
-
- -- opi <opi@zeropi.net>  Sun, 06 Mar 2016 21:51:06 +0100
 
 moulinette-yunohost (2.2.3) stable; urgency=low
 

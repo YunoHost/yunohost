@@ -334,7 +334,7 @@ app:
             arguments:
                 -u:
                     full: --url
-                    help: URL of remote JSON list (default https://yunohost.org/official.json)
+                    help: URL of remote JSON list (default https://app.yunohost.org/official.json)
                 -n:
                     full: --name
                     help: Name of the list (default yunohost)
@@ -376,6 +376,14 @@ app:
                 -r:
                     full: --raw
                     help: Return the full app_dict
+                    action: store_true
+                -i:
+                    full: --installed
+                    help: Return only installed apps
+                    action: store_true
+                -b:
+                    full: --with-backup
+                    help: Return only apps with backup feature (force --installed filter)
                     action: store_true
 
         ### app_info()
@@ -428,7 +436,7 @@ app:
                     help: Custom name for the app
                 -a:
                     full: --args
-                    help: Serialize arguments for app installation
+                    help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
 
         ### app_remove() TODO: Write help
         remove:
@@ -639,6 +647,8 @@ backup:
             action_help: Restore from a local backup archive
             api: POST /backup/restore/<name>
             configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
                 lock: false
             arguments:
                 name:
@@ -969,7 +979,6 @@ service:
             action_help: >
                 Check if the specific file has been modified and display differences.
                 Stores the file hash in the services.yml file
-            api: PUT /services/safecopy
             arguments:
                 new_conf_file:
                     help: Path to the desired conf file
@@ -990,7 +999,6 @@ service:
             action_help: >
                 Check if the specific file has been modified before removing it.
                 Backup the file in /home/yunohost.backup
-            api: PUT /services/safecopy
             arguments:
                 conf_file:
                     help: Path to the targeted conf file
@@ -1159,10 +1167,10 @@ dyndns:
             arguments:
                 --dyn-host:
                     help: Dynette DNS server to inform
-                    default: "dynhost.yunohost.org"
+                    default: "dyndns.yunohost.org"
                 -d:
                     full: --domain
-                    help: Full domain to subscribe with
+                    help: Full domain to update
                     extra:
                         pattern: *pattern_domain
                 -k:
@@ -1314,7 +1322,6 @@ hook:
         ### hook_add()
         add:
             action_help: Store hook script to filesystem
-            api: PUT /hook
             arguments:
                 app:
                     help: App to link with
@@ -1324,7 +1331,6 @@ hook:
         ### hook_remove()
         remove:
             action_help: Remove hook scripts from filesystem
-            api: DELETE /hook
             arguments:
                 app:
                     help: Scripts related to app will be removed
@@ -1362,7 +1368,7 @@ hook:
         ### hook_callback()
         callback:
             action_help: Execute all scripts binded to an action
-            api: GET /hooks
+            api: POST /hooks/<action>
             arguments:
                 action:
                     help: Action name
@@ -1378,7 +1384,6 @@ hook:
         ### hook_exec()
         exec:
             action_help: Execute hook from a file with arguments
-            api: GET /hook
             arguments:
                 path:
                     help: Path of the script to execute
@@ -1392,3 +1397,6 @@ hook:
                     full: --no-trace
                     help: Do not print each command that will be executed
                     action: store_true
+                -d:
+                    full: --chdir
+                    help: The directory from where the script will be executed

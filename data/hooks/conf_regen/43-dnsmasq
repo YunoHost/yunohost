@@ -17,11 +17,11 @@ function safe_copy () {
 cd /usr/share/yunohost/templates/dnsmasq
 
 # Get IPv4 address
-ip=$(curl -s -4 https://ip.yunohost.org 2>/dev/null)
+ip=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
 ynh_validate_ip4 $ip || ip='0.0.0.0'
 
 # Get IPv6 IP address
-ipv6=$(curl -s -6 http://ip6.yunohost.org 2>/dev/null)
+ipv6=$(curl -s -6 http://ip6.yunohost.org 2>/dev/null || true)
 ynh_validate_ip6 $ipv6 || ipv6=''
 
 sudo mkdir -p /etc/dnsmasq.d

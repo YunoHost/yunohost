@@ -85,7 +85,7 @@ def app_fetchlist(url=None, name=None):
 
     Keyword argument:
         name -- Name of the list (default yunohost)
-        url -- URL of remote JSON list (default https://yunohost.org/official.json)
+        url -- URL of remote JSON list (default https://app.yunohost.org/official.json)
 
     """
     # Create app path if not exists
@@ -93,7 +93,7 @@ def app_fetchlist(url=None, name=None):
     except OSError: os.makedirs(repo_path)
 
     if url is None:
-        url = 'https://yunohost.org/official.json'
+        url = 'https://app.yunohost.org/official.json'
         name = 'yunohost'
     else:
         if name is None:
@@ -131,7 +131,7 @@ def app_removelist(name):
     logger.success(m18n.n('appslist_removed'))
 
 
-def app_list(offset=None, limit=None, filter=None, raw=False):
+def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, with_backup=False):
     """
     List apps
 
@@ -140,12 +140,15 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
         offset -- Starting number for app fetching
         limit -- Maximum number of app fetched
         raw -- Return the full app_dict
+        installed -- Return only installed apps
+        with_backup -- Return only apps with backup feature (force --installed filter)
 
     """
     if offset: offset = int(offset)
     else: offset = 0
     if limit: limit = int(limit)
     else: limit = 1000
+    installed = with_backup or installed
 
     app_dict = {}
     if raw:
@@ -188,16 +191,27 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
         for app_id, app_info_dict in sorted_app_dict.items():
             if i < limit:
                 if (filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter:
-                    installed = _is_installed(app_id)
+                    app_installed = _is_installed(app_id)
+
+                    # Only installed apps filter
+                    if installed and not app_installed:
+                        continue
+
+                    # Filter only apps with backup and restore scripts
+                    if with_backup and (
+                        not os.path.isfile(apps_setting_path + app_id + '/scripts/backup') or
+                        not os.path.isfile(apps_setting_path + app_id + '/scripts/restore')
+                    ):
+                        continue
 
                     if raw:
-                        app_info_dict['installed'] = installed
-                        if installed:
+                        app_info_dict['installed'] = app_installed
+                        if app_installed:
                             app_info_dict['status'] = _get_app_status(app_id)
                         list_dict[app_id] = app_info_dict
                     else:
                         label = None
-                        if installed:
+                        if app_installed:
                             app_info_dict_raw = app_info(app=app_id, raw=True)
                             label = app_info_dict_raw['settings']['label']
                         list_dict.append({
@@ -209,7 +223,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False):
                             # FIXME: Temporarly allow undefined license
                             'license': app_info_dict['manifest'].get('license',
                                 m18n.n('license_undefined')),
-                            'installed': installed
+                            'installed': app_installed
                         })
                     i += 1
             else:
@@ -515,37 +529,53 @@ def app_install(auth, app, label=None, args=None):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (app_tmp_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
+
+    # Execute the app install script
+    install_retcode = 1
     try:
-        if hook_exec(app_tmp_folder + '/scripts/install', args=args_list, env=env_dict) == 0:
-            # Store app status
-            with open(app_setting_path + '/status.json', 'w+') as f:
-                json.dump(status, f)
-
-            # Clean and set permissions
-            shutil.rmtree(app_tmp_folder)
-            os.system('chmod -R 400 %s' % app_setting_path)
-            os.system('chown -R root: %s' % app_setting_path)
-            os.system('chown -R admin: %s/scripts' % app_setting_path)
-            app_ssowatconf(auth)
-            logger.success(m18n.n('installation_complete'))
-        else:
-            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+        install_retcode = hook_exec(
+            os.path.join(app_tmp_folder, 'scripts/install'), args_list, env=env_dict)
+    except (KeyboardInterrupt, EOFError):
+        install_retcode = -1
     except:
-        # Execute remove script and clean folders
-        hook_remove(app_instance_name)
-        shutil.rmtree(app_setting_path)
-        shutil.rmtree(app_tmp_folder)
+        logger.exception(m18n.n('unexpected_error'))
+    finally:
+        if install_retcode != 0:
+            # Setup environment for remove script
+            env_dict_remove = {}
+            env_dict_remove["YNH_APP_ID"] = app_id
+            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
-        # Reraise proper exception
-        try:
-            raise
-        except MoulinetteError:
-            raise
-        except (KeyboardInterrupt, EOFError):
-            raise MoulinetteError(errno.EINTR, m18n.g('operation_interrupted'))
-        except Exception as e:
-            logger.debug('app installation failed', exc_info=1)
-            raise MoulinetteError(errno.EIO, m18n.n('unexpected_error'))
+            # Execute remove script
+            remove_retcode = hook_exec(
+                os.path.join(app_tmp_folder, 'scripts/remove'), args=[app_instance_name], env=env_dict_remove)
+            if remove_retcode != 0:
+                logger.warning(m18n.n('app_not_properly_removed', app=app_instance_name))
+
+            # Clean tmp folders
+            hook_remove(app_instance_name)
+            shutil.rmtree(app_setting_path)
+            shutil.rmtree(app_tmp_folder)
+
+            if install_retcode == -1:
+                raise MoulinetteError(errno.EINTR,
+                                      m18n.g('operation_interrupted'))
+            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+
+    # Store app status
+    with open(app_setting_path + '/status.json', 'w+') as f:
+        json.dump(status, f)
+
+    # Clean and set permissions
+    shutil.rmtree(app_tmp_folder)
+    os.system('chmod -R 400 %s' % app_setting_path)
+    os.system('chown -R root: %s' % app_setting_path)
+    os.system('chown -R admin: %s/scripts' % app_setting_path)
+
+    app_ssowatconf(auth)
+
+    logger.success(m18n.n('installation_complete'))
 
 
 def app_remove(auth, app):
@@ -624,10 +654,7 @@ def app_addaccess(auth, apps, users=[]):
                     try:
                         user_info(auth, allowed_user)
                     except MoulinetteError:
-                        # FIXME: Add username keyword in user_unknown
-                        logger.warning('{0}{1}'.format(
-                                m18n.g('colon', m18n.n('user_unknown')),
-                                allowed_user))
+                        logger.warning(m18n.n('user_unknown', user=allowed_user))
                         continue
                     allowed_users.add(allowed_user)
 

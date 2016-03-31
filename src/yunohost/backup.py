@@ -39,6 +39,13 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 
+from yunohost.app import app_info, app_ssowatconf, _is_installed, _parse_app_instance_name
+from yunohost.hook import (
+    hook_info, hook_callback, hook_exec, custom_hook_folder
+)
+from yunohost.monitor import binary_to_human
+from yunohost.tools import tools_postinstall
+
 backup_path   = '/home/yunohost.backup'
 archives_path = '%s/archives' % backup_path
 
@@ -63,8 +70,6 @@ def backup_create(name=None, description=None, output_directory=None,
 
     """
     # TODO: Add a 'clean' argument to clean output directory
-    from yunohost.hook import hook_info, hook_callback, hook_exec
-
     tmp_dir = None
 
     # Validate what to backup
@@ -167,9 +172,6 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Backup apps
     if not ignore_apps:
-        from yunohost.app import app_info
-        from yunohost.app import _parse_app_instance_name
-
         # Filter applications to backup
         apps_list = set(os.listdir('/etc/yunohost/apps'))
         apps_filtered = set()
@@ -215,7 +217,8 @@ def backup_create(name=None, description=None, output_directory=None,
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
-                          raise_on_error=True, env=env_dict)
+                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+
             except:
                 logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
                 # Cleaning app backup directory
@@ -288,21 +291,20 @@ def backup_create(name=None, description=None, output_directory=None,
     return { 'archive': info }
 
 
-def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=False, force=False):
+def backup_restore(auth, name, hooks=[], ignore_hooks=False,
+                   apps=[], ignore_apps=False, force=False):
     """
     Restore from a local backup archive
 
     Keyword argument:
         name -- Name of the local backup archive
         hooks -- List of restoration hooks names to execute
+        ignore_hooks -- Do not execute backup hooks
         apps -- List of application names to restore
         ignore_apps -- Do not restore apps
         force -- Force restauration on an already installed system
 
     """
-    from yunohost.hook import hook_info, hook_callback, hook_exec
-    from yunohost.hook import custom_hook_folder
-
     # Validate what to restore
     if ignore_hooks and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
@@ -380,8 +382,6 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
                 _clean_tmp_dir()
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
     else:
-        from yunohost.tools import tools_postinstall
-
         # Retrieve the domain from the backup
         try:
             with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
@@ -437,9 +437,6 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
     # Add apps restore hook
     if not ignore_apps:
-        from yunohost.app import _is_installed
-        from yunohost.app import _parse_app_instance_name
-
         # Filter applications to restore
         apps_list = set(info['apps'].keys())
         apps_filtered = set()
@@ -454,6 +451,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
 
         for app_instance_name in apps_filtered:
             tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_instance_name)
+            tmp_app_bkp_dir = tmp_app_dir + '/backup'
 
             # Check if the app is not already installed
             if _is_installed(app_instance_name):
@@ -487,7 +485,7 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
                 hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_instance_name],
-                          raise_on_error=True, env=env_dict)
+                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
             except:
                 logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
                 # Cleaning app directory
@@ -501,6 +499,8 @@ def backup_restore(name, hooks=[], apps=[], ignore_apps=False, ignore_hooks=Fals
     if not result['hooks'] and not result['apps']:
         _clean_tmp_dir(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
+    if result['apps']:
+        app_ssowatconf(auth)
 
     _clean_tmp_dir()
     logger.success(m18n.n('restore_complete'))
@@ -553,8 +553,6 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    from yunohost.monitor import binary_to_human
-
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
     if not os.path.isfile(archive_file):
         raise MoulinetteError(errno.EIO,
@@ -602,7 +600,6 @@ def backup_delete(name):
         name -- Name of the local backup archive
 
     """
-    from yunohost.hook import hook_callback
     hook_callback('pre_backup_delete', args=[name])
 
     archive_file = '%s/%s.tar.gz' % (archives_path, name)

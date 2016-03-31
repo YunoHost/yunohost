@@ -1,8 +1,13 @@
-#!/usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys
 import os
+import sys
+import argparse
+
+import moulinette
+from moulinette.actionsmap import ActionsMap
+from moulinette.interfaces.cli import colorize, get_locale
 
 # Either we are in a development environment or not
 IN_DEVEL = False
@@ -34,17 +39,11 @@ if IN_DEVEL:
 
 def _die(message, title='Error:'):
     """Print error message and exit"""
-    try:
-        from moulinette.interfaces.cli import colorize
-    except ImportError:
-        colorize = lambda msg, c: msg
     print('%s %s' % (colorize(title, 'red'), message))
     sys.exit(1)
 
 def _parse_cli_args():
     """Parse additional arguments for the cli"""
-    import argparse
-
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--no-cache',
         action='store_false', default=True, dest='use_cache',
@@ -90,8 +89,6 @@ def _parse_cli_args():
 
 def _init_moulinette(debug=False, verbose=False, quiet=False):
     """Configure logging and initialize the moulinette"""
-    from moulinette import init
-
     # Define loggers handlers
     handlers = set(LOGGERS_HANDLERS)
     if quiet and 'tty' in handlers:
@@ -100,7 +97,7 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
         handlers.append('tty')
 
     root_handlers = set(handlers)
-    if not debug:
+    if not debug and 'tty' in root_handlers:
         root_handlers.remove('tty')
 
     # Define loggers level
@@ -167,11 +164,10 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
             _die(str(e))
 
     # Initialize moulinette
-    init(logging_config=logging, _from_source=IN_DEVEL)
+    moulinette.init(logging_config=logging, _from_source=IN_DEVEL)
 
 def _retrieve_namespaces():
     """Return the list of namespaces to load"""
-    from moulinette.actionsmap import ActionsMap
     ret = ['yunohost']
     for n in ActionsMap.get_namespaces():
         # Append YunoHost modules
@@ -190,8 +186,6 @@ if __name__ == '__main__':
     if not os.path.isfile('/etc/yunohost/installed') and \
        (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
                           args[0] +' '+ args[1] != 'backup restore')):
-        from moulinette.interfaces.cli import get_locale
-
         # Init i18n
         m18n.load_namespace('yunohost')
         m18n.set_locale(get_locale())
@@ -200,9 +194,9 @@ if __name__ == '__main__':
         _die(m18n.n('yunohost_not_installed'), m18n.g('error'))
 
     # Execute the action
-    from moulinette import cli
-    ret = cli(_retrieve_namespaces(), args,
-            use_cache=opts.use_cache, output_as=opts.output_as,
-            password=opts.password, parser_kwargs={'top_parser': parser}
+    ret = moulinette.cli(
+        _retrieve_namespaces(), args,
+        use_cache=opts.use_cache, output_as=opts.output_as,
+        password=opts.password, parser_kwargs={'top_parser': parser}
     )
     sys.exit(ret)

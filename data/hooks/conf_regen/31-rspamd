@@ -14,8 +14,11 @@ function safe_copy () {
 
 cd /usr/share/yunohost/templates/rspamd
 
-# Copy Rspamd configuration
-safe_copy metrics.conf /etc/rspamd/metrics.conf
+# Create configuration directories
+sudo mkdir -p /etc/rspamd/local.d /etc/rspamd/override.d
+
+# Copy specific configuration to rewrite the defaults
+safe_copy metrics.conf.local /etc/rspamd/local.d/metrics.conf
 
 # Install Rspamd sieve script
 safe_copy rspamd.sieve /etc/dovecot/global_script/rspamd.sieve

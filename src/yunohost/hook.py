@@ -110,7 +110,7 @@ def hook_info(action, name):
             })
 
     if not hooks:
-        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name))
+        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name=name))
     return {
         'action': action,
         'name': name,
@@ -275,7 +275,8 @@ def hook_callback(action, hooks=[], args=None):
     return result
 
 
-def hook_exec(path, args=None, raise_on_error=False, no_trace=False, env=None):
+def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
+              chdir=None, env=None):
     """
     Execute hook from a file with arguments
 
@@ -284,6 +285,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False, env=None):
         args -- A list of arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
         no_trace -- Do not print each command that will be executed
+        chdir -- The directory from where the script will be executed
         env -- Dictionnary of environment variables to export
 
     """
@@ -297,50 +299,54 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False, env=None):
         raise MoulinetteError(errno.EIO, m18n.g('file_not_exist'))
 
     # Construct command variables
-    cmd_fdir, cmd_fname = os.path.split(path)
-    cmd_fname = './{0}'.format(cmd_fname)
-
     cmd_args = ''
     if args and isinstance(args, list):
         # Concatenate arguments and escape them with double quotes to prevent
         # bash related issue if an argument is empty and is not the last
         cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in args))
+    if not chdir:
+        # use the script directory as current one
+        chdir, cmd_script = os.path.split(path)
+        cmd_script = './{0}'.format(cmd_script)
+    else:
+        cmd_script = path
 
     envcli = ''
     if env is not None:
         envcli = ' '.join([ '{key}="{val}"'.format(key=key, val=val) for key,val in env.items()])
 
     # Construct command to execute
-    command = ['sudo', '-u', 'admin', '-H', 'sh', '-c']
+    command = ['sudo', '-n', '-u', 'admin', '-H', 'sh', '-c']
     if no_trace:
-        cmd = 'cd "{0:s}" && {1:s} /bin/bash "{2:s}" {3:s}'
+        cmd = '{envcli} /bin/bash "{script}" {args}'
     else:
         # use xtrace on fd 7 which is redirected to stdout
-        cmd = 'cd "{0:s}" && {1:s} BASH_XTRACEFD=7 /bin/bash -x "{2:s}" {3:s} 7>&1'
-    command.append(cmd.format(cmd_fdir, envcli, cmd_fname, cmd_args))
+        cmd = '{envcli} BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
+    command.append(cmd.format(envcli=envcli, script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
         logger.info(m18n.n('executing_command', command=' '.join(command)))
     else:
-        logger.info(m18n.n('executing_script', script='{0}/{1}'.format(
-                cmd_fdir, cmd_fname)))
+        logger.info(m18n.n('executing_script', script=path))
 
     # Define output callbacks and call command
     callbacks = (
         lambda l: logger.info(l.rstrip()),
         lambda l: logger.warning(l.rstrip()),
     )
-    returncode = call_async_output(command, callbacks, shell=False)
+    returncode = call_async_output(
+        command, callbacks, shell=False, cwd=chdir
+    )
 
     # Check and return process' return code
     if returncode is None:
         if raise_on_error:
-            raise MoulinetteError(m18n.n('hook_exec_not_terminated'))
+            raise MoulinetteError(m18n.n('hook_exec_not_terminated', path=path))
         else:
-            logger.error(m18n.n('hook_exec_not_terminated'))
+            logger.error(m18n.n('hook_exec_not_terminated', path=path))
             return 1
     elif raise_on_error and returncode != 0:
-        raise MoulinetteError(m18n.n('hook_exec_failed'))
+        raise MoulinetteError(m18n.n('hook_exec_failed', path=path))
     return returncode
 
 

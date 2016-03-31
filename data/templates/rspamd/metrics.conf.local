@@ -1,0 +1,8 @@
+# Metrics settings
+# This define overridden options.
+
+actions {
+  reject = 21;
+  add_header = 8;
+  greylist = 4;
+}

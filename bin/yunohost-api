@@ -1,8 +1,13 @@
-#!/usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
+import os
 import sys
-import os.path
+import argparse
+
+import moulinette
+from moulinette.actionsmap import ActionsMap
+from moulinette.interfaces.cli import colorize
 
 # Either we are in a development environment or not
 IN_DEVEL = False
@@ -38,17 +43,11 @@ if IN_DEVEL:
 
 def _die(message, title='Error:'):
     """Print error message and exit"""
-    try:
-        from moulinette.interfaces.cli import colorize
-    except ImportError:
-        colorize = lambda msg, c: msg
     print('%s %s' % (colorize(title, 'red'), message))
     sys.exit(1)
 
 def _parse_api_args():
     """Parse main arguments for the api"""
-    import argparse
-
     parser = argparse.ArgumentParser(add_help=False,
         description="Run the YunoHost API to manage your server.",
     )
@@ -87,8 +86,6 @@ def _parse_api_args():
 
 def _init_moulinette(use_websocket=True, debug=False, verbose=False):
     """Configure logging and initialize the moulinette"""
-    from moulinette import init
-
     # Define loggers handlers
     handlers = set(LOGGERS_HANDLERS)
     if not use_websocket and 'api' in handlers:
@@ -162,11 +159,10 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
             _die(str(e))
 
     # Initialize moulinette
-    init(logging_config=logging, _from_source=IN_DEVEL)
+    moulinette.init(logging_config=logging, _from_source=IN_DEVEL)
 
 def _retrieve_namespaces():
     """Return the list of namespaces to load"""
-    from moulinette.actionsmap import ActionsMap
     ret = ['yunohost']
     for n in ActionsMap.get_namespaces():
         # Append YunoHost modules
@@ -195,14 +191,12 @@ if __name__ == '__main__':
     _init_moulinette(opts.use_websocket, opts.debug, opts.verbose)
 
     # Run the server
-    from moulinette import api, MoulinetteError
     from yunohost.utils.packages import ynh_packages_version
-    ret = api(_retrieve_namespaces(),
-            host=opts.host, port=opts.port,
-            routes={
-                ('GET', '/installed'): is_installed,
-                ('GET', '/version'): ynh_packages_version,
-            },
-            use_cache=opts.use_cache, use_websocket=opts.use_websocket
+    ret = moulinette.api(
+        _retrieve_namespaces(),
+        host=opts.host, port=opts.port, routes={
+            ('GET', '/installed'): is_installed,
+            ('GET', '/version'): ynh_packages_version,
+        }, use_cache=opts.use_cache, use_websocket=opts.use_websocket
     )
     sys.exit(ret)
