@@ -20,6 +20,17 @@ ynh_user_get_info() {
     sudo yunohost user info "$1" --output-as plain | ynh_get_plain_key "$2"
 }
 
+# Get the list of YunoHost users
+#
+# example: for u in $(ynh_user_list); do ...
+#
+# usage: ynh_user_list
+# | ret: string - one username per line
+ynh_user_list() {
+    sudo yunohost user list --output-as plain --quiet \
+      | awk '/^##username$/{getline; print}'
+}
+
 # Check if a user exists on the system
 #
 # usage: ynh_system_user_exists username
