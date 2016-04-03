@@ -69,6 +69,10 @@ ynh_package_install_from_equivs() {
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
      && sudo apt-get -f -y -qq install) \
         && ([[ -n "$TMPDIR" ]] && rm -rf $TMPDIR)
+
+    # check if the package is installed
+    dpkg-query -W -f='${Status}' "$pkgname" 2>/dev/null \
+        | grep 'installed' >/dev/null
 }
 
 # Remove package(s)
