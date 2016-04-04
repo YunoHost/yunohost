@@ -39,7 +39,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import app_info, app_ssowatconf, _is_installed,
+from yunohost.app import app_info, app_ssowatconf, _is_installed
 from yunohost.hook import (
     hook_info, hook_callback, hook_exec, custom_hook_folder
 )
