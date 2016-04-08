@@ -1401,7 +1401,8 @@ def _check_manifest_requirements(manifest):
             *requirements.keys(), strict=True, as_dict=True)
     except packages.PackageException as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_requirements_failed', err=str(e)))
+                              m18n.n('app_requirements_failed',
+                                     error=str(e)))
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():

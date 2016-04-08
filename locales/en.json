@@ -22,7 +22,7 @@
     "custom_app_url_required" : "You must provide an URL to upgrade your custom app {app:s}",
     "app_requirements_checking" : "Checking required packages...",
     "app_requirements_unmeet" : "Requirements are not met, the package {pkgname} ({version}) must be {spec}",
-    "app_requirements_failed" : "Unable to meet requirements: {err}",
+    "app_requirements_failed" : "Unable to meet requirements: {error}",
     "app_upgraded" : "{app:s} successfully upgraded",
     "app_upgrade_failed" : "Unable to upgrade {app:s}",
     "app_id_invalid" : "Invalid app id",
