@@ -36,7 +36,7 @@ restart_yunohost_firewall() {
   fi
 
   if [ -x /etc/init.d/yunohost-firewall ]; then
-      update-rc.d yunohost-firewall defaults >/dev/null
+      update-rc.d yunohost-firewall enable >/dev/null
       if [ -n "$2" ]; then
           invoke-rc.d yunohost-firewall restart >/dev/null || exit $?
       fi
