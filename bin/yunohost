@@ -5,10 +5,6 @@ import os
 import sys
 import argparse
 
-import moulinette
-from moulinette.actionsmap import ActionsMap
-from moulinette.interfaces.cli import colorize, get_locale
-
 # Either we are in a development environment or not
 IN_DEVEL = False
 
@@ -33,6 +29,11 @@ if IN_DEVEL:
     if os.path.isdir(os.path.join(basedir, 'moulinette')):
         sys.path.insert(0, basedir)
     LOG_DIR = os.path.join(basedir, 'log')
+
+
+import moulinette
+from moulinette.actionsmap import ActionsMap
+from moulinette.interfaces.cli import colorize, get_locale
 
 
 # Initialization & helpers functions -----------------------------------
