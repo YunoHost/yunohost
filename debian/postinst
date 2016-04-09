@@ -28,23 +28,18 @@ do_configure() {
 restart_yunohost_firewall() {
   echo "Restarting YunoHost firewall..."
 
-  if [ -x /etc/init.d/yunohost-firewall ]; then
-      update-rc.d yunohost-firewall defaults >/dev/null || true
-      if [ -d /run/systemd/system ]; then
-          systemctl --system daemon-reload >/dev/null || true
-      else
-          invoke-rc.d yunohost-firewall start >/dev/null || true
-      fi
-  fi
-
   deb-systemd-helper unmask yunohost-firewall.service >/dev/null || true
   if deb-systemd-helper --quiet was-enabled yunohost-firewall.service; then
       deb-systemd-helper enable yunohost-firewall.service >/dev/null || true
+  else
+      deb-systemd-helper update-state yunohost-firewall.service >/dev/null || true
   fi
-  deb-systemd-helper update-state yunohost-firewall.service >/dev/null || true
-  if [ -d /run/systemd/system ]; then
-      systemctl --system daemon-reload >/dev/null || true
-      deb-systemd-invoke try-restart yunohost-firewall.service >/dev/null || true
+
+  if [ -x /etc/init.d/yunohost-firewall ]; then
+      update-rc.d yunohost-firewall defaults >/dev/null
+      if [ -n "$2" ]; then
+          invoke-rc.d yunohost-firewall restart >/dev/null || exit $?
+      fi
   fi
 }
 
@@ -70,16 +65,6 @@ case "$1" in
         exit 1
     ;;
 esac
-
-# Enable and start yunohost-api sysv service
-if [ -x /etc/init.d/yunohost-api ]; then
-    update-rc.d yunohost-api defaults >/dev/null
-    if [ -d /run/systemd/system ]; then
-        systemctl --system daemon-reload >/dev/null || true
-    else
-        invoke-rc.d yunohost-api start || exit $?
-    fi
-fi
 
 #DEBHELPER#
 

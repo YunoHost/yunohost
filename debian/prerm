@@ -3,7 +3,6 @@
 set -e
 
 if [ -x /etc/init.d/yunohost-api ] && ! [ -d /run/systemd/system ]; then
-    invoke-rc.d yunohost-api stop || exit $?
     invoke-rc.d yunohost-firewall stop || true
 fi
 

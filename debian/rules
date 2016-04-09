@@ -8,12 +8,14 @@
 	dh ${@} --with=python2,systemd
 
 override_dh_installinit:
-	dh_installinit -pyunohost --name=yunohost-api --noscripts
+	dh_installinit -pyunohost --name=yunohost-api --restart-after-upgrade
 	dh_installinit -pyunohost --name=yunohost-firewall --noscripts
 
 override_dh_systemd_enable:
-	dh_systemd_enable --name=yunohost-api
-	dh_systemd_enable --name=yunohost-firewall --no-enable
+	dh_systemd_enable --name=yunohost-api \
+	    yunohost-api.service
+	dh_systemd_enable --name=yunohost-firewall --no-enable \
+	    yunohost-firewall.service
 
-override_dh_systemd_start:
-	dh_systemd_start --restart-after-upgrade yunohost-api.service
+#override_dh_systemd_start:
+#	dh_systemd_start --restart-after-upgrade yunohost-api.service
