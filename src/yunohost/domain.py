@@ -78,7 +78,7 @@ def domain_add(auth, domain, dyndns=False):
         dyndns -- Subscribe to DynDNS
 
     """
-    from yunohost.service import service_regenconf
+    from yunohost.service import service_regen_conf
     from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
@@ -157,10 +157,10 @@ def domain_add(auth, domain, dyndns=False):
 
         try:
             with open('/etc/yunohost/installed', 'r') as f:
-                service_regenconf(service='nginx')
-                service_regenconf(service='metronome')
-                service_regenconf(service='dnsmasq')
-                service_regenconf(service='rmilter')
+                service_regen_conf(service='nginx')
+                service_regen_conf(service='metronome')
+                service_regen_conf(service='dnsmasq')
+                service_regen_conf(service='rmilter')
                 os.system('yunohost app ssowatconf > /dev/null 2>&1')
         except IOError: pass
     except:
@@ -183,7 +183,7 @@ def domain_remove(auth, domain, force=False):
         force -- Force the domain removal
 
     """
-    from yunohost.service import service_regenconf
+    from yunohost.service import service_regen_conf
     from yunohost.hook import hook_callback
 
     if not force and domain not in domain_list(auth)['domains']:
@@ -206,9 +206,9 @@ def domain_remove(auth, domain, force=False):
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
-    service_regenconf(service='nginx')
-    service_regenconf(service='metronome')
-    service_regenconf(service='dnsmasq')
+    service_regen_conf(service='nginx')
+    service_regen_conf(service='metronome')
+    service_regen_conf(service='dnsmasq')
     os.system('yunohost app ssowatconf > /dev/null 2>&1')
 
     hook_callback('post_domain_remove', args=[domain])
