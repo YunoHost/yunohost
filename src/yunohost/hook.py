@@ -260,12 +260,6 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
     if not hooks_dict:
         return result
 
-    # Format arguments
-    if args is None:
-        args = []
-    elif not isinstance(args, list):
-        args = [args]
-
     # Validate callbacks
     if not callable(pre_callback):
         pre_callback = lambda name, priority, path, args: args
