@@ -176,6 +176,8 @@ def hook_list(action, list_by='name', show_info=False):
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder
         for f in os.listdir(folder + action):
+            if f[0] == '.' or f[-1] == '~':
+                continue
             path = '%s%s/%s' % (folder, action, f)
             priority, name = _extract_filename_parts(f)
             _append_hook(d, priority, name, path)
