@@ -956,8 +956,8 @@ service:
                     default: 50
                     type: int
 
-        ### service_regenconf()
-        regenconf:
+        ### service_regen_conf()
+        regen-conf:
             action_help: >
                 Regenerate the configuration file(s) for a service and compare the result
                 with the existing configuration file.
@@ -965,6 +965,8 @@ service:
             api: PUT /services/regenconf
             configuration:
                 lock: false
+            deprecated:
+                - regenconf
             arguments:
                 -s:
                     full: --service

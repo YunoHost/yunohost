@@ -150,6 +150,11 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
                 'handlers': [],
                 'propagate': True,
             },
+            'moulinette.interface': {
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
+            },
         },
         'root': {
             'level': level,

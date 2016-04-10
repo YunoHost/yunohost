@@ -273,7 +273,7 @@ def service_log(name, number=50):
     return result
 
 
-def service_regenconf(service=None, force=False):
+def service_regen_conf(service=None, force=False):
     """
     Regenerate the configuration file(s) for a service and compare the result
     with the existing configuration file.
