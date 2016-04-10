@@ -43,7 +43,7 @@ from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, a
 from yunohost.domain import domain_add, domain_list, get_public_ip
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp, firewall_reload
-from yunohost.service import service_status, service_regenconf, service_log
+from yunohost.service import service_status, service_regen_conf, service_log
 from yunohost.monitor import monitor_disk, monitor_network, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
@@ -152,7 +152,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
     try:
         with open('/etc/yunohost/installed', 'r') as f:
-            service_regenconf()
+            service_regen_conf()
     except IOError: pass
 
     logger.success(m18n.n('maindomain_changed'))
@@ -275,7 +275,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('update-rc.d yunohost-firewall enable')
     os.system('service yunohost-firewall start')
 
-    service_regenconf(force=True)
+    service_regen_conf(force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 
