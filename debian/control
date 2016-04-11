@@ -27,7 +27,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , rspamd (>= 1.2.0), rmilter (>=1.7.0), redis-server, opendkim-tools
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
- , bash-completion, rsyslog
+ , bash-completion, rsyslog, etckeeper
  , php5-gd, php5-curl, php-gettext, php5-mcrypt
  , python-pip
  , unattended-upgrades
