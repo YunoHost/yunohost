@@ -1,0 +1,38 @@
+set -e 
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/ssh
+
+  # only overwrite SSH configuration on an ISO installation
+  if [[ ! -f /etc/yunohost/from_script ]]; then
+      # do not listen to IPv6 if unavailable
+      [[ -f /proc/net/if_inet6 ]] \
+        || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
+
+      install -D sshd_config "${pending_conf}/etc/ssh/sshd_config"
+  fi
+}
+
+do_post_regen() {
+  [[ -f /etc/yunohost/from_script ]] \
+    || sudo service ssh restart
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$status'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

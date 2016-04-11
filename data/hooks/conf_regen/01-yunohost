@@ -1,0 +1,40 @@
+set -e 
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/yunohost
+
+  [[ -d /etc/yunohost ]] || mkdir -p /etc/yunohost
+
+  # set default current_host
+  [[ -f /etc/yunohost/current_host ]] \
+    || echo "yunohost.org" | sudo tee /etc/yunohost/current_host
+
+  # copy default firewall and services
+  # TODO: update them as needed with upgrades
+  [[ -f /etc/yunohost/firewall.yml ]] \
+    || sudo cp firewall.yml /etc/yunohost/firewall.yml
+  [[ -f /etc/yunohost/services.yml ]] \
+    || sudo cp services.yml /etc/yunohost/services.yml
+
+  # allow users to access /media directory
+  [[ -d /etc/skel/media ]] \
+    || (mkdir -p /media && ln -s /media /etc/skel/media)
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    ;;
+  *)
+    echo "hook called with unknown argument \`$status'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
