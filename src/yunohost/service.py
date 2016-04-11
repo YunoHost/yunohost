@@ -30,8 +30,8 @@ import glob
 import subprocess
 import errno
 import shutil
-import difflib
 import hashlib
+from difflib import unified_diff
 
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
@@ -271,12 +271,13 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(names=[], force=False):
+def service_regen_conf(names=[], with_diff=False, force=False):
     """
     Regenerate the configuration file(s) for a service
 
     Keyword argument:
         names -- Services name to regenerate configuration of
+        with_diff -- Show differences in case of configuration changes
         force -- Override all manual modifications in configuration files
 
     """
@@ -315,6 +316,10 @@ def service_regen_conf(names=[], force=False):
                          pending_path, system_path)
             conf_status = None
             regenerated = False
+
+            # Get the diff between files
+            conf_diff = _get_files_diff(
+                system_path, pending_path, True) if with_diff else None
 
             # Check if the conf must be removed
             to_remove = True if os.path.getsize(pending_path) == 0 else False
@@ -384,8 +389,9 @@ def service_regen_conf(names=[], force=False):
                     conf_status = 'modified'
 
             # Store the result
-            # TODO: Append the diff if --with-diff
             conf_result = {'status': conf_status}
+            if conf_diff is not None:
+                conf_result['diff'] = conf_diff
             if regenerated:
                 succeed_regen[system_path] = conf_result
                 conf_hashes[system_path] = new_hash
@@ -396,9 +402,7 @@ def service_regen_conf(names=[], force=False):
         if not succeed_regen and not failed_regen:
             logger.info(m18n.n('service_conf_up_to_date', service=service))
             continue
-        elif failed_regen:
-            logger.error(m18n.n('service_regenconf_failed', services=service))
-        else:
+        elif not failed_regen:
             logger.success(m18n.n('service_conf_updated', service=service))
         if succeed_regen:
             _update_conf_hashes(service, conf_hashes)
@@ -500,36 +504,38 @@ def _tail(file, n, offset=None):
     except IOError: return []
 
 
-def _get_diff(string, filename):
+def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
+    """Compare two files and return the differences
+
+    Read and compare two files. The differences are returned either as a delta
+    in unified diff format or a formatted string if as_string is True. The
+    header can also be removed if skip_header is True.
+
     """
-    Show differences between a string and a file's content
+    contents = [[], []]
+    for i, path in enumerate((orig_file, new_file)):
+        try:
+            with open(path, 'r') as f:
+                contents[i] = f.readlines()
+        except IOError:
+            pass
 
-    Keyword argument:
-        string -- The string
-        filename -- The file to compare with
-
-    """
-    try:
-        with open(filename, 'r') as f:
-            file_lines = f.readlines()
-
-        string = string + '\n'
-        new_lines = string.splitlines(True)
-        if file_lines:
-            while '\n' == file_lines[-1]:
-                del file_lines[-1]
-        return difflib.unified_diff(file_lines, new_lines)
-    except IOError: return []
+    # Compare files and format output
+    diff = unified_diff(contents[0], contents[1])
+    if skip_header:
+        for i in range(2):
+            try:
+                next(diff)
+            except:
+                break
+    if as_string:
+        result = ''.join(line for line in diff)
+        return result.rstrip()
+    return diff
 
 
 def _calculate_hash(path):
-    """
-    Calculate the MD5 hash of a file
-
-    Keyword argument:
-        path -- The path to the file
-
-    """
+    """Calculate the MD5 hash of a file"""
     hasher = hashlib.md5()
     try:
         with open(path, 'rb') as f:

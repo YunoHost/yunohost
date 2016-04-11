@@ -969,6 +969,10 @@ service:
                     help: Services name to regenerate configuration of
                     nargs: "*"
                     metavar: NAME
+                -d:
+                    full: --with-diff
+                    help: Show differences in case of configuration changes
+                    action: store_true
                 -f:
                     full: --force
                     help: >
