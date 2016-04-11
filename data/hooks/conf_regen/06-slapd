@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -e 
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/slapd
+
+  # remove legacy configuration file
+  [ ! -f /etc/ldap/slapd-yuno.conf ] \
+    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
+
+  ldap_dir="${pending_dir}/etc/ldap"
+  install -D ldap.conf  "${ldap_dir}/ldap.conf"
+  install -D slapd.conf "${ldap_dir}/slapd.conf"
+
+  schema_dir="${ldap_dir}/schema"
+  install -D sudo.schema       "${schema_dir}/sudo.schema"
+  install -D mailserver.schema "${schema_dir}/mailserver.schema"
+
+  install -D slapd.default "${pending_dir}/etc/default/slapd"
+}
+
+do_post_regen() {
+  # retrieve current backend
+  #backend=$(sudo slapcat -n 0 | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
+  backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
+
+  # save current database in case of a backend change
+  backend_change=0
+  backup_dir="/var/backups/dc=yunohost,dc=org-${backend}-$(date +%s)"
+  if [[ -n "$backend" && "$backend" != "mdb" ]]; then
+      backend_change=1
+      sudo mkdir -p "$backup_dir"
+      sudo slapcat -b dc=yunohost,dc=org \
+        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+  fi
+
+  # fix some permissions
+  sudo chown root:openldap /etc/ldap/slapd.conf
+  sudo chown -R openldap:openldap /etc/ldap/schema/
+  sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+
+  # check the slapd config file at first
+  sudo slaptest -Q -u -f /etc/ldap/slapd.conf
+
+  if [[ $backend_change -eq 1 ]]; then
+      # regenerate LDAP config directory and import database as root
+      # since the admin user may be unavailable
+      sudo sh -c "rm -Rf /etc/ldap/slapd.d;
+  mkdir /etc/ldap/slapd.d;
+  slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
+  chown -R openldap:openldap /etc/ldap/slapd.d;
+  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
+    -l '${backup_dir}/dc=yunohost-dc=org.ldif';
+  chown -R openldap:openldap /var/lib/ldap" 2>&1
+  else
+      # regenerate LDAP config directory from slapd.conf
+      sudo rm -Rf /etc/ldap/slapd.d
+      sudo mkdir /etc/ldap/slapd.d
+      sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+      sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+  fi
+
+  sudo service slapd force-reload
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$status'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
