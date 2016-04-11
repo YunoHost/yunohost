@@ -271,7 +271,8 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(names=[], with_diff=False, force=False):
+def service_regen_conf(names=[], with_diff=False, force=False,
+                       list_pending=False):
     """
     Regenerate the configuration file(s) for a service
 
@@ -279,9 +280,14 @@ def service_regen_conf(names=[], with_diff=False, force=False):
         names -- Services name to regenerate configuration of
         with_diff -- Show differences in case of configuration changes
         force -- Override all manual modifications in configuration files
+        list_pending -- List pending configuration files and exit
 
     """
     result = {}
+
+    # Just return pending conf
+    if list_pending:
+        return _get_pending_conf(names)
 
     # Clean pending conf directory
     shutil.rmtree(pending_conf_dir, ignore_errors=True)

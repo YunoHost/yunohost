@@ -979,6 +979,10 @@ service:
                         Override all manual modifications in configuration
                         files
                     action: store_true
+                -p:
+                    full: --list-pending
+                    help: List pending configuration files and exit
+                    action: store_true
 
         ### service_safecopy()
         safecopy:
