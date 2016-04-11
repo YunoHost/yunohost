@@ -958,22 +958,22 @@ service:
 
         ### service_regen_conf()
         regen-conf:
-            action_help: >
-                Regenerate the configuration file(s) for a service and compare the result
-                with the existing configuration file.
-                Prints the differences between files if any.
+            action_help: Regenerate the configuration file(s) for a service
             api: PUT /services/regenconf
             configuration:
                 lock: false
             deprecated:
                 - regenconf
             arguments:
-                -s:
-                    full: --service
-                    help: Regenerate configuration for a specfic service
+                names:
+                    help: Services name to regenerate configuration of
+                    nargs: "*"
+                    metavar: NAME
                 -f:
                     full: --force
-                    help: Override the current configuration with the newly generated one, even if it has been modified
+                    help: >
+                        Override all manual modifications in configuration
+                        files
                     action: store_true
 
         ### service_safecopy()

@@ -34,16 +34,14 @@ import difflib
 import hashlib
 
 from moulinette.core import MoulinetteError
-from moulinette.utils import log
+from moulinette.utils import log, filesystem
 
-template_dir = os.getenv(
-    'YUNOHOST_TEMPLATE_DIR',
-    '/usr/share/yunohost/templates'
-)
-conf_backup_dir = os.getenv(
-    'YUNOHOST_CONF_BACKUP_DIR',
-    '/home/yunohost.backup/conffiles'
-)
+from yunohost.hook import hook_list, hook_callback
+
+
+base_conf_path = '/home/yunohost.conf'
+backup_conf_dir = os.path.join(base_conf_path, 'backup')
+pending_conf_dir = os.path.join(base_conf_path, 'pending')
 
 logger = log.getActionLogger('yunohost.service')
 
@@ -273,26 +271,148 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(service=None, force=False):
+def service_regen_conf(names=[], force=False):
     """
-    Regenerate the configuration file(s) for a service and compare the result
-    with the existing configuration file.
-    Prints the differences between files if any.
+    Regenerate the configuration file(s) for a service
 
     Keyword argument:
-        service -- Regenerate configuration for a specfic service
-        force -- Override the current configuration with the newly generated
-                 one, even if it has been modified
+        names -- Services name to regenerate configuration of
+        force -- Override all manual modifications in configuration files
 
     """
-    from yunohost.hook import hook_callback
+    result = {}
 
-    if service is not None:
-        hook_callback('conf_regen', [service], args=[force])
-        logger.success(m18n.n('service_configured', service=service))
-    else:
-        hook_callback('conf_regen', args=[force])
-        logger.success(m18n.n('service_configured_all'))
+    # Clean pending conf directory
+    shutil.rmtree(pending_conf_dir, ignore_errors=True)
+    filesystem.mkdir(pending_conf_dir, 0755, True)
+
+    # Execute hooks for pre-regen
+    def _pre_call(name, priority, path, args):
+        # create the pending conf directory for the service
+        service_pending_path = os.path.join(pending_conf_dir, name)
+        filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
+        # return the arguments to pass to the script
+        return ['pre', 1 if force else 0, service_pending_path]
+    pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
+
+    # Update the services name
+    names = pre_result['succeed'].keys()
+    if not names:
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('service_regenconf_failed',
+                                     services=', '.join(pre_result['failed'])))
+
+    # Iterate over services and process pending conf
+    for service, conf_files in _get_pending_conf(names).items():
+        logger.info(m18n.n('service_regenconf_pending_applying',
+                           service=service))
+        conf_hashes = _get_conf_hashes(service)
+        succeed_regen = {}
+        failed_regen = {}
+
+        for system_path, pending_path in conf_files.items():
+            logger.debug("processing pending conf '%s' to system conf '%s'",
+                         pending_path, system_path)
+            conf_status = None
+            regenerated = False
+
+            # Check if the conf must be removed
+            to_remove = True if os.path.getsize(pending_path) == 0 else False
+
+            # Retrieve and calculate hashes
+            current_hash = conf_hashes.get(system_path, None)
+            system_hash = _calculate_hash(system_path)
+            new_hash = None if to_remove else _calculate_hash(pending_path)
+
+            # -> system conf does not exists
+            if not system_hash:
+                if to_remove:
+                    logger.debug("> system conf is already removed")
+                    continue
+                if not current_hash or force:
+                    if force:
+                        logger.debug("> system conf has been manually removed")
+                        conf_status = 'force-created'
+                    else:
+                        logger.debug("> system conf does not exist yet")
+                        conf_status = 'created'
+                    regenerated = _process_regen_conf(
+                        system_path, pending_path, save=False)
+                else:
+                    logger.warning(m18n.n(
+                        'service_conf_file_manually_removed',
+                        conf=system_path))
+                    conf_status = 'removed'
+            # -> system conf is not managed yet
+            elif not current_hash:
+                logger.debug("> system conf is not managed yet")
+                if system_hash == new_hash:
+                    logger.debug("> no changes to system conf has been made")
+                    os.remove(pending_path)
+                    conf_status = 'managed'
+                    regenerated = True
+                elif force and to_remove:
+                    regenerated = _process_regen_conf(system_path)
+                    conf_status = 'force-removed'
+                elif force:
+                    regenerated = _process_regen_conf(system_path, pending_path)
+                    conf_status = 'force-updated'
+                else:
+                    logger.warning(m18n.n('service_conf_file_not_managed',
+                                          conf=system_path))
+                    conf_status = 'unmanaged'
+            # -> system conf has not been manually modified
+            elif system_hash == current_hash:
+                if to_remove:
+                    regenerated = _process_regen_conf(system_path)
+                    conf_status = 'removed'
+                elif system_hash != new_hash:
+                    regenerated = _process_regen_conf(system_path, pending_path)
+                    conf_status = 'updated'
+                else:
+                    logger.debug("> system conf is already up-to-date")
+                    continue
+            else:
+                logger.debug("> system conf has been manually modified")
+                if force:
+                    regenerated = _process_regen_conf(system_path, pending_path)
+                    conf_status = 'force-updated'
+                else:
+                    logger.warning(m18n.n(
+                        'service_conf_file_manually_modified',
+                        conf=system_path))
+                    conf_status = 'modified'
+
+            # Store the result
+            # TODO: Append the diff if --with-diff
+            conf_result = {'status': conf_status}
+            if regenerated:
+                succeed_regen[system_path] = conf_result
+                conf_hashes[system_path] = new_hash
+            else:
+                failed_regen[system_path] = conf_result
+
+        # Check for service conf changes
+        if not succeed_regen and not failed_regen:
+            logger.info(m18n.n('service_conf_up_to_date', service=service))
+            continue
+        elif failed_regen:
+            logger.error(m18n.n('service_regenconf_failed', services=service))
+        else:
+            logger.success(m18n.n('service_conf_updated', service=service))
+        if succeed_regen:
+            _update_conf_hashes(service, conf_hashes)
+
+        # Append the service results
+        result[service] = {
+            'succeed': succeed_regen,
+            'failed': failed_regen
+        }
+
+    # Execute hooks for post-regen
+    hook_callback('conf_regen', names, args=['post', 1 if force else 0])
+
+    return result
 
 
 def _run_service_command(action, service):
@@ -402,153 +522,117 @@ def _get_diff(string, filename):
     except IOError: return []
 
 
-def _hash(filename):
+def _calculate_hash(path):
     """
-    Calculate a MD5 hash of a file
+    Calculate the MD5 hash of a file
 
     Keyword argument:
-        filename -- The file to hash
+        path -- The path to the file
 
     """
     hasher = hashlib.md5()
     try:
-        with open(filename, 'rb') as f:
-            buf = f.read()
-            hasher.update(buf)
-
+        with open(path, 'rb') as f:
+            hasher.update(f.read())
         return hasher.hexdigest()
     except IOError:
-        return 'no hash yet'
+        return None
 
 
-def service_saferemove(service, conf_file, force=False):
+def _get_pending_conf(services=[]):
+    """Get pending configuration for service(s)
+
+    Iterate over the pending configuration directory for given service(s) - or
+    all if empty - and look for files inside. Each file is considered as a
+    pending configuration file and therefore must be in the same directory
+    tree than the system file that it replaces.
+    The result is returned as a dict of services with pending configuration as
+    key and a dict of `system_conf_path` => `pending_conf_path` as value.
+
     """
-    Check if the specific file has been modified before removing it.
-    Backup the file in /home/yunohost.backup
+    result = {}
+    if not os.path.isdir(pending_conf_dir):
+        return result
+    if not services:
+        os.listdir(pending_conf_dir)
+    for name in services:
+        service_conf = {}
+        service_pending_path = os.path.join(pending_conf_dir, name)
+        path_index = len(service_pending_path)
+        for root, dirs, files in os.walk(service_pending_path):
+            for filename in files:
+                pending_path = os.path.join(root, filename)
+                service_conf[pending_path[path_index:]] = pending_path
+        if service_conf:
+            result[name] = service_conf
+    return result
 
-    Keyword argument:
-        service -- Service name of the file to delete
-        conf_file -- The file to write
-        force -- Force file deletion
 
-    """
-    deleted = False
+def _get_conf_hashes(service):
+    """Get the registered conf hashes for a service"""
+    try:
+        return _get_services()[service]['conffiles']
+    except:
+        logger.debug("unable to retrieve conf hashes for %s",
+                     service, exc_info=1)
+        return {}
+
+
+def _update_conf_hashes(service, hashes):
+    """Update the registered conf hashes for a service"""
+    logger.debug("updating conf hashes for '%s' with: %s",
+                 service, hashes)
     services = _get_services()
-
-    if not os.path.exists(conf_file):
-        try:
-            del services[service]['conffiles'][conf_file]
-        except KeyError: pass
-        return True
-
-    # Backup existing file
-    date = time.strftime("%Y%m%d.%H%M%S")
-    conf_backup_file = conf_backup_dir + conf_file +'-'+ date
-    process = subprocess.Popen(
-        ['install', '-D', conf_file, conf_backup_file]
-    )
-    process.wait()
-
-    # Retrieve hashes
-    if not 'conffiles' in services[service]:
-        services[service]['conffiles'] = {}
-
-    if conf_file in services[service]['conffiles']:
-        previous_hash = services[service]['conffiles'][conf_file]
-    else:
-        previous_hash = 'no hash yet'
-
-    current_hash = _hash(conf_file)
-
-    # Handle conflicts
-    if force or previous_hash == current_hash:
-	os.remove(conf_file)
-        try:
-            del services[service]['conffiles'][conf_file]
-        except KeyError: pass
-        deleted = True
-    else:
-        services[service]['conffiles'][conf_file] = previous_hash
-        os.remove(conf_backup_file)
-        if len(previous_hash) == 32 or previous_hash[-32:] != current_hash:
-            logger.warning(m18n.n('service_configuration_conflict',
-                file=conf_file))
-
+    service_conf = services.get(service, {})
+    service_conf['conffiles'] = hashes
+    services[service] = service_conf
     _save_services(services)
 
-    return deleted
 
+def _process_regen_conf(system_conf, new_conf=None, save=True):
+    """Regenerate a given system configuration file
 
-def service_safecopy(service, new_conf_file, conf_file, force=False):
-    """
-    Check if the specific file has been modified and display differences.
-    Stores the file hash in the services.yml file
-
-    Keyword argument:
-        service -- Service name attached to the conf file
-        new_conf_file -- Path to the desired conf file
-        conf_file -- Path to the targeted conf file
-        force -- Force file overriding
+    Replace a given system configuration file by a new one or delete it if
+    new_conf is None. A backup of the file - keeping its directory tree - will
+    be done in the backup conf directory before any operation if save is True.
 
     """
-    regenerated = False
-    services = _get_services()
-
-    if not os.path.exists(new_conf_file):
-        raise MoulinetteError(errno.EIO, m18n.n('no_such_conf_file', file=new_conf_file))
-
-    with open(new_conf_file, 'r') as f:
-        new_conf = ''.join(f.readlines()).rstrip()
-
-    # Backup existing file
-    date = time.strftime("%Y%m%d.%H%M%S")
-    conf_backup_file = conf_backup_dir + conf_file +'-'+ date
-    if os.path.exists(conf_file):
-        process = subprocess.Popen(
-            ['install', '-D', conf_file, conf_backup_file]
-        )
-        process.wait()
-    else:
-        logger.info(m18n.n('service_add_configuration', file=conf_file))
-
-    # Add the service if it does not exist
-    if service not in services.keys():
-        services[service] = {}
-
-    # Retrieve hashes
-    if not 'conffiles' in services[service]:
-        services[service]['conffiles'] = {}
-
-    if conf_file in services[service]['conffiles']:
-        previous_hash = services[service]['conffiles'][conf_file]
-    else:
-        previous_hash = 'no hash yet'
-
-    current_hash = _hash(conf_file)
-    diff = list(_get_diff(new_conf, conf_file))
-
-    # Handle conflicts
-    if force or previous_hash == current_hash:
-        with open(conf_file, 'w') as f: f.write(new_conf)
-        new_hash = _hash(conf_file)
-        if previous_hash != new_hash:
-            regenerated = True
-    elif len(diff) == 0:
-        new_hash = _hash(conf_file)
-    else:
-        new_hash = previous_hash
-        if (len(previous_hash) == 32 or previous_hash[-32:] != current_hash):
-            logger.warning('{0} {1}'.format(
-                m18n.n('service_configuration_conflict', file=conf_file),
-                m18n.n('show_diff', diff=''.join(diff))))
-
-    # Remove the backup file if the configuration has not changed
-    if new_hash == previous_hash:
-        try:
-            os.remove(conf_backup_file)
-        except OSError: pass
-
-    services[service]['conffiles'][conf_file] = new_hash
-    _save_services(services)
-
-    return regenerated
+    if save:
+        backup_path = os.path.join(backup_conf_dir, '{0}-{1}'.format(
+            system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
+        backup_dir = os.path.dirname(backup_path)
+        if not os.path.isdir(backup_dir):
+            filesystem.mkdir(backup_dir, 0755, True)
+        shutil.copy2(system_conf, backup_path)
+        logger.info(m18n.n('service_conf_file_backed_up',
+                           conf=system_conf, backup=backup_path))
+    try:
+        if not new_conf:
+            os.remove(system_conf)
+            logger.info(m18n.n('service_conf_file_removed',
+                               conf=system_conf))
+        else:
+            system_dir = os.path.dirname(system_conf)
+            if not os.path.isdir(system_dir):
+                filesystem.mkdir(system_dir, 0755, True)
+            shutil.copy2(new_conf, system_conf)
+            logger.info(m18n.n('service_conf_file_updated',
+                               conf=system_conf))
+    except:
+        if not new_conf and os.path.exists(system_conf):
+            logger.warning(m18n.n('service_conf_file_remove_failed',
+                                  conf=system_conf),
+                           exc_info=1)
+            return False
+        elif new_conf:
+            try:
+                copy_succeed = os.path.samefile(system_conf, new_conf)
+            except:
+                copy_succeed = False
+            finally:
+                if not copy_succeed:
+                    logger.warning(m18n.n('service_conf_file_copy_failed',
+                                          conf=system_conf, new=new_conf),
+                                   exc_info=1)
+                    return False
+    return True
