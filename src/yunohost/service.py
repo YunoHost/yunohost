@@ -333,6 +333,7 @@ def service_regen_conf(names=[], with_diff=False, force=False):
             if not system_hash:
                 if to_remove:
                     logger.debug("> system conf is already removed")
+                    os.remove(pending_path)
                     continue
                 if not current_hash or force:
                     if force:
@@ -376,6 +377,7 @@ def service_regen_conf(names=[], with_diff=False, force=False):
                     conf_status = 'updated'
                 else:
                     logger.debug("> system conf is already up-to-date")
+                    os.remove(pending_path)
                     continue
             else:
                 logger.debug("> system conf has been manually modified")
@@ -621,7 +623,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             system_dir = os.path.dirname(system_conf)
             if not os.path.isdir(system_dir):
                 filesystem.mkdir(system_dir, 0755, True)
-            shutil.copy2(new_conf, system_conf)
+            shutil.move(new_conf, system_conf)
             logger.info(m18n.n('service_conf_file_updated',
                                conf=system_conf))
     except:
