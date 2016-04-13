@@ -10,7 +10,7 @@ do_pre_regen() {
   # create directories for pending conf
   metronome_dir="${pending_dir}/etc/metronome"
   metronome_conf_dir="${metronome_dir}/conf.d"
-  mkdir -p "$metronome_dir" "$metronome_conf_dir"
+  mkdir -p "$metronome_conf_dir"
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
