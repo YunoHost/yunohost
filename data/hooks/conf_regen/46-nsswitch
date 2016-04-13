@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e 
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/nsswitch
+
+  install -D nsswitch.conf "${pending_dir}/etc/nsswitch.conf"
+}
+
+do_post_regen() {
+  sudo service nscd restart
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$status'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
