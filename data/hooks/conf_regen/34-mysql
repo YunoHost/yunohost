@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -e
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/mysql
+
+  install -D my.cnf "${pending_dir}/etc/mysql/my.cnf"
+}
+
+do_post_regen() {
+  # TODO: only restart if conf changed
+  sudo service mysql restart
+
+  if [ ! -f /etc/yunohost/mysql ]; then
+      # source string helpers
+      . /usr/share/yunohost/helpers.d/string
+
+      mysql_password=$(ynh_string_random 10)
+      sudo mysqladmin -u root -pyunohost password "$mysql_password"
+      echo $mysql_password | sudo tee /etc/yunohost/mysql
+      sudo chmod 400 /etc/yunohost/mysql
+  fi
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
