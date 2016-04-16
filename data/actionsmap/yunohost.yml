@@ -966,7 +966,7 @@ service:
             api: PUT /services/regenconf
             configuration:
                 lock: false
-            deprecated:
+            deprecated_alias:
                 - regenconf
             arguments:
                 -s:
