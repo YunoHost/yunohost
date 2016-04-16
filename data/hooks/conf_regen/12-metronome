@@ -30,7 +30,7 @@ do_pre_regen() {
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/metronome/conf.d \
-                 | awk '/^[a-z].*\.cfg\.lua$/ { print $1 }')
+                 | awk '/^[^\.]+\.[^\.]+.*\.cfg\.lua$/ { print $1 }')
   for file in $conf_files; do
     domain=${file%.cfg.lua}
     [[ $domain_list =~ $domain ]] \
