@@ -11,18 +11,25 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-  # TODO: only restart if conf changed
-  sudo service mysql restart
+  regen_conf_files=$1
 
   if [ ! -f /etc/yunohost/mysql ]; then
       # source string helpers
       . /usr/share/yunohost/helpers.d/string
 
+      # ensure that mysql is running
+      service mysql status >/dev/null 2>&1 \
+        || service mysql start
+
+      # generate a new root password
       mysql_password=$(ynh_string_random 10)
       sudo mysqladmin -u root -pyunohost password "$mysql_password"
       echo $mysql_password | sudo tee /etc/yunohost/mysql
       sudo chmod 400 /etc/yunohost/mysql
   fi
+
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service mysql restart
 }
 
 FORCE=$2
@@ -32,7 +39,7 @@ case "$1" in
     do_pre_regen $3
     ;;
   post)
-    do_post_regen
+    do_post_regen $3
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
