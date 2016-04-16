@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -e 
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/dovecot
+
+  dovecot_dir="${pending_dir}/etc/dovecot"
+  mkdir -p "${dovecot_dir}/global_script"
+
+  # copy simple conf files
+  cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
+  cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
+
+  # prepare dovecot.conf conf file
+  main_domain=$(cat /etc/yunohost/current_host)
+  cat dovecot.conf \
+    | sed "s/{{ main_domain }}/${main_domain}/g" \
+    > "${dovecot_dir}/dovecot.conf"
+
+  # adapt it for IPv4-only hosts
+  if [ ! -f /proc/net/if_inet6 ]; then
+    sed -i \
+      's/^\(listen =\).*/\1 */' \
+      "${dovecot_dir}/dovecot.conf"
+  fi
+}
+
+do_post_regen() {
+  # create vmail user
+  id vmail > /dev/null 2>&1 \
+    || sudo adduser --system --ingroup mail --uid 500 vmail
+
+  # compile sieve script
+  # TODO: only compile if script changed
+  sudo sievec /etc/dovecot/global_script/dovecot.sieve
+
+  # fix permissions
+  sudo chown -R vmail:mail /etc/dovecot/global_script
+  sudo chmod -R 770 /etc/dovecot/global_script
+  sudo chmod 660 /etc/dovecot/global_script/dovecot.{sieve,svbin}
+
+  # TODO: only restart if conf changed
+  sudo service dovecot restart
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$status'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
