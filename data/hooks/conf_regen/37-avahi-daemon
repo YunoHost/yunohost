@@ -11,7 +11,10 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-  sudo service avahi-daemon restart
+  regen_conf_files=$1
+
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service avahi-daemon restart
 }
 
 FORCE=$2
@@ -21,7 +24,7 @@ case "$1" in
     do_pre_regen $3
     ;;
   post)
-    do_post_regen
+    do_post_regen $3
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2

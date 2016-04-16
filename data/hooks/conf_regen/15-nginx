@@ -48,8 +48,11 @@ do_pre_regen() {
 }
 
 do_post_regen() {
+  regen_conf_files=$1
+
+  [ -z "$regen_conf_files" ] && exit 0
+
   # retrieve variables
-  # TODO: retrieve only changed/new domains
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
   # create NGINX conf directories for domains
@@ -57,7 +60,6 @@ do_post_regen() {
     sudo mkdir -p "/etc/nginx/conf.d/${domain}.d"
   done
 
-  # TODO: only restart if conf changed
   sudo service nginx restart
 }
 
@@ -68,7 +70,7 @@ case "$1" in
     do_pre_regen $3
     ;;
   post)
-    do_post_regen
+    do_post_regen $3
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2

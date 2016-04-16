@@ -39,8 +39,13 @@ do_pre_regen() {
 }
 
 do_post_regen() {
+  regen_conf_files=$1
+
+  # fix some permissions
+  sudo chown -R metronome: /var/lib/metronome/
+  sudo chown -R metronome: /etc/metronome/conf.d/
+
   # retrieve variables
-  # TODO: retrieve only changed/new domains
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
   # create metronome directories for domains
@@ -48,12 +53,8 @@ do_post_regen() {
     sudo mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
   done
 
-  # fix permissions
-  sudo chown -R metronome: /var/lib/metronome/
-  sudo chown -R metronome: /etc/metronome/conf.d/
-
-  # TODO: only restart if conf changed
-  sudo service metronome restart
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service metronome restart
 }
 
 FORCE=$2
@@ -63,7 +64,7 @@ case "$1" in
     do_pre_regen $3
     ;;
   post)
-    do_post_regen
+    do_post_regen $3
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
