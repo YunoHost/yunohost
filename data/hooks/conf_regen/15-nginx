@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -e
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/nginx
+
+  nginx_dir="${pending_dir}/etc/nginx"
+  nginx_conf_dir="${nginx_dir}/conf.d"
+  mkdir -p "$nginx_conf_dir"
+
+  # install plain conf files
+  cp plain/* "$nginx_conf_dir"
+
+  # retrieve variables
+  main_domain=$(cat /etc/yunohost/current_host)
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # add domain conf files
+  for domain in $domain_list; do
+    domain_conf_dir="${nginx_conf_dir}/${domain}.d"
+    mkdir -p "$domain_conf_dir"
+
+    # NGINX server configuration
+    cat server.tpl.conf \
+      | sed "s/{{ domain }}/${domain}/g" \
+      > "${nginx_conf_dir}/${domain}.conf"
+
+    [[ $main_domain != $domain ]] \
+      && touch "${domain_conf_dir}/yunohost_local.conf" \
+      || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
+  done
+
+  # remove old domain conf files
+  conf_files=$(ls -1 /etc/nginx/conf.d \
+                 | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
+  for file in $conf_files; do
+    domain=${file%.conf}
+    [[ $domain_list =~ $domain ]] \
+      || touch "${nginx_conf_dir}/${file}"
+  done
+
+  # disable default site
+  mkdir -p "${nginx_dir}/sites-enabled"
+  touch "${nginx_dir}/sites-enabled/default"
+}
+
+do_post_regen() {
+  # retrieve variables
+  # TODO: retrieve only changed/new domains
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # create NGINX conf directories for domains
+  for domain in $domain_list; do
+    sudo mkdir -p "/etc/nginx/conf.d/${domain}.d"
+  done
+
+  # TODO: only restart if conf changed
+  sudo service nginx restart
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
