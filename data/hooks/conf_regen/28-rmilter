@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -e
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/rmilter
+
+  install -D rmilter.conf "${pending_dir}/etc/rmilter.conf"
+  install -D rmilter.socket "${pending_dir}/etc/rmilter.socket"
+}
+
+do_post_regen() {
+  # retrieve variables
+  # TODO: retrieve only new domains
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # create DKIM key for domains
+  for domain in $domain_list; do
+    [ ! -f /etc/dkim/$domain.mail.key ] && {
+      sudo opendkim-genkey --domain="$domain" \
+          --selector=mail --directory=/etc/dkim
+      sudo mv /etc/dkim/mail.private "/etc/dkim/${domain}.mail.key"
+      sudo mv /etc/dkim/mail.txt "/etc/dkim/${domain}.mail.txt"
+    }
+  done
+
+  # fix DKIM keys permissions
+  sudo chown _rmilter /etc/dkim/*.mail.key
+  sudo chmod 400 /etc/dkim/*.mail.key
+
+  # Reload systemd daemon, ensure that the socket is listening and stop
+  # the service. It will be started again by the socket as needed.
+  # TODO: only restart if conf changed
+  sudo systemctl -q daemon-reload
+  sudo systemctl -q start rmilter.socket
+  sudo systemctl -q stop rmilter.service 2>&1 || true
+}
+
+FORCE=$2
+
+case "$1" in
+  pre)
+    do_pre_regen $3
+    ;;
+  post)
+    do_post_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$status'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
