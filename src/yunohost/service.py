@@ -431,7 +431,15 @@ def service_regen_conf(names=[], with_diff=False, force=False,
         }
 
     # Execute hooks for post-regen
-    hook_callback('conf_regen', names, args=['post', 1 if force else 0])
+    def _pre_call(name, priority, path, args):
+        # append coma-separated successful changes for the service
+        if name in result and result[name]['succeed']:
+            args.append(','.join(result[name]['succeed'].keys()))
+        else:
+            args.append('')
+        return args
+    hook_callback('conf_regen', names, pre_callback=_pre_call,
+                  args=['post', 1 if force else 0])
 
     return result
 
