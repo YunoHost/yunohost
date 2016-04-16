@@ -984,44 +984,6 @@ service:
                     help: List pending configuration files and exit
                     action: store_true
 
-        ### service_safecopy()
-        safecopy:
-            action_help: >
-                Check if the specific file has been modified and display differences.
-                Stores the file hash in the services.yml file
-            arguments:
-                new_conf_file:
-                    help: Path to the desired conf file
-                conf_file:
-                    help: Path to the targeted conf file
-                -s:
-                    full: --service
-                    help: Service name attached to the conf file
-                    extra:
-                        required: True
-                -f:
-                    full: --force
-                    help: Override the current configuration with the newly generated one, even if it has been modified
-                    action: store_true
-
-        ### service_saferemove()
-        saferemove:
-            action_help: >
-                Check if the specific file has been modified before removing it.
-                Backup the file in /home/yunohost.backup
-            arguments:
-                conf_file:
-                    help: Path to the targeted conf file
-                -s:
-                    full: --service
-                    help: Service name attached to the conf file
-                    extra:
-                        required: True
-                -f:
-                    full: --force
-                    help: Force file deletion
-                    action: store_true
-
 #############################
 #         Firewall          #
 #############################
