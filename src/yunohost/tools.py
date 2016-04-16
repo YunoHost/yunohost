@@ -177,6 +177,9 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     else:
         raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
 
+    # Regenerate some services at first
+    service_regen_conf(['slapd'], force=True)
+
     if len(domain.split('.')) >= 3 and not ignore_dyndns:
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')

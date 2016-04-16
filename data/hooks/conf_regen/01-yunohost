@@ -2,8 +2,11 @@
 
 set -e
 
-do_pre_regen() {
-  pending_dir=$1
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "You must be root to run this script" 1>&2
+    exit 1
+  fi
 
   cd /usr/share/yunohost/templates/yunohost
 
@@ -11,14 +14,14 @@ do_pre_regen() {
 
   # set default current_host
   [[ -f /etc/yunohost/current_host ]] \
-    || echo "yunohost.org" | sudo tee /etc/yunohost/current_host
+    || echo "yunohost.org" > /etc/yunohost/current_host
 
   # copy default firewall and services
   # TODO: update them as needed with upgrades
   [[ -f /etc/yunohost/firewall.yml ]] \
-    || sudo cp firewall.yml /etc/yunohost/firewall.yml
+    || cp firewall.yml /etc/yunohost/firewall.yml
   [[ -f /etc/yunohost/services.yml ]] \
-    || sudo cp services.yml /etc/yunohost/services.yml
+    || cp services.yml /etc/yunohost/services.yml
 
   # allow users to access /media directory
   [[ -d /etc/skel/media ]] \
@@ -28,10 +31,10 @@ do_pre_regen() {
 FORCE=$2
 
 case "$1" in
-  pre)
-    do_pre_regen $3
+  pre|post)
     ;;
-  post)
+  init)
+    do_init_regen
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2

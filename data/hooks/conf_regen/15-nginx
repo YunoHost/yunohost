@@ -2,6 +2,15 @@
 
 set -e
 
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "You must be root to run this script" 1>&2
+    exit 1
+  fi
+
+  do_pre_regen ""
+}
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -13,6 +22,13 @@ do_pre_regen() {
 
   # install plain conf files
   cp plain/* "$nginx_conf_dir"
+
+  # probably run with init: just disable default site, restart NGINX and exit
+  if [[ -z "$pending_dir" ]]; then
+    rm -f "${nginx_dir}/sites-enabled/default"
+    service nginx restart
+    exit 0
+  fi
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
@@ -71,6 +87,9 @@ case "$1" in
     ;;
   post)
     do_post_regen $3
+    ;;
+  init)
+    do_init_regen
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
