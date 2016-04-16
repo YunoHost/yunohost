@@ -23,7 +23,7 @@ do_pre_regen() {
 
   # add domain conf files
   for domain in $domain_list; do
-    cat domain.cfg.lua.sed \
+    cat domain.tpl.cfg.lua \
       | sed "s/{{ domain }}/${domain}/g" \
       > "${metronome_conf_dir}/${domain}.cfg.lua"
   done
