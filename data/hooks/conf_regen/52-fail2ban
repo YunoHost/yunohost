@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e 
+set -e
 
 do_pre_regen() {
   pending_dir=$1
@@ -28,7 +28,7 @@ case "$1" in
     do_post_regen
     ;;
   *)
-    echo "hook called with unknown argument \`$status'" >&2
+    echo "hook called with unknown argument \`$1'" >&2
     exit 1
     ;;
 esac

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e 
+set -e
 
 do_pre_regen() {
   pending_dir=$1
@@ -13,7 +13,7 @@ do_pre_regen() {
       [[ -f /proc/net/if_inet6 ]] \
         || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
 
-      install -D sshd_config "${pending_conf}/etc/ssh/sshd_config"
+      install -D sshd_config "${pending_dir}/etc/ssh/sshd_config"
   fi
 }
 
@@ -32,7 +32,7 @@ case "$1" in
     do_post_regen
     ;;
   *)
-    echo "hook called with unknown argument \`$status'" >&2
+    echo "hook called with unknown argument \`$1'" >&2
     exit 1
     ;;
 esac
