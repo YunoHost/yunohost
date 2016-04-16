@@ -14,15 +14,19 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-  # compile sieve script
-  # TODO: only compile and restart dovecot if script changed
-  sudo sievec /etc/dovecot/global_script/dovecot.sieve
-  # fix permissions and restart dovecot
-  sudo chown -R vmail:mail /etc/dovecot/global_script
-  sudo chmod 660 /etc/dovecot/global_script/rspamd.{sieve,svbin}
-  sudo systemctl restart dovecot
+  regen_conf_files=$1
 
-  # TODO: only restart if conf changed
+  [ -z "$regen_conf_files" ] && exit 0
+
+  # compile sieve script
+  [[ "$regen_conf_files" =~ rspamd\.sieve ]] && {
+    sudo sievec /etc/dovecot/global_script/rspamd.sieve
+    sudo chown -R vmail:mail /etc/dovecot/global_script
+    sudo systemctl restart dovecot
+  }
+
+  # ensure that the socket is listening and stop the service - it will be
+  # started again by the socket as needed
   sudo systemctl -q start rspamd.socket
   sudo systemctl -q stop rspamd.service 2>&1 || true
 }
@@ -34,7 +38,7 @@ case "$1" in
     do_pre_regen $3
     ;;
   post)
-    do_post_regen
+    do_post_regen $3
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
