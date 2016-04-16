@@ -23,24 +23,29 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-  # retrieve current backend
-  #backend=$(sudo slapcat -n 0 | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
-  backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
-
-  # save current database in case of a backend change
-  backend_change=0
-  backup_dir="/var/backups/dc=yunohost,dc=org-${backend}-$(date +%s)"
-  if [[ -n "$backend" && "$backend" != "mdb" ]]; then
-      backend_change=1
-      sudo mkdir -p "$backup_dir"
-      sudo slapcat -b dc=yunohost,dc=org \
-        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
-  fi
+  regen_conf_files=$1
 
   # fix some permissions
   sudo chown root:openldap /etc/ldap/slapd.conf
   sudo chown -R openldap:openldap /etc/ldap/schema/
   sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+
+  [ -z "$regen_conf_files" ] && exit 0
+
+  # retrieve current and new backends
+  curr_backend=$(sudo slapcat -n 0 \
+                   | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
+  new_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
+
+  # save current database in case of a backend change
+  backend_change=0
+  backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
+  if [[ -n "$curr_backend" && "$curr_backend" != "$new_backend" ]]; then
+      backend_change=1
+      sudo mkdir -p "$backup_dir"
+      sudo slapcat -b dc=yunohost,dc=org \
+        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+  fi
 
   # check the slapd config file at first
   sudo slaptest -Q -u -f /etc/ldap/slapd.conf
@@ -73,7 +78,7 @@ case "$1" in
     do_pre_regen $3
     ;;
   post)
-    do_post_regen
+    do_post_regen $3
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
