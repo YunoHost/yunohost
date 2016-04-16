@@ -51,7 +51,7 @@ def _parse_cli_args():
         help="Don't use actions map cache",
     )
     parser.add_argument('--output-as',
-        choices=['json', 'plain'], default=None,
+        choices=['json', 'plain', 'none'], default=None,
         help="Output result in another format",
     )
     parser.add_argument('--debug',
