@@ -516,6 +516,7 @@ app:
         initdb:
             action_help: Create database and initialize it with optionnal attached script
             api: POST /tools/initdb
+            deprecated: true
             arguments:
                 user:
                     help: Name of the DB user
@@ -962,7 +963,7 @@ service:
             api: PUT /services/regenconf
             configuration:
                 lock: false
-            deprecated:
+            deprecated_alias:
                 - regenconf
             arguments:
                 names:
