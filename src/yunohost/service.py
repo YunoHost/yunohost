@@ -302,13 +302,17 @@ def service_regen_conf(names=[], with_diff=False, force=False,
     shutil.rmtree(pending_conf_dir, ignore_errors=True)
     filesystem.mkdir(pending_conf_dir, 0755, True)
 
+    # Format common hooks arguments
+    common_args = [1 if force else 0,]
+
     # Execute hooks for pre-regen
+    pre_args = ['pre',] + common_args
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(pending_conf_dir, name)
         filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
         # return the arguments to pass to the script
-        return ['pre', 1 if force else 0, service_pending_path]
+        return pre_args + [service_pending_path,]
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Update the services name
@@ -431,15 +435,15 @@ def service_regen_conf(names=[], with_diff=False, force=False,
         }
 
     # Execute hooks for post-regen
+    post_args = ['post',] + common_args
     def _pre_call(name, priority, path, args):
         # append coma-separated applied changes for the service
         if name in result and result[name]['applied']:
-            args.append(','.join(result[name]['applied'].keys()))
+            regen_conf_files = ','.join(result[name]['applied'].keys())
         else:
-            args.append('')
-        return args
-    hook_callback('conf_regen', names, pre_callback=_pre_call,
-                  args=['post', 1 if force else 0])
+            regen_conf_files = ''
+        return post_args + [regen_conf_files,]
+    hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     return result
 
