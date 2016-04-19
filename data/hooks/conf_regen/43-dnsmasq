@@ -48,13 +48,14 @@ do_post_regen() {
 }
 
 FORCE=$2
+DRY_RUN=$3
 
 case "$1" in
   pre)
-    do_pre_regen $3
+    do_pre_regen $4
     ;;
   post)
-    do_post_regen $3
+    do_post_regen $4
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2

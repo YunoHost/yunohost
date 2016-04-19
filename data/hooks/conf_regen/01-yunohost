@@ -91,10 +91,11 @@ EOF
 }
 
 FORCE=$2
+DRY_RUN=$3
 
 case "$1" in
   pre)
-    do_pre_regen $3
+    do_pre_regen $4
     ;;
   post)
     ;;

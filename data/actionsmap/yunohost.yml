@@ -980,6 +980,10 @@ service:
                         Override all manual modifications in configuration
                         files
                     action: store_true
+                -n:
+                    full: --dry-run
+                    help: Show what would have been regenerated
+                    action: store_true
                 -p:
                     full: --list-pending
                     help: List pending configuration files and exit

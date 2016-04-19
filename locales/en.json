@@ -130,6 +130,7 @@
     "service_cmd_exec_failed" : "Unable to execute command '{command:s}'",
     "service_regenconf_failed" : "Unable to regenerate the configuration for service(s): {services}",
     "service_regenconf_pending_applying" : "Applying pending configuration for service '{service}'...",
+    "service_regenconf_dry_pending_applying" : "Checking pending configuration which would have been applied for service '{service}'...",
     "service_conf_file_manually_removed" : "The configuration file '{conf}' has been manually removed and will not be created",
     "service_conf_file_manually_modified" : "The configuration file '{conf}' has been manually modified and will not be updated",
     "service_conf_file_not_managed" : "The configuration file '{conf}' is not managed yet and will not be updated",
@@ -140,6 +141,7 @@
     "service_conf_file_copy_failed" : "Unable to copy the new configuration file '{new}' to '{conf}'",
     "service_conf_up_to_date" : "The configuration is already up-to-date for service '{service}'",
     "service_conf_updated" : "The configuration has been updated for service '{service}'",
+    "service_conf_would_be_updated" : "The configuration would have been updated for service '{service}'",
 
     "network_check_smtp_ok" : "Outbound mail (SMTP port 25) is not blocked",
     "network_check_smtp_ko" : "Outbound mail (SMTP port 25) seems to be blocked by your network",

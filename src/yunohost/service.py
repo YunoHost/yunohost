@@ -271,7 +271,7 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(names=[], with_diff=False, force=False,
+def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
     Regenerate the configuration file(s) for a service
@@ -280,6 +280,7 @@ def service_regen_conf(names=[], with_diff=False, force=False,
         names -- Services name to regenerate configuration of
         with_diff -- Show differences in case of configuration changes
         force -- Override all manual modifications in configuration files
+        dry_run -- Show what would have been regenerated
         list_pending -- List pending configuration files and exit
 
     """
@@ -303,7 +304,7 @@ def service_regen_conf(names=[], with_diff=False, force=False,
     filesystem.mkdir(pending_conf_dir, 0755, True)
 
     # Format common hooks arguments
-    common_args = [1 if force else 0,]
+    common_args = [1 if force else 0, 1 if dry_run else 0]
 
     # Execute hooks for pre-regen
     pre_args = ['pre',] + common_args
@@ -322,10 +323,16 @@ def service_regen_conf(names=[], with_diff=False, force=False,
                               m18n.n('service_regenconf_failed',
                                      services=', '.join(pre_result['failed'])))
 
+    # Set the processing method
+    _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
+
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
-        logger.info(m18n.n('service_regenconf_pending_applying',
-                           service=service))
+        logger.info(m18n.n(
+            'service_regenconf_pending_applying' if not dry_run else \
+                'service_regenconf_dry_pending_applying',
+            service=service))
+
         conf_hashes = _get_conf_hashes(service)
         succeed_regen = {}
         failed_regen = {}
@@ -361,7 +368,7 @@ def service_regen_conf(names=[], with_diff=False, force=False,
                     else:
                         logger.debug("> system conf does not exist yet")
                         conf_status = 'created'
-                    regenerated = _process_regen_conf(
+                    regenerated = _regen(
                         system_path, pending_path, save=False)
                 else:
                     logger.warning(m18n.n(
@@ -376,10 +383,10 @@ def service_regen_conf(names=[], with_diff=False, force=False,
                     conf_status = 'managed'
                     regenerated = True
                 elif force and to_remove:
-                    regenerated = _process_regen_conf(system_path)
+                    regenerated = _regen(system_path)
                     conf_status = 'force-removed'
                 elif force:
-                    regenerated = _process_regen_conf(system_path, pending_path)
+                    regenerated = _regen(system_path, pending_path)
                     conf_status = 'force-updated'
                 else:
                     logger.warning(m18n.n('service_conf_file_not_managed',
@@ -388,10 +395,10 @@ def service_regen_conf(names=[], with_diff=False, force=False,
             # -> system conf has not been manually modified
             elif system_hash == current_hash:
                 if to_remove:
-                    regenerated = _process_regen_conf(system_path)
+                    regenerated = _regen(system_path)
                     conf_status = 'removed'
                 elif system_hash != new_hash:
-                    regenerated = _process_regen_conf(system_path, pending_path)
+                    regenerated = _regen(system_path, pending_path)
                     conf_status = 'updated'
                 else:
                     logger.debug("> system conf is already up-to-date")
@@ -400,7 +407,7 @@ def service_regen_conf(names=[], with_diff=False, force=False,
             else:
                 logger.debug("> system conf has been manually modified")
                 if force:
-                    regenerated = _process_regen_conf(system_path, pending_path)
+                    regenerated = _regen(system_path, pending_path)
                     conf_status = 'force-updated'
                 else:
                     logger.warning(m18n.n(
@@ -425,8 +432,11 @@ def service_regen_conf(names=[], with_diff=False, force=False,
             logger.info(m18n.n('service_conf_up_to_date', service=service))
             continue
         elif not failed_regen:
-            logger.success(m18n.n('service_conf_updated', service=service))
-        if succeed_regen:
+            logger.success(m18n.n(
+                'service_conf_updated' if not dry_run else \
+                    'service_conf_would_be_updated',
+                service=service))
+        if succeed_regen and not dry_run:
             _update_conf_hashes(service, conf_hashes)
 
         # Append the service results
@@ -434,6 +444,10 @@ def service_regen_conf(names=[], with_diff=False, force=False,
             'applied': succeed_regen,
             'pending': failed_regen
         }
+
+    # Return in case of dry run
+    if dry_run:
+        return result
 
     # Execute hooks for post-regen
     post_args = ['post',] + common_args
