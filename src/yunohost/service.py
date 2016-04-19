@@ -373,7 +373,6 @@ def service_regen_conf(names=[], with_diff=False, force=False,
                 logger.debug("> system conf is not managed yet")
                 if system_hash == new_hash:
                     logger.debug("> no changes to system conf has been made")
-                    os.remove(pending_path)
                     conf_status = 'managed'
                     regenerated = True
                 elif force and to_remove:
@@ -416,6 +415,8 @@ def service_regen_conf(names=[], with_diff=False, force=False,
             if regenerated:
                 succeed_regen[system_path] = conf_result
                 conf_hashes[system_path] = new_hash
+                if os.path.isfile(pending_path):
+                    os.remove(pending_path)
             else:
                 failed_regen[system_path] = conf_result
 
@@ -650,7 +651,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             system_dir = os.path.dirname(system_conf)
             if not os.path.isdir(system_dir):
                 filesystem.mkdir(system_dir, 0755, True)
-            shutil.move(new_conf, system_conf)
+            shutil.copy2(new_conf, system_conf)
             logger.info(m18n.n('service_conf_file_updated',
                                conf=system_conf))
     except:
