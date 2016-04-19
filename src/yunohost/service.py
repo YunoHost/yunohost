@@ -426,15 +426,15 @@ def service_regen_conf(names=[], with_diff=False, force=False,
 
         # Append the service results
         result[service] = {
-            'succeed': succeed_regen,
-            'failed': failed_regen
+            'applied': succeed_regen,
+            'pending': failed_regen
         }
 
     # Execute hooks for post-regen
     def _pre_call(name, priority, path, args):
-        # append coma-separated successful changes for the service
-        if name in result and result[name]['succeed']:
-            args.append(','.join(result[name]['succeed'].keys()))
+        # append coma-separated applied changes for the service
+        if name in result and result[name]['applied']:
+            args.append(','.join(result[name]['applied'].keys()))
         else:
             args.append('')
         return args
