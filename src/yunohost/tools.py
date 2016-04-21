@@ -170,16 +170,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     """
     dyndns = not ignore_dyndns
 
-    try:
-        with open('/etc/yunohost/installed') as f: pass
-    except IOError:
-        logger.info(m18n.n('yunohost_installing'))
-    else:
-        raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
-
-    # Regenerate some services at first
-    service_regen_conf(['slapd'], force=True)
-
+    # Do some checks at first
+    if os.path.isfile('/etc/yunohost/installed'):
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('yunohost_already_installed'))
     if len(domain.split('.')) >= 3 and not ignore_dyndns:
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
@@ -190,10 +184,23 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             dyndomain  = '.'.join(domain.split('.')[1:])
             if dyndomain in dyndomains:
                 if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
-                    dyndns=True
+                    dyndns = True
                 else:
                     raise MoulinetteError(errno.EEXIST,
-                                      m18n.n('dyndns_unavailable'))
+                                          m18n.n('dyndns_unavailable'))
+
+    logger.info(m18n.n('yunohost_installing'))
+
+    # Instantiate LDAP Authenticator
+    auth = init_authenticator(('ldap', 'default'),
+                              {'uri': "ldap://localhost:389",
+                               'base_dn': "dc=yunohost,dc=org",
+                               'user_rdn': "cn=admin" })
+    auth.authenticate('yunohost')
+
+    # Initialize LDAP for YunoHost
+    # TODO: Improve this part by integrate ldapinit into conf_regen hook
+    tools_ldapinit(auth)
 
     # Create required folders
     folders_to_create = [
@@ -233,6 +240,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
+    service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     command_list = [
         'echo "01" > %s/serial' % ssl_dir,
@@ -249,16 +257,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         if os.system(command) != 0:
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('yunohost_ca_creation_failed'))
-
-    # Instantiate LDAP Authenticator
-    auth = init_authenticator(('ldap', 'default'),
-                              { 'uri': "ldap://localhost:389",
-                                'base_dn': "dc=yunohost,dc=org",
-                                'user_rdn': "cn=admin" })
-    auth.authenticate('yunohost')
-
-    # Initialize YunoHost LDAP base
-    tools_ldapinit(auth)
 
     # New domain config
     tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain, dyndns=dyndns)

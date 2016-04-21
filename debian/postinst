@@ -8,6 +8,7 @@ do_configure() {
   if [ ! -f /etc/yunohost/installed ]; then
       bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
       bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
+      bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
       bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
   else
       echo "Regenerating configuration, this might take a while..."

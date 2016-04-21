@@ -2,6 +2,30 @@
 
 set -e
 
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+      echo "You must be root to run this script" 1>&2
+      exit 1
+  fi
+
+  do_pre_regen ""
+
+  # fix some permissions
+  chown root:openldap /etc/ldap/slapd.conf
+  chown -R openldap:openldap /etc/ldap/schema/
+
+  # check the slapd config file at first
+  slaptest -Q -u -f /etc/ldap/slapd.conf
+
+  # regenerate LDAP config directory from slapd.conf
+  rm -Rf /etc/ldap/slapd.d
+  mkdir /etc/ldap/slapd.d
+  slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+  chown -R openldap:openldap /etc/ldap/slapd.d/
+
+  service slapd restart
+}
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -80,6 +104,9 @@ case "$1" in
     ;;
   post)
     do_post_regen $4
+    ;;
+  init)
+    do_init_regen
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
