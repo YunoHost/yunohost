@@ -604,7 +604,7 @@ def _get_pending_conf(services=[]):
     if not os.path.isdir(pending_conf_dir):
         return result
     if not services:
-        os.listdir(pending_conf_dir)
+        services = os.listdir(pending_conf_dir)
     for name in services:
         service_conf = {}
         service_pending_path = os.path.join(pending_conf_dir, name)
