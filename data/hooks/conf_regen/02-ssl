@@ -62,7 +62,7 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/ssl
 
-  install -D openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
+  install -D -m 644 openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
 }
 
 do_post_regen() {

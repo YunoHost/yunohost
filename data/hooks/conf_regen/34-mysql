@@ -7,7 +7,7 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/mysql
 
-  install -D my.cnf "${pending_dir}/etc/mysql/my.cnf"
+  install -D -m 644 my.cnf "${pending_dir}/etc/mysql/my.cnf"
 }
 
 do_post_regen() {

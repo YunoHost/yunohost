@@ -13,7 +13,7 @@ do_pre_regen() {
       [[ -f /proc/net/if_inet6 ]] \
         || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
 
-      install -D sshd_config "${pending_dir}/etc/ssh/sshd_config"
+      install -D -m 644 sshd_config "${pending_dir}/etc/ssh/sshd_config"
   fi
 }
 

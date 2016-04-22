@@ -7,7 +7,7 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/glances
 
-  install -D glances.default "${pending_dir}/etc/default/glances"
+  install -D -m 644 glances.default "${pending_dir}/etc/default/glances"
 }
 
 do_post_regen() {

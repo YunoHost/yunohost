@@ -7,9 +7,9 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/rspamd
 
-  install -D metrics.local.conf \
+  install -D -m 644 metrics.local.conf \
       "${pending_dir}/etc/rspamd/local.d/metrics.conf"
-  install -D rspamd.sieve \
+  install -D -m 644 rspamd.sieve \
       "${pending_dir}/etc/dovecot/global_script/rspamd.sieve"
 }
 

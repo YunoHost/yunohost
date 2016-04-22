@@ -35,15 +35,16 @@ do_pre_regen() {
   [ ! -f /etc/ldap/slapd-yuno.conf ] \
     || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
 
+  # create needed directories
   ldap_dir="${pending_dir}/etc/ldap"
-  install -D ldap.conf  "${ldap_dir}/ldap.conf"
-  install -D slapd.conf "${ldap_dir}/slapd.conf"
-
   schema_dir="${ldap_dir}/schema"
-  install -D sudo.schema       "${schema_dir}/sudo.schema"
-  install -D mailserver.schema "${schema_dir}/mailserver.schema"
+  mkdir -p "$ldap_dir" "$schema_dir"
 
-  install -D slapd.default "${pending_dir}/etc/default/slapd"
+  # copy configuration files
+  cp -a ldap.conf slapd.conf "$ldap_dir"
+  cp -a sudo.schema mailserver.schema "$schema_dir"
+
+  install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
 }
 
 do_post_regen() {
