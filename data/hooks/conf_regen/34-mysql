@@ -14,17 +14,39 @@ do_post_regen() {
   regen_conf_files=$1
 
   if [ ! -f /etc/yunohost/mysql ]; then
-      # source string helpers
       . /usr/share/yunohost/helpers.d/string
 
       # ensure that mysql is running
       service mysql status >/dev/null 2>&1 \
         || service mysql start
 
-      # generate a new root password
+      # generate and set new root password
       mysql_password=$(ynh_string_random 10)
-      sudo mysqladmin -u root -pyunohost password "$mysql_password"
-      echo $mysql_password | sudo tee /etc/yunohost/mysql
+      sudo mysqladmin -s -u root -pyunohost password "$mysql_password" || {
+        if [ $FORCE -eq 1 ]; then
+            . /usr/share/yunohost/helpers.d/package
+
+            # retrieve MySQL package provider
+            ynh_package_is_installed "mariadb-server-10.0" \
+              && mysql_pkg="mariadb-server-10.0" \
+              || mysql_pkg="mysql-server-5.5"
+
+            # set new password with debconf
+            sudo debconf-set-selections << EOF
+$mysql_pkg mysql-server/root_password password $mysql_password
+$mysql_pkg mysql-server/root_password_again password $mysql_password
+EOF
+
+            # reconfigure Debian package
+            sudo dpkg-reconfigure -freadline -u "$mysql_pkg" 2>&1
+        else
+            echo "MySQL password for root user has been manually changed" \
+              "and will not be overridden without --force" >&2
+        fi
+      }
+
+      # store new root password
+      echo "$mysql_password" | sudo tee /etc/yunohost/mysql
       sudo chmod 400 /etc/yunohost/mysql
   fi
 
