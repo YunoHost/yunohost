@@ -665,7 +665,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             system_dir = os.path.dirname(system_conf)
             if not os.path.isdir(system_dir):
                 filesystem.mkdir(system_dir, 0755, True)
-            shutil.copy2(new_conf, system_conf)
+            shutil.copyfile(new_conf, system_conf)
             logger.info(m18n.n('service_conf_file_updated',
                                conf=system_conf))
     except:
