@@ -1,6 +1,37 @@
 backup_dir="$1/conf/ynh/mysql"
 
-sudo service mysql restart
-sudo cp -a $backup_dir/mysql /etc/yunohost/mysql
-mysqlpwd=$(sudo cat /etc/yunohost/mysql)
-sudo mysqladmin flush-privileges -p"$mysqlpwd"
+# ensure that mysql is running
+service mysql status >/dev/null 2>&1 \
+  || service mysql start
+
+# retrieve current and new password
+[ -f /etc/yunohost/mysql ] \
+  && curr_pwd=$(sudo cat /etc/yunohost/mysql) \
+  || curr_pwd="yunohost"
+new_pwd=$(sudo cat "${backup_dir}/root_pwd" || sudo cat "${backup_dir}/mysql")
+
+# attempt to change it
+sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
+  . /usr/share/yunohost/helpers.d/package
+
+  # retrieve MySQL package provider
+  ynh_package_is_installed "mariadb-server-10.0" \
+    && mysql_pkg="mariadb-server-10.0" \
+    || mysql_pkg="mysql-server-5.5"
+
+  # set new password with debconf
+  sudo debconf-set-selections << EOF
+$mysql_pkg mysql-server/root_password password $new_pwd
+$mysql_pkg mysql-server/root_password_again password $new_pwd
+EOF
+
+  # reconfigure Debian package
+  sudo dpkg-reconfigure -freadline -u "$mysql_pkg" 2>&1
+}
+
+# store new root password
+echo "$new_pwd" | sudo tee /etc/yunohost/mysql
+sudo chmod 400 /etc/yunohost/mysql
+
+# reload the grant tables
+sudo mysqladmin -s -u root -p"$new_pwd" reload
