@@ -90,8 +90,8 @@ if updated:
 EOF
 }
 
-FORCE=$2
-DRY_RUN=$3
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
 case "$1" in
   pre)

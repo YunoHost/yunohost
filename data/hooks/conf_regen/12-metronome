@@ -57,8 +57,8 @@ do_post_regen() {
     || sudo service metronome restart
 }
 
-FORCE=$2
-DRY_RUN=$3
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
 case "$1" in
   pre)
