@@ -157,10 +157,10 @@ def domain_add(auth, domain, dyndns=False):
 
         try:
             with open('/etc/yunohost/installed', 'r') as f:
-                service_regen_conf(service='nginx')
-                service_regen_conf(service='metronome')
-                service_regen_conf(service='dnsmasq')
-                service_regen_conf(service='rmilter')
+                service_regen_conf(names='nginx')
+                service_regen_conf(names='metronome')
+                service_regen_conf(names='dnsmasq')
+                service_regen_conf(names='rmilter')
                 os.system('yunohost app ssowatconf > /dev/null 2>&1')
         except IOError: pass
     except:
@@ -206,9 +206,9 @@ def domain_remove(auth, domain, force=False):
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
-    service_regen_conf(service='nginx')
-    service_regen_conf(service='metronome')
-    service_regen_conf(service='dnsmasq')
+    service_regen_conf(names='nginx')
+    service_regen_conf(names='metronome')
+    service_regen_conf(names='dnsmasq')
     os.system('yunohost app ssowatconf > /dev/null 2>&1')
 
     hook_callback('post_domain_remove', args=[domain])
