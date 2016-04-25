@@ -113,7 +113,7 @@ class Specifier(object):
             return NotImplemented
 
     def __repr__(self):
-        return "<Specifier({1!r})>".format(str(self))
+        return "<Specifier({0!r})>".format(str(self))
 
     def __str__(self):
         return "{0}{1}".format(*self._spec)
@@ -275,7 +275,7 @@ class SpecifierSet(object):
         self._specs = frozenset(parsed)
 
     def __repr__(self):
-        return "<SpecifierSet({1!r})>".format(str(self))
+        return "<SpecifierSet({0!r})>".format(str(self))
 
     def __str__(self):
         return ",".join(sorted(str(s) for s in self._specs))
