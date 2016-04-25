@@ -146,6 +146,9 @@ class Specifier(object):
     def __and__(self, other):
         return self.intersection(other)
 
+    def __or__(self, other):
+        return self.union(other)
+
     def _get_relation(self, op):
         return getattr(self, "_compare_{0}".format(self._relations[op]))
 
@@ -217,6 +220,26 @@ class Specifier(object):
             else:
                 result = [self, other]
         return SpecifierSet(result if result is not None else '')
+
+    def union(self, other):
+        """Make the union of two version specifiers
+
+        Return a new `SpecifierSet` with version specifiers from the
+        specifier and the other.
+
+        Example:
+            >>> Specifier('>= 2.2') | '<< 2.3' == '>= 2.2, << 2.3'
+
+        """
+        if isinstance(other, basestring):
+            try:
+                other = self.__class__(other)
+            except InvalidSpecifier:
+                return NotImplemented
+        elif not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return SpecifierSet([self, other])
 
     def contains(self, item):
         """Check if the specifier contains an other
