@@ -34,6 +34,8 @@
     "app_extraction_failed" : "Unable to extract installation files",
     "app_install_files_invalid" : "Invalid installation files",
     "app_manifest_invalid" : "Invalid app manifest",
+    "app_incompatible" : "The app is incompatible with your YunoHost version",
+    "app_package_need_update" : "The app package need to be updated to follow YunoHost changes",
     "app_argument_choice_invalid" : "Invalid choice for argument '{name:s}', it must be one of {choices:s}",
     "app_argument_invalid" : "Invalid value for argument '{name:s}': {error:s}",
     "app_argument_required" : "Argument '{name:s}' is required",
