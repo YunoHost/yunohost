@@ -219,6 +219,15 @@ class Specifier(object):
         return SpecifierSet(result if result is not None else '')
 
     def contains(self, item):
+        """Check if the specifier contains an other
+
+        Return whether the item is contained in the version specifier.
+
+        Example:
+            >>> '2.2.1' in Specifier('<< 2.3')
+            >>> '2.4' not in Specifier('<< 2.3')
+
+        """
         return self._get_relation(self.relation)(item, self.version)
 
 
@@ -303,6 +312,15 @@ class SpecifierSet(object):
         return specifiers
 
     def contains(self, item):
+        """Check if the set contains a version specifier
+
+        Return whether the item is contained in all version specifiers.
+
+        Example:
+            >>> '2.2.1' in SpecifierSet('>= 2.2, << 2.3')
+            >>> '2.4' not in SpecifierSet('>= 2.2, << 2.3')
+
+        """
         return all(
             s.contains(item)
             for s in self._specs
