@@ -329,18 +329,18 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         cmd_script = path
 
-    envcli = ''
-    if env is not None:
-        envcli = ' '.join([ '{key}="{val}"'.format(key=key, val=val) for key,val in env.items()])
-
     # Construct command to execute
     command = ['sudo', '-n', '-u', 'admin', '-H', 'sh', '-c']
     if no_trace:
-        cmd = '{envcli} /bin/bash "{script}" {args}'
+        cmd = '/bin/bash "{script}" {args}'
     else:
         # use xtrace on fd 7 which is redirected to stdout
-        cmd = '{envcli} BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
-    command.append(cmd.format(envcli=envcli, script=cmd_script, args=cmd_args))
+        cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
+    if env:
+        # prepend environment variables
+        cmd = '{0} {1}'.format(
+            ' '.join(['{0}="{1}"'.format(k, v) for k, v in env.items()]), cmd)
+    command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
         logger.info(m18n.n('executing_command', command=' '.join(command)))

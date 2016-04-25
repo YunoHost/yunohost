@@ -486,7 +486,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-                hook_exec(tmp_script, args=[tmp_app_dir + '/backup', app_instance_name],
+                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
                           raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
             except:
                 logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
