@@ -1,3 +1,42 @@
+yunohost (2.3.12.1) testing; urgency=low
+
+  * [deb] Rely on dh_installinit to restart yunohost-firewall after upgrade
+  * [deb] Add Install section to yunohost-firewall.service
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 09 Apr 2016 17:22:40 +0200
+
+yunohost (2.3.12) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Use new rspamd configuration system to override metrics
+  * [enh] Allow to set script execution directory in hook_exec
+  * [enh] Add a ynh_user_list helper
+  * [enh] Call app remove script if installation fails
+  * [fix] Move imports at the top in yunohost and yunohost-api
+  * [fix] Use rspamd local.d folder to allow users to override the defaults
+  * [fix] Execute backup/restore app scripts from the backup dir (bugfix #139)
+  * [fix] Regenerate SSOwat conf after apps restoration
+  * [fix] Move imports at the top in backup.py
+  * [fix] Check if the package is actually installed in equivs helper
+  * [fix] Improve control file management in equivs helper
+  * [fix] Remove ending comma in backup.py
+  * [fix] Call yunohost commands with --quiet in setting helpers
+  * [fix] Check for tty in root_handlers before remove it in bin/yunohost
+  * [fix] Use dyndns.yunohost.org instead of dynhost.yunohost.org
+  * [fix] Set found private key and don't validate it in dyndns_update
+  * [fix] Update first registered domain with DynDNS instead of current_host 
+  * [i18n] Rename app_requirements_failed err named variable
+  * [i18n] Update translations from Weblate
+
+  [ opi ]
+  * [enh] Better message during service regenconf.
+  * [enh] Display hook path on error message.
+  * [enh] Use named arguments when calling m18n in service.py
+  * [enh] Use named arguments with m18n. 
+  * [enh] Use named arguments for user_unknown string.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 09 Apr 2016 12:13:10 +0200
+
 moulinette-yunohost (2.2.4) stable; urgency=low
 
   [ Jérôme Lebleu ]

@@ -1,33 +1,50 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s rspamd $1 $2 --force
-    else
-        sudo yunohost service safecopy \
-          -s rspamd $1 $2
-    fi
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/rspamd
+
+  install -D -m 644 metrics.local.conf \
+      "${pending_dir}/etc/rspamd/local.d/metrics.conf"
+  install -D -m 644 rspamd.sieve \
+      "${pending_dir}/etc/dovecot/global_script/rspamd.sieve"
 }
 
-cd /usr/share/yunohost/templates/rspamd
+do_post_regen() {
+  regen_conf_files=$1
 
-# Create configuration directories
-sudo mkdir -p /etc/rspamd/local.d /etc/rspamd/override.d
+  [ -z "$regen_conf_files" ] && exit 0
 
-# Copy specific configuration to rewrite the defaults
-safe_copy metrics.conf.local /etc/rspamd/local.d/metrics.conf
+  # compile sieve script
+  [[ "$regen_conf_files" =~ rspamd\.sieve ]] && {
+    sudo sievec /etc/dovecot/global_script/rspamd.sieve
+    sudo chown -R vmail:mail /etc/dovecot/global_script
+    sudo systemctl restart dovecot
+  }
 
-# Install Rspamd sieve script
-safe_copy rspamd.sieve /etc/dovecot/global_script/rspamd.sieve
-sudo sievec /etc/dovecot/global_script/rspamd.sieve
-sudo chmod 660 /etc/dovecot/global_script/rspamd.svbin
-sudo chown -R vmail:mail /etc/dovecot/global_script
+  # ensure that the socket is listening and stop the service - it will be
+  # started again by the socket as needed
+  sudo systemctl -q start rspamd.socket
+  sudo systemctl -q stop rspamd.service 2>&1 || true
+}
 
-# Ensure that the socket is listening and stop the service.
-sudo systemctl stop rspamd.service 2>&1 || true
-sudo systemctl start rspamd.socket
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-sudo systemctl restart dovecot
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

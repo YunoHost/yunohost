@@ -1413,12 +1413,24 @@ def _encode_string(value):
 def _check_manifest_requirements(manifest):
     """Check if required packages are met from the manifest"""
     requirements = manifest.get('requirements', dict())
+
     # FIXME: Deprecate min_version key
     if 'min_version' in manifest:
         requirements['yunohost'] = '>> {0}'.format(manifest['min_version'])
         logger.debug("the manifest key 'min_version' is deprecated, "
                      "use 'requirements' instead.")
-    if not requirements:
+
+    # Validate multi-instance app
+    if manifest.get('multi_instance', False):
+        # Handle backward-incompatible change introduced in yunohost >= 2.3.6
+        # See https://dev.yunohost.org/issues/156
+        yunohost_req = requirements.get('yunohost', None)
+        if (not yunohost_req or
+                not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
+            raise MoulinetteError(errno.EINVAL, '{0}{1}'.format(
+                m18n.g('colon', m18n.n('app_incompatible')),
+                m18n.n('app_package_need_update')))
+    elif not requirements:
         return
 
     logger.info(m18n.n('app_requirements_checking'))
@@ -1429,7 +1441,8 @@ def _check_manifest_requirements(manifest):
             *requirements.keys(), strict=True, as_dict=True)
     except packages.PackageException as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_requirements_failed', err=str(e)))
+                              m18n.n('app_requirements_failed',
+                                     error=str(e)))
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():

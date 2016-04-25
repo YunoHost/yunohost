@@ -516,6 +516,7 @@ app:
         initdb:
             action_help: Create database and initialize it with optionnal attached script
             api: POST /tools/initdb
+            deprecated: true
             arguments:
                 user:
                     help: Name of the DB user
@@ -956,60 +957,36 @@ service:
                     default: 50
                     type: int
 
-        ### service_regenconf()
-        regenconf:
-            action_help: >
-                Regenerate the configuration file(s) for a service and compare the result
-                with the existing configuration file.
-                Prints the differences between files if any.
+        ### service_regen_conf()
+        regen-conf:
+            action_help: Regenerate the configuration file(s) for a service
             api: PUT /services/regenconf
             configuration:
                 lock: false
+            deprecated_alias:
+                - regenconf
             arguments:
-                -s:
-                    full: --service
-                    help: Regenerate configuration for a specfic service
-                -f:
-                    full: --force
-                    help: Override the current configuration with the newly generated one, even if it has been modified
+                names:
+                    help: Services name to regenerate configuration of
+                    nargs: "*"
+                    metavar: NAME
+                -d:
+                    full: --with-diff
+                    help: Show differences in case of configuration changes
                     action: store_true
-
-        ### service_safecopy()
-        safecopy:
-            action_help: >
-                Check if the specific file has been modified and display differences.
-                Stores the file hash in the services.yml file
-            arguments:
-                new_conf_file:
-                    help: Path to the desired conf file
-                conf_file:
-                    help: Path to the targeted conf file
-                -s:
-                    full: --service
-                    help: Service name attached to the conf file
-                    extra:
-                        required: True
                 -f:
                     full: --force
-                    help: Override the current configuration with the newly generated one, even if it has been modified
+                    help: >
+                        Override all manual modifications in configuration
+                        files
                     action: store_true
-
-        ### service_saferemove()
-        saferemove:
-            action_help: >
-                Check if the specific file has been modified before removing it.
-                Backup the file in /home/yunohost.backup
-            arguments:
-                conf_file:
-                    help: Path to the targeted conf file
-                -s:
-                    full: --service
-                    help: Service name attached to the conf file
-                    extra:
-                        required: True
-                -f:
-                    full: --force
-                    help: Force file deletion
+                -n:
+                    full: --dry-run
+                    help: Show what would have been regenerated
+                    action: store_true
+                -p:
+                    full: --list-pending
+                    help: List pending configuration files and exit
                     action: store_true
 
 #############################
@@ -1378,8 +1355,15 @@ hook:
                     nargs: "*"
                 -a:
                     full: --args
-                    help: Ordered list of arguments to pass to the script
+                    help: Ordered list of arguments to pass to the scripts
                     nargs: "*"
+                -q:
+                    full: --no-trace
+                    help: Do not print each command that will be executed
+                    action: store_true
+                -d:
+                    full: --chdir
+                    help: The directory from where the scripts will be executed
 
         ### hook_exec()
         exec:
@@ -1389,7 +1373,8 @@ hook:
                     help: Path of the script to execute
                 -a:
                     full: --args
-                    help: Arguments to pass to the script
+                    help: Ordered list of arguments to pass to the script
+                    nargs: "*"
                 --raise-on-error:
                     help: Raise if the script returns a non-zero exit code
                     action: store_true

@@ -1,71 +1,118 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [ ! -f /etc/yunohost/installed ]; then
-        sudo cp $1 $2
-    else
-        if [[ "$force" == "True" ]]; then
-            sudo yunohost service safecopy \
-              -s slapd $1 $2 --force
-        else
-            sudo yunohost service safecopy \
-              -s slapd $1 $2
-        fi
-    fi
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+      echo "You must be root to run this script" 1>&2
+      exit 1
+  fi
+
+  do_pre_regen ""
+
+  # fix some permissions
+  chown root:openldap /etc/ldap/slapd.conf
+  chown -R openldap:openldap /etc/ldap/schema/
+
+  # check the slapd config file at first
+  slaptest -Q -u -f /etc/ldap/slapd.conf
+
+  # regenerate LDAP config directory from slapd.conf
+  rm -Rf /etc/ldap/slapd.d
+  mkdir /etc/ldap/slapd.d
+  slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+  chown -R openldap:openldap /etc/ldap/slapd.d/
+
+  service slapd restart
 }
 
-cd /usr/share/yunohost/templates/slapd
+do_pre_regen() {
+  pending_dir=$1
 
-# Remove legacy configuration file
-[ ! -f /etc/yunohost/installed ] \
-  || sudo yunohost service saferemove -s slapd \
-    /etc/ldap/slapd-yuno.conf
+  cd /usr/share/yunohost/templates/slapd
 
-# Retrieve current backend
-backend=$(sudo slapcat -n 0 | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
+  # remove legacy configuration file
+  [ ! -f /etc/ldap/slapd-yuno.conf ] \
+    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
 
-# Save current database in case of a backend change
-BACKEND_CHANGE=0
-BACKUP_DIR="/var/backups/dc=yunohost,dc=org-${backend}-$(date +%s)"
-if [[ -n "$backend" && "$backend" != "mdb" && "$force" == "True" ]]; then
-    BACKEND_CHANGE=1
-    sudo mkdir -p "$BACKUP_DIR"
-    sudo slapcat -b dc=yunohost,dc=org \
-      -l "${BACKUP_DIR}/dc=yunohost-dc=org.ldif"
-fi
+  # create needed directories
+  ldap_dir="${pending_dir}/etc/ldap"
+  schema_dir="${ldap_dir}/schema"
+  mkdir -p "$ldap_dir" "$schema_dir"
 
-safe_copy sudo.schema /etc/ldap/schema/sudo.schema
-safe_copy mailserver.schema /etc/ldap/schema/mailserver.schema
-safe_copy ldap.conf /etc/ldap/ldap.conf
-safe_copy slapd.default /etc/default/slapd
-safe_copy slapd.conf /etc/ldap/slapd.conf
+  # copy configuration files
+  cp -a ldap.conf slapd.conf "$ldap_dir"
+  cp -a sudo.schema mailserver.schema "$schema_dir"
 
-# Fix some permissions
-sudo chown root:openldap /etc/ldap/slapd.conf
-sudo chown -R openldap:openldap /etc/ldap/schema/
-sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+  install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
+}
 
-# Check the slapd config file at first
-sudo slaptest -Q -u -f /etc/ldap/slapd.conf
+do_post_regen() {
+  regen_conf_files=$1
 
-if [[ $BACKEND_CHANGE -eq 1 ]]; then
-    # Regenerate LDAP config directory and import database as root
-    # since the admin user may be unavailable
-    sudo sh -c "rm -Rf /etc/ldap/slapd.d;
-mkdir /etc/ldap/slapd.d;
-slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
-chown -R openldap:openldap /etc/ldap/slapd.d;
-slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
-  -l '${BACKUP_DIR}/dc=yunohost-dc=org.ldif';
-chown -R openldap:openldap /var/lib/ldap" 2>&1
-else
-    # Regenerate LDAP config directory from slapd.conf
-    sudo rm -Rf /etc/ldap/slapd.d
-    sudo mkdir /etc/ldap/slapd.d
-    sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
-    sudo chown -R openldap:openldap /etc/ldap/slapd.d/
-fi
+  # fix some permissions
+  sudo chown root:openldap /etc/ldap/slapd.conf
+  sudo chown -R openldap:openldap /etc/ldap/schema/
+  sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 
-sudo service slapd force-reload
+  [ -z "$regen_conf_files" ] && exit 0
+
+  # retrieve current and new backends
+  curr_backend=$(sudo slapcat -n 0 \
+                   | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
+  new_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
+
+  # save current database in case of a backend change
+  backend_change=0
+  backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
+  if [[ -n "$curr_backend" && "$curr_backend" != "$new_backend" ]]; then
+      backend_change=1
+      sudo mkdir -p "$backup_dir"
+      sudo slapcat -b dc=yunohost,dc=org \
+        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+  fi
+
+  # check the slapd config file at first
+  sudo slaptest -Q -u -f /etc/ldap/slapd.conf
+
+  if [[ $backend_change -eq 1 ]]; then
+      # regenerate LDAP config directory and import database as root
+      # since the admin user may be unavailable
+      sudo sh -c "rm -Rf /etc/ldap/slapd.d;
+  mkdir /etc/ldap/slapd.d;
+  slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
+  chown -R openldap:openldap /etc/ldap/slapd.d;
+  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
+    -l '${backup_dir}/dc=yunohost-dc=org.ldif';
+  chown -R openldap:openldap /var/lib/ldap" 2>&1
+  else
+      # regenerate LDAP config directory from slapd.conf
+      sudo rm -Rf /etc/ldap/slapd.d
+      sudo mkdir /etc/ldap/slapd.d
+      sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+      sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+  fi
+
+  sudo service slapd force-reload
+}
+
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
+
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  init)
+    do_init_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

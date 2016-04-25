@@ -15,8 +15,13 @@ postfix:
    log: [/var/log/mail.log,/var/log/mail.err]
 rmilter:
    status: systemctl status rmilter.socket
+   log: /var/log/mail.log
 rspamd:
    status: systemctl status rspamd.socket
+   log: /var/log/mail.log
+redis-server:
+   status: service
+   log: /var/log/redis/redis-server.log
 mysql:
    status: service
    log: [/var/log/mysql.log,/var/log/mysql.err]
@@ -39,9 +44,6 @@ yunohost-api:
    log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
    status: service
-postgrey:
-   status: service
-   log: /var/log/mail.log
 nslcd:
    status: service
    log: /var/log/syslog
@@ -49,3 +51,6 @@ nsswitch:
    status: service
 udisks2:
    status: service
+amavis: null
+postgrey: null
+spamassassin: null

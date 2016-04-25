@@ -48,27 +48,33 @@ ynh_package_install() {
 # usage: ynh_package_install_from_equivs controlfile
 # | arg: controlfile - path of the equivs control file
 ynh_package_install_from_equivs() {
+    controlfile=$1
+
+    # install equivs package as needed
     ynh_package_is_installed 'equivs' \
         || ynh_package_install equivs
 
     # retrieve package information
-    pkgname=$(grep '^Package: ' $1 | cut -d' ' -f 2)
-    pkgversion=$(grep '^Version: ' $1 | cut -d' ' -f 2)
+    pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)
+    pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)
     [[ -z "$pkgname" || -z "$pkgversion" ]] \
         && echo "Invalid control file" && exit 1
-    controlfile=$(readlink -f "$1")
 
     # update packages cache
     ynh_package_update
 
     # build and install the package
     TMPDIR=$(ynh_mkdir_tmp)
-    (cd $TMPDIR \
-     && equivs-build "$controlfile" 1>/dev/null \
+    (cp "$controlfile" "${TMPDIR}/control" \
+     && cd "$TMPDIR" \
+     && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
      && sudo apt-get -f -y -qq install) \
         && ([[ -n "$TMPDIR" ]] && rm -rf $TMPDIR)
+
+    # check if the package is actually installed
+    ynh_package_is_installed "$pkgname"
 }
 
 # Remove package(s)

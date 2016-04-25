@@ -1,35 +1,82 @@
+#!/bin/bash
+
 set -e
 
-force=$1
+do_pre_regen() {
+  pending_dir=$1
 
-function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s mysql $1 $2 --force
-    else
-        sudo yunohost service safecopy \
-          -s mysql $1 $2
-    fi
+  cd /usr/share/yunohost/templates/mysql
+
+  install -D -m 644 my.cnf "${pending_dir}/etc/mysql/my.cnf"
 }
 
-function randpass () {
-    [ "$2" == "0" ] && CHAR="[:alnum:]" || CHAR="[:graph:]"
-    cat /dev/urandom | tr -cd "$CHAR" | head -c ${1:-32}
-    echo
+do_post_regen() {
+  regen_conf_files=$1
+
+  if [ ! -f /etc/yunohost/mysql ]; then
+      . /usr/share/yunohost/helpers.d/string
+
+      # ensure that mysql is running
+      service mysql status >/dev/null 2>&1 \
+        || service mysql start
+
+      # generate and set new root password
+      mysql_password=$(ynh_string_random 10)
+      sudo mysqladmin -s -u root -pyunohost password "$mysql_password" || {
+        if [ $FORCE -eq 1 ]; then
+            . /usr/share/yunohost/helpers.d/package
+
+            echo "It seems that you have already configured MySQL." \
+              "YunoHost needs to have a root access to MySQL to runs its" \
+              "applications, and is going to reset the MySQL root password." \
+              "You can find this new password in /etc/yunohost/mysql." >&2
+
+            # retrieve MySQL package provider
+            ynh_package_is_installed "mariadb-server-10.0" \
+              && mysql_pkg="mariadb-server-10.0" \
+              || mysql_pkg="mysql-server-5.5"
+
+            # set new password with debconf
+            sudo debconf-set-selections << EOF
+$mysql_pkg mysql-server/root_password password $mysql_password
+$mysql_pkg mysql-server/root_password_again password $mysql_password
+EOF
+
+            # reconfigure Debian package
+            sudo dpkg-reconfigure -freadline -u "$mysql_pkg" 2>&1
+        else
+            echo "It seems that you have already configured MySQL." \
+              "YunoHost needs to have a root access to MySQL to runs its" \
+              "applications, but the MySQL root password is unknown." \
+              "You must either pass --force to reset the password or" \
+              "put the current one into the file /etc/yunohost/mysql." >&2
+            exit 1
+        fi
+      }
+
+      # store new root password
+      echo "$mysql_password" | sudo tee /etc/yunohost/mysql
+      sudo chmod 400 /etc/yunohost/mysql
+  fi
+
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service mysql restart
 }
 
-cd /usr/share/yunohost/templates/mysql
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-if [[ "$(safe_copy my.cnf /etc/mysql/my.cnf | tail -n1)" == "True" ]]; then
-    sudo service mysql restart
-fi
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
 
-if [ ! -f /etc/yunohost/mysql ]; then
-    [[ $(/bin/ps aux | grep '[m]ysqld') == "0" ]] \
-      && sudo service mysql start
-
-    mysql_password=$(randpass 10 0)
-    sudo mysqladmin -u root -pyunohost password $mysql_password
-    echo $mysql_password | sudo tee /etc/yunohost/mysql
-    sudo chmod 400 /etc/yunohost/mysql
-fi
+exit 0

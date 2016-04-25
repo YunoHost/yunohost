@@ -1,86 +1,101 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [ ! -f /etc/yunohost/installed ]; then
-        sudo cp $1 $2
-    else
-        if [[ "$force" == "True" ]]; then
-            sudo yunohost service safecopy \
-              -s nginx \
-              $1 $2 \
-              --force
-        else
-            sudo yunohost service safecopy \
-              -s nginx \
-              $1 $2
-        fi
-    fi
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "You must be root to run this script" 1>&2
+    exit 1
+  fi
+
+  do_pre_regen ""
 }
 
-cd /usr/share/yunohost/templates/nginx
+do_pre_regen() {
+  pending_dir=$1
 
-# Copy plain single configuration files
-files="ssowat.conf
-global.conf
-yunohost_admin.conf
-yunohost_admin.conf.inc
-yunohost_api.conf.inc
-yunohost_panel.conf.inc"
+  cd /usr/share/yunohost/templates/nginx
 
-for file in $files; do
-    safe_copy $file /etc/nginx/conf.d/$file
-done
+  nginx_dir="${pending_dir}/etc/nginx"
+  nginx_conf_dir="${nginx_dir}/conf.d"
+  mkdir -p "$nginx_conf_dir"
 
+  # install plain conf files
+  cp plain/* "$nginx_conf_dir"
 
-if [ -f /etc/yunohost/installed ]; then
+  # probably run with init: just disable default site, restart NGINX and exit
+  if [[ -z "$pending_dir" ]]; then
+    rm -f "${nginx_dir}/sites-enabled/default"
+    service nginx restart
+    exit 0
+  fi
 
-    need_restart=False
-    domain_list=$(sudo yunohost domain list --output-as plain)
+  # retrieve variables
+  main_domain=$(cat /etc/yunohost/current_host)
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
-    # Copy a configuration file for each YunoHost domain
-    for domain in $domain_list; do
-        sudo mkdir -p /etc/nginx/conf.d/$domain.d
-        cat server.conf.sed \
-          | sed "s/{{ domain }}/$domain/g" \
-          | sudo tee $domain.conf
-        [[ $(safe_copy $domain.conf /etc/nginx/conf.d/$domain.conf | tail -n1) == "True" ]] \
-          && need_restart=True
+  # add domain conf files
+  for domain in $domain_list; do
+    domain_conf_dir="${nginx_conf_dir}/${domain}.d"
+    mkdir -p "$domain_conf_dir"
 
-        [ -f /etc/nginx/conf.d/$domain.d/yunohost_local.conf ] \
-          && [[ $main_domain != $domain ]] \
-          && sudo yunohost service saferemove -s nginx \
-              /etc/nginx/conf.d/$domain.d/yunohost_local.conf
-    done
+    # NGINX server configuration
+    cat server.tpl.conf \
+      | sed "s/{{ domain }}/${domain}/g" \
+      > "${nginx_conf_dir}/${domain}.conf"
 
+    [[ $main_domain != $domain ]] \
+      && touch "${domain_conf_dir}/yunohost_local.conf" \
+      || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
+  done
 
-    # Copy 'yunohost.local' to the main domain conf directory
-    main_domain=$(cat /etc/yunohost/current_host)
-    safe_copy yunohost_local.conf \
-      /etc/nginx/conf.d/$main_domain.d/yunohost_local.conf
+  # remove old domain conf files
+  conf_files=$(ls -1 /etc/nginx/conf.d \
+                 | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
+  for file in $conf_files; do
+    domain=${file%.conf}
+    [[ $domain_list =~ $domain ]] \
+      || touch "${nginx_conf_dir}/${file}"
+  done
 
+  # disable default site
+  mkdir -p "${nginx_dir}/sites-enabled"
+  touch "${nginx_dir}/sites-enabled/default"
+}
 
-    # Remove old domains files
-    for file in /etc/nginx/conf.d/*.*.conf; do
-        domain=$(echo $file \
-                  | sed 's|/etc/nginx/conf.d/||' \
-                  | sed 's|.conf||')
-        [[ $domain_list =~ $domain ]] \
-          || ([[ $(sudo yunohost service saferemove -s nginx $file) == "True" ]] \
-            && (sudo rm -r /etc/nginx/conf.d/$domain.d || true))
-    done
+do_post_regen() {
+  regen_conf_files=$1
 
-else
-    [ ! -f /etc/nginx/sites-available/default ] \
-      || sudo rm -f /etc/nginx/sites-enabled/default
-    need_restart=True
-fi
+  [ -z "$regen_conf_files" ] && exit 0
 
-# Restart if need be
-if [[ "$need_restart" == "True" ]]; then
-    sudo service nginx restart
-else
-    sudo service nginx reload \
-      || sudo service nginx restart
-fi
+  # retrieve variables
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # create NGINX conf directories for domains
+  for domain in $domain_list; do
+    sudo mkdir -p "/etc/nginx/conf.d/${domain}.d"
+  done
+
+  sudo service nginx restart
+}
+
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
+
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  init)
+    do_init_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

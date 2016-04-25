@@ -176,6 +176,8 @@ def hook_list(action, list_by='name', show_info=False):
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder
         for f in os.listdir(folder + action):
+            if f[0] == '.' or f[-1] == '~':
+                continue
             path = '%s%s/%s' % (folder, action, f)
             priority, name = _extract_filename_parts(f)
             _append_hook(d, priority, name, path)
@@ -205,14 +207,22 @@ def hook_list(action, list_by='name', show_info=False):
     return { 'hooks': result }
 
 
-def hook_callback(action, hooks=[], args=None):
+def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
+                  pre_callback=None, post_callback=None):
     """
     Execute all scripts binded to an action
 
     Keyword argument:
         action -- Action name
         hooks -- List of hooks names to execute
-        args -- Ordered list of arguments to pass to the script
+        args -- Ordered list of arguments to pass to the scripts
+        no_trace -- Do not print each command that will be executed
+        chdir -- The directory from where the scripts will be executed
+        pre_callback -- An object to call before each script execution with
+            (name, priority, path, args) as arguments and which must return
+            the arguments to pass to the script
+        post_callback -- An object to call after each script execution with
+            (name, priority, path, succeed) as arguments
 
     """
     result = { 'succeed': {}, 'failed': {} }
@@ -252,26 +262,34 @@ def hook_callback(action, hooks=[], args=None):
     if not hooks_dict:
         return result
 
-    # Format arguments
-    if args is None:
-        args = []
-    elif not isinstance(args, list):
-        args = [args]
+    # Validate callbacks
+    if not callable(pre_callback):
+        pre_callback = lambda name, priority, path, args: args
+    if not callable(post_callback):
+        post_callback = lambda name, priority, path, succeed: None
 
     # Iterate over hooks and execute them
     for priority in sorted(hooks_dict):
         for name, info in iter(hooks_dict[priority].items()):
             state = 'succeed'
-            filename = '%s-%s' % (priority, name)
+            path = info['path']
             try:
-                hook_exec(info['path'], args=args, raise_on_error=True)
+                hook_args = pre_callback(name=name, priority=priority,
+                                         path=path, args=args)
+                hook_exec(path, args=hook_args, chdir=chdir,
+                          no_trace=no_trace, raise_on_error=True)
             except MoulinetteError as e:
-                logger.error(str(e))
                 state = 'failed'
+                logger.error(str(e))
+                post_callback(name=name, priority=priority, path=path,
+                              succeed=False)
+            else:
+                post_callback(name=name, priority=priority, path=path,
+                              succeed=True)
             try:
-                result[state][name].append(info['path'])
+                result[state][name].append(path)
             except KeyError:
-                result[state][name] = [info['path']]
+                result[state][name] = [path]
     return result
 
 
@@ -282,7 +300,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     Keyword argument:
         path -- Path of the script to execute
-        args -- A list of arguments to pass to the script
+        args -- Ordered list of arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
         no_trace -- Do not print each command that will be executed
         chdir -- The directory from where the script will be executed

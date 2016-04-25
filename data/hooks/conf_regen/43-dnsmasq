@@ -1,53 +1,66 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-. /usr/share/yunohost/helpers
+do_pre_regen() {
+  pending_dir=$1
 
-function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s dnsmasq $1 $2 --force
-    else
-        sudo yunohost service safecopy \
-          -s dnsmasq $1 $2
-    fi
+  # source ip helpers
+  . /usr/share/yunohost/helpers.d/ip
+
+  cd /usr/share/yunohost/templates/dnsmasq
+
+  # create directory for pending conf
+  dnsmasq_dir="${pending_dir}/etc/dnsmasq.d"
+  mkdir -p "$dnsmasq_dir"
+
+  # retrieve variables
+  ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
+  ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
+  ipv6=$(curl -s -6 http://ip6.yunohost.org 2>/dev/null || true)
+  ynh_validate_ip6 "$ipv6" || ipv6=''
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # add domain conf files
+  for domain in $domain_list; do
+    cat domain.tpl \
+      | sed "s/{{ domain }}/${domain}/g" \
+      | sed "s/{{ ip }}/${ipv4}/g" \
+      > "${dnsmasq_dir}/${domain}"
+    [[ -n $ipv6 ]] \
+      && echo "address=/${domain}/${ipv6}" >> "${dnsmasq_dir}/${domain}"
+  done
+
+  # remove old domain conf files
+  conf_files=$(ls -1 /etc/dnsmasq.d \
+                 | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
+  for domain in $conf_files; do
+    [[ $domain_list =~ $domain ]] \
+      || touch "${dnsmasq_dir}/${domain}"
+  done
 }
 
-cd /usr/share/yunohost/templates/dnsmasq
+do_post_regen() {
+  regen_conf_files=$1
 
-# Get IPv4 address
-ip=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
-ynh_validate_ip4 $ip || ip='0.0.0.0'
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service dnsmasq restart
+}
 
-# Get IPv6 IP address
-ipv6=$(curl -s -6 http://ip6.yunohost.org 2>/dev/null || true)
-ynh_validate_ip6 $ipv6 || ipv6=''
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-sudo mkdir -p /etc/dnsmasq.d
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
 
-domain_list=$(sudo yunohost domain list --output-as plain)
-
-# Copy a configuration file for each YunoHost domain 
-for domain in $domain_list; do
-    cat domain.sed \
-      | sed "s/{{ domain }}/$domain/g" \
-      | sed "s/{{ ip }}/$ip/g" \
-      | sudo tee $domain
-
-    if [[ "$ipv6" != "" ]]; then
-        echo "address=/$domain/$ipv6" | sudo tee -a $domain
-    fi
-
-    safe_copy $domain /etc/dnsmasq.d/$domain
-done
-
-# Remove old domains files
-for file in /etc/dnsmasq.d/*.*; do
-    domain=$(echo $file | sed 's|/etc/dnsmasq.d/||')
-    [[ $domain_list =~ $domain ]] \
-      || sudo yunohost service saferemove -s dnsmasq $file
-done
-
-sudo service dnsmasq reload \
-  || sudo service dnsmasq restart
+exit 0

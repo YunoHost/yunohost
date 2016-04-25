@@ -1,64 +1,93 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [ ! -f /etc/yunohost/installed ]; then
-        sudo cp $1 $2
-    else
-        if [ $force ]; then
-            sudo yunohost service safecopy \
-              -s ssl $1 $2 --force
-        else
-            sudo yunohost service safecopy \
-              -s ssl $1 $2
-        fi
-    fi
+ssl_dir="/usr/share/yunohost/yunohost-config/ssl/yunoCA"
+
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "You must be root to run this script" 1>&2
+    exit 1
+  fi
+
+  # create certs and SSL directories
+  mkdir -p "/etc/yunohost/certs/yunohost.org"
+  mkdir -p "${ssl_dir}/"{ca,certs,crl,newcerts}
+
+  # initialize some files
+  [[ -f "${ssl_dir}/serial" ]] \
+    || echo "00" > "${ssl_dir}/serial"
+  [[ -f "${ssl_dir}/index.txt" ]] \
+    || touch "${ssl_dir}/index.txt"
+
+  openssl_conf="/usr/share/yunohost/templates/ssl/openssl.cnf"
+
+  # create default certificates
+  if [[ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ]]; then
+      openssl req -x509 -new -config "$openssl_conf" \
+        -days 3650 -out "${ssl_dir}/ca/cacert.pem" \
+        -keyout "${ssl_dir}/ca/cakey.pem" -nodes -batch 2>&1
+      cp "${ssl_dir}/ca/cacert.pem" \
+        /etc/yunohost/certs/yunohost.org/ca.pem
+      ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
+        /etc/ssl/certs/ca-yunohost_crt.pem
+      update-ca-certificates
+  fi
+
+  if [[ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]]; then
+      openssl req -new -config "$openssl_conf" \
+        -days 730 -out "${ssl_dir}/certs/yunohost_csr.pem" \
+        -keyout "${ssl_dir}/certs/yunohost_key.pem" -nodes -batch 2>&1
+      openssl ca -config "$openssl_conf" \
+        -days 730 -in "${ssl_dir}/certs/yunohost_csr.pem" \
+        -out "${ssl_dir}/certs/yunohost_crt.pem" -batch 2>&1
+
+      last_cert=$(ls $ssl_dir/newcerts/*.pem | sort -V | tail -n 1)
+      chmod 640 "${ssl_dir}/certs/yunohost_key.pem"
+      chmod 640 "$last_cert"
+
+      cp "${ssl_dir}/certs/yunohost_key.pem" \
+        /etc/yunohost/certs/yunohost.org/key.pem
+      cp "$last_cert" \
+        /etc/yunohost/certs/yunohost.org/crt.pem
+      ln -sf /etc/yunohost/certs/yunohost.org/crt.pem \
+        /etc/ssl/certs/yunohost_crt.pem
+      ln -sf /etc/yunohost/certs/yunohost.org/key.pem \
+        /etc/ssl/private/yunohost_key.pem
+  fi
 }
 
-cd /usr/share/yunohost/templates/ssl
-ssl_dir=/usr/share/yunohost/yunohost-config/ssl/yunoCA
+do_pre_regen() {
+  pending_dir=$1
 
-sudo mkdir -p /etc/yunohost/certs/yunohost.org
-sudo mkdir -p $ssl_dir/{ca,certs,crl,newcerts}
+  cd /usr/share/yunohost/templates/ssl
 
-safe_copy openssl.cnf $ssl_dir/openssl.cnf
+  install -D -m 644 openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
+}
 
-[ -f $ssl_dir/serial ] \
-  || (echo "00" | sudo tee $ssl_dir/serial)
+do_post_regen() {
+  regen_conf_files=$1
 
-[ -f $ssl_dir/index.txt ] \
-  || sudo touch $ssl_dir/index.txt
+  # TODO: regenerate certificates if conf changed?
+}
 
-if [ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ]; then
-    sudo openssl req -x509 -new -config $ssl_dir/openssl.cnf \
-      -days 3650 -out $ssl_dir/ca/cacert.pem \
-      -keyout $ssl_dir/ca/cakey.pem -nodes -batch
-    sudo cp $ssl_dir/ca/cacert.pem \
-      /etc/yunohost/certs/yunohost.org/ca.pem
-    sudo ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
-      /etc/ssl/certs/ca-yunohost_crt.pem
-    sudo update-ca-certificates
-fi
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]; then
-    sudo openssl req -new -config $ssl_dir/openssl.cnf \
-      -days 730 -out $ssl_dir/certs/yunohost_csr.pem \
-      -keyout $ssl_dir/certs/yunohost_key.pem -nodes -batch 
-    sudo openssl ca -config $ssl_dir/openssl.cnf \
-      -days 730 -in $ssl_dir/certs/yunohost_csr.pem \
-      -out $ssl_dir/certs/yunohost_crt.pem -batch
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  init)
+    do_init_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
 
-    last_cert=$(ls $ssl_dir/newcerts/*.pem | sort -V | tail -n 1)
-    sudo chmod 640 $ssl_dir/certs/yunohost_key.pem
-    sudo chmod 640 $last_cert
-
-    sudo cp $ssl_dir/certs/yunohost_key.pem \
-      /etc/yunohost/certs/yunohost.org/key.pem
-    sudo cp $last_cert \
-      /etc/yunohost/certs/yunohost.org/crt.pem
-    sudo ln -sf /etc/yunohost/certs/yunohost.org/crt.pem \
-      /etc/ssl/certs/yunohost_crt.pem
-    sudo ln -sf /etc/yunohost/certs/yunohost.org/key.pem \
-      /etc/ssl/private/yunohost_key.pem
-fi
+exit 0

@@ -1,51 +1,69 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s dovecot $1 $2 --force
-    else
-        sudo yunohost service safecopy \
-          -s dovecot $1 $2
-    fi
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/dovecot
+
+  dovecot_dir="${pending_dir}/etc/dovecot"
+  mkdir -p "${dovecot_dir}/global_script"
+
+  # copy simple conf files
+  cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
+  cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
+
+  # prepare dovecot.conf conf file
+  main_domain=$(cat /etc/yunohost/current_host)
+  cat dovecot.conf \
+    | sed "s/{{ main_domain }}/${main_domain}/g" \
+    > "${dovecot_dir}/dovecot.conf"
+
+  # adapt it for IPv4-only hosts
+  if [ ! -f /proc/net/if_inet6 ]; then
+    sed -i \
+      's/^\(listen =\).*/\1 */' \
+      "${dovecot_dir}/dovecot.conf"
+  fi
 }
 
-cd /usr/share/yunohost/templates/dovecot
+do_post_regen() {
+  regen_conf_files=$1
 
-# Create vmail user
-sudo id vmail > /dev/null 2>&1 \
-  || sudo adduser --system --ingroup mail --uid 500 vmail
+  # create vmail user
+  id vmail > /dev/null 2>&1 \
+    || sudo adduser --system --ingroup mail --uid 500 vmail
 
+  # fix permissions
+  sudo chown -R vmail:mail /etc/dovecot/global_script
+  sudo chmod 770 /etc/dovecot/global_script
 
-# Replace main domain in the main configuration file
-main_domain=$(cat /etc/yunohost/current_host)
-cat dovecot.conf.sed \
-  | sed "s/{{ main_domain }}/$main_domain/g" \
-  | sudo tee dovecot.conf
+  [ -z "$regen_conf_files" ] && exit 0
 
+  # compile sieve script
+  [[ "$regen_conf_files" =~ dovecot\.sieve ]] && {
+    sudo sievec /etc/dovecot/global_script/dovecot.sieve
+    sudo chown -R vmail:mail /etc/dovecot/global_script
+  }
 
-# Handle IPv4 only systems
-if [ ! -f /proc/net/if_inet6 ];
-then
-  sudo sed -i 's/^listen.*/listen = \*/' dovecot.conf
-fi
+  sudo service dovecot restart
+}
 
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-safe_copy dovecot.conf /etc/dovecot/dovecot.conf
-safe_copy dovecot-ldap.conf /etc/dovecot/dovecot-ldap.conf
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
 
-
-# Setup Sieve
-sudo mkdir -p /etc/dovecot/global_script
-sudo chmod -R 770 /etc/dovecot/global_script
-
-safe_copy dovecot.sieve /etc/dovecot/global_script/dovecot.sieve
-sudo chmod 660 /etc/dovecot/global_script/dovecot.sieve > /dev/null 2>&1 \
-  || safe_copy dovecot.sieve /etc/dovecot/global_script/dovecot.sieve
-sudo sievec /etc/dovecot/global_script/dovecot.sieve
-sudo chmod 660 /etc/dovecot/global_script/dovecot.svbin
-sudo chown -R vmail:mail /etc/dovecot/global_script
-
-sudo service dovecot restart
+exit 0

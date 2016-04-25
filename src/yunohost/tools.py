@@ -43,7 +43,7 @@ from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, a
 from yunohost.domain import domain_add, domain_list, get_public_ip
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp, firewall_reload
-from yunohost.service import service_status, service_regenconf, service_log
+from yunohost.service import service_status, service_regen_conf, service_log
 from yunohost.monitor import monitor_disk, monitor_network, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
@@ -152,7 +152,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
     try:
         with open('/etc/yunohost/installed', 'r') as f:
-            service_regenconf()
+            service_regen_conf()
     except IOError: pass
 
     logger.success(m18n.n('maindomain_changed'))
@@ -170,13 +170,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     """
     dyndns = not ignore_dyndns
 
-    try:
-        with open('/etc/yunohost/installed') as f: pass
-    except IOError:
-        logger.info(m18n.n('yunohost_installing'))
-    else:
-        raise MoulinetteError(errno.EPERM, m18n.n('yunohost_already_installed'))
-
+    # Do some checks at first
+    if os.path.isfile('/etc/yunohost/installed'):
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('yunohost_already_installed'))
     if len(domain.split('.')) >= 3 and not ignore_dyndns:
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
@@ -187,10 +184,23 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             dyndomain  = '.'.join(domain.split('.')[1:])
             if dyndomain in dyndomains:
                 if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
-                    dyndns=True
+                    dyndns = True
                 else:
                     raise MoulinetteError(errno.EEXIST,
-                                      m18n.n('dyndns_unavailable'))
+                                          m18n.n('dyndns_unavailable'))
+
+    logger.info(m18n.n('yunohost_installing'))
+
+    # Instantiate LDAP Authenticator
+    auth = init_authenticator(('ldap', 'default'),
+                              {'uri': "ldap://localhost:389",
+                               'base_dn': "dc=yunohost,dc=org",
+                               'user_rdn': "cn=admin" })
+    auth.authenticate('yunohost')
+
+    # Initialize LDAP for YunoHost
+    # TODO: Improve this part by integrate ldapinit into conf_regen hook
+    tools_ldapinit(auth)
 
     # Create required folders
     folders_to_create = [
@@ -230,6 +240,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
+    service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     command_list = [
         'echo "01" > %s/serial' % ssl_dir,
@@ -246,16 +257,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         if os.system(command) != 0:
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('yunohost_ca_creation_failed'))
-
-    # Instantiate LDAP Authenticator
-    auth = init_authenticator(('ldap', 'default'),
-                              { 'uri': "ldap://localhost:389",
-                                'base_dn': "dc=yunohost,dc=org",
-                                'user_rdn': "cn=admin" })
-    auth.authenticate('yunohost')
-
-    # Initialize YunoHost LDAP base
-    tools_ldapinit(auth)
 
     # New domain config
     tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain, dyndns=dyndns)
@@ -275,7 +276,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('update-rc.d yunohost-firewall enable')
     os.system('service yunohost-firewall start')
 
-    service_regenconf(force=True)
+    service_regen_conf(force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 

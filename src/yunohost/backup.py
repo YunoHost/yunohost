@@ -39,7 +39,9 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import app_info, app_ssowatconf, _is_installed, _parse_app_instance_name
+from yunohost.app import (
+    app_info, app_ssowatconf, _is_installed, _parse_app_instance_name
+)
 from yunohost.hook import (
     hook_info, hook_callback, hook_exec, custom_hook_folder
 )
@@ -384,11 +386,11 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
     else:
         # Retrieve the domain from the backup
         try:
-            with open("%s/yunohost/current_host" % tmp_dir, 'r') as f:
+            with open("%s/conf/ynh/current_host" % tmp_dir, 'r') as f:
                 domain = f.readline().rstrip()
         except IOError:
-            logger.debug("unable to retrieve domain from "
-                "'%s/yunohost/current_host'", tmp_dir, exc_info=1)
+            logger.debug("unable to retrieve current_host from the backup",
+                         exc_info=1)
             raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
         logger.debug("executing the post-install...")

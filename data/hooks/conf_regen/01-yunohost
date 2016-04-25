@@ -1,25 +1,111 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-cd /usr/share/yunohost/templates/yunohost
+services_path="/etc/yunohost/services.yml"
 
-sudo mkdir -p /etc/yunohost
+do_init_regen() {
+  if [[ $EUID -ne 0 ]]; then
+    echo "You must be root to run this script" 1>&2
+    exit 1
+  fi
 
-if [ ! -f /etc/yunohost/current_host ]; then
-    echo "yunohost.org" | sudo tee /etc/yunohost/current_host
-fi
+  cd /usr/share/yunohost/templates/yunohost
 
-if [ ! -f /etc/yunohost/firewall.yml ]; then
-    sudo cp firewall.yml /etc/yunohost/firewall.yml
-fi
+  [[ -d /etc/yunohost ]] || mkdir -p /etc/yunohost
 
-if [ ! -f /etc/yunohost/services.yml ]; then
-    sudo cp services.yml /etc/yunohost/services.yml
-fi
+  # set default current_host
+  [[ -f /etc/yunohost/current_host ]] \
+    || echo "yunohost.org" > /etc/yunohost/current_host
 
-# Allow users to access /media directory
-if [ ! -d /etc/skel/media ]; then
-    mkdir -p /media
-    ln -s /media /etc/skel/
-fi
+  # copy default services and firewall
+  [[ -f $services_path ]] \
+    || cp services.yml "$services_path"
+  [[ -f /etc/yunohost/firewall.yml ]] \
+    || cp firewall.yml /etc/yunohost/firewall.yml
+
+  # allow users to access /media directory
+  [[ -d /etc/skel/media ]] \
+    || (mkdir -p /media && ln -s /media /etc/skel/media)
+}
+
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/yunohost
+
+  # update services.yml
+  if [[ -f $services_path ]]; then
+      tmp_services_path="${services_path}-tmp"
+      new_services_path="${services_path}-new"
+      sudo cp "$services_path" "$tmp_services_path"
+      _update_services "$new_services_path" || {
+        sudo mv "$tmp_services_path" "$services_path"
+        exit 1
+      }
+      if [[ -f $new_services_path ]]; then
+          # replace services.yml with new one
+          sudo mv "$new_services_path" "$services_path"
+          sudo mv "$tmp_services_path" "${services_path}-old"
+      else
+          sudo rm -f "$tmp_services_path"
+      fi
+  else
+      sudo cp services.yml /etc/yunohost/services.yml
+  fi
+}
+
+_update_services() {
+  sudo python2 - << EOF
+import yaml
+with open('services.yml') as f:
+    new_services = yaml.load(f)
+with open('/etc/yunohost/services.yml') as f:
+    services = yaml.load(f)
+updated = False
+for service, conf in new_services.items():
+    # remove service with empty conf
+    if not conf:
+        if service in services:
+            print("removing '{0}' from services".format(service))
+            del services[service]
+            updated = True
+    # add new service
+    elif not services.get(service, None):
+        print("adding '{0}' to services".format(service))
+        services[service] = conf
+        updated = True
+    # update service conf
+    else:
+        conffiles = services[service].pop('conffiles', {})
+        if services[service] != conf:
+            print("update '{0}' service".format(service))
+            services[service].update(conf)
+            updated = True
+        if conffiles:
+            services[service]['conffiles'] = conffiles
+if updated:
+    with open('/etc/yunohost/services.yml-new', 'w') as f:
+        yaml.safe_dump(services, f, default_flow_style=False)
+EOF
+}
+
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
+
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    ;;
+  init)
+    do_init_regen
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

@@ -1,66 +1,76 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s metronome \
-          $1 $2 \
-          --force
-    else
-        sudo yunohost service safecopy \
-          -s metronome \
-          $1 $2
-    fi
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/metronome
+
+  # create directories for pending conf
+  metronome_dir="${pending_dir}/etc/metronome"
+  metronome_conf_dir="${metronome_dir}/conf.d"
+  mkdir -p "$metronome_conf_dir"
+
+  # retrieve variables
+  main_domain=$(cat /etc/yunohost/current_host)
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # install main conf file
+  cat metronome.cfg.lua \
+    | sed "s/{{ main_domain }}/${main_domain}/g" \
+    > "${metronome_dir}/metronome.cfg.lua"
+
+  # add domain conf files
+  for domain in $domain_list; do
+    cat domain.tpl.cfg.lua \
+      | sed "s/{{ domain }}/${domain}/g" \
+      > "${metronome_conf_dir}/${domain}.cfg.lua"
+  done
+
+  # remove old domain conf files
+  conf_files=$(ls -1 /etc/metronome/conf.d \
+                 | awk '/^[^\.]+\.[^\.]+.*\.cfg\.lua$/ { print $1 }')
+  for file in $conf_files; do
+    domain=${file%.cfg.lua}
+    [[ $domain_list =~ $domain ]] \
+      || touch "${metronome_conf_dir}/${file}"
+  done
 }
 
-cd /usr/share/yunohost/templates/metronome
+do_post_regen() {
+  regen_conf_files=$1
 
-# Copy configuration files
-main_domain=$(cat /etc/yunohost/current_host)
-cat metronome.cfg.lua.sed \
-  | sed "s/{{ main_domain }}/$main_domain/g" \
-  | sudo tee metronome.cfg.lua
-safe_copy metronome.cfg.lua /etc/metronome/metronome.cfg.lua
+  # fix some permissions
+  sudo chown -R metronome: /var/lib/metronome/
+  sudo chown -R metronome: /etc/metronome/conf.d/
 
-need_restart=False
-sudo mkdir -p /etc/metronome/conf.d
+  # retrieve variables
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
-domain_list=$(sudo yunohost domain list --output-as plain)
+  # create metronome directories for domains
+  for domain in $domain_list; do
+    sudo mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
+  done
 
-# Copy a configuration file for each YunoHost domain 
-for domain in $domain_list; do
-    sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
-    sudo mkdir -p /var/lib/metronome/$sanitzed_domain/pep
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service metronome restart
+}
 
-    cat domain.cfg.lua.sed \
-      | sed "s/{{ domain }}/$domain/g" \
-      | sudo tee $domain.cfg.lua
-    if [[ $(safe_copy $domain.cfg.lua /etc/metronome/conf.d/$domain.cfg.lua | tail -n1) == "True" ]]; then
-        need_restart=True
-    fi
-done
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-# Remove old domains files
-for file in /etc/metronome/conf.d/*; do
-    domain=$(echo $file \
-             | sed 's|/etc/metronome/conf.d/||' \
-             | sed 's|.cfg.lua||')
-    sanitzed_domain="$(echo $domain | sed 's/\./%2e/g')"
-    [[ $domain_list =~ $domain ]] \
-      || ([[ $(sudo yunohost service saferemove -s metronome $file | tail -n1) == "True" ]] \
-        && sudo rm -rf /var/lib/metronome/$sanitzed_domain)
-done
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
 
-# Create domain directory
-sudo chown -R metronome: /var/lib/metronome/
-sudo chown -R metronome: /etc/metronome/conf.d/
-
-# Restart if need be
-if [[ "$need_restart" == "True" ]]; then
-    sudo service metronome restart
-else
-    sudo service metronome reload \
-      || sudo service metronome restart
-fi
+exit 0

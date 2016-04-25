@@ -5,10 +5,6 @@ import os
 import sys
 import argparse
 
-import moulinette
-from moulinette.actionsmap import ActionsMap
-from moulinette.interfaces.cli import colorize, get_locale
-
 # Either we are in a development environment or not
 IN_DEVEL = False
 
@@ -35,6 +31,11 @@ if IN_DEVEL:
     LOG_DIR = os.path.join(basedir, 'log')
 
 
+import moulinette
+from moulinette.actionsmap import ActionsMap
+from moulinette.interfaces.cli import colorize, get_locale
+
+
 # Initialization & helpers functions -----------------------------------
 
 def _die(message, title='Error:'):
@@ -50,7 +51,7 @@ def _parse_cli_args():
         help="Don't use actions map cache",
     )
     parser.add_argument('--output-as',
-        choices=['json', 'plain'], default=None,
+        choices=['json', 'plain', 'none'], default=None,
         help="Output result in another format",
     )
     parser.add_argument('--debug',
@@ -148,6 +149,11 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
                 'level': level,
                 'handlers': [],
                 'propagate': True,
+            },
+            'moulinette.interface': {
+                'level': level,
+                'handlers': handlers,
+                'propagate': False,
             },
         },
         'root': {

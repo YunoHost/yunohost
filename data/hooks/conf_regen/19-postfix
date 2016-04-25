@@ -1,56 +1,56 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [[ "$force" == "True" ]]; then
-        sudo yunohost service safecopy \
-          -s postfix \
-          $1 $2 \
-          --force
-    else
-        sudo yunohost service safecopy \
-          -s postfix \
-          $1 $2
-    fi
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/postfix
+
+  postfix_dir="${pending_dir}/etc/postfix"
+  mkdir -p "$postfix_dir"
+
+  # install plain conf files
+  cp plain/* "$postfix_dir"
+
+  # prepare main.cf conf file
+  main_domain=$(cat /etc/yunohost/current_host)
+  cat main.cf \
+    | sed "s/{{ main_domain }}/${main_domain}/g" \
+    > "${postfix_dir}/main.cf"
+
+  # adapt it for IPv4-only hosts
+  if [ ! -f /proc/net/if_inet6 ]; then
+    sed -i \
+      's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
+      "${postfix_dir}/main.cf"
+    sed -i \
+      's/inet_interfaces = all/&\ninet_protocols = ipv4/' \
+      "${postfix_dir}/main.cf"
+  fi
 }
 
-cd /usr/share/yunohost/templates/postfix
+do_post_regen() {
+  regen_conf_files=$1
 
-# Copy plain single configuration files
-files="header_checks
-ldap-accounts.cf
-ldap-aliases.cf
-ldap-domains.cf
-master.cf
-sender_canonical
-smtp_reply_filter"
+  [[ -z "$regen_conf_files" ]] \
+    || sudo service postfix restart
+}
 
-for file in $files; do
-    safe_copy $file /etc/postfix/$file
-done
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
 
-main_domain=$(cat /etc/yunohost/current_host)
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
 
-# Replace main domain in the main configuration file
-cat main.cf.sed \
-  | sed "s/{{ main_domain }}/$main_domain/g" \
-  | sudo tee main.cf
-
-# And adapt it to IPv4-only hosts
-if [ ! -f /proc/net/if_inet6 ]; then
-    sudo sed -i \
-      's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
-      main.cf
-
-    sudo sed -i \
-      's/inet_interfaces = all/inet_interfaces = all\ninet_protocols = ipv4/' \
-      main.cf
-fi
-
-if [[ $(safe_copy main.cf /etc/postfix/main.cf) == "True" ]]; then
-    sudo service postfix restart
-else
-    sudo service postfix reload \
-      || sudo service postfix restart
-fi
+exit 0

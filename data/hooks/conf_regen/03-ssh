@@ -1,30 +1,45 @@
-set -e 
+#!/bin/bash
 
-force=$1
+set -e
 
-function safe_copy () {
-    if [ $force ]; then
-        sudo yunohost service safecopy \
-          -s ssh \
-          $1 $2 \
-          --force
-    else
-        sudo yunohost service safecopy \
-          -s ssh \
-          $1 $2
-    fi
+do_pre_regen() {
+  pending_dir=$1
+
+  cd /usr/share/yunohost/templates/ssh
+
+  # only overwrite SSH configuration on an ISO installation
+  if [[ ! -f /etc/yunohost/from_script ]]; then
+      # do not listen to IPv6 if unavailable
+      [[ -f /proc/net/if_inet6 ]] \
+        || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
+
+      install -D -m 644 sshd_config "${pending_dir}/etc/ssh/sshd_config"
+  fi
 }
 
-cd /usr/share/yunohost/templates/ssh
+do_post_regen() {
+  regen_conf_files=$1
 
-# Only overwrite SSH configuration on an ISO installation
-if [ ! -f /etc/yunohost/from_script ]; then
+  if [[ ! -f /etc/yunohost/from_script ]]; then
+    [[ -z "$regen_conf_files" ]] \
+      || sudo service ssh restart
+  fi
+}
 
-    # Do not listen to IPv6 if unavailable
-    if [ ! -f /proc/net/if_inet6 ]; then
-        sudo sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
-    fi
-    safe_copy sshd_config /etc/ssh/sshd_config
-    
-    sudo service ssh restart
-fi
+FORCE=${2:-0}
+DRY_RUN=${3:-0}
+
+case "$1" in
+  pre)
+    do_pre_regen $4
+    ;;
+  post)
+    do_post_regen $4
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

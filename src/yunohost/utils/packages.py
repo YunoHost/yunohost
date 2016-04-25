@@ -98,17 +98,22 @@ class Specifier(object):
     }
 
     def __init__(self, spec):
-        match = self._regex.search(spec)
-        if not match:
-            raise InvalidSpecifier("Invalid specifier: '{0}'".format(spec))
+        if isinstance(spec, basestring):
+            match = self._regex.search(spec)
+            if not match:
+                raise InvalidSpecifier("Invalid specifier: '{0}'".format(spec))
 
-        self._spec = (
-            match.group("relation").strip(),
-            match.group("version").strip(),
-        )
+            self._spec = (
+                match.group("relation").strip(),
+                match.group("version").strip(),
+            )
+        elif isinstance(spec, self.__class__):
+            self._spec = spec._spec
+        else:
+            return NotImplemented
 
     def __repr__(self):
-        return "<Specifier({1!r})>".format(str(self))
+        return "<Specifier({0!r})>".format(str(self))
 
     def __str__(self):
         return "{0}{1}".format(*self._spec)
@@ -137,6 +142,12 @@ class Specifier(object):
             return NotImplemented
 
         return self._spec != other._spec
+
+    def __and__(self, other):
+        return self.intersection(other)
+
+    def __or__(self, other):
+        return self.union(other)
 
     def _get_relation(self, op):
         return getattr(self, "_compare_{0}".format(self._relations[op]))
@@ -167,7 +178,79 @@ class Specifier(object):
     def __contains__(self, item):
         return self.contains(item)
 
+    def intersection(self, other):
+        """Make the intersection of two specifiers
+
+        Return a new `SpecifierSet` with version specifier(s) common to the
+        specifier and the other.
+
+        Example:
+            >>> Specifier('>= 2.2') & '>> 2.2.1' == '>> 2.2.1'
+            >>> Specifier('>= 2.2') & '<< 2.3' == '>= 2.2, << 2.3'
+
+        """
+        if isinstance(other, basestring):
+            try:
+                other = self.__class__(other)
+            except InvalidSpecifier:
+                return NotImplemented
+        elif not isinstance(other, self.__class__):
+            return NotImplemented
+
+        # store spec parts for easy access
+        rel1, v1 = self.relation, self.version
+        rel2, v2 = other.relation, other.version
+        result = []
+
+        if other == self:
+            result = [other]
+        elif rel1 == '=':
+            result = [self] if v1 in other else None
+        elif rel2 == '=':
+            result = [other] if v2 in self else None
+        elif v1 == v2:
+            result = [other if rel1[1] == '=' else self]
+        elif v2 in self or v1 in other:
+            is_self_greater = version_compare(v1, v2) > 0
+            if rel1[0] == rel2[0]:
+                if rel1[0] == '>':
+                    result = [self if is_self_greater else other]
+                else:
+                    result = [other if is_self_greater else self]
+            else:
+                result = [self, other]
+        return SpecifierSet(result if result is not None else '')
+
+    def union(self, other):
+        """Make the union of two version specifiers
+
+        Return a new `SpecifierSet` with version specifiers from the
+        specifier and the other.
+
+        Example:
+            >>> Specifier('>= 2.2') | '<< 2.3' == '>= 2.2, << 2.3'
+
+        """
+        if isinstance(other, basestring):
+            try:
+                other = self.__class__(other)
+            except InvalidSpecifier:
+                return NotImplemented
+        elif not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return SpecifierSet([self, other])
+
     def contains(self, item):
+        """Check if the specifier contains an other
+
+        Return whether the item is contained in the version specifier.
+
+        Example:
+            >>> '2.2.1' in Specifier('<< 2.3')
+            >>> '2.4' not in Specifier('<< 2.3')
+
+        """
         return self._get_relation(self.relation)(item, self.version)
 
 
@@ -181,7 +264,9 @@ class SpecifierSet(object):
     """
 
     def __init__(self, specifiers):
-        specifiers = [s.strip() for s in specifiers.split(",") if s.strip()]
+        if isinstance(specifiers, basestring):
+            specifiers = [s.strip() for s in specifiers.split(",")
+                          if s.strip()]
 
         parsed = set()
         for specifier in specifiers:
@@ -190,7 +275,7 @@ class SpecifierSet(object):
         self._specs = frozenset(parsed)
 
     def __repr__(self):
-        return "<SpecifierSet({1!r})>".format(str(self))
+        return "<SpecifierSet({0!r})>".format(str(self))
 
     def __str__(self):
         return ",".join(sorted(str(s) for s in self._specs))
@@ -199,14 +284,10 @@ class SpecifierSet(object):
         return hash(self._specs)
 
     def __and__(self, other):
-        if isinstance(other, basestring):
-            other = SpecifierSet(other)
-        elif not isinstance(other, SpecifierSet):
-            return NotImplemented
+        return self.intersection(other)
 
-        specifier = SpecifierSet()
-        specifier._specs = frozenset(self._specs | other._specs)
-        return specifiers
+    def __or__(self, other):
+        return self.union(other)
 
     def __eq__(self, other):
         if isinstance(other, basestring):
@@ -237,7 +318,69 @@ class SpecifierSet(object):
     def __contains__(self, item):
         return self.contains(item)
 
+    def intersection(self, other):
+        """Make the intersection of two specifiers sets
+
+        Return a new `SpecifierSet` with version specifier(s) common to the
+        set and the other.
+
+        Example:
+            >>> SpecifierSet('>= 2.2') & '>> 2.2.1' == '>> 2.2.1'
+            >>> SpecifierSet('>= 2.2, << 2.4') & '<< 2.3' == '>= 2.2, << 2.3'
+            >>> SpecifierSet('>= 2.2, << 2.3') & '>= 2.4' == ''
+
+        """
+        if isinstance(other, basestring):
+            other = SpecifierSet(other)
+        elif not isinstance(other, SpecifierSet):
+            return NotImplemented
+
+        specifiers = set(self._specs | other._specs)
+        intersection = [specifiers.pop()] if specifiers else []
+
+        for specifier in specifiers:
+            parsed = set()
+            for spec in intersection:
+                inter = spec & specifier
+                if not inter:
+                    parsed.clear()
+                    break
+                # TODO: validate with other specs in parsed
+                parsed.update(inter._specs)
+            intersection = parsed
+            if not intersection:
+                break
+        return SpecifierSet(intersection)
+
+    def union(self, other):
+        """Make the union of two specifiers sets
+
+        Return a new `SpecifierSet` with version specifiers from the set
+        and the other.
+
+        Example:
+            >>> SpecifierSet('>= 2.2') | '<< 2.3' == '>= 2.2, << 2.3'
+
+        """
+        if isinstance(other, basestring):
+            other = SpecifierSet(other)
+        elif not isinstance(other, SpecifierSet):
+            return NotImplemented
+
+        specifiers = SpecifierSet([])
+        specifiers._specs = frozenset(self._specs | other._specs)
+        return specifiers
+
     def contains(self, item):
+        """Check if the set contains a version specifier
+
+        Return whether the item is contained in all version specifiers.
+
+        Example:
+            >>> '2.2.1' in SpecifierSet('>= 2.2, << 2.3')
+            >>> '2.4' not in SpecifierSet('>= 2.2, << 2.3')
+
+        """
         return all(
             s.contains(item)
             for s in self._specs
