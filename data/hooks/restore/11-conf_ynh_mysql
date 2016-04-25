@@ -14,6 +14,11 @@ new_pwd=$(sudo cat "${backup_dir}/root_pwd" || sudo cat "${backup_dir}/mysql")
 sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
   . /usr/share/yunohost/helpers.d/package
 
+  echo "It seems that you have already configured MySQL." \
+    "YunoHost needs to have a root access to MySQL to runs its" \
+    "applications, and is going to reset the MySQL root password." \
+    "You can find this new password in /etc/yunohost/mysql." >&2
+
   # retrieve MySQL package provider
   ynh_package_is_installed "mariadb-server-10.0" \
     && mysql_pkg="mariadb-server-10.0" \

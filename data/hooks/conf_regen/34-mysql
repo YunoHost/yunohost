@@ -26,6 +26,11 @@ do_post_regen() {
         if [ $FORCE -eq 1 ]; then
             . /usr/share/yunohost/helpers.d/package
 
+            echo "It seems that you have already configured MySQL." \
+              "YunoHost needs to have a root access to MySQL to runs its" \
+              "applications, and is going to reset the MySQL root password." \
+              "You can find this new password in /etc/yunohost/mysql." >&2
+
             # retrieve MySQL package provider
             ynh_package_is_installed "mariadb-server-10.0" \
               && mysql_pkg="mariadb-server-10.0" \
@@ -40,8 +45,12 @@ EOF
             # reconfigure Debian package
             sudo dpkg-reconfigure -freadline -u "$mysql_pkg" 2>&1
         else
-            echo "MySQL password for root user has been manually changed" \
-              "and will not be overridden without --force" >&2
+            echo "It seems that you have already configured MySQL." \
+              "YunoHost needs to have a root access to MySQL to runs its" \
+              "applications, but the MySQL root password is unknown." \
+              "You must either pass --force to reset the password or" \
+              "put the current one into the file /etc/yunohost/mysql." >&2
+            exit 1
         fi
       }
 
