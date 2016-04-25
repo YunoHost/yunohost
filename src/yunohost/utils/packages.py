@@ -283,6 +283,9 @@ class SpecifierSet(object):
     def __hash__(self):
         return hash(self._specs)
 
+    def __and__(self, other):
+        return self.intersection(other)
+
     def __or__(self, other):
         return self.union(other)
 
@@ -315,8 +318,42 @@ class SpecifierSet(object):
     def __contains__(self, item):
         return self.contains(item)
 
+    def intersection(self, other):
+        """Make the intersection of two specifiers sets
+
+        Return a new `SpecifierSet` with version specifier(s) common to the
+        set and the other.
+
+        Example:
+            >>> SpecifierSet('>= 2.2') & '>> 2.2.1' == '>> 2.2.1'
+            >>> SpecifierSet('>= 2.2, << 2.4') & '<< 2.3' == '>= 2.2, << 2.3'
+            >>> SpecifierSet('>= 2.2, << 2.3') & '>= 2.4' == ''
+
+        """
+        if isinstance(other, basestring):
+            other = SpecifierSet(other)
+        elif not isinstance(other, SpecifierSet):
+            return NotImplemented
+
+        specifiers = set(self._specs | other._specs)
+        intersection = [specifiers.pop()] if specifiers else []
+
+        for specifier in specifiers:
+            parsed = set()
+            for spec in intersection:
+                inter = spec & specifier
+                if not inter:
+                    parsed.clear()
+                    break
+                # TODO: validate with other specs in parsed
+                parsed.update(inter._specs)
+            intersection = parsed
+            if not intersection:
+                break
+        return SpecifierSet(intersection)
+
     def union(self, other):
-        """Make the union of two specifiers set
+        """Make the union of two specifiers sets
 
         Return a new `SpecifierSet` with version specifiers from the set
         and the other.
