@@ -1393,7 +1393,7 @@ def _check_manifest_requirements(manifest):
                      "use 'requirements' instead.")
 
     # Validate multi-instance app
-    if manifest.get('multi_instance', False):
+    if is_true(manifest.get('multi_instance', False)):
         # Handle backward-incompatible change introduced in yunohost >= 2.3.6
         # See https://dev.yunohost.org/issues/156
         yunohost_req = requirements.get('yunohost', None)
