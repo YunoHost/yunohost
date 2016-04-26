@@ -1,3 +1,35 @@
+yunohost (2.3.13) testing; urgency=low
+
+  * [cli] Deprecate app_initdb action in flavour of helpers
+  * [cli] Deprecate and rename regenconf action to regen-conf
+  * [enh] Add pre/post script execution callbacks to hook_callback
+  * [enh] Refactor the conf regen for better conflicts handle
+  * [enh] Allow to show the diff between conf in service_regen_conf
+  * [enh] Allow to list pending conf in service_regen_conf
+  * [enh] Add a dry-run option for service_regen_conf
+  * [enh] Update services.yml in yunohost conf_regen and update its content
+  * [enh] Add a yunopaste script to paste data to YunoHost Haste server
+  * [enh] Catch boolean in is_true method of app.py
+  * [enh] Implement the intersection of package version Specifier class
+  * [enh] Implement the union of package version Specifier class
+  * [enh] Implement the intersection of package version SpecifierSet class
+  * [enh] Prevent non-updated multi-instances apps installation (close #126)
+  * [enh] Force new MySQL password set if it's unknown at regen-conf
+  * [fix] Restore MySQL password for root user (bugfix #194)
+  * [fix] Restore current_host and use only one backup path for it
+  * [fix] Use SSL certificate of main domain in Dovecot and Postfix conf
+  * [fix] multi_instance manifest key is generally a string
+  * [fix] Call regen-conf only once passing a list in domain_add/remove
+  * [fix] Remove useless `email_legacy` conf_regen hook
+  * [fix] Import moulinette after dev env check in bin/yunohost{-api,}
+  * [fix] Skip hidden and temp files in hook_list
+  * [deb] Add etckeeper package in Recommends (wip #280)
+  * [deb] Enable yunohost-firewall on service restart at postinst
+  * [doc] Be more verbose when reset the MySQL root password
+  * [doc] Add documentation to contains methods of Specifier/SpecifierSet
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Tue, 26 Apr 2016 16:26:20 +0200
+
 yunohost (2.3.12.1) testing; urgency=low
 
   * [deb] Rely on dh_installinit to restart yunohost-firewall after upgrade
