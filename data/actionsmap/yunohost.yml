@@ -211,7 +211,6 @@ user:
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
-                    default: "0"
                     metavar: "{SIZE|0}"
                     extra:
                         pattern: *pattern_mailbox_quota
