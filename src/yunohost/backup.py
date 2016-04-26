@@ -217,6 +217,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 env_dict["YNH_APP_ID"] = app_id
                 env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+                env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
 
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
                           raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
@@ -485,6 +486,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 env_dict["YNH_APP_ID"] = app_id
                 env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+                env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
 
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
                           raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
