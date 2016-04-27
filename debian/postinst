@@ -17,11 +17,13 @@ do_configure() {
       # restart yunohost-firewall if it's running
       service yunohost-firewall status >/dev/null \
         && restart_yunohost_firewall \
-        || echo "Service yunohost-firewall is not running, you should " \
+        || echo "yunohost-firewall service is not running, you should " \
             "consider to start it by doing 'service yunohost-firewall start'."
   fi
 
-  # update PAM configs
+  # remove old PAM config and update it
+  [[ ! -f /usr/share/pam-configs/my_mkhomedir ]] \
+    || rm /usr/share/pam-configs/my_mkhomedir
   pam-auth-update --package
 }
 
