@@ -31,14 +31,14 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/slapd
 
-  # remove legacy configuration file
-  [ ! -f /etc/ldap/slapd-yuno.conf ] \
-    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
-
   # create needed directories
   ldap_dir="${pending_dir}/etc/ldap"
   schema_dir="${ldap_dir}/schema"
   mkdir -p "$ldap_dir" "$schema_dir"
+
+  # remove legacy configuration file
+  [ ! -f /etc/ldap/slapd-yuno.conf ] \
+    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
 
   # copy configuration files
   cp -a ldap.conf slapd.conf "$ldap_dir"
