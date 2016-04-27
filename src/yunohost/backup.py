@@ -114,21 +114,25 @@ def backup_create(name=None, description=None, output_directory=None,
     else:
         output_directory = archives_path
 
+    def _clean_tmp_dir(retcode=0):
+        ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
+        if not ret['failed']:
+            filesystem.rm(tmp_dir, True, True)
+            return True
+        else:
+            logger.warning(m18n.n('backup_cleaning_failed'))
+            return False
+
     # Create temporary directory
     if not tmp_dir:
         tmp_dir = "%s/tmp/%s" % (backup_path, name)
         if os.path.isdir(tmp_dir):
             logger.debug("temporary directory for backup '%s' already exists",
                 tmp_dir)
-            filesystem.rm(tmp_dir, recursive=True)
+            if not _clean_tmp_dir():
+                raise MoulinetteError(
+                    errno.EIO, m18n.n('backup_output_directory_not_empty'))
         filesystem.mkdir(tmp_dir, 0750, parents=True, uid='admin')
-
-    def _clean_tmp_dir(retcode=0):
-        ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
-        if not ret['failed']:
-            filesystem.rm(tmp_dir, True, True)
-        else:
-            logger.warning(m18n.n('backup_cleaning_failed'))
 
     # Initialize backup info
     info = {
