@@ -30,7 +30,6 @@ smtpd_tls_security_level=may
 smtpd_tls_auth_only=yes
 smtpd_tls_cert_file = /etc/yunohost/certs/{{ main_domain }}/crt.pem
 smtpd_tls_key_file = /etc/yunohost/certs/{{ main_domain }}/key.pem
-smtpd_tls_CAfile = /etc/yunohost/certs/{{ main_domain }}/ca.pem
 smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtpd_tls_loglevel=1
