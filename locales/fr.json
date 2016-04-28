@@ -52,6 +52,7 @@
     "backup_cleaning_failed": "Impossible de nettoyer le dossier temporaire de sauvegarde",
     "backup_created": "Sauvegarde terminée",
     "backup_creating_archive": "Création de l'archive de sauvegarde...",
+    "backup_creation_failed": "Impossible de créer la sauvegarde",
     "backup_delete_error": "Impossible de supprimer « {path:s} »",
     "backup_deleted": "La sauvegarde a bien été supprimée",
     "backup_extracting_archive": "Extraction de l'archive de sauvegarde...",
