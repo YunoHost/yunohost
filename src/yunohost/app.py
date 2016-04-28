@@ -35,6 +35,7 @@ import socket
 import urlparse
 import errno
 import subprocess
+from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -54,6 +55,10 @@ re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
     '(?P<owner>[\w\-_]+)/(?P<repo>[\w\-_]+)(.git)?'
     '(/tree/(?P<tree>.+))?'
+)
+
+re_app_instance_name = re.compile(
+    r'^(?P<appid>[\w]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
 
 
@@ -344,62 +349,70 @@ def app_upgrade(auth, app=[], url=None, file=None):
     elif not isinstance(app, list):
         app = [ app ]
 
-    for app_id in app:
-        installed = _is_installed(app_id)
+    for app_instance_name in app:
+        installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
-                                  m18n.n('app_not_installed', app=app_id))
+                                  m18n.n('app_not_installed', app=app_instance_name))
 
-        if app_id in upgraded_apps:
+        if app_instance_name in upgraded_apps:
             continue
 
-        current_app_dict = app_info(app_id,  raw=True)
-        new_app_dict     = app_info(app_id, raw=True)
+        current_app_dict = app_info(app_instance_name,  raw=True)
+        new_app_dict     = app_info(app_instance_name, raw=True)
 
         if file:
             manifest = _extract_app_from_file(file)
         elif url:
             manifest = _fetch_app_from_git(url)
         elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-            logger.warning(m18n.n('custom_app_url_required', app=app_id))
+            logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
         elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
               or ('update_time' not in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
               or ('update_time' in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
-            manifest = _fetch_app_from_git(app_id)
+            manifest = _fetch_app_from_git(app_instance_name)
         else:
             continue
 
         # Check requirements
         _check_manifest_requirements(manifest)
 
-        app_setting_path = apps_setting_path +'/'+ app_id
+        app_setting_path = apps_setting_path +'/'+ app_instance_name
 
         # Retrieve current app status
-        status = _get_app_status(app_id)
+        status = _get_app_status(app_instance_name)
         status['remote'] = manifest.get('remote', None)
 
         # Clean hooks and add new ones
-        hook_remove(app_id)
+        hook_remove(app_instance_name)
         if 'hooks' in os.listdir(app_tmp_folder):
             for hook in os.listdir(app_tmp_folder +'/hooks'):
-                hook_add(app_id, app_tmp_folder +'/hooks/'+ hook)
+                hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ hook)
 
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
-        args_list = _parse_args_from_manifest(manifest, 'upgrade', auth=auth)
-        args_list.append(app_id)
+        args_odict = _parse_args_from_manifest(manifest, 'upgrade', auth=auth)
+        args_list = args_odict.values()
+        args_list.append(app_instance_name)
+
+        # Prepare env. var. to pass to script
+        env_dict = _make_environment_dict(args_odict)
+        app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
+        env_dict["YNH_APP_ID"] = app_id
+        env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
+        env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
-        if hook_exec(app_tmp_folder +'/scripts/upgrade', args_list) != 0:
-            logger.error(m18n.n('app_upgrade_failed', app=app_id))
+        if hook_exec(app_tmp_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
+            logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
             now = int(time.time())
             # TODO: Move install_time away from app_setting
-            app_setting(app_id, 'update_time', now)
+            app_setting(app_instance_name, 'update_time', now)
             status['upgraded_at'] = now
 
             # Store app status
@@ -411,8 +424,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (app_tmp_folder, app_tmp_folder, app_setting_path))
 
             # So much win
-            upgraded_apps.append(app_id)
-            logger.success(m18n.n('app_upgraded', app=app_id))
+            upgraded_apps.append(app_instance_name)
+            logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
@@ -471,34 +484,43 @@ def app_install(auth, app, label=None, args=None):
                                   m18n.n('app_already_installed', app=app_id))
 
         # Change app_id to the forked app id
-        app_id = app_id + '__' + str(instance_number)
+        app_instance_name = app_id + '__' + str(instance_number)
+    else:
+        app_instance_name = app_id
 
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
-    args_list = _parse_args_from_manifest(manifest, 'install', args_dict, auth)
-    args_list.append(app_id)
+    args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict, auth=auth)
+    args_list = args_odict.values()
+    args_list.append(app_instance_name)
+
+    # Prepare env. var. to pass to script
+    env_dict = _make_environment_dict(args_odict)
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
     # Create app directory
-    app_setting_path = os.path.join(apps_setting_path, app_id)
+    app_setting_path = os.path.join(apps_setting_path, app_instance_name)
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
 
     # Clean hooks and add new ones
-    hook_remove(app_id)
+    hook_remove(app_instance_name)
     if 'hooks' in os.listdir(app_tmp_folder):
         for file in os.listdir(app_tmp_folder +'/hooks'):
-            hook_add(app_id, app_tmp_folder +'/hooks/'+ file)
+            hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ file)
 
     # Set initial app settings
     app_settings = {
-        'id': app_id,
+        'id': app_instance_name,
         'label': label if label else manifest['name'],
     }
     # TODO: Move install_time away from app settings
     app_settings['install_time'] = status['installed_at']
-    _set_app_settings(app_id, app_settings)
+    _set_app_settings(app_instance_name, app_settings)
 
     os.system('chown -R admin: '+ app_tmp_folder)
 
@@ -512,21 +534,27 @@ def app_install(auth, app, label=None, args=None):
     install_retcode = 1
     try:
         install_retcode = hook_exec(
-            os.path.join(app_tmp_folder, 'scripts/install'), args_list)
+            os.path.join(app_tmp_folder, 'scripts/install'), args_list, env=env_dict)
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
     except:
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
+            # Setup environment for remove script
+            env_dict_remove = {}
+            env_dict_remove["YNH_APP_ID"] = app_id
+            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+
             # Execute remove script
             remove_retcode = hook_exec(
-                os.path.join(app_tmp_folder, 'scripts/remove'), [app_id])
+                os.path.join(app_tmp_folder, 'scripts/remove'), args=[app_instance_name], env=env_dict_remove)
             if remove_retcode != 0:
-                logger.warning(m18n.n('app_not_properly_removed', app=app_id))
+                logger.warning(m18n.n('app_not_properly_removed', app=app_instance_name))
 
             # Clean tmp folders
-            hook_remove(app_id)
+            hook_remove(app_instance_name)
             shutil.rmtree(app_setting_path)
             shutil.rmtree(app_tmp_folder)
 
@@ -1431,8 +1459,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     Retrieve specified arguments for the action from the manifest, and parse
     given args according to that. If some required arguments are not provided,
     its values will be asked if interaction is possible.
-    Parsed arguments will be returned as a list of strings to pass directly
-    to the proper script.
+    Parsed arguments will be returned as an OrderedDict
 
     Keyword arguments:
         manifest -- The app manifest to use
@@ -1443,7 +1470,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     from yunohost.domain import domain_list
     from yunohost.user import user_info
 
-    args_list = []
+    args_list = OrderedDict()
     try:
         action_args = manifest['arguments'][action]
     except KeyError:
@@ -1531,9 +1558,49 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                         raise MoulinetteError(errno.EINVAL,
                             m18n.n('app_argument_choice_invalid',
                                 name=arg_name, choices='0, 1'))
-            args_list.append(arg_value)
+            args_list[arg_name] = arg_value
     return args_list
 
+def _make_environment_dict(args_dict):
+    """
+    Convert a dictionnary containing manifest arguments
+    to a dictionnary of env. var. to be passed to scripts
+
+    Keyword arguments:
+        arg -- A key/value dictionnary of manifest arguments
+
+    """
+    env_dict = {}
+    for arg_name, arg_value in args_dict.items():
+        env_dict[ "YNH_APP_ARG_%s" % arg_name.upper() ] = arg_value
+    return env_dict
+
+def _parse_app_instance_name(app_instance_name):
+    """
+    Parse a Yunohost app instance name and extracts the original appid
+    and the application instance number
+
+    >>> _parse_app_instance_name('yolo') == ('yolo', 1)
+    True
+    >>> _parse_app_instance_name('yolo1') == ('yolo1', 1)
+    True
+    >>> _parse_app_instance_name('yolo__0') == ('yolo__0', 1)
+    True
+    >>> _parse_app_instance_name('yolo__1') == ('yolo', 1)
+    True
+    >>> _parse_app_instance_name('yolo__23') == ('yolo', 23)
+    True
+    >>> _parse_app_instance_name('yolo__42__72') == ('yolo__42', 72)
+    True
+    >>> _parse_app_instance_name('yolo__23qdqsd') == ('yolo__23qdqsd', 1)
+    True
+    >>> _parse_app_instance_name('yolo__23qdqsd56') == ('yolo__23qdqsd56', 1)
+    True
+    """
+    match = re_app_instance_name.match(app_instance_name)
+    appid = match.groupdict().get('appid')
+    app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
+    return (appid, app_instance_nb)
 
 def is_true(arg):
     """
