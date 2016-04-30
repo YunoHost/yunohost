@@ -208,7 +208,7 @@ def hook_list(action, list_by='name', show_info=False):
 
 
 def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
-                  pre_callback=None, post_callback=None):
+                  env=None, pre_callback=None, post_callback=None):
     """
     Execute all scripts binded to an action
 
@@ -218,6 +218,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
         args -- Ordered list of arguments to pass to the scripts
         no_trace -- Do not print each command that will be executed
         chdir -- The directory from where the scripts will be executed
+        env -- Dictionnary of environment variables to export
         pre_callback -- An object to call before each script execution with
             (name, priority, path, args) as arguments and which must return
             the arguments to pass to the script
@@ -276,7 +277,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             try:
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
-                hook_exec(path, args=hook_args, chdir=chdir,
+                hook_exec(path, args=hook_args, chdir=chdir, env=env,
                           no_trace=no_trace, raise_on_error=True)
             except MoulinetteError as e:
                 state = 'failed'
