@@ -1,3 +1,24 @@
+yunohost (2.3.14) testing; urgency=low
+
+  [ Jean-Baptiste ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Jérôme Lebleu ]
+  * [enh] Remove client certificate verification from Dovecot and Postfix
+  * [enh] Allow to set env var for executed hooks in hooks_callback
+  * [enh] Do not bind mounting if no backup archive is created (wip #298)
+  * [fix] Do not set default value to mailbox-quota at user_update
+  * [fix] Clean properly backup tmp directory if it already exists (wip #298)
+  * [fix] Remove legacy slapd file after directory creation at regen-conf
+  * [fix] Remove old PAM config file at package postinstall
+  * [i18n] Translated using Weblate (French)
+
+  [ Julien Malik ]
+  * [enh] Support passing env var to hook_exec
+  * [enh] Set env var for each app script and rename app variables
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 30 Apr 2016 20:59:28 +0200
+
 yunohost (2.3.13) testing; urgency=low
 
   * [cli] Deprecate app_initdb action in flavour of helpers
