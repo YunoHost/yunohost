@@ -73,6 +73,7 @@ def backup_create(name=None, description=None, output_directory=None,
     """
     # TODO: Add a 'clean' argument to clean output directory
     tmp_dir = None
+    env_var = {}
 
     # Validate what to backup
     if ignore_hooks and ignore_apps:
@@ -110,9 +111,13 @@ def backup_create(name=None, description=None, output_directory=None,
             raise MoulinetteError(errno.EIO,
                 m18n.n('backup_output_directory_not_empty'))
 
-        # Define temporary directory
+        # Do not compress, so set temporary directory to output one and
+        # disable bind mounting to prevent data loss in case of a rm
+        # See: https://dev.yunohost.org/issues/298
         if no_compress:
+            logger.debug('bind mounting will be disabled')
             tmp_dir = output_directory
+            env_var['CAN_BIND'] = 0
     else:
         output_directory = archives_path
 
@@ -159,7 +164,8 @@ def backup_create(name=None, description=None, output_directory=None,
 
         if not hooks or hooks_filtered:
             logger.info(m18n.n('backup_running_hooks'))
-            ret = hook_callback('backup', hooks_filtered, args=[tmp_dir])
+            ret = hook_callback('backup', hooks_filtered, args=[tmp_dir],
+                                env=env_var)
             if ret['succeed']:
                 info['hooks'] = ret['succeed']
 
@@ -216,8 +222,9 @@ def backup_create(name=None, description=None, output_directory=None,
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
                 # Prepare env. var. to pass to script
-                env_dict = {}
-                app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
+                app_id, app_instance_nb = _parse_app_instance_name(
+                    app_instance_name)
+                env_dict = env_var.copy()
                 env_dict["YNH_APP_ID"] = app_id
                 env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
