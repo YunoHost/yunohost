@@ -300,8 +300,15 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         return pending_conf
 
     # Clean pending conf directory
-    shutil.rmtree(pending_conf_dir, ignore_errors=True)
-    filesystem.mkdir(pending_conf_dir, 0755, True)
+    if os.path.isdir(pending_conf_dir):
+        if not names:
+            shutil.rmtree(pending_conf_dir, ignore_errors=True)
+        else:
+            for name in names:
+                shutil.rmtree(os.path.join(pending_conf_dir, name),
+                              ignore_errors=True)
+    else:
+        filesystem.mkdir(pending_conf_dir, 0755, True)
 
     # Format common hooks arguments
     common_args = [1 if force else 0, 1 if dry_run else 0]
