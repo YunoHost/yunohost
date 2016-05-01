@@ -617,15 +617,20 @@ def _get_pending_conf(services=[]):
     if not services:
         services = os.listdir(pending_conf_dir)
     for name in services:
-        service_conf = {}
         service_pending_path = os.path.join(pending_conf_dir, name)
+        if not os.path.isdir(service_pending_path):
+            continue
         path_index = len(service_pending_path)
+        service_conf = {}
         for root, dirs, files in os.walk(service_pending_path):
             for filename in files:
                 pending_path = os.path.join(root, filename)
                 service_conf[pending_path[path_index:]] = pending_path
         if service_conf:
             result[name] = service_conf
+        else:
+            # remove empty directory
+            shutil.rmtree(service_pending_path, ignore_errors=True)
     return result
 
 
