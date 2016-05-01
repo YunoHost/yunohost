@@ -351,8 +351,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
             to_remove = True if os.path.getsize(pending_path) == 0 else False
 
             # Retrieve and calculate hashes
-            current_hash = conf_hashes.get(system_path, None)
             system_hash = _calculate_hash(system_path)
+            saved_hash = conf_hashes.get(system_path, None)
             new_hash = None if to_remove else _calculate_hash(pending_path)
 
             # -> system conf does not exists
@@ -361,7 +361,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     logger.debug("> system conf is already removed")
                     os.remove(pending_path)
                     continue
-                if not current_hash or force:
+                if not saved_hash or force:
                     if force:
                         logger.debug("> system conf has been manually removed")
                         conf_status = 'force-created'
@@ -376,7 +376,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                         conf=system_path))
                     conf_status = 'removed'
             # -> system conf is not managed yet
-            elif not current_hash:
+            elif not saved_hash:
                 logger.debug("> system conf is not managed yet")
                 if system_hash == new_hash:
                     logger.debug("> no changes to system conf has been made")
@@ -393,7 +393,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                                           conf=system_path))
                     conf_status = 'unmanaged'
             # -> system conf has not been manually modified
-            elif system_hash == current_hash:
+            elif system_hash == saved_hash:
                 if to_remove:
                     regenerated = _regen(system_path)
                     conf_status = 'removed'
@@ -406,7 +406,11 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     continue
             else:
                 logger.debug("> system conf has been manually modified")
-                if force:
+                if system_hash == new_hash:
+                    logger.debug("> new conf is as current system conf")
+                    conf_status = 'managed'
+                    regenerated = True
+                elif force:
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'force-updated'
                 else:
