@@ -965,7 +965,11 @@ def app_ssowatconf(auth):
 
     users = {}
     for username in user_list(auth)['users'].keys():
-        users[username] = app_map(user=username)
+        apps_by_domains = app_map(user=username, raw=True)
+        users[username] = []
+        for apps in apps_by_domains.values():
+            for app in apps.values():
+                users[username].append(app.get('id'))
 
     skipped_urls = []
     skipped_regex = []
@@ -990,6 +994,11 @@ def app_ssowatconf(auth):
         if _is_installed(app['id']):
             with open(apps_setting_path + app['id'] +'/settings.yml') as f:
                 app_settings = yaml.load(f)
+                # Add url to the app details
+                app['url'] = "{0}{1}".format(
+                    app_settings.get('domain', ""),
+                    app_settings.get('path', "")
+                )
                 for item in _get_setting(app_settings, 'skipped_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
@@ -1035,6 +1044,7 @@ def app_ssowatconf(auth):
         'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
         'users': users,
+        'apps': {a['id']:a for a in apps_list if a.get('installed', False)},
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
