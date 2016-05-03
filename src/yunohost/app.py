@@ -608,7 +608,13 @@ def app_remove(auth, app):
 
     args_list = [app]
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args_list) == 0:
+    env_dict = {}
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict) == 0:
         logger.success(m18n.n('app_removed', app=app))
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
