@@ -386,12 +386,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
         status = _get_app_status(app_instance_name)
         status['remote'] = manifest.get('remote', None)
 
-        # Clean hooks and add new ones
-        hook_remove(app_instance_name)
-        if 'hooks' in os.listdir(app_tmp_folder):
-            for hook in os.listdir(app_tmp_folder +'/hooks'):
-                hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ hook)
-
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade', auth=auth)
@@ -414,6 +408,12 @@ def app_upgrade(auth, app=[], url=None, file=None):
             # TODO: Move install_time away from app_setting
             app_setting(app_instance_name, 'update_time', now)
             status['upgraded_at'] = now
+
+            # Clean hooks and add new ones
+            hook_remove(app_instance_name)
+            if 'hooks' in os.listdir(app_tmp_folder):
+                for hook in os.listdir(app_tmp_folder +'/hooks'):
+                    hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ hook)
 
             # Store app status
             with open(app_setting_path + '/status.json', 'w+') as f:
