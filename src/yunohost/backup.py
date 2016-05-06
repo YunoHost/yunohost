@@ -255,9 +255,9 @@ def backup_create(name=None, description=None, output_directory=None,
         raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
     # Calculate total size
-    size = subprocess.check_output(
-        ['du','-sb', tmp_dir]).split()[0].decode('utf-8')
-    info['size'] = int(size)
+    backup_size = int(subprocess.check_output(
+        ['du', '-sb', tmp_dir]).split()[0].decode('utf-8'))
+    info['size'] = backup_size
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
@@ -266,20 +266,29 @@ def backup_create(name=None, description=None, output_directory=None,
     # Create the archive
     if not no_compress:
         logger.info(m18n.n('backup_creating_archive'))
-        archive_file = "%s/%s.tar.gz" % (output_directory, name)
+
+        # Check free space in output directory at first
+        avail_output = subprocess.check_output(
+            ['df', '--block-size=1', '--output=avail', tmp_dir]).split()
+        if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
+            logger.debug('not enough space at %s (free: %s / needed: %d)',
+                         output_directory, avail_output[1], backup_size)
+            _clean_tmp_dir(3)
+            raise MoulinetteError(errno.EIO, m18n.n(
+                'not_enough_disk_space', path=output_directory))
 
         # Open archive file for writing
+        archive_file = "%s/%s.tar.gz" % (output_directory, name)
         try:
             tar = tarfile.open(archive_file, "w:gz")
         except:
             logger.debug("unable to open '%s' for writing",
-                archive_file, exc_info=1)
-
+                         archive_file, exc_info=1)
             _clean_tmp_dir(2)
             raise MoulinetteError(errno.EIO,
-                m18n.n('backup_archive_open_failed'))
+                                  m18n.n('backup_archive_open_failed'))
 
-        # Write into archive
+        # Add files to the arvhice
         try:
             tar.add(tmp_dir, arcname='')
             tar.close()
