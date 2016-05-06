@@ -265,29 +265,29 @@ def backup_create(name=None, description=None, output_directory=None,
     if not no_compress:
         logger.info(m18n.n('backup_creating_archive'))
         archive_file = "%s/%s.tar.gz" % (output_directory, name)
+        # Create the archives directory
+        if not os.path.isdir(archives_path):
+            os.mkdir(archives_path, 0750)
+
+        # Open archive file for writing
         try:
             tar = tarfile.open(archive_file, "w:gz")
         except:
-            tar = None
+            logger.debug("unable to open '%s' for writing",
+                archive_file, exc_info=1)
 
-            # Create the archives directory and retry
-            if not os.path.isdir(archives_path):
-                os.mkdir(archives_path, 0750)
-                try:
-                    tar = tarfile.open(archive_file, "w:gz")
-                except:
-                    logger.debug("unable to open '%s' for writing",
-                        archive_file, exc_info=1)
-                    tar = None
-            else:
-                logger.debug("unable to open '%s' for writing",
-                    archive_file, exc_info=1)
-            if tar is None:
-                _clean_tmp_dir(2)
-                raise MoulinetteError(errno.EIO,
-                    m18n.n('backup_archive_open_failed'))
-        tar.add(tmp_dir, arcname='')
-        tar.close()
+            _clean_tmp_dir(2)
+            raise MoulinetteError(errno.EIO,
+                m18n.n('backup_archive_open_failed'))
+
+        # Write into archive
+        try:
+            tar.add(tmp_dir, arcname='')
+            tar.close()
+        except IOError as e:
+            logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
+            _clean_tmp_dir(3)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_failed'))
 
         # Move info file
         os.rename(tmp_dir + '/info.json',
