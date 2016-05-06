@@ -1,27 +1,43 @@
 CAN_BIND=${CAN_BIND:-1}
 
-# Bind a directory or copy it on error
+# Mark a file or a directory for backup
+# Note: currently, SRCPATH will be copied or binded to DESTPATH
 #
-# usage: ynh_bind_or_cp srcdir destdir as_root
+# usage: ynh_backup srcdir destdir can_bind as_root
 # | arg: srcdir - directory to bind or copy
 # | arg: destdir - mountpoint or destination directory
-# | arg: as_root - 1 to execute commands as root
-ynh_bind_or_cp() {
-    local SRCDIR=$1
-    local DESTDIR=$2
-    local SUDO_CMD=
-    [[ "${3}" = "1" ]] && SUDO_CMD="sudo"
+# | arg: to_bind - 1 to bind mounting the directory if possible
+# | arg: no_root - 1 to execute commands as current user
+ynh_backup() {
+    local SRCPATH=$1
+    local DESTPATH=$2
+    local TO_BIND=${3:-0}
+    local SUDO_CMD="sudo"
+    [[ "${4:-}" = "1" ]] && SUDO_CMD=
 
-    [[ ! -f "${DESTDIR}" ]] || {
-        echo "Destination directory '${DESTDIR}' already exists" >&2
+    # validate arguments
+    [[ -e "${SRCPATH}" ]] || {
+        echo "Source path '${DESTPATH}' does not exist" >&2
+        return 1
+    }
+    [[ "${DESTPATH:0:1}" = "/" ]] && {
+        echo "Destination path should be relative" >&2
+        return 1
+    }
+
+    # prepend the backup directory
+    [[ -z "${YNH_APP_BACKUP_DIR}" ]] || \
+        DESTPATH="${YNH_APP_BACKUP_DIR}/${DESTPATH}"
+    [[ ! -e "${DESTPATH}" ]] || {
+        echo "Destination path '${DESTPATH}' already exist" >&2
         return 1
     }
 
     # attempt to bind mounting the directory
-    if [[ "${CAN_BIND}" = "1" ]]; then
-        eval $SUDO_CMD mkdir -p "${DESTDIR}"
+    if [[ "${CAN_BIND}" = "1" && "${TO_BIND}" = "1" ]]; then
+        eval $SUDO_CMD mkdir -p "${DESTPATH}"
 
-        if sudo mount --rbind "${SRCDIR}" "${DESTDIR}"; then
+        if sudo mount --rbind "${SRCPATH}" "${DESTPATH}"; then
             return 0
         else
             CAN_BIND=0
@@ -30,13 +46,22 @@ ynh_bind_or_cp() {
         fi
 
         # delete mountpoint directory safely
-        mountpoint -q "${DESTDIR}" && sudo umount -R "${DESTDIR}"
-        eval $SUDO_CMD rm -rf "${DESTDIR}"
+        mountpoint -q "${DESTPATH}" && sudo umount -R "${DESTPATH}"
+        eval $SUDO_CMD rm -rf "${DESTPATH}"
     fi
 
     # ... or just copy the directory
-    eval $SUDO_CMD mkdir -p $(dirname "${DESTDIR}")
-    eval $SUDO_CMD cp -a "${SRCDIR}" "${DESTDIR}"
+    eval $SUDO_CMD mkdir -p $(dirname "${DESTPATH}")
+    eval $SUDO_CMD cp -a "${SRCPATH}" "${DESTPATH}"
+}
+
+# Deprecated helper since it's a dangerous one!
+ynh_bind_or_cp() {
+    local AS_ROOT=${3:-0}
+    local NO_ROOT=0
+    [[ "${AS_ROOT}" = "1" ]] || NO_ROOT=1
+    echo "This helper is deprecated, you should use ynh_backup instead" >&2
+    ynh_backup "$1" "$2" 1 "$NO_ROOT"
 }
 
 # Create a directory under /tmp
