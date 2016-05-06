@@ -1,3 +1,22 @@
+yunohost (2.3.15) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Create backup archives path depending of output directory
+  * [enh] Check free space in output directory before backup archive creation
+  * [enh] Create ynh_backup helper based on ynh_bind_or_cp
+  * [enh] Add ynh_die helper to print error message and exit
+  * [enh] Do not clean whole pending conf dir when names are given at regen-conf
+  * [enh] Remove empty pending conf directory at regen-conf
+  * [fix] Handle when new conf is as current system conf in regen-conf
+  * [fix] Remove the app if it restoration failed
+  * [i18n] Rename backup_complete and backup_failed strings
+
+  [ opi ]
+  * [fix] Pass app instance environment variables to remove script.
+  * [fix] Catch IOError on tar creation (backup).
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Fri, 06 May 2016 20:31:12 +0200
+
 yunohost (2.3.14) testing; urgency=low
 
   [ Jean-Baptiste ]
