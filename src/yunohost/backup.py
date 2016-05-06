@@ -120,6 +120,8 @@ def backup_create(name=None, description=None, output_directory=None,
             env_var['CAN_BIND'] = 0
     else:
         output_directory = archives_path
+        if not os.path.isdir(archives_path):
+            os.mkdir(archives_path, 0750)
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
@@ -265,9 +267,6 @@ def backup_create(name=None, description=None, output_directory=None,
     if not no_compress:
         logger.info(m18n.n('backup_creating_archive'))
         archive_file = "%s/%s.tar.gz" % (output_directory, name)
-        # Create the archives directory
-        if not os.path.isdir(archives_path):
-            os.mkdir(archives_path, 0750)
 
         # Open archive file for writing
         try:
