@@ -507,12 +507,6 @@ def app_install(auth, app, label=None, args=None):
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
 
-    # Clean hooks and add new ones
-    hook_remove(app_instance_name)
-    if 'hooks' in os.listdir(app_tmp_folder):
-        for file in os.listdir(app_tmp_folder +'/hooks'):
-            hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ file)
-
     # Set initial app settings
     app_settings = {
         'id': app_instance_name,
@@ -557,7 +551,6 @@ def app_install(auth, app, label=None, args=None):
                                       app=app_instance_name))
 
             # Clean tmp folders
-            hook_remove(app_instance_name)
             shutil.rmtree(app_setting_path)
             shutil.rmtree(app_tmp_folder)
 
@@ -565,6 +558,12 @@ def app_install(auth, app, label=None, args=None):
                 raise MoulinetteError(errno.EINTR,
                                       m18n.g('operation_interrupted'))
             raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+
+    # Clean hooks and add new ones
+    hook_remove(app_instance_name)
+    if 'hooks' in os.listdir(app_tmp_folder):
+        for file in os.listdir(app_tmp_folder +'/hooks'):
+            hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ file)
 
     # Store app status
     with open(app_setting_path + '/status.json', 'w+') as f:
