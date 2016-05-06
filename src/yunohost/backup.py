@@ -475,6 +475,10 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
             tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_instance_name)
             tmp_app_bkp_dir = tmp_app_dir + '/backup'
 
+            # Parse app instance name and id
+            # TODO: Use app_id to check if app is installed?
+            app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
+
             # Check if the app is not already installed
             if _is_installed(app_instance_name):
                 logger.error(m18n.n('restore_already_installed_app',
@@ -492,6 +496,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
             logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
             try:
                 # Copy app settings and set permissions
+                # TODO: Copy app hooks too
                 shutil.copytree(tmp_app_dir + '/settings', app_setting_path)
                 filesystem.chmod(app_setting_path, 0555, 0444, True)
                 filesystem.chmod(app_setting_path + '/settings.yml', 0400)
@@ -501,7 +506,6 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
                 # Prepare env. var. to pass to script
                 env_dict = {}
-                app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
                 env_dict["YNH_APP_ID"] = app_id
                 env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
@@ -511,6 +515,21 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                           raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
             except:
                 logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
+
+                # Setup environment for remove script
+                env_dict_remove = {}
+                env_dict_remove["YNH_APP_ID"] = app_id
+                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+                # Execute remove script
+                remove_retcode = hook_exec(
+                    os.path.join(tmp_app_dir, 'settings/scripts/remove'),
+                    args=[app_instance_name], env=env_dict_remove)
+                if remove_retcode != 0:
+                    logger.warning(m18n.n('app_not_properly_removed',
+                                          app=app_instance_name))
+
                 # Cleaning app directory
                 shutil.rmtree(app_setting_path, ignore_errors=True)
             else:
