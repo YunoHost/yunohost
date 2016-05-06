@@ -295,7 +295,8 @@ def backup_create(name=None, description=None, output_directory=None,
         except IOError as e:
             logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
             _clean_tmp_dir(3)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_failed'))
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('backup_creation_failed'))
 
         # Move info file
         os.rename(tmp_dir + '/info.json',
@@ -305,7 +306,7 @@ def backup_create(name=None, description=None, output_directory=None,
     if tmp_dir != output_directory:
         _clean_tmp_dir()
 
-    logger.success(m18n.n('backup_complete'))
+    logger.success(m18n.n('backup_created'))
 
     # Return backup info
     info['name'] = name

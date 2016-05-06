@@ -30,7 +30,7 @@
     "ask_main_domain": "Domínio principal",
     "ask_new_admin_password": "Senha de administração nova",
     "ask_password": "Senha",
-    "backup_complete": "Backup completo",
+    "backup_created": "Backup completo",
     "backup_creating_archive": "A criar ficheiro de backup...",
     "backup_invalid_archive": "Arquivo de backup inválido",
     "backup_output_directory_not_empty": "A pasta de destino não se encontra vazia",

@@ -33,7 +33,7 @@
     "backup_archive_name_exists": "Un archivo ya existe con el nombre del archivo de backup",
     "backup_archive_name_unknown": "El nombre archivo local de backup está desconocido",
     "backup_archive_open_failed": "No se pudo abrir el archivo backup",
-    "backup_complete": "El backup se ha completado",
+    "backup_created": "El backup se ha completado",
     "backup_creating_archive": "Creando el archivo backup...",
     "backup_extracting_archive": "Extrayendo el archivo backup...",
     "backup_invalid_archive": "Archivo de backup es inválido",

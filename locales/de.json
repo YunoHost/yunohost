@@ -41,7 +41,7 @@
     "backup_archive_name_unknown": "Unbekanntes lokale Datensicherung mit Namen '{name:s}' gefunden",
     "backup_archive_open_failed": "Kann Sicherungsarchiv nicht öfnen",
     "backup_cleaning_failed": "Verzeichnis von temporäre Sicherungsdaten konnte nicht geleert werden",
-    "backup_complete": "Datensicherung komplett",
+    "backup_created": "Datensicherung komplett",
     "backup_creating_archive": "Datensicherung wird erstellt...",
     "backup_delete_error": "Pfad '{path:s}' konnte nicht gelöscht werden",
     "backup_deleted": "Datensicherung erfolgreich gelöscht",

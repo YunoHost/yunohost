@@ -6,7 +6,7 @@
     "ask_email": "Indirizzo email",
     "ask_password": "Password",
     "backup_archive_name_exists": "Il nome dell'archivio del backup esiste già",
-    "backup_complete": "Backup completo",
+    "backup_created": "Backup completo",
     "backup_invalid_archive": "Archivio di backup non valido",
     "backup_output_directory_not_empty": "Directory di output non è vuota",
     "backup_running_app_script": "Esecuzione script di backup dell'applicazione '{app:s}'...",
