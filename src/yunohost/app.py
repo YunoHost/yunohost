@@ -1512,7 +1512,10 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     if arg_default is not None:
                         ask_string += ' (default: {0})'.format(arg_default)
 
-                    input_string = msignals.prompt(ask_string)
+                    # Check for a password argument
+                    is_password = True if arg_type == 'password' else False
+
+                    input_string = msignals.prompt(ask_string, is_password)
                     if (input_string == '' or input_string is None) \
                             and arg_default is not None:
                         arg_value = arg_default
