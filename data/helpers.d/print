@@ -1,0 +1,6 @@
+# Print a message to stderr and exit
+# usage: ynh_die MSG [RETCODE]
+ynh_die() {
+  echo "$1" 1>&2
+  exit "${2:-1}"
+}
