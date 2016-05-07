@@ -3,7 +3,7 @@ CAN_BIND=${CAN_BIND:-1}
 # Mark a file or a directory for backup
 # Note: currently, SRCPATH will be copied or binded to DESTPATH
 #
-# usage: ynh_backup srcdir destdir can_bind as_root
+# usage: ynh_backup srcdir destdir to_bind no_root
 # | arg: srcdir - directory to bind or copy
 # | arg: destdir - mountpoint or destination directory
 # | arg: to_bind - 1 to bind mounting the directory if possible
@@ -20,14 +20,10 @@ ynh_backup() {
         echo "Source path '${DESTPATH}' does not exist" >&2
         return 1
     }
-    [[ "${DESTPATH:0:1}" = "/" ]] && {
-        echo "Destination path should be relative" >&2
-        return 1
-    }
 
     # prepend the backup directory
-    [[ -z "${YNH_APP_BACKUP_DIR}" ]] || \
-        DESTPATH="${YNH_APP_BACKUP_DIR}/${DESTPATH}"
+    [[ -n "${YNH_APP_BACKUP_DIR}" && "${DESTPATH:0:1}" != "/" ]] \
+        && DESTPATH="${YNH_APP_BACKUP_DIR}/${DESTPATH}"
     [[ ! -e "${DESTPATH}" ]] || {
         echo "Destination path '${DESTPATH}' already exist" >&2
         return 1
@@ -39,7 +35,7 @@ ynh_backup() {
 
         if sudo mount --rbind "${SRCPATH}" "${DESTPATH}"; then
             # try to remount destination directory as read-only
-            sudo mount -o remount,ro "${DESTPATH}" \
+            sudo mount -o remount,ro "${DESTPATH}" >/dev/null 2>&1 \
               || sudo mount -o remount,ro,bind "${SRCPATH}" "${DESTPATH}" \
               || true
             return 0
