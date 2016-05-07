@@ -1,3 +1,20 @@
+yunohost (2.4.0) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Add app hooks after the install to allow modifications
+  * [enh] Also add app hooks after successful upgrade
+  * [enh] Handle password argument type at prompt from app manifest
+  * [enh] Try to remount directory as read-only in ynh_backup (wip #298)
+  * [fix] Prepend backup dir to relative path only and allow absolute in
+    ynh_backup
+  * [fix] Update data_home/mail backup hooks to use ynh_backup helper
+
+  [ opi ]
+  * [fix] Can install app on domain root even if another app is installed
+    in a sub folder.
+
+ -- Jérôme Lebleu <jerome@maroufle.fr>  Sun, 08 May 2016 00:47:49 +0200
+
 yunohost (2.3.15) testing; urgency=low
 
   [ Jérôme Lebleu ]
