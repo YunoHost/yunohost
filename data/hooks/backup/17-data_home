@@ -1,10 +1,7 @@
-backup_dir="$1/data/home"
-sudo mkdir -p $backup_dir
-
 . /usr/share/yunohost/helpers
 
 for f in $(find /home/* -type d -prune | awk -F/ '{print $NF}'); do
     if [[ ! "$f" =~ ^yunohost|lost\+found ]]; then
-        ynh_bind_or_cp "/home/$f" "${backup_dir}/$f" 1
+        ynh_backup "/home/$f" "${1}/data/home/$f" 1
     fi
 done
