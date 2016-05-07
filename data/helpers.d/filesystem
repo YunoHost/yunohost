@@ -38,6 +38,10 @@ ynh_backup() {
         eval $SUDO_CMD mkdir -p "${DESTPATH}"
 
         if sudo mount --rbind "${SRCPATH}" "${DESTPATH}"; then
+            # try to remount destination directory as read-only
+            sudo mount -o remount,ro "${DESTPATH}" \
+              || sudo mount -o remount,ro,bind "${SRCPATH}" "${DESTPATH}" \
+              || true
             return 0
         else
             CAN_BIND=0
