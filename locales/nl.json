@@ -94,7 +94,7 @@
     "show_diff": "Let op de volgende verschillen zijn:\n{diff:s}",
     "unexpected_error": "Er is een onbekende fout opgetreden",
     "unrestore_app": "App '{app:s}' wordt niet teruggezet",
-    "updating_apt_cache": "Lijst van beschikbare pakketen wordt bijgewerkt",
+    "updating_apt_cache": "Lijst van beschikbare pakketten wordt bijgewerkt...",
     "upgrade_complete": "Upgrade voltooid",
     "upgrading_packages": "Pakketten worden geüpdate...",
     "upnp_dev_not_found": "Geen UPnP apparaten gevonden",
