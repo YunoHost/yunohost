@@ -195,6 +195,9 @@
     "pattern_port_or_range" : "Must be a valid port number (i.e. 0-65535) or range of ports (e.g. 100:200)",
     "pattern_backup_archive_name" : "Must be a valid filename with alphanumeric and -_. characters only",
 
-    "format_datetime_short" : "%m/%d/%Y %I:%M %p"
+    "format_datetime_short" : "%m/%d/%Y %I:%M %p",
+
+    "upgrade_24_not_jessie" : "Upgrading to YunoHost v2.4 will only work on Debian Jessie. Please upgrade your system before upgrading YunoHost.",
+    "upgrade_24_reboot" : "You must reboot your server for the changes to take effect. Enter the 'reboot' command right now."
 }
 

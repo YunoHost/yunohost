@@ -1146,6 +1146,9 @@ tools:
                 --ignore-packages:
                     help: Ignore APT packages upgrade
                     action: store_true
+                --v24:
+                    help: Manual upgrade from v2.2 to v2.4 (Debian Jessie only)
+                    action: store_true
 
 
 #############################

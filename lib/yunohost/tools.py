@@ -399,7 +399,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     return { 'packages': packages, 'apps': apps }
 
 
-def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
+def tools_upgrade(auth, ignore_apps=False, ignore_packages=False, v24=False):
     """
     Update apps & package cache, then display changelog
 
@@ -409,6 +409,11 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
     """
     from yunohost.app import app_upgrade
+
+    # Special case for v2.2 to v2.4 upgrade
+    if v24:
+        return tools_upgrade_v24(auth)
+    # End of v2.4 special case
 
     failure = False
 
@@ -469,3 +474,44 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
     if is_api:
         from yunohost.service import service_log
         return { "log": service_log('yunohost-api', number="100").values()[0] }
+
+
+def tools_upgrade_v24(auth):
+    """
+    YunoHost upgrade to new Yunohost version (on jessie)
+    """
+    import platform
+
+    # Retrieve interface
+    is_api = True if msettings.get('interface') == 'api' else False
+
+    # Get Debian major version
+    debian_major_version = platform.linux_distribution()[1].split('.')[0]
+    if debian_major_version is not '8':
+        msignals.display(m18n.n('upgrade_24_not_jessie'), 'error')
+        return
+
+    # Upgrade with current sources
+    os.system('apt-get update')
+    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade')
+
+    # Change sources
+    with open('/etc/apt/sources.list.d/yunohost.list', "w") as sources:
+        sources.write('deb http://repo.yunohost.org/debian/ jessie stable')
+
+    # Upgrade with new sources
+    os.system('apt-get update')
+    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" yunohost')
+    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade')
+    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get remove -y --force-yes amavisd-new')
+    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes autoremove')
+    os.system('yunohost service regen-conf -f')
+
+    msignals.display(m18n.n('system_upgraded'), 'success')
+
+    # Prepare systemctl
+    with open('/etc/cron.d/yunohost-regenconf', 'w+') as f:
+        f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin systemctl start yunohost-api && rm -f /etc/cron.d/yunohost-regenconf\n' )
+
+    # Reboot user notice
+    msignals.display(m18n.n('upgrade_24_reboot'), 'warning')
