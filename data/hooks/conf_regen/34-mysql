@@ -17,7 +17,7 @@ do_post_regen() {
       . /usr/share/yunohost/helpers.d/string
 
       # ensure that mysql is running
-      service mysql status >/dev/null 2>&1 \
+      ps -C mysqld >/dev/null 2>&1 \
         || service mysql start
 
       # generate and set new root password
