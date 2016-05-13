@@ -495,6 +495,14 @@ def tools_upgrade_v24(auth):
     os.system('apt-get update')
     os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade')
 
+    # Remove old repo in sources.list file
+    with open('/etc/apt/sources.list', "r") as sources:
+        lines = sources.readlines()
+    with open('/etc/apt/sources.list', "w") as sources:
+        for line in lines:
+            if "yunohost" not in line:
+                sources.write(line)
+
     # Change sources
     with open('/etc/apt/sources.list.d/yunohost.list', "w") as sources:
         sources.write('deb http://repo.yunohost.org/debian/ jessie stable')
