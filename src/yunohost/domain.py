@@ -33,6 +33,10 @@ import requests
 
 from moulinette.core import MoulinetteError
 
+from yunohost.service import service_regenconf
+from yunohost.hook import hook_callback
+from yunohost.dyndns import dyndns_subscribe
+
 
 def domain_list(auth, raw=False, filter=None, limit=None, offset=None):
     """
@@ -77,8 +81,6 @@ def domain_add(auth, domain, dyndns=False):
         dyndns -- Subscribe to DynDNS
 
     """
-    from yunohost.service import service_regenconf
-    from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
 
@@ -89,7 +91,6 @@ def domain_add(auth, domain, dyndns=False):
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-        from yunohost.dyndns import dyndns_subscribe
 
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
@@ -178,9 +179,6 @@ def domain_remove(auth, domain, force=False):
         force -- Force the domain removal
 
     """
-    from yunohost.service import service_regenconf
-    from yunohost.hook import hook_callback
-
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
