@@ -314,9 +314,8 @@ def tools_update(ignore_apps=False, ignore_packages=False):
             app_fetchlist()
         except MoulinetteError:
             pass
-        app_list = os.listdir(apps_setting_path)
 
-        for app_id in app_list:
+        for app_id in os.listdir(apps_setting_path):
             if '__' in app_id:
                 original_app_id = app_id[:app_id.index('__')]
             else:
