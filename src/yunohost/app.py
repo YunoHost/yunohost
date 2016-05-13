@@ -1402,11 +1402,11 @@ def _value_for_locale(values):
     if not isinstance(values, dict):
         return values
 
-    for lang in [m18n.locale, m18n.default_locale]:
-        try:
-            return _encode_string(values[lang])
-        except KeyError:
-            continue
+    if m18n.locale in values:
+        return _encode_string(values[m18n.locale])
+
+    if m18n.default_locale in values:
+        return _encode_string(values[m18n.default_locale])
 
     # Fallback to first value
     return _encode_string(values.values()[0])
