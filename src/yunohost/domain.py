@@ -158,7 +158,7 @@ def domain_add(auth, domain, dyndns=False):
                 service_regenconf(service='nginx')
                 service_regenconf(service='metronome')
                 service_regenconf(service='dnsmasq')
-                os.system('yunohost app ssowatconf > /dev/null 2>&1')
+                assert os.system('yunohost app ssowatconf > /dev/null 2>&1') == 0, "SSOwat conf regen failed"
         except IOError: pass
     except:
         # Force domain removal silently
@@ -205,7 +205,8 @@ def domain_remove(auth, domain, force=False):
     service_regenconf(service='nginx')
     service_regenconf(service='metronome')
     service_regenconf(service='dnsmasq')
-    os.system('yunohost app ssowatconf > /dev/null 2>&1')
+
+    assert os.system('yunohost app ssowatconf > /dev/null 2>&1') == 0, "SSOwat conf regen failed"
 
     hook_callback('post_domain_remove', args=[domain])
 
