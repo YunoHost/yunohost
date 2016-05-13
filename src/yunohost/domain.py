@@ -37,6 +37,7 @@ from moulinette.utils.log import getActionLogger
 from yunohost.service import service_regen_conf
 from yunohost.hook import hook_callback
 from yunohost.dyndns import dyndns_subscribe
+from yunohost.app import app_ssowatconf
 
 logger = getActionLogger('yunohost.domain')
 
@@ -154,7 +155,7 @@ def domain_add(auth, domain, dyndns=False):
             with open('/etc/yunohost/installed', 'r') as f:
                 service_regen_conf(names=[
                     'nginx', 'metronome', 'dnsmasq', 'rmilter'])
-                assert os.system('yunohost app ssowatconf > /dev/null 2>&1') == 0, "SSOwat conf regen failed"
+                app_ssowatconf(auth)
         except IOError: pass
     except:
         # Force domain removal silently
@@ -199,7 +200,7 @@ def domain_remove(auth, domain, force=False):
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
     service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
-    assert os.system('yunohost app ssowatconf > /dev/null 2>&1') == 0, "SSOwat conf regen failed"
+    app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])
 
