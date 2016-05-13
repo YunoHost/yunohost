@@ -80,8 +80,6 @@ def domain_add(auth, domain, dyndns=False):
     from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
-    now = datetime.datetime.now()
-    timestamp = str(now.year) + str(now.month) + str(now.day)
 
     if domain in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
