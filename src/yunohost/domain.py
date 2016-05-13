@@ -24,18 +24,19 @@
     Manage domains
 """
 import os
+import re
 import json
 import yaml
 import errno
 import requests
 from urllib import urlopen
 
-import requests
-
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_regen_conf
+from yunohost.hook import hook_callback
+from yunohost.dyndns import dyndns_subscribe
 
 logger = getActionLogger('yunohost.domain')
 
@@ -78,7 +79,6 @@ def domain_add(auth, domain, dyndns=False):
         dyndns -- Subscribe to DynDNS
 
     """
-    from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
 
@@ -89,7 +89,6 @@ def domain_add(auth, domain, dyndns=False):
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-        from yunohost.dyndns import dyndns_subscribe
 
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
@@ -177,8 +176,6 @@ def domain_remove(auth, domain, force=False):
         force -- Force the domain removal
 
     """
-    from yunohost.hook import hook_callback
-
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
