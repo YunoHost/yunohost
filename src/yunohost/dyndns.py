@@ -40,6 +40,10 @@ from yunohost.domain import get_public_ip
 logger = getActionLogger('yunohost.dyndns')
 
 
+re_dyndns_private_key = re.compile(
+    r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
+)
+
 class IPRouteLine(object):
     """ Utility class to parse an ip route output line
 
@@ -61,10 +65,6 @@ class IPRouteLine(object):
         # make regexp group available as object attributes
         for k, v in self.m.groupdict().items():
             setattr(self, k, v)
-
-re_dyndns_private_key = re.compile(
-    r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
-)
 
 
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
