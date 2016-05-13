@@ -29,6 +29,8 @@ import yaml
 import errno
 from urllib import urlopen
 
+import requests
+
 from moulinette.core import MoulinetteError
 
 
@@ -87,7 +89,6 @@ def domain_add(auth, domain, dyndns=False):
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-        import requests
         from yunohost.dyndns import dyndns_subscribe
 
         try:
