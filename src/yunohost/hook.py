@@ -49,14 +49,16 @@ def hook_add(app, file):
     path, filename = os.path.split(file)
     priority, action = _extract_filename_parts(filename)
 
-    try: os.listdir(custom_hook_folder + action)
-    except OSError: os.makedirs(custom_hook_folder + action)
+    try:
+        os.listdir(custom_hook_folder + action)
+    except OSError:
+        os.makedirs(custom_hook_folder + action)
 
-    finalpath = custom_hook_folder + action +'/'+ priority +'-'+ app
+    finalpath = custom_hook_folder + action + '/' + priority + '-' + app
     os.system('cp %s %s' % (file, finalpath))
     os.system('chown -hR admin: %s' % hook_folder)
 
-    return { 'hook': finalpath }
+    return {'hook': finalpath}
 
 
 def hook_remove(app):
@@ -71,8 +73,9 @@ def hook_remove(app):
         for action in os.listdir(custom_hook_folder):
             for script in os.listdir(custom_hook_folder + action):
                 if script.endswith(app):
-                    os.remove(custom_hook_folder + action +'/'+ script)
-    except OSError: pass
+                    os.remove(custom_hook_folder + action + '/' + script)
+    except OSError:
+        pass
 
 
 def hook_info(action, name):
@@ -133,11 +136,11 @@ def hook_list(action, list_by='name', show_info=False):
             def _append_hook(d, priority, name, path):
                 # Use the priority as key and a dict of hooks names
                 # with their info as value
-                value = { 'path': path }
+                value = {'path': path}
                 try:
                     d[priority][name] = value
                 except KeyError:
-                    d[priority] = { name: value }
+                    d[priority] = {name: value}
         else:
             def _append_hook(d, priority, name, path):
                 # Use the priority as key and the name as value
@@ -159,11 +162,12 @@ def hook_list(action, list_by='name', show_info=False):
                         if h['path'] != path:
                             h['path'] = path
                         return
-                l.append({ 'priority': priority, 'path': path })
+                l.append({'priority': priority, 'path': path})
                 d[name] = l
         else:
             if list_by == 'name':
                 result = set()
+
             def _append_hook(d, priority, name, path):
                 # Add only the name
                 d.add(name)
@@ -201,7 +205,7 @@ def hook_list(action, list_by='name', show_info=False):
         logger.debug("custom hook folder not found for action '%s' in %s",
                      action, custom_hook_folder)
 
-    return { 'hooks': result }
+    return {'hooks': result}
 
 
 def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
@@ -223,7 +227,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             (name, priority, path, succeed) as arguments
 
     """
-    result = { 'succeed': {}, 'failed': {} }
+    result = {'succeed': {}, 'failed': {}}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -255,7 +259,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             for h in hl:
                 # Update hooks dict
                 d = hooks_dict.get(h['priority'], dict())
-                d.update({ n: { 'path': h['path'] }})
+                d.update({n: {'path': h['path']}})
                 hooks_dict[h['priority']] = d
     if not hooks_dict:
         return result
