@@ -80,10 +80,6 @@ def domain_add(auth, domain, dyndns=False):
     from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
-    try:
-        ip = str(urlopen('http://ip.yunohost.org').read())
-    except IOError:
-        ip = "127.0.0.1"
     now = datetime.datetime.now()
     timestamp = str(now.year) + str(now.month) + str(now.day)
 
