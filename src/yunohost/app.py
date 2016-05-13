@@ -29,6 +29,8 @@ import shutil
 import yaml
 import time
 import re
+import string
+import random
 import socket
 import urlparse
 import errno
@@ -40,6 +42,10 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log
 from yunohost.utils import packages
+from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+from yunohost.user import user_list, user_info
+from yunohost.domain import domain_list
+
 
 logger = getActionLogger('yunohost.app')
 
@@ -331,8 +337,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
-    from yunohost.hook import hook_add, hook_remove, hook_exec
-
     try:
         app_list()
     except MoulinetteError:
@@ -443,8 +447,6 @@ def app_install(auth, app, label=None, args=None):
         args -- Serialize arguments for app installation
 
     """
-    from yunohost.hook import hook_add, hook_remove, hook_exec
-
     # Fetch or extract sources
     try: os.listdir(install_tmp)
     except OSError: os.makedirs(install_tmp)
@@ -586,8 +588,6 @@ def app_remove(auth, app):
         app -- App(s) to delete
 
     """
-    from yunohost.hook import hook_exec, hook_remove
-
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
@@ -629,9 +629,6 @@ def app_addaccess(auth, apps, users=[]):
         apps
 
     """
-    from yunohost.user import user_list, user_info
-    from yunohost.hook import hook_callback
-
     result = {}
 
     if not users:
@@ -684,9 +681,6 @@ def app_removeaccess(auth, apps, users=[]):
         apps
 
     """
-    from yunohost.user import user_list
-    from yunohost.hook import hook_callback
-
     result = {}
 
     remove_all = False
@@ -734,8 +728,6 @@ def app_clearaccess(auth, apps):
         apps
 
     """
-    from yunohost.hook import hook_callback
-
     if not isinstance(apps, list): apps = [apps]
 
     for app in apps:
@@ -786,8 +778,6 @@ def app_makedefault(auth, app, domain=None):
         domain
 
     """
-    from yunohost.domain import domain_list
-
     app_settings = _get_app_settings(app)
     app_domain = app_settings['domain']
     app_path   = app_settings['path']
@@ -879,8 +869,6 @@ def app_checkurl(auth, url, app=None):
         app -- Write domain & path to app settings for further checks
 
     """
-    from yunohost.domain import domain_list
-
     if "https://" == url[:8]:
         url = url[8:]
     elif "http://" == url[:7]:
@@ -963,9 +951,6 @@ def app_ssowatconf(auth):
 
 
     """
-    from yunohost.domain import domain_list
-    from yunohost.user import user_list
-
     with open('/etc/yunohost/current_host', 'r') as f:
         main_domain = f.readline().rstrip()
 
@@ -1464,6 +1449,7 @@ def _check_manifest_requirements(manifest):
                                      pkgname=pkgname, version=version,
                                      spec=spec))
 
+
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     """Parse arguments needed for an action from the manifest
 
@@ -1478,9 +1464,6 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    from yunohost.domain import domain_list
-    from yunohost.user import user_info
-
     args_list = OrderedDict()
     try:
         action_args = manifest['arguments'][action]
@@ -1575,6 +1558,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             args_list[arg_name] = arg_value
     return args_list
 
+
 def _make_environment_dict(args_dict):
     """
     Convert a dictionnary containing manifest arguments
@@ -1588,6 +1572,7 @@ def _make_environment_dict(args_dict):
     for arg_name, arg_value in args_dict.items():
         env_dict[ "YNH_APP_ARG_%s" % arg_name.upper() ] = arg_value
     return env_dict
+
 
 def _parse_app_instance_name(app_instance_name):
     """
@@ -1615,6 +1600,7 @@ def _parse_app_instance_name(app_instance_name):
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
+
 
 def is_true(arg):
     """
@@ -1648,7 +1634,5 @@ def random_password(length=8):
         length -- The string length to generate
 
     """
-    import string, random
-
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
     return ''.join(random.sample(char_set, length))
