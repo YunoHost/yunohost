@@ -31,9 +31,15 @@ import json
 import errno
 import subprocess
 import re
+import pwd
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+
+from yunohost.domain import domain_list
+from yunohost.hook import hook_callback
+from yunohost.app import app_ssowatconf
+
 
 logger = getActionLogger('yunohost.user')
 
@@ -104,11 +110,6 @@ def user_create(auth, username, firstname, lastname, mail, password,
         mailbox_quota -- Mailbox size quota
 
     """
-    import pwd
-    from yunohost.domain import domain_list
-    from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf
-
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
         'uid'       : username,
@@ -222,9 +223,6 @@ def user_delete(auth, username, purge=False):
         purge
 
     """
-    from yunohost.app import app_ssowatconf
-    from yunohost.hook import hook_callback
-
     if auth.remove('uid=%s,ou=users' % username):
         # Invalidate passwd to take user deletion into account
         subprocess.call(['nscd', '-i', 'passwd'])
@@ -264,9 +262,6 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         remove_mailalias -- Mail aliases to remove
 
     """
-    from yunohost.domain import domain_list
-    from yunohost.app import app_ssowatconf
-
     attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     new_attr_dict = {}
     domains = domain_list(auth)['domains']
