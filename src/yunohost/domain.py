@@ -29,8 +29,6 @@ import json
 import yaml
 import errno
 import shutil
-from urllib import urlopen
-
 import requests
 
 from moulinette.core import MoulinetteError
@@ -293,7 +291,7 @@ def get_public_ip(protocol=4):
     else:
         raise ValueError("invalid protocol version")
     try:
-        return urlopen(url).read().strip()
+        return requests.get(url).content.strip()
     except IOError:
         logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
         raise MoulinetteError(errno.ENETUNREACH,
