@@ -315,29 +315,29 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         except MoulinetteError:
             pass
         app_list = os.listdir(apps_setting_path)
-        if len(app_list) > 0:
-            for app_id in app_list:
-                if '__' in app_id:
-                    original_app_id = app_id[:app_id.index('__')]
-                else:
-                    original_app_id = app_id
 
-                current_app_dict = app_info(app_id,  raw=True)
-                new_app_dict     = app_info(original_app_id, raw=True)
+        for app_id in app_list:
+            if '__' in app_id:
+                original_app_id = app_id[:app_id.index('__')]
+            else:
+                original_app_id = app_id
 
-                # Custom app
-                if new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-                    continue
+            current_app_dict = app_info(app_id,  raw=True)
+            new_app_dict     = app_info(original_app_id, raw=True)
 
-                if (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
-                      or ('update_time' not in current_app_dict['settings'] \
-                           and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
-                      or ('update_time' in current_app_dict['settings'] \
-                           and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
-                    apps.append({
-                        'id': app_id,
-                        'label': current_app_dict['settings']['label']
-                    })
+            # Custom app
+            if new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
+                continue
+
+            if (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
+                  or ('update_time' not in current_app_dict['settings'] \
+                       and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
+                  or ('update_time' in current_app_dict['settings'] \
+                       and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
+                apps.append({
+                    'id': app_id,
+                    'label': current_app_dict['settings']['label']
+                })
 
     if len(apps) == 0 and len(packages) == 0:
         logger.info(m18n.n('packages_no_upgrade'))
