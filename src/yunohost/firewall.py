@@ -36,7 +36,9 @@ except ImportError:
 from moulinette.core import MoulinetteError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.text import prependlines
+from moulinette.utils.text import prependlines, searchf
+
+from yunohost.hook import hook_callback
 
 firewall_file = '/etc/yunohost/firewall.yml'
 upnp_cron_job = '/etc/cron.d/yunohost-firewall-upnp'
@@ -194,8 +196,6 @@ def firewall_reload(skip_upnp=False):
         skip_upnp -- Do not refresh port forwarding using UPnP
 
     """
-    from yunohost.hook import hook_callback
-
     reloaded = False
     errors = False
 
@@ -434,7 +434,6 @@ def _get_ssh_port(default=22):
     Retrieve the SSH port from the sshd_config file or used the default
     one if it's not defined.
     """
-    from moulinette.utils.text import searchf
     try:
         m = searchf(r'^Port[ \t]+([0-9]+)$',
                     '/etc/ssh/sshd_config', count=-1)
@@ -444,11 +443,13 @@ def _get_ssh_port(default=22):
         pass
     return default
 
+
 def _update_firewall_file(rules):
     """Make a backup and write new rules to firewall file"""
     os.system("cp {0} {0}.old".format(firewall_file))
     with open(firewall_file, 'w') as f:
         yaml.safe_dump(rules, f, default_flow_style=False)
+
 
 def _on_rule_command_error(returncode, cmd, output):
     """Callback for rules commands error"""
