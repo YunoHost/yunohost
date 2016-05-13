@@ -328,8 +328,8 @@ def tools_update(ignore_apps=False, ignore_packages=False):
             else:
                 original_app_id = app_id
 
-            current_app_dict = app_info(app_id,  raw=True)
-            new_app_dict     = app_info(original_app_id, raw=True)
+            current_app_dict = app_info(app_id, raw=True)
+            new_app_dict = app_info(original_app_id, raw=True)
 
             # Custom app
             if new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:

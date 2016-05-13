@@ -55,12 +55,12 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
         fields -- fields to fetch
 
     """
-    user_attrs = { 'uid': 'username',
-                   'cn': 'fullname',
-                   'mail': 'mail',
-                   'maildrop': 'mail-forward',
-                   'mailuserquota': 'mailbox-quota' }
-    attrs = [ 'uid' ]
+    user_attrs = {'uid': 'username',
+                  'cn': 'fullname',
+                  'mail': 'mail',
+                  'maildrop': 'mail-forward',
+                  'mailuserquota': 'mailbox-quota'}
+    attrs = ['uid']
     users = {}
 
     # Set default arguments values
@@ -79,12 +79,12 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('field_invalid', attr))
     else:
-        attrs = [ 'uid', 'cn', 'mail', 'mailuserquota' ]
+        attrs = ['uid', 'cn', 'mail', 'mailuserquota']
 
     result = auth.search('ou=users,dc=yunohost,dc=org', filter, attrs)
 
     if len(result) > offset and limit > 0:
-        for user in result[offset:offset+limit]:
+        for user in result[offset:offset + limit]:
             entry = {}
             for attr, values in user.items():
                 try:
@@ -93,7 +93,7 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
                     pass
             uid = entry[user_attrs['uid']]
             users[uid] = entry
-    return { 'users' : users }
+    return {'users': users}
 
 
 def user_create(auth, username, firstname, lastname, mail, password,
@@ -112,8 +112,8 @@ def user_create(auth, username, firstname, lastname, mail, password,
     """
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
-        'uid'       : username,
-        'mail'      : mail
+        'uid': username,
+        'mail': mail
     })
 
     # Validate uniqueness of username in system users
@@ -125,10 +125,10 @@ def user_create(auth, username, firstname, lastname, mail, password,
         raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
 
     # Check that the mail domain exists
-    if mail[mail.find('@')+1:] not in domain_list(auth)['domains']:
+    if mail[mail.find('@') + 1:] not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
-                                     domain=mail[mail.find('@')+1:]))
+                                     domain=mail[mail.find('@') + 1:]))
 
     # Get random UID/GID
     uid_check = gid_check = 0
@@ -141,7 +141,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
     fullname = '%s %s' % (firstname, lastname)
     rdn = 'uid=%s,ou=users' % username
     char_set = string.ascii_uppercase + string.digits
-    salt = ''.join(random.sample(char_set,8))
+    salt = ''.join(random.sample(char_set, 8))
     salt = '$1$' + salt + '$'
     user_pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
     attr_dict = {
@@ -166,12 +166,12 @@ def user_create(auth, username, firstname, lastname, mail, password,
         with open('/etc/yunohost/current_host') as f:
             main_domain = f.readline().rstrip()
         aliases = [
-            'root@'+ main_domain,
-            'admin@'+ main_domain,
-            'webmaster@'+ main_domain,
-            'postmaster@'+ main_domain,
+            'root@' + main_domain,
+            'admin@' + main_domain,
+            'webmaster@' + main_domain,
+            'postmaster@' + main_domain,
         ]
-        attr_dict['mail'] = [ attr_dict['mail'] ] + aliases
+        attr_dict['mail'] = [attr_dict['mail']] + aliases
 
         # If exists, remove the redirection from the SSO
         try:
@@ -184,8 +184,8 @@ def user_create(auth, username, firstname, lastname, mail, password,
             with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
                 json.dump(ssowat_conf, f, sort_keys=True, indent=4)
 
-        except IOError: pass
-
+        except IOError:
+            pass
 
     if auth.add(rdn, attr_dict):
         # Invalidate passwd to take user creation into account
@@ -194,7 +194,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
         memberlist.append(username)
-        if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
+        if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
             try:
                 # Attempt to create user home folder
                 subprocess.check_call(
@@ -204,12 +204,12 @@ def user_create(auth, username, firstname, lastname, mail, password,
                     logger.warning(m18n.n('user_home_creation_failed'),
                                    exc_info=1)
             app_ssowatconf(auth)
-            #TODO: Send a welcome mail to user
+            # TODO: Send a welcome mail to user
             logger.success(m18n.n('user_created'))
             hook_callback('post_user_create',
                           args=[username, mail, password, firstname, lastname])
 
-            return { 'fullname' : fullname, 'username' : username, 'mail' : mail }
+            return {'fullname': fullname, 'username': username, 'mail': mail}
 
     raise MoulinetteError(169, m18n.n('user_creation_failed'))
 
@@ -229,9 +229,11 @@ def user_delete(auth, username, purge=False):
 
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
-        try: memberlist.remove(username)
-        except: pass
-        if auth.update('cn=sftpusers,ou=groups', { 'memberUid': memberlist }):
+        try:
+            memberlist.remove(username)
+        except:
+            pass
+        if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
             if purge:
                 subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
     else:
@@ -274,11 +276,11 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
 
     # Get modifications from arguments
     if firstname:
-        new_attr_dict['givenName'] = firstname # TODO: Validate
+        new_attr_dict['givenName'] = firstname  # TODO: Validate
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + user['sn'][0]
 
     if lastname:
-        new_attr_dict['sn'] = lastname # TODO: Validate
+        new_attr_dict['sn'] = lastname  # TODO: Validate
         new_attr_dict['cn'] = new_attr_dict['displayName'] = user['givenName'][0] + ' ' + lastname
 
     if lastname and firstname:
@@ -286,34 +288,34 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
 
     if change_password:
         char_set = string.ascii_uppercase + string.digits
-        salt = ''.join(random.sample(char_set,8))
+        salt = ''.join(random.sample(char_set, 8))
         salt = '$1$' + salt + '$'
         new_attr_dict['userPassword'] = '{CRYPT}' + crypt.crypt(str(change_password), salt)
 
     if mail:
-        auth.validate_uniqueness({ 'mail': mail })
-        if mail[mail.find('@')+1:] not in domains:
+        auth.validate_uniqueness({'mail': mail})
+        if mail[mail.find('@') + 1:] not in domains:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('mail_domain_unknown',
-                                          domain=mail[mail.find('@')+1:]))
+                                         domain=mail[mail.find('@') + 1:]))
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
 
     if add_mailalias:
         if not isinstance(add_mailalias, list):
-            add_mailalias = [ add_mailalias ]
+            add_mailalias = [add_mailalias]
         for mail in add_mailalias:
-            auth.validate_uniqueness({ 'mail': mail })
-            if mail[mail.find('@')+1:] not in domains:
+            auth.validate_uniqueness({'mail': mail})
+            if mail[mail.find('@') + 1:] not in domains:
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('mail_domain_unknown',
-                                             domain=mail[mail.find('@')+1:]))
+                                             domain=mail[mail.find('@') + 1:]))
             user['mail'].append(mail)
         new_attr_dict['mail'] = user['mail']
 
     if remove_mailalias:
         if not isinstance(remove_mailalias, list):
-            remove_mailalias = [ remove_mailalias ]
+            remove_mailalias = [remove_mailalias]
         for mail in remove_mailalias:
             if len(user['mail']) > 1 and mail in user['mail'][1:]:
                 user['mail'].remove(mail)
@@ -324,7 +326,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
 
     if add_mailforward:
         if not isinstance(add_mailforward, list):
-            add_mailforward = [ add_mailforward ]
+            add_mailforward = [add_mailforward]
         for mail in add_mailforward:
             if mail in user['maildrop'][1:]:
                 continue
@@ -333,7 +335,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
 
     if remove_mailforward:
         if not isinstance(remove_mailforward, list):
-            remove_mailforward = [ remove_mailforward ]
+            remove_mailforward = [remove_mailforward]
         for mail in remove_mailforward:
             if len(user['maildrop']) > 1 and mail in user['maildrop'][1:]:
                 user['maildrop'].remove(mail)
@@ -346,11 +348,11 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         new_attr_dict['mailuserquota'] = mailbox_quota
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
-       logger.success(m18n.n('user_updated'))
-       app_ssowatconf(auth)
-       return user_info(auth, username)
+        logger.success(m18n.n('user_updated'))
+        app_ssowatconf(auth)
+        return user_info(auth, username)
     else:
-       raise MoulinetteError(169, m18n.n('user_update_failed'))
+        raise MoulinetteError(169, m18n.n('user_update_failed'))
 
 
 def user_info(auth, username):
@@ -366,9 +368,9 @@ def user_info(auth, username):
     ]
 
     if len(username.split('@')) is 2:
-        filter = 'mail='+ username
+        filter = 'mail=' + username
     else:
-        filter = 'uid='+ username
+        filter = 'uid=' + username
 
     result = auth.search('ou=users,dc=yunohost,dc=org', filter, user_attrs)
 
@@ -392,28 +394,31 @@ def user_info(auth, username):
         result_dict['mail-forward'] = user['maildrop'][1:]
 
     if 'mailuserquota' in user:
-        if user['mailuserquota'][0] != '0': 
-           cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
-           userquota = subprocess.check_output(cmd,stderr=subprocess.STDOUT,
-                                             shell=True)
-           quotavalue = re.findall(r'\d+', userquota)
-           result = '%s (%s%s)' % ( _convertSize(eval(quotavalue[0])), 
-                                             quotavalue[2], '%')
-           result_dict['mailbox-quota'] = {
-               'limit' : user['mailuserquota'][0],
-               'use' : result
-           }
+        if user['mailuserquota'][0] != '0':
+            cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
+            userquota = subprocess.check_output(cmd, stderr=subprocess.STDOUT,
+                                              shell=True)
+            quotavalue = re.findall(r'\d+', userquota)
+            result = '%s (%s%s)' % (_convertSize(eval(quotavalue[0])),
+                                    quotavalue[2], '%')
+            result_dict['mailbox-quota'] = {
+                'limit': user['mailuserquota'][0],
+                'use': result
+            }
         else:
-           result_dict['mailbox-quota'] = m18n.n('unlimit')
- 
+            result_dict['mailbox-quota'] = m18n.n('unlimit')
+
     if result:
         return result_dict
     else:
         raise MoulinetteError(167, m18n.n('user_info_failed'))
 
+
 def _convertSize(num, suffix=''):
-    for unit in ['K','M','G','T','P','E','Z']:
+    for unit in ['K', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(num) < 1024.0:
             return "%3.1f%s%s" % (num, unit, suffix)
+
         num /= 1024.0
+
     return "%.1f%s%s" % (num, 'Yi', suffix)
