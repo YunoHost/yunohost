@@ -27,6 +27,7 @@ import os
 import json
 import yaml
 import errno
+import shutil
 from urllib import urlopen
 
 import requests
@@ -197,7 +198,7 @@ def domain_remove(auth, domain, force=False):
                                           m18n.n('domain_uninstall_app_first'))
 
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+        shutil.rmtree('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
