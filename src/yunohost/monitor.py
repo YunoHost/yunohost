@@ -41,6 +41,9 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.domain import get_public_ip
+from yunohost.service import (service_status, service_enable,
+    service_start, service_disable, service_stop)
+
 
 logger = getActionLogger('yunohost.monitor')
 
@@ -406,9 +409,6 @@ def monitor_enable(no_stats=False):
         no_stats -- Disable monitoring statistics
 
     """
-    from yunohost.service import (service_status, service_enable,
-        service_start)
-
     glances = service_status('glances')
     if glances['status'] != 'running':
         service_start('glances')
@@ -433,9 +433,6 @@ def monitor_disable():
     Disable server monitoring
 
     """
-    from yunohost.service import (service_status, service_disable,
-        service_stop)
-
     glances = service_status('glances')
     if glances['status'] != 'inactive':
         service_stop('glances')
@@ -466,8 +463,6 @@ def _get_glances_api():
         pass
     else:
         return p
-
-    from yunohost.service import service_status
 
     if service_status('glances')['status'] != 'running':
         raise MoulinetteError(errno.EPERM, m18n.n('monitor_not_enabled'))
