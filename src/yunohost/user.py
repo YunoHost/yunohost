@@ -30,7 +30,6 @@ import string
 import json
 import errno
 import subprocess
-import math
 import re
 
 from moulinette.core import MoulinetteError
