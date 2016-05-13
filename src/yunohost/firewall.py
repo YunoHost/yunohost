@@ -36,7 +36,9 @@ except ImportError:
 from moulinette.core import MoulinetteError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.text import prependlines
+from moulinette.utils.text import prependlines, searchf
+
+from yunohost.hook import hook_callback
 
 firewall_file = '/etc/yunohost/firewall.yml'
 upnp_cron_job = '/etc/cron.d/yunohost-firewall-upnp'
@@ -123,7 +125,7 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
     ipvs = ['ipv4', 'ipv6']
     upnp = True
     if ipv4_only and ipv6_only:
-        upnp = True # automatically disallow UPnP
+        upnp = True  # automatically disallow UPnP
     elif ipv4_only:
         ipvs = ['ipv4',]
         upnp = upnp_only
@@ -178,7 +180,7 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
         ports = sorted(set(ports['ipv4']) | set(ports['ipv6']))
 
     # Format returned dict
-    ret = { "opened_ports": ports }
+    ret = {"opened_ports": ports}
     if list_forwarded:
         # Combine TCP and UDP forwarded ports
         ret['forwarded_ports'] = sorted(
@@ -194,8 +196,6 @@ def firewall_reload(skip_upnp=False):
         skip_upnp -- Do not refresh port forwarding using UPnP
 
     """
-    from yunohost.hook import hook_callback
-
     reloaded = False
     errors = False
 
@@ -224,8 +224,8 @@ def firewall_reload(skip_upnp=False):
         # Iterate over ports and add rule
         for protocol in ['TCP', 'UDP']:
             for port in firewall['ipv4'][protocol]:
-                rules.append("iptables -A INPUT -p %s --dport %s -j ACCEPT" \
-                                 % (protocol, process.quote(str(port))))
+                rules.append("iptables -A INPUT -p %s --dport %s -j ACCEPT"
+                             % (protocol, process.quote(str(port))))
         rules += [
             "iptables -A INPUT -i lo -j ACCEPT",
             "iptables -A INPUT -p icmp -j ACCEPT",
@@ -253,8 +253,8 @@ def firewall_reload(skip_upnp=False):
         # Iterate over ports and add rule
         for protocol in ['TCP', 'UDP']:
             for port in firewall['ipv6'][protocol]:
-                rules.append("ip6tables -A INPUT -p %s --dport %s -j ACCEPT" \
-                                 % (protocol, process.quote(str(port))))
+                rules.append("ip6tables -A INPUT -p %s --dport %s -j ACCEPT"
+                             % (protocol, process.quote(str(port))))
         rules += [
             "ip6tables -A INPUT -i lo -j ACCEPT",
             "ip6tables -A INPUT -p icmpv6 -j ACCEPT",
@@ -308,13 +308,14 @@ def firewall_upnp(action='status', no_refresh=False):
         try:
             # Remove old cron job
             os.remove('/etc/cron.d/yunohost-firewall')
-        except: pass
+        except:
+            pass
         action = 'status'
         no_refresh = False
 
     if action == 'status' and no_refresh:
         # Only return current state
-        return { 'enabled': enabled }
+        return {'enabled': enabled}
     elif action == 'enable' or (enabled and action == 'status'):
         # Add cron job
         with open(upnp_cron_job, 'w+') as f:
@@ -330,7 +331,8 @@ def firewall_upnp(action='status', no_refresh=False):
         try:
             # Remove cron job
             os.remove(upnp_cron_job)
-        except: pass
+        except:
+            pass
         enabled = False
         if action == 'status':
             no_refresh = True
@@ -364,7 +366,8 @@ def firewall_upnp(action='status', no_refresh=False):
                         if upnpc.getspecificportmapping(port, protocol):
                             try:
                                 upnpc.deleteportmapping(port, protocol)
-                            except: pass
+                            except:
+                                pass
                         if not enabled:
                             continue
                         try:
@@ -403,7 +406,7 @@ def firewall_upnp(action='status', no_refresh=False):
 
     if action == 'enable' and not enabled:
         raise MoulinetteError(errno.ENXIO, m18n.n('upnp_port_open_failed'))
-    return { 'enabled': enabled }
+    return {'enabled': enabled}
 
 
 def firewall_stop():
@@ -434,7 +437,6 @@ def _get_ssh_port(default=22):
     Retrieve the SSH port from the sshd_config file or used the default
     one if it's not defined.
     """
-    from moulinette.utils.text import searchf
     try:
         m = searchf(r'^Port[ \t]+([0-9]+)$',
                     '/etc/ssh/sshd_config', count=-1)
@@ -444,11 +446,13 @@ def _get_ssh_port(default=22):
         pass
     return default
 
+
 def _update_firewall_file(rules):
     """Make a backup and write new rules to firewall file"""
     os.system("cp {0} {0}.old".format(firewall_file))
     with open(firewall_file, 'w') as f:
         yaml.safe_dump(rules, f, default_flow_style=False)
+
 
 def _on_rule_command_error(returncode, cmd, output):
     """Callback for rules commands error"""

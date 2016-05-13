@@ -24,10 +24,7 @@
     Specific tools
 """
 import os
-import sys
 import yaml
-import re
-import getpass
 import requests
 import json
 import errno
@@ -42,12 +39,12 @@ from moulinette.utils.log import getActionLogger
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
 from yunohost.domain import domain_add, domain_list, get_public_ip
 from yunohost.dyndns import dyndns_subscribe
-from yunohost.firewall import firewall_upnp, firewall_reload
+from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log
-from yunohost.monitor import monitor_disk, monitor_network, monitor_system
+from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
-apps_setting_path= '/etc/yunohost/apps/'
+apps_setting_path = '/etc/yunohost/apps/'
 
 logger = getActionLogger('yunohost.tools')
 
@@ -62,12 +59,16 @@ def tools_ldapinit(auth):
         ldap_map = yaml.load(f)
 
     for rdn, attr_dict in ldap_map['parents'].items():
-        try: auth.add(rdn, attr_dict)
-        except: pass
+        try:
+            auth.add(rdn, attr_dict)
+        except:
+            pass
 
     for rdn, attr_dict in ldap_map['children'].items():
-        try: auth.add(rdn, attr_dict)
-        except: pass
+        try:
+            auth.add(rdn, attr_dict)
+        except:
+            pass
 
     admin_dict = {
         'cn': 'admin',
@@ -118,7 +119,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             old_domain = f.readline().rstrip()
 
         if not new_domain:
-            return { 'current_main_domain': old_domain }
+            return {'current_main_domain': old_domain}
 
     if not new_domain:
         raise MoulinetteError(errno.EINVAL, m18n.n('new_domain_required'))
@@ -130,7 +131,7 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
 
     command_list = [
         'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
-        'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
+        'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem' % new_domain,
         'echo %s > /etc/yunohost/current_host' % new_domain,
     ]
 
@@ -146,14 +147,15 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
             pass
         else:
             dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(new_domain.split('.')[1:])
+            dyndomain = '.'.join(new_domain.split('.')[1:])
             if dyndomain in dyndomains:
                 dyndns_subscribe(domain=new_domain)
 
     try:
         with open('/etc/yunohost/installed', 'r') as f:
             service_regen_conf()
-    except IOError: pass
+    except IOError:
+        pass
 
     logger.success(m18n.n('maindomain_changed'))
 
@@ -181,7 +183,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             pass
         else:
             dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(domain.split('.')[1:])
+            dyndomain = '.'.join(domain.split('.')[1:])
             if dyndomain in dyndomains:
                 if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
                     dyndns = True
@@ -195,7 +197,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     auth = init_authenticator(('ldap', 'default'),
                               {'uri': "ldap://localhost:389",
                                'base_dn': "dc=yunohost,dc=org",
-                               'user_rdn': "cn=admin" })
+                               'user_rdn': "cn=admin"})
     auth.authenticate('yunohost')
 
     # Initialize LDAP for YunoHost
@@ -212,8 +214,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     ]
 
     for folder in folders_to_create:
-        try: os.listdir(folder)
-        except OSError: os.makedirs(folder)
+        try:
+            os.listdir(folder)
+        except OSError:
+            os.makedirs(folder)
 
     # Change folders permissions
     os.system('chmod 755 /home/yunohost.app')
@@ -232,7 +236,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
-    ssowat_conf['redirected_urls']['/'] = domain +'/yunohost/admin'
+    ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
     with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
         json.dump(ssowat_conf, f, sort_keys=True, indent=4)
@@ -244,8 +248,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     command_list = [
         'echo "01" > %s/serial' % ssl_dir,
-        'rm %s/index.txt'       % ssl_dir,
-        'touch %s/index.txt'    % ssl_dir,
+        'rm %s/index.txt' % ssl_dir,
+        'touch %s/index.txt' % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
         'sed -i "s/yunohost.org/%s/g" %s/openssl.ca.cnf ' % (domain, ssl_dir),
         'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch' % (ssl_dir, ssl_dir, ssl_dir),
@@ -317,35 +321,34 @@ def tools_update(ignore_apps=False, ignore_packages=False):
             app_fetchlist()
         except MoulinetteError:
             pass
-        app_list = os.listdir(apps_setting_path)
-        if len(app_list) > 0:
-            for app_id in app_list:
-                if '__' in app_id:
-                    original_app_id = app_id[:app_id.index('__')]
-                else:
-                    original_app_id = app_id
 
-                current_app_dict = app_info(app_id,  raw=True)
-                new_app_dict     = app_info(original_app_id, raw=True)
+        for app_id in os.listdir(apps_setting_path):
+            if '__' in app_id:
+                original_app_id = app_id[:app_id.index('__')]
+            else:
+                original_app_id = app_id
 
-                # Custom app
-                if new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-                    continue
+            current_app_dict = app_info(app_id, raw=True)
+            new_app_dict = app_info(original_app_id, raw=True)
 
-                if (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
-                      or ('update_time' not in current_app_dict['settings'] \
-                           and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
-                      or ('update_time' in current_app_dict['settings'] \
-                           and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
-                    apps.append({
-                        'id': app_id,
-                        'label': current_app_dict['settings']['label']
-                    })
+            # Custom app
+            if new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
+                continue
+
+            if (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
+                  or ('update_time' not in current_app_dict['settings'] \
+                       and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
+                  or ('update_time' in current_app_dict['settings'] \
+                       and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
+                apps.append({
+                    'id': app_id,
+                    'label': current_app_dict['settings']['label']
+                })
 
     if len(apps) == 0 and len(packages) == 0:
         logger.info(m18n.n('packages_no_upgrade'))
 
-    return { 'packages': packages, 'apps': apps }
+    return {'packages': packages, 'apps': apps}
 
 
 def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
@@ -381,7 +384,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
             # ... and set a hourly cron up to upgrade critical packages
             if critical_upgrades:
                 logger.info(m18n.n('packages_upgrade_critical_later',
-                                        packages=', '.join(critical_upgrades)))
+                                   packages=', '.join(critical_upgrades)))
                 with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
                     f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade\n' % ' '.join(critical_upgrades))
 
@@ -414,7 +417,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
     # Return API logs if it is an API call
     if is_api:
-        return { "log": service_log('yunohost-api', number="100").values()[0] }
+        return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
 def tools_diagnosis(auth, private=False):
@@ -422,7 +425,7 @@ def tools_diagnosis(auth, private=False):
     Return global info about current yunohost instance to help debugging
 
     """
-    diagnosis = OrderedDict();
+    diagnosis = OrderedDict()
 
     # Debian release
     try:
@@ -466,8 +469,8 @@ def tools_diagnosis(auth, private=False):
         logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['memory'] = {
-            'ram' : '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
-            'swap' : '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
+            'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
+            'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
         }
 
     # Services status

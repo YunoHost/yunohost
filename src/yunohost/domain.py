@@ -2,7 +2,7 @@
 
 """ License
 
-    Copyright (C) 2013 YunoHost
+    Copyright (C) 2013-2016 YunoHost
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
@@ -24,20 +24,20 @@
     Manage domains
 """
 import os
-import sys
-import datetime
 import re
-import shutil
 import json
 import yaml
 import errno
+import shutil
 import requests
-from urllib import urlopen
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_regen_conf
+from yunohost.hook import hook_callback
+from yunohost.dyndns import dyndns_subscribe
+from yunohost.app import app_ssowatconf
 
 logger = getActionLogger('yunohost.domain')
 
@@ -80,12 +80,8 @@ def domain_add(auth, domain, dyndns=False):
         dyndns -- Subscribe to DynDNS
 
     """
-    from yunohost.hook import hook_callback
 
     attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
-
-    now = datetime.datetime.now()
-    timestamp = str(now.year) + str(now.month) + str(now.day)
 
     if domain in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
@@ -94,7 +90,6 @@ def domain_add(auth, domain, dyndns=False):
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-        from yunohost.dyndns import dyndns_subscribe
 
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
@@ -160,12 +155,14 @@ def domain_add(auth, domain, dyndns=False):
             with open('/etc/yunohost/installed', 'r') as f:
                 service_regen_conf(names=[
                     'nginx', 'metronome', 'dnsmasq', 'rmilter'])
-                os.system('yunohost app ssowatconf > /dev/null 2>&1')
+                app_ssowatconf(auth)
         except IOError: pass
     except:
         # Force domain removal silently
-        try: domain_remove(auth, domain, True)
-        except: pass
+        try:
+            domain_remove(auth, domain, True)
+        except:
+            pass
         raise
 
     hook_callback('post_domain_add', args=[domain])
@@ -182,8 +179,6 @@ def domain_remove(auth, domain, force=False):
         force -- Force the domain removal
 
     """
-    from yunohost.hook import hook_callback
-
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
@@ -200,12 +195,12 @@ def domain_remove(auth, domain, force=False):
                                           m18n.n('domain_uninstall_app_first'))
 
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+        shutil.rmtree('/etc/yunohost/certs/%s' % domain)
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
     service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
-    os.system('yunohost app ssowatconf > /dev/null 2>&1')
+    app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])
 
@@ -296,7 +291,7 @@ def get_public_ip(protocol=4):
     else:
         raise ValueError("invalid protocol version")
     try:
-        return urlopen(url).read().strip()
+        return requests.get(url).content.strip()
     except IOError:
         logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
         raise MoulinetteError(errno.ENETUNREACH,
