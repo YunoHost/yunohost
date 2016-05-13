@@ -717,22 +717,26 @@ def _append_to_stats(stats, monitor, statics=[]):
         statics = [statics]
 
     # Appending function
-    def _append(s, m, st):
-        for k, v in m.items():
-            if k in st:
-                s[k] = v
-            elif isinstance(v, dict):
-                if k not in s:
-                    s[k] = {}
-                s[k] = _append(s[k], v, st)
+    def _append(_stats, _monitor, _statics):
+        for key, value in _monitor.items():
+            if key in _statics:
+                _stats[key] = value
+
+            elif isinstance(value, dict):
+                if key not in _stats:
+                    _stats[key] = {}
+                _stats[key] = _append(_stats[key], value, _statics)
+
             else:
-                if k not in s:
-                    s[k] = []
-                if isinstance(v, list):
-                    s[k].extend(v)
+                if key not in _stats:
+                    _stats[key] = []
+
+                if isinstance(value, list):
+                    _stats[key].extend(value)
                 else:
-                    s[k].append(v)
-        return s
+                    _stats[key].append(value)
+
+        return _stats
 
     stats = _append(stats, monitor, statics)
     return stats
