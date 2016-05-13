@@ -92,7 +92,7 @@ def domain_add(auth, domain, dyndns=False):
 
         try:
             r = requests.get('https://dyndns.yunohost.org/domains')
-        except ConnectionError:
+        except requests.ConnectionError:
             pass
         else:
             dyndomains = json.loads(r.text)
