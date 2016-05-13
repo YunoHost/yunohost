@@ -30,6 +30,8 @@ import errno
 import requests
 from urllib import urlopen
 
+import requests
+
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
