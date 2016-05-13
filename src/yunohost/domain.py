@@ -158,8 +158,10 @@ def domain_add(auth, domain, dyndns=False):
         except IOError: pass
     except:
         # Force domain removal silently
-        try: domain_remove(auth, domain, True)
-        except: pass
+        try:
+            domain_remove(auth, domain, True)
+        except:
+            pass
         raise
 
     hook_callback('post_domain_add', args=[domain])
