@@ -35,7 +35,7 @@ import errno
 import os
 import dns.resolver
 import cPickle as pickle
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
