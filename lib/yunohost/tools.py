@@ -34,6 +34,7 @@ import errno
 import logging
 import apt
 import apt.progress
+import platform
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -480,7 +481,6 @@ def tools_upgrade_v24(auth):
     """
     YunoHost upgrade to new Yunohost version (on jessie)
     """
-    import platform
 
     # Retrieve interface
     is_api = True if msettings.get('interface') == 'api' else False
