@@ -511,7 +511,7 @@ def tools_upgrade_v24(auth):
 
     # Prepare systemctl
     with open('/etc/cron.d/yunohost-regenconf', 'w+') as f:
-        f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin systemctl start yunohost-api && rm -f /etc/cron.d/yunohost-regenconf\n' )
+        f.write('* * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin systemctl start yunohost-api && rm -f /etc/cron.d/yunohost-regenconf\n' )
 
     # Reboot user notice
     msignals.display(m18n.n('upgrade_24_reboot'), 'warning')
