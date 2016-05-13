@@ -29,6 +29,7 @@ from glob import iglob
 
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
+from moulinette.utils.process import call_async_output
 
 hook_folder = '/usr/share/yunohost/hooks/'
 custom_hook_folder = '/etc/yunohost/hooks.d/'
@@ -304,8 +305,6 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         env -- Dictionnary of environment variables to export
 
     """
-    from moulinette.utils.process import call_async_output
-
     # Validate hook path
     if path[0] != '/':
         path = os.path.realpath(path)
