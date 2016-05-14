@@ -1483,7 +1483,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     from yunohost.domain import domain_list
     from yunohost.user import user_info
 
-    args_list = OrderedDict()
+    args_dict = OrderedDict()
     try:
         action_args = manifest['arguments'][action]
     except KeyError:
@@ -1535,7 +1535,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                 raise MoulinetteError(errno.EINVAL,
                     m18n.n('app_argument_required', name=arg_name))
             elif not arg_value:
-                args_list.append('')
+                args_dict[arg_name] = ''
                 continue
 
             # Validate argument choice
@@ -1574,8 +1574,8 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                         raise MoulinetteError(errno.EINVAL,
                             m18n.n('app_argument_choice_invalid',
                                 name=arg_name, choices='0, 1'))
-            args_list[arg_name] = arg_value
-    return args_list
+            args_dict[arg_name] = arg_value
+    return args_dict
 
 def _make_environment_dict(args_dict):
     """
