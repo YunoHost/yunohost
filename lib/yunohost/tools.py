@@ -413,15 +413,24 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False, v24=False):
     """
     from yunohost.app import app_upgrade
 
+    # Retrieve interface
+    is_api = True if msettings.get('interface') == 'api' else False
+
     # Special case for v2.2 to v2.4 upgrade
+    if not v24 and not is_api:
+        try:
+            i = msignals.prompt(m18n.n('upgrade_24_confirm',
+                                       answers='y/N'))
+        except NotImplemented:
+            pass
+        else:
+            if i == 'y' or i == 'Y':
+                v24 = True
     if v24:
         return tools_upgrade_v24(auth)
     # End of v2.4 special case
 
     failure = False
-
-    # Retrieve interface
-    is_api = True if msettings.get('interface') == 'api' else False
 
     if not ignore_packages:
         cache = apt.Cache()

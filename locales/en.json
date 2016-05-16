@@ -197,6 +197,7 @@
 
     "format_datetime_short" : "%m/%d/%Y %I:%M %p",
 
+    "upgrade_24_confirm" : "YunoHost should be upgraded to v2.4, do you want to proceed? [{answers:s}]",
     "upgrade_24_not_jessie" : "Upgrading to YunoHost v2.4 will only work on Debian Jessie. Please upgrade your system before upgrading YunoHost.",
     "upgrade_24_update_failed" : "An error occurred while updating the packages list, you should maybe check your network connection.",
     "upgrade_24_system_failed" : "An error occurred while upgrading your system, we will try to fix broken packages...",
