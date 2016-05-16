@@ -198,6 +198,13 @@
     "format_datetime_short" : "%m/%d/%Y %I:%M %p",
 
     "upgrade_24_not_jessie" : "Upgrading to YunoHost v2.4 will only work on Debian Jessie. Please upgrade your system before upgrading YunoHost.",
+    "upgrade_24_update_failed" : "An error occurred while updating the packages list, you should maybe check your network connection.",
+    "upgrade_24_system_failed" : "An error occurred while upgrading your system, we will try to fix broken packages...",
+    "upgrade_24_system_done" : "Your system has been upgraded, the new YunoHost version can be installed...",
+    "upgrade_24_yunohost_install_failed" : "An error occurred while installing new yunohost package version. Please see the log and ask for help on the forum or the support chat room.",
+    "upgrade_24_yunohost_installed" : "The new YunoHost version has been installed! Now removing unused packages and regenerate the configuration...",
+    "upgrade_24_autoremove_failed" : "An error occurred while removing unused packages, you should check what failed.",
+    "upgrade_24_regenconf_failed" : "The configuration regeneration for services failed",
     "upgrade_24_reboot" : "You must reboot your server for the changes to take effect. Enter the 'reboot' command right now."
 }
 

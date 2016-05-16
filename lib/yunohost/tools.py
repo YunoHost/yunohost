@@ -35,6 +35,8 @@ import logging
 import apt
 import apt.progress
 import platform
+import shutil
+import subprocess
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -481,19 +483,33 @@ def tools_upgrade_v24(auth):
     """
     YunoHost upgrade to new Yunohost version (on jessie)
     """
-
-    # Retrieve interface
-    is_api = True if msettings.get('interface') == 'api' else False
-
     # Get Debian major version
     debian_major_version = platform.linux_distribution()[1].split('.')[0]
-    if debian_major_version is not '8':
+    if debian_major_version != '8':
         msignals.display(m18n.n('upgrade_24_not_jessie'), 'error')
         return
 
+    # Prepare environment and commands
+    env = os.environ.copy()
+    env['DEBIAN_FRONTEND'] = 'noninteractive'
+    env['DEBIAN_PRIORITY'] = 'critical'
+    apt_cmd = ['apt-get', '-y', '--force-yes', '-qq',
+               '-o', 'Dpkg::Options::=--force-confdef',
+               '-o', 'Dpkg::Options::=--force-confold']
+    _call = lambda cmd: subprocess.call(cmd, env=env)
+    _apt = lambda cmd: _call(apt_cmd + cmd)
+
     # Upgrade with current sources
-    os.system('apt-get update')
-    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade')
+    if _apt(['update',]) != 0:
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('upgrade_24_update_failed'))
+    if _apt(['upgrade',]) != 0:
+        msignals.display(m18n.n('upgrade_24_system_failed'), 'error')
+        # Attempt to repair the system
+        if _apt(['-f', 'install']) != 0 or _apt(['upgrade',]) != 0:
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('packages_upgrade_failed'))
+    msignals.display(m18n.n('upgrade_24_system_done'), 'success')
 
     # Remove old repo in sources.list file
     with open('/etc/apt/sources.list', "r") as sources:
@@ -508,18 +524,32 @@ def tools_upgrade_v24(auth):
         sources.write('deb http://repo.yunohost.org/debian/ jessie stable')
 
     # Upgrade with new sources
-    os.system('apt-get update')
-    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get install -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" yunohost')
-    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade')
-    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get remove -y --force-yes amavisd-new')
-    os.system('yes "q" | DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical apt-get -y --force-yes autoremove')
-    os.system('yunohost service regen-conf -f')
+    if _apt(['update',]) != 0:
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('upgrade_24_update_failed'))
+    if _apt(['install', 'yunohost',]) != 0:
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('upgrade_24_yunohost_install_failed'))
+    msignals.display(m18n.n('upgrade_24_yunohost_installed'))
+
+    # Remove unused packages and folders
+    if _apt(['autoremove',]) != 0:
+        msignals.display(m18n.n('upgrade_24_autoremove_failed'), 'error')
+        # Remove at least amavis and spamassassin
+        _apt(['remove', 'amavisd-new', 'spamassassin'])
+    shutil.rmtree('/usr/share/yunohost/miniupnp-src', ignore_errors=True)
+
+    # Regenerate configuration
+    if _call(['yunohost', 'service', 'regen-conf', '-f']) != 0:
+        msignals.display(m18n.n('upgrade_24_regenconf_failed'))
 
     msignals.display(m18n.n('system_upgraded'), 'success')
 
     # Prepare systemctl
     with open('/etc/cron.d/yunohost-regenconf', 'w+') as f:
-        f.write('* * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin systemctl start yunohost-api && rm -f /etc/cron.d/yunohost-regenconf\n' )
+        f.write('* * * * * root PATH=/usr/sbin:/usr/bin:/sbin:/bin '
+                'systemctl start yunohost-api && '
+                'rm -f /etc/cron.d/yunohost-regenconf\n')
 
     # Reboot user notice
     msignals.display(m18n.n('upgrade_24_reboot'), 'warning')
