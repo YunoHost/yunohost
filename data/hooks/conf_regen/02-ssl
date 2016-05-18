@@ -68,6 +68,21 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
+  # Ensure that index.txt exists
+  index_txt=/usr/share/yunohost/yunohost-config/ssl/yunoCA/index.txt
+  [[ -f "${index_txt}" ]] || {
+    if [[ -f "${index_txt}.saved" ]]; then
+      # use saved database from 2.2
+      sudo cp "${index_txt}.saved" "${index_txt}"
+    elif [[ -f "${index_txt}.old" ]]; then
+      # ... or use the state-1 database
+      sudo cp "${index_txt}.old" "${index_txt}"
+    else
+      # ... or create an empty one
+      sudo touch "${index_txt}"
+    fi
+  }
+
   # TODO: regenerate certificates if conf changed?
 }
 
