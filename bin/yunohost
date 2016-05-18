@@ -185,6 +185,10 @@ def _retrieve_namespaces():
 # Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
+    if os.geteuid() != 0:
+        # since moulinette isn't initialized, we can't use m18n here
+        sys.stderr.write("\033[1;31mError:\033[0m yunohost command must be runed as root or with sudo.\n")
+        sys.exit(1)
     parser, opts, args = _parse_cli_args()
     _init_moulinette(opts.debug, opts.verbose, opts.quiet)
 
