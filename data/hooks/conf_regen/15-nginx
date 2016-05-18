@@ -76,7 +76,8 @@ do_post_regen() {
     sudo mkdir -p "/etc/nginx/conf.d/${domain}.d"
   done
 
-  sudo service nginx restart
+  # Reload nginx configuration
+  sudo service nginx reload
 }
 
 FORCE=${2:-0}
