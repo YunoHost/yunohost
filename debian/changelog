@@ -1,3 +1,14 @@
+yunohost (2.4.0.2) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Update argument with empty value adding for OrderedDict usage
+  * [fix] Ensure that index.txt CA database exists at SSL regen-conf
+
+  [ opi ]
+  * [fix] Restart Nginx breaks web admin. Reload instead and fixes #330.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 18 May 2016 11:12:52 +0200
+
 yunohost (2.4.0.1) stable; urgency=low
 
   * [fix] Use ps to check if MySQL is running in conf_regen hook (fix #232)
