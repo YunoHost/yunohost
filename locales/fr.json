@@ -173,5 +173,16 @@
     "pattern_port": "Doit être un numéro de port valide (0-65535)",
     "pattern_port_or_range": "Doit être un numéro de port valide (0-65535) ou une gamme de ports (ex : 100:200)",
     "pattern_backup_archive_name": "Doit être un nom de fichier valide composé de caractères alphanumérique et -_. uniquement",
-    "format_datetime_short": "%d/%m/%Y %H:%M"
+    "format_datetime_short": "%d/%m/%Y %H:%M",
+
+    "upgrade_24_confirm" : "YunoHost devrait être mis à jour en version 2.4, voulez-vous continuer ? [{answers:s}]",
+    "upgrade_24_not_jessie" : "La mise à jour de YunoHost en version 2.4 ne fonctionne que sous Debian Jessie. Veuillez mettre à jour votre système pour pouvoir continuer.",
+    "upgrade_24_update_failed" : "Une erreur est survenue lors de la mise à jour de la liste des paquets, vous devriez peut-être vérifier votre connexion Internet.",
+    "upgrade_24_system_failed" : "Une erreur est survenue lors de la mise à jour de votre système, tentons de réparer les paquets cassés...",
+    "upgrade_24_system_done" : "Votre système est à jour, YunoHost peut désormais être mis à jour...",
+    "upgrade_24_yunohost_install_failed" : "Une erreur est survenue lors de l'installation de la nouvelle version du paquet yunohost. Veuillez consulter les journaux, et demander de l'aide si besoin sur le forum ou le salon d'entraide.",
+    "upgrade_24_yunohost_installed" : "La nouvelle version de YunoHost a été installée ! Supprimons les paquets qui ne sont plus nécessaires et régénérons la configuration des services...",
+    "upgrade_24_autoremove_failed" : "Une erreur est survenue lors de la suppression des paquets inutilisés, vous devriez vérifier ce qui a échoué.",
+    "upgrade_24_regenconf_failed" : "La régénération de la configuration des services a échoué.",
+    "upgrade_24_reboot" : "Vous devriez redémarrer votre serveur pour s'assurer que tout les changements sont appliqués. Vous pouvez entrer la commande 'reboot' pour ce faire."
 }
