@@ -1,3 +1,18 @@
+moulinette-yunohost (2.2.6) old-stable; urgency=low
+
+  [ opi ]
+  * [enh] Add --v24 option to upgrade command. WIP #308
+  * [fix] Move import at the beginning of the file.
+  * [fix] Cron timing.
+  * [enh] Cleanup sources.list as YunoHost use a dedicated sources file.
+
+  [ Jérôme Lebleu ]
+  * [enh] Catch each command error and be more verbose in upgrade_v24
+  * [enh] Ask the user to upgrade to v2.4 on cli
+  * [i18n] Add French translations for the upgrade-to-2.4
+
+ -- Jérôme Lebleu <jerome@maroufle.fr>  Fri, 20 May 2016 21:28:50 +0200
+
 moulinette-yunohost (2.2.5) stable; urgency=low
 
   * [fix] Block installation and upgrade of apps with requirements
