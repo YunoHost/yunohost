@@ -1,3 +1,14 @@
+yunohost (2.4.0.3) stable; urgency=low
+
+  [ Laurent Peuch ]
+  * [fix] exit if not run as root instead of raising an obscur exception
+
+  [ Jérôme Lebleu ]
+  * [enh] Add ynh_apt wrapper helper and make use of it
+  * [fix] Save LDAP base before any conf changes in conf_regen hook
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 21 May 2016 18:00:32 +0200
+
 yunohost (2.4.0.2) stable; urgency=low
 
   [ Jérôme Lebleu ]
