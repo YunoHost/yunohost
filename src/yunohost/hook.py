@@ -281,7 +281,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                           no_trace=no_trace, raise_on_error=True)
             except MoulinetteError as e:
                 state = 'failed'
-                logger.error(str(e))
+                logger.error(e.strerror, exc_info=1)
                 post_callback(name=name, priority=priority, path=path,
                               succeed=False)
             else:
