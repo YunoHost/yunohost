@@ -24,11 +24,18 @@ ynh_package_version() {
     fi
 }
 
+# APT wrapper for non-interactive operation
+#
+# usage: ynh_apt update
+ynh_apt() {
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq $@
+}
+
 # Update package index files
 #
 # usage: ynh_package_update
 ynh_package_update() {
-    sudo apt-get -y -qq update
+    ynh_apt update
 }
 
 # Install package(s)
@@ -36,7 +43,8 @@ ynh_package_update() {
 # usage: ynh_package_install name [name [...]]
 # | arg: name - the package name to install
 ynh_package_install() {
-    sudo apt-get -y -qq install $@
+    ynh_apt -o Dpkg::Options::=--force-confdef \
+            -o Dpkg::Options::=--force-confold install $@
 }
 
 # Build and install a package from an equivs control file
@@ -70,7 +78,7 @@ ynh_package_install_from_equivs() {
      && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && sudo apt-get -f -y -qq install) \
+     && ynh_package_install -f) \
         && ([[ -n "$TMPDIR" ]] && rm -rf $TMPDIR)
 
     # check if the package is actually installed
@@ -82,7 +90,7 @@ ynh_package_install_from_equivs() {
 # usage: ynh_package_remove name [name [...]]
 # | arg: name - the package name to remove
 ynh_package_remove() {
-    sudo apt-get -y -qq remove $@
+    ynh_apt remove $@
 }
 
 # Remove package(s) and their uneeded dependencies
@@ -90,5 +98,5 @@ ynh_package_remove() {
 # usage: ynh_package_autoremove name [name [...]]
 # | arg: name - the package name to remove
 ynh_package_autoremove() {
-    sudo apt-get -y -qq autoremove $@
+    ynh_apt autoremove $@
 }
