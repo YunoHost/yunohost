@@ -2,6 +2,8 @@
 
 set -e
 
+tmp_backup_dir_file="/tmp/slapd-backup-dir.txt"
+
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
       echo "You must be root to run this script" 1>&2
@@ -40,6 +42,23 @@ do_pre_regen() {
   [ ! -f /etc/ldap/slapd-yuno.conf ] \
     || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
 
+  # remove temporary backup file
+  sudo rm -f "$tmp_backup_dir_file"
+
+  # retrieve current and new backends
+  curr_backend=$(sudo slapcat -n 0 \
+                   | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
+  new_backend=$(grep '^database' slapd.conf | awk '{print $2}')
+
+  # save current database before any conf changes
+  if [[ -n "$curr_backend" && "$curr_backend" != "$new_backend" ]]; then
+    backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
+    sudo mkdir -p "$backup_dir"
+    sudo slapcat -b dc=yunohost,dc=org \
+      -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+    echo "$backup_dir" > "$tmp_backup_dir_file"
+  fi
+
   # copy configuration files
   cp -a ldap.conf slapd.conf "$ldap_dir"
   cp -a sudo.schema mailserver.schema "$schema_dir"
@@ -57,25 +76,12 @@ do_post_regen() {
 
   [ -z "$regen_conf_files" ] && exit 0
 
-  # retrieve current and new backends
-  curr_backend=$(sudo slapcat -n 0 \
-                   | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
-  new_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
-
-  # save current database in case of a backend change
-  backend_change=0
-  backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
-  if [[ -n "$curr_backend" && "$curr_backend" != "$new_backend" ]]; then
-      backend_change=1
-      sudo mkdir -p "$backup_dir"
-      sudo slapcat -b dc=yunohost,dc=org \
-        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
-  fi
-
   # check the slapd config file at first
   sudo slaptest -Q -u -f /etc/ldap/slapd.conf
 
-  if [[ $backend_change -eq 1 ]]; then
+  # check if a backup should be restored
+  backup_dir=$(cat "$tmp_backup_dir_file" || true)
+  if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
       # regenerate LDAP config directory and import database as root
       # since the admin user may be unavailable
       sudo sh -c "rm -Rf /etc/ldap/slapd.d;
