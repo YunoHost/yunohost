@@ -46,8 +46,7 @@ do_pre_regen() {
   sudo rm -f "$tmp_backup_dir_file"
 
   # retrieve current and new backends
-  curr_backend=$(sudo slapcat -n 0 \
-                   | sed -n 's/^dn: olcDatabase={1}\(.*\),cn=config$/\1/p')
+  curr_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
   new_backend=$(grep '^database' slapd.conf | awk '{print $2}')
 
   # save current database before any conf changes
@@ -68,6 +67,9 @@ do_pre_regen() {
 
 do_post_regen() {
   regen_conf_files=$1
+
+  # ensure that slapd.d exists
+  sudo mkdir -p /etc/ldap/slapd.d
 
   # fix some permissions
   sudo chown root:openldap /etc/ldap/slapd.conf
