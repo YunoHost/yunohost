@@ -1,3 +1,11 @@
+yunohost (2.4.0.4) stable; urgency=low
+
+  * [fix] Print string error of MoulinetteError in hook_callback
+  * [fix] Hide cat error if tmp_backup_dir_file doesn't exist in conf_regen
+  * [fix] Rely on systemd is-active to check if mysql is running
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 22 May 2016 16:48:06 +0200
+
 yunohost (2.4.0.3) stable; urgency=low
 
   [ Laurent Peuch ]
