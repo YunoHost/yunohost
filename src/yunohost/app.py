@@ -1505,7 +1505,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             if arg_name in args:
                 arg_value = args[arg_name]
             else:
-                if os.isatty(1) and 'ask' in arg:
+                if 'ask' in arg:
                     # Retrieve proper ask string
                     ask_string = _value_for_locale(arg['ask'])
 
@@ -1520,7 +1520,10 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                     # Check for a password argument
                     is_password = True if arg_type == 'password' else False
 
-                    input_string = msignals.prompt(ask_string, is_password)
+                    try:
+                        input_string = msignals.prompt(ask_string, is_password)
+                    except NotImplementedError:
+                        input_string = None
                     if (input_string == '' or input_string is None) \
                             and arg_default is not None:
                         arg_value = arg_default
