@@ -210,26 +210,26 @@ def firewall_reload(skip_upnp=False):
 
     # IPv4
     try:
-        process.check_output("iptables -L")
+        process.check_output("iptables -w -L")
     except process.CalledProcessError as e:
         logger.debug('iptables seems to be not available, it outputs:\n%s',
                      prependlines(e.output.rstrip(), '> '))
         logger.warning(m18n.n('iptables_unavailable'))
     else:
         rules = [
-            "iptables -F",
-            "iptables -X",
-            "iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT",
+            "iptables -w -F",
+            "iptables -w -X",
+            "iptables -w -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT",
         ]
         # Iterate over ports and add rule
         for protocol in ['TCP', 'UDP']:
             for port in firewall['ipv4'][protocol]:
-                rules.append("iptables -A INPUT -p %s --dport %s -j ACCEPT" \
+                rules.append("iptables -w -A INPUT -p %s --dport %s -j ACCEPT" \
                                  % (protocol, process.quote(str(port))))
         rules += [
-            "iptables -A INPUT -i lo -j ACCEPT",
-            "iptables -A INPUT -p icmp -j ACCEPT",
-            "iptables -P INPUT DROP",
+            "iptables -w -A INPUT -i lo -j ACCEPT",
+            "iptables -w -A INPUT -p icmp -j ACCEPT",
+            "iptables -w -P INPUT DROP",
         ]
 
         # Execute each rule
@@ -246,19 +246,19 @@ def firewall_reload(skip_upnp=False):
         logger.warning(m18n.n('ip6tables_unavailable'))
     else:
         rules = [
-            "ip6tables -F",
-            "ip6tables -X",
-            "ip6tables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT",
+            "ip6tables -w -F",
+            "ip6tables -w -X",
+            "ip6tables -w -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT",
         ]
         # Iterate over ports and add rule
         for protocol in ['TCP', 'UDP']:
             for port in firewall['ipv6'][protocol]:
-                rules.append("ip6tables -A INPUT -p %s --dport %s -j ACCEPT" \
+                rules.append("ip6tables -w -A INPUT -p %s --dport %s -j ACCEPT" \
                                  % (protocol, process.quote(str(port))))
         rules += [
-            "ip6tables -A INPUT -i lo -j ACCEPT",
-            "ip6tables -A INPUT -p icmpv6 -j ACCEPT",
-            "ip6tables -P INPUT DROP",
+            "ip6tables -w -A INPUT -i lo -j ACCEPT",
+            "ip6tables -w -A INPUT -p icmpv6 -j ACCEPT",
+            "ip6tables -w -P INPUT DROP",
         ]
 
         # Execute each rule
@@ -413,11 +413,11 @@ def firewall_stop():
 
     """
 
-    if os.system("iptables -P INPUT ACCEPT") != 0:
+    if os.system("iptables -w -P INPUT ACCEPT") != 0:
         raise MoulinetteError(errno.ESRCH, m18n.n('iptables_unavailable'))
 
-    os.system("iptables -F")
-    os.system("iptables -X")
+    os.system("iptables -w -F")
+    os.system("iptables -w -X")
 
     if os.path.exists("/proc/net/if_inet6"):
         os.system("ip6tables -P INPUT ACCEPT")
