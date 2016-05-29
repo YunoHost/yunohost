@@ -320,9 +320,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     # Construct command variables
     cmd_args = ''
     if args and isinstance(args, list):
-        # Concatenate arguments and escape them with double quotes to prevent
-        # bash related issue if an argument is empty and is not the last
-        cmd_args = '"{:s}"'.format('" "'.join(str(s) for s in args))
+        # Concatenate escaped arguments
+        cmd_args = ' '.join(shell_quote(s) for s in args)
     if not chdir:
         # use the script directory as current one
         chdir, cmd_script = os.path.split(path)
@@ -340,7 +339,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if env:
         # prepend environment variables
         cmd = '{0} {1}'.format(
-            ' '.join(['{0}="{1}"'.format(k, v) for k, v in env.items()]), cmd)
+            ' '.join(['{0}={1}'.format(k, shell_quote(v)) \
+                    for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
@@ -379,3 +379,20 @@ def _extract_filename_parts(filename):
         priority = '50'
         action = filename
     return priority, action
+
+
+# Taken from Python 3 shlex module --------------------------------------------
+
+_find_unsafe = re.compile(r'[^\w@%+=:,./-]', re.UNICODE).search
+
+def shell_quote(s):
+    """Return a shell-escaped version of the string *s*."""
+    s = str(s)
+    if not s:
+        return "''"
+    if _find_unsafe(s) is None:
+        return s
+
+    # use single quotes, and put single quotes into double quotes
+    # the string $'b is then quoted as '$'"'"'b'
+    return "'" + s.replace("'", "'\"'\"'") + "'"
