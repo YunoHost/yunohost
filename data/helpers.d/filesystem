@@ -22,7 +22,7 @@ ynh_backup() {
     }
 
     # prepend the backup directory
-    [[ -n "${YNH_APP_BACKUP_DIR}" && "${DESTPATH:0:1}" != "/" ]] \
+    [[ -n "${YNH_APP_BACKUP_DIR:-}" && "${DESTPATH:0:1}" != "/" ]] \
         && DESTPATH="${YNH_APP_BACKUP_DIR}/${DESTPATH}"
     [[ ! -e "${DESTPATH}" ]] || {
         echo "Destination path '${DESTPATH}' already exist" >&2
