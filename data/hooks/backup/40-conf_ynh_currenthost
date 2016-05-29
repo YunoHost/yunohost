@@ -1,4 +1,9 @@
-backup_dir="$1/conf/ynh"
-sudo mkdir -p $backup_dir
+#!/bin/bash
 
-sudo cp -a /etc/yunohost/current_host "${backup_dir}/current_host"
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/ynh"
+
+ynh_backup "/etc/yunohost/current_host" "${backup_dir}/current_host"

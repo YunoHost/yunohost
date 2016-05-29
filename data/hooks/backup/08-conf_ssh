@@ -1,8 +1,13 @@
-backup_dir="$1/conf/ssh"
-sudo mkdir -p $backup_dir
+#!/bin/bash
+
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/ssh"
 
 if [ -d /etc/ssh/ ]; then
-    sudo cp -a /etc/ssh/. $backup_dir
+    ynh_backup "/etc/ssh" "$backup_dir"
 else
     echo "SSH is not installed"
 fi

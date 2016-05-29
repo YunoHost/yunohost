@@ -1,4 +1,8 @@
-. /usr/share/yunohost/helpers
+#!/bin/bash
+
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
 
 for f in $(find /home/* -type d -prune | awk -F/ '{print $NF}'); do
     if [[ ! "$f" =~ ^yunohost|lost\+found ]]; then

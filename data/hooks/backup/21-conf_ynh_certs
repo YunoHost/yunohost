@@ -1,4 +1,9 @@
-backup_dir="$1/conf/ynh/certs"
-sudo mkdir -p $backup_dir
+#!/bin/bash
 
-sudo cp -a /etc/yunohost/certs/. $backup_dir
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/ynh/certs"
+
+ynh_backup "/etc/yunohost/certs" "$backup_dir"

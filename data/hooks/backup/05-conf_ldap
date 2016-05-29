@@ -1,13 +1,13 @@
-backup_dir="${1}/conf/ldap"
-sudo mkdir -p "$backup_dir"
+#!/bin/bash
 
-# Fix for first jessie yunohost where slapd.conf is called slapd-yuno.conf
-# without slapcat doesn't work
-[[ ! -f /etc/ldap/slapd.conf ]] \
-  && sudo mv /etc/ldap/slapd-yuno.conf /etc/ldap/slapd.conf
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/ldap"
 
 # Back up the configuration
-sudo cp -a /etc/ldap/slapd.conf "${backup_dir}/slapd.conf"
+ynh_backup "/etc/ldap/slapd.conf" "${backup_dir}/slapd.conf"
 sudo slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
 
 # Back up the database

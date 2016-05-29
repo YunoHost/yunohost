@@ -1,5 +1,10 @@
-backup_dir="$1/conf/xmpp"
-sudo mkdir -p $backup_dir/{etc,var}
+#!/bin/bash
 
-sudo cp -a /etc/metronome/. $backup_dir/etc
-sudo cp -a /var/lib/metronome/. $backup_dir/var
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/xmpp"
+
+ynh_backup /etc/metronome "${backup_dir}/etc"
+ynh_backup /var/lib/metronome "${backup_dir}/var"

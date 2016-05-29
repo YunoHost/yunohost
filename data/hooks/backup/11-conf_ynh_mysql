@@ -1,4 +1,10 @@
-backup_dir="$1/conf/ynh/mysql"
-sudo mkdir -p $backup_dir
+#!/bin/bash
 
-sudo cp -a /etc/yunohost/mysql "${backup_dir}/root_pwd"
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/ynh/mysql"
+
+# Save MySQL root password
+ynh_backup "/etc/yunohost/mysql" "${backup_dir}/root_pwd"

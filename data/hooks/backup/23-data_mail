@@ -1,3 +1,7 @@
-. /usr/share/yunohost/helpers
+#!/bin/bash
+
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
 
 ynh_backup /var/mail "${1}/data/mail" 1

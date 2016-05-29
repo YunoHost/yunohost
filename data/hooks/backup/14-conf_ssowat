@@ -1,4 +1,9 @@
-backup_dir="$1/conf/ssowat"
-sudo mkdir -p $backup_dir
+#!/bin/bash
 
-sudo cp -a /etc/ssowat/. $backup_dir
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/ssowat"
+
+ynh_backup "/etc/ssowat" "$backup_dir"

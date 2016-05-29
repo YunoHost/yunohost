@@ -1,4 +1,9 @@
-backup_dir="$1/conf/nginx"
-sudo mkdir -p $backup_dir
+#!/bin/bash
 
-sudo cp -a /etc/nginx/conf.d/. $backup_dir
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/nginx"
+
+ynh_backup "/etc/nginx/conf.d" "$backup_dir"

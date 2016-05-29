@@ -1,4 +1,11 @@
-backup_dir="$1/conf/cron"
-sudo mkdir -p $backup_dir
+#!/bin/bash
 
-sudo cp -a /etc/cron.d/yunohost* $backup_dir/
+set -eu
+
+. /usr/share/yunohost/helpers.d/filesystem
+
+backup_dir="${1}/conf/cron"
+
+for f in $(ls -1B /etc/cron.d/yunohost*); do
+  ynh_backup "$f" "${backup_dir}/${f##*/}"
+done
