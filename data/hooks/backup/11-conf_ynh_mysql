@@ -4,7 +4,7 @@
 set -eu
 
 # Source YNH helpers
-. /usr/share/yunohost/helpers.d/filesystem
+source /usr/share/yunohost/helpers.d/filesystem
 
 # Backup destination
 backup_dir="${1}/conf/ynh/mysql"
