@@ -1,3 +1,21 @@
+yunohost (2.4.0.6) stable; urgency=low
+
+  [ Bugsbane ]
+  * [i18n] Fixed minor English grammar errors
+
+  [ Jérôme Lebleu ]
+  * [fix] Harden backup hooks with set options and use ynh_backup
+  * [fix] Set default value for YNH_APP_BACKUP_DIR in ynh_backup helper
+  * [fix] Raise proper MoulinetteError exception in hook_exec
+  * [fix] Use the classic way to create read-only bind mount in ynh_backup
+  * [fix] Escape arguments and env values in hook_exec (bugfix #377)
+
+  [ opi ]
+  * [enh] Comments will save us.
+  * [enh] Use 'source' instead of dot notation, more explicit.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Mon, 30 May 2016 12:15:21 +0200
+
 yunohost (2.4.0.5) stable; urgency=low
 
   * [enh] Call iptables/ip6tables with --wait option (close #325)
