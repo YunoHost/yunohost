@@ -1,14 +1,17 @@
 #!/bin/bash
 
+# Exit hook on subcommand error or unset variable
 set -eu
 
+# Source YNH helpers
 . /usr/share/yunohost/helpers.d/filesystem
 
+# Backup destination
 backup_dir="${1}/conf/ldap"
 
-# Back up the configuration
+# Backup the configuration
 ynh_backup "/etc/ldap/slapd.conf" "${backup_dir}/slapd.conf"
 sudo slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
 
-# Back up the database
+# Backup the database
 sudo slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
