@@ -35,8 +35,7 @@ ynh_backup() {
 
         if sudo mount --rbind "${SRCPATH}" "${DESTPATH}"; then
             # try to remount destination directory as read-only
-            sudo mount -o remount,ro "${DESTPATH}" >/dev/null 2>&1 \
-              || sudo mount -o remount,ro,bind "${SRCPATH}" "${DESTPATH}" \
+            sudo mount -o remount,ro,bind "${SRCPATH}" "${DESTPATH}" \
               || true
             return 0
         else
