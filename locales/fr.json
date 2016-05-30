@@ -141,7 +141,7 @@
     "network_check_smtp_ok": "Le trafic courriel sortant (port 25 SMTP) n'est pas bloqué",
     "new_domain_required": "Vous devez spécifier le nouveau domaine principal",
     "no_appslist_found": "Aucune liste d'applications trouvée",
-    "no_internet_connection": "Le serveur n'est pas connecté à internet",
+    "no_internet_connection": "Le serveur n'est pas connecté à Internet",
     "no_ipv6_connectivity": "La connectivité IPv6 n'est pas disponible",
     "no_restore_script": "Le script de sauvegarde n'a pas été trouvé pour l'application « {app:s} »",
     "no_such_conf_file": "Le fichier {file:s} n’existe pas, il ne peut pas être copié",
