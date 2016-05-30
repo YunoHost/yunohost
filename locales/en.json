@@ -167,7 +167,7 @@
     "restore_action_required": "You must specify something to restore",
     "restore_already_installed_app": "An app is already installed with the id '{app:s}'",
     "restore_app_failed": "Unable to restore the app '{app:s}'",
-    "restore_cleaning_failed": "Unable to clean temporary restoration directory",
+    "restore_cleaning_failed": "Unable to clean-up the temporary restoration directory",
     "restore_complete": "Restore complete",
     "restore_confirm_yunohost_installed": "Do you really want to restore an already installed system? [{answers:s}]",
     "restore_failed": "Unable to restore the system",
