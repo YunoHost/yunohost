@@ -58,7 +58,7 @@ re_github_repo = re.compile(
 )
 
 re_app_instance_name = re.compile(
-    r'^(?P<appid>[\w]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
+    r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
 
 
