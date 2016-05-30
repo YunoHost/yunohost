@@ -119,7 +119,7 @@
     "mail_domain_unknown": "Unknown mail address domain '{domain:s}'",
     "mail_forward_remove_failed": "Unable to remove mail forward '{mail:s}'",
     "maindomain_change_failed": "Unable to change the main domain",
-    "maindomain_changed": "Main domain successfully changed",
+    "maindomain_changed": "The main domain has been successfully changed",
     "monitor_disabled": "Server monitoring successfully disabled",
     "monitor_enabled": "Server monitoring has been successfully enabled",
     "monitor_glances_con_failed": "Unable to connect to Glances server",
