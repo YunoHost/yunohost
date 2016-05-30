@@ -119,7 +119,7 @@
     "iptables_unavailable": "Vous ne pouvez pas jouer avec iptables ici. Vous êtes sûrement dans un conteneur, autrement votre noyau ne le supporte pas.",
     "ldap_initialized": "L'annuaire LDAP a été initialisé",
     "license_undefined": "indéfinie",
-    "mail_alias_remove_failed": "Impossible de supprimer l'adresse mail supplémentaire « {mail:s} »",
+    "mail_alias_remove_failed": "Impossible de supprimer l'adresse courriel supplémentaire « {mail:s} »",
     "mail_domain_unknown": "Domaine « {domain:s} » de l'adresse mail inconnu",
     "mail_forward_remove_failed": "Impossible de supprimer l'adresse courriel de transfert « {mail:s} »",
     "maindomain_change_failed": "Impossible de modifier le domaine principal",
