@@ -120,7 +120,7 @@
     "ldap_initialized": "L'annuaire LDAP a été initialisé",
     "license_undefined": "indéfinie",
     "mail_alias_remove_failed": "Impossible de supprimer l'adresse courriel supplémentaire « {mail:s} »",
-    "mail_domain_unknown": "Domaine « {domain:s} » de l'adresse mail inconnu",
+    "mail_domain_unknown": "Le domaine « {domain:s} » de l'adresse courriel est inconnu",
     "mail_forward_remove_failed": "Impossible de supprimer l'adresse courriel de transfert « {mail:s} »",
     "maindomain_change_failed": "Impossible de modifier le domaine principal",
     "maindomain_changed": "Le domaine principal a été modifié",
