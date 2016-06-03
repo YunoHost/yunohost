@@ -137,7 +137,7 @@
     "mysql_db_init_failed": "Impossible d'initialiser la base de données MySQL",
     "mysql_db_initialized": "La base de donnée MySQL a été initialisée",
     "network_check_mx_ko": "L'enregistrement DNS MX n'est pas précisé",
-    "network_check_smtp_ko": "Le trafic mail sortant (port 25 SMTP) semble bloqué par votre réseau",
+    "network_check_smtp_ko": "Le trafic courriel sortant (port 25 SMTP) semble bloqué par votre réseau",
     "network_check_smtp_ok": "Le trafic courriel sortant (port 25 SMTP) n'est pas bloqué",
     "new_domain_required": "Vous devez spécifier le nouveau domaine principal",
     "no_appslist_found": "Aucune liste d'applications trouvée",
