@@ -398,12 +398,12 @@ def monitor_show_stats(period, date=None):
     return result
 
 
-def monitor_enable(no_stats=False):
+def monitor_enable(with_stats=False):
     """
     Enable server monitoring
 
     Keyword argument:
-        no_stats -- Disable monitoring statistics
+        with_stats -- Enable monitoring statistics
 
     """
     from yunohost.service import (service_status, service_enable,
@@ -416,14 +416,14 @@ def monitor_enable(no_stats=False):
         service_enable('glances')
 
     # Install crontab
-    if not no_stats:
-        cmd = 'yunohost monitor update-stats'
+    if with_stats:
         #  day: every 5 min  #  week: every 1 h  #  month: every 4 h  #
-        rules = ('*/5 * * * * root %(cmd)s day >> /dev/null\n' + \
-                 '3 * * * * root %(cmd)s week >> /dev/null\n' + \
-                 '6 */4 * * * root %(cmd)s month >> /dev/null') % {'cmd': cmd}
-        os.system("touch %s" % crontab_path)
-        os.system("echo '%s' >%s" % (rules, crontab_path))
+        rules = ('*/5 * * * * root {cmd} day >> /dev/null\n'
+                 '3 * * * * root {cmd} week >> /dev/null\n'
+                 '6 */4 * * * root {cmd} month >> /dev/null').format(
+                    cmd='/usr/bin/yunohost --quiet monitor update-stats')
+        with open(crontab_path, 'w') as f:
+            f.write(rules)
 
     logger.success(m18n.n('monitor_enabled'))
 

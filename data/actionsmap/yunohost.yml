@@ -846,9 +846,9 @@ monitor:
             action_help: Enable server monitoring
             api: PUT /monitor
             arguments:
-                -n:
-                    full: --no-stats
-                    help: Disable monitoring statistics
+                -s:
+                    full: --with-stats
+                    help: Enable monitoring statistics
                     action: store_true
 
         ### monitor_disable()
