@@ -38,6 +38,8 @@ do_post_regen() {
   # fix permissions
   sudo chown -R vmail:mail /etc/dovecot/global_script
   sudo chmod 770 /etc/dovecot/global_script
+  sudo chown root:mail /var/mail
+  sudo chmod 1775 /var/mail
 
   [ -z "$regen_conf_files" ] && exit 0
 
