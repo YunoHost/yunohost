@@ -35,6 +35,7 @@ import errno
 import subprocess
 import requests
 from collections import OrderedDict
+from urllib import urlretrieve
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
