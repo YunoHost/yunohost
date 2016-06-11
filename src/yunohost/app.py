@@ -106,7 +106,7 @@ def app_fetchlist(url=None, name=None):
             if os.path.exists(url_filename_path):
                 url = open(url_filename_path, "r").read().strip()
             else:  # XXX backward compatible code, YunoHost never store the url of the list else where
-                cron_file_path = "/etc/cron.d/yunohost-applist-%s" % name
+                cron_file_path = "/etc/cron.d/yunohost-applist-%s" % base_filename
 
                 if not os.path.exists(cron_file_path):
                     logger.warning("neither %s nor %s exist, is the app list '%s' correctly installed on the system?" %\
