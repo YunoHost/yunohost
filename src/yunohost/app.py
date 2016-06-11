@@ -117,7 +117,7 @@ def app_fetchlist(url=None, name=None):
 
                 maybe_url = re.search("-u (https?://[^ ]+)", cron_file_content)
 
-                if maybe_url.groups():
+                if maybe_url and maybe_url.groups():
                     url = maybe_url.groups()[0]
                     open(url_filename_path, "w").write(url)
                 else:
