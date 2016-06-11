@@ -90,8 +90,8 @@ def app_fetchlist(url=None, name=None):
 
     """
     # Create app path if not exists
-    try: os.listdir(repo_path)
-    except OSError: os.makedirs(repo_path)
+    if not os.path.exists(repo_path):
+        os.makedirs(repo_path)
 
     if url is None:
         url = 'https://app.yunohost.org/official.json'
