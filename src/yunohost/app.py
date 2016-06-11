@@ -133,7 +133,6 @@ def app_fetchlist(url=None, name=None):
             app_lists.append((url, base_filename))
 
     for url, name in app_lists:
-
         # Download file
         try:
             applist_request = requests.get(url, timeout=30)
