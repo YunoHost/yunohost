@@ -81,7 +81,7 @@ def app_listlists():
 
 def app_fetchlist(url=None, name=None):
     """
-    Fetch application list from app server
+    Fetch application list(s) from app server
 
     Keyword argument:
         name -- Name of the list (default yunohost)
@@ -92,40 +92,76 @@ def app_fetchlist(url=None, name=None):
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
-    if url is None:
-        url = 'https://app.yunohost.org/official.json'
-        name = 'yunohost'
-    elif name is None:
+    if url is not None and name:
+        app_lists = [(url, name)]
+    elif url is not None and name is None:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('custom_appslist_name_required'))
+    else:
+        app_lists = []
+        for filename in [x for x in os.listdir(REPO_PATH) if x.endswith(".json")]:
+            base_filename = filename[:-len(".json")]
+            url_filename_path = os.path.join(REPO_PATH, base_filename + ".url")
 
-    # Download file
-    try:
-        applist_request = requests.get(url, timeout=30)
-    except Exception as e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
+            if os.path.exists(url_filename_path):
+                url = open(url_filename_path, "r").read().strip()
+            else:  # XXX backward compatible code, YunoHost never store the url of the list else where
+                cron_file_path = "/etc/cron.d/yunohost-applist-%s" % name
 
-    if (applist_request.status_code != 200):
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+                if not os.path.exists(cron_file_path):
+                    logger.warning("neither %s nor %s exist, is the app list '%s' correctly installed on the system?" %\
+                                                                       (url_filename_path, cron_file_path, base_filename))
+                    continue
 
-    # Validate app list format
-    # TODO / Possible improvement : better validation for app list (check that
-    # json fields actually look like an app list and not any json file)
-    applist = applist_request.text
-    try:
-        json.loads(applist)
-    except ValueError, e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+                cron_file_content = open(cron_file_path).read().strip()
 
-    # Write app list to file
-    list_file = '%s/%s.json' % (REPO_PATH, name)
-    with open(list_file, "w") as f:
-        f.write(applist)
+                maybe_url = re.search("-u (https?://[^ ]+)", cron_file_content)
 
-    # Setup a cron job to re-fetch the list at midnight
-    open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
+                if maybe_url.groups():
+                    url = maybe_url.groups()[0]
+                    open(url_filename_path, "w").write(url)
+                else:
+                    logger.warning("I could not retreive the url for the app list '%(app_list)s' in the file '%(cron_file_path)s'."
+                                    "Please create a file '%(url_filename_path)s' that contains the url for this applist." % {
+                        "app_list": base_filename,
+                        "cron_file_path": cron_file_path,
+                        "url_filename_path": url_filename_path
+                    })
 
-    logger.success(m18n.n('appslist_fetched'))
+                    continue
+
+            app_lists.append((url, base_filename))
+
+    for url, name in app_lists:
+
+        # Download file
+        try:
+            applist_request = requests.get(url, timeout=30)
+        except Exception as e:
+            raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
+
+        if (applist_request.status_code != 200):
+            raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+
+        # Validate app list format
+        # TODO / Possible improvement : better validation for app list (check that
+        # json fields actually look like an app list and not any json file)
+        applist = applist_request.text
+        try:
+            json.loads(applist)
+        except ValueError, e:
+            raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+
+        # Write app list to file
+        list_file = '%s/%s.json' % (REPO_PATH, name)
+        with open(list_file, "w") as f:
+            f.write(applist)
+
+        # Setup a cron job to re-fetch the list at midnight
+        open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
+
+        # TODO display app list name
+        logger.success(m18n.n('appslist_fetched'))
 
 
 def app_removelist(name):
