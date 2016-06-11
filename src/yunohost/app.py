@@ -108,7 +108,6 @@ def app_fetchlist(url=None, name=None):
     # Rename fetched temp list
     os.rename('%s.tmp' % list_file, list_file)
 
-    os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
     os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
 
     logger.success(m18n.n('appslist_fetched'))
