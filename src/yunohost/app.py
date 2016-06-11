@@ -96,10 +96,9 @@ def app_fetchlist(url=None, name=None):
     if url is None:
         url = 'https://app.yunohost.org/official.json'
         name = 'yunohost'
-    else:
-        if name is None:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_appslist_name_required'))
+    elif name is None:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('custom_appslist_name_required'))
 
     try:
         urlretrieve(url, '%s/%s.json' % (repo_path, name))
