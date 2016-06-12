@@ -103,9 +103,7 @@ def app_fetchlist(url=None, name=None):
     try:
         urlretrieve(url, '%s/%s.json' % (repo_path, name))
     except Exception as e:
-        # I don't know how to put e into the MoulinetteError stuff
-        print e
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'), error=str(e))
 
     open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
