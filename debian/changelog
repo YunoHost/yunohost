@@ -1,3 +1,11 @@
+yunohost (2.4.0.7) stable; urgency=low
+
+  * [fix] Allow - in app id when parsing app instance name
+  * [ref] Invert no-stats option to with-stats in monitor_enable
+  * [fix] Set /var/mail folder owners and permissions
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 12 Jun 2016 15:58:26 +0200
+
 yunohost (2.4.0.6) stable; urgency=low
 
   [ Bugsbane ]
