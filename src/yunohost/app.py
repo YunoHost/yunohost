@@ -362,9 +362,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         new_app_dict     = app_info(app_instance_name, raw=True)
 
         if file:
-            manifest = _extract_app_from_file(file)
+            manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
-            manifest = _fetch_app_from_git(url)
+            manifest, extracted_app_folder = _fetch_app_from_git(url)
         elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
@@ -373,7 +373,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
               or ('update_time' in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
-            manifest = _fetch_app_from_git(app_instance_name)
+            manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
             continue
 
@@ -401,7 +401,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % install_tmp)
-        if hook_exec(app_tmp_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
+        if hook_exec(extracted_app_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
             now = int(time.time())
@@ -411,9 +411,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
             # Clean hooks and add new ones
             hook_remove(app_instance_name)
-            if 'hooks' in os.listdir(app_tmp_folder):
-                for hook in os.listdir(app_tmp_folder +'/hooks'):
-                    hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ hook)
+            if 'hooks' in os.listdir(extracted_app_folder):
+                for hook in os.listdir(extracted_app_folder +'/hooks'):
+                    hook_add(app_instance_name, extracted_app_folder +'/hooks/'+ hook)
 
             # Store app status
             with open(app_setting_path + '/status.json', 'w+') as f:
@@ -421,7 +421,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
             # Replace scripts and manifest
             os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
-            os.system('mv "%s/manifest.json" "%s/scripts" %s' % (app_tmp_folder, app_tmp_folder, app_setting_path))
+            os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
             # So much win
             upgraded_apps.append(app_instance_name)
@@ -460,9 +460,9 @@ def app_install(auth, app, label=None, args=None):
     }
 
     if app in app_list(raw=True) or ('@' in app) or ('http://' in app) or ('https://' in app):
-        manifest = _fetch_app_from_git(app)
+        manifest, extracted_app_folder = _fetch_app_from_git(app)
     elif os.path.exists(app):
-        manifest = _extract_app_from_file(app)
+        manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
         raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
     status['remote'] = manifest.get('remote', {})
@@ -516,19 +516,19 @@ def app_install(auth, app, label=None, args=None):
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
 
-    os.system('chown -R admin: '+ app_tmp_folder)
+    os.system('chown -R admin: '+ extracted_app_folder)
 
     # Execute App install script
     os.system('chown -hR admin: %s' % install_tmp)
     # Move scripts and manifest to the right place
-    os.system('cp %s/manifest.json %s' % (app_tmp_folder, app_setting_path))
-    os.system('cp -R %s/scripts %s' % (app_tmp_folder, app_setting_path))
+    os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
+    os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
     # Execute the app install script
     install_retcode = 1
     try:
         install_retcode = hook_exec(
-            os.path.join(app_tmp_folder, 'scripts/install'),
+            os.path.join(extracted_app_folder, 'scripts/install'),
             args=args_list, env=env_dict)
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
@@ -544,7 +544,7 @@ def app_install(auth, app, label=None, args=None):
 
             # Execute remove script
             remove_retcode = hook_exec(
-                os.path.join(app_tmp_folder, 'scripts/remove'),
+                os.path.join(extracted_app_folder, 'scripts/remove'),
                 args=[app_instance_name], env=env_dict_remove)
             if remove_retcode != 0:
                 logger.warning(m18n.n('app_not_properly_removed',
@@ -552,7 +552,7 @@ def app_install(auth, app, label=None, args=None):
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
-            shutil.rmtree(app_tmp_folder)
+            shutil.rmtree(extracted_app_folder)
 
             if install_retcode == -1:
                 raise MoulinetteError(errno.EINTR,
@@ -561,16 +561,16 @@ def app_install(auth, app, label=None, args=None):
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
-    if 'hooks' in os.listdir(app_tmp_folder):
-        for file in os.listdir(app_tmp_folder +'/hooks'):
-            hook_add(app_instance_name, app_tmp_folder +'/hooks/'+ file)
+    if 'hooks' in os.listdir(extracted_app_folder):
+        for file in os.listdir(extracted_app_folder +'/hooks'):
+            hook_add(app_instance_name, extracted_app_folder +'/hooks/'+ file)
 
     # Store app status
     with open(app_setting_path + '/status.json', 'w+') as f:
         json.dump(status, f)
 
     # Clean and set permissions
-    shutil.rmtree(app_tmp_folder)
+    shutil.rmtree(extracted_app_folder)
     os.system('chmod -R 400 %s' % app_setting_path)
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
@@ -1142,8 +1142,6 @@ def _extract_app_from_file(path, remove=False):
         Dict manifest
 
     """
-    global app_tmp_folder
-
     logger.info(m18n.n('extracting'))
 
     if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
@@ -1169,10 +1167,11 @@ def _extract_app_from_file(path, remove=False):
         raise MoulinetteError(errno.EINVAL, m18n.n('app_extraction_failed'))
 
     try:
-        if len(os.listdir(app_tmp_folder)) == 1:
-            for folder in os.listdir(app_tmp_folder):
-                app_tmp_folder = app_tmp_folder +'/'+ folder
-        with open(app_tmp_folder + '/manifest.json') as json_manifest:
+        extracted_app_folder = app_tmp_folder
+        if len(os.listdir(extracted_app_folder)) == 1:
+            for folder in os.listdir(extracted_app_folder):
+                extracted_app_folder = extracted_app_folder +'/'+ folder
+        with open(extracted_app_folder + '/manifest.json') as json_manifest:
             manifest = json.loads(str(json_manifest.read()))
             manifest['lastUpdate'] = int(time.time())
     except IOError:
@@ -1181,7 +1180,7 @@ def _extract_app_from_file(path, remove=False):
     logger.info(m18n.n('done'))
 
     manifest['remote'] = {'type': 'file', 'path': path}
-    return manifest
+    return manifest, extracted_app_folder
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
@@ -1215,9 +1214,11 @@ def _fetch_app_from_git(app):
         Dict manifest
 
     """
-    app_tmp_archive = '{0}.zip'.format(app_tmp_folder)
-    if os.path.exists(app_tmp_folder):
-        shutil.rmtree(app_tmp_folder)
+    extracted_app_folder = app_tmp_folder
+
+    app_tmp_archive = '{0}.zip'.format(extracted_app_folder)
+    if os.path.exists(extracted_app_folder):
+        shutil.rmtree(extracted_app_folder)
     if os.path.exists(app_tmp_archive):
         os.remove(app_tmp_archive)
 
@@ -1245,7 +1246,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
             else:
-                manifest = _extract_app_from_file(
+                manifest, extracted_app_folder = _extract_app_from_file(
                     app_tmp_archive, remove=True)
         else:
             tree_index = url.rfind('/tree/')
@@ -1254,11 +1255,11 @@ def _fetch_app_from_git(app):
                 branch = app[tree_index+6:]
             try:
                 subprocess.check_call([
-                    'git', 'clone', '--depth=1', url, app_tmp_folder])
+                    'git', 'clone', '--depth=1', url, extracted_app_folder])
                 subprocess.check_call([
                         'git', 'reset', '--hard', branch
-                    ], cwd=app_tmp_folder)
-                with open(app_tmp_folder + '/manifest.json') as f:
+                    ], cwd=extracted_app_folder)
+                with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
                 raise MoulinetteError(errno.EIO,
@@ -1303,18 +1304,18 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
             else:
-                manifest = _extract_app_from_file(
+                manifest, extracted_app_folder = _extract_app_from_file(
                     app_tmp_archive, remove=True)
         else:
             try:
                 subprocess.check_call([
                     'git', 'clone', app_info['git']['url'],
-                    '-b', app_info['git']['branch'], app_tmp_folder])
+                    '-b', app_info['git']['branch'], extracted_app_folder])
                 subprocess.check_call([
                         'git', 'reset', '--hard',
                         str(app_info['git']['revision'])
-                    ], cwd=app_tmp_folder)
-                with open(app_tmp_folder + '/manifest.json') as f:
+                    ], cwd=extracted_app_folder)
+                with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
                 raise MoulinetteError(errno.EIO,
@@ -1333,7 +1334,7 @@ def _fetch_app_from_git(app):
             'revision': app_info['git']['revision'],
         }
 
-    return manifest
+    return manifest, extracted_app_folder
 
 
 def _installed_instance_number(app, last=False):
