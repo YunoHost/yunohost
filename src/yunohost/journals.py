@@ -74,7 +74,9 @@ class Journal(object):
         self.name = name
         self.category = category
         self.first_write = True
-        self.started_at = None
+
+        # this help uniformise file name and avoir threads concurrency errors
+        self.started_at = datetime.now()
 
         self.path = os.path.join(JOURNALS_PATH, category)
 
@@ -101,8 +103,6 @@ class Journal(object):
         self.fd.flush()
 
     def _do_first_write(self):
-        self.started_at = datetime.now()
-
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
