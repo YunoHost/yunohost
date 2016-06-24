@@ -297,7 +297,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="admin"):
+              chdir=None, env=None, journal=None, user="admin"):
     """
     Execute hook from a file with arguments
 
@@ -359,11 +359,18 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         logger.info(m18n.n('executing_script', script=path))
 
-    # Define output callbacks and call command
-    callbacks = (
-        lambda l: logger.info(l.rstrip()),
-        lambda l: logger.warning(l.rstrip()),
-    )
+    if journal is None:
+        # Define output callbacks and call command
+        callbacks = (
+            lambda l: logger.info(l.rstrip()),
+            lambda l: logger.warning(l.rstrip()),
+        )
+    else:
+        callbacks = journal.as_callbacks_tuple(
+            stdout=lambda l: logger.info(l.rstrip()),
+            stderr=lambda l: logger.warning(l.rstrip()),
+        )
+
     returncode = call_async_output(
         command, callbacks, shell=False, cwd=chdir
     )
