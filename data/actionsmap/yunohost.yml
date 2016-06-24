@@ -1605,3 +1605,11 @@ journals:
                     full: --limit
                     help: Maximum number of journals per categories
                     type: int
+
+        ### journals_display()
+        display:
+            action_help: List journals
+            api: GET /journals/<file_name>
+            arguments:
+                file_name:
+                    help: Journal file name

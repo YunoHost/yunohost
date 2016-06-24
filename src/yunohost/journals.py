@@ -76,6 +76,40 @@ def journals_list(limit=None):
     return result
 
 
+def journals_display(file_name):
+    if not os.path.exists(JOURNALS_PATH):
+        # TODO raise exception
+        return {}
+
+    for category in os.listdir(JOURNALS_PATH):
+        for journal in filter(lambda x: x.endswith(".journal"), os.listdir(os.path.join(JOURNALS_PATH, category))):
+            if journal != file_name:
+                continue
+
+            with open(os.path.join(JOURNALS_PATH, category, file_name), "r") as content:
+                content = content.read()
+
+                journal = journal[:-len(".journal")]
+                journal = journal.split("_")
+                journal_datetime = datetime.strptime(" ".join(journal[-2:]), "%Y-%m-%d %H-%M-%S")
+
+                infos, logs = content.split("\n---\n", 1)
+                infos = yaml.safe_load(infos)
+                logs = [x.split(": ", 1) for x in logs.split("\n") if x]
+
+                return {
+                    "started_at": journal_datetime,
+                    "name": " ".join(journal[:-2]),
+                    "file_name": file_name,
+                    "path": os.path.join(JOURNALS_PATH, category, file_name),
+                    "metadata": infos,
+                    "logs": logs,
+                }
+
+    # TODO raise exception
+    return {}
+
+
 class Journal(object):
     def __init__(self, name, category, on_stdout=None, on_stderr=None, on_write=None, **kwargs):
         self.name = name
