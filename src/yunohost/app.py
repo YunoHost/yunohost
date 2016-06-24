@@ -653,6 +653,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
+    from yunohost.journals import Journal
 
     # Fetch or extract sources
     try:
@@ -738,7 +739,12 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict, user="root")
+            args=args_list, env=env_dict, user="root"
+            journal = Journal(
+                ["install", app_instance_name],
+                "app", args=args_list, env=env_dict
+            ),
+        )
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
     except:
