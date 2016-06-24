@@ -1588,3 +1588,15 @@ hook:
                 -d:
                     full: --chdir
                     help: The directory from where the script will be executed
+
+#############################
+#          Journals         #
+#############################
+journals:
+    category_help: Manage debug journals
+    actions:
+
+        ### domain_list()
+        list:
+            action_help: List journals
+            api: GET /journals
