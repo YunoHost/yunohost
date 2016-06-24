@@ -48,3 +48,41 @@ def journals_list():
         return {}
 
     return {}
+
+
+class Journal(object):
+    def __init__(self, name, category, on_stdout=None, on_stderr=None, on_write=None, **kwargs):
+        self.name = name
+        self.category = category
+        self.first_write = False
+        self.started_at = None
+
+        self.on_stdout = [] if on_stdout is None else on_stdout
+        self.on_stderr = [] if on_stderr is None else on_stderr
+        self.on_write = [] if on_write is None else on_write
+
+        self.additional_information = kwargs
+
+    def write(self, line):
+        print "[journal]", line.rstrip()
+
+    def stdout(self, line):
+        for i in self.on_stdout:
+            i(line)
+
+        self.write(line)
+
+    def stderr(self, line):
+        for i in self.on_stderr:
+            i(line)
+
+        self.write(line)
+
+    def as_callbacks_tuple(self, stdout=None, stderr=None):
+        if stdout:
+            self.on_stdout.append(stdout)
+
+        if stderr:
+            self.on_stderr.append(stderr)
+
+        return (self.stdout, self.stderr)
