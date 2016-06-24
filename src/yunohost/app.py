@@ -739,7 +739,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict, user="root"
+            args=args_list, env=env_dict, user="root",
             journal = Journal(
                 ["install", app_instance_name],
                 "app", args=args_list, env=env_dict
@@ -761,7 +761,12 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
                 # Execute remove script
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
-                    args=[app_instance_name], env=env_dict_remove, user="root")
+                    args=[app_instance_name], env=env_dict_remove, user="root",
+                    journal = Journal(
+                        ["remove", app_instance_name, "failed install"],
+                        "app", args=[app_instance_name], env=env_dict_remove,
+                    ),
+                )
                 if remove_retcode != 0:
                     logger.warning(m18n.n('app_not_properly_removed',
                                           app=app_instance_name))
