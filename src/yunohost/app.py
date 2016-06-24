@@ -812,6 +812,7 @@ def app_remove(auth, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove
+    from yunohost.journals import Journal
 
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
@@ -837,7 +838,8 @@ def app_remove(auth, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
+    journal = Journal(["remove", app], "app", args=args_list, env=env_dict)
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root", journal=journal) == 0:
         logger.success(m18n.n('app_removed', app=app))
 
     if os.path.exists(app_setting_path):
