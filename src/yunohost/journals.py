@@ -112,6 +112,7 @@ def journals_display(file_name):
 
 class Journal(object):
     def __init__(self, name, category, on_stdout=None, on_stderr=None, on_write=None, **kwargs):
+        # TODO add a way to not save password on app installation
         self.name = name
         self.category = category
         self.first_write = True
