@@ -36,7 +36,7 @@ JOURNALS_PATH = '/var/log/journals/'
 logger = getActionLogger('yunohost.journals')
 
 
-def journals_list():
+def journals_list(limit=None):
     """
     List domains
 
@@ -65,6 +65,9 @@ def journals_list():
             })
 
         result[category] = list(reversed(sorted(result[category], key=lambda x: x["started_at"])))
+
+        if limit is not None:
+            result[category] = result[category][:limit]
 
     return result
 

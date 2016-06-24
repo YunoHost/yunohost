@@ -1600,3 +1600,8 @@ journals:
         list:
             action_help: List journals
             api: GET /journals
+            arguments:
+               -l:
+                    full: --limit
+                    help: Maximum number of journals per categories
+                    type: int
