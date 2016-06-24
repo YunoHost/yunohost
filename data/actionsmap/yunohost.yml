@@ -1596,7 +1596,7 @@ journals:
     category_help: Manage debug journals
     actions:
 
-        ### domain_list()
+        ### journals_list()
         list:
             action_help: List journals
             api: GET /journals
