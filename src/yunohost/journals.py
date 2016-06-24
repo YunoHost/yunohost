@@ -25,6 +25,9 @@
 """
 
 import os
+import yaml
+
+from datetime import datetime
 
 from moulinette.utils.log import getActionLogger
 
@@ -54,8 +57,12 @@ class Journal(object):
     def __init__(self, name, category, on_stdout=None, on_stderr=None, on_write=None, **kwargs):
         self.name = name
         self.category = category
-        self.first_write = False
+        self.first_write = True
         self.started_at = None
+
+        self.path = os.path.join(JOURNALS_PATH, category)
+
+        self.fd = None
 
         self.on_stdout = [] if on_stdout is None else on_stdout
         self.on_stderr = [] if on_stderr is None else on_stderr
@@ -63,8 +70,34 @@ class Journal(object):
 
         self.additional_information = kwargs
 
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
+
     def write(self, line):
-        print "[journal]", line.rstrip()
+        if self.first_write:
+            self._do_first_write()
+            self.first_write = False
+
+        self.fd.write("%s: " % datetime.now().strftime("%F_%X").replace(":", "-"))
+        self.fd.write(line.rstrip())
+        self.fd.write("\n")
+        self.fd.flush()
+
+    def _do_first_write(self):
+        self.started_at = datetime.now()
+
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
+
+        file_name = "%s_%s.journal" % (self.name if isinstance(self.name, basestring) else "_".join(self.name), self.started_at.strftime("%F_%X").replace(":", "-"))
+
+        serialized_additional_information = yaml.safe_dump(self.additional_information, default_flow_style=False)
+
+        self.fd = open(os.path.join(self.path, file_name), "w")
+
+        self.fd.write(serialized_additional_information)
+        self.fd.write("\n---\n")
 
     def stdout(self, line):
         for i in self.on_stdout:
