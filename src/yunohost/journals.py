@@ -43,4 +43,8 @@ def journals_list():
         limit -- Maximum number of domain fetched
 
     """
+
+    if not os.path.exists(JOURNALS_PATH):
+        return {}
+
     return {}
