@@ -104,7 +104,7 @@ class Journal(object):
             self._do_first_write()
             self.first_write = False
 
-        self.fd.write("%s: " % datetime.now().strftime("%F_%X").replace(":", "-"))
+        self.fd.write("%s: " % datetime.now().strftime("%F %X"))
         self.fd.write(line.rstrip())
         self.fd.write("\n")
         self.fd.flush()
