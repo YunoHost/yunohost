@@ -56,12 +56,16 @@ def journals_list(limit=None):
         result[category] = []
         for journal in filter(lambda x: x.endswith(".journal"), os.listdir(os.path.join(JOURNALS_PATH, category))):
 
+            file_name = journal
+
             journal = journal[:-len(".journal")]
             journal = journal.split("_")
             journal_datetime = datetime.strptime(" ".join(journal[-2:]), "%Y-%m-%d %H-%M-%S")
             result[category].append({
                 "started_at": journal_datetime,
                 "name": " ".join(journal[:-2]),
+                "file_name": file_name,
+                "path": os.path.join(JOURNALS_PATH, category, file_name),
             })
 
         result[category] = list(reversed(sorted(result[category], key=lambda x: x["started_at"])))
