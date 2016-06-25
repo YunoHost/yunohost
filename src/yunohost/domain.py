@@ -274,7 +274,7 @@ def domain_dns_conf(domain, ttl=None):
         )
         if dkim:
             result += '\n{host} {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
-                host='{0}.{1}'.format(dkim.group('host'), domain), ttl=ttl,
+                host='{0}.{1}.'.format(dkim.group('host'), domain), ttl=ttl,
                 v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')
             )
 
