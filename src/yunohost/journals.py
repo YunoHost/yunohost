@@ -95,7 +95,7 @@ def journals_display(file_name):
 
                 infos, logs = content.split("\n---\n", 1)
                 infos = yaml.safe_load(infos)
-                logs = [x.split(": ", 1) for x in logs.split("\n") if x]
+                logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
 
                 return {
                     "started_at": journal_datetime,
