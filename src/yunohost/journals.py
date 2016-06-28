@@ -47,13 +47,13 @@ def journals_list(limit=None):
 
     """
 
+    result = {"categories": []}
+
     if not os.path.exists(JOURNALS_PATH):
-        return {}
+        return result
 
-    result = {}
-
-    for category in os.listdir(JOURNALS_PATH):
-        result[category] = []
+    for category in sorted(os.listdir(JOURNALS_PATH)):
+        result["categories"].append({"name": category, "journals": []})
         for journal in filter(lambda x: x.endswith(".journal"), os.listdir(os.path.join(JOURNALS_PATH, category))):
 
             file_name = journal
@@ -61,17 +61,17 @@ def journals_list(limit=None):
             journal = journal[:-len(".journal")]
             journal = journal.split("_")
             journal_datetime = datetime.strptime(" ".join(journal[-2:]), "%Y-%m-%d %H-%M-%S")
-            result[category].append({
+            result["categories"][-1]["journals"].append({
                 "started_at": journal_datetime,
                 "name": " ".join(journal[:-2]),
                 "file_name": file_name,
                 "path": os.path.join(JOURNALS_PATH, category, file_name),
             })
 
-        result[category] = list(reversed(sorted(result[category], key=lambda x: x["started_at"])))
+        result["categories"][-1]["journals"] = list(reversed(sorted(result["categories"][-1]["journals"], key=lambda x: x["started_at"])))
 
         if limit is not None:
-            result[category] = result[category][:limit]
+            result["categories"][-1]["journals"] = result["categories"][-1]["journals"][:limit]
 
     return result
 
