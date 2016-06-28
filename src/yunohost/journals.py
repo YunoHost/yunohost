@@ -31,7 +31,7 @@ from datetime import datetime
 
 from moulinette.utils.log import getActionLogger
 
-JOURNALS_PATH = '/var/log/journals/'
+JOURNALS_PATH = '/var/log/yunohost/journals/'
 
 logger = getActionLogger('yunohost.journals')
 
