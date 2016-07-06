@@ -100,3 +100,14 @@ def migrations_migrate(auth):
     for migration in migrations:
         logger.info("Running migration {number} {name}...".format(**migration))
         migration["module"].Migration().migrate() # XXX error handling
+
+
+class Migration(object):
+    def migrate(self):
+        self.forward() # XXX error handling
+
+    def forward(self):
+        raise NotImplementedError()
+
+    def backward(self):
+        pass
