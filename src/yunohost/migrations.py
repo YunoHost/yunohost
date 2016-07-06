@@ -26,6 +26,14 @@
 
 import os
 import re
+import json
+from importlib import import_module
+from moulinette.utils.log import getActionLogger
+
+
+MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
+
+logger = getActionLogger('yunohost.migrations')
 
 
 def migrations_list(auth):
@@ -50,3 +58,44 @@ def migrations_list(auth):
     migrations["migrations"] = sorted(migrations["migrations"], key=lambda x: x["number"])
 
     return migrations
+
+
+def migrations_migrate(auth):
+    """
+    Perform migrations
+    """
+
+    if not os.path.exists(MIGRATIONS_STATE_PATH):
+        state = {"last_runned_migration": None}
+    else:
+        # XXX error handling
+        state = json.load(open(MIGRATIONS_STATE_PATH))
+
+    migrations = []
+
+    try:
+        import yunohost_migrations
+    except ImportError:
+        return migrations
+
+    # XXX error handling
+    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(yunohost_migrations.__path__[0])):
+        number = migration.split("_", 1)[0]
+
+        # skip already runnned migrations
+        if state["last_runned_migration"] is not None and\
+           state["last_runned_migration"]["number"] <= number:
+            continue
+
+        migration = migration[:-len(".py")]
+        migrations.append({
+            "number": number,
+            "name": migration.split("_", 1)[1],
+            "module": import_module("yunohost.yunohost_migrations.{}".format(migration)), # XXX error handling
+        })
+
+    migrations = sorted(migrations, key=lambda x: x["number"])
+
+    for migration in migrations:
+        logger.info("Running migration {number} {name}...".format(**migration))
+        migration["module"].Migration().migrate() # XXX error handling
