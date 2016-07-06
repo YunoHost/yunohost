@@ -77,7 +77,7 @@ def migrations_migrate(auth):
     try:
         import yunohost_migrations
     except ImportError:
-        return migrations
+        return
 
     # XXX error handling
     for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(yunohost_migrations.__path__[0])):
