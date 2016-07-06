@@ -1480,6 +1480,22 @@ tools:
 
 
 #############################
+#         Migrations        #
+#############################
+migrations:
+    category_help: Manage migrations
+    actions:
+
+        ### migrations_list()
+        list:
+            action_help: List migrations
+            api: GET /migrations
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+
+#############################
 #           Hook            #
 #############################
 hook:
