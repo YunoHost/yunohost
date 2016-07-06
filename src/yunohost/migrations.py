@@ -49,7 +49,7 @@ def migrations_list(auth):
         return migrations
 
     # XXX error handling on __path__[0] and listdir
-    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(data_migrations.__path__[0])):
+    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(data_migrations.__path__[0])):
         migration = migration[:-len(".py")]
         migrations["migrations"].append({
             "number": migration.split("_", 1)[0],
@@ -80,7 +80,7 @@ def migrations_migrate(auth):
         return
 
     # XXX error handling
-    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(data_migrations.__path__[0])):
+    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(data_migrations.__path__[0])):
         number = migration.split("_", 1)[0]
 
         # skip already runnned migrations
