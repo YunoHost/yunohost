@@ -48,6 +48,7 @@ def migrations_list(auth):
     except ImportError:
         return migrations
 
+    # XXX error handling on __path__[0] and listdir
     for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(yunohost_migrations.__path__[0])):
         migration = migration[:-len(".py")]
         migrations["migrations"].append({
