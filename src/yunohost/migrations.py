@@ -44,12 +44,12 @@ def migrations_list(auth):
     migrations = {"migrations": []}
 
     try:
-        import yunohost_migrations
+        import data_migrations
     except ImportError:
         return migrations
 
     # XXX error handling on __path__[0] and listdir
-    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(yunohost_migrations.__path__[0])):
+    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(data_migrations.__path__[0])):
         migration = migration[:-len(".py")]
         migrations["migrations"].append({
             "number": migration.split("_", 1)[0],
@@ -75,12 +75,12 @@ def migrations_migrate(auth):
     migrations = []
 
     try:
-        import yunohost_migrations
+        import data_migrations
     except ImportError:
         return
 
     # XXX error handling
-    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(yunohost_migrations.__path__[0])):
+    for migration in filter(lambda x: re.match("^\d+_.+\.py$", x), os.listdir(data_migrations.__path__[0])):
         number = migration.split("_", 1)[0]
 
         # skip already runnned migrations
@@ -92,7 +92,7 @@ def migrations_migrate(auth):
         migrations.append({
             "number": number,
             "name": migration.split("_", 1)[1],
-            "module": import_module("yunohost.yunohost_migrations.{}".format(migration)), # XXX error handling
+            "module": import_module("yunohost.data_migrations.{}".format(migration)), # XXX error handling
         })
 
     migrations = sorted(migrations, key=lambda x: x["number"])
