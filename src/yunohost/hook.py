@@ -292,7 +292,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user=None):
+              chdir=None, env=None, user="admin"):
     """
     Execute hook from a file with arguments
 
@@ -328,10 +328,10 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         cmd_script = path
 
     # Construct command to execute
-    if user is not None:
-        command = ['sudo', '-n', '-u', user, '-H', 'sh', '-c']
-    else:
+    if user == "root":
         command = ['sh', '-c']
+    else:
+        command = ['sudo', '-n', '-u', user, '-H', 'sh', '-c']
 
     if no_trace:
         cmd = '/bin/bash "{script}" {args}'
