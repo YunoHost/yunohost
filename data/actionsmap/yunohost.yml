@@ -1503,6 +1503,12 @@ migrations:
                 authenticator: ldap-anonymous
 
 
+        ### migrations_state()
+        state:
+            action_help: Perform migrations
+            api: GEt /migrations/state
+
+
 #############################
 #           Hook            #
 #############################

@@ -111,6 +111,15 @@ def migrations_migrate(auth):
     open(MIGRATIONS_STATE_PATH, "w").write(state)
 
 
+def migrations_state():
+    # XXX DRY
+    if not os.path.exists(MIGRATIONS_STATE_PATH):
+        return {"last_runned_migration": None}
+    else:
+        # XXX error handling
+        return json.load(open(MIGRATIONS_STATE_PATH))
+
+
 class Migration(object):
     def migrate(self):
         self.forward() # XXX error handling
