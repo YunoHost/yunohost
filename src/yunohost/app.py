@@ -408,7 +408,7 @@ def app_change_url(auth, app, domain, path):
     shutil.copytree(os.path.join(apps_setting_path, app, "scripts"),
                     os.path.join(app_tmp_folder, "scripts"))
 
-    # Execute App upgrade script
+    # Execute App change_url script
     os.system('chown -R admin: %s' % install_tmp)
     os.system('chmod +x %s' % os.path.join(os.path.join(app_tmp_folder, "scripts")))
     os.system('chmod +x %s' % os.path.join(os.path.join(app_tmp_folder, "scripts", "change_url")))
