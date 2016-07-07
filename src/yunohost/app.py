@@ -364,7 +364,7 @@ def app_change_url(auth, app, domain, path):
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
-    old_path_trimed = app_setting(app, "path")
+    old_path_trimed = old_path
     if old_path_trimed.endswith("/"):
         old_path_trimed = old_path_trimed[:-1]
 
