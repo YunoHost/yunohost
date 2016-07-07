@@ -418,7 +418,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
-        if hook_exec(extracted_app_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
+        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
             now = int(time.time())
@@ -547,7 +547,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict)
+            args=args_list, env=env_dict, user="root")
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
     except:
@@ -564,7 +564,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
                 # Execute remove script
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
-                    args=[app_instance_name], env=env_dict_remove)
+                    args=[app_instance_name], env=env_dict_remove, user="root")
                 if remove_retcode != 0:
                     logger.warning(m18n.n('app_not_properly_removed',
                                           app=app_instance_name))
@@ -632,7 +632,7 @@ def app_remove(auth, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict) == 0:
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
