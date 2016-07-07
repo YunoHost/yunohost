@@ -377,7 +377,7 @@ def app_change_url(auth, app, domain, path):
 
     manifest = json.load(open(os.path.join(apps_setting_path, app, "manifest.json")))
 
-    # Retrieve arguments list for upgrade script
+    # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, 'change_url', auth=auth)
     args_list = args_odict.values()
