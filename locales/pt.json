@@ -16,7 +16,7 @@
     "app_no_upgrade": "Não existem aplicações para atualizar",
     "app_not_installed": "{:s} não está instalada",
     "custom_app_url_required": "Deve proporcionar uma URL para atualizar a sua aplicação personalizada {:s}",
-    "app_recent_version_required": "{:s} requer uma versão mais recente da moulinette",
+    "app_recent_version_required": "{:s} requer uma versão mais recente da moulinette https://forum.yunohost.org/t/yunohost-2-4-released/1544",
     "app_upgraded": "{:s} atualizada com êxito",
     "app_upgrade_failed": "Unable to upgrade all apps",
     "app_id_invalid": "ID da aplicação invélida",
