@@ -99,7 +99,16 @@ def migrations_migrate(auth):
 
     for migration in migrations:
         logger.info("Running migration {number} {name}...".format(**migration))
-        migration["module"].Migration().migrate() # XXX error handling
+        migration["module"].MyMigration().migrate() # XXX error handling
+
+        state["last_runned_migration"] = {
+            "number": migration["number"],
+            "name": migration["name"],
+        }
+
+    # XXX error handling
+    state = json.dumps(state, indent=4)
+    open(MIGRATIONS_STATE_PATH, "w").write(state)
 
 
 class Migration(object):
