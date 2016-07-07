@@ -16,7 +16,7 @@
     "app_no_upgrade": "Aucune application à mettre à jour",
     "app_not_installed": "{:s} n'est pas installé",
     "custom_app_url_required": "Vous devez spécifier une URL pour mettre à jour votre application locale {:s}",
-    "app_recent_version_required": "{:s} nécessite une version plus récente de la moulinette",
+    "app_recent_version_required": "{:s} nécessite une version plus récente de la moulinette, voir https://forum.yunohost.org/t/parution-de-yunohost-2-4/1541",
     "app_upgraded": "{:s} mis à jour avec succès",
     "app_upgrade_failed": "Impossible de mettre à jour toutes les applications",
     "app_id_invalid": "Id d'application incorrect",

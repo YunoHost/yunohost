@@ -7,7 +7,7 @@
     "app_no_upgrade": "Keine App zu updaten",
     "app_not_installed": "{:s} ist nicht intalliert",
     "custom_app_url_required": "Bitte eine URL geben, um deine nüzterspezifische App {:s} zu updaten",
-    "app_recent_version_required": "{:s} braucht eine jüngstere Fassung von \"moulinette\"",
+    "app_recent_version_required": "{:s} braucht eine jüngstere Fassung von \"moulinette\" https://forum.yunohost.org/t/yunohost-2-4-released/1544",
     "app_upgraded": "{:s} erfolgreich updaten",
     "app_id_invalid": "Falsche App-ID",
     "app_already_installed": "{:s} ist schon installiert",
