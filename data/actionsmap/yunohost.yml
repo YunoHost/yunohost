@@ -542,6 +542,7 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
+                lock: false
             arguments:
                 app:
                     help: Target app instance name
