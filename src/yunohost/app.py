@@ -341,6 +341,96 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
+def app_change_url(auth, app, domain, path):
+    """
+    Modify the URL at which an application is installed.
+
+    Keyword argument:
+        app -- Taget app instance name
+        domain -- New app domain on which the application will be moved
+        path -- New path at which the application will be move
+
+    """
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app))
+
+    # checkurl will modify the settings
+    # (this is a non intuitive behavior that should be changed)
+    # (or checkurl renamed in reserve_url)
+    old_domain = app_setting(app, "domain")
+    old_path = app_setting(app, "path")
+
+    old_path_trimed = app_setting(app, "path")
+    if old_path_trimed.endswith("/"):
+        old_path_trimed = old_path_trimed[:-1]
+
+    app_checkurl(auth, '%s%s' % (domain, path), app)
+
+    if not os.path.exists(os.path.join(apps_setting_path, app, "scripts", "change_url")):
+        raise MoulinetteError(errno.EINVAL, "This application '%s' doesn't "
+                              "support url modification yet. Maybe you should "
+                              "upgrade the application." % app)
+
+    manifest = json.load(open(os.path.join(apps_setting_path, app, "manifest.json")))
+
+    # Retrieve arguments list for upgrade script
+    # TODO: Allow to specify arguments
+    args_odict = _parse_args_from_manifest(manifest, 'change_url', auth=auth)
+    args_list = args_odict.values()
+    args_list.append(app)
+
+    # Prepare env. var. to pass to script
+    env_dict = _make_environment_dict(args_odict)
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+    env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
+    env_dict["YNH_APP_OLD_PATH"] = old_path
+    env_dict["YNH_APP_OLD_PATH_TRIMED"] = old_path_trimed
+
+    env_dict["YNH_APP_NEW_DOMAIN"] = domain
+    env_dict["YNH_APP_NEW_PATH"] = path
+
+    if path.endswith("/"):
+        env_dict["YNH_APP_NEW_PATH_TRIMED"] = path[:-1]
+    else:
+        env_dict["YNH_APP_NEW_PATH_TRIMED"] = path
+
+    if os.path.exists(os.path.join(app_tmp_folder, "scripts")):
+        shutil.rmtree(os.path.join(app_tmp_folder, "scripts"))
+
+    shutil.copytree(os.path.join(apps_setting_path, app, "scripts"),
+                    os.path.join(app_tmp_folder, "scripts"))
+
+    # Execute App upgrade script
+    os.system('chown -R admin: %s' % install_tmp)
+    os.system('chmod +x %s' % os.path.join(os.path.join(app_tmp_folder, "scripts")))
+    os.system('chmod +x %s' % os.path.join(os.path.join(app_tmp_folder, "scripts", "change_url")))
+    # XXX journal
+    if hook_exec(os.path.join(app_tmp_folder, 'scripts/change_url'), args=args_list, env=env_dict) != 0:
+        logger.error("Failed to change '%s' url." % app)
+
+        # restore values modified by app_checkurl
+        # see begining of the function
+        app_setting(app, "domain", value=old_domain)
+        app_setting(app, "path", value=old_path)
+
+        return
+
+    # avoid common mistakes
+    os.system("service nginx reload")
+
+    app_ssowatconf(auth)
+
+    logger.success("Successfly changed '%s' url to '%s%s'" % (app, domain, path))
+
+
 def app_upgrade(auth, app=[], url=None, file=None):
     """
     Upgrade app

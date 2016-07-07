@@ -535,6 +535,23 @@ app:
                     full: --file
                     help: Folder or tarball for upgrade
 
+        ### app_change_url()
+        change_url:
+            action_help: Change app's URL
+            api: PUT /apps/<app>/change_url
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: Target app instance name
+                -d:
+                    full: --domain
+                    help: New app domain on which the application will be moved
+                -p:
+                    full: --path
+                    help: New path at which the application will be moved
+
         ### app_setting()
         setting:
             action_help: Set or get an app setting value
