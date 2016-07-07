@@ -43,6 +43,7 @@ def migrations_list(auth):
 
     migrations = {"migrations": []}
 
+    # XXX DRY
     try:
         import data_migrations
     except ImportError:
@@ -74,6 +75,7 @@ def migrations_migrate(auth):
 
     migrations = []
 
+    # XXX DRY
     try:
         import data_migrations
     except ImportError:
