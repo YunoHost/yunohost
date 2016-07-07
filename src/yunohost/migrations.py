@@ -85,7 +85,7 @@ def migrations_migrate(auth):
 
         # skip already runnned migrations
         if state["last_runned_migration"] is not None and\
-           state["last_runned_migration"]["number"] <= number:
+           int(number) <= int(state["last_runned_migration"]["number"]):
             continue
 
         migration = migration[:-len(".py")]
