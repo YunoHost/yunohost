@@ -292,7 +292,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None):
+              chdir=None, env=None, user=None):
     """
     Execute hook from a file with arguments
 
@@ -303,6 +303,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         no_trace -- Do not print each command that will be executed
         chdir -- The directory from where the script will be executed
         env -- Dictionnary of environment variables to export
+        user -- User with which to run the command
 
     """
     from moulinette.utils.process import call_async_output
@@ -327,7 +328,11 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         cmd_script = path
 
     # Construct command to execute
-    command = ['sudo', '-n', '-u', 'admin', '-H', 'sh', '-c']
+    if user is not None:
+        command = ['sudo', '-n', '-u', user, '-H', 'sh', '-c']
+    else:
+        command = ['sh', '-c']
+
     if no_trace:
         cmd = '/bin/bash "{script}" {args}'
     else:
