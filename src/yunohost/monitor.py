@@ -283,7 +283,7 @@ def monitor_system(units=None, human_readable=False):
         elif u == 'process':
             result[u] = json.loads(glances.getProcessCount())
         elif u == 'uptime':
-            result[u] = (str(datetime.now() - datetime.fromtimestamp(psutil.BOOT_TIME)).split('.')[0])
+            result[u] = (str(datetime.now() - datetime.fromtimestamp(psutil.boot_time())).split('.')[0])
         elif u == 'infos':
             result[u] = json.loads(glances.getSystem())
         else:
