@@ -1,3 +1,65 @@
+yunohost (2.4.1) stable; urgency=low
+
+  [ vetetix ]
+  * fix issue in dkim dns setting
+
+  [ Jérôme Lebleu ]
+  * [i18n] Translated using Weblate (French)
+
+  [ DUBWiSE ]
+  * [i18n] Translated using Weblate (Dutch)
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Jérôme Lebleu ]
+  * [i18n] Translated using Weblate (English)
+
+  [ Bugsbane ]
+  * [i18n] Translated using Weblate (English)
+
+  [ Jérôme Lebleu ]
+  * [i18n] Translated using Weblate (English)
+
+  [ Bugsbane ]
+  * [i18n] Translated using Weblate (English)
+
+  [ Jérôme Lebleu ]
+  * [i18n] Translated using Weblate (English)
+  * [i18n] Translated using Weblate (French)
+  * [i18n] Translated using Weblate (French)
+  * [i18n] Translated using Weblate (English)
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Bugsbane ]
+  * [i18n] Translated using Weblate (English)
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Jérôme Lebleu ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Jean-Baptiste ]
+  * [i18n] Translated using Weblate (French)
+  * [i18n] Translated using Weblate (French)
+
+  [ Jérôme Lebleu ]
+  * [fix] Set empty app argument value only when it's None
+
+  [ jellium ]
+  * [fix] Replace deprecated psutil.BOOT_TIME attribute
+
+  [ Laurent Peuch ]
+  * [fix] Use a local variable for extracted app dir (bugfix #326)
+
+  [ Jérôme Lebleu ]
+
+ -- Jérôme Lebleu <jerome@maroufle.fr>  Thu, 14 Jul 2016 12:05:35 +0200
+
 yunohost (2.4.0.7) stable; urgency=low
 
   * [fix] Allow - in app id when parsing app instance name
