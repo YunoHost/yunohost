@@ -25,7 +25,7 @@ ynh_mysql_execute_as_root() {
 
 # Execute a command from a file as root user
 #
-# usage: ynh_mysql_execute_file_as_root sql [db]
+# usage: ynh_mysql_execute_file_as_root file [db]
 # | arg: file - the file containing SQL commands
 # | arg: db - the database to connect to
 ynh_mysql_execute_file_as_root() {
