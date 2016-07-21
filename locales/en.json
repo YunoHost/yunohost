@@ -209,6 +209,7 @@
     "service_unknown": "Unknown service '{service:s}'",
     "ssowat_conf_generated": "The SSOwat configuration has been generated",
     "ssowat_conf_updated": "The SSOwat configuration has been updated",
+    "ssowat_persistent_conf_error": "Erro while reading SSOwat persistent configuration",
     "system_upgraded": "The system has been upgraded",
     "system_username_exists": "Username already exists in the system users",
     "unbackup_app": "App '{app:s}' will not be saved",

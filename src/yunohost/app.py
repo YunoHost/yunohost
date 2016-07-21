@@ -806,6 +806,9 @@ def app_makedefault(auth, app, domain=None):
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
+    except ValueError:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('ssowat_persistent_conf_error'))
     except IOError:
         ssowat_conf = {}
 
