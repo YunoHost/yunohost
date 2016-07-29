@@ -1,1 +1,12 @@
-{}
+{
+    "action_invalid": "अवैध कार्रवाई '{action:s}'",
+    "admin_password": "व्यवस्थापक पासवर्ड",
+    "admin_password_change_failed": "पासवर्ड बदलने में असमर्थ",
+    "admin_password_changed": "व्यवस्थापक पासवर्ड बदल दिया गया है",
+    "app_already_installed": "'{app:s}' पहले से ही इंस्टाल्ड है",
+    "app_argument_choice_invalid": "गलत तर्क का चयन किया गया '{name:s}' , तर्क इन विकल्पों में से होने चाहिए  {choices:s}",
+    "app_argument_invalid": "तर्क के लिए अमान्य मान  '{name:s}': {error:s}",
+    "app_argument_required": "तर्क '{name:s}' की आवश्यकता है",
+    "app_extraction_failed": "इन्सटाल्ड फ़ाइलों को निकालने में असमर्थ",
+    "app_id_invalid": "अवैध एप्लिकेशन id"
+}
