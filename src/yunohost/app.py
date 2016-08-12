@@ -208,6 +208,11 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
                         app_info_dict['installed'] = app_installed
                         if app_installed:
                             app_info_dict['status'] = _get_app_status(app_id)
+
+                        # dirty: we used to have manifest containing multi_instance value in form of a string
+                        # but we've switched to bool, this line ensure retrocompatibility
+                        app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+
                         list_dict[app_id] = app_info_dict
                     else:
                         label = None
