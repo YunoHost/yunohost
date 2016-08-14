@@ -1,4 +1,4 @@
-yunohost (2.4.2) testing; urgency=low
+yunohost (2.4.2) stable; urgency=low
 
   [ Laurent Peuch ]
   * [enh] add empty file for hindie to enable it in weblate
