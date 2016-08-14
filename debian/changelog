@@ -1,3 +1,16 @@
+yunohost (2.4.2) testing; urgency=low
+
+  [ Laurent Peuch ]
+  * [enh] add empty file for hindie to enable it in weblate
+
+  [ opi ]
+  * [fix] Documentation typo
+
+  [ Laurent Peuch ]
+  * [fix] ensure that multi_instance key value is always a boolean
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Sun, 14 Aug 2016 18:55:10 +0200
+
 yunohost (2.4.1) stable; urgency=low
 
   [ Bugsbane ]
