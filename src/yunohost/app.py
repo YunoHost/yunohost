@@ -1259,8 +1259,13 @@ def _fetch_app_from_git(app):
                 url = url[:tree_index]
                 branch = app[tree_index+6:]
             try:
+                # We use currently git 2.1 so we can't use --shallow-submodules
+                # option. When git will be in 2.9 (with the new debian version)
+                # we will be able to use it. Without this option all the history
+                # of the submodules repo is downloaded.
                 subprocess.check_call([
-                    'git', 'clone', '--depth=1', url, extracted_app_folder])
+                    'git', 'clone', '--depth=1', '--recursive', url,
+                    extracted_app_folder])
                 subprocess.check_call([
                         'git', 'reset', '--hard', branch
                     ], cwd=extracted_app_folder)
