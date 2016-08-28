@@ -226,9 +226,9 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError:
+    except ValueError as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error'))
+                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
     except IOError:
         ssowat_conf = {}
 
@@ -237,8 +237,13 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     ssowat_conf['redirected_urls']['/'] = domain +'/yunohost/admin'
 
-    with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-        json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    try:
+        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
+            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    except IOError as e:
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
