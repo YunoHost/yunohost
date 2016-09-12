@@ -114,7 +114,7 @@ def alias_create(auth, alias, mailforward):
     # Adapt values for LDAP
     rdn = 'uid=%s,ou=aliases' % alias
     attr_dict = {
-        'objectClass'   : ['mailAccount', 'inetOrgPerson'],
+        'objectClass'   : ['mailAccount'],
         'uid'           : alias,
         'mail'          : alias
     }
