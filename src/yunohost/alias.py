@@ -158,7 +158,7 @@ def alias_info(auth, alias):
     if len(alias.split('@')) is 2:
         filter = 'mail=' + alias
     else:
-        # TODO better exception
+        # TODO better error message
         raise MoulinetteError(167, m18n.n('alias_info_failed'))
 
     result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
@@ -172,7 +172,7 @@ def alias_info(auth, alias):
         'alias': alias['mail'][0]
     }
 
-    if len(alias['maildrop']) > 1:
+    if len(alias['maildrop']) > 0:
         result_dict['mail-forward'] = alias['maildrop'][0:]
 
     if result:
