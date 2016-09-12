@@ -233,13 +233,6 @@ alias:
     category_help: Manage alias
     actions:
 
-        ### alias_init()
-        init:
-            action_help: Init alias
-            api: GET /alias/init
-            configuration:
-                authenticate: all
-
         ### alias_list()
         list:
             action_help: List alias

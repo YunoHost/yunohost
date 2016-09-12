@@ -28,18 +28,6 @@ import errno
 
 from moulinette.core import MoulinetteError
 
-
-def alias_init(auth):
-    """
-    Init alias schema, workaround to activate alias on an existing install, better solution needed
-    """
-    rdn = 'ou=aliases'
-    attr_dict = {
-           'objectClass'   : ['organizationalUnit', 'top'],
-    }
-    if auth.add(rdn, attr_dict):
-        msignals.display(m18n.n('alias_init'), 'success')
-
 def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
     """
     List alias
@@ -51,6 +39,8 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
         fields -- fields to fetch
 
     """
+    _ensure_ou_created(auth)
+
     alias_attrs = { 'mail': 'alias',
                     'maildrop': 'mail-forward' }
     attrs = []
@@ -99,6 +89,8 @@ def alias_create(auth, alias, mailforward):
     """
     from yunohost.domain import domain_list
 
+    _ensure_ou_created(auth)
+
     # Validate uniqueness of alias and mail in LDAP
     auth.validate_uniqueness({
         'mail'      : alias
@@ -134,6 +126,7 @@ def alias_delete(auth, alias):
         alias -- Alias to delete
 
     """
+    _ensure_ou_created(auth)
 
     if auth.remove('mail=%s,ou=aliases' % alias):
         pass
@@ -151,6 +144,8 @@ def alias_info(auth, alias):
         alias -- Alias mail to get informations
 
     """
+    _ensure_ou_created(auth)
+
     alias_attrs = [
         'mail', 'maildrop'
     ]
@@ -179,4 +174,15 @@ def alias_info(auth, alias):
         return result_dict
     else:
         raise MoulinetteError(167, m18n.n('alias_info_failed'))
+
+
+def _ensure_ou_created(auth):
+    rdn = 'ou=aliases'
+    attr_dict = {
+           'objectClass'   : ['organizationalUnit', 'top'],
+    }
+    if not auth.search('dc=yunohost,dc=org', rdn, attr_dict['objectClass']) :
+        if auth.add(rdn, attr_dict):
+            msignals.display(m18n.n('alias_init'), 'success')
+    return
 
