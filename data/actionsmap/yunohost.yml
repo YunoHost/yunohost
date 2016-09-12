@@ -306,29 +306,6 @@ alias:
                     extra:
                         pattern: *pattern_email
 
-        ### alias_update()
-        update:
-            action_help: Update alias informations
-            api: PUT /alias/<alias>
-            configuration:
-                authenticate: all
-            arguments:
-                alias:
-                    help: Alias to update
-                -n:
-                    full: --name
-                    help: Unique name for the alias
-                    extra:
-                        pattern: *pattern_name
-                --add-mailforward:
-                    help: List of mailforward addresses to add, separated by commas without space
-                    extra:
-                        pattern: *pattern_listemail
-                --remove-mailforward:
-                    help: List of mailforward addresses to remove, separated by commas without space
-                    extra:
-                        pattern: *pattern_listemail
-
         ### alias_info()
         info:
             action_help: Get alias information

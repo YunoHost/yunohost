@@ -150,55 +150,6 @@ def alias_delete(auth, alias):
     msignals.display(m18n.n('alias_deleted'), 'success')
 
 
-def alias_update(auth, alias, name=None, add_mailforward=None, remove_mailforward=None):
-    """
-    Update alias informations
-
-    Keyword argument:
-        alias
-        name
-        remove_mailforward -- Mailforward addresses to remove
-        add_mailforward -- Mailforward addresses to add
-
-    """
-
-    attrs_to_fetch = ['uid', 'cn', 'displayName', 'maildrop']
-    new_attr_dict = {}
-
-    # Populate alias informations
-    result = auth.search(base='ou=aliases,dc=yunohost,dc=org', filter='uid=' + alias, attrs=attrs_to_fetch)
-    if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
-    alias_fetched = result[0]
-
-    # Get modifications from arguments
-    if name:
-        new_attr_dict['cn'] = name
-        new_attr_dict['displayName'] = name
-
-    if add_mailforward:
-        add_mailforward = add_mailforward.split(",")
-        for mail in add_mailforward:
-            if mail in alias_fetched['maildrop'][1:]:
-                continue
-            alias_fetched['maildrop'].append(mail)
-        new_attr_dict['maildrop'] = alias_fetched['maildrop']
-
-    if remove_mailforward:
-        remove_mailforward = remove_mailforward.split(",")
-        for mail in remove_mailforward:
-            if mail not in alias_fetched['maildrop'][1:]:
-                continue
-            alias_fetched['maildrop'].remove(mail)
-        new_attr_dict['maildrop'] = alias_fetched['maildrop']
-
-    if auth.update('uid=%s,ou=aliases' % alias, new_attr_dict):
-       msignals.display(m18n.n('alias_updated'), 'success')
-       return alias_info(auth, alias)
-    else:
-       raise MoulinetteError(169, m18n.n('alias_update_failed'))
-
-
 def alias_info(auth, alias):
     """
     Get alias informations
