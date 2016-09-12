@@ -282,7 +282,7 @@ alias:
                         ask: ask_alias_mailforward
                         required: True
                         pattern: &pattern_listemail
-                            - !!str ^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,}),?)+$
+                            - !!str ^([\w.-]+(\+[\w.-]+)*@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,}),?)+$
                             - "pattern_listemail"
 
         ### alias_delete()
