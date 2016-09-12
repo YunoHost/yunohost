@@ -158,10 +158,10 @@ def alias_info(auth, alias):
 
     result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
 
-    if result:
-        alias = result[0]
-    else:
+    if not result:
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
+
+    alias = result[0]
 
     result_dict = {
         'alias': alias['mail'][0]
@@ -170,11 +170,7 @@ def alias_info(auth, alias):
     if len(alias['maildrop']) > 0:
         result_dict['mail-forward'] = alias['maildrop'][0:]
 
-    if result:
-        return result_dict
-    else:
-        raise MoulinetteError(167, m18n.n('alias_info_failed'))
-
+    return result_dict
 
 def _ensure_ldap_ou_is_created(auth):
     """
