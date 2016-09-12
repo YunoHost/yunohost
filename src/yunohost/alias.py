@@ -177,6 +177,13 @@ def alias_info(auth, alias):
 
 
 def _ensure_ldap_ou_is_created(auth):
+    """
+    Make sure the 'ou=aliases' tree is created, for holding aliases entries.
+    Raises an exception in case of error.
+    
+    Keyword argument:
+        auth -- the auth object from moulinette, managing the LDAP connection
+    """
     rdn = 'ou=aliases'
     attr_dict = {
            'objectClass'   : ['organizationalUnit', 'top'],
@@ -184,5 +191,3 @@ def _ensure_ldap_ou_is_created(auth):
     if not auth.search('dc=yunohost,dc=org', rdn, attr_dict['objectClass']) :
         if auth.add(rdn, attr_dict):
             msignals.display(m18n.n('alias_init'), 'success')
-    return
-
