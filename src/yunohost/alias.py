@@ -52,8 +52,7 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
 
     """
     alias_attrs = { 'mail': 'alias',
-                   'cn': 'name',
-                   'maildrop': 'mail-forward'}
+                    'maildrop': 'mail-forward' }
     attrs = []
     result_list = []
 
@@ -73,7 +72,7 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('field_invalid', attr))
     else:
-        attrs = [ 'mail', 'cn', 'maildrop' ]
+        attrs = [ 'mail', 'maildrop' ]
 
     result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, attrs)
 
@@ -89,12 +88,11 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
     return { 'alias' : result_list }
 
 
-def alias_create(auth, alias, name, mailforward):
+def alias_create(auth, alias, mailforward):
     """
     Create alias
 
     Keyword argument:
-        name --
         alias -- Main mail address must be unique
         mailforward -- List of email to forward, separated by commas without space
 
@@ -117,9 +115,6 @@ def alias_create(auth, alias, name, mailforward):
     rdn = 'uid=%s,ou=aliases' % alias
     attr_dict = {
         'objectClass'   : ['mailAccount', 'inetOrgPerson'],
-        'sn'            : alias,
-        'displayName'   : name,
-        'cn'            : name,
         'uid'           : alias,
         'mail'          : alias
     }
@@ -128,7 +123,7 @@ def alias_create(auth, alias, name, mailforward):
 
     if auth.add(rdn, attr_dict):
         msignals.display(m18n.n('alias_created'), 'success')
-        return { 'alias' : alias, 'name' : name, 'mailforward' : attr_dict['maildrop'] }
+        return { 'alias' : alias, 'mailforward' : attr_dict['maildrop'] }
 
     raise MoulinetteError(169, m18n.n('alias_creation_failed'))
 
@@ -159,7 +154,7 @@ def alias_info(auth, alias):
 
     """
     alias_attrs = [
-        'cn', 'mail', 'uid', 'maildrop', 'givenName', 'sn'
+        'mail', 'uid', 'maildrop'
     ]
 
     if len(alias.split('@')) is 2:
@@ -175,8 +170,7 @@ def alias_info(auth, alias):
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
 
     result_dict = {
-        'alias': alias['mail'][0],
-        'name': alias['cn'][0],
+        'alias': alias['mail'][0]
     }
 
     if len(alias['maildrop']) > 1:

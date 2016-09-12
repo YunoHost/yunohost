@@ -275,15 +275,6 @@ alias:
                     extra:
                         required: True
                         pattern: *pattern_email
-                -n:
-                    full: --name
-                    extra:
-                        ask: ask_alias_name
-                        help: A name for the alias
-                        required: True
-                        pattern: &pattern_name
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
-                            - "pattern_name"
                 -f:
                     full: --mailforward
                     help: List of email to forward, separated by commas without space
