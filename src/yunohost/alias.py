@@ -39,7 +39,7 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
         fields -- fields to fetch
 
     """
-    _ensure_ou_created(auth)
+    _ensure_ldap_ou_is_created(auth)
 
     alias_attrs = { 'mail': 'alias',
                     'maildrop': 'mail-forward' }
@@ -89,7 +89,7 @@ def alias_create(auth, alias, mailforward):
     """
     from yunohost.domain import domain_list
 
-    _ensure_ou_created(auth)
+    _ensure_ldap_ou_is_created(auth)
 
     # Validate uniqueness of alias and mail in LDAP
     auth.validate_uniqueness({
@@ -126,7 +126,7 @@ def alias_delete(auth, alias):
         alias -- Alias to delete
 
     """
-    _ensure_ou_created(auth)
+    _ensure_ldap_ou_is_created(auth)
 
     if auth.remove('mail=%s,ou=aliases' % alias):
         pass
@@ -144,7 +144,7 @@ def alias_info(auth, alias):
         alias -- Alias mail to get informations
 
     """
-    _ensure_ou_created(auth)
+    _ensure_ldap_ou_is_created(auth)
 
     alias_attrs = [
         'mail', 'maildrop'
@@ -176,7 +176,7 @@ def alias_info(auth, alias):
         raise MoulinetteError(167, m18n.n('alias_info_failed'))
 
 
-def _ensure_ou_created(auth):
+def _ensure_ldap_ou_is_created(auth):
     rdn = 'ou=aliases'
     attr_dict = {
            'objectClass'   : ['organizationalUnit', 'top'],
