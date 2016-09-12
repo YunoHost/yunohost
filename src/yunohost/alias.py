@@ -28,54 +28,16 @@ import errno
 
 from moulinette.core import MoulinetteError
 
-def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
+def alias_list(auth):
     """
     List aliases
 
-    Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for alias fetching
-        limit -- Maximum number of alias fetched
-        fields -- fields to fetch
-
     """
     _ensure_ldap_ou_is_created(auth)
-
-    alias_attrs = { 'mail': 'alias',
-                    'maildrop': 'mail-forward' }
-    attrs = []
-    result_list = []
-
-    # Set default arguments values
-    if offset is None:
-        offset = 0
-    if limit is None:
-        limit = 1000
-    if filter is None:
-        filter = '(&(objectclass=mailAccount)(objectclass=mailAlias))'
-    if fields:
-        keys = alias_attrs.keys()
-        for attr in fields:
-            if attr in keys:
-                attrs.append(attr)
-            else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('field_invalid', attr))
-    else:
-        attrs = [ 'mail', 'maildrop' ]
-
-    result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, attrs)
-
-    if len(result) > offset and limit > 0:
-        for alias in result[offset:offset+limit]:
-            entry = {}
-            for attr, values in alias.items():
-                try:
-                    entry[alias_attrs[attr]] = values[0:]
-                except:
-                    pass
-            result_list.append(entry)
-    return { 'alias' : result_list }
+    ldap_filter = '(&(objectclass=mailAccount)(objectclass=mailAlias))'
+    ldap_attrs = [ 'mail', 'maildrop' ]
+    result = auth.search('ou=aliases,dc=yunohost,dc=org', ldap_filter, ldap_attrs)
+    return { 'alias' : result }
 
 
 def alias_create(auth, alias, mailforward):
@@ -162,15 +124,7 @@ def alias_info(auth, alias):
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
 
     alias = result[0]
-
-    result_dict = {
-        'alias': alias['mail'][0]
-    }
-
-    if len(alias['maildrop']) > 0:
-        result_dict['mail-forward'] = alias['maildrop'][0:]
-
-    return result_dict
+    return alias
 
 def _ensure_ldap_ou_is_created(auth):
     """

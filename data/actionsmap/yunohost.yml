@@ -240,21 +240,6 @@ alias:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-            arguments:
-               --fields:
-                    help: fields to fetch
-                    nargs: "+"
-               -f:
-                    full: --filter
-                    help: LDAP filter used to search
-               -l:
-                    full: --limit
-                    help: Maximum number of alias fetched
-                    type: int
-               -o:
-                    full: --offset
-                    help: Starting number for alias fetching
-                    type: int
 
         ### alias_create()
         create:
