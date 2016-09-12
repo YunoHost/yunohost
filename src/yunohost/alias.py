@@ -30,7 +30,7 @@ from moulinette.core import MoulinetteError
 
 def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
     """
-    List alias
+    List aliases
 
     Keyword argument:
         filter -- LDAP filter used to search
