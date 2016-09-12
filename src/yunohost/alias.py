@@ -33,7 +33,7 @@ def alias_init(auth):
     """
     Init alias schema, workaround to activate alias on an existing install, better solution needed
     """
-    rdn = 'ou=alias'
+    rdn = 'ou=aliases'
     attr_dict = {
            'objectClass'   : ['organizationalUnit', 'top'],
     }
@@ -75,7 +75,7 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
     else:
         attrs = [ 'mail', 'cn', 'maildrop' ]
 
-    result = auth.search('ou=alias,dc=yunohost,dc=org', filter, attrs)
+    result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, attrs)
 
     if len(result) > offset and limit > 0:
         for alias in result[offset:offset+limit]:
@@ -114,7 +114,7 @@ def alias_create(auth, alias, name, mailforward):
                                      alias[alias.find('@')+1:]))
 
     # Adapt values for LDAP
-    rdn = 'uid=%s,ou=alias' % alias
+    rdn = 'uid=%s,ou=aliases' % alias
     attr_dict = {
         'objectClass'   : ['mailAccount', 'inetOrgPerson'],
         'sn'            : alias,
@@ -142,7 +142,7 @@ def alias_delete(auth, alias):
 
     """
 
-    if auth.remove('uid=%s,ou=alias' % alias):
+    if auth.remove('uid=%s,ou=aliases' % alias):
         pass
     else:
         raise MoulinetteError(169, m18n.n('alias_deletion_failed'))
@@ -166,7 +166,7 @@ def alias_update(auth, alias, name=None, add_mailforward=None, remove_mailforwar
     new_attr_dict = {}
 
     # Populate alias informations
-    result = auth.search(base='ou=alias,dc=yunohost,dc=org', filter='uid=' + alias, attrs=attrs_to_fetch)
+    result = auth.search(base='ou=aliases,dc=yunohost,dc=org', filter='uid=' + alias, attrs=attrs_to_fetch)
     if not result:
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
     alias_fetched = result[0]
@@ -192,7 +192,7 @@ def alias_update(auth, alias, name=None, add_mailforward=None, remove_mailforwar
             alias_fetched['maildrop'].remove(mail)
         new_attr_dict['maildrop'] = alias_fetched['maildrop']
 
-    if auth.update('uid=%s,ou=alias' % alias, new_attr_dict):
+    if auth.update('uid=%s,ou=aliases' % alias, new_attr_dict):
        msignals.display(m18n.n('alias_updated'), 'success')
        return alias_info(auth, alias)
     else:
@@ -216,7 +216,7 @@ def alias_info(auth, alias):
     else:
         filter = 'uid=' + alias
 
-    result = auth.search('ou=alias,dc=yunohost,dc=org', filter, alias_attrs)
+    result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
 
     if result:
         alias = result[0]
