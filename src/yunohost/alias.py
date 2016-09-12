@@ -62,7 +62,7 @@ def alias_list(auth, fields=None, filter=None, limit=None, offset=None):
     if limit is None:
         limit = 1000
     if filter is None:
-        filter = '(&(objectclass=mailAccount)(!(uid=root))(!(uid=nobody)))'
+        filter = '(&(objectclass=mailAccount)(objectclass=mailAlias))'
     if fields:
         keys = alias_attrs.keys()
         for attr in fields:
@@ -101,7 +101,6 @@ def alias_create(auth, alias, mailforward):
 
     # Validate uniqueness of alias and mail in LDAP
     auth.validate_uniqueness({
-        'uid'       : alias,
         'mail'      : alias
     })
 
@@ -112,10 +111,9 @@ def alias_create(auth, alias, mailforward):
                                      alias[alias.find('@')+1:]))
 
     # Adapt values for LDAP
-    rdn = 'uid=%s,ou=aliases' % alias
+    rdn = 'mail=%s,ou=aliases' % alias
     attr_dict = {
-        'objectClass'   : ['mailAccount'],
-        'uid'           : alias,
+        'objectClass'   : ['mailAccount', 'mailAlias'],
         'mail'          : alias
     }
 
@@ -137,7 +135,7 @@ def alias_delete(auth, alias):
 
     """
 
-    if auth.remove('uid=%s,ou=aliases' % alias):
+    if auth.remove('mail=%s,ou=aliases' % alias):
         pass
     else:
         raise MoulinetteError(169, m18n.n('alias_deletion_failed'))
@@ -154,13 +152,14 @@ def alias_info(auth, alias):
 
     """
     alias_attrs = [
-        'mail', 'uid', 'maildrop'
+        'mail', 'maildrop'
     ]
 
     if len(alias.split('@')) is 2:
         filter = 'mail=' + alias
     else:
-        filter = 'uid=' + alias
+        # TODO better exception
+        raise MoulinetteError(167, m18n.n('alias_info_failed'))
 
     result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
 
