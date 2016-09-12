@@ -123,8 +123,7 @@ def alias_info(auth, alias):
     if not result:
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
 
-    alias = result[0]
-    return alias
+    return result[0]
 
 def _ensure_ldap_ou_is_created(auth):
     """
