@@ -89,9 +89,7 @@ def alias_delete(auth, alias):
     """
     _ensure_ldap_ou_is_created(auth)
 
-    if auth.remove('mail=%s,ou=aliases' % alias):
-        pass
-    else:
+    if not auth.remove('mail=%s,ou=aliases' % alias):
         raise MoulinetteError(169, m18n.n('alias_deletion_failed'))
 
     msignals.display(m18n.n('alias_deleted'), 'success')
