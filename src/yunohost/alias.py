@@ -27,6 +27,7 @@
 import errno
 
 from moulinette.core import MoulinetteError
+from yunohost.domain import domain_list
 
 def alias_list(auth):
     """
@@ -49,8 +50,6 @@ def alias_create(auth, alias, mailforward):
         mailforward -- List of email to forward, separated by commas without space
 
     """
-    from yunohost.domain import domain_list
-
     _ensure_ldap_ou_is_created(auth)
 
     # Validate uniqueness of alias and mail in LDAP
