@@ -59,19 +59,19 @@ def alias_create(auth, alias, mailforward):
     })
 
     # Check that the mail domain exists
-    if alias[alias.find('@')+1:] not in domain_list(auth)['domains']:
+    alias_domain = alias[alias.find('@')+1:]
+    if alias_domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
-                                     alias[alias.find('@')+1:]))
+                                     alias_domain))
 
     # Adapt values for LDAP
     rdn = 'mail=%s,ou=aliases' % alias
     attr_dict = {
         'objectClass'   : ['mailAccount', 'mailAlias'],
-        'mail'          : alias
+        'mail'          : alias,
+        'maildrop'      : mailforward.split(",")
     }
-
-    attr_dict['maildrop'] = mailforward.split(",")
 
     if auth.add(rdn, attr_dict):
         msignals.display(m18n.n('alias_created'), 'success')
