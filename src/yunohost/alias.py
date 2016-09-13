@@ -73,11 +73,11 @@ def alias_create(auth, alias, mailforward):
         'maildrop'      : mailforward.split(",")
     }
 
-    if auth.add(rdn, attr_dict):
-        msignals.display(m18n.n('alias_created'), 'success')
-        return { 'alias' : alias, 'mailforward' : attr_dict['maildrop'] }
+    if not auth.add(rdn, attr_dict):
+        raise MoulinetteError(169, m18n.n('alias_creation_failed'))
 
-    raise MoulinetteError(169, m18n.n('alias_creation_failed'))
+    msignals.display(m18n.n('alias_created'), 'success')
+    return { 'alias' : alias, 'mailforward' : attr_dict['maildrop'] }
 
 
 def alias_delete(auth, alias):
