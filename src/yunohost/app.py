@@ -363,18 +363,18 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if app_instance_name in upgraded_apps:
             continue
 
-        new_app_dict     = app_info(app_instance_name, raw=True)
+        app_dict = app_info(app_instance_name, raw=True)
 
-        locale_update_time = new_app_dict['settings'].get('update_time', new_app_dict['settings']['install_time'])
+        locale_update_time = app_dict['settings'].get('update_time', app_dict['settings']['install_time'])
 
         if file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
-        elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
+        elif app_dict is None or 'lastUpdate' not in app_dict or 'git' not in app_dict:
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif new_app_dict['lastUpdate'] > locale_update_time:
+        elif app_dict['lastUpdate'] > locale_update_time:
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
             continue
