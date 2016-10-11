@@ -363,10 +363,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if app_instance_name in upgraded_apps:
             continue
 
-        current_app_dict = app_info(app_instance_name,  raw=True)
         new_app_dict     = app_info(app_instance_name, raw=True)
 
-        locale_update_time = current_app_dict['settings'].get('update_time', current_app_dict['settings']['install_time'])
+        locale_update_time = new_app_dict['settings'].get('update_time', new_app_dict['settings']['install_time'])
 
         if file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
