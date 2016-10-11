@@ -373,8 +373,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
-              or ('update_time' not in current_app_dict['settings'] \
+        elif ('update_time' not in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
               or ('update_time' in current_app_dict['settings'] \
                    and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
