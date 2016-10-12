@@ -448,7 +448,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_fail=False):
         app -- Name, local path or git URL of the app to install
         label -- Custom name for the app
         args -- Serialize arguments for app installation
-        no_remove_on_fail -- Debug option to avoid removing the app on a filed installation
+        no_remove_on_fail -- Debug option to avoid removing the app on a failed installation
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
