@@ -72,7 +72,7 @@
     "diagnostic_monitor_system_error": "No se puede monitorizar el sistema: {error}",
     "diagnostic_no_apps": "Aplicación no instalada",
     "dnsmasq_isnt_installed": "Parece que dnsmasq no está instalado, ejecuta 'apt-get remove bind9 && apt-get install dnsmasq'",
-    "domain_cert_gen_failed": "No se pudo crear el certificado",
+    "certmanager_domain_cert_gen_failed": "No se pudo crear el certificado",
     "domain_created": "El dominio ha sido creado",
     "domain_creation_failed": "No se pudo crear el dominio",
     "domain_deleted": "El dominio ha sido eliminado",
