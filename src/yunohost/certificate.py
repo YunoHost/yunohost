@@ -491,7 +491,6 @@ def _get_status(domain):
     valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
     days_remaining = (valid_up_to - datetime.now()).days
 
-    CA_type = None
     if cert_issuer == _name_self_CA():
         CA_type = "Self-signed"
 
