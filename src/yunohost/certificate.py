@@ -128,7 +128,7 @@ def certificate_install_selfsigned(domain_list, force=False):
         # Check we ain't trying to overwrite a good cert !
         status = _get_status(domain)
 
-        if status != {} and status["summaryCode"] > 0 and not force:
+        if status and status["summaryCode"] > 0 and not force:
             raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
         cert_folder_domain = os.path.join(cert_folder, domain)
