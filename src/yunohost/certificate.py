@@ -33,7 +33,6 @@ import requests
 
 from OpenSSL import crypto
 from datetime import datetime
-from tabulate import tabulate
 from acme_tiny import get_crt as sign_certificate
 
 from moulinette.core import MoulinetteError
