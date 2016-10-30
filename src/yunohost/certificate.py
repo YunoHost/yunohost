@@ -473,7 +473,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
     # Save the request in tmp folder
     csr_file = output_folder + domain + ".csr"
-    logger.info("Saving to " + csr_file + " .")
+    logger.info("Saving to %s.", csr_file)
 
     with open(csr_file, "w") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
