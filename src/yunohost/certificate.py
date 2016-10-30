@@ -608,14 +608,23 @@ def _dns_ip_match_public_ip(public_ip, domain):
         traceback.print_exc(file=sys.stdout)
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_contacting_dns_api', api="dns-api.org", reason=exception))
 
-    dns_ip = result.json()
-    if not dns_ip or "value" not in dns_ip[0]:
+    try:
+        dns_ip = result.json()
+    except Exception as exception:
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
 
-    dns_ip = dns_ip[0]["value"]
+    if len(dns_ip) == 0:
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
+
+    dns_ip = dns_ip[0]
 
     if dns_ip.get("error") == "NXDOMAIN":
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_no_A_dns_record', domain=domain))
+
+    if "value" not in dns_ip:
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
+
+    dns_ip = dns_ip["value"]
 
     if dns_ip == public_ip:
         return True
