@@ -626,10 +626,7 @@ def _dns_ip_match_public_ip(public_ip, domain):
 
     dns_ip = dns_ip["value"]
 
-    if dns_ip == public_ip:
-        return True
-    else:
-        return False
+    return dns_ip == public_ip
 
 
 def _domain_is_accessible_through_HTTP(ip, domain):
