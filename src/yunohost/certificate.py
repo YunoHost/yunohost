@@ -487,7 +487,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 
 def _get_status(domain):
-    cert_file = cert_folder + "/" + domain + "/crt.pem"
+    cert_file = os.path.join(cert_folder, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
         return {}
