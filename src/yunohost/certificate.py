@@ -86,7 +86,7 @@ def certificate_status(auth, domainList, full=False):
     """
 
     # If no domains given, consider all yunohost domains
-    if (domainList == []):
+    if domainList == []:
         domainList = yunohost.domain.domain_list(auth)['domains']
     # Else, validate that yunohost knows the domains given
     else:
