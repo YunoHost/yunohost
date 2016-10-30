@@ -76,21 +76,21 @@ intermediate_certificate_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cr
 # Status
 
 
-def certificate_status(auth, domainList, full=False):
+def certificate_status(auth, domain_list, full=False):
     """
     Print the status of certificate for given domains (all by default)
 
     Keyword argument:
-        domainList -- Domains to be checked
+        domain_list -- Domains to be checked
         full       -- Display more info about the certificates
     """
 
     # If no domains given, consider all yunohost domains
-    if domainList == []:
-        domainList = yunohost.domain.domain_list(auth)['domains']
+    if domain_list == []:
+        domain_list = yunohost.domain.domain_list(auth)['domains']
     # Else, validate that yunohost knows the domains given
     else:
-        for domain in domainList:
+        for domain in domain_list:
             # Is it in Yunohost domain list ?
             if domain not in yunohost.domain.domain_list(auth)['domains']:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_unknown', domain=domain))
@@ -102,7 +102,7 @@ def certificate_status(auth, domainList, full=False):
         headers = ["Domain", "Certificate subject", "Certificate status", "Authority type", "Authority name", "Days remaining"]
 
     lines = []
-    for domain in domainList:
+    for domain in domain_list:
         status = _get_status(domain)
 
         line = []
@@ -123,27 +123,27 @@ def certificate_status(auth, domainList, full=False):
     print(tabulate(lines, headers=headers, tablefmt="simple", stralign="center"))
 
 
-def certificate_install(auth, domainList, force=False, no_checks=False, self_signed=False):
+def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
     Keyword argument:
-        domainList  -- Domains on which to install certificates
+        domain_list  -- Domains on which to install certificates
         force       -- Install even if current certificate is not self-signed
         no-check    -- Disable some checks about the reachability of web server
                        before attempting the install
         self-signed -- Instal self-signed certificates instead of Let's Encrypt
     """
     if (self_signed):
-        certificate_install_selfsigned(domainList, force)
+        certificate_install_selfsigned(domain_list, force)
     else:
-        certificate_install_letsencrypt(auth, domainList, force, no_checks)
+        certificate_install_letsencrypt(auth, domain_list, force, no_checks)
 
 
 # Install self-signed
 
-def certificate_install_selfsigned(domainList, force=False):
-    for domain in domainList:
+def certificate_install_selfsigned(domain_list, force=False):
+    for domain in domain_list:
 
         # Check we ain't trying to overwrite a good cert !
         status = _get_status(domain)
@@ -187,24 +187,24 @@ def certificate_install_selfsigned(domainList, force=False):
         _set_permissions(os.path.join(cert_folder_domain, "openssl.cnf"), "root", "root", 0600)
 
 
-def certificate_install_letsencrypt(auth, domainList, force=False, no_checks=False):
+def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False):
     if not os.path.exists(account_key_file):
         _generate_account_key()
 
     # If no domains given, consider all yunohost domains with self-signed
     # certificates
-    if domainList == []:
+    if domain_list == []:
         for domain in yunohost.domain.domain_list(auth)['domains']:
 
             status = _get_status(domain)
             if status["CAtype"] != "Self-signed":
                 continue
 
-            domainList.append(domain)
+            domain_list.append(domain)
 
     # Else, validate that yunohost knows the domains given
     else:
-        for domain in domainList:
+        for domain in domain_list:
             # Is it in Yunohost dmomain list ?
             if domain not in yunohost.domain.domain_list(auth)['domains']:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_unknown', domain=domain))
@@ -215,7 +215,7 @@ def certificate_install_letsencrypt(auth, domainList, force=False, no_checks=Fal
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_cert_not_selfsigned', domain=domain))
 
     # Actual install steps
-    for domain in domainList:
+    for domain in domain_list:
 
         logger.info("Now attempting install of certificate for domain %s!", domain)
 
@@ -235,12 +235,12 @@ def certificate_install_letsencrypt(auth, domainList, force=False, no_checks=Fal
             logger.error(str(e))
 
 
-def certificate_renew(auth, domainList, force=False, no_checks=False, email=False):
+def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
     Keyword argument:
-        domainList -- Domains for which to renew the certificates
+        domain_list -- Domains for which to renew the certificates
         force      -- Ignore the validity threshold (15 days)
         no-check   -- Disable some checks about the reachability of web server
                       before attempting the renewing
@@ -249,7 +249,7 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
-    if domainList == []:
+    if domain_list == []:
         for domain in yunohost.domain.domain_list(auth)['domains']:
 
             # Does it has a Let's Encrypt cert ?
@@ -259,14 +259,14 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
 
             # Does it expires soon ?
             if force or status["validity"] <= validity_limit:
-                domainList.append(domain)
+                domain_list.append(domain)
 
-        if len(domainList) == 0:
+        if len(domain_list) == 0:
             logger.info("No certificate needs to be renewed.")
 
     # Else, validate the domain list given
     else:
-        for domain in domainList:
+        for domain in domain_list:
 
             # Is it in Yunohost dmomain list ?
             if domain not in yunohost.domain.domain_list(auth)['domains']:
@@ -283,7 +283,7 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_nonLE_cert', domain=domain))
 
     # Actual renew steps
-    for domain in domainList:
+    for domain in domain_list:
         logger.info("Now attempting renewing of certificate for domain %s !", domain)
 
         try:

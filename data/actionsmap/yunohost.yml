@@ -313,7 +313,7 @@ domain:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                domainList:
+                domain_list:
                     help: Domains to check
                     nargs: "*"
                 --full:
@@ -328,7 +328,7 @@ domain:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                domainList:
+                domain_list:
                     help: Domains for which to install the certificates
                     nargs: "*"
                 --force:
@@ -349,7 +349,7 @@ domain:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                domainList:
+                domain_list:
                     help: Domains for which to renew the certificates
                     nargs: "*"
                 --force:
