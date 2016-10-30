@@ -25,7 +25,6 @@
 """
 
 import os
-import sys
 import errno
 import requests
 import shutil
@@ -43,7 +42,7 @@ from moulinette.core      import MoulinetteError
 from moulinette.utils.log import getActionLogger
 import yunohost.domain
 from yunohost.service     import _run_service_command
-from yunohost.app         import app_setting, app_ssowatconf
+from yunohost.app         import app_ssowatconf
 
 
 logger = getActionLogger('yunohost.certmanager')
