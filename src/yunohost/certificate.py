@@ -191,8 +191,8 @@ def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=Fa
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domain_list:
-            # Is it in Yunohost dmomain list ?
-            if domain not in yunohost.domain.domain_list(auth)['domains']:
+            yunohost_domains_list = yunohost.domain.domain_list(auth)['domains']
+            if domain not in yunohost_domains_list:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_unknown', domain=domain))
 
             # Is it self-signed ?
