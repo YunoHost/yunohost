@@ -284,7 +284,7 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
 
     # Actual renew steps
     for domain in domainList:
-        logger.info("Now attempting renewing of certificate for domain " + domain + " !")
+        logger.info("Now attempting renewing of certificate for domain %s !", domain)
 
         try:
             if not no_checks:
@@ -295,7 +295,7 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
 
         except Exception as e:
-            logger.error("Certificate renewing for " + domain + " failed !")
+            logger.error("Certificate renewing for %s failed !", domain)
             logger.error(str(e))
 
             if email:
