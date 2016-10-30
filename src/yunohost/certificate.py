@@ -594,7 +594,7 @@ def _set_permissions(path, user, group, permissions):
 
 
 def _backup_current_cert(domain):
-    logger.info("Backuping existing certificate for domain " + domain)
+    logger.info("Backuping existing certificate for domain %s", domain)
 
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
