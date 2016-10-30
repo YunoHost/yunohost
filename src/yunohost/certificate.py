@@ -217,7 +217,7 @@ def certificate_install_letsencrypt(auth, domainList, force=False, no_checks=Fal
     # Actual install steps
     for domain in domainList:
 
-        logger.info("Now attempting install of certificate for domain " + domain + " !")
+        logger.info("Now attempting install of certificate for domain %s!", domain)
 
         try:
             if not no_checks:
@@ -231,7 +231,7 @@ def certificate_install_letsencrypt(auth, domainList, force=False, no_checks=Fal
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
 
         except Exception as e:
-            logger.error("Certificate installation for %s failed !" % domain)
+            logger.error("Certificate installation for %s failed !", domain)
             logger.error(str(e))
 
 
