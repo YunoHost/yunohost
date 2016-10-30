@@ -281,12 +281,17 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
 
         except Exception as e:
+            import traceback
+            from StringIO import StringIO
+            stack = StringIO()
+            traceback.print_exc(file=stack)
             logger.error("Certificate renewing for %s failed !", domain)
+            logger.error(stack.getvalue())
             logger.error(str(e))
 
             if email:
                 logger.error("Sending email with details to root ...")
-                _email_renewing_failed(domain, e)
+                _email_renewing_failed(domain, e, stack.getvalue())
 
 
 ###############################################################################
@@ -303,7 +308,7 @@ def _install_cron():
     _set_permissions(cron_job_file, "root", "root", 0755)
 
 
-def _email_renewing_failed(domain, exception_message):
+def _email_renewing_failed(domain, exception_message, stack):
     from_ = "certmanager@%s (Certificate Manager)" % domain
     to_ = "root"
     subject_ = "Certificate renewing attempt for %s failed!" % domain
@@ -314,6 +319,7 @@ At attempt for renewing the certificate for domain %s failed with the following
 error :
 
 %s
+%s
 
 Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
 investigate :
@@ -322,7 +328,7 @@ investigate :
 
 -- Certificate Manager
 
-""" % (domain, exception_message, logs)
+""" % (domain, exception_message, stack, logs)
 
     message = """
 From: %s
