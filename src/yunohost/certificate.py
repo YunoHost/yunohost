@@ -249,7 +249,7 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
-    if (domainList == []):
+    if domainList == []:
         for domain in yunohost.domain.domain_list(auth)['domains']:
 
             # Does it has a Let's Encrypt cert ?
@@ -258,10 +258,10 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
                 continue
 
             # Does it expires soon ?
-            if (force) or (status["validity"] <= validity_limit):
+            if force or status["validity"] <= validity_limit:
                 domainList.append(domain)
 
-        if (len(domainList) == 0):
+        if len(domainList) == 0:
             logger.info("No certificate needs to be renewed.")
 
     # Else, validate the domain list given
@@ -275,7 +275,7 @@ def certificate_renew(auth, domainList, force=False, no_checks=False, email=Fals
             status = _get_status(domain)
 
             # Does it expires soon ?
-            if not (force or status["validity"] <= validity_limit):
+            if not force or status["validity"] <= validity_limit:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_valid_cert', domain=domain))
 
             # Does it has a Let's Encrypt cert ?
