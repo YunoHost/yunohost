@@ -30,13 +30,15 @@ import json
 import yaml
 import errno
 import requests
+
 from urllib import urlopen
 
-from moulinette.core      import MoulinetteError
+from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.service     import service_regen_conf
 import yunohost.certificate
+
+from yunohost.service import service_regen_conf
 
 logger = getActionLogger('yunohost.domain')
 
@@ -115,7 +117,7 @@ def domain_add(auth, domain, dyndns=False):
         yunohost.certificate.certificate_install_selfsigned([domain], False)
 
         try:
-            auth.validate_uniqueness({ 'virtualdomain': domain })
+            auth.validate_uniqueness({'virtualdomain': domain})
         except MoulinetteError:
             raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
 
@@ -254,14 +256,18 @@ def domain_dns_conf(domain, ttl=None):
 
     return result
 
+
 def domain_cert_status(auth, domainList, full=False):
     return yunohost.certificate.certificate_status(auth, domainList, full)
+
 
 def domain_cert_install(auth, domainList, force=False, no_checks=False, self_signed=False):
     return yunohost.certificate.certificate_install(auth, domainList, force, no_checks, self_signed)
 
+
 def domain_cert_renew(auth, domainList, force=False, no_checks=False, email=False):
     return yunohost.certificate.certificate_renew(auth, domainList, force, no_checks, email)
+
 
 def get_public_ip(protocol=4):
     """Retrieve the public IP address from ip.yunohost.org"""
@@ -278,4 +284,3 @@ def get_public_ip(protocol=4):
         logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
         raise MoulinetteError(errno.ENETUNREACH,
                               m18n.n('no_internet_connection'))
-
