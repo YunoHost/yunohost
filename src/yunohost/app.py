@@ -1035,15 +1035,19 @@ def app_ssowatconf(auth):
     for domain in domains:
 
         # Check ACME challenge file is present in nginx conf
-        nginx_acme_challenge_conf_file = "/etc/nginx/conf.d/"+domain+".d/000-acmechallenge.conf"
-        if not (os.path.isfile(nginx_acme_challenge_conf_file)) : continue
+        nginx_acme_challenge_conf_file = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
+
+        if not os.path.isfile(nginx_acme_challenge_conf_file):
+            continue
 
         # Check the file contains the ACME challenge uri
         acme_uri = '/.well-known/acme-challenge'
-        if not (acme_uri in open(nginx_acme_challenge_conf_file).read()) : continue
+
+        if not acme_uri in open(nginx_acme_challenge_conf_file).read():
+            continue
 
         # If so, then authorize the ACME challenge uri to unprotected regex
-        regex = domain+"/%.well%-known/acme%-challenge/.*$"
+        regex = domain + "/%.well%-known/acme%-challenge/.*$"
         unprotected_regex.append(regex)
 
 
