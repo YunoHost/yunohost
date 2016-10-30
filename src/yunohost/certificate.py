@@ -602,7 +602,7 @@ def _check_domain_is_correctly_configured(domain):
 
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
-        result = requests.get("http://dns-api.org/A/" + domain)
+        result = requests.get("https://dns-api.org/A/" + domain)
     except Exception as exception:
         import traceback
         traceback.print_exc(file=sys.stdout)
