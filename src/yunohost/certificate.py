@@ -359,15 +359,15 @@ def _configure_for_acme_challenge(auth, domain):
 location '/.well-known/acme-challenge'
 {
         default_type "text/plain";
-        alias        ''' + webroot_folder + ''';
+        alias %s;
 }
-    '''
+    ''' % webroot_folder
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
         logger.info("Nginx configuration file for ACME challenge already exists for domain, skipping.")
     else:
-        logger.info("Adding Nginx configuration file for Acme challenge for domain " + domain + ".")
+        logger.info("Adding Nginx configuration file for Acme challenge for domain %s.", domain)
 
         with open(nginx_conf_file, "w") as f:
             f.write(nginx_configuration)
@@ -394,7 +394,7 @@ def _fetch_and_enable_new_certificate(domain):
     _set_permissions(tmp_folder, "root", "root", 0640)
 
     # Prepare certificate signing request
-    logger.info("Prepare key and certificate signing request (CSR) for " + domain + "...")
+    logger.info("Prepare key and certificate signing request (CSR) for %s...", domain)
 
     domain_key_file = "%s/%s.pem" % (tmp_folder,  domain)
     _generate_key(domain_key_file)
