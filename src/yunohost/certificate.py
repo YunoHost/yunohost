@@ -90,32 +90,19 @@ def certificate_status(auth, domain_list, full=False):
             if domain not in yunohost_domains_list:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_unknown', domain=domain))
 
-    # Get status for each domain, and prepare display using tabulate
-    if not full:
-        headers = ["Domain", "Certificate status", "Authority type", "Days remaining"]
-    else:
-        headers = ["Domain", "Certificate subject", "Certificate status", "Authority type", "Authority name", "Days remaining"]
-
     lines = []
+
     for domain in domain_list:
         status = _get_status(domain)
+        status["summaryCode"] = _summary_code_to_string(status["summaryCode"])
 
-        line = []
-        line.append(domain)
+        if not full:
+            del status["subject"]
+            del status["CAname"]
 
-        if full:
-            line.append(status["subject"])
+        lines.append(status)
 
-        line.append(_summary_code_to_string(status["summaryCode"]))
-        line.append(status["CAtype"])
-
-        if full:
-            line.append(status["CAname"])
-
-        line.append(status["validity"])
-        lines.append(line)
-
-    print(tabulate(lines, headers=headers, tablefmt="simple", stralign="center"))
+    return lines
 
 
 def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
