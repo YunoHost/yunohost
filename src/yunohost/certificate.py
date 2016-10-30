@@ -665,8 +665,8 @@ def _name_selfCA():
     return cert.get_subject().CN
 
 
-def _tail(n, filePath):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, filePath))
+def _tail(n, file_path):
+    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
     stdin.close()
     lines = stdout.readlines()
     stdout.close()
