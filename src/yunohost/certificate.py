@@ -639,17 +639,22 @@ def _domain_is_accessible_through_HTTP(ip, domain):
 
 
 def _summary_code_to_string(code):
-    if (code <= -30):
+    if code <= -30:
         return "CRITICAL"
-    elif (code <= -20):
-        return "WARNING"
-    elif (code <= -10):
-        return "Attention"
-    elif (code <= 0):
-        return "Unknown?"
-    elif (code <= 10):
-        return "Good"
-    elif (code <= 20):
+
+    if code <= -20:
+      return "WARNING"
+
+    if code <= -10:
+      return "Attention"
+
+    if code <= 0:
+      return "Unknown?"
+
+    if code <= 10:
+      return "Good"
+
+    if code <= 20:
         return "Great!"
 
     return "Unknown?"
