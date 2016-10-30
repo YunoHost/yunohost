@@ -94,11 +94,10 @@ def certificate_status(auth, domain_list, full=False):
 
     for domain in domain_list:
         status = _get_status(domain)
-        status["summaryCode"] = _summary_code_to_string(status["summaryCode"])
 
         if not full:
             del status["subject"]
-            del status["CAname"]
+            del status["CA_name"]
 
         lines.append(status)
 
@@ -128,7 +127,7 @@ def certificate_install_selfsigned(domain_list, force=False):
         # Check we ain't trying to overwrite a good cert !
         status = _get_status(domain)
 
-        if status and status["summaryCode"] > 0 and not force:
+        if status and status["summary"]["code"] in ('good', 'great') and not force:
             raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
         cert_folder_domain = os.path.join(cert_folder, domain)
@@ -183,7 +182,7 @@ def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=Fa
         for domain in yunohost.domain.domain_list(auth)['domains']:
 
             status = _get_status(domain)
-            if status["CAtype"] != "Self-signed":
+            if status["CA_type"]["code"] != "self-signed":
                 continue
 
             domain_list.append(domain)
@@ -197,7 +196,7 @@ def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=Fa
 
             # Is it self-signed ?
             status = _get_status(domain)
-            if not force and status["CAtype"] != "Self-signed":
+            if not force and status["CA_type"]["code"] != "self-signed":
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_cert_not_selfsigned', domain=domain))
 
     # Actual install steps
@@ -240,7 +239,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
             # Does it has a Let's Encrypt cert ?
             status = _get_status(domain)
-            if status["CAtype"] != "Let's Encrypt":
+            if status["CA_type"]["code"] != "lets-encrypt":
                 continue
 
             # Does it expires soon ?
@@ -265,7 +264,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_valid_cert', domain=domain))
 
             # Does it has a Let's Encrypt cert ?
-            if status["CAtype"] != "Let's Encrypt":
+            if status["CA_type"]["code"] != "lets-encrypt":
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_nonLE_cert', domain=domain))
 
     # Actual renew steps
@@ -444,9 +443,9 @@ def _fetch_and_enable_new_certificate(domain):
     os.symlink(new_cert_folder, live_link)
 
     # Check the status of the certificate is now good
-    status_summary_code = _get_status(domain)["summaryCode"]
+    status_summary = _get_status(domain)["summary"]
 
-    if status_summary_code < 20:
+    if status_summary["code"] != "great":
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_certificate_fetching_or_enabling_failed', domain=domain))
 
     logger.info("Restarting services...")
@@ -498,47 +497,72 @@ def _get_status(domain):
     days_remaining = (valid_up_to - datetime.now()).days
 
     if cert_issuer == _name_self_CA():
-        CA_type = "Self-signed"
+        CA_type = {
+            "code": "self-signed",
+            "verbose": "Self-signed",
+        }
 
     elif cert_issuer.startswith("Let's Encrypt"):
-        CA_type = "Let's Encrypt"
+        CA_type = {
+            "code": "lets-encrypt",
+            "verbose": "Let's Encrypt",
+        }
 
     elif cert_issuer.startswith("Fake LE"):
-        CA_type = "Fake Let's Encrypt"
+        CA_type = {
+            "code": "fake-lets-encrypt",
+            "verbose": "Fake Let's Encrypt",
+        }
 
     else:
-        CA_type = "Other / Unknown"
+        CA_type = {
+            "code": "other-unknown",
+            "verbose": "Other / Unknown",
+        }
 
-    # Unknown by default
-    status_summary_code = 0
-
-    # Critical
     if days_remaining <= 0:
-        status_summary_code = -30
+        status_summary = {
+            "code": "critical",
+            "verbose": "CRITICAL",
+        }
 
-    # Warning, self-signed, browser will display a warning discouraging visitors to enter website
-    elif CA_type == "Self-signed" or CA_type == "Fake Let's Encrypt":
-        status_summary_code = -20
+    elif CA_type["code"] in ("self-signed","fake-lets-encrypt"):
+        status_summary = {
+            "code": "warning",
+            "verbose": "WARNING",
+        }
 
-    # Attention, certificate will expire soon (should be renewed automatically if Let's Encrypt)
     elif days_remaining < validity_limit:
-        status_summary_code = -10
+        status_summary = {
+            "code": "attention",
+            "verbose": "About to expire",
+        }
 
-    # CA not known, but still a valid certificate, so okay !
-    elif CA_type == "Other / Unknown":
-        status_summary_code = 10
+    elif CA_type["code"] == "other-unknown":
+        status_summary = {
+            "code": "good",
+            "verbose": "Good",
+        }
 
-    # Let's Encrypt, great !
-    elif CA_type == "Let's Encrypt":
-        status_summary_code = 20
+    elif CA_type["code"] == "lets-encrypt":
+        status_summary = {
+            "code": "great",
+            "verbose": "Great!",
+        }
+
+    else:
+        status_summary = {
+            "code": "unknown",
+            "verbose": "Unknown?",
+        }
 
     return {
         "domain": domain,
         "subject": cert_subject,
-        "CAname": cert_issuer,
-        "CAtype": CA_type,
+        "CA_name": cert_issuer,
+        "CA_type": CA_type,
         "validity": days_remaining,
-        "summaryCode": status_summary_code
+        "summary": status_summary,
     }
 
 ###############################################################################
@@ -627,28 +651,6 @@ def _domain_is_accessible_through_HTTP(ip, domain):
         return False
 
     return True
-
-
-def _summary_code_to_string(code):
-    if code <= -30:
-        return "CRITICAL"
-
-    if code <= -20:
-        return "WARNING"
-
-    if code <= -10:
-        return "Attention"
-
-    if code <= 0:
-        return "Unknown?"
-
-    if code <= 10:
-        return "Good"
-
-    if code <= 20:
-        return "Great!"
-
-    return "Unknown?"
 
 
 def _name_self_CA():
