@@ -154,24 +154,31 @@ def certificate_install_selfsigned(domain_list, force=False):
         with open(os.path.join(ssl_dir, 'serial'), 'r') as f:
             serial = f.readline().rstrip()
 
+        shutil.copyfile(os.path.join(ssl_dir, "openssl.cnf"), os.path.join(cert_folder_domain, "openssl.cnf"))
+
         # FIXME : should refactor this to avoid so many os.system() calls...
         # We should be able to do all this using OpenSSL.crypto and os/shutil
         command_list = [
-            'cp %s/openssl.cnf %s' % (ssl_dir, cert_folder_domain),
             'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf' % (domain, cert_folder_domain),
             'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch'
             % (cert_folder_domain, ssl_dir, ssl_dir),
             'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch'
             % (cert_folder_domain, ssl_dir, ssl_dir),
-            'ln -s /etc/ssl/certs/ca-yunohost_crt.pem %s/ca.pem' % cert_folder_domain,
-            'cp %s/certs/yunohost_key.pem    %s/key.pem' % (ssl_dir, cert_folder_domain),
-            'cp %s/newcerts/%s.pem %s/crt.pem' % (ssl_dir, serial, cert_folder_domain),
-            'cat %s/ca.pem >> %s/crt.pem' % (cert_folder_domain, cert_folder_domain)
         ]
 
         for command in command_list:
             if os.system(command) != 0:
                 raise MoulinetteError(errno.EIO, m18n.n('certmanager_domain_cert_gen_failed'))
+
+        os.symlink('/etc/ssl/certs/ca-yunohost_crt.pem', os.path.join(cert_folder_domain, "ca.pem"))
+        shutil.copyfile(os.path.join(ssl_dir, "certs", "yunohost_key.pem"), os.path.join(cert_folder_domain, "key.pem"))
+        shutil.copyfile(os.path.join(ssl_dir, "newcerts", "%s.pem" % serial), os.path.join(cert_folder_domain, "crt.pem"))
+
+        # append ca.pem at the end of crt.pem
+        with open(os.path.join(cert_folder_domain, "ca.pem"), "r") as ca_pem:
+            with open(os.path.join(cert_folder_domain, "crt.pem"), "a") as crt_pem:
+                crt_pem.write("\n")
+                crt_pem.write(ca_pem.read())
 
         _set_permissions(cert_folder_domain, "root", "root", 0755)
         _set_permissions(os.path.join(cert_folder_domain, "key.pem"), "root", "metronome", 0640)
