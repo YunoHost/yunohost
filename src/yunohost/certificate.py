@@ -47,8 +47,6 @@ from yunohost.service import _run_service_command
 
 logger = getActionLogger('yunohost.certmanager')
 
-# Misc stuff we need
-
 cert_folder = "/etc/yunohost/certs/"
 tmp_folder = "/tmp/acme-challenge-private/"
 webroot_folder = "/tmp/acme-challenge-public/"
@@ -70,8 +68,6 @@ intermediate_certificate_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cr
 ###############################################################################
 #   Front-end stuff                                                           #
 ###############################################################################
-
-# Status
 
 
 def certificate_status(auth, domain_list, full=False):
@@ -139,8 +135,6 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
         certificate_install_letsencrypt(auth, domain_list, force, no_checks)
 
 
-# Install self-signed
-
 def certificate_install_selfsigned(domain_list, force=False):
     for domain in domain_list:
 
@@ -152,7 +146,6 @@ def certificate_install_selfsigned(domain_list, force=False):
 
         cert_folder_domain = os.path.join(cert_folder, domain)
 
-        # Create cert folder if it does not exists yet
         if not os.path.exists(cert_folder_domain):
             os.makedirs(cert_folder_domain)
 
