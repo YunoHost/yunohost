@@ -91,7 +91,7 @@ def certificate_status(auth, domainList, full=False):
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domainList:
-            # Is it in Yunohost dmomain list ?
+            # Is it in Yunohost domain list ?
             if domain not in yunohost.domain.domain_list(auth)['domains']:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_unknown', domain=domain))
 
