@@ -249,7 +249,7 @@
     "certmanager_error_parsing_dns" : "Error parsing the return value from the DNS API : {value:s}. Please verify your DNS configuration for domain {domain:s}. Use --no-checks to disable checks.",
     "certmanager_domain_dns_ip_differs_from_public_ip" : "The DNS 'A' record for domain {domain:s} is different from this server IP. Give some time for the DNS to refresh, or use --no-checks to disable checks.",
     "certmanager_no_A_dns_record" : "No DNS record of type A found for {domain:s}. You need to configure the DNS for your domain before installing a certificate !",
-    "certmanager_cannot_read_cert": "Something wrong happened when trying to open current certificate for domain {domain:s} (file : {file:s})",
+    "certmanager_cannot_read_cert": "Something wrong happened when trying to open current certificate for domain {domain:s} (file : {file:s}), reason: {reason:s}",
     "certmanager_cert_install_success" : "Successfully installed Let's Encrypt certificate for domain {domain:s} !",
     "certmanager_cert_renew_success" : "Successfully renewed Let's Encrypt certificate for domain {domain:s} !"
 }

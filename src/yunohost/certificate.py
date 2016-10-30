@@ -491,8 +491,10 @@ def _get_status(domain):
 
     try:
         cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
-    except:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cannot_read_cert', domain=domain, file=cert_file))
+    except Exception as exception:
+        import traceback
+        traceback.print_exc(file=sys.stdout)
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cannot_read_cert', domain=domain, file=cert_file, reason=exception))
 
     certSubject = cert.get_subject().CN
     certIssuer = cert.get_issuer().CN
