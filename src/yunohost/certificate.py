@@ -82,7 +82,7 @@ def certificate_status(auth, domain_list, full=False):
 
     Keyword argument:
         domain_list -- Domains to be checked
-        full       -- Display more info about the certificates
+        full        -- Display more info about the certificates
     """
 
     # If no domains given, consider all yunohost domains
@@ -130,10 +130,10 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
 
     Keyword argument:
         domain_list  -- Domains on which to install certificates
-        force       -- Install even if current certificate is not self-signed
-        no-check    -- Disable some checks about the reachability of web server
+        force        -- Install even if current certificate is not self-signed
+        no-check     -- Disable some checks about the reachability of web server
                        before attempting the install
-        self-signed -- Instal self-signed certificates instead of Let's Encrypt
+        self-signed  -- Instal self-signed certificates instead of Let's Encrypt
     """
     if (self_signed):
         certificate_install_selfsigned(domain_list, force)
