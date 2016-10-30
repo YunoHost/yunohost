@@ -450,8 +450,10 @@ def _fetch_and_enable_new_certificate(domain):
 
     logger.info("Restarting services...")
 
-    for service in ("nginx", "postfix", "dovecot", "metronome"):
+    for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
+
+    _run_service_command("reload", "nginx")
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
