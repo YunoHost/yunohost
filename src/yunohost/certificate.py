@@ -317,12 +317,11 @@ def _install_cron():
     _set_permissions(cron_job_file, "root", "root", 0755)
 
 
-def _email_renewing_failed(domain, e):
+def _email_renewing_failed(domain, exceptionMessage):
     from_ = "certmanager@%s (Certificate Manager)" % domain
     to_ = "root"
     subject_ = "Certificate renewing attempt for %s failed!" % domain
 
-    exceptionMessage = str(e)
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
     text     = """
 At attempt for renewing the certificate for domain %s failed with the following
