@@ -589,22 +589,25 @@ def _check_domain_is_correctly_configured(domain):
 
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
-        r = requests.get("http://dns-api.org/A/" + domain)
-    except:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_contacting_dns_api', api="dns-api.org"))
+        result = requests.get("http://dns-api.org/A/" + domain)
+    except Exception as exception:
+        import traceback
+        traceback.print_exc(file=sys.stdout)
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_contacting_dns_api', api="dns-api.org", reason=exception))
 
-    if (r.text == "[{\"error\":\"NXDOMAIN\"}]"):
+    dns_ip = result.json()
+    if not dns_ip or "value" not in dns_ip[0]:
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
+
+    dns_ip = dns_ip[0]["value"]
+
+    if dns_ip.get("error") == "NXDOMAIN":
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_no_A_dns_record', domain=domain))
 
-    try:
-        dns_ip = json.loads(r.text)[0]["value"]
-    except:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=r.text))
-
-    if (dns_ip != public_ip):
-        return False
-    else:
+    if dns_ip == public_ip:
         return True
+    else:
+        return False
 
 
 def _domain_is_accessible_through_HTTP(ip, domain):
