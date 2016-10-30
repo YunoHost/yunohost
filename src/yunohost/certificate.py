@@ -17,9 +17,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program; if not, see http://www.gnu.org/licenses
 
-"""
-
-""" yunohost_certificate.py
+    yunohost_certificate.py
 
     Manage certificates, in particular Let's encrypt
 """
@@ -27,21 +25,21 @@
 import os
 import sys
 import errno
-import requests
 import shutil
 import pwd
 import grp
 import smtplib
+import requests
 
 from OpenSSL import crypto
 from datetime import datetime
 from tabulate import tabulate
 from acme_tiny import get_crt as sign_certificate
 
-import yunohost.domain
-
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+
+import yunohost.domain
 
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command
@@ -135,7 +133,7 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
                        before attempting the install
         self-signed  -- Instal self-signed certificates instead of Let's Encrypt
     """
-    if (self_signed):
+    if self_signed:
         certificate_install_selfsigned(domain_list, force)
     else:
         certificate_install_letsencrypt(auth, domain_list, force, no_checks)
@@ -318,13 +316,13 @@ def _install_cron():
     _set_permissions(cron_job_file, "root", "root", 0755)
 
 
-def _email_renewing_failed(domain, exceptionMessage):
+def _email_renewing_failed(domain, exception_message):
     from_ = "certmanager@%s (Certificate Manager)" % domain
     to_ = "root"
     subject_ = "Certificate renewing attempt for %s failed!" % domain
 
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
-    text     = """
+    text = """
 At attempt for renewing the certificate for domain %s failed with the following
 error :
 
@@ -337,7 +335,7 @@ investigate :
 
 -- Certificate Manager
 
-""" % (domain, exceptionMessage, logs)
+""" % (domain, exception_message, logs)
 
     message = """
 From: %s
@@ -397,7 +395,7 @@ def _fetch_and_enable_new_certificate(domain):
     # Prepare certificate signing request
     logger.info("Prepare key and certificate signing request (CSR) for %s...", domain)
 
-    domain_key_file = "%s/%s.pem" % (tmp_folder,  domain)
+    domain_key_file = "%s/%s.pem" % (tmp_folder, domain)
     _generate_key(domain_key_file)
     _set_permissions(domain_key_file, "root", "metronome", 0640)
 
@@ -453,9 +451,9 @@ def _fetch_and_enable_new_certificate(domain):
     os.symlink(new_cert_folder, live_link)
 
     # Check the status of the certificate is now good
-    statusSummaryCode = _get_status(domain)["summaryCode"]
+    status_summary_code = _get_status(domain)["summaryCode"]
 
-    if statusSummaryCode < 20:
+    if status_summary_code < 20:
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_certificate_fetching_or_enabling_failed', domain=domain))
 
     logger.info("Restarting services...")
@@ -501,54 +499,54 @@ def _get_status(domain):
         traceback.print_exc(file=sys.stdout)
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cannot_read_cert', domain=domain, file=cert_file, reason=exception))
 
-    certSubject = cert.get_subject().CN
-    certIssuer = cert.get_issuer().CN
-    validUpTo = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
-    daysRemaining = (validUpTo - datetime.now()).days
+    cert_subject = cert.get_subject().CN
+    cert_issuer = cert.get_issuer().CN
+    valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
+    days_remaining = (valid_up_to - datetime.now()).days
 
-    CAtype = None
-    if certIssuer == _name_selfCA():
-        CAtype = "Self-signed"
+    CA_type = None
+    if cert_issuer == _name_self_CA():
+        CA_type = "Self-signed"
 
-    elif certIssuer.startswith("Let's Encrypt"):
-        CAtype = "Let's Encrypt"
+    elif cert_issuer.startswith("Let's Encrypt"):
+        CA_type = "Let's Encrypt"
 
-    elif certIssuer.startswith("Fake LE"):
-        CAtype = "Fake Let's Encrypt"
+    elif cert_issuer.startswith("Fake LE"):
+        CA_type = "Fake Let's Encrypt"
 
     else:
-        CAtype = "Other / Unknown"
+        CA_type = "Other / Unknown"
 
     # Unknown by default
-    statusSummaryCode = 0
+    status_summary_code = 0
 
     # Critical
-    if daysRemaining <= 0:
-        statusSummaryCode = -30
+    if days_remaining <= 0:
+        status_summary_code = -30
 
     # Warning, self-signed, browser will display a warning discouraging visitors to enter website
-    elif CAtype == "Self-signed" or CAtype == "Fake Let's Encrypt":
-        statusSummaryCode = -20
+    elif CA_type == "Self-signed" or CA_type == "Fake Let's Encrypt":
+        status_summary_code = -20
 
     # Attention, certificate will expire soon (should be renewed automatically if Let's Encrypt)
-    elif daysRemaining < validity_limit:
-        statusSummaryCode = -10
+    elif days_remaining < validity_limit:
+        status_summary_code = -10
 
     # CA not known, but still a valid certificate, so okay !
-    elif CAtype == "Other / Unknown":
-        statusSummaryCode = 10
+    elif CA_type == "Other / Unknown":
+        status_summary_code = 10
 
     # Let's Encrypt, great !
-    elif CAtype == "Let's Encrypt":
-        statusSummaryCode = 20
+    elif CA_type == "Let's Encrypt":
+        status_summary_code = 20
 
     return {
         "domain": domain,
-        "subject": certSubject,
-        "CAname": certIssuer,
-        "CAtype": CAtype,
-        "validity": daysRemaining,
-        "summaryCode": statusSummaryCode
+        "subject": cert_subject,
+        "CAname": cert_issuer,
+        "CAtype": CA_type,
+        "validity": days_remaining,
+        "summaryCode": status_summary_code
     }
 
 ###############################################################################
@@ -562,11 +560,11 @@ def _generate_account_key():
     _set_permissions(account_key_file, "root", "root", 0400)
 
 
-def _generate_key(destinationPath):
+def _generate_key(destination_path):
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, key_size)
 
-    with open(destinationPath, "w") as f:
+    with open(destination_path, "w") as f:
         f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
 
@@ -583,8 +581,8 @@ def _backup_current_cert(domain):
 
     cert_folder_domain = os.path.join(cert_folder, domain)
 
-    dateTag = datetime.now().strftime("%Y%m%d.%H%M%S")
-    backup_folder = "%s-backup-%s" % (cert_folder_domain, dateTag)
+    date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
+    backup_folder = "%s-backup-%s" % (cert_folder_domain, date_tag)
 
     shutil.copytree(cert_folder_domain, backup_folder)
 
@@ -644,16 +642,16 @@ def _summary_code_to_string(code):
         return "CRITICAL"
 
     if code <= -20:
-      return "WARNING"
+        return "WARNING"
 
     if code <= -10:
-      return "Attention"
+        return "Attention"
 
     if code <= 0:
-      return "Unknown?"
+        return "Unknown?"
 
     if code <= 10:
-      return "Good"
+        return "Good"
 
     if code <= 20:
         return "Great!"
@@ -661,7 +659,7 @@ def _summary_code_to_string(code):
     return "Unknown?"
 
 
-def _name_selfCA():
+def _name_self_CA():
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(selfCA_file).read())
     return cert.get_subject().CN
 
