@@ -506,13 +506,13 @@ def _get_status(domain):
     daysRemaining = (validUpTo - datetime.now()).days
 
     CAtype = None
-    if (certIssuer == _name_selfCA()):
+    if certIssuer == _name_selfCA():
         CAtype = "Self-signed"
 
-    elif (certIssuer.startswith("Let's Encrypt")):
+    elif certIssuer.startswith("Let's Encrypt"):
         CAtype = "Let's Encrypt"
 
-    elif (certIssuer.startswith("Fake LE")):
+    elif certIssuer.startswith("Fake LE"):
         CAtype = "Fake Let's Encrypt"
 
     else:
@@ -522,23 +522,23 @@ def _get_status(domain):
     statusSummaryCode = 0
 
     # Critical
-    if (daysRemaining <= 0):
+    if daysRemaining <= 0:
         statusSummaryCode = -30
 
     # Warning, self-signed, browser will display a warning discouraging visitors to enter website
-    elif (CAtype == "Self-signed") or (CAtype == "Fake Let's Encrypt"):
+    elif CAtype == "Self-signed" or CAtype == "Fake Let's Encrypt":
         statusSummaryCode = -20
 
     # Attention, certificate will expire soon (should be renewed automatically if Let's Encrypt)
-    elif (daysRemaining < validity_limit):
+    elif daysRemaining < validity_limit:
         statusSummaryCode = -10
 
     # CA not known, but still a valid certificate, so okay !
-    elif (CAtype == "Other / Unknown"):
+    elif CAtype == "Other / Unknown":
         statusSummaryCode = 10
 
     # Let's Encrypt, great !
-    elif (CAtype == "Let's Encrypt"):
+    elif CAtype == "Let's Encrypt":
         statusSummaryCode = 20
 
     return {
