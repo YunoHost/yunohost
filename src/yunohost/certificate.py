@@ -46,23 +46,23 @@ from yunohost.service import _run_service_command
 
 logger = getActionLogger('yunohost.certmanager')
 
-cert_folder = "/etc/yunohost/certs/"
-tmp_folder = "/tmp/acme-challenge-private/"
-webroot_folder = "/tmp/acme-challenge-public/"
+CERT_FOLDER = "/etc/yunohost/certs/"
+TMP_FOLDER = "/tmp/acme-challenge-private/"
+WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
 
-selfCA_file = "/etc/ssl/certs/ca-yunohost_crt.pem"
-account_key_file = "/etc/yunohost/letsencrypt_account.pem"
+SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
+ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
-key_size = 2048
+KEY_SIZE = 2048
 
-validity_limit = 15  # days
+VALIDITY_LIMIT = 15  # days
 
 # For tests
-#certification_authority = "https://acme-staging.api.letsencrypt.org"
+#CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
 # For prod
-certification_authority = "https://acme-v01.api.letsencrypt.org"
+CERTIFICATION_AUTHORITY = "https://acme-v01.api.letsencrypt.org"
 
-intermediate_certificate_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
+INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
 
 ###############################################################################
 #   Front-end stuff                                                           #
@@ -129,7 +129,7 @@ def certificate_install_selfsigned(domain_list, force=False):
         if status and status["summary"]["code"] in ('good', 'great') and not force:
             raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
-        cert_folder_domain = os.path.join(cert_folder, domain)
+        cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
         if not os.path.exists(cert_folder_domain):
             os.makedirs(cert_folder_domain)
@@ -172,7 +172,7 @@ def certificate_install_selfsigned(domain_list, force=False):
 
 
 def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False):
-    if not os.path.exists(account_key_file):
+    if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
     # If no domains given, consider all yunohost domains with self-signed
@@ -242,7 +242,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 continue
 
             # Does it expires soon ?
-            if force or status["validity"] <= validity_limit:
+            if force or status["validity"] <= VALIDITY_LIMIT:
                 domain_list.append(domain)
 
         if len(domain_list) == 0:
@@ -259,7 +259,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             status = _get_status(domain)
 
             # Does it expires soon ?
-            if not force or status["validity"] <= validity_limit:
+            if not force or status["validity"] <= VALIDITY_LIMIT:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_valid_cert', domain=domain))
 
             # Does it has a Let's Encrypt cert ?
@@ -350,7 +350,7 @@ location '/.well-known/acme-challenge'
         default_type "text/plain";
         alias %s;
 }
-    ''' % webroot_folder
+    ''' % WEBROOT_FOLDER
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
@@ -374,36 +374,36 @@ def _fetch_and_enable_new_certificate(domain):
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
-    if not os.path.exists(webroot_folder):
-        os.makedirs(webroot_folder)
+    if not os.path.exists(WEBROOT_FOLDER):
+        os.makedirs(WEBROOT_FOLDER)
 
-    if not os.path.exists(tmp_folder):
-        os.makedirs(tmp_folder)
+    if not os.path.exists(TMP_FOLDER):
+        os.makedirs(TMP_FOLDER)
 
-    _set_permissions(webroot_folder, "root", "www-data", 0650)
-    _set_permissions(tmp_folder, "root", "root", 0640)
+    _set_permissions(WEBROOT_FOLDER, "root", "www-data", 0650)
+    _set_permissions(TMP_FOLDER, "root", "root", 0640)
 
     # Prepare certificate signing request
     logger.info("Prepare key and certificate signing request (CSR) for %s...", domain)
 
-    domain_key_file = "%s/%s.pem" % (tmp_folder, domain)
+    domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
     _generate_key(domain_key_file)
     _set_permissions(domain_key_file, "root", "metronome", 0640)
 
-    _prepare_certificate_signing_request(domain, domain_key_file, tmp_folder)
+    _prepare_certificate_signing_request(domain, domain_key_file, TMP_FOLDER)
 
     # Sign the certificate
     logger.info("Now using ACME Tiny to sign the certificate...")
 
-    domain_csr_file = "%s/%s.csr" % (tmp_folder, domain)
+    domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
-    signed_certificate = sign_certificate(account_key_file,
+    signed_certificate = sign_certificate(ACCOUNT_KEY_FILE,
                                           domain_csr_file,
-                                          webroot_folder,
+                                          WEBROOT_FOLDER,
                                           log=logger,
-                                          CA=certification_authority)
+                                          CA=CERTIFICATION_AUTHORITY)
 
-    intermediate_certificate = requests.get(intermediate_certificate_url).text
+    intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL).text
 
     # Now save the key and signed certificate
     logger.info("Saving the key and signed certificate...")
@@ -411,7 +411,7 @@ def _fetch_and_enable_new_certificate(domain):
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
 
-    new_cert_folder = "%s/%s.%s" % (cert_folder, domain, date_tag)
+    new_cert_folder = "%s/%s.%s" % (CERT_FOLDER, domain, date_tag)
     os.makedirs(new_cert_folder)
 
     _set_permissions(new_cert_folder, "root", "root", 0655)
@@ -431,7 +431,7 @@ def _fetch_and_enable_new_certificate(domain):
     logger.info("Enabling the new certificate...")
 
     # Replace (if necessary) the link or folder for live cert
-    live_link = os.path.join(cert_folder, domain)
+    live_link = os.path.join(CERT_FOLDER, domain)
 
     if not os.path.islink(live_link):
         shutil.rmtree(live_link)  # Well, yep, hopefully that's not too dangerous (directory should have been backuped before calling this command)
@@ -480,7 +480,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 
 def _get_status(domain):
-    cert_file = os.path.join(cert_folder, domain, "crt.pem")
+    cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
         return {}
@@ -533,7 +533,7 @@ def _get_status(domain):
             "verbose": "WARNING",
         }
 
-    elif days_remaining < validity_limit:
+    elif days_remaining < VALIDITY_LIMIT:
         status_summary = {
             "code": "attention",
             "verbose": "About to expire",
@@ -573,13 +573,13 @@ def _get_status(domain):
 
 def _generate_account_key():
     logger.info("Generating account key ...")
-    _generate_key(account_key_file)
-    _set_permissions(account_key_file, "root", "root", 0400)
+    _generate_key(ACCOUNT_KEY_FILE)
+    _set_permissions(ACCOUNT_KEY_FILE, "root", "root", 0400)
 
 
 def _generate_key(destination_path):
     k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, key_size)
+    k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
 
     with open(destination_path, "w") as f:
         f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
@@ -596,7 +596,7 @@ def _set_permissions(path, user, group, permissions):
 def _backup_current_cert(domain):
     logger.info("Backuping existing certificate for domain " + domain)
 
-    cert_folder_domain = os.path.join(cert_folder, domain)
+    cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
     backup_folder = "%s-backup-%s" % (cert_folder_domain, date_tag)
@@ -655,7 +655,7 @@ def _domain_is_accessible_through_HTTP(ip, domain):
 
 
 def _name_self_CA():
-    cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(selfCA_file).read())
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(SELF_CA_FILE).read())
     return cert.get_subject().CN
 
 
