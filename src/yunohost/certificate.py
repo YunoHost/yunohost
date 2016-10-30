@@ -294,7 +294,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 ###############################################################################
 
 def _install_cron():
-    cron_job_file = "/etc/cron.weekly/certificateRenewer"
+    cron_job_file = "/etc/cron.weekly/yunohost-certificate-renew"
 
     with open(cron_job_file, "w") as f:
         f.write("#!/bin/bash\n")
