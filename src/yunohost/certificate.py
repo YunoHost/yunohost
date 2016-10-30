@@ -667,8 +667,10 @@ def _name_selfCA():
 
 def _tail(n, file_path):
     stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
+
     stdin.close()
+
     lines = stdout.readlines()
     stdout.close()
-    lines = "".join(lines)
-    return lines
+
+    return "".join(lines)
