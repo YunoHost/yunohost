@@ -366,18 +366,19 @@ location '/.well-known/acme-challenge'
     # Write the conf
     if os.path.exists(nginx_conf_file):
         logger.info("Nginx configuration file for ACME challenge already exists for domain, skipping.")
-    else:
-        logger.info("Adding Nginx configuration file for Acme challenge for domain %s.", domain)
+        return
 
-        with open(nginx_conf_file, "w") as f:
-            f.write(nginx_configuration)
+    logger.info("Adding Nginx configuration file for Acme challenge for domain %s.", domain)
 
-        # Assume nginx conf is okay, and reload it
-        # (FIXME : maybe add a check that it is, using nginx -t, haven't found
-        # any clean function already implemented in yunohost to do this though)
-        _run_service_command("reload", "nginx")
+    with open(nginx_conf_file, "w") as f:
+        f.write(nginx_configuration)
 
-        app_ssowatconf(auth)
+    # Assume nginx conf is okay, and reload it
+    # (FIXME : maybe add a check that it is, using nginx -t, haven't found
+    # any clean function already implemented in yunohost to do this though)
+    _run_service_command("reload", "nginx")
+
+    app_ssowatconf(auth)
 
 
 def _fetch_and_enable_new_certificate(domain):
