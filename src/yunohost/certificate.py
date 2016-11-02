@@ -33,7 +33,7 @@ import requests
 
 from OpenSSL import crypto
 from datetime import datetime
-from acme_tiny import get_crt as sign_certificate
+from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
