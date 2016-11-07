@@ -89,7 +89,7 @@ def certificate_status(auth, domain_list, full=False):
             if domain not in yunohost_domains_list:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_unknown', domain=domain))
 
-    lines = []
+    certificates = {}
 
     for domain in domain_list:
         status = _get_status(domain)
@@ -97,10 +97,13 @@ def certificate_status(auth, domain_list, full=False):
         if not full:
             del status["subject"]
             del status["CA_name"]
+            status["CA_type"] = status["CA_type"]["verbose"]
+            status["summary"] = status["summary"]["verbose"]
 
-        lines.append(status)
+        del status["domain"]
+        certificates[domain] = status
 
-    return { "certificates" : lines }
+    return { "certificates" : certificates }
 
 
 def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
