@@ -74,3 +74,35 @@ ynh_mkdir_tmp() {
     done
     mkdir -p "$TMPDIR" && echo "$TMPDIR"
 }
+
+# Prevent suppression of a important parent dir
+# Remove a directory with some variables into the path.
+# Each variable are checked, if a variable are empty, the suppression are cancelled.
+#
+# usage: ynh_safe_remove 'path_to_remove'
+# | arg: path_to_remove - directory to remove. The path of directory need to be placed between simple quotes
+ynh_safe_remove() {
+	chaine="$1"
+	no_var=0
+	while (echo "$chaine" | grep -q '\$')	# Boucle tant qu'il y a des $ dans la chaine
+	do
+		no_var=1
+		global_var=$(echo "$chaine" | cut -d '$' -f 2)	# Isole la première variable trouvée.
+		only_var=\$$(expr "$global_var" : '\([A-Za-z0-9_]*\)')	# Isole complètement la variable en ajoutant le $ au début et en gardant uniquement le nom de la variable. Se débarrasse surtout du / et d'un éventuel chemin derrière.
+		real_var=$(eval "echo ${only_var}")		# `eval "echo ${var}` permet d'interpréter une variable contenue dans une variable.
+		if test -z "$real_var"; then
+			echo "Variable $only_var is empty, suppression of $chaine cancelled."
+			return 1
+		fi
+		chaine=$(echo "$chaine" | sed "s@$only_var@$real_var@")	# remplace la variable par sa valeur dans la chaine.
+	done
+	if [ "$no_var" -eq 1 ]
+	then
+		echo "Delete directory $chaine"
+ 		sudo rm -r "$chaine"
+		return 0
+	else
+		echo "No detected variable."
+		return 1
+	fi
+}
