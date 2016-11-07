@@ -100,7 +100,7 @@ def certificate_status(auth, domain_list, full=False):
 
         lines.append(status)
 
-    return lines
+    return { "certificates" : lines }
 
 
 def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
