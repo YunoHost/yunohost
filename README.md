@@ -13,6 +13,8 @@
 - Debian files for package creation.
 - Locales for translations of `yunohost` command.
 - YunoHost core Python 2.7 scripts.
+- An actionmap used by moulinette.
+- Hooks.
 
 ## How does it works?
 - Python core scripts are accessible through two interfaces thanks to [moulinette framework](https://github.com/YunoHost/moulinette):
