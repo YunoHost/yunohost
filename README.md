@@ -17,7 +17,7 @@
 ## How does it works?
 - Python core scripts are accessible through two interfaces thanks to [moulinette framework](https://github.com/YunoHost/moulinette):
  - [CLI](https://en.wikipedia.org/wiki/Command-line_interface) for `yunohost` command.
- - [API](https://en.wikipedia.org/wiki/Application_programming_interface) for [web administration module](https://github.com/YunoHost/yunohost-admin).
+ - [API](https://en.wikipedia.org/wiki/Application_programming_interface) for [web administration module](https://github.com/YunoHost/yunohost-admin) (other modules could be implemented).
 - You could found more details about how YunoHost works on this [documentation (in french)](https://yunohost.org/#/package_list_fr).
 
 ## Dependencies
