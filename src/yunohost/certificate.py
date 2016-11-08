@@ -685,7 +685,10 @@ def _dns_ip_match_public_ip(public_ip, domain):
 
 def _domain_is_accessible_through_HTTP(ip, domain):
     try:
-        requests.head("http://" + ip, headers={"Host": domain})
+        r = requests.head("http://" + ip, headers={"Host": domain})
+        # Check we got the ssowat header in the response
+        if ("x-sso-wat" not in r.headers.keys()) :
+            return False
     except Exception:
         return False
 
