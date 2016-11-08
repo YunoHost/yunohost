@@ -3,8 +3,8 @@
 - [Please report issues on YunoHost bugtracker](https://dev.yunohost.org/projects/yunohost/issues) (no registration needed).
 
 ## Contribute
-- You could develop on this repository using [ynh-dev tool](https://github.com/YunoHost/ynh-dev) with `use-git`  sub-command.
-- On this repository we are working [following this workflow](https://yunohost.org/#/build_system_en): `stable <— testing <— branch`.
+- You can develop on this repository using [ynh-dev tool](https://github.com/YunoHost/ynh-dev) with `use-git`  sub-command.
+- On this repository we are [following this workflow](https://yunohost.org/#/build_system_en): `stable <— testing <— branch`.
 
 ## Repository content
 - [YunoHost core Python 2.7 scripts](https://github.com/YunoHost/yunohost/tree/stable/src/yunohost).
@@ -17,10 +17,10 @@
 - [Debian files](https://github.com/YunoHost/yunohost/tree/stable/debian) for package creation.
 
 ## How does it works?
-- Python core scripts are accessible through two interfaces thanks to [moulinette framework](https://github.com/YunoHost/moulinette):
+- Python core scripts are accessible through two interfaces thanks to the [moulinette framework](https://github.com/YunoHost/moulinette):
  - [CLI](https://en.wikipedia.org/wiki/Command-line_interface) for `yunohost` command.
  - [API](https://en.wikipedia.org/wiki/Application_programming_interface) for [web administration module](https://github.com/YunoHost/yunohost-admin) (other modules could be implemented).
-- You could found more details about how YunoHost works on this [documentation (in french)](https://yunohost.org/#/package_list_fr).
+- You can find more details about how YunoHost works on this [documentation (in french)](https://yunohost.org/#/package_list_fr).
 
 ## Dependencies
 - [Python 2.7](https://www.python.org/download/releases/2.7)
