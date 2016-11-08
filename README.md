@@ -7,14 +7,14 @@
 - On this repository we are working [following this workflow](https://yunohost.org/#/build_system_en): `stable <— testing <— branch`.
 
 ## Repository content
-- [Shell helpers](https://github.com/YunoHost/yunohost/tree/stable/data/helpers.d) for [application packaging](https://yunohost.org/#/packaging_apps_helpers_en).
-- [Services configuration templates](https://github.com/YunoHost/yunohost/tree/stable/data/templates).
-- [Modules for the XMPP server Metronome](https://github.com/YunoHost/yunohost/tree/stable/lib/metronome/modules).
-- [Debian files](https://github.com/YunoHost/yunohost/tree/stable/debian) for package creation.
-- [Locales](https://github.com/YunoHost/yunohost/tree/stable/locales) for translations of `yunohost` command.
 - [YunoHost core Python 2.7 scripts](https://github.com/YunoHost/yunohost/tree/stable/src/yunohost).
 - [An actionmap](https://github.com/YunoHost/yunohost/blob/stable/data/actionsmap/yunohost.yml) used by moulinette.
+- [Services configuration templates](https://github.com/YunoHost/yunohost/tree/stable/data/templates).
 - [Hooks](https://github.com/YunoHost/yunohost/tree/stable/data/hooks).
+- [Locales](https://github.com/YunoHost/yunohost/tree/stable/locales) for translations of `yunohost` command.
+- [Shell helpers](https://github.com/YunoHost/yunohost/tree/stable/data/helpers.d) for [application packaging](https://yunohost.org/#/packaging_apps_helpers_en).
+- [Modules for the XMPP server Metronome](https://github.com/YunoHost/yunohost/tree/stable/lib/metronome/modules).
+- [Debian files](https://github.com/YunoHost/yunohost/tree/stable/debian) for package creation.
 
 ## How does it works?
 - Python core scripts are accessible through two interfaces thanks to [moulinette framework](https://github.com/YunoHost/moulinette):
