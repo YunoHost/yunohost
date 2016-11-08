@@ -5,6 +5,7 @@
 ## Contribute
 - You can develop on this repository using [ynh-dev tool](https://github.com/YunoHost/ynh-dev) with `use-git`  sub-command.
 - On this repository we are [following this workflow](https://yunohost.org/#/build_system_en): `stable <— testing <— branch`.
+- Note: if you modify python scripts, you will have to modifiy the action map.
 
 ## Repository content
 - [YunoHost core Python 2.7 scripts](https://github.com/YunoHost/yunohost/tree/stable/src/yunohost).
