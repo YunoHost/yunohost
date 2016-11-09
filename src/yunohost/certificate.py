@@ -657,7 +657,7 @@ def _backup_current_cert(domain):
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
-    backup_folder = "%s-backup-%s" % (cert_folder_domain, date_tag)
+    backup_folder = "%s-backups/%s" % (cert_folder_domain, date_tag)
 
     shutil.copytree(cert_folder_domain, backup_folder)
 
