@@ -665,7 +665,7 @@ def _dns_ip_match_public_ip(public_ip, domain):
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN) :
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_no_A_record', domain=domain))
 
-    dns_ip = answers[0]
+    dns_ip = str(answers[0])
 
     return dns_ip == public_ip
 
