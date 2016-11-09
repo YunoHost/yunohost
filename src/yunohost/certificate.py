@@ -144,53 +144,48 @@ def certificate_install_selfsigned(domain_list, force=False):
             raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
 
-        cert_folder_domain = os.path.join(CERT_FOLDER, domain)
+        date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
+        new_cert_folder = "%s/%s-history/%s-selfsigned" % (CERT_FOLDER, domain, date_tag)
 
-        # Backup existing certificate / folder
-        if os.path.exists(cert_folder_domain) :
-            if not os.path.islink(cert_folder_domain):
-                _backup_current_cert(domain)
-                shutil.rmtree(cert_folder_domain)
-            else :
-                os.remove(cert_folder_domain)
-
-        os.makedirs(cert_folder_domain)
+        os.makedirs(new_cert_folder)
 
         # Get serial
         ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
         with open(os.path.join(ssl_dir, 'serial'), 'r') as f:
             serial = f.readline().rstrip()
 
-        shutil.copyfile(os.path.join(ssl_dir, "openssl.cnf"), os.path.join(cert_folder_domain, "openssl.cnf"))
+        shutil.copyfile(os.path.join(ssl_dir, "openssl.cnf"), os.path.join(new_cert_folder, "openssl.cnf"))
 
         # FIXME : should refactor this to avoid so many os.system() calls...
         # We should be able to do all this using OpenSSL.crypto and os/shutil
         command_list = [
-            'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf' % (domain, cert_folder_domain),
+            'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf' % (domain, new_cert_folder),
             'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch 2>/dev/null'
-            % (cert_folder_domain, ssl_dir, ssl_dir),
+            % (new_cert_folder, ssl_dir, ssl_dir),
             'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch 2>/dev/null'
-            % (cert_folder_domain, ssl_dir, ssl_dir),
+            % (new_cert_folder, ssl_dir, ssl_dir),
         ]
 
         for command in command_list:
             if os.system(command) != 0:
                 raise MoulinetteError(errno.EIO, m18n.n('certmanager_domain_cert_gen_failed'))
 
-        os.symlink('/etc/ssl/certs/ca-yunohost_crt.pem', os.path.join(cert_folder_domain, "ca.pem"))
-        shutil.copyfile(os.path.join(ssl_dir, "certs", "yunohost_key.pem"), os.path.join(cert_folder_domain, "key.pem"))
-        shutil.copyfile(os.path.join(ssl_dir, "newcerts", "%s.pem" % serial), os.path.join(cert_folder_domain, "crt.pem"))
+        os.symlink('/etc/ssl/certs/ca-yunohost_crt.pem', os.path.join(new_cert_folder, "ca.pem"))
+        shutil.copyfile(os.path.join(ssl_dir, "certs", "yunohost_key.pem"), os.path.join(new_cert_folder, "key.pem"))
+        shutil.copyfile(os.path.join(ssl_dir, "newcerts", "%s.pem" % serial), os.path.join(new_cert_folder, "crt.pem"))
 
         # append ca.pem at the end of crt.pem
-        with open(os.path.join(cert_folder_domain, "ca.pem"), "r") as ca_pem:
-            with open(os.path.join(cert_folder_domain, "crt.pem"), "a") as crt_pem:
+        with open(os.path.join(new_cert_folder, "ca.pem"), "r") as ca_pem:
+            with open(os.path.join(new_cert_folder, "crt.pem"), "a") as crt_pem:
                 crt_pem.write("\n")
                 crt_pem.write(ca_pem.read())
 
-        _set_permissions(cert_folder_domain, "root", "root", 0755)
-        _set_permissions(os.path.join(cert_folder_domain, "key.pem"), "root", "metronome", 0640)
-        _set_permissions(os.path.join(cert_folder_domain, "crt.pem"), "root", "metronome", 0640)
-        _set_permissions(os.path.join(cert_folder_domain, "openssl.cnf"), "root", "root", 0600)
+        _set_permissions(new_cert_folder, "root", "root", 0755)
+        _set_permissions(os.path.join(new_cert_folder, "key.pem"), "root", "metronome", 0640)
+        _set_permissions(os.path.join(new_cert_folder, "crt.pem"), "root", "metronome", 0640)
+        _set_permissions(os.path.join(new_cert_folder, "openssl.cnf"), "root", "root", 0600)
+
+        _enable_certificate(domain, new_cert_folder)
 
         # Check new status indicate a recently created self-signed certificate,
         status = _get_status(domain)
@@ -239,7 +234,6 @@ def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=Fa
             if not no_checks:
                 _check_domain_is_correctly_configured(domain)
 
-            _backup_current_cert(domain)
             _configure_for_acme_challenge(auth, domain)
             _fetch_and_enable_new_certificate(domain)
             _install_cron()
@@ -308,7 +302,6 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         try:
             if not no_checks:
                 _check_domain_is_correctly_configured(domain)
-            _backup_current_cert(domain)
             _fetch_and_enable_new_certificate(domain)
 
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
@@ -469,7 +462,7 @@ def _fetch_and_enable_new_certificate(domain):
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
 
-    new_cert_folder = "%s/%s.%s" % (CERT_FOLDER, domain, date_tag)
+    new_cert_folder = "%s/%s-history/%s-letsencrypt" % (CERT_FOLDER, domain, date_tag)
     os.makedirs(new_cert_folder)
 
     _set_permissions(new_cert_folder, "root", "root", 0655)
@@ -486,31 +479,13 @@ def _fetch_and_enable_new_certificate(domain):
 
     _set_permissions(domain_cert_file, "root", "metronome", 0640)
 
-    logger.info("Enabling the new certificate...")
-
-    # Replace (if necessary) the link or folder for live cert
-    live_link = os.path.join(CERT_FOLDER, domain)
-
-    if not os.path.islink(live_link):
-        shutil.rmtree(live_link)  # Hopefully that's not too dangerous (directory should have been backuped before calling this command)
-
-    elif os.path.lexists(live_link):
-        os.remove(live_link)
-
-    os.symlink(new_cert_folder, live_link)
+    _enable_certificate(domain, new_cert_folder)
 
     # Check the status of the certificate is now good
     status_summary = _get_status(domain)["summary"]
 
     if status_summary["code"] != "great":
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_certificate_fetching_or_enabling_failed', domain=domain))
-
-    logger.info("Restarting services...")
-
-    for service in ("postfix", "dovecot", "metronome"):
-        _run_service_command("restart", service)
-
-    _run_service_command("reload", "nginx")
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
@@ -649,6 +624,32 @@ def _set_permissions(path, user, group, permissions):
 
     os.chown(path, uid, gid)
     os.chmod(path, permissions)
+
+
+def _enable_certificate(domain, new_cert_folder) :
+    logger.info("Enabling the certificate for domain %s ...", domain)
+
+    live_link = os.path.join(CERT_FOLDER, domain)
+
+    # If a live link (or folder) already exists
+    if os.path.exists(live_link) :
+        # If it's not a link ... expect if to be a folder
+        if not os.path.islink(live_link):
+            # Backup it and remove it
+            _backup_current_cert(domain)
+            shutil.rmtree(live_link)
+        # Else if it's a link, simply delete it
+        elif os.path.lexists(live_link):
+            os.remove(live_link)
+
+    os.symlink(new_cert_folder, live_link)
+
+    logger.info("Restarting services...")
+
+    for service in ("postfix", "dovecot", "metronome"):
+        _run_service_command("restart", service)
+
+    _run_service_command("reload", "nginx")
 
 
 def _backup_current_cert(domain):
