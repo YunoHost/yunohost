@@ -55,7 +55,7 @@ WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
 ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
-KEY_SIZE = 2048
+KEY_SIZE = 3072
 
 VALIDITY_LIMIT = 15  # days
 
