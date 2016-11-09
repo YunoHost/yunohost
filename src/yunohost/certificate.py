@@ -167,9 +167,9 @@ def certificate_install_selfsigned(domain_list, force=False):
         # We should be able to do all this using OpenSSL.crypto and os/shutil
         command_list = [
             'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf' % (domain, cert_folder_domain),
-            'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch'
+            'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch 2>/dev/null'
             % (cert_folder_domain, ssl_dir, ssl_dir),
-            'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch'
+            'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch 2>/dev/null'
             % (cert_folder_domain, ssl_dir, ssl_dir),
         ]
 
