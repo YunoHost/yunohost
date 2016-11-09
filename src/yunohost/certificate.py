@@ -31,6 +31,8 @@ import grp
 import smtplib
 import requests
 
+import dns.resolver
+
 from OpenSSL import crypto
 from datetime import datetime
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
@@ -656,29 +658,14 @@ def _check_domain_is_correctly_configured(domain):
 
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
-        result = requests.get("https://dns-api.org/A/" + domain)
-    except Exception as exception:
-        import traceback
-        traceback.print_exc(file=sys.stdout)
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_contacting_dns_api', api="dns-api.org", reason=exception))
+        resolver = dns.resolver.Resolver()
+        # These are FDN's DNS
+        resolver.nameservers = [ "80.67.169.12", "80.67.169.40" ]
+        answers = resolver.query(domain, "A")
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN) :
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_no_A_record', domain=domain))
 
-    try:
-        dns_ip = result.json()
-    except Exception as exception:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
-
-    if len(dns_ip) == 0:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
-
-    dns_ip = dns_ip[0]
-
-    if dns_ip.get("error") == "NXDOMAIN":
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_no_A_dns_record', domain=domain))
-
-    if "value" not in dns_ip:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_parsing_dns', domain=domain, value=result.text))
-
-    dns_ip = dns_ip["value"]
+    dns_ip = answers[0]
 
     return dns_ip == public_ip
 
