@@ -108,11 +108,11 @@ def certificate_status(auth, domain_list, full=False):
         del status["domain"]
         certificates[domain] = status
 
-    return { "certificates" : certificates }
+    return {"certificates" : certificates}
 
 
 def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
-   
+
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -126,7 +126,7 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
 
     # Check if old letsencrypt_ynh is installed
     _check_old_letsencrypt_app()
-    
+
 
     if self_signed:
         certificate_install_selfsigned(domain_list, force)
@@ -325,9 +325,9 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 ###############################################################################
 
 def _check_old_letsencrypt_app():
+    installedAppIds = [app["id"] for app in yunohost.app.app_list(installed=True)["apps"]]
 
-    installedAppIds = [ app["id"] for app in yunohost.app.app_list(installed=True)["apps"] ]
-    if ("letsencrypt" not in installedAppIds) :
+    if "letsencrypt" not in installedAppIds:
         return
 
     logger.warning(" ")
@@ -344,8 +344,9 @@ def _check_old_letsencrypt_app():
     logger.warning("all domains with a Let's Encrypt certificate or self-signed")
     logger.warning("certificate.")
     logger.warning(" ")
-    
+
     raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_old_letsencrypt_app_detected'))
+
 
 def _install_cron():
     cron_job_file = "/etc/cron.weekly/yunohost-certificate-renew"
@@ -679,9 +680,9 @@ def _dns_ip_match_public_ip(public_ip, domain):
     try:
         resolver = dns.resolver.Resolver()
         # These are FDN's DNS
-        resolver.nameservers = [ "80.67.169.12", "80.67.169.40" ]
+        resolver.nameservers = ["80.67.169.12", "80.67.169.40"]
         answers = resolver.query(domain, "A")
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN) :
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_no_A_record', domain=domain))
 
     dns_ip = str(answers[0])
@@ -693,7 +694,7 @@ def _domain_is_accessible_through_HTTP(ip, domain):
     try:
         r = requests.head("http://" + ip, headers={"Host": domain})
         # Check we got the ssowat header in the response
-        if ("x-sso-wat" not in r.headers.keys()) :
+        if "x-sso-wat" not in r.headers.keys():
             return False
     except Exception:
         return False
