@@ -143,10 +143,18 @@ def certificate_install_selfsigned(domain_list, force=False):
         if status and status["summary"]["code"] in ('good', 'great') and not force:
             raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
+
         cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
-        if not os.path.exists(cert_folder_domain):
-            os.makedirs(cert_folder_domain)
+        # Backup existing certificate / folder
+        if os.path.exists(cert_folder_domain) :
+            if not os.path.islink(cert_folder_domain):
+                _backup_current_cert(domain)
+                shutil.rmtree(cert_folder_domain)
+            else :
+                os.remove(cert_folder_domain)
+
+        os.makedirs(cert_folder_domain)
 
         # Get serial
         ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
@@ -183,6 +191,16 @@ def certificate_install_selfsigned(domain_list, force=False):
         _set_permissions(os.path.join(cert_folder_domain, "key.pem"), "root", "metronome", 0640)
         _set_permissions(os.path.join(cert_folder_domain, "crt.pem"), "root", "metronome", 0640)
         _set_permissions(os.path.join(cert_folder_domain, "openssl.cnf"), "root", "root", 0600)
+
+        # Check new status indicate a recently created self-signed certificate,
+        status = _get_status(domain)
+
+        if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
+            logger.success(m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
+        else :
+            logger.error("Installation of self-signed certificate installation for %s failed !", domain)
+            logger.error(str(e))
+
 
 
 def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False):
@@ -474,7 +492,7 @@ def _fetch_and_enable_new_certificate(domain):
     live_link = os.path.join(CERT_FOLDER, domain)
 
     if not os.path.islink(live_link):
-        shutil.rmtree(live_link)  # Well, yep, hopefully that's not too dangerous (directory should have been backuped before calling this command)
+        shutil.rmtree(live_link)  # Hopefully that's not too dangerous (directory should have been backuped before calling this command)
 
     elif os.path.lexists(live_link):
         os.remove(live_link)
