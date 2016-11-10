@@ -696,8 +696,16 @@ def _check_domain_is_correctly_configured(domain):
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
         resolver = dns.resolver.Resolver()
-        # These are FDN's DNS
-        resolver.nameservers = ["80.67.169.12", "80.67.169.40"]
+        resolver.nameservers = []
+        # FFDN DNS resolvers
+        # See https://www.ffdn.org/wiki/doku.php?id=formations:dns
+        resolver.nameservers.append("80.67.169.12")    # FDN
+        resolver.nameservers.append("80.67.169.40")    #
+        resolver.nameservers.append("89.234.141.66")   # ARN
+        resolver.nameservers.append("141.255.128.100") # Aquilenet
+        resolver.nameservers.append("141.255.128.101") #
+        resolver.nameservers.append("89.234.186.18")   # Grifon
+        resolver.nameservers.append("80.67.188.188")   # LDN
         answers = resolver.query(domain, "A")
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_no_A_record', domain=domain))
