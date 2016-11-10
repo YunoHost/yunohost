@@ -30,6 +30,7 @@ import pwd
 import grp
 import smtplib
 import requests
+import subprocess
 
 import dns.resolver
 
@@ -143,58 +144,74 @@ def certificate_install_selfsigned(domain_list, force=False):
         if status and status["summary"]["code"] in ('good', 'great') and not force:
             raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
-
+        # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
         new_cert_folder = "%s/%s-history/%s-selfsigned" % (CERT_FOLDER, domain, date_tag)
 
-        os.makedirs(new_cert_folder)
-
-        # Get serial
+        original_ca_file = '/etc/ssl/certs/ca-yunohost_crt.pem'
         ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-        with open(os.path.join(ssl_dir, 'serial'), 'r') as f:
-            serial = f.readline().rstrip()
+        conf_template = os.path.join(ssl_dir, "openssl.cnf")
 
-        shutil.copyfile(os.path.join(ssl_dir, "openssl.cnf"), os.path.join(new_cert_folder, "openssl.cnf"))
+        csr_file = os.path.join(ssl_dir, "certs", "yunohost_csr.pem")
+        conf_file = os.path.join(new_cert_folder, "openssl.cnf")
+        key_file = os.path.join(new_cert_folder, "key.pem")
+        crt_file = os.path.join(new_cert_folder, "crt.pem")
+        ca_file = os.path.join(new_cert_folder, "ca.pem")
+        
+        # Create output folder for new certificate stuff
+        os.makedirs(new_cert_folder)
+        
+        # Create our conf file, based on template, replacing the occurences of
+        # "yunohost.org" with the given domain
+        with open(conf_file, "w") as f :
+            with open(conf_template, "r") as template :
+                for line in template :
+                    f.write(line.replace("yunohost.org", domain))
 
-        # FIXME : should refactor this to avoid so many os.system() calls...
-        # We should be able to do all this using OpenSSL.crypto and os/shutil
-        command_list = [
-            'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf' % (domain, new_cert_folder),
-            'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch 2>/dev/null'
-            % (new_cert_folder, ssl_dir, ssl_dir),
-            'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch 2>/dev/null'
-            % (new_cert_folder, ssl_dir, ssl_dir),
-        ]
+        # Use OpenSSL command line to create a certificate signing request, 
+        # and self-sign the cert
+        commands = []
+        commands.append("openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch" 
+                        % (conf_file, csr_file, key_file))
+        commands.append("openssl ca -config %s -days 3650 -in %s -out %s -batch"
+                        % (conf_file, csr_file, crt_file))
 
-        for command in command_list:
-            if os.system(command) != 0:
+        for command in commands :
+            p = subprocess.Popen(command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out, _ = p.communicate()
+            if p.returncode != 0:
+                logger.warning(out)
                 raise MoulinetteError(errno.EIO, m18n.n('certmanager_domain_cert_gen_failed'))
+            else :
+                logger.info(out)
 
-        os.symlink('/etc/ssl/certs/ca-yunohost_crt.pem', os.path.join(new_cert_folder, "ca.pem"))
-        shutil.copyfile(os.path.join(ssl_dir, "certs", "yunohost_key.pem"), os.path.join(new_cert_folder, "key.pem"))
-        shutil.copyfile(os.path.join(ssl_dir, "newcerts", "%s.pem" % serial), os.path.join(new_cert_folder, "crt.pem"))
+        # Link the CA cert (not sure it's actually needed in practice though,
+        # since we append it at the end of crt.pem. For instance for Let's
+        # Encrypt certs, we only need the crt.pem and key.pem)
+        os.symlink(original_ca_file, ca_file)
 
-        # append ca.pem at the end of crt.pem
-        with open(os.path.join(new_cert_folder, "ca.pem"), "r") as ca_pem:
-            with open(os.path.join(new_cert_folder, "crt.pem"), "a") as crt_pem:
+        # Append ca.pem at the end of crt.pem
+        with open(ca_file, "r") as ca_pem:
+            with open(crt_file, "a") as crt_pem:
                 crt_pem.write("\n")
                 crt_pem.write(ca_pem.read())
 
+        # Set appropriate permissions
         _set_permissions(new_cert_folder, "root", "root", 0755)
-        _set_permissions(os.path.join(new_cert_folder, "key.pem"), "root", "metronome", 0640)
-        _set_permissions(os.path.join(new_cert_folder, "crt.pem"), "root", "metronome", 0640)
-        _set_permissions(os.path.join(new_cert_folder, "openssl.cnf"), "root", "root", 0600)
+        _set_permissions(key_file, "root", "metronome", 0640)
+        _set_permissions(crt_file, "root", "metronome", 0640)
+        _set_permissions(conf_file, "root", "root", 0600)
 
+        # Actually enable the certificate we created
         _enable_certificate(domain, new_cert_folder)
 
-        # Check new status indicate a recently created self-signed certificate,
+        # Check new status indicate a recently created self-signed certificate
         status = _get_status(domain)
 
         if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
             logger.success(m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
         else :
             logger.error("Installation of self-signed certificate installation for %s failed !", domain)
-            logger.error(str(e))
 
 
 
