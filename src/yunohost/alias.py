@@ -76,7 +76,7 @@ def alias_create(auth, alias, mailforward):
         raise MoulinetteError(169, m18n.n('alias_creation_failed'))
 
     msignals.display(m18n.n('alias_created'), 'success')
-    return { 'alias' : alias, 'mailforward' : attr_dict['maildrop'] }
+    return { 'alias' : alias, 'maildrop' : attr_dict['maildrop'] }
 
 
 def alias_delete(auth, alias):
