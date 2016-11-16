@@ -103,12 +103,12 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
     ]
 
     if len(alias.split('@')) == 2:
-        filter = 'mail=%s' % alias
+        ldap_filter = 'mail=%s' % alias
     else:
         # TODO better error message
         raise MoulinetteError(167, m18n.n('alias_info_failed'))
 
-    result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
+    result = auth.search('ou=aliases,dc=yunohost,dc=org', ldap_filter, alias_attrs)
 
     if not result:
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
