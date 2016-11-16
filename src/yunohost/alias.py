@@ -91,6 +91,13 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
     """
     _ensure_ldap_ou_is_created(auth)
 
+    # normalize input
+    if not isinstance(add_mailforward, list):
+        add_mailforward = [add_mailforward]
+
+    if not isinstance(add_mailforward, list):
+        add_mailforward = [add_mailforward]
+
     alias_attrs = [
         'mail', 'maildrop'
     ]
@@ -110,15 +117,11 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
 
     # Get modifications from arguments
     if add_mailforward:
-        if not isinstance(add_mailforward, list):
-            add_mailforward = [add_mailforward]
         for mail in add_mailforward:
             if mail not in current_alias_info['maildrop']:
                 current_alias_info['maildrop'].append(mail)
 
     if remove_mailforward:
-        if not isinstance(add_mailforward, list):
-            add_mailforward = [add_mailforward]
         for mail in remove_mailforward:
             if mail in current_alias_info['maildrop'][1:]:
                 current_alias_info['maildrop'].remove(mail)
