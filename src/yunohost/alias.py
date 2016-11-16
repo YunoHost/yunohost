@@ -107,13 +107,15 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
 
     # Get modifications from arguments
     if add_mailforward:
-        add_mailforward = add_mailforward.split(",")
+        if not isinstance(add_mailforward, list):
+            add_mailforward = [ add_mailforward ]
         for mail in add_mailforward:
             if mail not in current_alias_info['maildrop']:
                 current_alias_info['maildrop'].append(mail)
 
     if remove_mailforward:
-        remove_mailforward = remove_mailforward.split(",")
+        if not isinstance(add_mailforward, list):
+            add_mailforward = [ add_mailforward ]
         for mail in remove_mailforward:
             if mail in current_alias_info['maildrop'][1:]:
                 current_alias_info['maildrop'].remove(mail)

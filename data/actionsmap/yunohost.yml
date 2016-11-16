@@ -274,10 +274,12 @@ alias:
                     help: Alias to update
                 --add-mailforward:
                     help: List of mailforward addresses to add, separated by commas without space
+                    nargs: "*"
                     extra:
                         pattern: *pattern_listemail
                 --remove-mailforward:
                     help: List of mailforward addresses to remove, separated by commas without space
+                    nargs: "*"
                     extra:
                         pattern: *pattern_listemail
 
