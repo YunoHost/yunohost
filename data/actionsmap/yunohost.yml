@@ -250,12 +250,14 @@ alias:
             arguments:
                 alias:
                     help: The unique email alias to create
+                    metavar: ALIAS
                     extra:
                         required: True
                         pattern: *pattern_email
                 -f:
                     full: --mailforward
                     help: List of email to forward to, separated by commas without space
+                    metavar: MAIL
                     extra:
                         ask: ask_alias_mailforward
                         required: True
@@ -274,11 +276,13 @@ alias:
                     help: Alias to update
                 --add-mailforward:
                     help: List of mailforward addresses to add, separated by commas without space
+                    metavar: MAIL
                     nargs: "*"
                     extra:
                         pattern: *pattern_listemail
                 --remove-mailforward:
                     help: List of mailforward addresses to remove, separated by commas without space
+                    metavar: MAIL
                     nargs: "*"
                     extra:
                         pattern: *pattern_listemail
@@ -292,6 +296,7 @@ alias:
             arguments:
                 alias:
                     help: Alias to delete
+                    metavar: ALIAS
                     extra:
                         pattern: *pattern_email
 
@@ -305,6 +310,7 @@ alias:
             arguments:
                 alias:
                     help: Alias to get information
+                    metavar: ALIAS
 
 #############################
 #          Domain           #
