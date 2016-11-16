@@ -235,7 +235,7 @@ alias:
 
         ### alias_list()
         list:
-            action_help: List alias
+            action_help: List existing aliases
             api: GET /alias
             configuration:
                 authenticate: all
@@ -243,25 +243,43 @@ alias:
 
         ### alias_create()
         create:
-            action_help: Create alias
+            action_help: Create a new alias
             api: POST /alias
             configuration:
                 authenticate: all
             arguments:
                 alias:
-                    help: The unique alias name to create
+                    help: The unique email alias to create
                     extra:
                         required: True
                         pattern: *pattern_email
                 -f:
                     full: --mailforward
-                    help: List of email to forward, separated by commas without space
+                    help: List of email to forward to, separated by commas without space
                     extra:
                         ask: ask_alias_mailforward
                         required: True
                         pattern: &pattern_listemail
                             - !!str ^([\w.-]+(\+[\w.-]+)*@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,}),?)+$
                             - "pattern_listemail"
+
+        ### alias_update()
+        update:
+            action_help: Update an existing email alias
+            api: PUT /alias/<alias>
+            configuration:
+                authenticate: all
+            arguments:
+                alias:
+                    help: Alias to update
+                --add-mailforward:
+                    help: List of mailforward addresses to add, separated by commas without space
+                    extra:
+                        pattern: *pattern_listemail
+                --remove-mailforward:
+                    help: List of mailforward addresses to remove, separated by commas without space
+                    extra:
+                        pattern: *pattern_listemail
 
         ### alias_delete()
         delete:
