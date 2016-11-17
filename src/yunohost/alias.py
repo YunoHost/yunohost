@@ -29,6 +29,7 @@ import errno
 from moulinette.core import MoulinetteError
 from yunohost.domain import domain_list
 
+
 def alias_list(auth):
     """
     List aliases
@@ -36,9 +37,9 @@ def alias_list(auth):
     """
     _ensure_ldap_ou_is_created(auth)
     ldap_filter = '(&(objectclass=mailAccount)(objectclass=mailAlias))'
-    ldap_attrs = [ 'mail', 'maildrop' ]
+    ldap_attrs = ['mail', 'maildrop']
     result = auth.search('ou=aliases,dc=yunohost,dc=org', ldap_filter, ldap_attrs)
-    return { 'alias' : result }
+    return {'alias': result}
 
 
 def alias_create(auth, alias, mailforward):
@@ -54,11 +55,11 @@ def alias_create(auth, alias, mailforward):
 
     # Validate uniqueness of alias and mail in LDAP
     auth.validate_uniqueness({
-        'mail'      : alias
+        'mail': alias,
     })
 
     # Check that the mail domain exists
-    alias_domain = alias[alias.find('@')+1:]
+    alias_domain = alias[alias.find('@') + 1:]
     if alias_domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
@@ -67,16 +68,18 @@ def alias_create(auth, alias, mailforward):
     # Adapt values for LDAP
     rdn = 'mail=%s,ou=aliases' % alias
     attr_dict = {
-        'objectClass'   : ['mailAccount', 'mailAlias'],
-        'mail'          : alias,
-        'maildrop'      : mailforward.split(",")
+        'objectClass': ['mailAccount', 'mailAlias'],
+        'mail': alias,
+        'maildrop': mailforward.split(",")
     }
 
-    if not auth.add(rdn, attr_dict):
+    success = auth.add(rdn, attr_dict)
+    if not success:
         raise MoulinetteError(169, m18n.n('alias_creation_failed'))
 
     msignals.display(m18n.n('alias_created'), 'success')
-    return { 'alias' : alias, 'maildrop' : attr_dict['maildrop'] }
+    return {'alias': alias, 'maildrop': attr_dict['maildrop']}
+
 
 def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
     """
@@ -88,17 +91,24 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
     """
     _ensure_ldap_ou_is_created(auth)
 
+    # normalize input
+    if not isinstance(add_mailforward, list):
+        add_mailforward = [add_mailforward]
+
+    if not isinstance(add_mailforward, list):
+        add_mailforward = [add_mailforward]
+
     alias_attrs = [
         'mail', 'maildrop'
     ]
 
-    if len(alias.split('@')) is 2:
-        filter = 'mail=' + alias
+    if len(alias.split('@')) == 2:
+        ldap_filter = 'mail=%s' % alias
     else:
         # TODO better error message
         raise MoulinetteError(167, m18n.n('alias_info_failed'))
 
-    result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
+    result = auth.search('ou=aliases,dc=yunohost,dc=org', ldap_filter, alias_attrs)
 
     if not result:
         raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
@@ -107,24 +117,22 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
 
     # Get modifications from arguments
     if add_mailforward:
-        if not isinstance(add_mailforward, list):
-            add_mailforward = [ add_mailforward ]
         for mail in add_mailforward:
             if mail not in current_alias_info['maildrop']:
                 current_alias_info['maildrop'].append(mail)
 
     if remove_mailforward:
-        if not isinstance(add_mailforward, list):
-            add_mailforward = [ add_mailforward ]
         for mail in remove_mailforward:
             if mail in current_alias_info['maildrop'][1:]:
                 current_alias_info['maildrop'].remove(mail)
 
-    if auth.update('mail=%s,ou=aliases' % alias, current_alias_info):
-       msignals.display(m18n.n('alias_updated'), 'success')
-       return alias_info(auth, alias)
-    else:
-       raise MoulinetteError(169, m18n.n('alias_update_failed'))
+    success = auth.update('mail=%s,ou=aliases' % alias, current_alias_info)
+    if not success:
+        raise MoulinetteError(169, m18n.n('alias_update_failed'))
+
+    msignals.display(m18n.n('alias_updated'), 'success')
+    return alias_info(auth, alias)
+
 
 def alias_delete(auth, alias):
     """
@@ -136,7 +144,8 @@ def alias_delete(auth, alias):
     """
     _ensure_ldap_ou_is_created(auth)
 
-    if not auth.remove('mail=%s,ou=aliases' % alias):
+    success = auth.remove('mail=%s,ou=aliases' % alias)
+    if not success:
         raise MoulinetteError(169, m18n.n('alias_deletion_failed'))
 
     msignals.display(m18n.n('alias_deleted'), 'success')
@@ -169,18 +178,22 @@ def alias_info(auth, alias):
 
     return result[0]
 
+
 def _ensure_ldap_ou_is_created(auth):
     """
     Make sure the 'ou=aliases' tree is created, for holding aliases entries.
     Raises an exception in case of error.
-    
+
     Keyword argument:
         auth -- the auth object from moulinette, managing the LDAP connection
     """
     rdn = 'ou=aliases'
     attr_dict = {
-           'objectClass'   : ['organizationalUnit', 'top'],
+        'objectClass': ['organizationalUnit', 'top'],
     }
-    if not auth.search('dc=yunohost,dc=org', rdn, attr_dict['objectClass']) :
+
+    result = auth.search('dc=yunohost,dc=org', rdn, attr_dict['objectClass'])
+
+    if not result:
         if auth.add(rdn, attr_dict):
             msignals.display(m18n.n('alias_init'), 'success')
