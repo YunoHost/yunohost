@@ -92,6 +92,7 @@ objectclass ( 1.3.6.1.4.1.40328.1.1.2.3
 # Mail Alias Objectclass
 objectclass ( 1.3.6.1.4.1.40328.1.2.4.4
         NAME 'mailAlias'
+        DESC 'Mail Alias for a set of mail addresses'
         SUP top
         STRUCTURAL
         MUST (
