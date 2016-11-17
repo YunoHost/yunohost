@@ -126,7 +126,7 @@ user:
                         ask: ask_email
                         required: True
                         pattern: &pattern_email
-                            - !!str ".*@.+"
+                            - !!str ".+@.+"
                             - "pattern_email"
                 -p:
                     full: --password
@@ -249,11 +249,13 @@ alias:
                 authenticate: all
             arguments:
                 alias:
-                    help: The unique email alias to create
+                    help: The unique alias to create
                     metavar: ALIAS
                     extra:
                         required: True
-                        pattern: *pattern_email
+                        pattern: &pattern_alias
+                            - !!str ".*@.+"
+                            - "pattern_alias"
                 -f:
                     full: --mailforward
                     help: List of email to forward to, separated by commas without space
@@ -272,6 +274,10 @@ alias:
             arguments:
                 alias:
                     help: Alias to update
+                    metavar: ALIAS
+                    extra:
+                        required: True
+                        pattern: *pattern_alias
                 --add-mailforward:
                     help: List of mailforward addresses to add, separated by commas without space
                     metavar: MAIL
@@ -296,7 +302,7 @@ alias:
                     help: Alias to delete
                     metavar: ALIAS
                     extra:
-                        pattern: *pattern_email
+                        pattern: *pattern_alias
 
         ### alias_info()
         info:
@@ -309,6 +315,8 @@ alias:
                 alias:
                     help: Alias to get information
                     metavar: ALIAS
+                    extra:
+                        pattern: *pattern_alias
 
 #############################
 #          Domain           #
