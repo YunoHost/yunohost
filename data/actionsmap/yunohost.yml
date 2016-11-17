@@ -126,7 +126,7 @@ user:
                         ask: ask_email
                         required: True
                         pattern: &pattern_email
-                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
+                            - !!str ".*@.+"
                             - "pattern_email"
                 -p:
                     full: --password
@@ -261,9 +261,7 @@ alias:
                     extra:
                         ask: ask_alias_mailforward
                         required: True
-                        pattern: &pattern_listemail
-                            - !!str ^([\w.-]+(\+[\w.-]+)*@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,}),?)+$
-                            - "pattern_listemail"
+                        pattern: *pattern_email
 
         ### alias_update()
         update:
@@ -279,13 +277,13 @@ alias:
                     metavar: MAIL
                     nargs: "*"
                     extra:
-                        pattern: *pattern_listemail
+                        pattern: *pattern_email
                 --remove-mailforward:
                     help: List of mailforward addresses to remove, separated by commas without space
                     metavar: MAIL
                     nargs: "*"
                     extra:
-                        pattern: *pattern_listemail
+                        pattern: *pattern_email
 
         ### alias_delete()
         delete:
