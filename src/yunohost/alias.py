@@ -75,7 +75,7 @@ def alias_create(auth, alias, mailforward):
 
     success = auth.add(rdn, attr_dict)
     if not success:
-        raise MoulinetteError(169, m18n.n('alias_creation_failed'))
+        raise MoulinetteError(errno.EREMOTEIO, m18n.n('alias_creation_failed'))
 
     msignals.display(m18n.n('alias_created'), 'success')
     return {'alias': alias, 'maildrop': attr_dict['maildrop']}
@@ -105,13 +105,12 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
     if len(alias.split('@')) == 2:
         ldap_filter = 'mail=%s' % alias
     else:
-        # TODO better error message
-        raise MoulinetteError(167, m18n.n('alias_info_failed'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('alias_invalid', alias))
 
     result = auth.search('ou=aliases,dc=yunohost,dc=org', ldap_filter, alias_attrs)
 
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown', alias))
 
     current_alias_info = result[0]
 
@@ -128,7 +127,7 @@ def alias_update(auth, alias, add_mailforward=None, remove_mailforward=None):
 
     success = auth.update('mail=%s,ou=aliases' % alias, current_alias_info)
     if not success:
-        raise MoulinetteError(169, m18n.n('alias_update_failed'))
+        raise MoulinetteError(errno.EREMOTEIO, m18n.n('alias_update_failed'))
 
     msignals.display(m18n.n('alias_updated'), 'success')
     return alias_info(auth, alias)
@@ -146,7 +145,7 @@ def alias_delete(auth, alias):
 
     success = auth.remove('mail=%s,ou=aliases' % alias)
     if not success:
-        raise MoulinetteError(169, m18n.n('alias_deletion_failed'))
+        raise MoulinetteError(errno.EREMOTEIO, m18n.n('alias_deletion_failed'))
 
     msignals.display(m18n.n('alias_deleted'), 'success')
 
@@ -168,13 +167,12 @@ def alias_info(auth, alias):
     if len(alias.split('@')) is 2:
         filter = 'mail=' + alias
     else:
-        # TODO better error message
-        raise MoulinetteError(167, m18n.n('alias_info_failed'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('alias_invalid', alias))
 
     result = auth.search('ou=aliases,dc=yunohost,dc=org', filter, alias_attrs)
 
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('alias_unknown', alias))
 
     return result[0]
 

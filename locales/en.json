@@ -246,7 +246,8 @@
     "alias_creation_failed" : "Unable to create alias",
     "alias_deletion_failed" : "Unable to delete alias",
     "alias_deleted" : "Alias successfully deleted",
-    "alias_unknown" : "Unknown alias",
+    "alias_invalid" : "Invalid alias '{alias:s}' : an alias is a mail address and must contain at least @ sign",
+    "alias_unknown" : "Unknown alias '{alias:s}'",
     "alias_updated" : "Alias successfully updated",
     "alias_update_failed" : "Unable to update alias",
     "alias_info_failed" : "Unable to retrieve alias information"
