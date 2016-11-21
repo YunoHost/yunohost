@@ -36,7 +36,7 @@
     "backup_output_directory_not_empty": "A pasta de destino não se encontra vazia",
     "custom_app_url_required": "Deve proporcionar uma URL para atualizar a sua aplicação personalizada {app:s}",
     "custom_appslist_name_required": "Deve fornecer um nome para a sua lista de aplicações personalizada",
-    "certmanager_domain_cert_gen_failed": "Não foi possível gerar o certificado",
+    "domain_cert_gen_failed": "Não foi possível gerar o certificado",
     "domain_created": "Domínio criado com êxito",
     "domain_creation_failed": "Não foi possível criar o domínio",
     "domain_deleted": "Domínio removido com êxito",

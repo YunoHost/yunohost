@@ -114,7 +114,7 @@ def domain_add(auth, domain, dyndns=False):
                                       m18n.n('domain_dyndns_root_unknown'))
 
     try:
-        yunohost.certificate.certificate_install_selfsigned([domain], False)
+        yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         try:
             auth.validate_uniqueness({'virtualdomain': domain})

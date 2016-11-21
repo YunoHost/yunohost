@@ -73,7 +73,7 @@
     "diagnostic_monitor_system_error": "Impossible de superviser le système : {error}",
     "diagnostic_no_apps": "Aucune application installée",
     "dnsmasq_isnt_installed": "dnsmasq ne semble pas être installé, veuillez lancer « apt-get remove bind9 && apt-get install dnsmasq »",
-    "certmanager_domain_cert_gen_failed": "Impossible de générer le certificat",
+    "domain_cert_gen_failed": "Impossible de générer le certificat",
     "domain_created": "Le domaine a été créé",
     "domain_creation_failed": "Impossible de créer le domaine",
     "domain_deleted": "Le domaine a été supprimé",

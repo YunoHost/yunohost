@@ -82,6 +82,8 @@ def certificate_status(auth, domain_list, full=False):
     """
 
     # Check if old letsencrypt_ynh is installed
+    # TODO / FIXME - Remove this in the future once the letsencrypt app is
+    # not used anymore
     _check_old_letsencrypt_app()
 
     # If no domains given, consider all yunohost domains
@@ -127,16 +129,18 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
     """
 
     # Check if old letsencrypt_ynh is installed
+    # TODO / FIXME - Remove this in the future once the letsencrypt app is
+    # not used anymore
     _check_old_letsencrypt_app()
 
 
     if self_signed:
-        certificate_install_selfsigned(domain_list, force)
+        _certificate_install_selfsigned(domain_list, force)
     else:
-        certificate_install_letsencrypt(auth, domain_list, force, no_checks)
+        _certificate_install_letsencrypt(auth, domain_list, force, no_checks)
 
 
-def certificate_install_selfsigned(domain_list, force=False):
+def _certificate_install_selfsigned(domain_list, force=False):
     for domain in domain_list:
 
         # Check we ain't trying to overwrite a good cert !
@@ -182,7 +186,7 @@ def certificate_install_selfsigned(domain_list, force=False):
             out, _ = p.communicate()
             if p.returncode != 0:
                 logger.warning(out)
-                raise MoulinetteError(errno.EIO, m18n.n('certmanager_domain_cert_gen_failed'))
+                raise MoulinetteError(errno.EIO, m18n.n('domain_cert_gen_failed'))
             else :
                 logger.info(out)
 
@@ -216,7 +220,7 @@ def certificate_install_selfsigned(domain_list, force=False):
 
 
 
-def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False):
+def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False):
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
@@ -276,6 +280,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     """
 
     # Check if old letsencrypt_ynh is installed
+    # TODO / FIXME - Remove this in the future once the letsencrypt app is
+    # not used anymore
     _check_old_letsencrypt_app()
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
@@ -283,12 +289,12 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     if domain_list == []:
         for domain in yunohost.domain.domain_list(auth)['domains']:
 
-            # Does it has a Let's Encrypt cert ?
+            # Does it have a Let's Encrypt cert ?
             status = _get_status(domain)
             if status["CA_type"]["code"] != "lets-encrypt":
                 continue
 
-            # Does it expires soon ?
+            # Does it expire soon ?
             if force or status["validity"] <= VALIDITY_LIMIT:
                 domain_list.append(domain)
 
@@ -305,11 +311,11 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
             status = _get_status(domain)
 
-            # Does it expires soon ?
+            # Does it expire soon ?
             if not force or status["validity"] <= VALIDITY_LIMIT:
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_valid_cert', domain=domain))
 
-            # Does it has a Let's Encrypt cert ?
+            # Does it have a Let's Encrypt cert ?
             if status["CA_type"]["code"] != "lets-encrypt":
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_nonLE_cert', domain=domain))
 
@@ -383,7 +389,7 @@ def _email_renewing_failed(domain, exception_message, stack):
 
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
     text = """
-At attempt for renewing the certificate for domain %s failed with the following
+An attempt for renewing the certificate for domain %s failed with the following
 error :
 
 %s

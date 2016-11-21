@@ -57,7 +57,7 @@
     "custom_app_url_required": "Es muss eine URL angegeben um deine benutzerdefinierte App {app:s} zu aktualisieren",
     "custom_appslist_name_required": "Du musst einen Namen für deine benutzerdefinierte Appliste angeben",
     "dnsmasq_isnt_installed": "dnsmasq scheint nicht installiert zu sein. Bitte führe 'apt-get remove bind9 && apt-get install dnsmasq' aus",
-    "certmanager_domain_cert_gen_failed": "Zertifikat konnte nicht erzeugt werden",
+    "domain_cert_gen_failed": "Zertifikat konnte nicht erzeugt werden",
     "domain_created": "Domain erfolgreich erzeugt",
     "domain_creation_failed": "Konnte Domain nicht erzeugen",
     "domain_deleted": "Domain erfolgreich gelöscht",

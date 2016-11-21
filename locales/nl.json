@@ -37,7 +37,7 @@
     "custom_app_url_required": "U moet een URL opgeven om uw aangepaste app {app:s} bij te werken",
     "custom_appslist_name_required": "U moet een naam opgeven voor uw aangepaste app-lijst",
     "dnsmasq_isnt_installed": "dnsmasq lijkt niet geïnstalleerd te zijn, voer alstublieft het volgende commando uit: 'apt-get remove bind9 && apt-get install dnsmasq'",
-    "certmanager_domain_cert_gen_failed": "Kan certificaat niet genereren",
+    "domain_cert_gen_failed": "Kan certificaat niet genereren",
     "domain_created": "Domein succesvol aangemaakt",
     "domain_creation_failed": "Kan domein niet aanmaken",
     "domain_deleted": "Domein succesvol verwijderd",

@@ -335,7 +335,7 @@ domain:
                     help: Install even if current certificate is not self-signed
                     action: store_true
                 --no-checks:
-                    help: Does not perform any check that your domain seems correcly configured (DNS, reachability) before attempting to install. (Not recommended)
+                    help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to install. (Not recommended)
                     action: store_true
                 --self-signed:
                     help: Install self-signed certificate instead of Let's Encrypt
@@ -353,13 +353,13 @@ domain:
                     help: Domains for which to renew the certificates
                     nargs: "*"
                 --force:
-                    help: Ignore the validity treshold (30 days)
+                    help: Ignore the validity threshold (30 days)
                     action: store_true
                 --email:
                     help: Send an email to root with logs if some renewing fails
                     action: store_true
                 --no-checks:
-                    help: Does not perform any check that your domain seems correcly configured (DNS, reachability) before attempting to renew. (Not recommended)
+                    help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
                     action: store_true
 
          ### domain_info()
