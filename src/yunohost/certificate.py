@@ -103,6 +103,7 @@ def certificate_status(auth, domain_list, full=False):
         if not full:
             del status["subject"]
             del status["CA_name"]
+            del status["ACME_eligible"]
             status["CA_type"] = status["CA_type"]["verbose"]
             status["summary"] = status["summary"]["verbose"]
 
@@ -157,10 +158,10 @@ def certificate_install_selfsigned(domain_list, force=False):
         key_file = os.path.join(new_cert_folder, "key.pem")
         crt_file = os.path.join(new_cert_folder, "crt.pem")
         ca_file = os.path.join(new_cert_folder, "ca.pem")
-        
+
         # Create output folder for new certificate stuff
         os.makedirs(new_cert_folder)
-        
+
         # Create our conf file, based on template, replacing the occurences of
         # "yunohost.org" with the given domain
         with open(conf_file, "w") as f :
@@ -168,10 +169,10 @@ def certificate_install_selfsigned(domain_list, force=False):
                 for line in template :
                     f.write(line.replace("yunohost.org", domain))
 
-        # Use OpenSSL command line to create a certificate signing request, 
+        # Use OpenSSL command line to create a certificate signing request,
         # and self-sign the cert
         commands = []
-        commands.append("openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch" 
+        commands.append("openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch"
                         % (conf_file, csr_file, key_file))
         commands.append("openssl ca -config %s -days 3650 -in %s -out %s -batch"
                         % (conf_file, csr_file, crt_file))
@@ -249,7 +250,7 @@ def certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=Fa
 
         try:
             if not no_checks:
-                _check_domain_is_correctly_configured(domain)
+                _check_domain_is_ready_for_ACME(domain)
 
             _configure_for_acme_challenge(auth, domain)
             _fetch_and_enable_new_certificate(domain)
@@ -318,7 +319,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
         try:
             if not no_checks:
-                _check_domain_is_correctly_configured(domain)
+                _check_domain_is_ready_for_ACME(domain)
             _fetch_and_enable_new_certificate(domain)
 
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
@@ -608,6 +609,12 @@ def _get_status(domain):
             "verbose": "Unknown?",
         }
 
+    try :
+        _check_domain_is_ready_for_ACME(domain)
+        ACME_eligible = True
+    except :
+        ACME_eligible = False
+
     return {
         "domain": domain,
         "subject": cert_subject,
@@ -615,6 +622,7 @@ def _get_status(domain):
         "CA_type": CA_type,
         "validity": days_remaining,
         "summary": status_summary,
+        "ACME_eligible": ACME_eligible
     }
 
 ###############################################################################
@@ -681,7 +689,7 @@ def _backup_current_cert(domain):
     shutil.copytree(cert_folder_domain, backup_folder)
 
 
-def _check_domain_is_correctly_configured(domain):
+def _check_domain_is_ready_for_ACME(domain):
     public_ip = yunohost.domain.get_public_ip()
 
     # Check if IP from DNS matches public IP

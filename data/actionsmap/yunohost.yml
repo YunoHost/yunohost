@@ -308,7 +308,7 @@ domain:
         ### certificate_status()
         cert-status:
             action_help: List status of current certificates (all by default).
-            api: GET /certs/status/<domains>
+            api: GET /domains/cert-status/<domain_list>
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -323,7 +323,7 @@ domain:
         ### certificate_install()
         cert-install:
             action_help: Install Let's Encrypt certificates for given domains (all by default).
-            api: POST /certs/enable/<domains>
+            api: POST /domains/cert-install/<domain_list>
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -344,7 +344,7 @@ domain:
         ### certificate_renew()
         cert-renew:
             action_help: Renew the Let's Encrypt certificates for given domains (all by default).
-            api: POST /certs/renew/<domains>
+            api: POST /domains/cert-renew/<domain_list>
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -361,7 +361,7 @@ domain:
                 --no-checks:
                     help: Does not perform any check that your domain seems correcly configured (DNS, reachability) before attempting to renew. (Not recommended)
                     action: store_true
-             
+
          ### domain_info()
 #        info:
 #            action_help: Get domain informations
