@@ -67,6 +67,18 @@ CERTIFICATION_AUTHORITY = "https://acme-v01.api.letsencrypt.org"
 
 INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
 
+DNS_RESOLVERS = [
+    # FFDN DNS resolvers
+    # See https://www.ffdn.org/wiki/doku.php?id=formations:dns
+    "80.67.169.12",    # FDN
+    "80.67.169.40",    #
+    "89.234.141.66",   # ARN
+    "141.255.128.100", # Aquilenet
+    "141.255.128.101", #
+    "89.234.186.18",   # Grifon
+    "80.67.188.188"   # LDN
+]
+
 ###############################################################################
 #   Front-end stuff                                                           #
 ###############################################################################
@@ -695,16 +707,7 @@ def _check_domain_is_ready_for_ACME(domain):
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
         resolver = dns.resolver.Resolver()
-        resolver.nameservers = []
-        # FFDN DNS resolvers
-        # See https://www.ffdn.org/wiki/doku.php?id=formations:dns
-        resolver.nameservers.append("80.67.169.12")    # FDN
-        resolver.nameservers.append("80.67.169.40")    #
-        resolver.nameservers.append("89.234.141.66")   # ARN
-        resolver.nameservers.append("141.255.128.100") # Aquilenet
-        resolver.nameservers.append("141.255.128.101") #
-        resolver.nameservers.append("89.234.186.18")   # Grifon
-        resolver.nameservers.append("80.67.188.188")   # LDN
+        resolver.nameservers = DNS_RESOLVERS
         answers = resolver.query(domain, "A")
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_error_no_A_record', domain=domain))
