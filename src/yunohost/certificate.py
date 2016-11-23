@@ -60,9 +60,9 @@ KEY_SIZE = 3072
 VALIDITY_LIMIT = 15  # days
 
 # For tests
-#CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
+STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
 # For prod
-CERTIFICATION_AUTHORITY = "https://acme-v01.api.letsencrypt.org"
+PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v01.api.letsencrypt.org"
 
 INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
 
@@ -126,7 +126,7 @@ def certificate_status(auth, domain_list, full=False):
     return {"certificates" : certificates}
 
 
-def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
+def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False, staging=False):
 
     """
     Install a Let's Encrypt certificate for given domains (all by default)
@@ -148,7 +148,7 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
     else:
-        _certificate_install_letsencrypt(auth, domain_list, force, no_checks)
+        _certificate_install_letsencrypt(auth, domain_list, force, no_checks, staging)
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
@@ -231,7 +231,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 
-def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False):
+def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
@@ -258,6 +258,9 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             if not force and status["CA_type"]["code"] != "self-signed":
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_domain_cert_not_selfsigned', domain=domain))
 
+    if (staging):
+        logger.warning("Please note that you used the --staging option, and that no new certificate will actually be enabled !")
+    
     # Actual install steps
     for domain in domain_list:
 
@@ -268,7 +271,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
                 _check_domain_is_ready_for_ACME(domain)
 
             _configure_for_acme_challenge(auth, domain)
-            _fetch_and_enable_new_certificate(domain)
+            _fetch_and_enable_new_certificate(domain, staging)
             _install_cron()
 
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
@@ -278,7 +281,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             logger.error(str(e))
 
 
-def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False):
+def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
@@ -330,6 +333,9 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if status["CA_type"]["code"] != "lets-encrypt":
                 raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_renew_nonLE_cert', domain=domain))
 
+    if (staging):
+        logger.warning("Please note that you used the --staging option, and that no new certificate will actually be enabled !")
+    
     # Actual renew steps
     for domain in domain_list:
         logger.info("Now attempting renewing of certificate for domain %s !", domain)
@@ -337,7 +343,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         try:
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
-            _fetch_and_enable_new_certificate(domain)
+            _fetch_and_enable_new_certificate(domain, staging)
 
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
 
@@ -442,7 +448,7 @@ location '/.well-known/acme-challenge'
     app_ssowatconf(auth)
 
 
-def _fetch_and_enable_new_certificate(domain):
+def _fetch_and_enable_new_certificate(domain, staging=False):
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
@@ -469,20 +475,25 @@ def _fetch_and_enable_new_certificate(domain):
 
     domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
+    if (staging):
+        certification_authority = STAGING_CERTIFICATION_AUTHORITY
+    else:
+        certification_authority = PRODUCTION_CERTIFICATION_AUTHORITY
+
     try:
         signed_certificate = sign_certificate(ACCOUNT_KEY_FILE,
                                               domain_csr_file,
                                               WEBROOT_FOLDER,
                                               log=logger,
-                                              CA=CERTIFICATION_AUTHORITY)
+                                              CA=certification_authority)
     except ValueError as e:
-        if ("urn:acme:error:rateLimited" in str(e)) :
+        if ("urn:acme:error:rateLimited" in str(e)):
             raise MoulinetteError(errno.EINVAL,  m18n.n('certmanager_hit_rate_limit', domain=domain))
-        else :
+        else:
             raise
     except Exception as e:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cert_signing_failed'))
         logger.error(str(e))
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cert_signing_failed'))
 
     intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL).text
 
@@ -492,7 +503,12 @@ def _fetch_and_enable_new_certificate(domain):
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
 
-    new_cert_folder = "%s/%s-history/%s-letsencrypt" % (CERT_FOLDER, domain, date_tag)
+    if (staging):
+        folder_flag = "staging"
+    else:
+        folder_flag = "letsencrypt"
+
+    new_cert_folder = "%s/%s-history/%s-%s" % (CERT_FOLDER, domain, date_tag, folder_flag)
     os.makedirs(new_cert_folder)
 
     _set_permissions(new_cert_folder, "root", "root", 0655)
@@ -508,6 +524,9 @@ def _fetch_and_enable_new_certificate(domain):
         f.write(intermediate_certificate)
 
     _set_permissions(domain_cert_file, "root", "metronome", 0640)
+
+    if (staging):
+        return
 
     _enable_certificate(domain, new_cert_folder)
 

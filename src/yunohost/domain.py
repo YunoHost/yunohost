@@ -261,12 +261,12 @@ def domain_cert_status(auth, domain_list, full=False):
     return yunohost.certificate.certificate_status(auth, domain_list, full)
 
 
-def domain_cert_install(auth, domain_list, force=False, no_checks=False, self_signed=False):
-    return yunohost.certificate.certificate_install(auth, domain_list, force, no_checks, self_signed)
+def domain_cert_install(auth, domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    return yunohost.certificate.certificate_install(auth, domain_list, force, no_checks, self_signed, staging)
 
 
-def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=False):
-    return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email)
+def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
+    return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
 def get_public_ip(protocol=4):
