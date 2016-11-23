@@ -155,10 +155,11 @@ def _certificate_install_selfsigned(domain_list, force=False):
     for domain in domain_list:
 
         # Check we ain't trying to overwrite a good cert !
-        status = _get_status(domain)
+        if (not force) :
+            status = _get_status(domain)
 
-        if status and status["summary"]["code"] in ('good', 'great') and not force:
-            raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
+            if status["summary"]["code"] in ('good', 'great') :
+                raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
         # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -490,7 +491,8 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         if ("urn:acme:error:rateLimited" in str(e)):
             raise MoulinetteError(errno.EINVAL,  m18n.n('certmanager_hit_rate_limit', domain=domain))
         else:
-            raise
+            logger.error(str(e))
+            raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cert_signing_failed'))
     except Exception as e:
         logger.error(str(e))
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cert_signing_failed'))
@@ -565,7 +567,7 @@ def _get_status(domain):
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
-        return {}
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_no_cert_file', domain=domain, file=cert_file))
 
     try:
         cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
