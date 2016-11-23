@@ -354,21 +354,6 @@ def _check_old_letsencrypt_app():
     if "letsencrypt" not in installedAppIds:
         return
 
-    logger.warning(" ")
-    logger.warning("Yunohost detected that the 'letsencrypt' app is installed, ")
-    logger.warning("which conflits with the new certificate management features")
-    logger.warning("directly integrated in Yunohost. If you wish to use these  ")
-    logger.warning("new features, please run the following commands to migrate ")
-    logger.warning("your installation :")
-    logger.warning(" ")
-    logger.warning("   yunohost app remove letsencrypt")
-    logger.warning("   yunohost domain cert-install")
-    logger.warning(" ")
-    logger.warning("N.B. : this will attempt to re-install certificates for    ")
-    logger.warning("all domains with a Let's Encrypt certificate or self-signed")
-    logger.warning("certificate.")
-    logger.warning(" ")
-
     raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_old_letsencrypt_app_detected'))
 
 
