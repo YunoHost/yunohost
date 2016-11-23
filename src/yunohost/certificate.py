@@ -31,7 +31,6 @@ import grp
 import smtplib
 import requests
 import subprocess
-
 import dns.resolver
 
 from OpenSSL import crypto
@@ -470,11 +469,20 @@ def _fetch_and_enable_new_certificate(domain):
 
     domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
-    signed_certificate = sign_certificate(ACCOUNT_KEY_FILE,
-                                          domain_csr_file,
-                                          WEBROOT_FOLDER,
-                                          log=logger,
-                                          CA=CERTIFICATION_AUTHORITY)
+    try:
+        signed_certificate = sign_certificate(ACCOUNT_KEY_FILE,
+                                              domain_csr_file,
+                                              WEBROOT_FOLDER,
+                                              log=logger,
+                                              CA=CERTIFICATION_AUTHORITY)
+    except ValueError as e:
+        if ("urn:acme:error:rateLimited" in str(e)) :
+            raise MoulinetteError(errno.EINVAL,  m18n.n('certmanager_hit_rate_limit', domain=domain))
+        else :
+            raise
+    except Exception as e:
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_cert_signing_failed'))
+        logger.error(str(e))
 
     intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL).text
 
@@ -612,10 +620,10 @@ def _get_status(domain):
             "verbose": "Unknown?",
         }
 
-    try :
+    try:
         _check_domain_is_ready_for_ACME(domain)
         ACME_eligible = True
-    except :
+    except:
         ACME_eligible = False
 
     return {

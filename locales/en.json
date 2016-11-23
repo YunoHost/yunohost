@@ -251,5 +251,7 @@
     "certmanager_cert_install_success_selfsigned" : "Successfully installed a self-signed certificate for domain {domain:s} !",
     "certmanager_cert_install_success" : "Successfully installed Let's Encrypt certificate for domain {domain:s} !",
     "certmanager_cert_renew_success" : "Successfully renewed Let's Encrypt certificate for domain {domain:s} !",
-    "certmanager_old_letsencrypt_app_detected" : "\nYunohost detected that the 'letsencrypt' app is installed, which conflits with the new built-in certificate management features in Yunohost. If you wish to use the new built-in features, please run the following commands to migrate your installation :\n\n    yunohost app remove letsencrypt\n    yunohost domain cert-install\n\nN.B. : this will attempt to re-install certificates for all domains with a Let's Encrypt certificate or self-signed certificate."
+    "certmanager_old_letsencrypt_app_detected" : "\nYunohost detected that the 'letsencrypt' app is installed, which conflits with the new built-in certificate management features in Yunohost. If you wish to use the new built-in features, please run the following commands to migrate your installation :\n\n    yunohost app remove letsencrypt\n    yunohost domain cert-install\n\nN.B. : this will attempt to re-install certificates for all domains with a Let's Encrypt certificate or self-signed certificate.",
+    "certmanager_hit_rate_limit" :"Too many certificates already issued for exact set of domains {domain:s} recently. Please try again later. See https://letsencrypt.org/docs/rate-limits/ for more details.",
+    "certmanager_cert_signing_failed" : "Signing the new certificate failed."
 }
