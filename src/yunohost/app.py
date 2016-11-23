@@ -1031,22 +1031,8 @@ def app_ssowatconf(auth):
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
 
-    # Authorize ACME challenge url if a domain seems configured for it...
-    for domain in domains:
-
-        # Check ACME challenge file is present in nginx conf
-        nginx_acme_challenge_conf_file = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
-
-        if not os.path.isfile(nginx_acme_challenge_conf_file):
-            continue
-
-        # Check the file contains the ACME challenge uri
-        if not '/.well-known/acme-challenge' in open(nginx_acme_challenge_conf_file).read():
-            continue
-
-        # If so, then authorize the ACME challenge uri to unprotected regex
-        unprotected_regex.append(domain + "/%.well%-known/acme%-challenge/.*$")
-
+    # Authorize ACME challenge url
+    skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
 
     conf_dict = {
         'portal_domain': main_domain,
