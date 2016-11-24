@@ -379,7 +379,7 @@ def _check_old_letsencrypt_app():
 
 
 def _install_cron():
-    cron_job_file = "/etc/cron.weekly/yunohost-certificate-renew"
+    cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
 
     with open(cron_job_file, "w") as f:
         f.write("#!/bin/bash\n")
