@@ -10,11 +10,11 @@ This repository is the core of YunoHost code.
 ## Contribute
 - You can develop on this repository using [ynh-dev tool](https://github.com/YunoHost/ynh-dev) with `use-git`  sub-command.
 - On this repository we are [following this workflow](https://yunohost.org/#/build_system_en): `stable <— testing <— branch`.
-- Note: if you modify python scripts, you will have to modifiy the action map.
+- Note: if you modify python scripts, you will have to modifiy the actions map.
 
 ## Repository content
 - [YunoHost core Python 2.7 scripts](https://github.com/YunoHost/yunohost/tree/stable/src/yunohost).
-- [An actionmap](https://github.com/YunoHost/yunohost/blob/stable/data/actionsmap/yunohost.yml) used by moulinette.
+- [An actionsmap](https://github.com/YunoHost/yunohost/blob/stable/data/actionsmap/yunohost.yml) used by moulinette.
 - [Services configuration templates](https://github.com/YunoHost/yunohost/tree/stable/data/templates).
 - [Hooks](https://github.com/YunoHost/yunohost/tree/stable/data/hooks).
 - [Locales](https://github.com/YunoHost/yunohost/tree/stable/locales) for translations of `yunohost` command.
