@@ -299,7 +299,7 @@ def backup_create(name=None, description=None, output_directory=None,
                                   m18n.n('backup_creation_failed'))
 
         # Move info file
-        os.rename(tmp_dir + '/info.json',
+        shutil.move(tmp_dir + '/info.json',
                   '{:s}/{:s}.info.json'.format(archives_path, name))
 
     # Clean temporary directory
