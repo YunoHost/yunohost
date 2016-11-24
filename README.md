@@ -1,4 +1,9 @@
 # YunoHost core
+
+- [YunoHost project website](https://yunohost.org)
+
+This repository is the core of YunoHost code.
+
 ## Issues
 - [Please report issues on YunoHost bugtracker](https://dev.yunohost.org/projects/yunohost/issues) (no registration needed).
 
