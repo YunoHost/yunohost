@@ -909,10 +909,6 @@ def app_checkurl(auth, url, app=None):
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
     if domain in apps_map:
-        # Domain already has apps on sub path
-        if path == '/':
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('app_location_install_failed'))
         # Loop through apps
         for p, a in apps_map[domain].items():
             # Skip requested app checking
@@ -922,7 +918,7 @@ def app_checkurl(auth, url, app=None):
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('app_location_already_used'))
-            elif path.startswith(p):
+            elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('app_location_install_failed'))
 
