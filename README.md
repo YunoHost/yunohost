@@ -33,3 +33,6 @@ This repository is the core of YunoHost code.
 - [Moulinette](https://github.com/YunoHost/moulinette)
 - [Bash](https://www.gnu.org/software/bash/bash.html)
 - [Debian Jessie](https://www.debian.org/releases/jessie)
+
+## License
+As [other components of YunoHost core code](https://yunohost.org/#/faq_en), this repository is under GNU AGPL v.3 license.
