@@ -1266,7 +1266,7 @@ tools:
 
         ### tools_maindomain()
         maindomain:
-            action_help: Main domain change tool
+            action_help: Check the current main domain, or change it
             api:
                 - GET /domains/main
                 - PUT /domains/main
@@ -1274,12 +1274,9 @@ tools:
                 authenticate: all
                 lock: false
             arguments:
-                -o:
-                    full: --old-domain
-                    extra:
-                        pattern: *pattern_domain
                 -n:
                     full: --new-domain
+                    help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
 
