@@ -92,7 +92,7 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
 
 
 def user_create(auth, username, firstname, lastname, mail, password,
-        mailbox_quota=0):
+        mailbox_quota="0"):
     """
     Create user
 
@@ -398,20 +398,36 @@ def user_info(auth, username):
         result_dict['mail-forward'] = user['maildrop'][1:]
 
     if 'mailuserquota' in user:
-        if user['mailuserquota'][0] != '0': 
-           cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
-           userquota = subprocess.check_output(cmd,stderr=subprocess.STDOUT,
-                                             shell=True)
-           quotavalue = re.findall(r'\d+', userquota)
-           result = '%s (%s%s)' % ( _convertSize(eval(quotavalue[0])), 
-                                             quotavalue[2], '%')
-           result_dict['mailbox-quota'] = {
-               'limit' : user['mailuserquota'][0],
-               'use' : result
-           }
-        else:
-           result_dict['mailbox-quota'] = m18n.n('unlimit')
- 
+        userquota = user['mailuserquota'][0]
+        if isinstance( userquota, int ):
+            userquota = str(userquota)
+
+        # Test if userquota is '0' or '0M' ( quota pattern is ^(\d+[bkMGT])|0$ )
+        is_limited = not re.match('0[bkMGT]?', userquota)
+        storage_use = '?'
+        cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
+        try:
+            cmd_result = subprocess.check_output(cmd,stderr=subprocess.STDOUT,
+                                                 shell=True)
+            # Exemple of return value for cmd:
+            # """Quota name=User quota Type=STORAGE Value=0 Limit=- %=0
+            # Quota name=User quota Type=MESSAGE Value=0 Limit=- %=0"""
+            has_value=re.search(r'Value=(\d+)', cmd_result)
+            if has_value:
+                storage_use = int(has_value.group(1))
+                storage_use = _convertSize(storage_use)
+                if is_limited:
+                    has_percent=re.search(r'%=(\d+)', cmd_result)
+                    if has_percent:
+                        percentage = int(has_percent.group(1))
+                        storage_use += ' (%s%s)' % (percentage, '%')
+        except subprocess.CalledProcessError:
+            logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
+        result_dict['mailbox-quota'] = {
+            'limit' : userquota if is_limited else m18n.n('unlimit'),
+            'use' : storage_use
+        }
+
     if result:
         return result_dict
     else:

@@ -118,6 +118,7 @@
     "mail_alias_remove_failed": "Unable to remove mail alias '{mail:s}'",
     "mail_domain_unknown": "Unknown mail address domain '{domain:s}'",
     "mail_forward_remove_failed": "Unable to remove mail forward '{mail:s}'",
+    "mailbox_used_space_dovecot_down": "Dovecot mailbox service need to be up, if you want to get mailbox used space",
     "maindomain_change_failed": "Unable to change the main domain",
     "maindomain_changed": "The main domain has been changed",
     "monitor_disabled": "The server monitoring has been disabled",
