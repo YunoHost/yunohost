@@ -32,6 +32,7 @@ import smtplib
 import requests
 import subprocess
 import dns.resolver
+import glob
 
 from OpenSSL import crypto
 from datetime import datetime
@@ -152,14 +153,8 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
+
     for domain in domain_list:
-
-        # Check we ain't trying to overwrite a good cert !
-        if (not force) :
-            status = _get_status(domain)
-
-            if status["summary"]["code"] in ('good', 'great') :
-                raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
         # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -174,6 +169,14 @@ def _certificate_install_selfsigned(domain_list, force=False):
         key_file = os.path.join(new_cert_folder, "key.pem")
         crt_file = os.path.join(new_cert_folder, "crt.pem")
         ca_file = os.path.join(new_cert_folder, "ca.pem")
+
+        # Check we ain't trying to overwrite a good cert !
+        current_cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
+        if (not force) and (os.path.isfile(current_cert_file)):
+            status = _get_status(domain)
+
+            if status["summary"]["code"] in ('good', 'great') :
+                raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_attempt_to_replace_valid_cert', domain=domain))
 
         # Create output folder for new certificate stuff
         os.makedirs(new_cert_folder)
@@ -261,7 +264,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
 
     if (staging):
         logger.warning("Please note that you used the --staging option, and that no new certificate will actually be enabled !")
-    
+
     # Actual install steps
     for domain in domain_list:
 
@@ -336,7 +339,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
     if (staging):
         logger.warning("Please note that you used the --staging option, and that no new certificate will actually be enabled !")
-    
+
     # Actual renew steps
     for domain in domain_list:
         logger.info("Now attempting renewing of certificate for domain %s !", domain)
@@ -421,7 +424,9 @@ Subject: %s
 
 
 def _configure_for_acme_challenge(auth, domain):
-    nginx_conf_file = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
+
+    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
+    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
 
     nginx_configuration = '''
 location '/.well-known/acme-challenge'
@@ -430,6 +435,15 @@ location '/.well-known/acme-challenge'
         alias %s;
 }
     ''' % WEBROOT_FOLDER
+
+    # Check there isn't a conflicting file for the acme-challenge well-known uri
+    for path in glob.glob('%s/*.conf' % nginx_conf_folder):
+        if (path == nginx_conf_file) :
+            continue
+        with open(path) as f:
+            contents = f.read()
+        if ('/.well-known/acme-challenge' in contents) :
+            raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_conflicting_nginx_file', filepath=path))
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
@@ -564,6 +578,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 
 def _get_status(domain):
+
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
