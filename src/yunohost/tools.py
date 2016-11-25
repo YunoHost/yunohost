@@ -125,7 +125,7 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
+def tools_maindomain(auth, new_domain=None):
     """
     Main domain consultaton or change tool
 
@@ -278,8 +278,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
                                   m18n.n('yunohost_ca_creation_failed'))
 
     # New domain config
-    domain_add(auth, new_domain, dyndns)
-    tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain)
+    domain_add(auth, domain, dyndns)
+    tools_maindomain(auth, domain)
 
     # Generate SSOwat configuration file
     app_ssowatconf(auth)
