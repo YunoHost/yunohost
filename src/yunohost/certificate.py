@@ -173,7 +173,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         # Check we ain't trying to overwrite a good cert !
         current_cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
-        if (not force) and (os.path.isfile(current_cert_file)):
+        if not force and os.path.isfile(current_cert_file):
             status = _get_status(domain)
 
             if status["summary"]["code"] in ('good', 'great'):
@@ -350,7 +350,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_nonLE_cert', domain=domain))
 
-    if (staging):
+    if staging:
         logger.warning(
             "Please note that you used the --staging option, and that no new certificate will actually be enabled !")
 
@@ -456,11 +456,14 @@ location '/.well-known/acme-challenge'
     # Check there isn't a conflicting file for the acme-challenge well-known
     # uri
     for path in glob.glob('%s/*.conf' % nginx_conf_folder):
-        if (path == nginx_conf_file):
+
+        if path == nginx_conf_file:
             continue
+
         with open(path) as f:
             contents = f.read()
-        if ('/.well-known/acme-challenge' in contents):
+
+        if '/.well-known/acme-challenge' in contents:
             raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_conflicting_nginx_file', filepath=path))
 
@@ -512,7 +515,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
 
     domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
-    if (staging):
+    if staging:
         certification_authority = STAGING_CERTIFICATION_AUTHORITY
     else:
         certification_authority = PRODUCTION_CERTIFICATION_AUTHORITY
@@ -524,7 +527,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                                               log=logger,
                                               CA=certification_authority)
     except ValueError as e:
-        if ("urn:acme:error:rateLimited" in str(e)):
+        if "urn:acme:error:rateLimited" in str(e):
             raise MoulinetteError(errno.EINVAL,  m18n.n(
                 'certmanager_hit_rate_limit', domain=domain))
         else:
@@ -544,7 +547,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
 
-    if (staging):
+    if staging:
         folder_flag = "staging"
     else:
         folder_flag = "letsencrypt"
@@ -567,7 +570,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
 
     _set_permissions(domain_cert_file, "root", "metronome", 0640)
 
-    if (staging):
+    if staging:
         return
 
     _enable_certificate(domain, new_cert_folder)
