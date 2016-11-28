@@ -105,7 +105,7 @@ def certificate_status(auth, domain_list, full=False):
     else:
         yunohost_domains_list = yunohost.domain.domain_list(auth)['domains']
         for domain in domain_list:
-            # Is it in Yunohost domain list ?
+            # Is it in Yunohost domain list?
             if domain not in yunohost_domains_list:
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_domain_unknown', domain=domain))
@@ -263,13 +263,13 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_domain_unknown', domain=domain))
 
-            # Is it self-signed ?
+            # Is it self-signed?
             status = _get_status(domain)
             if not force and status["CA_type"]["code"] != "self-signed":
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_domain_cert_not_selfsigned', domain=domain))
 
-    if (staging):
+    if staging:
         logger.warning(
             "Please note that you used the --staging option, and that no new certificate will actually be enabled !")
 
@@ -317,12 +317,12 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     if domain_list == []:
         for domain in yunohost.domain.domain_list(auth)['domains']:
 
-            # Does it have a Let's Encrypt cert ?
+            # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
             if status["CA_type"]["code"] != "lets-encrypt":
                 continue
 
-            # Does it expire soon ?
+            # Does it expire soon?
             if force or status["validity"] <= VALIDITY_LIMIT:
                 domain_list.append(domain)
 
@@ -333,19 +333,19 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     else:
         for domain in domain_list:
 
-            # Is it in Yunohost dmomain list ?
+            # Is it in Yunohost dmomain list?
             if domain not in yunohost.domain.domain_list(auth)['domains']:
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_domain_unknown', domain=domain))
 
             status = _get_status(domain)
 
-            # Does it expire soon ?
+            # Does it expire soon?
             if not force or status["validity"] <= VALIDITY_LIMIT:
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_valid_cert', domain=domain))
 
-            # Does it have a Let's Encrypt cert ?
+            # Does it have a Let's Encrypt cert?
             if status["CA_type"]["code"] != "lets-encrypt":
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_nonLE_cert', domain=domain))
@@ -774,7 +774,7 @@ def _check_domain_is_ready_for_ACME(domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_domain_dns_ip_differs_from_public_ip', domain=domain))
 
-    # Check if domain seems to be accessible through HTTP ?
+    # Check if domain seems to be accessible through HTTP?
     if not _domain_is_accessible_through_HTTP(public_ip, domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_domain_http_not_working', domain=domain))
