@@ -32,6 +32,7 @@ import requests
 import json
 import errno
 import logging
+import subprocess
 from collections import OrderedDict
 
 import apt
@@ -82,6 +83,7 @@ def tools_ldapinit(auth):
     }
 
     auth.update('cn=admin', admin_dict)
+    subprocess.call(['nscd', '-i', 'passwd'])
 
     logger.success(m18n.n('ldap_initialized'))
 
