@@ -440,7 +440,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.success(m18n.n('upgrade_complete'))
 
 
-def app_install(auth, app, label=None, args=None, no_remove_on_fail=False):
+def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
 
@@ -448,7 +448,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_fail=False):
         app -- Name, local path or git URL of the app to install
         label -- Custom name for the app
         args -- Serialize arguments for app installation
-        no_remove_on_fail -- Debug option to avoid removing the app on a failed installation
+        no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
@@ -542,7 +542,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_fail=False):
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
-            if not no_remove_on_fail:
+            if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
                 env_dict_remove["YNH_APP_ID"] = app_id
