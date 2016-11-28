@@ -185,10 +185,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         # Create our conf file, based on template, replacing the occurences of
         # "yunohost.org" with the given domain
-        with open(conf_file, "w") as f:
-            with open(conf_template, "r") as template:
-                for line in template:
-                    f.write(line.replace("yunohost.org", domain))
+        with open(conf_file, "w") as f, open(conf_template, "r") as template:
+            for line in template:
+                f.write(line.replace("yunohost.org", domain))
 
         # Use OpenSSL command line to create a certificate signing request,
         # and self-sign the cert
@@ -216,10 +215,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
         os.symlink(original_ca_file, ca_file)
 
         # Append ca.pem at the end of crt.pem
-        with open(ca_file, "r") as ca_pem:
-            with open(crt_file, "a") as crt_pem:
-                crt_pem.write("\n")
-                crt_pem.write(ca_pem.read())
+        with open(ca_file, "r") as ca_pem, open(crt_file, "a") as crt_pem:
+            crt_pem.write("\n")
+            crt_pem.write(ca_pem.read())
 
         # Set appropriate permissions
         _set_permissions(new_cert_folder, "root", "root", 0755)
