@@ -292,8 +292,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
         except Exception as e:
-            logger.error("Certificate installation for %s failed !", domain)
-            logger.error(str(e))
+            logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
 
 
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
