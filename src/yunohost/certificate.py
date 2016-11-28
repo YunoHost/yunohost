@@ -201,7 +201,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
         for command in commands:
             p = subprocess.Popen(
                 command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
             out, _ = p.communicate()
+
             if p.returncode != 0:
                 logger.warning(out)
                 raise MoulinetteError(
@@ -532,8 +534,10 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
             logger.error(str(e))
             raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_cert_signing_failed'))
+
     except Exception as e:
         logger.error(str(e))
+
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_cert_signing_failed'))
 
@@ -552,6 +556,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
 
     new_cert_folder = "%s/%s-history/%s-%s" % (
         CERT_FOLDER, domain, date_tag, folder_flag)
+
     os.makedirs(new_cert_folder)
 
     _set_permissions(new_cert_folder, "root", "root", 0655)
