@@ -24,18 +24,19 @@
     Manage domains
 """
 import os
-import sys
 import datetime
 import re
-import shutil
 import json
 import yaml
 import errno
 import requests
+
 from urllib import urlopen
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+
+import yunohost.certificate
 
 from yunohost.service import service_regen_conf
 
@@ -113,40 +114,10 @@ def domain_add(auth, domain, dyndns=False):
                                       m18n.n('domain_dyndns_root_unknown'))
 
     try:
-        # Commands
-        ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-        ssl_domain_path  = '/etc/yunohost/certs/%s' % domain
-        with open('%s/serial' % ssl_dir, 'r') as f:
-            serial = f.readline().rstrip()
-        try: os.listdir(ssl_domain_path)
-        except OSError: os.makedirs(ssl_domain_path)
-
-        command_list = [
-            'cp %s/openssl.cnf %s'                               % (ssl_dir, ssl_domain_path),
-            'sed -i "s/yunohost.org/%s/g" %s/openssl.cnf'        % (domain, ssl_domain_path),
-            'openssl req -new -config %s/openssl.cnf -days 3650 -out %s/certs/yunohost_csr.pem -keyout %s/certs/yunohost_key.pem -nodes -batch'
-            % (ssl_domain_path, ssl_dir, ssl_dir),
-            'openssl ca -config %s/openssl.cnf -days 3650 -in %s/certs/yunohost_csr.pem -out %s/certs/yunohost_crt.pem -batch'
-            % (ssl_domain_path, ssl_dir, ssl_dir),
-            'ln -s /etc/ssl/certs/ca-yunohost_crt.pem %s/ca.pem' % ssl_domain_path,
-            'cp %s/certs/yunohost_key.pem    %s/key.pem'         % (ssl_dir, ssl_domain_path),
-            'cp %s/newcerts/%s.pem %s/crt.pem'                   % (ssl_dir, serial, ssl_domain_path),
-            'chmod 755 %s'                                       % ssl_domain_path,
-            'chmod 640 %s/key.pem'                               % ssl_domain_path,
-            'chmod 640 %s/crt.pem'                               % ssl_domain_path,
-            'chmod 600 %s/openssl.cnf'                           % ssl_domain_path,
-            'chown root:metronome %s/key.pem'                    % ssl_domain_path,
-            'chown root:metronome %s/crt.pem'                    % ssl_domain_path,
-            'cat %s/ca.pem >> %s/crt.pem'                        % (ssl_domain_path, ssl_domain_path)
-        ]
-
-        for command in command_list:
-            if os.system(command) != 0:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('domain_cert_gen_failed'))
+        yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         try:
-            auth.validate_uniqueness({ 'virtualdomain': domain })
+            auth.validate_uniqueness({'virtualdomain': domain})
         except MoulinetteError:
             raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
 
@@ -284,6 +255,18 @@ def domain_dns_conf(domain, ttl=None):
             )
 
     return result
+
+
+def domain_cert_status(auth, domain_list, full=False):
+    return yunohost.certificate.certificate_status(auth, domain_list, full)
+
+
+def domain_cert_install(auth, domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    return yunohost.certificate.certificate_install(auth, domain_list, force, no_checks, self_signed, staging)
+
+
+def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
+    return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
 def get_public_ip(protocol=4):

@@ -1027,6 +1027,9 @@ def app_ssowatconf(auth):
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
 
+    # Authorize ACME challenge url
+    skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
+
     conf_dict = {
         'portal_domain': main_domain,
         'portal_path': '/yunohost/sso/',
