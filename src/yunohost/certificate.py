@@ -192,11 +192,12 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         # Use OpenSSL command line to create a certificate signing request,
         # and self-sign the cert
-        commands = []
-        commands.append("openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch"
-                        % (conf_file, csr_file, key_file))
-        commands.append("openssl ca -config %s -days 3650 -in %s -out %s -batch"
-                        % (conf_file, csr_file, crt_file))
+        commands = [
+            "openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch"
+                    % (conf_file, csr_file, key_file),
+            "openssl ca -config %s -days 3650 -in %s -out %s -batch"
+                    % (conf_file, csr_file, crt_file),
+        ]
 
         for command in commands:
             p = subprocess.Popen(
