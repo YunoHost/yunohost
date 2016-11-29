@@ -248,5 +248,22 @@
     "yunohost_ca_creation_failed": "Impossible de créer l'autorité de certification",
     "yunohost_configured": "YunoHost a été configuré",
     "yunohost_installing": "Installation de YunoHost...",
-    "yunohost_not_installed": "YunoHost n'est pas ou pas correctement installé. Veuillez exécuter « yunohost tools postinstall »."
+    "yunohost_not_installed": "YunoHost n'est pas ou pas correctement installé. Veuillez exécuter « yunohost tools postinstall ».",
+    "certmanager_attempt_to_replace_valid_cert": "Vous êtes en train de remplacer un certificat correct et valide pour le domaine {domain:s} ! (Utilisez --force pour contourner)",
+    "certmanager_domain_unknown": "Domaine inconnu {domain:s}",
+    "certmanager_domain_cert_not_selfsigned": "Le certificat du domaine {domain:s} n’est pas auto-signé. Voulez-vous vraiment le remplacer ? (Utilisez --force)",
+    "certmanager_certificate_fetching_or_enabling_failed": "Il semble que l'activation du nouveau certificat pour {domain:s} a échoué…",
+    "certmanager_attempt_to_renew_nonLE_cert": "Le certificat pour le domaine {domain:s} n’est pas fourni par Let’s Encrypt. Impossible de le renouveler automatiquement !",
+    "certmanager_attempt_to_renew_valid_cert": "Le certificat pour le domaine {domain:s} est sur le point d’expirer ! Utilisez --force pour contourner",
+    "certmanager_domain_http_not_working": "Il semble que le domaine {domain:s} n’est pas accessible via HTTP. Veuillez vérifier que vos configuration DNS et nginx sont correctes.",
+    "certmanager_error_no_A_record": "Aucun enregistrement DNS « A » n’a été trouvé pour {domain:s}. De devez faire pointer votre nom de domaine vers votre machine pour être capable d’installer un certificat Let’s Encrypt ! (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces contrôles)",
+    "certmanager_domain_dns_ip_differs_from_public_ip": "L’enregistrement DNS « A » du domaine {domain:s} est différent de l’adresse IP de ce serveur. Si vous avez modifié récemment votre enregistrement « A », veuillez attendre sa propagation (quelques vérificateur de propagation sont disponibles en ligne). (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces contrôles)",
+    "certmanager_cannot_read_cert": "Quelque chose s’est mal passé lors de la tentative d’ouverture du certificat actuel pour le domaine {domain:s} (fichier : {file:s}), cause : {reason:s}",
+    "certmanager_cert_install_success_selfsigned": "Installation avec succès d’un certificat auto-signé pour le domaine {domain:s} !",
+    "certmanager_cert_install_success": "Installation avec succès d’un certificat Let’s Encrypt pour le domaine {domain:s} !",
+    "certmanager_cert_renew_success": "Renouvellement avec succès d’un certificat Let’s Encrypt pour le domaine {domain:s} !",
+    "certmanager_old_letsencrypt_app_detected": "\nYunoHost a détecté que l’application « letsencrypt » est installé, ce qui est en conflit avec les nouvelles fonctionnalités de gestion intégrée de certificats dans YunoHost. Si vous souhaitez utiliser ces nouvelles fonctionnalités intégrées, veuillez lancer les commandes suivantes pour migrer votre installation :\n\n    yunohost app remove letsencrypt\n    yunohost domain cert-install\n\nN.B. : cela tentera de réinstaller les certificats de tous les domaines avec un certificat Let's Encrypt ou ceux auto-signés.",
+    "certmanager_cert_signing_failed": "La signature du nouveau certificat a échoué.",
+    "certmanager_no_cert_file": "Impossible de lire le fichier de certificat pour le domaine {domain:s} (fichier : {file:s})",
+    "certmanager_conflicting_nginx_file": "Impossible de préparer le domaine pour de défi ACME : le fichier de configuration nginx  {filepath:s} est en conflit et doit être retiré au préalable."
 }
