@@ -70,5 +70,6 @@ ynh_bind_or_cp() {
 # usage: ynh_mkdir_tmp
 # | ret: the created directory path
 ynh_mkdir_tmp() {
+    echo "This helper is deprecated, you should use 'mktemp -d' instead." >&2
     mktemp -d
 }
