@@ -62,3 +62,13 @@ ynh_bind_or_cp() {
     echo "This helper is deprecated, you should use ynh_backup instead" >&2
     ynh_backup "$1" "$2" 1 "$NO_ROOT"
 }
+
+# Create a directory under /tmp
+#
+# Deprecated helper
+#
+# usage: ynh_mkdir_tmp
+# | ret: the created directory path
+ynh_mkdir_tmp() {
+    mktemp -d
+}
