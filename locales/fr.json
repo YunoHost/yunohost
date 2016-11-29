@@ -265,5 +265,6 @@
     "certmanager_old_letsencrypt_app_detected": "\nYunoHost a détecté que l’application « letsencrypt » est installé, ce qui est en conflit avec les nouvelles fonctionnalités de gestion intégrée de certificats dans YunoHost. Si vous souhaitez utiliser ces nouvelles fonctionnalités intégrées, veuillez lancer les commandes suivantes pour migrer votre installation :\n\n    yunohost app remove letsencrypt\n    yunohost domain cert-install\n\nN.B. : cela tentera de réinstaller les certificats de tous les domaines avec un certificat Let's Encrypt ou ceux auto-signés.",
     "certmanager_cert_signing_failed": "La signature du nouveau certificat a échoué.",
     "certmanager_no_cert_file": "Impossible de lire le fichier de certificat pour le domaine {domain:s} (fichier : {file:s})",
-    "certmanager_conflicting_nginx_file": "Impossible de préparer le domaine pour de défi ACME : le fichier de configuration nginx  {filepath:s} est en conflit et doit être retiré au préalable."
+    "certmanager_conflicting_nginx_file": "Impossible de préparer le domaine pour de défi ACME : le fichier de configuration nginx  {filepath:s} est en conflit et doit être retiré au préalable.",
+    "certmanager_hit_rate_limit": "Trop de certificats ont déjà été demandés récemment pour cet ensemble précis de domaines {domain:s}. Veuillez réessayer plus tard. Lisez https://letsencrypt.org/docs/rate-limits/ pour obtenir plus de détails."
 }
