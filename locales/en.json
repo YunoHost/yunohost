@@ -43,6 +43,7 @@
     "backup_action_required": "You must specify something to save",
     "backup_app_failed": "Unable to back up the app '{app:s}'",
     "backup_archive_app_not_found": "App '{app:s}' not found in the backup archive",
+    "backup_archive_broken_link": "Unable to access backup archive (broken link to {path:s})",
     "backup_archive_hook_not_exec": "Hook '{hook:s}' not executed in this backup",
     "backup_archive_name_exists": "The backup's archive name already exists",
     "backup_archive_name_unknown": "Unknown local backup archive named '{name:s}'",
