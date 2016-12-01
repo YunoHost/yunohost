@@ -266,5 +266,6 @@
     "certmanager_cert_signing_failed": "La signature du nouveau certificat a échoué.",
     "certmanager_no_cert_file": "Impossible de lire le fichier de certificat pour le domaine {domain:s} (fichier : {file:s})",
     "certmanager_conflicting_nginx_file": "Impossible de préparer le domaine pour de défi ACME : le fichier de configuration nginx  {filepath:s} est en conflit et doit être retiré au préalable.",
-    "certmanager_hit_rate_limit": "Trop de certificats ont déjà été demandés récemment pour cet ensemble précis de domaines {domain:s}. Veuillez réessayer plus tard. Lisez https://letsencrypt.org/docs/rate-limits/ pour obtenir plus de détails."
+    "certmanager_hit_rate_limit": "Trop de certificats ont déjà été demandés récemment pour cet ensemble précis de domaines {domain:s}. Veuillez réessayer plus tard. Lisez https://letsencrypt.org/docs/rate-limits/ pour obtenir plus de détails.",
+    "ldap_init_failed_to_create_admin": "L’initialisation de LDAP n’a pas réussi à créer l’utilisateur admin."
 }
