@@ -159,7 +159,7 @@ def tools_maindomain(auth, new_domain=None):
 
         _set_maindomain(new_domain)
     except Exception as e:
-        print e
+        logger.warning("%s" % e, exc_info=1)
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
     # Regen configurations
