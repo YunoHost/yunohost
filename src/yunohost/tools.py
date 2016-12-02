@@ -127,7 +127,7 @@ def tools_adminpw(auth, new_password):
 
 def tools_maindomain(auth, new_domain=None):
     """
-    Main domain consultaton or change tool
+    Check the current main domain, or change it
 
     Keyword argument:
         new_domain -- The new domain to be set as the main domain
