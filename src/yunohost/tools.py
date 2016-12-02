@@ -149,9 +149,9 @@ def tools_maindomain(auth, new_domain=None):
     new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
 
     try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key) :
+        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
             os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt) :
+        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
             os.remove(ssl_crt)
 
         os.symlink(new_ssl_key, ssl_key)
