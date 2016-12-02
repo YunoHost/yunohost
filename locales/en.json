@@ -255,5 +255,6 @@
     "certmanager_hit_rate_limit" :"Too many certificates already issued for exact set of domains {domain:s} recently. Please try again later. See https://letsencrypt.org/docs/rate-limits/ for more details.",
     "certmanager_cert_signing_failed" : "Signing the new certificate failed.",
     "certmanager_no_cert_file" : "Unable to read certificate file for domain {domain:s} (file : {file:s})",
-    "certmanager_conflicting_nginx_file": "Unable to prepare domain for ACME challenge : the nginx configuration file {filepath:s} is conflicting and should be removed first."
+    "certmanager_conflicting_nginx_file": "Unable to prepare domain for ACME challenge : the nginx configuration file {filepath:s} is conflicting and should be removed first.",
+    "certmanager_unable_to_determine_self_CA_name": "Unable to determine name of self-signing authority."
 }
