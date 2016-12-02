@@ -817,9 +817,9 @@ def _name_self_CA():
             lines = f.readlines()
 
         for line in lines:
-            if (line.startswith("commonName_default")):
+            if line.startswith("commonName_default"):
                 return line.split()[2]
-    except :
+    except:
         pass
 
     logger.warning(m18n.n('certmanager_unable_to_determine_self_CA_name'))
