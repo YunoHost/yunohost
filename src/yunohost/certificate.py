@@ -813,7 +813,7 @@ def _name_self_CA():
     ca_conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
 
     try :
-        with open("%s/openssl.ca.cnf" % SSL_DIR) as f:
+        with open(ca_conf) as f:
             lines = f.readlines()
 
         for line in lines:
