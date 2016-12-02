@@ -65,12 +65,11 @@ ynh_bind_or_cp() {
 
 # Create a directory under /tmp
 #
+# Deprecated helper
+#
 # usage: ynh_mkdir_tmp
 # | ret: the created directory path
 ynh_mkdir_tmp() {
-    TMPDIR="/tmp/$(ynh_string_random 6)"
-    while [ -d $TMPDIR ]; do
-        TMPDIR="/tmp/$(ynh_string_random 6)"
-    done
-    mkdir -p "$TMPDIR" && echo "$TMPDIR"
+    echo "This helper is deprecated, you should use 'mktemp -d' instead." >&2
+    mktemp -d
 }
