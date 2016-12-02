@@ -136,7 +136,7 @@ def tools_maindomain(auth, new_domain=None):
 
     # If no new domain specified, we return the current main domain
     if not new_domain:
-        return { 'current_main_domain': _get_maindomain() }
+        return {'current_main_domain': _get_maindomain()}
 
     # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
@@ -149,7 +149,6 @@ def tools_maindomain(auth, new_domain=None):
     new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
 
     try:
-
         if os.path.exists(ssl_key) or os.path.lexists(ssl_key) :
             os.remove(ssl_key)
         if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt) :

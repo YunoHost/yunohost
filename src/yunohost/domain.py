@@ -160,7 +160,7 @@ def domain_remove(auth, domain, force=False):
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
     # Check domain is not the main domain
-    if (domain == _get_maindomain()) :
+    if domain == _get_maindomain():
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_cannot_remove_main'))
 
     # Check if apps are installed on the domain
@@ -289,6 +289,7 @@ def get_public_ip(protocol=4):
         logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
         raise MoulinetteError(errno.ENETUNREACH,
                               m18n.n('no_internet_connection'))
+
 
 def _get_maindomain():
     with open('/etc/yunohost/current_host', 'r') as f:
