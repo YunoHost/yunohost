@@ -176,14 +176,20 @@ def user_create(auth, username, firstname, lastname, mail, password,
         try:
             with open('/etc/ssowat/conf.json.persistent') as json_conf:
                 ssowat_conf = json.loads(str(json_conf.read()))
+        except ValueError as e:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+        except IOError:
+            ssowat_conf = {}
 
-            if 'redirected_urls' in ssowat_conf and '/' in ssowat_conf['redirected_urls']:
-                del ssowat_conf['redirected_urls']['/']
-
-            with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-                json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-
-        except IOError: pass
+        if 'redirected_urls' in ssowat_conf and '/' in ssowat_conf['redirected_urls']:
+            del ssowat_conf['redirected_urls']['/']
+            try:
+                with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
+                    json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+            except IOError as e:
+                raise MoulinetteError(errno.EPERM,
+                                      m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
 
 
     if auth.add(rdn, attr_dict):
