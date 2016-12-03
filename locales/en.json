@@ -114,7 +114,7 @@
     "ip6tables_unavailable": "You cannot play with ip6tables here. You are either in a container or your kernel does not support it.",
     "iptables_unavailable": "You cannot play with iptables here. You are either in a container or your kernel does not support it.",
     "ldap_initialized": "LDAP has been initialized",
-    "ldap_init_failed_to_create_admin": "LDAP initialization failed to create admin. Aborting.",
+    "ldap_init_failed_to_create_admin": "LDAP initialization failed to create admin user.",
     "license_undefined": "undefined",
     "mail_alias_remove_failed": "Unable to remove mail alias '{mail:s}'",
     "mail_domain_unknown": "Unknown mail address domain '{domain:s}'",

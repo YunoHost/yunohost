@@ -100,8 +100,8 @@ def tools_ldapinit():
     try:
         pwd.getpwnam("admin")
     except KeyError:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ldap_init_failed_to_create_admin'))
+        logger.error(m18n.n('ldap_init_failed_to_create_admin'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('installation_failed'))
 
     logger.success(m18n.n('ldap_initialized'))
     return auth
