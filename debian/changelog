@@ -1,3 +1,43 @@
+yunohost (2.5.0) testing; urgency=low
+
+  * Certificate management integration (e.g. Let's Encrypt certificate install)
+  * [fix] Support git ynh app with submodules #533 (#174)
+  * [enh] display file path on file_not_exist error
+  * [mod] move a part of os.system calls to native shutil/os
+  * [fix] Can't restore app on a root domain
+
+  Miscellaneous
+
+  * Update backup.py
+  * [mod] autopep8
+  * [mod] trailing spaces
+  * [mod] pep8
+  * [mod] remove useless imports
+  * [mod] more pythonic and explicit tests with more verbose errors
+  * [fix] correctly handle all cases
+  * [mod] simplier condition
+  * [fix] uses https
+  * [mod] uses logger string concatenation api
+  * [mod] small opti, getting domain list can be slow
+  * [mod] pylint
+  * [mod] os.path.join
+  * [mod] remove useless assign
+  * [enh] include tracebak into error email
+  * [mod] remove the summary code concept and switch to code/verbose duet instead
+  * [mod] I only need to reload nginx, not restart it
+  * [mod] top level constants should be upper case (pep8)
+  * Check that the DNS A record matches the global IP now using dnspython and FDN's DNS
+  * Refactored the self-signed cert generation, some steps were overly complicated for no reason
+  * Using a single generic skipped regex for acme challenge in ssowat conf
+  * Adding an option to use the staging Let's Encrypt CA, sort of a dry-run
+  * [enh] Complete readme (#183)
+  * [fix] avoid reverse order log display on web admin
+
+  Thanks to all contributors: Aleks, Bram, JimboJoe, ljf, M5oul
+  Kudos to Aleks for leading the Let's Encrypt integration to YunoHost core \o/
+
+ -- opi <opi@zeropi.net>  Thu, 01 Dec 2016 21:22:19 +0100
+
 yunohost (2.4.2) stable; urgency=low
 
   [ Laurent Peuch ]
