@@ -69,12 +69,16 @@ def tools_ldapinit():
         ldap_map = yaml.load(f)
 
     for rdn, attr_dict in ldap_map['parents'].items():
-        try: auth.add(rdn, attr_dict)
-        except: pass
+        try:
+            auth.add(rdn, attr_dict)
+        except:
+            pass
 
     for rdn, attr_dict in ldap_map['children'].items():
-        try: auth.add(rdn, attr_dict)
-        except: pass
+        try:
+            auth.add(rdn, attr_dict)
+        except:
+            pass
 
     admin_dict = {
         'cn': 'admin',
@@ -170,7 +174,8 @@ def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
     try:
         with open('/etc/yunohost/installed', 'r') as f:
             service_regen_conf()
-    except IOError: pass
+    except IOError:
+        pass
 
     logger.success(m18n.n('maindomain_changed'))
 
@@ -199,6 +204,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         else:
             dyndomains = json.loads(r.text)
             dyndomain  = '.'.join(domain.split('.')[1:])
+
             if dyndomain in dyndomains:
                 if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
                     dyndns = True
@@ -222,8 +228,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     ]
 
     for folder in folders_to_create:
-        try: os.listdir(folder)
-        except OSError: os.makedirs(folder)
+        try:
+            os.listdir(folder)
+        except OSError:
+            os.makedirs(folder)
 
     # Change folders permissions
     os.system('chmod 755 /home/yunohost.app')
@@ -308,6 +316,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
+
         logger.info(m18n.n('done'))
 
         cache.open(None)
@@ -355,7 +364,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     if len(apps) == 0 and len(packages) == 0:
         logger.info(m18n.n('packages_no_upgrade'))
 
-    return { 'packages': packages, 'apps': apps }
+    return {'packages': packages, 'apps': apps}
 
 
 def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
@@ -388,6 +397,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                     critical_upgrades.add(pkg.name)
                     # Temporarily keep package ...
                     pkg.mark_keep()
+
             # ... and set a hourly cron up to upgrade critical packages
             if critical_upgrades:
                 logger.info(m18n.n('packages_upgrade_critical_later',
@@ -397,6 +407,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
         if cache.get_changes():
             logger.info(m18n.n('upgrading_packages'))
+
             try:
                 # Apply APT changes
                 # TODO: Logs output for the API
@@ -424,7 +435,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
     # Return API logs if it is an API call
     if is_api:
-        return { "log": service_log('yunohost-api', number="100").values()[0] }
+        return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
 def tools_diagnosis(auth, private=False):
@@ -483,6 +494,7 @@ def tools_diagnosis(auth, private=False):
     # Services status
     services = service_status()
     diagnosis['services'] = {}
+
     for service in services:
         diagnosis['services'][service] = "%s (%s)" % (services[service]['status'], services[service]['loaded'])
 
