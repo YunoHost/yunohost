@@ -32,6 +32,8 @@ import requests
 import json
 import errno
 import logging
+import subprocess
+import pwd
 from collections import OrderedDict
 
 import apt
@@ -52,12 +54,20 @@ apps_setting_path= '/etc/yunohost/apps/'
 logger = getActionLogger('yunohost.tools')
 
 
-def tools_ldapinit(auth):
+def tools_ldapinit():
     """
     YunoHost LDAP initialization
 
 
     """
+
+    # Instantiate LDAP Authenticator
+    auth = init_authenticator(('ldap', 'default'),
+                              {'uri': "ldap://localhost:389",
+                               'base_dn': "dc=yunohost,dc=org",
+                               'user_rdn': "cn=admin" })
+    auth.authenticate('yunohost')
+
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
         ldap_map = yaml.load(f)
 
@@ -83,8 +93,18 @@ def tools_ldapinit(auth):
 
     auth.update('cn=admin', admin_dict)
 
-    logger.success(m18n.n('ldap_initialized'))
+    # Force nscd to refresh cache to take admin creation into account
+    subprocess.call(['nscd', '-i', 'passwd'])
 
+    # Check admin actually exists now
+    try:
+        pwd.getpwnam("admin")
+    except KeyError:
+        logger.error(m18n.n('ldap_init_failed_to_create_admin'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('installation_failed'))
+
+    logger.success(m18n.n('ldap_initialized'))
+    return auth
 
 def tools_adminpw(auth, new_password):
     """
@@ -191,16 +211,9 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     logger.info(m18n.n('yunohost_installing'))
 
-    # Instantiate LDAP Authenticator
-    auth = init_authenticator(('ldap', 'default'),
-                              {'uri': "ldap://localhost:389",
-                               'base_dn': "dc=yunohost,dc=org",
-                               'user_rdn': "cn=admin" })
-    auth.authenticate('yunohost')
-
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
-    tools_ldapinit(auth)
+    auth = tools_ldapinit()
 
     # Create required folders
     folders_to_create = [
