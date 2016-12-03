@@ -24,10 +24,7 @@
     Specific tools
 """
 import os
-import sys
 import yaml
-import re
-import getpass
 import requests
 import json
 import errno
@@ -44,9 +41,9 @@ from moulinette.utils.log import getActionLogger
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
 from yunohost.domain import domain_add, domain_list, get_public_ip
 from yunohost.dyndns import dyndns_subscribe
-from yunohost.firewall import firewall_upnp, firewall_reload
+from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log
-from yunohost.monitor import monitor_disk, monitor_network, monitor_system
+from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
 apps_setting_path= '/etc/yunohost/apps/'
