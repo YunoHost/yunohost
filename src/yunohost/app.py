@@ -24,10 +24,8 @@
     Manage apps
 """
 import os
-import sys
 import json
 import shutil
-import stat
 import yaml
 import time
 import re

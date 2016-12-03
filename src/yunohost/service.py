@@ -36,7 +36,7 @@ from difflib import unified_diff
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
-from yunohost.hook import hook_list, hook_callback
+from yunohost.hook import hook_callback
 
 
 base_conf_path = '/home/yunohost.conf'

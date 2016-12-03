@@ -24,11 +24,8 @@
     Manage hooks
 """
 import os
-import sys
 import re
-import json
 import errno
-import subprocess
 from glob import iglob
 
 from moulinette.core import MoulinetteError
