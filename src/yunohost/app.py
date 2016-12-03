@@ -438,7 +438,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.success(m18n.n('upgrade_complete'))
 
 
-def app_install(auth, app, label=None, args=None):
+def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
 
@@ -446,6 +446,7 @@ def app_install(auth, app, label=None, args=None):
         app -- Name, local path or git URL of the app to install
         label -- Custom name for the app
         args -- Serialize arguments for app installation
+        no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
@@ -539,19 +540,20 @@ def app_install(auth, app, label=None, args=None):
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
-            # Setup environment for remove script
-            env_dict_remove = {}
-            env_dict_remove["YNH_APP_ID"] = app_id
-            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            if not no_remove_on_failure:
+                # Setup environment for remove script
+                env_dict_remove = {}
+                env_dict_remove["YNH_APP_ID"] = app_id
+                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
-            # Execute remove script
-            remove_retcode = hook_exec(
-                os.path.join(extracted_app_folder, 'scripts/remove'),
-                args=[app_instance_name], env=env_dict_remove)
-            if remove_retcode != 0:
-                logger.warning(m18n.n('app_not_properly_removed',
-                                      app=app_instance_name))
+                # Execute remove script
+                remove_retcode = hook_exec(
+                    os.path.join(extracted_app_folder, 'scripts/remove'),
+                    args=[app_instance_name], env=env_dict_remove)
+                if remove_retcode != 0:
+                    logger.warning(m18n.n('app_not_properly_removed',
+                                          app=app_instance_name))
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)

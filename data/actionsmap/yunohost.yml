@@ -499,6 +499,9 @@ app:
                 -a:
                     full: --args
                     help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+                -n:
+                  full: --no-remove-on-failure
+                    help: Debug option to avoid removing the app on a failed installation
 
         ### app_remove() TODO: Write help
         remove:
