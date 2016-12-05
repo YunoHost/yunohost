@@ -995,7 +995,6 @@ def app_ssowatconf(auth):
     redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
     redirected_urls ={}
 
-    apps = {}
     try:
         apps_list = app_list()['apps']
     except:
