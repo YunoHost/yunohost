@@ -1011,19 +1011,19 @@ def app_ssowatconf(auth):
                 for item in _get_setting(app_settings, 'skipped_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    skipped_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'skipped_regex'):
                     skipped_regex.append(item)
                 for item in _get_setting(app_settings, 'unprotected_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    unprotected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'unprotected_regex'):
                     unprotected_regex.append(item)
                 for item in _get_setting(app_settings, 'protected_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    protected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'protected_regex'):
                     protected_regex.append(item)
                 if 'redirected_urls' in app_settings:
