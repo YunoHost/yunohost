@@ -39,7 +39,7 @@ import apt.progress
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
-from yunohost.domain import domain_add, domain_list, get_public_ip
+from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log
@@ -125,52 +125,44 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
+def tools_maindomain(auth, new_domain=None):
     """
-    Main domain change tool
+    Check the current main domain, or change it
 
     Keyword argument:
-        new_domain
-        old_domain
+        new_domain -- The new domain to be set as the main domain
 
     """
-    if not old_domain:
-        with open('/etc/yunohost/current_host', 'r') as f:
-            old_domain = f.readline().rstrip()
 
-        if not new_domain:
-            return { 'current_main_domain': old_domain }
-
+    # If no new domain specified, we return the current main domain
     if not new_domain:
-        raise MoulinetteError(errno.EINVAL, m18n.n('new_domain_required'))
+        return {'current_main_domain': _get_maindomain()}
+
+    # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
-        domain_add(auth, new_domain)
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
-    os.system('rm /etc/ssl/private/yunohost_key.pem')
-    os.system('rm /etc/ssl/certs/yunohost_crt.pem')
+    # Apply changes to ssl certs
+    ssl_key = "/etc/ssl/private/yunohost_key.pem"
+    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
+    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_domain
+    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
 
-    command_list = [
-        'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
-        'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
-        'echo %s > /etc/yunohost/current_host' % new_domain,
-    ]
+    try:
+        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
+            os.remove(ssl_key)
+        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
+            os.remove(ssl_crt)
 
-    for command in command_list:
-        if os.system(command) != 0:
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('maindomain_change_failed'))
+        os.symlink(new_ssl_key, ssl_key)
+        os.symlink(new_ssl_crt, ssl_crt)
 
-    if dyndns and len(new_domain.split('.')) >= 3:
-        try:
-            r = requests.get('https://dyndns.yunohost.org/domains')
-        except requests.ConnectionError:
-            pass
-        else:
-            dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(new_domain.split('.')[1:])
-            if dyndomain in dyndomains:
-                dyndns_subscribe(domain=new_domain)
+        _set_maindomain(new_domain)
+    except Exception as e:
+        logger.warning("%s" % e, exc_info=1)
+        raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
+    # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
             service_regen_conf()
@@ -285,7 +277,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
                                   m18n.n('yunohost_ca_creation_failed'))
 
     # New domain config
-    tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain, dyndns=dyndns)
+    domain_add(auth, domain, dyndns)
+    tools_maindomain(auth, domain)
 
     # Generate SSOwat configuration file
     app_ssowatconf(auth)

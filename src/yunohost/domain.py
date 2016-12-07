@@ -113,6 +113,7 @@ def domain_add(auth, domain, dyndns=False):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('domain_dyndns_root_unknown'))
 
+
     try:
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
@@ -157,6 +158,10 @@ def domain_remove(auth, domain, force=False):
 
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    # Check domain is not the main domain
+    if domain == _get_maindomain():
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_cannot_remove_main'))
 
     # Check if apps are installed on the domain
     for app in os.listdir('/etc/yunohost/apps/'):
@@ -284,3 +289,13 @@ def get_public_ip(protocol=4):
         logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
         raise MoulinetteError(errno.ENETUNREACH,
                               m18n.n('no_internet_connection'))
+
+
+def _get_maindomain():
+    with open('/etc/yunohost/current_host', 'r') as f:
+        maindomain = f.readline().rstrip()
+    return maindomain
+
+def _set_maindomain(domain):
+    with open('/etc/yunohost/current_host', 'w') as f:
+        f.write(domain)
