@@ -812,17 +812,18 @@ def _domain_is_accessible_through_HTTP(ip, domain):
 def _name_self_CA():
     ca_conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
 
-    try :
-        with open(ca_conf) as f:
-            lines = f.readlines()
+    if not os.path.exists(ca_conf) :
+        logger.warning(m18n.n('certmanager_self_ca_conf_file_not_found', file=ca_conf))
+        return ""
 
-        for line in lines:
-            if line.startswith("commonName_default"):
-                return line.split()[2]
-    except:
-        pass
+    with open(ca_conf) as f:
+        lines = f.readlines()
 
-    logger.warning(m18n.n('certmanager_unable_to_determine_self_CA_name'))
+    for line in lines:
+        if line.startswith("commonName_default"):
+            return line.split()[2]
+
+    logger.warning(m18n.n('certmanager_unable_to_parse_self_CA_name', file=ca_conf))
     return ""
 
 
