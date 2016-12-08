@@ -623,15 +623,16 @@ def backup_info(name, with_details=False, human_readable=False):
             m18n.n('backup_archive_name_unknown', name=name))
 
     # If symlink, retrieve the real path
-    if os.path.islink(archive_file) :
+    if os.path.islink(archive_file):
         archive_file = os.path.realpath(archive_file)
 
         # Raise exception if link is broken (e.g. on unmounted external storage)
-        if (not os.path.exists(archive_file)) :
+        if not os.path.exists(archive_file):
             raise MoulinetteError(errno.EIO,
                 m18n.n('backup_archive_broken_link', path=archive_file))
 
     info_file = "%s/%s.info.json" % (archives_path, name)
+
     try:
         with open(info_file) as f:
             # Retrieve backup info
