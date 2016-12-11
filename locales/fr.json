@@ -17,6 +17,7 @@
     "app_manifest_invalid": "Manifeste d'application incorrect",
     "app_no_upgrade": "Aucune application à mettre à jour",
     "app_not_correctly_installed": "{app:s} semble être mal installé",
+	"app_not_domain_default": "{app:s} n'est pas l'application par défault du domaine",
     "app_not_installed": "{app:s} n'est pas installé",
     "app_not_properly_removed": "{app:s} n'a pas été supprimé correctement",
     "app_package_need_update": "Le paquet de l'application doit être mis à jour pour suivre les changements de YunoHost",
