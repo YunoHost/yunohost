@@ -812,7 +812,7 @@ def _domain_is_accessible_through_HTTP(ip, domain):
 def _name_self_CA():
     ca_conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
 
-    if not os.path.exists(ca_conf) :
+    if not os.path.exists(ca_conf):
         logger.warning(m18n.n('certmanager_self_ca_conf_file_not_found', file=ca_conf))
         return ""
 
