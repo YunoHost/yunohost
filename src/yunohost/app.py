@@ -601,6 +601,9 @@ def app_remove(auth, app):
 
     app_setting_path = apps_setting_path + app
 
+    if app_checkdefault(auth,app):
+        app_removedefault(auth, app)
+        
     #TODO: display fail messages from script
     try:
         shutil.rmtree('/tmp/yunohost_remove')
