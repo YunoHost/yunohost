@@ -83,7 +83,6 @@
     "domain_unknown": "Unknown domain",
     "domain_zone_exists": "DNS zone file already exists",
     "domain_zone_not_found": "DNS zone file not found for domain {:s}",
-    "domains_available": "Available domains :",
     "done": "Done",
     "downloading": "Downloading...",
     "dyndns_cron_installed": "The DynDNS cron job has been installed",
