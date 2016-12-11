@@ -1,3 +1,22 @@
+yunohost (2.5.1) testing; urgency=low
+
+  * [fix] Raise error on malformed SSOwat persistent conf.
+  * [enh] Catch SSOwat persistent configuration write error.
+  * [fix] Write SSOwat configuration file only if needed.
+  * [enh] Display full exception error message.
+  * [enh] cli option to avoid removing an application on installation failure
+  * [mod] give instructions on how to solve the conf.json.persistant parsing error
+  * [fix] avoid random bug on post-install due to nscd cache
+  * [enh] Adding check that user is actually created + minor refactor of ldap/auth init
+  * [fix] Fix the way name of self-CA is determined
+  * [fix] Add missing dependency to nscd package #656
+  * [fix] Refactoring tools_maindomain and disabling removal of main domain to avoid breaking things
+  * [fix] Bracket in passwd from ynh_string_random
+
+  Thanks to all contributors: Aleks, Bram, ju, jibec, ljf, M5oul, opi
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Sun, 11 Dec 2016 15:26:21 +0100
+
 yunohost (2.5.0) testing; urgency=low
 
   * Certificate management integration (e.g. Let's Encrypt certificate install)
