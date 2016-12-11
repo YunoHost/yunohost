@@ -606,7 +606,7 @@ app:
         ### app_makedefault()
         makedefault:
             action_help: Redirect domain root to an app
-            api: PUT /apps/<app>/default
+            api: PUT /apps/<app>/makedefault
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -616,6 +616,34 @@ app:
                 -d:
                     full: --domain
                     help: Specific domain to put app on (the app domain by default)
+                    
+        ### app_removedefault()
+        removedefault:
+            action_help: Remove the default redirection to an app on a domain
+            api: PUT /apps/<app>/removedefault
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: App to remove the redirection
+                -d:
+                    full: --domain
+                    help: Specific domain to remove the redirection (the app domain by default)
+
+        ### app_checkdefault()
+        checkdefault:
+            action_help: Check if app is the default domain redirection
+            api: GET /apps/<app>/checkdefault
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: App name to check
+                -d:
+                    full: --domain
+                    help: Specific domain to check the app on (the app domain by default)
 
         ### app_ssowatconf()
         ssowatconf:
