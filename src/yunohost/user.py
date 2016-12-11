@@ -408,7 +408,7 @@ def user_info(auth, username):
         is_limited = not re.match('0[bkMGT]?', userquota)
         storage_use = '?'
 
-        if (service_status("dovecot")["status"] != "running"):
+        if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
         else:
             cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
