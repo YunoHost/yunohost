@@ -15,6 +15,7 @@
     "app_location_already_used": "Une application est déjà installée à cet emplacement",
     "app_location_install_failed": "Impossible d'installer l'application à cet emplacement",
     "app_manifest_invalid": "Manifeste d'application incorrect",
+	"app_no_domain": "Cette application n'a pas de domaine",
     "app_no_upgrade": "Aucune application à mettre à jour",
     "app_not_correctly_installed": "{app:s} semble être mal installé",
     "app_not_installed": "{app:s} n'est pas installé",
