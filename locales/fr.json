@@ -86,6 +86,7 @@
     "domain_unknown": "Domaine inconnu",
     "domain_zone_exists": "Le fichier de zone DNS existe déjà",
     "domain_zone_not_found": "Fichier de zone DNS introuvable pour le domaine {:s}",
+    "domains_available": "Domaines disponibles :",
     "done": "Terminé.",
     "downloading": "Téléchargement...",
     "dyndns_cron_installed": "La tâche cron pour le domaine DynDNS a été installée",
