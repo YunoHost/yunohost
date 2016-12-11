@@ -56,6 +56,8 @@ WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
 ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
+SSL_DIR = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
+
 KEY_SIZE = 3072
 
 VALIDITY_LIMIT = 15  # days
@@ -161,11 +163,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
         new_cert_folder = "%s/%s-history/%s-selfsigned" % (
             CERT_FOLDER, domain, date_tag)
 
-        original_ca_file = '/etc/ssl/certs/ca-yunohost_crt.pem'
-        ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-        conf_template = os.path.join(ssl_dir, "openssl.cnf")
+        conf_template = os.path.join(SSL_DIR, "openssl.cnf")
 
-        csr_file = os.path.join(ssl_dir, "certs", "yunohost_csr.pem")
+        csr_file = os.path.join(SSL_DIR, "certs", "yunohost_csr.pem")
         conf_file = os.path.join(new_cert_folder, "openssl.cnf")
         key_file = os.path.join(new_cert_folder, "key.pem")
         crt_file = os.path.join(new_cert_folder, "crt.pem")
@@ -214,7 +214,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # Link the CA cert (not sure it's actually needed in practice though,
         # since we append it at the end of crt.pem. For instance for Let's
         # Encrypt certs, we only need the crt.pem and key.pem)
-        os.symlink(original_ca_file, ca_file)
+        os.symlink(SELF_CA_FILE, ca_file)
 
         # Append ca.pem at the end of crt.pem
         with open(ca_file, "r") as ca_pem, open(crt_file, "a") as crt_pem:
@@ -810,9 +810,21 @@ def _domain_is_accessible_through_HTTP(ip, domain):
 
 
 def _name_self_CA():
-    cert = crypto.load_certificate(
-        crypto.FILETYPE_PEM, open(SELF_CA_FILE).read())
-    return cert.get_subject().CN
+    ca_conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
+
+    if not os.path.exists(ca_conf) :
+        logger.warning(m18n.n('certmanager_self_ca_conf_file_not_found', file=ca_conf))
+        return ""
+
+    with open(ca_conf) as f:
+        lines = f.readlines()
+
+    for line in lines:
+        if line.startswith("commonName_default"):
+            return line.split()[2]
+
+    logger.warning(m18n.n('certmanager_unable_to_parse_self_CA_name', file=ca_conf))
+    return ""
 
 
 def _tail(n, file_path):
