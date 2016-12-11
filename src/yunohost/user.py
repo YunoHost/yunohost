@@ -35,6 +35,7 @@ import re
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from yunohost.service import service_status
 
 logger = getActionLogger('yunohost.user')
 
@@ -407,9 +408,10 @@ def user_info(auth, username):
         is_limited = not re.match('0[bkMGT]?', userquota)
         storage_use = '?'
 
-        cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
-
-        try:
+        if (service_status("dovecot")["status"] != "running"):
+            logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
+        else:
+            cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
             cmd_result = subprocess.check_output(cmd, stderr=subprocess.STDOUT,
                                                  shell=True)
             # Exemple of return value for cmd:
@@ -427,9 +429,6 @@ def user_info(auth, username):
                     if has_percent:
                         percentage = int(has_percent.group(1))
                         storage_use += ' (%s%%)' % percentage
-
-        except subprocess.CalledProcessError:
-            logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
 
         result_dict['mailbox-quota'] = {
             'limit' : userquota if is_limited else m18n.n('unlimit'),
