@@ -11,7 +11,7 @@ Package: yunohost
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 2.3.5.1)
- , python-psutil, python-requests, python-dnspython
+ , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc
  , glances
  , dnsutils, bind9utils, unzip, git, curl, cron
