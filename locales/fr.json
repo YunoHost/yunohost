@@ -111,7 +111,7 @@
     "hook_choice_invalid": "Choix incorrect : '{:s}'",
     "hook_exec_failed": "Échec de l'exécution du script « {path:s} »",
     "hook_exec_not_terminated": "L'exécution du script « {path:s} » ne s'est pas terminée",
-    "hook_list_by_invalid": "Propriété pour lister les scripts incorrecte",
+    "hook_list_by_invalid": "Propriété pour lister les scripts incorrects",
     "hook_name_unknown": "Nom de script « {name:s} » inconnu",
     "installation_complete": "Installation terminée",
     "installation_failed": "Échec de l'installation",
@@ -272,5 +272,6 @@
     "ssowat_persistent_conf_write_error": "Erreur lors de la sauvegarde de la configuration persistante de SSOwat : {error:s}. Modifiez le fichier /etc/ssowat/conf.json.persistent pour réparer la syntaxe JSON",
     "domain_cannot_remove_main": "Impossible de retirer le domaine principal. Définissez un nouveau domaine principal au préalable.",
     "certmanager_self_ca_conf_file_not_found": "Le fichier de configuration pour l’autorité du certificat auto-signé est introuvable (fichier : {file:s})",
-    "certmanager_unable_to_parse_self_CA_name": "Impossible d’analyser le nom de l’autorité du certificat auto-signé (fichier : {file:s})"
+    "certmanager_unable_to_parse_self_CA_name": "Impossible d’analyser le nom de l’autorité du certificat auto-signé (fichier : {file:s})",
+    "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la boîte mail."
 }
