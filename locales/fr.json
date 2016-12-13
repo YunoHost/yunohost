@@ -119,9 +119,9 @@
     "iptables_unavailable": "Vous ne pouvez pas jouer avec iptables ici. Vous êtes soit dans un conteneur, soit votre noyau ne le supporte pas",
     "ldap_initialized": "L'annuaire LDAP a été initialisé",
     "license_undefined": "indéfinie",
-    "mail_alias_remove_failed": "Impossible de supprimer l'adresse courriel supplémentaire « {mail:s} »",
-    "mail_domain_unknown": "Le domaine « {domain:s} » de l'adresse courriel est inconnu",
-    "mail_forward_remove_failed": "Impossible de supprimer l'adresse courriel de transfert « {mail:s} »",
+    "mail_alias_remove_failed": "Impossible de supprimer l'alias courriel « {mail:s} »",
+    "mail_domain_unknown": "Le domaine « {domain:s} » du courriel est inconnu",
+    "mail_forward_remove_failed": "Impossible de supprimer le courriel de transfert « {mail:s} »",
     "maindomain_change_failed": "Impossible de modifier le domaine principal",
     "maindomain_changed": "Le domaine principal a été modifié",
     "monitor_disabled": "La supervision du serveur a été désactivé",
@@ -155,7 +155,7 @@
     "path_removal_failed": "Impossible de supprimer le chemin {:s}",
     "pattern_backup_archive_name": "Doit être un nom de fichier valide composé de caractères alphanumérique et -_. uniquement",
     "pattern_domain": "Doit être un nom de domaine valide (ex : mon-domaine.org)",
-    "pattern_email": "Doit être une adresse courriel valide (ex. : someone@domain.org)",
+    "pattern_email": "Doit être une adresse courriel valide (ex. : pseudo@domain.org)",
     "pattern_firstname": "Doit être un prénom valide",
     "pattern_lastname": "Doit être un nom valide",
     "pattern_listname": "Doit être composé uniquement de caractères alphanumériques et de tirets bas",
@@ -273,5 +273,5 @@
     "domain_cannot_remove_main": "Impossible de retirer le domaine principal. Définissez un nouveau domaine principal au préalable.",
     "certmanager_self_ca_conf_file_not_found": "Le fichier de configuration pour l’autorité du certificat auto-signé est introuvable (fichier : {file:s})",
     "certmanager_unable_to_parse_self_CA_name": "Impossible d’analyser le nom de l’autorité du certificat auto-signé (fichier : {file:s})",
-    "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la boîte mail."
+    "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la messagerie"
 }
