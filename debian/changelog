@@ -1,3 +1,42 @@
+yunohost (2.5.2) testing; urgency=low
+
+  LDAP admin user:
+  * [fix] wait for admin user to be available after a slapd regen-conf, this fix install on slow hardware/vps
+
+  Dovecot/emails:
+  * [enh] reorder dovecot main configuration so that it is easier to read and extend
+  * [enh] Allow for dovecot configuration extensions
+  * [fix] Can't get mailbos used space if dovecot is down
+
+  Backup:
+  * [fix] Need to create archives_path even for custom output directory
+  * Keep track of backups with custom directory using symlinks
+
+  Security:
+  * [fix] Improve dnssec key generation on low entropy devices
+  * [enh] Add haveged as dependency
+
+  Random broken app installed on slow hardware:
+  * [enh] List available domains when installing an app by CLI.
+
+  Translation:
+  * French by Jibec and Genma
+  * German by Philip Gatzka
+  * Hindi by Anmol
+  * Spanish by Juanu
+
+  Other fixes and improvements:
+  * [enh] remove timeout from cli interface
+  * [fix] [#662](https://dev.yunohost.org/issues/662): missing 'python-openssl' dependency for Let's Encrypt integration.
+  * [fix] --no-remove-on-failure for app install should behave as a flag.
+  * [fix] don't remove trailing char if it's not a slash
+
+  Thanks to all contributors: Aleks, alex, Anmol, Bram, Genma, jibec, ju,
+  Juanu, ljf, Moul, opi, Philip Gatzka and to the people who are participating
+  to the beta and giving us feedback <3
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Fri, 16 Dec 2016 00:49:08 +0100
+
 yunohost (2.5.1) testing; urgency=low
 
   * [fix] Raise error on malformed SSOwat persistent conf.
