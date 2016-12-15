@@ -84,6 +84,7 @@
     "domain_zone_exists": "DNS zone file already exists",
     "domain_zone_not_found": "DNS zone file not found for domain {:s}",
     "done": "Done",
+    "domains_available": "Available domains:",
     "downloading": "Downloading...",
     "dyndns_cron_installed": "The DynDNS cron job has been installed",
     "dyndns_cron_remove_failed": "Unable to remove the DynDNS cron job",

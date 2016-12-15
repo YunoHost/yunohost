@@ -1497,7 +1497,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_info
 
     args_dict = OrderedDict()
@@ -1536,6 +1536,13 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
 
                     # Check for a password argument
                     is_password = True if arg_type == 'password' else False
+
+                    if arg_type == 'domain':
+                        arg_default = _get_maindomain()
+                        ask_string += ' (default: {0})'.format(arg_default)
+                        msignals.display(m18n.n('domains_available'))
+                        for domain in domain_list(auth)['domains']:
+                            msignals.display("- {}".format(domain))
 
                     try:
                         input_string = msignals.prompt(ask_string, is_password)
