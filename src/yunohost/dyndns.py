@@ -95,7 +95,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
             logger.info(m18n.n('dyndns_key_generating'))
 
             os.system('cd /etc/yunohost/dyndns && ' \
-                      'dnssec-keygen -a hmac-md5 -b 128 -n USER %s' % domain)
+                      'dnssec-keygen -a hmac-md5 -b 128 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
         key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]

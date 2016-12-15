@@ -119,8 +119,10 @@ def backup_create(name=None, description=None, output_directory=None,
             env_var['CAN_BIND'] = 0
     else:
         output_directory = archives_path
-        if not os.path.isdir(archives_path):
-            os.mkdir(archives_path, 0750)
+
+    # Create archives directory if it does not exists
+    if not os.path.isdir(archives_path):
+        os.mkdir(archives_path, 0750)
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
@@ -287,7 +289,7 @@ def backup_create(name=None, description=None, output_directory=None,
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_archive_open_failed'))
 
-        # Add files to the arvhice
+        # Add files to the archive
         try:
             tar.add(tmp_dir, arcname='')
             tar.close()
@@ -297,9 +299,21 @@ def backup_create(name=None, description=None, output_directory=None,
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_creation_failed'))
 
+        # FIXME : it looks weird that the "move info file" is not enabled if
+        # user activated "no_compress" ... or does it really means
+        # "dont_keep_track_of_this_backup_in_history" ?
+
         # Move info file
         shutil.move(tmp_dir + '/info.json',
                   '{:s}/{:s}.info.json'.format(archives_path, name))
+
+        # If backuped to a non-default location, keep a symlink of the archive
+        # to that location
+        if output_directory != archives_path:
+            link = "%s/%s.tar.gz" % (archives_path, name)
+            os.symlink(archive_file, link)
+
+
 
     # Clean temporary directory
     if tmp_dir != output_directory:
@@ -601,11 +615,23 @@ def backup_info(name, with_details=False, human_readable=False):
 
     """
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
-    if not os.path.isfile(archive_file):
+
+    # Check file exist (even if it's a broken symlink)
+    if not os.path.lexists(archive_file):
         raise MoulinetteError(errno.EIO,
             m18n.n('backup_archive_name_unknown', name=name))
 
+    # If symlink, retrieve the real path
+    if os.path.islink(archive_file):
+        archive_file = os.path.realpath(archive_file)
+
+        # Raise exception if link is broken (e.g. on unmounted external storage)
+        if not os.path.exists(archive_file):
+            raise MoulinetteError(errno.EIO,
+                m18n.n('backup_archive_broken_link', path=archive_file))
+
     info_file = "%s/%s.info.json" % (archives_path, name)
+
     try:
         with open(info_file) as f:
             # Retrieve backup info

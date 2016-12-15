@@ -502,6 +502,7 @@ app:
                 -n:
                     full: --no-remove-on-failure
                     help: Debug option to avoid removing the app on a failed installation
+                    action: store_true
 
         ### app_remove() TODO: Write help
         remove:
