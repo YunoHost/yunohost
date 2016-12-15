@@ -274,5 +274,6 @@
     "certmanager_self_ca_conf_file_not_found": "Le fichier de configuration pour l’autorité du certificat auto-signé est introuvable (fichier : {file:s})",
     "certmanager_unable_to_parse_self_CA_name": "Impossible d’analyser le nom de l’autorité du certificat auto-signé (fichier : {file:s})",
     "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la messagerie",
-    "domains_available": "Domaines disponibles :"
+    "domains_available": "Domaines disponibles :",
+    "backup_archive_broken_link": "Impossible d'accéder à l'archive de la sauvegarde (lien cassé à {path:s})"
 }
