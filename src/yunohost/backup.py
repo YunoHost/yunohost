@@ -47,7 +47,7 @@ from yunohost.hook import (
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 
-backup_path   = '/home/yunohost.backup'
+backup_path = '/home/yunohost.backup'
 archives_path = '%s/archives' % backup_path
 
 logger = getActionLogger('yunohost.backup')
@@ -313,8 +313,6 @@ def backup_create(name=None, description=None, output_directory=None,
             link = "%s/%s.tar.gz" % (archives_path, name)
             os.symlink(archive_file, link)
 
-
-
     # Clean temporary directory
     if tmp_dir != output_directory:
         _clean_tmp_dir()
@@ -323,7 +321,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Return backup info
     info['name'] = name
-    return { 'archive': info }
+    return {'archive': info}
 
 
 def backup_restore(auth, name, hooks=[], ignore_hooks=False,
@@ -601,7 +599,7 @@ def backup_list(with_info=False, human_readable=False):
             d[a] = backup_info(a, human_readable=human_readable)
         result = d
 
-    return { 'archives': result }
+    return {'archives': result}
 
 
 def backup_info(name, with_details=False, human_readable=False):
@@ -645,7 +643,7 @@ def backup_info(name, with_details=False, human_readable=False):
     size = info.get('size', 0)
     if not size:
         tar = tarfile.open(archive_file, "r:gz")
-        size = reduce(lambda x,y: getattr(x, 'size', x)+getattr(y, 'size', y),
+        size = reduce(lambda x, y: getattr(x, 'size', x) + getattr(y, 'size', y),
                       tar.getmembers())
         tar.close()
     if human_readable:
@@ -678,7 +676,7 @@ def backup_delete(name):
     archive_file = '%s/%s.tar.gz' % (archives_path, name)
 
     info_file = "%s/%s.info.json" % (archives_path, name)
-    for backup_file in [archive_file,info_file]:
+    for backup_file in [archive_file, info_file]:
         if not os.path.isfile(backup_file):
             raise MoulinetteError(errno.EIO,
                 m18n.n('backup_archive_name_unknown', name=backup_file))

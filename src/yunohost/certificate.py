@@ -193,9 +193,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # and self-sign the cert
         commands = [
             "openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch"
-                    % (conf_file, csr_file, key_file),
+            % (conf_file, csr_file, key_file),
             "openssl ca -config %s -days 3650 -in %s -out %s -batch"
-                    % (conf_file, csr_file, crt_file),
+            % (conf_file, csr_file, crt_file),
         ]
 
         for command in commands:
@@ -528,7 +528,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                                               CA=certification_authority)
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
-            raise MoulinetteError(errno.EINVAL,  m18n.n(
+            raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_hit_rate_limit', domain=domain))
         else:
             logger.error(str(e))

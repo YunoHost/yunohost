@@ -66,10 +66,10 @@ def domain_list(auth, filter=None, limit=None, offset=None):
     result = auth.search('ou=domains,dc=yunohost,dc=org', filter, ['virtualdomain'])
 
     if len(result) > offset and limit > 0:
-        for domain in result[offset:offset+limit]:
+        for domain in result[offset:offset + limit]:
             result_list.append(domain['virtualdomain'][0])
 
-    return { 'domains': result_list }
+    return {'domains': result_list}
 
 
 def domain_add(auth, domain, dyndns=False):
@@ -83,7 +83,7 @@ def domain_add(auth, domain, dyndns=False):
     """
     from yunohost.hook import hook_callback
 
-    attr_dict = { 'objectClass' : ['mailDomain', 'top'] }
+    attr_dict = {'objectClass': ['mailDomain', 'top']}
 
     now = datetime.datetime.now()
     timestamp = str(now.year) + str(now.month) + str(now.day)
@@ -103,7 +103,7 @@ def domain_add(auth, domain, dyndns=False):
             pass
         else:
             dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(domain.split('.')[1:])
+            dyndomain = '.'.join(domain.split('.')[1:])
             if dyndomain in dyndomains:
                 if os.path.exists('/etc/cron.d/yunohost-dyndns'):
                     raise MoulinetteError(errno.EPERM,
@@ -113,7 +113,6 @@ def domain_add(auth, domain, dyndns=False):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('domain_dyndns_root_unknown'))
 
-
     try:
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
@@ -121,7 +120,6 @@ def domain_add(auth, domain, dyndns=False):
             auth.validate_uniqueness({'virtualdomain': domain})
         except MoulinetteError:
             raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
-
 
         attr_dict['virtualdomain'] = domain
 
@@ -133,11 +131,14 @@ def domain_add(auth, domain, dyndns=False):
                 service_regen_conf(names=[
                     'nginx', 'metronome', 'dnsmasq', 'rmilter'])
                 os.system('yunohost app ssowatconf > /dev/null 2>&1')
-        except IOError: pass
+        except IOError:
+            pass
     except:
         # Force domain removal silently
-        try: domain_remove(auth, domain, True)
-        except: pass
+        try:
+            domain_remove(auth, domain, True)
+        except:
+            pass
         raise
 
     hook_callback('post_domain_add', args=[domain])
@@ -165,7 +166,7 @@ def domain_remove(auth, domain, force=False):
 
     # Check if apps are installed on the domain
     for app in os.listdir('/etc/yunohost/apps/'):
-        with open('/etc/yunohost/apps/' + app +'/settings.yml') as f:
+        with open('/etc/yunohost/apps/' + app + '/settings.yml') as f:
             try:
                 app_domain = yaml.load(f)['domain']
             except:
@@ -224,13 +225,13 @@ def domain_dns_conf(domain, ttl=None):
         "muc {ttl} IN CNAME @\n"
         "pubsub {ttl} IN CNAME @\n"
         "vjud {ttl} IN CNAME @\n"
-    ).format(ttl=ttl, domain=domain)
+               ).format(ttl=ttl, domain=domain)
 
     # Email
     result += ('\n'
         '@ {ttl} IN MX 10 {domain}.\n'
         '@ {ttl} IN TXT "v=spf1 a mx ip4:{ip4}'
-    ).format(ttl=ttl, domain=domain, ip4=ip4)
+               ).format(ttl=ttl, domain=domain, ip4=ip4)
     if ip6 is not None:
         result += ' ip6:{ip6}'.format(ip6=ip6)
     result += ' -all"'
@@ -246,7 +247,7 @@ def domain_dns_conf(domain, ttl=None):
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
             '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
             '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
-            '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M|re.S
+            '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
         )
         if dkim:
             result += '\n{host}. {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
@@ -295,6 +296,7 @@ def _get_maindomain():
     with open('/etc/yunohost/current_host', 'r') as f:
         maindomain = f.readline().rstrip()
     return maindomain
+
 
 def _set_maindomain(domain):
     with open('/etc/yunohost/current_host', 'w') as f:
