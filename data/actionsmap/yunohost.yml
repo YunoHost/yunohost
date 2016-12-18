@@ -925,6 +925,60 @@ monitor:
 
 
 #############################
+#         Settings          #
+#############################
+settings:
+    category_help: Manage YunoHost global settings
+    actions:
+
+        ### settings_list()
+        list:
+            action_help: list all entries of the settings
+            api: GET /settings
+
+        ### settings_get()
+        get:
+            action_help: get an entry value in the settings
+            api: GET /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+                -d:
+                    full: --default
+                    help: Default value to get if the key doesn't exist
+                    extra:
+                        required: True
+
+        ### settings_set()
+        set:
+            action_help: set an entry value in the settings
+            api: POST /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+                value:
+                    help: new value
+
+        ### settings_exists()
+        exists:
+            action_help: check if an entry exist in the settings
+            api: GET /settings/<key>/exists
+            arguments:
+                key:
+                    help: Settings key
+
+        ### settings_remove()
+        remove:
+            action_help: delete an entry in the settings
+            api: DELETE /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+                -s:
+                    full: --fail-silently
+                    help: Don't return 1 if the entry doesn't exists
+
+#############################
 #         Service           #
 #############################
 service:
