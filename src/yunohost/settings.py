@@ -13,7 +13,7 @@ def settings_list():
     return _get_settings()
 
 
-def settings_has(key):
+def settings_exists(key):
     return key in _get_settings()
 
 
