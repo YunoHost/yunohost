@@ -4,6 +4,10 @@ import yaml
 
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
 
+DEFAULT_VALUES = {
+    "example": "value",
+}
+
 
 def settings_get(key, default):
     return _get_settings().get(key, default)
@@ -46,11 +50,13 @@ def settings_remove(key, silently_fail=False):
 
 
 def _get_settings():
+    settings = DEFAULT_VALUES.copy()
+
     if not os.path.exists(SETTINGS_PATH):
-        return {}
+        return settings
 
     # TODO error handling
     with open(SETTINGS_PATH) as settings_fd:
-        settings = yaml.load(settings_fd)
+        settings.update(yaml.load(settings_fd))
 
     return settings
