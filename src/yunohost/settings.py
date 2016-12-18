@@ -27,7 +27,7 @@ def settings_set(key, value):
     settings[key] = value
 
     # TODO error handling
-    result = yaml.dump(settings)
+    result = yaml.dump(settings, default_flow_style=False)
 
     with open(SETTINGS_PATH, "w") as settings_fd:
         settings_fd.write(result)
@@ -41,7 +41,7 @@ def settings_remove(key, silently_fail=False):
     del settings[key]
 
     # TODO error handling
-    result = yaml.dump(settings)
+    result = yaml.dump(settings, default_flow_style=False)
 
     with open(SETTINGS_PATH, "w") as settings_fd:
         settings_fd.write(result)
