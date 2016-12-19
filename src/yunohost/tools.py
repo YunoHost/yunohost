@@ -162,6 +162,45 @@ def tools_maindomain(auth, new_domain=None):
         logger.warning("%s" % e, exc_info=1)
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
+    # Set hostname
+    
+    commands = [     
+        "sudo hostnamectl --static set-hostname %s" % new_domain,
+        "sudo hostnamectl --transient set-hostname %s" % new_domain,
+        "sudo hostnamectl --pretty set-hostname (YunoHost/%s)" % new_domain
+    ]
+
+    for command in commands:
+        p = subprocess.Popen(command.split(),
+                             stdout = subprocess.PIPE, 
+                             stderr = subprocess.STDOUT)
+
+        out, _ = p.communicate()
+
+        if p.returncode != 0:
+            logger.warning(command)
+            logger.warning(out)
+            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))          # FIXME - To be added in locales/en.json
+        else:
+            logger.info(out) 
+
+    # Add domain to /etc/hosts
+
+    ipv4line = False
+    ipv6line = False
+    with open("/etc/hosts", "r") as f :
+        for line in f.readlines() :
+            if (line.startswith("127.0.0.1 %s" % new_domain)) : 
+                ipv4line = True
+            if (line.startswith("::1 %s" % new_domain)) : 
+                ipv6line = True
+
+    with open("/etc/hosts", "a") as f :
+        if (not ipv4line) :
+            f.write("127.0.0.1 %s\n" % new_domain)
+        if (not ipv6line) :
+            f.write("::1 %s\n" % new_domain)
+
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
