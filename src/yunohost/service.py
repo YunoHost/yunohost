@@ -642,10 +642,10 @@ def _get_conf_hashes(service):
 
     d = _get_services()
 
-    if (service not in d.keys()):
+    if service not in d.keys():
         logger.debug("Service %s is not in services.yml yet.", service)
         return {}
-    elif ('conffiles' not in d[service].keys()):
+    elif 'conffiles' not in d[service].keys():
         logger.debug("No configuration files for service %s.", service)
         return {}
     else:
