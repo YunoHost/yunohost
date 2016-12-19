@@ -639,12 +639,17 @@ def _get_pending_conf(services=[]):
 
 def _get_conf_hashes(service):
     """Get the registered conf hashes for a service"""
-    try:
-        return _get_services()[service]['conffiles']
-    except:
-        logger.debug("unable to retrieve conf hashes for %s",
-                     service, exc_info=1)
+
+    d = _get_services()
+
+    if (service not in d.keys()):
+        logger.debug("Service %s is not in services.yml yet.", service)
         return {}
+    elif ('conffiles' not in d[service].keys()):
+        logger.debug("No configuration files for service %s.", service)
+        return {}
+    else:
+        return d[service]['conffiles']
 
 
 def _update_conf_hashes(service, hashes):
