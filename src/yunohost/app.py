@@ -99,7 +99,7 @@ def app_fetchlist(url=None, name=None):
                                   m18n.n('custom_appslist_name_required'))
 
     list_file = '%s/%s.json' % (repo_path, name)
-    if os.system('wget "%s" -O "%s.tmp"' % (url, list_file)) != 0:
+    if os.system('wget --timeout=30 "%s" -O "%s.tmp"' % (url, list_file)) != 0:
         os.remove('%s.tmp' % list_file)
         raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
 
