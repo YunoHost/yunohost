@@ -223,8 +223,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         # Set appropriate permissions
         _set_permissions(new_cert_folder, "root", "root", 0755)
-        _set_permissions(key_file, "root", "metronome", 0640)
-        _set_permissions(crt_file, "root", "metronome", 0640)
+        _set_permissions(key_file, "root", "ssl-cert", 0640)
+        _set_permissions(crt_file, "root", "ssl-cert", 0640)
         _set_permissions(conf_file, "root", "root", 0600)
 
         # Actually enable the certificate we created
@@ -506,7 +506,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
 
     domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
     _generate_key(domain_key_file)
-    _set_permissions(domain_key_file, "root", "metronome", 0640)
+    _set_permissions(domain_key_file, "root", "ssl-cert", 0640)
 
     _prepare_certificate_signing_request(domain, domain_key_file, TMP_FOLDER)
 
@@ -571,7 +571,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         f.write(signed_certificate)
         f.write(intermediate_certificate)
 
-    _set_permissions(domain_cert_file, "root", "metronome", 0640)
+    _set_permissions(domain_cert_file, "root", "ssl-cert", 0640)
 
     if staging:
         return
