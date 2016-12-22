@@ -349,7 +349,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             status = _get_status(domain)
 
             # Does it expire soon?
-            if not force or status["validity"] <= VALIDITY_LIMIT:
+            if status["validity"] > VALIDITY_LIMIT and not force:
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_valid_cert', domain=domain))
 
