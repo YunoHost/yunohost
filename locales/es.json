@@ -265,5 +265,6 @@
     "certmanager_conflicting_nginx_file": "No se puede preparar el dominio para el desafío ACME: el archivo de configuración nginx {filepath:s} está en conflicto y debe ser eliminado primero",
     "domain_cannot_remove_main": "No se puede eliminar el dominio principal. Primero debe establecer un nuevo dominio principal",
     "certmanager_self_ca_conf_file_not_found": "No se ha encontrado el archivo de configuración para la autoridad de autofirma (file: {file:s})",
-    "certmanager_unable_to_parse_self_CA_name": "No se puede procesar el nombre de la autoridad de autofirma (file: {file:s} 1)"
+    "certmanager_unable_to_parse_self_CA_name": "No se puede procesar el nombre de la autoridad de autofirma (file: {file:s} 1)",
+    "domains_available": "Dominios instalados:"
 }
