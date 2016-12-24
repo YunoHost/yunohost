@@ -275,5 +275,6 @@
     "certmanager_unable_to_parse_self_CA_name": "Impossible d’analyser le nom de l’autorité du certificat auto-signé (fichier : {file:s})",
     "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la messagerie",
     "domains_available": "Domaines disponibles :",
-    "backup_archive_broken_link": "Impossible d'accéder à l'archive de la sauvegarde (lien cassé à {path:s})"
+    "backup_archive_broken_link": "Impossible d'accéder à l'archive de la sauvegarde (lien cassé à {path:s})",
+    "certmanager_acme_not_configured_for_domain": "266 (EN vers FR) :\nLe certificat pour le domaine {domain:s} ne semble pas être correctement installé. Veuillez préalablement exécuter cert-install pour ce domaine."
 }
