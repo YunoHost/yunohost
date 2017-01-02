@@ -100,6 +100,7 @@
     "dyndns_registered": "The DynDNS domain has been registered",
     "dyndns_registration_failed": "Unable to register DynDNS domain: {error:s}",
     "dyndns_unavailable": "Unavailable DynDNS subdomain",
+    "dyndns_provider_unreachable": "Unreachable dyndns provider {provider:s}",
     "executing_command": "Executing command '{command:s}'...",
     "executing_script": "Executing script '{script:s}'...",
     "extracting": "Extracting...",

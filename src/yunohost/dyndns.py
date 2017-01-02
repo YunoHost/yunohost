@@ -66,6 +66,38 @@ re_dyndns_private_key = re.compile(
     r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
 )
 
+def _dyndns_provides(provider, domain):
+
+    logger.debug("Checking if %s is managed by %s ..." % (domain, provider))
+
+    try:
+        r = requests.get('https://%s/domains' % provider)
+    except requests.ConnectionError:
+        raise MoulinetteError(errno.ENETUNREACH,
+                m18n.n('dyndns_provider_unreachable', provider=provider))
+
+    dyndomains = json.loads(r.text)
+    dyndomain  = '.'.join(domain.split('.')[1:])
+
+    return (dyndomain in dyndomains)
+
+
+def _dyndns_available(provider, domain):
+
+    logger.debug("Checking if domain %s is available on %s ..." % (domain, provider))
+
+    if not _dyndns_provides(provider, domain):
+        return False
+
+    try:
+        r = requests.get('https://dyndns.yunohost.org/test/%s' % domain)
+    except requests.ConnectionError:
+        raise MoulinetteError(errno.ENETUNREACH,
+                m18n.n('dyndns_provider_unreachable', provider=provider))
+
+    # Domain is available if return code is 200
+    return (r.status_code == 200)
+
 
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
@@ -77,17 +109,18 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         subscribe_host -- Dynette HTTP API to subscribe to
 
     """
+
+    # Defaults domain to the main domain
     if domain is None:
+        # TODO / FIXME : replace with call to domain._get_maindomain()
         with open('/etc/yunohost/current_host', 'r') as f:
             domain = f.readline().rstrip()
 
     # Verify if domain is available
-    try:
-        if requests.get('https://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
-            raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
-    except requests.ConnectionError:
-        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+    if not _dyndns_available(subscribe_host, domain):
+        raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
 
+    # If no key provided, generate a new one
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
             os.makedirs('/etc/yunohost/dyndns')
@@ -177,14 +210,9 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
                 if not match:
                     continue
                 _domain = match.group('domain')
-                try:
-                    # Check if domain is registered
-                    if requests.get('https://{0}/test/{1}'.format(
-                            dyn_host, _domain)).status_code == 200:
-                        continue
-                except requests.ConnectionError:
-                    raise MoulinetteError(errno.ENETUNREACH,
-                                          m18n.n('no_internet_connection'))
+                # Check if domain is registered
+                if (_dyndns_available(dyn_host, _domain)):
+                    continue
                 domain = _domain
                 key = path
                 break
