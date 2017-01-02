@@ -416,7 +416,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                              apt.progress.base.InstallProgress())
             except Exception as e:
                 failure = True
-                logging.warning('unable to upgrade packages: %s' % str(e))
+                logger.warning('unable to upgrade packages: %s' % str(e))
                 logger.error(m18n.n('packages_upgrade_failed'))
             else:
                 logger.info(m18n.n('done'))
@@ -428,7 +428,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
             app_upgrade(auth)
         except Exception as e:
             failure = True
-            logging.warning('unable to upgrade apps: %s' % str(e))
+            logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_failed'))
 
     if not failure:
