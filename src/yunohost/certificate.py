@@ -323,8 +323,16 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 continue
 
             # Does it expire soon?
-            if force or status["validity"] <= VALIDITY_LIMIT:
-                domain_list.append(domain)
+            if status["validity"] > VALIDITY_LIMIT and not force:
+                continue
+
+            # Check ACME challenge configured for given domain
+            if not _check_acme_challenge_configuration(domain):
+                logger.warning(m18n.n(
+                    'certmanager_acme_not_configured_for_domain', domain=domain))
+                continue
+
+            domain_list.append(domain)
 
         if len(domain_list) == 0:
             logger.info("No certificate needs to be renewed.")
@@ -341,7 +349,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             status = _get_status(domain)
 
             # Does it expire soon?
-            if not force or status["validity"] <= VALIDITY_LIMIT:
+            if status["validity"] > VALIDITY_LIMIT and not force:
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_valid_cert', domain=domain))
 
@@ -349,6 +357,11 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if status["CA_type"]["code"] != "lets-encrypt":
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_nonLE_cert', domain=domain))
+
+            # Check ACME challenge configured for given domain
+            if not _check_acme_challenge_configuration(domain):
+                raise MoulinetteError(errno.EINVAL, m18n.n(
+                    'certmanager_acme_not_configured_for_domain', domain=domain))
 
     if staging:
         logger.warning(
@@ -362,6 +375,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         try:
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
+
             _fetch_and_enable_new_certificate(domain, staging)
 
             logger.success(
@@ -485,6 +499,17 @@ location '/.well-known/acme-challenge'
     _run_service_command("reload", "nginx")
 
     app_ssowatconf(auth)
+
+
+def _check_acme_challenge_configuration(domain):
+    # Check nginx conf file exists
+    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
+    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
+
+    if not os.path.exists(nginx_conf_file):
+        return False
+    else:
+        return True
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False):
