@@ -785,6 +785,13 @@ def _check_domain_is_ready_for_ACME(domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_domain_http_not_working', domain=domain))
 
+    # Check if domain is resolved locally (Might happen despite the previous
+    # checks because of dns propagation ?... Acme-tiny won't work in that case,
+    # because it explicitly requests() the domain.)
+    if not _domain_is_resolved_locally(domain):
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'certmanager_domain_not_resolved_locally', domain=domain))
+
 
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
@@ -803,6 +810,15 @@ def _dns_ip_match_public_ip(public_ip, domain):
 def _domain_is_accessible_through_HTTP(ip, domain):
     try:
         requests.head("http://" + ip, headers={"Host": domain})
+    except Exception:
+        return False
+
+    return True
+
+
+def _domain_is_resolved_locally(domain):
+    try:
+        requests.head("http://%s/" % domain)
     except Exception:
         return False
 
