@@ -838,7 +838,8 @@ def _dns_ip_match_public_ip(public_ip, domain):
 def _domain_is_accessible_through_HTTP(ip, domain):
     try:
         requests.head("http://" + ip, headers={"Host": domain})
-    except Exception:
+    except Exception as e:
+        logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
         return False
 
     return True
