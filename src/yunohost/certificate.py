@@ -587,7 +587,9 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _set_permissions(new_cert_folder, "root", "root", 0655)
 
     # Move the private key
-    shutil.move(domain_key_file, os.path.join(new_cert_folder, "key.pem"))
+    domain_key_file_finaldest = os.path.join(new_cert_folder, "key.pem")
+    shutil.move(domain_key_file, domain_key_file_finaldest)
+    _set_permissions(domain_key_file_finaldest, "root", "metronome", 0640)
 
     # Write the cert
     domain_cert_file = os.path.join(new_cert_folder, "crt.pem")
