@@ -31,6 +31,7 @@ import grp
 import smtplib
 import requests
 import subprocess
+import socket
 import dns.resolver
 import glob
 
@@ -812,6 +813,13 @@ def _check_domain_is_ready_for_ACME(domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_domain_http_not_working', domain=domain))
 
+    # Check if domain is resolved locally (Might happen despite the previous
+    # checks because of dns propagation ?... Acme-tiny won't work in that case,
+    # because it explicitly requests() the domain.)
+    if not _domain_is_resolved_locally(public_ip, domain):
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'certmanager_domain_not_resolved_locally', domain=domain))
+
 
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
@@ -834,6 +842,17 @@ def _domain_is_accessible_through_HTTP(ip, domain):
         return False
 
     return True
+
+
+def _domain_is_resolved_locally(public_ip, domain):
+    try:
+        ip = socket.gethostbyname(domain)
+    except socket.error as e:
+        logger.debug("Couldn't get domain '%s' ip because: %s" % (domain, e))
+        return False
+
+    logger.debug("Domain '%s' ip is %s, except it to be 127.0.0.1 or %s" % (domain, public_ip))
+    return ip in ["127.0.0.1", public_ip]
 
 
 def _name_self_CA():
