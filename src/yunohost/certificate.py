@@ -823,7 +823,7 @@ def _domain_is_resolved_locally(public_ip, domain):
     except socket.error:
         return False
 
-    return (ip in ["127.0.0.1", public_ip])
+    return ip in ["127.0.0.1", public_ip]
 
 
 def _name_self_CA():
