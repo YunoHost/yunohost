@@ -39,6 +39,11 @@ do_post_regen() {
   sudo chown _rmilter /etc/dkim/*.mail.key
   sudo chmod 400 /etc/dkim/*.mail.key
 
+  # fix rmilter socket permission (postfix is chrooted in /var/spool/postfix )
+  sudo mkdir -p /var/spool/postfix/run/rmilter
+  sudo chown -R postfix:_rmilter /var/spool/postfix/run/rmilter
+  sudo chmod g+w /var/spool/postfix/run/rmilter
+
   [ -z "$regen_conf_files" ] && exit 0
 
   # reload systemd daemon
