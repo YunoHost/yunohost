@@ -277,5 +277,5 @@
     "domains_available": "Domaines disponibles :",
     "backup_archive_broken_link": "Impossible d'accéder à l'archive de la sauvegarde (lien cassé à {path:s})",
     "certmanager_acme_not_configured_for_domain": "Le certificat du domaine {domain:s} ne semble pas être correctement installé. Veuillez préalablement exécuter cert-install pour ce domaine.",
-    "certmanager_domain_not_resolved_locally": "Le domaine {domain:s} ne peut être résolu depuis votre serveur Yunohost. Cela peut arriver si vous avez récemment modifié votre enregistrement DNS. Auquel cas, merci d'attendre quelques heures qu'il se propage. Si le problème persiste, envisager d'ajouter {domain:s} au fichier /etc/hosts (Si vous savez ce que vou faites, utilisez --no-checks pour désactiver ces vérifications.)"
+    "certmanager_domain_not_resolved_locally": "Le domaine {domain:s} ne peut être déterminé depuis votre serveur YunoHost. Cela peut arriver si vous avez récemment modifié votre enregistrement DNS. Auquel cas, merci d’attendre quelques heures qu’il se propage. Si le problème persiste, envisager d’ajouter {domain:s} au fichier /etc/hosts. (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces vérifications.)"
 }
