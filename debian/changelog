@@ -1,3 +1,37 @@
+yunohost (2.5.3) testing; urgency=low
+
+  Love:
+  * [enh][love] Add CONTRIBUTORS.md
+
+  LE:
+  * Check acme challenge conf exists in nginx when renewing cert
+  * Fix bad validity check..
+
+  Fix a situation where to domain for the LE cert can't be locally resolved:
+  * Adding check that domain is resolved locally for cert management
+  * Changing the way to check domain is locally resolved
+
+  Fix a situation where a cert could end up with bad perms for metronome:
+  * Attempt to fix missing perm for metronome in weird cases
+
+  Rspamd cannot be activate on socket anymore:
+  * [fix] new rspamd version replace rspamd.socket with rspamd.service
+  * [fix] Remove residual rmilter socket file
+  * [fix] Postfix can't access rmilter socket due to chroot
+
+  Various:
+  * fix fail2ban rules to take into account failed loggin on ssowat
+  * [fix] Ignore dyndns option is not needed with small domain
+  * [enh] add yaml syntax check in travis.yml
+  * [mod] autopep8 on all files that aren't concerned by a PR
+  * [fix] add timeout to fetchlist's wget
+
+  Thanks to all contributors: Aleks, Bram, ju, ljf, opi, zimo2001 and to the
+  people who are participating to the beta and giving us feedback <3
+
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Mon, 09 Jan 2017 18:38:30 +0100
+
 yunohost (2.5.2) testing; urgency=low
 
   LDAP admin user:
