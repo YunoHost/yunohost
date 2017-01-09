@@ -31,6 +31,7 @@ import grp
 import smtplib
 import requests
 import subprocess
+import socket
 import dns.resolver
 import glob
 
@@ -193,9 +194,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # and self-sign the cert
         commands = [
             "openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch"
-                    % (conf_file, csr_file, key_file),
+            % (conf_file, csr_file, key_file),
             "openssl ca -config %s -days 3650 -in %s -out %s -batch"
-                    % (conf_file, csr_file, crt_file),
+            % (conf_file, csr_file, crt_file),
         ]
 
         for command in commands:
@@ -323,8 +324,16 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 continue
 
             # Does it expire soon?
-            if force or status["validity"] <= VALIDITY_LIMIT:
-                domain_list.append(domain)
+            if status["validity"] > VALIDITY_LIMIT and not force:
+                continue
+
+            # Check ACME challenge configured for given domain
+            if not _check_acme_challenge_configuration(domain):
+                logger.warning(m18n.n(
+                    'certmanager_acme_not_configured_for_domain', domain=domain))
+                continue
+
+            domain_list.append(domain)
 
         if len(domain_list) == 0:
             logger.info("No certificate needs to be renewed.")
@@ -341,7 +350,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             status = _get_status(domain)
 
             # Does it expire soon?
-            if not force or status["validity"] <= VALIDITY_LIMIT:
+            if status["validity"] > VALIDITY_LIMIT and not force:
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_valid_cert', domain=domain))
 
@@ -349,6 +358,11 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if status["CA_type"]["code"] != "lets-encrypt":
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_renew_nonLE_cert', domain=domain))
+
+            # Check ACME challenge configured for given domain
+            if not _check_acme_challenge_configuration(domain):
+                raise MoulinetteError(errno.EINVAL, m18n.n(
+                    'certmanager_acme_not_configured_for_domain', domain=domain))
 
     if staging:
         logger.warning(
@@ -362,6 +376,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         try:
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
+
             _fetch_and_enable_new_certificate(domain, staging)
 
             logger.success(
@@ -487,6 +502,17 @@ location '/.well-known/acme-challenge'
     app_ssowatconf(auth)
 
 
+def _check_acme_challenge_configuration(domain):
+    # Check nginx conf file exists
+    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
+    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
+
+    if not os.path.exists(nginx_conf_file):
+        return False
+    else:
+        return True
+
+
 def _fetch_and_enable_new_certificate(domain, staging=False):
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
@@ -528,7 +554,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                                               CA=certification_authority)
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
-            raise MoulinetteError(errno.EINVAL,  m18n.n(
+            raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_hit_rate_limit', domain=domain))
         else:
             logger.error(str(e))
@@ -562,7 +588,9 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _set_permissions(new_cert_folder, "root", "root", 0655)
 
     # Move the private key
-    shutil.move(domain_key_file, os.path.join(new_cert_folder, "key.pem"))
+    domain_key_file_finaldest = os.path.join(new_cert_folder, "key.pem")
+    shutil.move(domain_key_file, domain_key_file_finaldest)
+    _set_permissions(domain_key_file_finaldest, "root", "metronome", 0640)
 
     # Write the cert
     domain_cert_file = os.path.join(new_cert_folder, "crt.pem")
@@ -785,6 +813,13 @@ def _check_domain_is_ready_for_ACME(domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_domain_http_not_working', domain=domain))
 
+    # Check if domain is resolved locally (Might happen despite the previous
+    # checks because of dns propagation ?... Acme-tiny won't work in that case,
+    # because it explicitly requests() the domain.)
+    if not _domain_is_resolved_locally(public_ip, domain):
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'certmanager_domain_not_resolved_locally', domain=domain))
+
 
 def _dns_ip_match_public_ip(public_ip, domain):
     try:
@@ -803,10 +838,22 @@ def _dns_ip_match_public_ip(public_ip, domain):
 def _domain_is_accessible_through_HTTP(ip, domain):
     try:
         requests.head("http://" + ip, headers={"Host": domain})
-    except Exception:
+    except Exception as e:
+        logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
         return False
 
     return True
+
+
+def _domain_is_resolved_locally(public_ip, domain):
+    try:
+        ip = socket.gethostbyname(domain)
+    except socket.error as e:
+        logger.debug("Couldn't get domain '%s' ip because: %s" % (domain, e))
+        return False
+
+    logger.debug("Domain '%s' ip is %s, except it to be 127.0.0.1 or %s" % (domain, public_ip))
+    return ip in ["127.0.0.1", public_ip]
 
 
 def _name_self_CA():

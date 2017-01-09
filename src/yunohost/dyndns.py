@@ -94,7 +94,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
             logger.info(m18n.n('dyndns_key_generating'))
 
-            os.system('cd /etc/yunohost/dyndns && ' \
+            os.system('cd /etc/yunohost/dyndns && '
                       'dnssec-keygen -a hmac-md5 -b 128 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
@@ -104,12 +104,14 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     # Send subscription
     try:
-        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={ 'subdomain': domain })
+        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain})
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:
-        try:    error = json.loads(r.text)['error']
-        except: error = "Server error"
+        try:
+            error = json.loads(r.text)['error']
+        except:
+            error = "Server error"
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_registration_failed', error=error))
 
@@ -204,33 +206,33 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         lines = [
             'server %s' % dyn_host,
             'zone %s' % host,
-            'update delete %s. A'        % domain,
-            'update delete %s. AAAA'     % domain,
-            'update delete %s. MX'       % domain,
-            'update delete %s. TXT'      % domain,
+            'update delete %s. A' % domain,
+            'update delete %s. AAAA' % domain,
+            'update delete %s. MX' % domain,
+            'update delete %s. TXT' % domain,
             'update delete pubsub.%s. A' % domain,
             'update delete pubsub.%s. AAAA' % domain,
-            'update delete muc.%s. A'    % domain,
+            'update delete muc.%s. A' % domain,
             'update delete muc.%s. AAAA' % domain,
-            'update delete vjud.%s. A'   % domain,
+            'update delete vjud.%s. A' % domain,
             'update delete vjud.%s. AAAA' % domain,
             'update delete _xmpp-client._tcp.%s. SRV' % domain,
             'update delete _xmpp-server._tcp.%s. SRV' % domain,
-            'update add %s. 1800 A %s'      % (domain, ipv4),
+            'update add %s. 1800 A %s' % (domain, ipv4),
             'update add %s. 14400 MX 5 %s.' % (domain, domain),
             'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
-            'update add pubsub.%s. 1800 A %s'    % (domain, ipv4),
-            'update add muc.%s. 1800 A %s'       % (domain, ipv4),
-            'update add vjud.%s. 1800 A %s'      % (domain, ipv4),
+            'update add pubsub.%s. 1800 A %s' % (domain, ipv4),
+            'update add muc.%s. 1800 A %s' % (domain, ipv4),
+            'update add vjud.%s. 1800 A %s' % (domain, ipv4),
             'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
             'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain)
         ]
         if ipv6 is not None:
             lines += [
-                'update add %s. 1800 AAAA %s'   % (domain, ipv6),
+                'update add %s. 1800 AAAA %s' % (domain, ipv6),
                 'update add pubsub.%s. 1800 AAAA %s' % (domain, ipv6),
-                'update add muc.%s. 1800 AAAA %s'    % (domain, ipv6),
-                'update add vjud.%s. 1800 AAAA %s'   % (domain, ipv6),
+                'update add muc.%s. 1800 AAAA %s' % (domain, ipv6),
+                'update add vjud.%s. 1800 AAAA %s' % (domain, ipv6),
             ]
         lines += [
             'show',

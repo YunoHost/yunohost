@@ -424,6 +424,7 @@ def get_installed_version(*pkgnames, **kwargs):
         return versions[pkgnames[0]]
     return versions
 
+
 def meets_version_specifier(pkgname, specifier):
     """Check if a package installed version meets specifier"""
     spec = SpecifierSet(specifier)

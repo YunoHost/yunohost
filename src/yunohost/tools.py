@@ -178,7 +178,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     Keyword argument:
         domain -- YunoHost main domain
-        ignore_dyndns -- Do not subscribe domain to a DynDNS service
+        ignore_dyndns -- Do not subscribe domain to a DynDNS service (only
+        needed for nohost.me, noho.st domains)
         password -- YunoHost admin password
 
     """
@@ -203,6 +204,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
                 else:
                     raise MoulinetteError(errno.EEXIST,
                                           m18n.n('dyndns_unavailable'))
+            else:
+                dyndns = False
+    else:
+        dyndns = False
 
     logger.info(m18n.n('yunohost_installing'))
 
@@ -296,7 +301,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('service yunohost-firewall start')
 
     service_regen_conf(force=True)
-
     logger.success(m18n.n('yunohost_configured'))
 
 
@@ -416,7 +420,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                              apt.progress.base.InstallProgress())
             except Exception as e:
                 failure = True
-                logging.warning('unable to upgrade packages: %s' % str(e))
+                logger.warning('unable to upgrade packages: %s' % str(e))
                 logger.error(m18n.n('packages_upgrade_failed'))
             else:
                 logger.info(m18n.n('done'))
@@ -428,7 +432,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
             app_upgrade(auth)
         except Exception as e:
             failure = True
-            logging.warning('unable to upgrade apps: %s' % str(e))
+            logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_failed'))
 
     if not failure:
