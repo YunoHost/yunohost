@@ -1,3 +1,9 @@
+yunohost (2.5.3.1) testing; urgency=low
+
+  * super quickfix release for a typo that break LE certificates
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Tue, 10 Jan 2017 02:58:56 +0100
+
 yunohost (2.5.3) testing; urgency=low
 
   Love:
