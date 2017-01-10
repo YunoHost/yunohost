@@ -852,7 +852,7 @@ def _domain_is_resolved_locally(public_ip, domain):
         logger.debug("Couldn't get domain '%s' ip because: %s" % (domain, e))
         return False
 
-    logger.debug("Domain '%s' ip is %s, except it to be 127.0.0.1 or %s" % (domain, public_ip))
+    logger.debug("Domain '%s' ip is %s, except it to be 127.0.0.1 or %s" % (domain, ip, public_ip))
     return ip in ["127.0.0.1", public_ip]
 
 
