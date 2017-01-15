@@ -948,6 +948,11 @@ settings:
                     help: Default value to get if the key doesn't exist
                     extra:
                         required: True
+                -n:
+                    full: --namespace
+                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
+                    extra:
+                        required: True
 
         ### settings_set()
         set:
@@ -961,6 +966,11 @@ settings:
                     help: new value
                     extra:
                         required: True
+                -n:
+                    full: --namespace
+                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
+                    extra:
+                        required: True
 
         ### settings_exists()
         exists:
@@ -969,6 +979,11 @@ settings:
             arguments:
                 key:
                     help: Settings key
+                -n:
+                    full: --namespace
+                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
+                    extra:
+                        required: True
 
         ### settings_remove()
         remove:
@@ -980,6 +995,11 @@ settings:
                 -s:
                     full: --fail-silently
                     help: Don't return 1 if the entry doesn't exists
+                -n:
+                    full: --namespace
+                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
+                    extra:
+                        required: True
 
 #############################
 #         Service           #

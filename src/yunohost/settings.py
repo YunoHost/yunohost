@@ -11,33 +11,36 @@ DEFAULT_VALUES = {
 }
 
 
-def settings_get(key, default):
-    return _get_settings().get(key, default)
+def settings_get(key, default, namespace):
+    return _get_settings().get(namespace, {}).get(key, default)
 
 
-def settings_list():
-    return _get_settings()
+def settings_list(namespace=None):
+    if namespace is not None:
+        return _get_settings().get(namespace, {})
+    else:
+        return _get_settings()
 
 
-def settings_exists(key):
+def settings_exists(key, namespace):
     # is returning a python boolean the moulinette way of doing this?
     # looks weird
-    return key in _get_settings()
+    return key in _get_settings().get(namespace, {})
 
 
-def settings_set(key, value):
+def settings_set(key, value, namespace):
     settings = _get_settings()
 
-    settings[key] = value
+    settings.setdefault(namespace, {})[key] = value
 
     _save_settings(settings)
 
 
-def settings_remove(key, fail_silently=False):
+def settings_remove(key, namespace, fail_silently=False):
     settings = _get_settings()
 
-    if key in settings:
-        del settings[key]
+    if key in settings.get(namespace, {}):
+        del settings.get(namespace, {})[key]
     elif not fail_silently:
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'global_settings_key_doesnt_exists', settings_key=key))
