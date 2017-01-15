@@ -935,6 +935,10 @@ settings:
         list:
             action_help: list all entries of the settings
             api: GET /settings
+            arguments:
+                -n:
+                    full: --namespace
+                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
 
         ### settings_get()
         get:
