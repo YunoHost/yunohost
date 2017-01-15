@@ -21,6 +21,8 @@ def settings_list():
 
 
 def settings_exists(key):
+    # is returning a python boolean the moulinette way of doing this?
+    # looks weird
     return key in _get_settings()
 
 
