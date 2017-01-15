@@ -999,6 +999,7 @@ settings:
                 -s:
                     full: --fail-silently
                     help: Don't return 1 if the entry doesn't exists
+                    action: store_true
                 -n:
                     full: --namespace
                     help: 'The namespace in which the settings is stored (eg: "ssl"))'
