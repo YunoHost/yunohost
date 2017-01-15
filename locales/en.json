@@ -109,6 +109,7 @@
     "firewall_rules_cmd_failed": "Some firewall rules commands have failed. For more information, see the log",
     "format_datetime_short": "%m/%d/%Y %I:%M %p",
     "global_settings_cant_open_settings": "Failed to open settings file, reason: {reason:s}",
+    "global_settings_cant_serialize_setings": "Failed to serialzed settings data, reason: {reason:s}",
     "global_settings_cant_write_settings": "Failed to write settings file, reason: {reason:s}",
     "global_settings_key_doesnt_exists": "The key '{settings_key:s}' doesn't exists in the global settings, you can see all the available keys by doing 'yunohost settings list",
     "global_settings_namespace_is_empty": "The namespace '{namespace:s}' is empty or doesn't exists in the global settings",
