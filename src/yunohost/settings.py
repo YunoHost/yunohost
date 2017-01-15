@@ -69,7 +69,7 @@ def _get_settings():
         with open(SETTINGS_PATH) as settings_fd:
             settings.update(yaml.load(settings_fd))
     except Exception as e:
-        raise MoulinetteError(m18n.n('global_settings_cant_open_settings', reason=e),
+        raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
                               exc_info=1)
 
     return settings
@@ -79,12 +79,13 @@ def _save_settings(settings):
     try:
         result = yaml.dump(settings, default_flow_style=False)
     except Exception as e:
-        raise MoulinetteError(m18n.n('global_settings_cant_serialize_setings', reason=e),
+        raise MoulinetteError(errno.EINVAL, m18n.n('global_settings_cant_serialize_setings',
+                                                   reason=e),
                               exc_info=1)
 
     try:
         with open(SETTINGS_PATH, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
-        raise MoulinetteError(m18n.n('global_settings_cant_write_settings', reason=e),
+        raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_write_settings', reason=e),
                               exc_info=1)
