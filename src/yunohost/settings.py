@@ -1,5 +1,8 @@
 import os
 import yaml
+import errno
+
+from moulinette.core import MoulinetteError
 
 
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
@@ -32,7 +35,11 @@ def settings_set(key, value):
 def settings_remove(key, fail_silently=False):
     settings = _get_settings()
 
-    del settings[key]
+    if key in settings:
+        del settings[key]
+    elif not fail_silently:
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'global_settings_key_doesnt_exists', settings_key=key))
 
     _save_settings(settings)
 
