@@ -47,8 +47,6 @@ def settings_remove(key, namespace, fail_silently=False):
 
     _save_settings(settings)
 
-    return "ok"
-
 
 def _get_settings():
     settings = DEFAULT_VALUES.copy()
