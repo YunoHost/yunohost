@@ -65,9 +65,12 @@ def _get_settings():
     if not os.path.exists(SETTINGS_PATH):
         return settings
 
-    # TODO error handling
-    with open(SETTINGS_PATH) as settings_fd:
-        settings.update(yaml.load(settings_fd))
+    try:
+        with open(SETTINGS_PATH) as settings_fd:
+            settings.update(yaml.load(settings_fd))
+    except Exception as e:
+        raise MoulinetteError(m18n.n('global_settings_cant_open_settings', reason=e),
+                              exc_info=1)
 
     return settings
 
