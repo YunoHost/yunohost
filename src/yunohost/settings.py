@@ -25,9 +25,9 @@ def settings_list(namespace=None):
         return {}
 
     if namespace is not None:
-        return _get_settings().get(namespace, {})
-    else:
-        return _get_settings()
+        return settings.get(namespace, {})
+
+    return settings
 
 
 def settings_exists(key, namespace):
