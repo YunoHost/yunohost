@@ -79,5 +79,9 @@ def _save_settings(settings):
     # TODO error handling
     result = yaml.dump(settings, default_flow_style=False)
 
-    with open(SETTINGS_PATH, "w") as settings_fd:
-        settings_fd.write(result)
+    try:
+        with open(SETTINGS_PATH, "w") as settings_fd:
+            settings_fd.write(result)
+    except Exception as e:
+        raise MoulinetteError(m18n.n('global_settings_cant_write_settings', reason=e),
+                              exc_info=1)
