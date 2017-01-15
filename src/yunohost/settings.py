@@ -28,8 +28,6 @@ def settings_set(key, value):
 
     _save_settings(settings)
 
-    return "ok"
-
 
 def settings_remove(key, fail_silently=False):
     settings = _get_settings()
