@@ -956,8 +956,11 @@ settings:
             arguments:
                 key:
                     help: Settings key
-                value:
+                -v:
+                    full: --value
                     help: new value
+                    extra:
+                        required: True
 
         ### settings_exists()
         exists:
