@@ -8,7 +8,6 @@ from moulinette.core import MoulinetteError
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
 
 DEFAULT_VALUES = {
-    "example": "value",
 }
 
 
