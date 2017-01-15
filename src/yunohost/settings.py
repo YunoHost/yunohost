@@ -45,6 +45,9 @@ def settings_remove(key, namespace, fail_silently=False):
 
     del settings[namespace][key]
 
+    if not settings[namespace]:
+        del settings[namespace]
+
     _save_settings(settings)
 
 
