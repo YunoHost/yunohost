@@ -31,7 +31,7 @@ def settings_set(key, value):
     return "ok"
 
 
-def settings_remove(key, silently_fail=False):
+def settings_remove(key, fail_silently=False):
     settings = _get_settings()
 
     del settings[key]
