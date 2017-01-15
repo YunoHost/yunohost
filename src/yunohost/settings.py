@@ -3,7 +3,9 @@ import yaml
 import errno
 
 from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
 
+logger = getActionLogger('yunohost.settings')
 
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
 
@@ -16,6 +18,12 @@ def settings_get(key, default, namespace):
 
 
 def settings_list(namespace=None):
+    settings = _get_settings()
+
+    if namespace is not None and not settings.get(namespace, {}):
+        logger.warning(m18n.n('global_settings_namespace_is_empty', namespace=namespace))
+        return {}
+
     if namespace is not None:
         return _get_settings().get(namespace, {})
     else:
