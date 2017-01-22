@@ -1,0 +1,15 @@
+# Check the path syntax
+# Check the slash at the beginning of path and its absence at ending
+#
+# example: ynh_check_path
+#
+# usage: ynh_check_path
+ynh_check_path () {
+	test -n "$path" || ynh_die "The path variable is empty."
+	if [ "${path:0:1}" != "/" ]; then    # If the first character is a /
+		path="/$path"    # Add / at begin of path variable
+	fi
+	if [ "${path:${#path}-1}" == "/" ] && [ ${#path} -gt 1 ]; then    # If the last character is a / and that not the only character.
+		path="${path:0:${#path}-1}"	# Delete the last character
+	fi
+}
