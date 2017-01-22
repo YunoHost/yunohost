@@ -14,7 +14,11 @@ ynh_app_setting_get() {
 # | arg: key - the setting name to set
 # | arg: value - the setting value to set
 ynh_app_setting_set() {
-    sudo yunohost app setting "$1" "$2" -v "$3" --quiet
+    if [ $3 == "-d" ]; then
+        sudo yunohost app setting "$1" "$2" -d --quiet
+    else
+        sudo yunohost app setting "$1" "$2" -v "$3" --quiet
+    fi
 }
 
 # Delete an application setting
