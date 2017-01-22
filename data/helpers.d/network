@@ -37,3 +37,13 @@ ynh_find_port () {
 	done
 	echo $port
 }
+
+# Check availability of a web path
+#
+# example: ynh_path_validity $domain$path
+#
+# usage: ynh_path_validity $domain_and_path
+# | arg: domain_and_path - complete path to check
+ynh_path_validity () {
+	sudo yunohost app checkurl $1 -a $app
+}
