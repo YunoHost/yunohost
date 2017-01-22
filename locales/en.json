@@ -63,7 +63,7 @@
     "backup_output_directory_required": "You must provide an output directory for the backup",
     "backup_running_app_script": "Running backup script of app '{app:s}'...",
     "backup_running_hooks": "Running backup hooks...",
-    "custom_app_url_required": "You must provide a URL to upgrade your custom app {app:s}",
+    "custom_app_url_required": "You must provide an URL to upgrade custom app {app:s}",
     "custom_appslist_name_required": "You must provide a name for your custom app list",
     "diagnostic_debian_version_error": "Can't retrieve the Debian version: {error}",
     "diagnostic_kernel_version_error": "Can't retrieve kernel version: {error}",
