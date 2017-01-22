@@ -90,3 +90,38 @@ ynh_mysql_create_user() {
 ynh_mysql_drop_user() {
     ynh_mysql_execute_as_root "DROP USER '${1}'@'localhost';"
 }
+
+# Create a database, an user and its password. Then store the password in the app's config
+#
+# User of database will be store in db_user's variable.
+# Name of database will be store in db_name's variable.
+# And password in db_pwd's variable.
+#
+# usage: ynh_mysql_generate_db user name
+# | arg: user - Proprietary of the database
+# | arg: name - Name of the database
+ynh_mysql_generate_db () {
+	db_user=${1//[-.]/_}	# Mariadb doesn't support - and . in the name of databases. It will be replace by _
+	db_name=${2//[-.]/_}
+
+	db_pwd=$(ynh_string_random)	# Generate a random password
+
+	ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
+
+	ynh_app_setting_set $app mysqlpwd $db_pwd	# Store the password in the app's config
+}
+
+# Remove a database if it exist and the associated user
+#
+# usage: ynh_mysql_remove_db user name
+# | arg: user - Proprietary of the database
+# | arg: name - Name of the database
+ynh_mysql_remove_db () {
+	if mysqlshow -u root -p$(sudo cat $MYSQL_ROOT_PWD_FILE) | grep -q "^| $2"; then	# Check if the database exist
+		echo "Remove database $2" >&2
+		ynh_mysql_drop_db $2	# Remove the database
+		ynh_mysql_drop_user $1	# Remove the associated user to database
+	else
+		echo "Database $2 not found" >&2
+	fi
+}
