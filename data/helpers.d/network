@@ -6,7 +6,7 @@
 # usage: ynh_check_path
 ynh_check_path () {
 	test -n "$path" || ynh_die "The path variable is empty."
-	if [ "${path:0:1}" != "/" ]; then    # If the first character is a /
+	if [ "${path:0:1}" != "/" ]; then    # If the first character is not a /
 		path="/$path"    # Add / at begin of path variable
 	fi
 	if [ "${path:${#path}-1}" == "/" ] && [ ${#path} -gt 1 ]; then    # If the last character is a / and that not the only character.
