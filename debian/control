@@ -16,12 +16,12 @@ Depends: ${python:Depends}, ${misc:Depends}
  , glances
  , dnsutils, bind9utils, unzip, git, curl, cron
  , ca-certificates, netcat-openbsd, iproute
- , mariadb-server | mysql-server, php5-mysql | php5-mysqlnd
+ , mariadb-server | mysql-server, php5-mysql | php5-mysqlnd | php-mysql | php-mysqlnd
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, nscd
  , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
  , dovecot-antispam, fail2ban
- , nginx-extras (>=1.6.2), php5-fpm, php5-ldap, php5-intl
+ , nginx-extras (>=1.6.2), php5-fpm | php-fpm, php5-ldap | php-ldap, php5-intl | php-intl
  , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , metronome
  , rspamd (>= 1.2.0), rmilter (>=1.7.0), redis-server, opendkim-tools
@@ -29,7 +29,7 @@ Depends: ${python:Depends}, ${misc:Depends}
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog, etckeeper
- , php5-gd, php5-curl, php-gettext, php5-mcrypt
+ , php5-gd | php-gd, php5-curl | php-curl, php5-gettext | php-gettext, php5-mcrypt | php-mcrypt
  , python-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
