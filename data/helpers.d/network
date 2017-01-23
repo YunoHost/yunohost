@@ -7,7 +7,7 @@
 ynh_find_port () {
 	port=$(echo "$1" | sed 's/[^0-9]//g')	# Eliminate all non-digit characters
 	test -n "$port" || ynh_die "The argument of ynh_find_port must be a valid port."
-	while ! sudo yunohost app checkport $port --quiet       # Check if the port is free
+	while netcat -z 127.0.0.1 $port       # Check if the port is free
 	do
 		port=$((port+1))	# Else, pass to next port
 	done
