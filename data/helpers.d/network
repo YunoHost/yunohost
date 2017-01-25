@@ -1,13 +1,17 @@
-# Normalize the path syntax
-# Check the slash at the beginning of path and its absence at ending
+# Normalize the url path syntax
+# Handle the slash at the beginning of path and its absence at ending
+# Return a normalized url path
 #
-# example: path=$(ynh_normalize_path $path)
+# example: url_path=$(ynh_normalize_url_path $url_path)
+#          ynh_normalize_url_path example -> /example
+#          ynh_normalize_url_path /example -> /example
+#          ynh_normalize_url_path /example/ -> /example
 #
-# usage: ynh_normalize_path path_to_normalize
-# | arg: path_to_normalize - Path to normalize before using it
-ynh_normalize_path () {
+# usage: ynh_normalize_url_path path_to_normalize
+# | arg: url_path_to_normalize - URL path to normalize before using it
+ynh_normalize_url_path () {
 	path=$1
-	test -n "$path" || ynh_die "The path variable is empty."
+	test -n "$path" || ynh_die "ynh_normalize_url_path expect a URL path as first argument and received nothing."
 	if [ "${path:0:1}" != "/" ]; then    # If the first character is not a /
 		path="/$path"    # Add / at begin of path variable
 	fi
