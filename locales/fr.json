@@ -273,5 +273,9 @@
     "domain_cannot_remove_main": "Impossible de retirer le domaine principal. Définissez un nouveau domaine principal au préalable.",
     "certmanager_self_ca_conf_file_not_found": "Le fichier de configuration pour l’autorité du certificat auto-signé est introuvable (fichier : {file:s})",
     "certmanager_unable_to_parse_self_CA_name": "Impossible d’analyser le nom de l’autorité du certificat auto-signé (fichier : {file:s})",
-    "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la messagerie"
+    "mailbox_used_space_dovecot_down": "Le service de mail Dovecot doit être démarré, si vous souhaitez voir l'espace disque occupé par la messagerie",
+    "domains_available": "Domaines disponibles :",
+    "backup_archive_broken_link": "Impossible d'accéder à l'archive de la sauvegarde (lien cassé à {path:s})",
+    "certmanager_acme_not_configured_for_domain": "Le certificat du domaine {domain:s} ne semble pas être correctement installé. Veuillez préalablement exécuter cert-install pour ce domaine.",
+    "certmanager_domain_not_resolved_locally": "Le domaine {domain:s} ne peut être déterminé depuis votre serveur YunoHost. Cela peut arriver si vous avez récemment modifié votre enregistrement DNS. Auquel cas, merci d’attendre quelques heures qu’il se propage. Si le problème persiste, envisager d’ajouter {domain:s} au fichier /etc/hosts. (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces vérifications.)"
 }
