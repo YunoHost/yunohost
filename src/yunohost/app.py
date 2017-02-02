@@ -24,10 +24,8 @@
     Manage apps
 """
 import os
-import sys
 import json
 import shutil
-import stat
 import yaml
 import time
 import re
@@ -101,7 +99,7 @@ def app_fetchlist(url=None, name=None):
                                   m18n.n('custom_appslist_name_required'))
 
     list_file = '%s/%s.json' % (repo_path, name)
-    if os.system('wget "%s" -O "%s.tmp"' % (url, list_file)) != 0:
+    if os.system('wget --timeout=30 "%s" -O "%s.tmp"' % (url, list_file)) != 0:
         os.remove('%s.tmp' % list_file)
         raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
 
@@ -440,7 +438,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.success(m18n.n('upgrade_complete'))
 
 
-def app_install(auth, app, label=None, args=None):
+def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
 
@@ -448,6 +446,7 @@ def app_install(auth, app, label=None, args=None):
         app -- Name, local path or git URL of the app to install
         label -- Custom name for the app
         args -- Serialize arguments for app installation
+        no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
@@ -541,19 +540,20 @@ def app_install(auth, app, label=None, args=None):
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
-            # Setup environment for remove script
-            env_dict_remove = {}
-            env_dict_remove["YNH_APP_ID"] = app_id
-            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            if not no_remove_on_failure:
+                # Setup environment for remove script
+                env_dict_remove = {}
+                env_dict_remove["YNH_APP_ID"] = app_id
+                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
-            # Execute remove script
-            remove_retcode = hook_exec(
-                os.path.join(extracted_app_folder, 'scripts/remove'),
-                args=[app_instance_name], env=env_dict_remove)
-            if remove_retcode != 0:
-                logger.warning(m18n.n('app_not_properly_removed',
-                                      app=app_instance_name))
+                # Execute remove script
+                remove_retcode = hook_exec(
+                    os.path.join(extracted_app_folder, 'scripts/remove'),
+                    args=[app_instance_name], env=env_dict_remove)
+                if remove_retcode != 0:
+                    logger.warning(m18n.n('app_not_properly_removed',
+                                          app=app_instance_name))
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
@@ -811,6 +811,9 @@ def app_makedefault(auth, app, domain=None):
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
+    except ValueError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
     except IOError:
         ssowat_conf = {}
 
@@ -819,8 +822,13 @@ def app_makedefault(auth, app, domain=None):
 
     ssowat_conf['redirected_urls'][domain +'/'] = app_domain + app_path
 
-    with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-        json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    try:
+        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
+            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    except IOError as e:
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -909,10 +917,6 @@ def app_checkurl(auth, url, app=None):
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
     if domain in apps_map:
-        # Domain already has apps on sub path
-        if path == '/':
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('app_location_install_failed'))
         # Loop through apps
         for p, a in apps_map[domain].items():
             # Skip requested app checking
@@ -922,7 +926,7 @@ def app_checkurl(auth, url, app=None):
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('app_location_already_used'))
-            elif path.startswith(p):
+            elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('app_location_install_failed'))
 
@@ -991,7 +995,6 @@ def app_ssowatconf(auth):
     redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
     redirected_urls ={}
 
-    apps = {}
     try:
         apps_list = app_list()['apps']
     except:
@@ -1008,19 +1011,19 @@ def app_ssowatconf(auth):
                 for item in _get_setting(app_settings, 'skipped_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    skipped_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'skipped_regex'):
                     skipped_regex.append(item)
                 for item in _get_setting(app_settings, 'unprotected_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    unprotected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'unprotected_regex'):
                     unprotected_regex.append(item)
                 for item in _get_setting(app_settings, 'protected_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    protected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'protected_regex'):
                     protected_regex.append(item)
                 if 'redirected_urls' in app_settings:
@@ -1030,6 +1033,9 @@ def app_ssowatconf(auth):
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
+
+    # Authorize ACME challenge url
+    skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -1259,8 +1265,13 @@ def _fetch_app_from_git(app):
                 url = url[:tree_index]
                 branch = app[tree_index+6:]
             try:
+                # We use currently git 2.1 so we can't use --shallow-submodules
+                # option. When git will be in 2.9 (with the new debian version)
+                # we will be able to use it. Without this option all the history
+                # of the submodules repo is downloaded.
                 subprocess.check_call([
-                    'git', 'clone', '--depth=1', url, extracted_app_folder])
+                    'git', 'clone', '--depth=1', '--recursive', url,
+                    extracted_app_folder])
                 subprocess.check_call([
                         'git', 'reset', '--hard', branch
                     ], cwd=extracted_app_folder)
@@ -1486,7 +1497,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_info
 
     args_dict = OrderedDict()
@@ -1525,6 +1536,13 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
 
                     # Check for a password argument
                     is_password = True if arg_type == 'password' else False
+
+                    if arg_type == 'domain':
+                        arg_default = _get_maindomain()
+                        ask_string += ' (default: {0})'.format(arg_default)
+                        msignals.display(m18n.n('domains_available'))
+                        for domain in domain_list(auth)['domains']:
+                            msignals.display("- {}".format(domain))
 
                     try:
                         input_string = msignals.prompt(ask_string, is_password)

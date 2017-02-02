@@ -17,7 +17,7 @@ ynh_backup() {
 
     # validate arguments
     [[ -e "${SRCPATH}" ]] || {
-        echo "Source path '${DESTPATH}' does not exist" >&2
+        echo "Source path '${SRCPATH}' does not exist" >&2
         return 1
     }
 

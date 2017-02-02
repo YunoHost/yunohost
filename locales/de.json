@@ -209,5 +209,14 @@
     "yunohost_ca_creation_failed": "Zertifikatsstelle konnte nicht erstellt werden",
     "yunohost_configured": "YunoHost wurde erfolgreich konfiguriert",
     "yunohost_installing": "YunoHost wird installiert...",
-    "yunohost_not_installed": "Die YunoHost ist unvollständig. Bitte 'yunohost tools postinstall' ausführen."
+    "yunohost_not_installed": "Die YunoHost ist unvollständig. Bitte 'yunohost tools postinstall' ausführen.",
+    "app_not_properly_removed": "{app:s} wurde nicht ordnungsgemäß entfernt",
+    "service_regenconf_failed": "Konnte die Konfiguration für folgende Dienste nicht neu erzeugen: {services}",
+    "not_enough_disk_space": "Zu wenig Speicherplatz unter '{path:s}' verfügbar",
+    "backup_creation_failed": "Erzeugung des Backups fehlgeschlagen",
+    "service_conf_up_to_date": "Die Konfiguration für den Dienst '{service}' ist bereits aktuell",
+    "package_not_installed": "Paket '{pkgname}' ist nicht installiert",
+    "pattern_positive_number": "Muss eine positive Zahl sein",
+    "diagnostic_kernel_version_error": "Kann Kernelversion nicht abrufen: {error}",
+    "package_unexpected_error": "Ein unerwarteter Fehler trat bei der Verarbeitung des Pakets '{pkgname}' auf"
 }
