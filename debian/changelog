@@ -1,3 +1,173 @@
+yunohost (2.5.4) stable; urgency=low
+
+  [ Maniack Crudelis ]
+  * Remove helper ynh_mkdir_tmp
+  * Update filesystem
+
+  [ opi ]
+  * [enh] Add warning about deprecated ynh_mkdir_tmp helper
+  * [enh] Increase fail2ban maxretry on user login, narrow nginx log files
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Jean-Baptiste Holcroft ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Laurent Peuch ]
+  * [mod] start putting timeout in certificate code
+
+  [ Alexandre Aubin ]
+  * Implement timeout exceptions
+  * Implementing opi's comments
+
+  [ JimboJoe ]
+  * ynh_backup: Fix error message when source path doesn't exist
+
+  [ paddy ]
+  * [i18n] Translated using Weblate (Spanish)
+  * [i18n] Translated using Weblate (French)
+
+ -- opi <opi@zeropi.net>  Thu, 02 Feb 2017 11:24:55 +0100
+
+yunohost (2.5.3.1) testing; urgency=low
+
+  * super quickfix release for a typo that break LE certificates
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Tue, 10 Jan 2017 02:58:56 +0100
+
+yunohost (2.5.3) testing; urgency=low
+
+  Love:
+  * [enh][love] Add CONTRIBUTORS.md
+
+  LE:
+  * Check acme challenge conf exists in nginx when renewing cert
+  * Fix bad validity check..
+
+  Fix a situation where to domain for the LE cert can't be locally resolved:
+  * Adding check that domain is resolved locally for cert management
+  * Changing the way to check domain is locally resolved
+
+  Fix a situation where a cert could end up with bad perms for metronome:
+  * Attempt to fix missing perm for metronome in weird cases
+
+  Rspamd cannot be activate on socket anymore:
+  * [fix] new rspamd version replace rspamd.socket with rspamd.service
+  * [fix] Remove residual rmilter socket file
+  * [fix] Postfix can't access rmilter socket due to chroot
+
+  Various:
+  * fix fail2ban rules to take into account failed loggin on ssowat
+  * [fix] Ignore dyndns option is not needed with small domain
+  * [enh] add yaml syntax check in travis.yml
+  * [mod] autopep8 on all files that aren't concerned by a PR
+  * [fix] add timeout to fetchlist's wget
+
+  Thanks to all contributors: Aleks, Bram, ju, ljf, opi, zimo2001 and to the
+  people who are participating to the beta and giving us feedback <3
+
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Mon, 09 Jan 2017 18:38:30 +0100
+
+yunohost (2.5.2) testing; urgency=low
+
+  LDAP admin user:
+  * [fix] wait for admin user to be available after a slapd regen-conf, this fix install on slow hardware/vps
+
+  Dovecot/emails:
+  * [enh] reorder dovecot main configuration so that it is easier to read and extend
+  * [enh] Allow for dovecot configuration extensions
+  * [fix] Can't get mailbos used space if dovecot is down
+
+  Backup:
+  * [fix] Need to create archives_path even for custom output directory
+  * Keep track of backups with custom directory using symlinks
+
+  Security:
+  * [fix] Improve dnssec key generation on low entropy devices
+  * [enh] Add haveged as dependency
+
+  Random broken app installed on slow hardware:
+  * [enh] List available domains when installing an app by CLI.
+
+  Translation:
+  * French by Jibec and Genma
+  * German by Philip Gatzka
+  * Hindi by Anmol
+  * Spanish by Juanu
+
+  Other fixes and improvements:
+  * [enh] remove timeout from cli interface
+  * [fix] [#662](https://dev.yunohost.org/issues/662): missing 'python-openssl' dependency for Let's Encrypt integration.
+  * [fix] --no-remove-on-failure for app install should behave as a flag.
+  * [fix] don't remove trailing char if it's not a slash
+
+  Thanks to all contributors: Aleks, alex, Anmol, Bram, Genma, jibec, ju,
+  Juanu, ljf, Moul, opi, Philip Gatzka and to the people who are participating
+  to the beta and giving us feedback <3
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Fri, 16 Dec 2016 00:49:08 +0100
+
+yunohost (2.5.1) testing; urgency=low
+
+  * [fix] Raise error on malformed SSOwat persistent conf.
+  * [enh] Catch SSOwat persistent configuration write error.
+  * [fix] Write SSOwat configuration file only if needed.
+  * [enh] Display full exception error message.
+  * [enh] cli option to avoid removing an application on installation failure
+  * [mod] give instructions on how to solve the conf.json.persistant parsing error
+  * [fix] avoid random bug on post-install due to nscd cache
+  * [enh] Adding check that user is actually created + minor refactor of ldap/auth init
+  * [fix] Fix the way name of self-CA is determined
+  * [fix] Add missing dependency to nscd package #656
+  * [fix] Refactoring tools_maindomain and disabling removal of main domain to avoid breaking things
+  * [fix] Bracket in passwd from ynh_string_random
+
+  Thanks to all contributors: Aleks, Bram, ju, jibec, ljf, M5oul, opi
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Sun, 11 Dec 2016 15:26:21 +0100
+
+yunohost (2.5.0) testing; urgency=low
+
+  * Certificate management integration (e.g. Let's Encrypt certificate install)
+  * [fix] Support git ynh app with submodules #533 (#174)
+  * [enh] display file path on file_not_exist error
+  * [mod] move a part of os.system calls to native shutil/os
+  * [fix] Can't restore app on a root domain
+
+  Miscellaneous
+
+  * Update backup.py
+  * [mod] autopep8
+  * [mod] trailing spaces
+  * [mod] pep8
+  * [mod] remove useless imports
+  * [mod] more pythonic and explicit tests with more verbose errors
+  * [fix] correctly handle all cases
+  * [mod] simplier condition
+  * [fix] uses https
+  * [mod] uses logger string concatenation api
+  * [mod] small opti, getting domain list can be slow
+  * [mod] pylint
+  * [mod] os.path.join
+  * [mod] remove useless assign
+  * [enh] include tracebak into error email
+  * [mod] remove the summary code concept and switch to code/verbose duet instead
+  * [mod] I only need to reload nginx, not restart it
+  * [mod] top level constants should be upper case (pep8)
+  * Check that the DNS A record matches the global IP now using dnspython and FDN's DNS
+  * Refactored the self-signed cert generation, some steps were overly complicated for no reason
+  * Using a single generic skipped regex for acme challenge in ssowat conf
+  * Adding an option to use the staging Let's Encrypt CA, sort of a dry-run
+  * [enh] Complete readme (#183)
+  * [fix] avoid reverse order log display on web admin
+
+  Thanks to all contributors: Aleks, Bram, JimboJoe, ljf, M5oul
+  Kudos to Aleks for leading the Let's Encrypt integration to YunoHost core \o/
+
+ -- opi <opi@zeropi.net>  Thu, 01 Dec 2016 21:22:19 +0100
+
 yunohost (2.4.2) stable; urgency=low
 
   [ Laurent Peuch ]

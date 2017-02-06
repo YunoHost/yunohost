@@ -36,7 +36,7 @@ from difflib import unified_diff
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
-from yunohost.hook import hook_list, hook_callback
+from yunohost.hook import hook_callback
 
 
 base_conf_path = '/home/yunohost.conf'
@@ -60,9 +60,9 @@ def service_add(name, status=None, log=None, runlevel=None):
     services = _get_services()
 
     if not status:
-        services[name] = { 'status': 'service' }
+        services[name] = {'status': 'service'}
     else:
-        services[name] = { 'status': status }
+        services[name] = {'status': status}
 
     if log is not None:
         services[name]['log'] = log
@@ -202,7 +202,7 @@ def service_status(names=[]):
 
         status = None
         if 'status' not in services[name] or \
-          services[name]['status'] == 'service':
+                services[name]['status'] == 'service':
             status = 'service %s status' % name
         else:
             status = str(services[name]['status'])
@@ -211,7 +211,7 @@ def service_status(names=[]):
         if 'runlevel' in services[name].keys():
             runlevel = int(services[name]['runlevel'])
 
-        result[name] = { 'status': 'unknown', 'loaded': 'unknown' }
+        result[name] = {'status': 'unknown', 'loaded': 'unknown'}
 
         # Retrieve service status
         try:
@@ -261,7 +261,7 @@ def service_log(name, number=50):
 
         for log_path in log_list:
             if os.path.isdir(log_path):
-                for log in [ f for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f)) and f[-4:] == '.log' ]:
+                for log in [f for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f)) and f[-4:] == '.log']:
                     result[os.path.join(log_path, log)] = _tail(os.path.join(log_path, log), int(number))
             else:
                 result[log_path] = _tail(log_path, int(number))
@@ -314,13 +314,14 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     common_args = [1 if force else 0, 1 if dry_run else 0]
 
     # Execute hooks for pre-regen
-    pre_args = ['pre',] + common_args
+    pre_args = ['pre', ] + common_args
+
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(pending_conf_dir, name)
         filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
         # return the arguments to pass to the script
-        return pre_args + [service_pending_path,]
+        return pre_args + [service_pending_path, ]
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Update the services name
@@ -336,8 +337,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
         logger.info(m18n.n(
-            'service_regenconf_pending_applying' if not dry_run else \
-                'service_regenconf_dry_pending_applying',
+            'service_regenconf_pending_applying' if not dry_run else
+            'service_regenconf_dry_pending_applying',
             service=service))
 
         conf_hashes = _get_conf_hashes(service)
@@ -444,8 +445,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
             continue
         elif not failed_regen:
             logger.success(m18n.n(
-                'service_conf_updated' if not dry_run else \
-                    'service_conf_would_be_updated',
+                'service_conf_updated' if not dry_run else
+                'service_conf_would_be_updated',
                 service=service))
         if succeed_regen and not dry_run:
             _update_conf_hashes(service, conf_hashes)
@@ -461,14 +462,15 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         return result
 
     # Execute hooks for post-regen
-    post_args = ['post',] + common_args
+    post_args = ['post', ] + common_args
+
     def _pre_call(name, priority, path, args):
         # append coma-separated applied changes for the service
         if name in result and result[name]['applied']:
             regen_conf_files = ','.join(result[name]['applied'].keys())
         else:
             regen_conf_files = ''
-        return post_args + [regen_conf_files,]
+        return post_args + [regen_conf_files, ]
     hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     return result
@@ -556,7 +558,8 @@ def _tail(file, n, offset=None):
                     return lines[-to_read:offset and -offset or None]
                 avg_line_length *= 1.3
 
-    except IOError: return []
+    except IOError:
+        return []
 
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
@@ -636,12 +639,17 @@ def _get_pending_conf(services=[]):
 
 def _get_conf_hashes(service):
     """Get the registered conf hashes for a service"""
-    try:
-        return _get_services()[service]['conffiles']
-    except:
-        logger.debug("unable to retrieve conf hashes for %s",
-                     service, exc_info=1)
+
+    services = _get_services()
+
+    if service not in services:
+        logger.debug("Service %s is not in services.yml yet.", service)
         return {}
+    elif 'conffiles' not in services[service]:
+        logger.debug("No configuration files for service %s.", service)
+        return {}
+    else:
+        return services[service]['conffiles']
 
 
 def _update_conf_hashes(service, hashes):

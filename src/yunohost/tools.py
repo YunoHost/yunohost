@@ -24,14 +24,13 @@
     Specific tools
 """
 import os
-import sys
 import yaml
-import re
-import getpass
 import requests
 import json
 import errno
 import logging
+import subprocess
+import pwd
 from collections import OrderedDict
 
 import apt
@@ -40,11 +39,11 @@ import apt.progress
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
-from yunohost.domain import domain_add, domain_list, get_public_ip
+from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import dyndns_subscribe
-from yunohost.firewall import firewall_upnp, firewall_reload
+from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log
-from yunohost.monitor import monitor_disk, monitor_network, monitor_system
+from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
 apps_setting_path= '/etc/yunohost/apps/'
@@ -52,22 +51,34 @@ apps_setting_path= '/etc/yunohost/apps/'
 logger = getActionLogger('yunohost.tools')
 
 
-def tools_ldapinit(auth):
+def tools_ldapinit():
     """
     YunoHost LDAP initialization
 
 
     """
+
+    # Instantiate LDAP Authenticator
+    auth = init_authenticator(('ldap', 'default'),
+                              {'uri': "ldap://localhost:389",
+                               'base_dn': "dc=yunohost,dc=org",
+                               'user_rdn': "cn=admin" })
+    auth.authenticate('yunohost')
+
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
         ldap_map = yaml.load(f)
 
     for rdn, attr_dict in ldap_map['parents'].items():
-        try: auth.add(rdn, attr_dict)
-        except: pass
+        try:
+            auth.add(rdn, attr_dict)
+        except:
+            pass
 
     for rdn, attr_dict in ldap_map['children'].items():
-        try: auth.add(rdn, attr_dict)
-        except: pass
+        try:
+            auth.add(rdn, attr_dict)
+        except:
+            pass
 
     admin_dict = {
         'cn': 'admin',
@@ -83,8 +94,18 @@ def tools_ldapinit(auth):
 
     auth.update('cn=admin', admin_dict)
 
-    logger.success(m18n.n('ldap_initialized'))
+    # Force nscd to refresh cache to take admin creation into account
+    subprocess.call(['nscd', '-i', 'passwd'])
 
+    # Check admin actually exists now
+    try:
+        pwd.getpwnam("admin")
+    except KeyError:
+        logger.error(m18n.n('ldap_init_failed_to_create_admin'))
+        raise MoulinetteError(errno.EINVAL, m18n.n('installation_failed'))
+
+    logger.success(m18n.n('ldap_initialized'))
+    return auth
 
 def tools_adminpw(auth, new_password):
     """
@@ -104,56 +125,49 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-def tools_maindomain(auth, old_domain=None, new_domain=None, dyndns=False):
+def tools_maindomain(auth, new_domain=None):
     """
-    Main domain change tool
+    Check the current main domain, or change it
 
     Keyword argument:
-        new_domain
-        old_domain
+        new_domain -- The new domain to be set as the main domain
 
     """
-    if not old_domain:
-        with open('/etc/yunohost/current_host', 'r') as f:
-            old_domain = f.readline().rstrip()
 
-        if not new_domain:
-            return { 'current_main_domain': old_domain }
-
+    # If no new domain specified, we return the current main domain
     if not new_domain:
-        raise MoulinetteError(errno.EINVAL, m18n.n('new_domain_required'))
+        return {'current_main_domain': _get_maindomain()}
+
+    # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
-        domain_add(auth, new_domain)
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
-    os.system('rm /etc/ssl/private/yunohost_key.pem')
-    os.system('rm /etc/ssl/certs/yunohost_crt.pem')
+    # Apply changes to ssl certs
+    ssl_key = "/etc/ssl/private/yunohost_key.pem"
+    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
+    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_domain
+    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
 
-    command_list = [
-        'ln -s /etc/yunohost/certs/%s/key.pem /etc/ssl/private/yunohost_key.pem' % new_domain,
-        'ln -s /etc/yunohost/certs/%s/crt.pem /etc/ssl/certs/yunohost_crt.pem'   % new_domain,
-        'echo %s > /etc/yunohost/current_host' % new_domain,
-    ]
+    try:
+        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
+            os.remove(ssl_key)
+        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
+            os.remove(ssl_crt)
 
-    for command in command_list:
-        if os.system(command) != 0:
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('maindomain_change_failed'))
+        os.symlink(new_ssl_key, ssl_key)
+        os.symlink(new_ssl_crt, ssl_crt)
 
-    if dyndns and len(new_domain.split('.')) >= 3:
-        try:
-            r = requests.get('https://dyndns.yunohost.org/domains')
-        except requests.ConnectionError:
-            pass
-        else:
-            dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(new_domain.split('.')[1:])
-            if dyndomain in dyndomains:
-                dyndns_subscribe(domain=new_domain)
+        _set_maindomain(new_domain)
+    except Exception as e:
+        logger.warning("%s" % e, exc_info=1)
+        raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
+    # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
             service_regen_conf()
-    except IOError: pass
+    except IOError:
+        pass
 
     logger.success(m18n.n('maindomain_changed'))
 
@@ -164,7 +178,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     Keyword argument:
         domain -- YunoHost main domain
-        ignore_dyndns -- Do not subscribe domain to a DynDNS service
+        ignore_dyndns -- Do not subscribe domain to a DynDNS service (only
+        needed for nohost.me, noho.st domains)
         password -- YunoHost admin password
 
     """
@@ -182,25 +197,23 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         else:
             dyndomains = json.loads(r.text)
             dyndomain  = '.'.join(domain.split('.')[1:])
+
             if dyndomain in dyndomains:
                 if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
                     dyndns = True
                 else:
                     raise MoulinetteError(errno.EEXIST,
                                           m18n.n('dyndns_unavailable'))
+            else:
+                dyndns = False
+    else:
+        dyndns = False
 
     logger.info(m18n.n('yunohost_installing'))
 
-    # Instantiate LDAP Authenticator
-    auth = init_authenticator(('ldap', 'default'),
-                              {'uri': "ldap://localhost:389",
-                               'base_dn': "dc=yunohost,dc=org",
-                               'user_rdn': "cn=admin" })
-    auth.authenticate('yunohost')
-
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
-    tools_ldapinit(auth)
+    auth = tools_ldapinit()
 
     # Create required folders
     folders_to_create = [
@@ -212,8 +225,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     ]
 
     for folder in folders_to_create:
-        try: os.listdir(folder)
-        except OSError: os.makedirs(folder)
+        try:
+            os.listdir(folder)
+        except OSError:
+            os.makedirs(folder)
 
     # Change folders permissions
     os.system('chmod 755 /home/yunohost.app')
@@ -226,6 +241,9 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
+    except ValueError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
     except IOError:
         ssowat_conf = {}
 
@@ -234,8 +252,13 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     ssowat_conf['redirected_urls']['/'] = domain +'/yunohost/admin'
 
-    with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-        json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    try:
+        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
+            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    except IOError as e:
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -259,7 +282,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
                                   m18n.n('yunohost_ca_creation_failed'))
 
     # New domain config
-    tools_maindomain(auth, old_domain='yunohost.org', new_domain=domain, dyndns=dyndns)
+    domain_add(auth, domain, dyndns)
+    tools_maindomain(auth, domain)
 
     # Generate SSOwat configuration file
     app_ssowatconf(auth)
@@ -277,7 +301,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('service yunohost-firewall start')
 
     service_regen_conf(force=True)
-
     logger.success(m18n.n('yunohost_configured'))
 
 
@@ -298,6 +321,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
+
         logger.info(m18n.n('done'))
 
         cache.open(None)
@@ -345,7 +369,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     if len(apps) == 0 and len(packages) == 0:
         logger.info(m18n.n('packages_no_upgrade'))
 
-    return { 'packages': packages, 'apps': apps }
+    return {'packages': packages, 'apps': apps}
 
 
 def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
@@ -378,6 +402,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                     critical_upgrades.add(pkg.name)
                     # Temporarily keep package ...
                     pkg.mark_keep()
+
             # ... and set a hourly cron up to upgrade critical packages
             if critical_upgrades:
                 logger.info(m18n.n('packages_upgrade_critical_later',
@@ -387,6 +412,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
         if cache.get_changes():
             logger.info(m18n.n('upgrading_packages'))
+
             try:
                 # Apply APT changes
                 # TODO: Logs output for the API
@@ -394,7 +420,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                              apt.progress.base.InstallProgress())
             except Exception as e:
                 failure = True
-                logging.warning('unable to upgrade packages: %s' % str(e))
+                logger.warning('unable to upgrade packages: %s' % str(e))
                 logger.error(m18n.n('packages_upgrade_failed'))
             else:
                 logger.info(m18n.n('done'))
@@ -406,7 +432,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
             app_upgrade(auth)
         except Exception as e:
             failure = True
-            logging.warning('unable to upgrade apps: %s' % str(e))
+            logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_failed'))
 
     if not failure:
@@ -414,7 +440,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
 
     # Return API logs if it is an API call
     if is_api:
-        return { "log": service_log('yunohost-api', number="100").values()[0] }
+        return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
 def tools_diagnosis(auth, private=False):
@@ -473,6 +499,7 @@ def tools_diagnosis(auth, private=False):
     # Services status
     services = service_status()
     diagnosis['services'] = {}
+
     for service in services:
         diagnosis['services'][service] = "%s (%s)" % (services[service]['status'], services[service]['loaded'])
 
