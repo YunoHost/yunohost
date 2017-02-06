@@ -101,6 +101,7 @@ def app_fetchlist(url=None, name=None):
                               m18n.n('custom_appslist_name_required'))
 
     try:
+        logger.info("Fetching app list '%s' from %s ...", name, url)
         urlretrieve(url, '%s/%s.json' % (repo_path, name))
     except Exception as e:
         raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'), error=str(e))
