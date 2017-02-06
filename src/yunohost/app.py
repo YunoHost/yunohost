@@ -35,8 +35,8 @@ import socket
 import urlparse
 import errno
 import subprocess
+import requests
 from collections import OrderedDict
-from urllib import urlretrieve
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -100,12 +100,18 @@ def app_fetchlist(url=None, name=None):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('custom_appslist_name_required'))
 
+    # Download file
     try:
-        logger.info("Fetching app list '%s' from %s ...", name, url)
-        urlretrieve(url, '%s/%s.json' % (repo_path, name))
+        applist = requests.get(url, timeout=30).text
     except Exception as e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'), error=str(e))
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
 
+    # Write app list to file
+    list_file = '%s/%s.json' % (repo_path, name)
+    with open(list_file, "w") as f:
+        f.write(applist)
+
+    # Setup a cron job to re-fetch the list at midnight
     open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
     logger.success(m18n.n('appslist_fetched'))
