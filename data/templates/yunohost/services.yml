@@ -14,10 +14,10 @@ postfix:
    status: service
    log: [/var/log/mail.log,/var/log/mail.err]
 rmilter:
-   status: systemctl status rmilter.socket
+   status: systemctl status rmilter.service
    log: /var/log/mail.log
 rspamd:
-   status: systemctl status rspamd.socket
+   status: systemctl status rspamd.service
    log: /var/log/mail.log
 redis-server:
    status: service
