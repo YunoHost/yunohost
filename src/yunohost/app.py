@@ -354,6 +354,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
     elif not isinstance(app, list):
         app = [ app ]
 
+    logger.info("Will upgrade apps %s", ", ".join(app))
+
     for app_instance_name in app:
         installed = _is_installed(app_instance_name)
         if not installed:
