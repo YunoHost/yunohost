@@ -198,7 +198,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
             app_dict[app]['repository'] = None
 
     # ???
-    if not (len(app_dict) > (0 + offset) and limit > 0):
+    if not (len(app_dict) > offset and limit > 0):
         return {'apps': list_dict} if not raw else list_dict
 
     # Sort app list
