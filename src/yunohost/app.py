@@ -350,7 +350,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     # If no app is specified, upgrade all apps
     if not app:
         if (not url and not file):
-            app = os.listdir(apps_setting_path)
+            app = [ app["id"] for app in app_list(installed=True)["apps"] ]
     elif not isinstance(app, list):
         app = [ app ]
 
