@@ -201,20 +201,16 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
     if not (len(app_dict) > (0 + offset) and limit > 0):
         return {'apps': list_dict} if not raw else list_dict
 
-    # Build dict taking account of offset (ordered with sorted)
-    sorted_app_dict = {}
-    print( sorted(app_dict.keys())[offset:])
-    for sorted_keys in sorted(app_dict.keys())[offset:]:
-        sorted_app_dict[sorted_keys] = app_dict[sorted_keys]
+    # Sort app list
+    sorted_app_list = sorted(app_dict.keys())
+
+    # Take into account offset
+    sorted_app_list = sorted_app_list[offset:]
 
     i = 0
-    for app_id, app_info_dict in sorted_app_dict.items():
+    for app_id in sorted_app_list:
 
-        print(app_id)
-
-        # Apply limit
-        if i >= limit:
-            break
+        app_info_dict = app_dict[app_id]
 
         # Apply filter if there's one
         if (filter and
@@ -261,8 +257,11 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
                 'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
                 'installed': app_installed
             })
-        
+
+        # Count listed apps and apply limit
         i += 1
+        if i >= limit:
+            break
 
 
     return {'apps': list_dict} if not raw else list_dict
