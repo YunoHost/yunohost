@@ -184,23 +184,6 @@ def tools_maindomain(auth, new_domain=None):
         else:
             logger.info(out) 
 
-    # Add domain to /etc/hosts
-
-    ipv4line = False
-    ipv6line = False
-    with open("/etc/hosts", "r") as f :
-        for line in f.readlines() :
-            if (line.startswith("127.0.0.1 %s" % new_domain)) : 
-                ipv4line = True
-            if (line.startswith("::1 %s" % new_domain)) : 
-                ipv6line = True
-
-    with open("/etc/hosts", "a") as f :
-        if (not ipv4line) :
-            f.write("127.0.0.1 %s\n" % new_domain)
-        if (not ipv6line) :
-            f.write("::1 %s\n" % new_domain)
-
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
