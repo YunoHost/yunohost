@@ -171,6 +171,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         app_fetchlist()
         applists = app_listlists()['lists']
 
+    # Construct a dictionnary of apps, based on known app lists
     for applist in applists:
         with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
             for app, info in json.load(json_list).items():
@@ -180,42 +181,54 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
                 info['repository'] = applist
                 app_dict[app] = info
 
+    # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
         if app not in app_dict:
-            # Look for forks
+            # Handle multi-instance case like wordpress__2
             if '__' in app:
                 original_app = app[:app.index('__')]
                 if original_app in app_dict:
                     app_dict[app] = app_dict[original_app]
                     continue
-            with open( APPS_SETTING_PATH + app +'/manifest.json') as json_manifest:
-                app_dict[app] = {"manifest": json.loads(json_manifest)}
+                # FIXME : What if it's not !?!?
 
+            with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+                app_dict[app] = {"manifest": json.load(json_manifest)}
 
             app_dict[app]['repository'] = None
 
+    # ???
     if not (len(app_dict) > (0 + offset) and limit > 0):
         return {'apps': list_dict} if not raw else list_dict
 
+    # Build dict taking account of offset (ordered with sorted)
     sorted_app_dict = {}
+    print( sorted(app_dict.keys())[offset:])
     for sorted_keys in sorted(app_dict.keys())[offset:]:
         sorted_app_dict[sorted_keys] = app_dict[sorted_keys]
 
     i = 0
     for app_id, app_info_dict in sorted_app_dict.items():
+
+        print(app_id)
+
+        # Apply limit
         if i >= limit:
             break
 
-        if not ((filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter):
+        # Apply filter if there's one
+        if (filter and
+           (filter not in app_id) and
+           (filter not in app_info_dict['manifest']['name'])):
             continue
 
+        # Ignore non-installed app if user wants only installed apps
         app_installed = _is_installed(app_id)
-
-        # Only installed apps filter
         if installed and not app_installed:
             continue
 
-        # Filter only apps with backup and restore scripts
+        # Ignore apps which don't have backup/restore script if user wants
+        # only apps with backup features
         if with_backup and (
             not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
             not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
@@ -248,7 +261,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
                 'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
                 'installed': app_installed
             })
-
+        
         i += 1
 
 
