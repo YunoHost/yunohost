@@ -31,6 +31,7 @@
     "appslist_fetched": "The app list has been fetched",
     "appslist_removed": "The app list has been removed",
     "appslist_retrieve_error": "Unable to retrieve the remote app list: {error}",
+    "appslist_retrieve_bad_format": "Retrieved file is not a valid app list",
     "appslist_unknown": "Unknown app list",
     "ask_current_admin_password": "Current administration password",
     "ask_email": "Email address",

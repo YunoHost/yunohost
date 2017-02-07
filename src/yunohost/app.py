@@ -100,10 +100,22 @@ def app_fetchlist(url=None, name=None):
 
     # Download file
     try:
-        applist = requests.get(url, timeout=30).text
+        applist_request = requests.get(url, timeout=30)
     except Exception as e:
         raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
-        
+
+    if (applist_request.status_code != 200):
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+
+    # Validate app list format
+    # TODO / Possible improvement : better validation for app list (check that
+    # json fields actually look like an app list and not any json file)
+    applist = applist_request.text
+    try:
+        json.loads(applist)
+    except ValueError, e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+
     # Write app list to file
     list_file = '%s/%s.json' % (repo_path, name)
     with open(list_file, "w") as f:
