@@ -180,7 +180,7 @@ def tools_maindomain(auth, new_domain=None):
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))          # FIXME - To be added in locales/en.json
+            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
         else:
             logger.info(out) 
 

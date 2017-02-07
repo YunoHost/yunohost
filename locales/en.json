@@ -80,6 +80,7 @@
     "domain_dyndns_invalid": "Invalid domain to use with DynDNS",
     "domain_dyndns_root_unknown": "Unknown DynDNS root domain",
     "domain_exists": "Domain already exists",
+    "domain_hostname_failed": "Failed to set new hostname",
     "domain_uninstall_app_first": "One or more apps are installed on this domain. Please uninstall them before proceeding to domain removal",
     "domain_unknown": "Unknown domain",
     "domain_zone_exists": "DNS zone file already exists",
