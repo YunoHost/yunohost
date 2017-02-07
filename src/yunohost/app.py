@@ -349,10 +349,10 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     # If no app is specified, upgrade all apps
     if not app:
-        if (not url and not file):
-            app = [ app["id"] for app in app_list(installed=True)["apps"] ]
+        if not url and not file:
+            app = [app["id"] for app in app_list(installed=True)["apps"]]
     elif not isinstance(app, list):
-        app = [ app ]
+        app = [app]
 
     logger.info("Will upgrade apps %s", ", ".join(app))
 
@@ -384,7 +384,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Check requirements
         _check_manifest_requirements(manifest)
 
-        app_setting_path = apps_setting_path +'/'+ app_instance_name
+        app_setting_path = apps_setting_path + '/' + app_instance_name
 
         # Retrieve current app status
         status = _get_app_status(app_instance_name)
