@@ -27,5 +27,17 @@
     "system_username_exists": "Nome utente esiste già negli utenti del sistema",
     "unrestore_app": "Applicazione '{app:s}' non verrà ripristinato",
     "upgrading_packages": "Aggiornamento dei pacchetti...",
-    "user_deleted": "Utente cancellato con successo"
+    "user_deleted": "Utente cancellato con successo",
+    "admin_password": "Password dell'amministrazione",
+    "admin_password_change_failed": "Non è possibile cambiare la password",
+    "admin_password_changed": "La password dell'amministrazione è stata cambiata",
+    "app_incompatible": "L'app non è compatibile con la tua versione di Yunohost",
+    "app_install_files_invalid": "Non sono validi i file di installazione",
+    "app_location_already_used": "Una app è già installata in questa postazione",
+    "app_location_install_failed": "Non è possibile installare l'app in questa postazione",
+    "app_manifest_invalid": "",
+    "app_no_upgrade": "Nessun app da aggiornare",
+    "app_not_correctly_installed": "{app:s} sembra di non essere installata correttamente",
+    "app_not_properly_removed": "{app:s} non è stata correttamente rimossa",
+    "action_invalid": "L'azione '{action:s}' non è valida"
 }
