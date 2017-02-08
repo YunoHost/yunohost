@@ -111,7 +111,7 @@
     "hook_choice_invalid": "Choix incorrect : '{:s}'",
     "hook_exec_failed": "Échec de l'exécution du script « {path:s} »",
     "hook_exec_not_terminated": "L'exécution du script « {path:s} » ne s'est pas terminée",
-    "hook_list_by_invalid": "Propriété pour lister les scripts incorrects",
+    "hook_list_by_invalid": "Propriété invalide pour lister les scripts",
     "hook_name_unknown": "Nom de script « {name:s} » inconnu",
     "installation_complete": "Installation terminée",
     "installation_failed": "Échec de l'installation",
