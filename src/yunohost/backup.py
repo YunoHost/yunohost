@@ -502,7 +502,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 logger.warning(m18n.n('unrestore_app', app=app_instance_name))
                 continue
 
-            tmp_script = '/tmp/restore_' + app_instance_name
+            tmp_settings_dir = tmp_app_dir + '/settings'
             app_setting_path = '/etc/yunohost/apps/' + app_instance_name
             logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
             try:
@@ -512,8 +512,9 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 filesystem.chmod(app_setting_path, 0555, 0444, True)
                 filesystem.chmod(app_setting_path + '/settings.yml', 0400)
 
-                # Copy restore script in a tmp file
-                subprocess.call(['install', '-Dm555', app_script, tmp_script])
+                # Set correct right to the temporary settings folder
+                filesystem.chmod(tmp_settings_dir, 0550, 0550, True)
+                filesystem.chown(tmp_settings_dir, 'admin', None, True)
 
                 # Prepare env. var. to pass to script
                 env_dict = {}
@@ -523,16 +524,12 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
 
                 # Execute app restore script
-                hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
+                hook_exec(app_script, args=[tmp_app_bkp_dir, app_instance_name],
                           raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
             except:
                 logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
 
-                # Copy remove script in a tmp file
-                filesystem.rm(tmp_script, force=True)
                 app_script = tmp_app_dir + '/settings/scripts/remove'
-                tmp_script = '/tmp/remove_' + app_instance_name
-                subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -542,7 +539,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
                 # Execute remove script
                 # TODO: call app_remove instead
-                if hook_exec(tmp_script, args=[app_instance_name],
+                if hook_exec(app_script, args=[app_instance_name],
                              env=env_dict_remove) != 0:
                     logger.warning(m18n.n('app_not_properly_removed',
                                           app=app_instance_name))
@@ -551,8 +548,6 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 shutil.rmtree(app_setting_path, ignore_errors=True)
             else:
                 result['apps'].append(app_instance_name)
-            finally:
-                filesystem.rm(tmp_script, force=True)
 
     # Check if something has been restored
     if not result['hooks'] and not result['apps']:
