@@ -1,3 +1,35 @@
+yunohost (2.5.4) stable; urgency=low
+
+  [ Maniack Crudelis ]
+  * Remove helper ynh_mkdir_tmp
+  * Update filesystem
+
+  [ opi ]
+  * [enh] Add warning about deprecated ynh_mkdir_tmp helper
+  * [enh] Increase fail2ban maxretry on user login, narrow nginx log files
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Jean-Baptiste Holcroft ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Laurent Peuch ]
+  * [mod] start putting timeout in certificate code
+
+  [ Alexandre Aubin ]
+  * Implement timeout exceptions
+  * Implementing opi's comments
+
+  [ JimboJoe ]
+  * ynh_backup: Fix error message when source path doesn't exist
+
+  [ paddy ]
+  * [i18n] Translated using Weblate (Spanish)
+  * [i18n] Translated using Weblate (French)
+
+ -- opi <opi@zeropi.net>  Thu, 02 Feb 2017 11:24:55 +0100
+
 yunohost (2.5.3.1) testing; urgency=low
 
   * super quickfix release for a typo that break LE certificates

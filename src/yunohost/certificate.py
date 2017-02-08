@@ -37,6 +37,8 @@ import glob
 
 from OpenSSL import crypto
 from datetime import datetime
+from requests.exceptions import Timeout
+
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 from moulinette.core import MoulinetteError
@@ -567,7 +569,10 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_cert_signing_failed'))
 
-    intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL).text
+    try:
+        intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
+    except Timeout as e:
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
 
     # Now save the key and signed certificate
     logger.info("Saving the key and signed certificate...")
@@ -837,7 +842,10 @@ def _dns_ip_match_public_ip(public_ip, domain):
 
 def _domain_is_accessible_through_HTTP(ip, domain):
     try:
-        requests.head("http://" + ip, headers={"Host": domain})
+        requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
+    except Timeout as e:
+        logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
+        return False
     except Exception as e:
         logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
         return False
