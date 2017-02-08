@@ -266,5 +266,10 @@
     "domain_cannot_remove_main": "No se puede eliminar el dominio principal. Primero debe establecer un nuevo dominio principal",
     "certmanager_self_ca_conf_file_not_found": "No se ha encontrado el archivo de configuración para la autoridad de autofirma (file: {file:s})",
     "certmanager_unable_to_parse_self_CA_name": "No se puede procesar el nombre de la autoridad de autofirma (file: {file:s} 1)",
-    "domains_available": "Dominios instalados:"
+    "domains_available": "Dominios instalados:",
+    "backup_archive_broken_link": "Acceso a la copia de seguridad imposible (enlace roto {path:s})",
+    "certmanager_domain_not_resolved_locally": "Su servidor Yunohost no consigue resolver el dominio {domain:s}. Esto puede suceder si modificó su registro DNS. Si es el caso, espere unas horas que se propague la modificación. Si el problema persiste, considere añadir {domain:s} a /etc/hosts. (Si sabe usted lo que está haciendo, use --no-checks para deshabilitar estas verificaciones.)",
+    "certmanager_acme_not_configured_for_domain": "El certificado para el dominio {domain:s} no parece instalado correctamente. Ejecute primero cert-install para este dominio.",
+    "certmanager_http_check_timeout": "Plazo expirado, el servidor no ha podido contactarse a si mismo a través de HTTP usando su dirección IP pública (dominio {domain:s} con ip {ip:s}). Puede ser debido a hairpinning o a una mala configuración del cortafuego/router al que está conectado su servidor.",
+    "certmanager_couldnt_fetch_intermediate_cert": "Plazo expirado, no se ha podido descargar el certificado intermedio de Let's Encrypt. La instalación/renovación del certificado ha sido cancelada - vuelva a intentarlo más tarde."
 }
