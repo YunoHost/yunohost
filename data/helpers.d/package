@@ -89,19 +89,19 @@ ynh_package_install_from_equivs () {
 
     # Build and install the package
     TMPDIR=$(ynh_mkdir_tmp)
-    cp "$controlfile" "${TMPDIR}/control" && pushd "$TMPDIR"	# pushd is like a cd, but it stores the previous directory
+    # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
-    equivs-build ./control 1>/dev/null \
+    (cp "$controlfile" "${TMPDIR}/control" && cd "$TMPDIR" \
+     && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f
+     && ynh_package_install -f)
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
     ynh_package_is_installed "$pkgname"
-    popd	# Like a cd on the directory stored by pushd
 }
 
 # Install dependencies with a equivs control file
