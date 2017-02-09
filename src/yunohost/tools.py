@@ -265,21 +265,31 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     # Create SSL CA
     service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-    command_list = [
+    commands = [
         'echo "01" > %s/serial' % ssl_dir,
         'rm %s/index.txt'       % ssl_dir,
         'touch %s/index.txt'    % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
-        'sed -i "s/yunohost.org/%s/g" %s/openssl.ca.cnf ' % (domain, ssl_dir),
+        'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
         'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch' % (ssl_dir, ssl_dir, ssl_dir),
         'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
         'update-ca-certificates'
     ]
 
-    for command in command_list:
-        if os.system(command) != 0:
+    for command in commands:
+        p = subprocess.Popen(
+            command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        out, _ = p.communicate()
+
+        if p.returncode != 0:
+            logger.warning(out)
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('yunohost_ca_creation_failed'))
+        else:
+            logger.debug(out)
+
+    logger.success(m18n.n('yunohost_ca_creation_success'))
 
     # New domain config
     domain_add(auth, domain, dyndns)

@@ -240,6 +240,7 @@
     "user_updated": "The user has been updated",
     "yunohost_already_installed": "YunoHost is already installed",
     "yunohost_ca_creation_failed": "Unable to create certificate authority",
+    "yunohost_ca_creation_success": "The local certification authority has been created.",
     "yunohost_configured": "YunoHost has been configured",
     "yunohost_installing": "Installing YunoHost...",
     "yunohost_not_installed": "YunoHost is not or not correctly installed. Please execute 'yunohost tools postinstall'",
