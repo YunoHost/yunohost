@@ -98,16 +98,11 @@ ynh_mysql_drop_user() {
 # And password in db_pwd's variable.
 #
 # usage: ynh_mysql_generate_db user name
-# | arg: user - Proprietary of the database
+# | arg: user - Owner of the database
 # | arg: name - Name of the database
 ynh_mysql_generate_db () {
-	db_user=${1//[-.]/_}	# Mariadb doesn't support - and . in the name of databases. It will be replace by _
-	db_name=${2//[-.]/_}
-
 	db_pwd=$(ynh_string_random)	# Generate a random password
-
-	ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
-
+	ynh_mysql_create_db "$2" "$1" "$db_pwd"	# Create the database
 	ynh_app_setting_set $app mysqlpwd $db_pwd	# Store the password in the app's config
 }
 
@@ -124,4 +119,18 @@ ynh_mysql_remove_db () {
 	else
 		echo "Database $2 not found" >&2
 	fi
+}
+
+# Correct the name given in argument for mariadb
+#
+# Avoid invalid name for your database
+#
+# Exemple: dbname=$(ynh_make_valid_dbid $app)
+#
+# usage: ynh_make_valid_dbid name
+# | arg: name - name to correct
+# | ret: the corrected name
+ynh_make_valid_dbid () {
+	dbid=${1//[-.]/_}	# Mariadb doesn't support - and . in the name of databases. It will be replace by _
+	echo $dbid
 }
