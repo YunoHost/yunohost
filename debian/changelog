@@ -1,3 +1,12 @@
+yunohost (2.5.5) stable; urgency=low
+
+  Hotfix release
+
+  [ ljf ]
+  * [fix] Permission issue on install of some apps 778
+
+ -- opi <opi@zeropi.net>  Thu, 09 Feb 2017 22:27:08 +0100
+
 yunohost (2.5.4) stable; urgency=low
 
   [ Maniack Crudelis ]
