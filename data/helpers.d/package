@@ -109,8 +109,12 @@ ynh_package_install_from_equivs () {
 # usage: ynh_app_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence
 ynh_app_dependencies () {
-	dependencies=$1
-	version=$(sudo python3 -c "import sys, json;print(json.load(open('../manifest.json'))['version'])")	# Retrieve the version number in the manifest file.
+    dependencies=$@
+    manifest_path="../manifest.json"
+    if [ ! -e "$manifest_path" ]; then
+    	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+    fi
+    version=$(sudo python3 -c "import sys, json;print(json.load(open(\"$manifest_path\"))['version'])")	# Retrieve the version number in the manifest file.
     dep_app=${app/_/-}	# Replace all '_' by '-'
     cat > ./${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
 Section: misc
