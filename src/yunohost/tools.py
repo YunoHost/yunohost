@@ -163,17 +163,17 @@ def tools_maindomain(auth, new_domain=None):
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
     # Set hostname
-    
-    commands = [     
-        "sudo hostnamectl --static set-hostname %s" % new_domain,
-        "sudo hostnamectl --transient set-hostname %s" % new_domain,
-        "sudo hostnamectl --pretty set-hostname (YunoHost/%s)" % new_domain
+    pretty_hostname = "(YunoHost/%s)" % new_domain
+    commands = [
+        "sudo hostnamectl --static    set-hostname".split() + [new_domain],
+        "sudo hostnamectl --transient set-hostname".split() + [new_domain],
+        "sudo hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
     ]
 
     for command in commands:
-        p = subprocess.Popen(command.split(),
-                             stdout = subprocess.PIPE, 
-                             stderr = subprocess.STDOUT)
+        p = subprocess.Popen(command,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
 
         out, _ = p.communicate()
 
@@ -182,7 +182,7 @@ def tools_maindomain(auth, new_domain=None):
             logger.warning(out)
             raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
         else:
-            logger.info(out) 
+            logger.info(out)
 
     # Regen configurations
     try:
