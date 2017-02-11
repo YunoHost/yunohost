@@ -44,12 +44,6 @@ def settings_list():
     return _get_settings()
 
 
-def settings_exists(key, namespace):
-    # is returning a python boolean the moulinette way of doing this?
-    # looks weird
-    return key in _get_settings().get(namespace, {})
-
-
 def settings_set(key, value, namespace):
     settings = _get_settings()
 

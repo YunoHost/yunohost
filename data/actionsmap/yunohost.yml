@@ -962,19 +962,6 @@ settings:
                     extra:
                         required: True
 
-        ### settings_exists()
-        exists:
-            action_help: check if an entry exist in the settings
-            api: GET /settings/<key>/exists
-            arguments:
-                key:
-                    help: Settings key
-                -n:
-                    full: --namespace
-                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
-                    extra:
-                        required: True
-
         ### settings_remove()
         remove:
             action_help: delete an entry in the settings
