@@ -52,21 +52,6 @@ def settings_set(key, value, namespace):
     _save_settings(settings)
 
 
-def settings_remove(key, namespace, fail_silently=False):
-    settings = _get_settings()
-
-    if key not in settings.get(namespace, {}):
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
-
-    del settings[namespace][key]
-
-    if not settings[namespace]:
-        del settings[namespace]
-
-    _save_settings(settings)
-
-
 def _get_settings():
     settings = {}
 
