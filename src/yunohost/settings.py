@@ -40,18 +40,8 @@ def settings_get(key):
     return settings[key]
 
 
-
-def settings_list(namespace=None):
-    settings = _get_settings()
-
-    if namespace is not None and not settings.get(namespace, {}):
-        logger.warning(m18n.n('global_settings_namespace_is_empty', namespace=namespace))
-        return {}
-
-    if namespace is not None:
-        return settings.get(namespace, {})
-
-    return settings
+def settings_list():
+    return _get_settings()
 
 
 def settings_exists(key, namespace):
