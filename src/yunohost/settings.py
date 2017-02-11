@@ -12,7 +12,7 @@ logger = getActionLogger('yunohost.settings')
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
 
 # a settings entry is in the form of:
-# [name, type, value, default, description, [possibilities]]
+# name: {type, value, default, description, [possibilities]}
 # possibilities is only for enum
 
 # type can be:
@@ -26,19 +26,19 @@ DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True, "description": "Example boolean option"}),
     ("example.int", {"type": "int", "default": 42, "description": "Example int option"}),
     ("example.string", {"type": "string", "default": "yolo swag", "description": "Example stringean option"}),
-    ("example.enum", {"type": "enum", "default": "a", "possibilities": ["a", "b", "c"], "description": "Example enum option"}),
+    ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"], "description": "Example enum option"}),
 ])
 
 
 def settings_get(key):
     settings = _get_settings()
 
-    for i in settings:
-        if i[0] == key:
-            return i
+    if key not in settings:
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'global_settings_key_doesnt_exists', settings_key=key))
 
-    raise MoulinetteError(errno.EINVAL, m18n.n(
-        'global_settings_key_doesnt_exists', settings_key=key))
+    return settings[key]
+
 
 
 def settings_list(namespace=None):
@@ -84,26 +84,11 @@ def settings_remove(key, namespace, fail_silently=False):
 
 
 def _get_settings():
-    settings = []
+    settings = {}
 
-    for key, value in DEFAULTS.items():
-        if "possibilities" in value:
-            settings.append((
-                key,
-                value["type"],
-                value["default"],
-                value["default"],
-                value["description"],
-                value["possibilities"],
-            ))
-        else:
-            settings.append((
-                key,
-                value["type"],
-                value["default"],
-                value["default"],
-                value["description"],
-            ))
+    for key, value in DEFAULTS.copy().items():
+        settings[key] = value
+        settings[key]["value"] = value["default"]
 
     # if not os.path.exists(SETTINGS_PATH):
     #     return settings
