@@ -44,10 +44,10 @@ def settings_list():
     return _get_settings()
 
 
-def settings_set(key, value, namespace):
+def settings_set(key, value):
     settings = _get_settings()
 
-    settings.setdefault(namespace, {})[key] = value
+    settings[key]["value"] = value
 
     _save_settings(settings)
 
