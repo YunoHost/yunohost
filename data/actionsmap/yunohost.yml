@@ -947,16 +947,6 @@ settings:
             arguments:
                 key:
                     help: Settings key
-                -d:
-                    full: --default
-                    help: Default value to get if the key doesn't exist
-                    extra:
-                        required: True
-                -n:
-                    full: --namespace
-                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
-                    extra:
-                        required: True
 
         ### settings_set()
         set:

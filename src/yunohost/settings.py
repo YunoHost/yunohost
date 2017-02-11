@@ -2,6 +2,8 @@ import os
 import yaml
 import errno
 
+from collections import OrderedDict
+
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
@@ -9,12 +11,34 @@ logger = getActionLogger('yunohost.settings')
 
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
 
-DEFAULT_VALUES = {
-}
+# a settings entry is in the form of:
+# [name, type, value, default, description, [possibilities]]
+# possibilities is only for enum
+
+# type can be:
+# * bool
+# * int
+# * string
+# * enum (in form a python list)
+
+# we don't store the value in default options
+DEFAULTS = OrderedDict([
+    ("example.bool", {"type": "bool", "default": True, "description": "Example boolean option"}),
+    ("example.int", {"type": "int", "default": 42, "description": "Example int option"}),
+    ("example.string", {"type": "string", "default": "yolo swag", "description": "Example stringean option"}),
+    ("example.enum", {"type": "enum", "default": "a", "possibilities": ["a", "b", "c"], "description": "Example enum option"}),
+])
 
 
-def settings_get(key, default, namespace):
-    return _get_settings().get(namespace, {}).get(key, default)
+def settings_get(key):
+    settings = _get_settings()
+
+    for i in settings:
+        if i[0] == key:
+            return i
+
+    raise MoulinetteError(errno.EINVAL, m18n.n(
+        'global_settings_key_doesnt_exists', settings_key=key))
 
 
 def settings_list(namespace=None):
@@ -60,17 +84,36 @@ def settings_remove(key, namespace, fail_silently=False):
 
 
 def _get_settings():
-    settings = DEFAULT_VALUES.copy()
+    settings = []
 
-    if not os.path.exists(SETTINGS_PATH):
-        return settings
+    for key, value in DEFAULTS.items():
+        if "possibilities" in value:
+            settings.append((
+                key,
+                value["type"],
+                value["default"],
+                value["default"],
+                value["description"],
+                value["possibilities"],
+            ))
+        else:
+            settings.append((
+                key,
+                value["type"],
+                value["default"],
+                value["default"],
+                value["description"],
+            ))
 
-    try:
-        with open(SETTINGS_PATH) as settings_fd:
-            settings.update(yaml.load(settings_fd))
-    except Exception as e:
-        raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
-                              exc_info=1)
+    # if not os.path.exists(SETTINGS_PATH):
+    #     return settings
+
+    # try:
+    #     with open(SETTINGS_PATH) as settings_fd:
+    #         settings.update(yaml.load(settings_fd))
+    # except Exception as e:
+    #     raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
+    #                           exc_info=1)
 
     return settings
 
