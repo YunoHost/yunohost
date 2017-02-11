@@ -33,6 +33,7 @@ import socket
 import urlparse
 import errno
 import subprocess
+import requests
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -87,27 +88,41 @@ def app_fetchlist(url=None, name=None):
 
     """
     # Create app path if not exists
-    try: os.listdir(repo_path)
-    except OSError: os.makedirs(repo_path)
+    if not os.path.exists(repo_path):
+        os.makedirs(repo_path)
 
     if url is None:
         url = 'https://app.yunohost.org/official.json'
         name = 'yunohost'
-    else:
-        if name is None:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_appslist_name_required'))
+    elif name is None:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('custom_appslist_name_required'))
 
+    # Download file
+    try:
+        applist_request = requests.get(url, timeout=30)
+    except Exception as e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
+
+    if (applist_request.status_code != 200):
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+
+    # Validate app list format
+    # TODO / Possible improvement : better validation for app list (check that
+    # json fields actually look like an app list and not any json file)
+    applist = applist_request.text
+    try:
+        json.loads(applist)
+    except ValueError, e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+
+    # Write app list to file
     list_file = '%s/%s.json' % (repo_path, name)
-    if os.system('wget --timeout=30 "%s" -O "%s.tmp"' % (url, list_file)) != 0:
-        os.remove('%s.tmp' % list_file)
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
+    with open(list_file, "w") as f:
+        f.write(applist)
 
-    # Rename fetched temp list
-    os.rename('%s.tmp' % list_file, list_file)
-
-    os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
-    os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
+    # Setup a cron job to re-fetch the list at midnight
+    open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
     logger.success(m18n.n('appslist_fetched'))
 
