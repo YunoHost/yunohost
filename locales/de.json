@@ -23,7 +23,7 @@
     "app_upgraded": "{app:s} wurde erfolgreich aktualisiert",
     "appslist_fetched": "Appliste wurde erfolgreich heruntergelanden",
     "appslist_removed": "Appliste wurde erfolgreich entfernt",
-    "appslist_retrieve_error": "Entfernte Appliste kann nicht empfangen werden",
+    "appslist_retrieve_error": "Entfernte Appliste kann nicht empfangen werden: {error}",
     "appslist_unknown": "Unbekannte Appliste",
     "ask_current_admin_password": "Derzeitiges Verwaltungspasswort",
     "ask_email": "E-Mail Adresse",
@@ -276,5 +276,6 @@
     "service_regenconf_dry_pending_applying": "Überprüfe ausstehende Konfigurationen, die für den Server {service} notwendig sind...",
     "service_regenconf_pending_applying": "Überprüfe ausstehende Konfigurationen, die für den Server '{service}' notwendig sind...",
     "certmanager_http_check_timeout": "Eine Zeitüberschreitung ist aufgetreten als der Server versuchte sich selbst über HTTP mit der öffentlichen IP (Domain {domain:s} mit der IP {ip:s}) zu erreichen. Möglicherweise ist dafür hairpinning oder eine misskonfigurierte Firewall/Router deines Servers dafür verantwortlich.",
-    "certmanager_couldnt_fetch_intermediate_cert": "Eine Zeitüberschreitung ist aufgetreten als der Server versuchte die Teilzertifikate von Let's Encrypt zusammenzusetzen. Die Installation/Erneuerung des Zertifikats wurde abgebrochen - bitte versuche es später erneut."
+    "certmanager_couldnt_fetch_intermediate_cert": "Eine Zeitüberschreitung ist aufgetreten als der Server versuchte die Teilzertifikate von Let's Encrypt zusammenzusetzen. Die Installation/Erneuerung des Zertifikats wurde abgebrochen - bitte versuche es später erneut.",
+    "appslist_retrieve_bad_format": "Die empfangene Datei ist keine gültige Appliste"
 }
