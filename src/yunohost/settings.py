@@ -1,5 +1,5 @@
 import os
-import yaml
+import json
 import errno
 
 from collections import OrderedDict
@@ -9,7 +9,7 @@ from moulinette.utils.log import getActionLogger
 
 logger = getActionLogger('yunohost.settings')
 
-SETTINGS_PATH = "/etc/yunohost/settings.yaml"
+SETTINGS_PATH = "/etc/yunohost/settings.json"
 
 # a settings entry is in the form of:
 # name: {type, value, default, description, [possibilities]}
@@ -59,22 +59,29 @@ def _get_settings():
         settings[key] = value
         settings[key]["value"] = value["default"]
 
-    # if not os.path.exists(SETTINGS_PATH):
-    #     return settings
+    if not os.path.exists(SETTINGS_PATH):
+        return settings
 
-    # try:
-    #     with open(SETTINGS_PATH) as settings_fd:
-    #         settings.update(yaml.load(settings_fd))
-    # except Exception as e:
-    #     raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
-    #                           exc_info=1)
+    try:
+        with open(SETTINGS_PATH) as settings_fd:
+            local_settings = json.load(settings_fd)
+
+            for key, value in local_settings.items():
+                if key in settings:
+                    settings[key] = value
+                else:
+                    # TODO i18n
+                    logger.warning("Unknown key in settings: '%s', discarding it")
+    except Exception as e:
+        raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
+                              exc_info=1)
 
     return settings
 
 
 def _save_settings(settings):
     try:
-        result = yaml.dump(settings, default_flow_style=False)
+        result = json.dumps(settings, indent=4)
     except Exception as e:
         raise MoulinetteError(errno.EINVAL, m18n.n('global_settings_cant_serialize_setings',
                                                    reason=e),
