@@ -96,6 +96,10 @@ def settings_default(key):
 
 
 def settings_reset(yes=False):
+    if not yes:
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'global_settings_reset_not_yes'))
+
     settings = _get_settings()
 
     for value in settings.values():
