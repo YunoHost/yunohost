@@ -17,6 +17,9 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # name: {type, value, default, description, [possibilities]}
 # possibilities is only for enum
 
+# description is implied from the translated strings
+# the key is "global_settings_setting_%s" % key.replace(".", "_")
+
 # type can be:
 # * bool
 # * int
@@ -25,10 +28,10 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
 # we don't store the value in default options
 DEFAULTS = OrderedDict([
-    ("example.bool", {"type": "bool", "default": True, "description": "Example boolean option"}),
-    ("example.int", {"type": "int", "default": 42, "description": "Example int option"}),
-    ("example.string", {"type": "string", "default": "yolo swag", "description": "Example stringean option"}),
-    ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"], "description": "Example enum option"}),
+    ("example.bool", {"type": "bool", "default": True}),
+    ("example.int", {"type": "int", "default": 42}),
+    ("example.string", {"type": "string", "default": "yolo swag"}),
+    ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
 ])
 
 
@@ -124,6 +127,7 @@ def _get_settings():
     for key, value in DEFAULTS.copy().items():
         settings[key] = value
         settings[key]["value"] = value["default"]
+        settings[key]["description"] = m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
 
     if not os.path.exists(SETTINGS_PATH):
         return settings
@@ -144,6 +148,7 @@ def _get_settings():
             for key, value in local_settings.items():
                 if key in settings:
                     settings[key] = value
+                    settings[key]["description"] = m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
                 else:
                     logger.warning(m18n.n('global_settings_unknown_setting_from_settings_file',
                                           setting_key=key))
@@ -162,8 +167,14 @@ def _get_settings():
 
 
 def _save_settings(settings, location=SETTINGS_PATH):
+    settings_without_description = {}
+    for key, value in settings.items():
+        settings_without_description[key] = value
+        if "description" in value:
+            del settings_without_description[key]["description"]
+
     try:
-        result = json.dumps(settings, indent=4)
+        result = json.dumps(settings_without_description, indent=4)
     except Exception as e:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('global_settings_cant_serialize_setings', reason=e),
