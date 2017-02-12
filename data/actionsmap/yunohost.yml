@@ -970,6 +970,7 @@ settings:
                 -y:
                     full: --yes
                     help: Yes I'm sure I want to do that
+                    action: store_true
 
 #############################
 #         Service           #
