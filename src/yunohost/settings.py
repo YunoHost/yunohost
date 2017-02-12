@@ -2,6 +2,7 @@ import os
 import json
 import errno
 
+from datetime import datetime
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -10,6 +11,7 @@ from moulinette.utils.log import getActionLogger
 logger = getActionLogger('yunohost.settings')
 
 SETTINGS_PATH = "/etc/yunohost/settings.json"
+SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
 # a settings entry is in the form of:
 # name: {type, value, default, description, [possibilities]}
@@ -102,10 +104,18 @@ def settings_reset(yes=False):
 
     settings = _get_settings()
 
+    old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.now().strftime("%F_%X")
+    _save_settings(settings, location=old_settings_backup_path)
+
     for value in settings.values():
         value["value"] = value["default"]
 
     _save_settings(settings)
+
+    return {
+        "old_settings_backup_path": old_settings_backup_path,
+        "message": m18n.n("global_settings_reset_success", path=old_settings_backup_path)
+    }
 
 
 def _get_settings():
@@ -136,7 +146,7 @@ def _get_settings():
     return settings
 
 
-def _save_settings(settings):
+def _save_settings(settings, location=SETTINGS_PATH):
     try:
         result = json.dumps(settings, indent=4)
     except Exception as e:
@@ -145,7 +155,7 @@ def _save_settings(settings):
                               exc_info=1)
 
     try:
-        with open(SETTINGS_PATH, "w") as settings_fd:
+        with open(location, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
         raise MoulinetteError(errno.EIO,
