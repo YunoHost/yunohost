@@ -74,6 +74,12 @@ def settings_set(key, value):
     _save_settings(settings)
 
 
+def settings_default(key):
+    settings = _get_settings()
+    settings[key]["value"] = settings[key]["default"]
+    _save_settings(settings)
+
+
 def _get_settings():
     settings = {}
 
