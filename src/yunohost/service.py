@@ -39,9 +39,9 @@ from moulinette.utils import log, filesystem
 from yunohost.hook import hook_callback
 
 
-base_conf_path = '/home/yunohost.conf'
-backup_conf_dir = os.path.join(base_conf_path, 'backup')
-pending_conf_dir = os.path.join(base_conf_path, 'pending')
+BASE_CONF_PATH = '/home/yunohost.conf'
+BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
+PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, 'pending')
 
 logger = log.getActionLogger('yunohost.service')
 
@@ -300,15 +300,15 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         return pending_conf
 
     # Clean pending conf directory
-    if os.path.isdir(pending_conf_dir):
+    if os.path.isdir(PENDING_CONF_DIR):
         if not names:
-            shutil.rmtree(pending_conf_dir, ignore_errors=True)
+            shutil.rmtree(PENDING_CONF_DIR, ignore_errors=True)
         else:
             for name in names:
-                shutil.rmtree(os.path.join(pending_conf_dir, name),
+                shutil.rmtree(os.path.join(PENDING_CONF_DIR, name),
                               ignore_errors=True)
     else:
-        filesystem.mkdir(pending_conf_dir, 0755, True)
+        filesystem.mkdir(PENDING_CONF_DIR, 0755, True)
 
     # Format common hooks arguments
     common_args = [1 if force else 0, 1 if dry_run else 0]
@@ -318,7 +318,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
-        service_pending_path = os.path.join(pending_conf_dir, name)
+        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
         filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
@@ -615,12 +615,12 @@ def _get_pending_conf(services=[]):
 
     """
     result = {}
-    if not os.path.isdir(pending_conf_dir):
+    if not os.path.isdir(PENDING_CONF_DIR):
         return result
     if not services:
-        services = os.listdir(pending_conf_dir)
+        services = os.listdir(PENDING_CONF_DIR)
     for name in services:
-        service_pending_path = os.path.join(pending_conf_dir, name)
+        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
         if not os.path.isdir(service_pending_path):
             continue
         path_index = len(service_pending_path)
@@ -672,7 +672,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
     """
     if save:
-        backup_path = os.path.join(backup_conf_dir, '{0}-{1}'.format(
+        backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
             system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
         backup_dir = os.path.dirname(backup_path)
         if not os.path.isdir(backup_dir):

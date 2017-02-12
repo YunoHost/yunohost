@@ -42,13 +42,13 @@ from yunohost.app import (
     app_info, app_ssowatconf, _is_installed, _parse_app_instance_name
 )
 from yunohost.hook import (
-    hook_info, hook_callback, hook_exec, custom_hook_folder
+    hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
 )
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 
-backup_path = '/home/yunohost.backup'
-archives_path = '%s/archives' % backup_path
+BACKUP_PATH = '/home/yunohost.backup'
+ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
 
 logger = getActionLogger('yunohost.backup')
 
@@ -95,7 +95,7 @@ def backup_create(name=None, description=None, output_directory=None,
         output_directory = os.path.abspath(output_directory)
 
         # Check for forbidden folders
-        if output_directory.startswith(archives_path) or \
+        if output_directory.startswith(ARCHIVES_PATH) or \
            re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
                     output_directory):
             raise MoulinetteError(errno.EINVAL,
@@ -118,11 +118,11 @@ def backup_create(name=None, description=None, output_directory=None,
             tmp_dir = output_directory
             env_var['CAN_BIND'] = 0
     else:
-        output_directory = archives_path
+        output_directory = ARCHIVES_PATH
 
     # Create archives directory if it does not exists
-    if not os.path.isdir(archives_path):
-        os.mkdir(archives_path, 0750)
+    if not os.path.isdir(ARCHIVES_PATH):
+        os.mkdir(ARCHIVES_PATH, 0750)
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
@@ -135,7 +135,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Create temporary directory
     if not tmp_dir:
-        tmp_dir = "%s/tmp/%s" % (backup_path, name)
+        tmp_dir = "%s/tmp/%s" % (BACKUP_PATH, name)
         if os.path.isdir(tmp_dir):
             logger.debug("temporary directory for backup '%s' already exists",
                 tmp_dir)
@@ -305,12 +305,12 @@ def backup_create(name=None, description=None, output_directory=None,
 
         # Move info file
         shutil.move(tmp_dir + '/info.json',
-                  '{:s}/{:s}.info.json'.format(archives_path, name))
+                  '{:s}/{:s}.info.json'.format(ARCHIVES_PATH, name))
 
         # If backuped to a non-default location, keep a symlink of the archive
         # to that location
-        if output_directory != archives_path:
-            link = "%s/%s.tar.gz" % (archives_path, name)
+        if output_directory != ARCHIVES_PATH:
+            link = "%s/%s.tar.gz" % (ARCHIVES_PATH, name)
             os.symlink(archive_file, link)
 
     # Clean temporary directory
@@ -354,19 +354,19 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
         raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
 
     # Check temporary directory
-    tmp_dir = "%s/tmp/%s" % (backup_path, name)
+    tmp_dir = "%s/tmp/%s" % (BACKUP_PATH, name)
     if os.path.isdir(tmp_dir):
         logger.debug("temporary directory for restoration '%s' already exists",
             tmp_dir)
         os.system('rm -rf %s' % tmp_dir)
 
     # Check available disk space
-    statvfs = os.statvfs(backup_path)
+    statvfs = os.statvfs(BACKUP_PATH)
     free_space = statvfs.f_frsize * statvfs.f_bavail
     if free_space < info['size']:
         logger.debug("%dB left but %dB is needed", free_space, info['size'])
         raise MoulinetteError(
-            errno.EIO, m18n.n('not_enough_disk_space', path=backup_path))
+            errno.EIO, m18n.n('not_enough_disk_space', path=BACKUP_PATH))
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_restore', args=[tmp_dir, retcode])
@@ -455,7 +455,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                     continue
                 # Add restoration hook from the backup to the system
                 # FIXME: Refactor hook_add and use it instead
-                restore_hook_folder = custom_hook_folder + 'restore'
+                restore_hook_folder = CUSTOM_HOOK_FOLDER + 'restore'
                 filesystem.mkdir(restore_hook_folder, 755, True)
                 for f in tmp_hooks:
                     logger.debug("adding restoration hook '%s' to the system "
@@ -580,7 +580,7 @@ def backup_list(with_info=False, human_readable=False):
 
     try:
         # Retrieve local archives
-        archives = os.listdir(archives_path)
+        archives = os.listdir(ARCHIVES_PATH)
     except OSError:
         logger.debug("unable to iterate over local archives", exc_info=1)
     else:
@@ -612,7 +612,7 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    archive_file = '%s/%s.tar.gz' % (archives_path, name)
+    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
@@ -628,7 +628,7 @@ def backup_info(name, with_details=False, human_readable=False):
             raise MoulinetteError(errno.EIO,
                 m18n.n('backup_archive_broken_link', path=archive_file))
 
-    info_file = "%s/%s.info.json" % (archives_path, name)
+    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
     try:
         with open(info_file) as f:
@@ -673,9 +673,9 @@ def backup_delete(name):
     """
     hook_callback('pre_backup_delete', args=[name])
 
-    archive_file = '%s/%s.tar.gz' % (archives_path, name)
+    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
 
-    info_file = "%s/%s.info.json" % (archives_path, name)
+    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
     for backup_file in [archive_file, info_file]:
         if not os.path.isfile(backup_file):
             raise MoulinetteError(errno.EIO,
