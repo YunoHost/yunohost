@@ -962,6 +962,15 @@ settings:
                     extra:
                         required: True
 
+        ### settings_reset()
+        reset:
+            action_help: reset all settings to their default value
+            api: POST /settings/reset
+            arguments:
+                -y:
+                    full: --yes
+                    help: Yes I'm sure I want to do that
+
 #############################
 #         Service           #
 #############################

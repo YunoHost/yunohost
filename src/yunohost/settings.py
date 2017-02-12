@@ -95,6 +95,15 @@ def settings_default(key):
     _save_settings(settings)
 
 
+def settings_reset(yes=False):
+    settings = _get_settings()
+
+    for value in settings.values():
+        value["value"] = value["default"]
+
+    _save_settings(settings)
+
+
 def _get_settings():
     settings = {}
 
