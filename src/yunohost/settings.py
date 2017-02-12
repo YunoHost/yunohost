@@ -75,7 +75,9 @@ def settings_set(key, value):
                 received_type=type(value).__name__,
                 expected_type=", ".join(settings[key]["choices"])))
     else:
-        raise MoulinetteError()  # TODO
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'global_settings_unknown_type', setting=key,
+            unknown_type=key_type))
 
     settings[key]["value"] = value
 
