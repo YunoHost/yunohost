@@ -117,7 +117,7 @@
     "global_settings_reset_not_yes": "You've ask to reset the global settings but haven't provided the '--yes' cli argument. If you are REALLY sure that you want to reset the setings call this command with '--yes'.",
     "global_settings_reset_success": "Success. Your previous settings have been backuped in {path:s}",
     "global_settings_unknown_type": "Unexpected situation, the setting {setting:s} appears to have the type {unknown_type:s} but it's not a type supported by the system.",
-    "global_settings_unknown_setting_from_settings_file": "Unknown key in settings: '{key:s}', discarding it and save it in /etc/yunohost/unkown_settings.json",
+    "global_settings_unknown_setting_from_settings_file": "Unknown key in settings: '{setting_key:s}', discarding it and save it in /etc/yunohost/unkown_settings.json",
     "hook_exec_failed": "Script execution failed: {path:s}",
     "hook_exec_not_terminated": "Script execution hasn’t terminated: {path:s}",
     "hook_list_by_invalid": "Invalid property to list hook by",
