@@ -1158,7 +1158,7 @@ def _get_app_status(app_id, format_date=False):
 
 def _extract_app_from_file(path, remove=False):
     """
-    Unzip or untar application tarball in app_tmp_folder, or copy it from a directory
+    Unzip or untar application tarball in APP_TMP_FOLDER, or copy it from a directory
 
     Keyword arguments:
         path -- Path of the tarball or directory
@@ -1231,7 +1231,7 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
 
 def _fetch_app_from_git(app):
     """
-    Unzip or untar application tarball in app_tmp_folder
+    Unzip or untar application tarball in APP_TMP_FOLDER
 
     Keyword arguments:
         app -- App_id or git repo URL
