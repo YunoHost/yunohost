@@ -38,8 +38,8 @@ from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.text import prependlines
 
-firewall_file = '/etc/yunohost/firewall.yml'
-upnp_cron_job = '/etc/cron.d/yunohost-firewall-upnp'
+FIREWALL_FILE = '/etc/yunohost/firewall.yml'
+UPNP_CRON_JOB = '/etc/cron.d/yunohost-firewall-upnp'
 
 logger = getActionLogger('yunohost.firewall')
 
@@ -161,7 +161,7 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
         list_forwarded -- List forwarded ports with UPnP
 
     """
-    with open(firewall_file) as f:
+    with open(FIREWALL_FILE) as f:
         firewall = yaml.load(f)
     if raw:
         return firewall
@@ -318,7 +318,7 @@ def firewall_upnp(action='status', no_refresh=False):
         return {'enabled': enabled}
     elif action == 'enable' or (enabled and action == 'status'):
         # Add cron job
-        with open(upnp_cron_job, 'w+') as f:
+        with open(UPNP_CRON_JOB, 'w+') as f:
             f.write('*/50 * * * * root '
                     '/usr/bin/yunohost firewall upnp status >>/dev/null\n')
         # Open port 1900 to receive discovery message
@@ -330,7 +330,7 @@ def firewall_upnp(action='status', no_refresh=False):
     elif action == 'disable' or (not enabled and action == 'status'):
         try:
             # Remove cron job
-            os.remove(upnp_cron_job)
+            os.remove(UPNP_CRON_JOB)
         except:
             pass
         enabled = False
@@ -384,8 +384,8 @@ def firewall_upnp(action='status', no_refresh=False):
         firewall['uPnP']['enabled'] = enabled
 
         # Make a backup and update firewall file
-        os.system("cp {0} {0}.old".format(firewall_file))
-        with open(firewall_file, 'w') as f:
+        os.system("cp {0} {0}.old".format(FIREWALL_FILE))
+        with open(FIREWALL_FILE, 'w') as f:
             yaml.safe_dump(firewall, f, default_flow_style=False)
 
         if not no_refresh:
@@ -427,7 +427,7 @@ def firewall_stop():
         os.system("ip6tables -F")
         os.system("ip6tables -X")
 
-    if os.path.exists(upnp_cron_job):
+    if os.path.exists(UPNP_CRON_JOB):
         firewall_upnp('disable')
 
 
@@ -450,8 +450,8 @@ def _get_ssh_port(default=22):
 
 def _update_firewall_file(rules):
     """Make a backup and write new rules to firewall file"""
-    os.system("cp {0} {0}.old".format(firewall_file))
-    with open(firewall_file, 'w') as f:
+    os.system("cp {0} {0}.old".format(FIREWALL_FILE))
+    with open(FIREWALL_FILE, 'w') as f:
         yaml.safe_dump(rules, f, default_flow_style=False)
 
 
