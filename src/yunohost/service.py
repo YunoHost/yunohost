@@ -658,6 +658,11 @@ def _update_conf_hashes(service, hashes):
                  service, hashes)
     services = _get_services()
     service_conf = services.get(service, {})
+
+    # Handle the case where services[service] is set to null in the yaml
+    if service_conf is None:
+        service_conf = {}
+
     service_conf['conffiles'] = hashes
     services[service] = service_conf
     _save_services(services)
