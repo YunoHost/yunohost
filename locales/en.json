@@ -115,7 +115,6 @@
     "global_settings_cant_write_settings": "Failed to write settings file, reason: {reason:s}",
     "global_settings_key_doesnt_exists": "The key '{settings_key:s}' doesn't exists in the global settings, you can see all the available keys by doing 'yunohost settings list",
     "global_settings_unknown_type": "Unexpected situation, the setting {setting:s} appears to have the type {unknown_type:s} but it's not a type supported by the system.",
-    "global_settings_namespace_is_empty": "The namespace '{namespace:s}' is empty or doesn't exists in the global settings",
     "hook_exec_failed": "Script execution failed: {path:s}",
     "hook_exec_not_terminated": "Script execution hasn’t terminated: {path:s}",
     "hook_list_by_invalid": "Invalid property to list hook by",
