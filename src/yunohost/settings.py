@@ -56,13 +56,19 @@ def settings_set(key, value):
     # TODO i18n
     if key_type == "bool":
         if not isinstance(value, bool):
-            raise MoulinetteError(errno.EINVAL, "bad type")
+            raise MoulinetteError(errno.EINVAL, m18n.n(
+                'global_settings_bad_type_for_setting', setting=key,
+                received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "int":
         if not isinstance(value, int) or isinstance(value, bool):
-            raise MoulinetteError(errno.EINVAL, "bad type")
+            raise MoulinetteError(errno.EINVAL, m18n.n(
+                'global_settings_bad_type_for_setting', setting=key,
+                received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "string":
         if not isinstance(value, basestring):
-            raise MoulinetteError(errno.EINVAL, "bad type")
+            raise MoulinetteError(errno.EINVAL, m18n.n(
+                'global_settings_bad_type_for_setting', setting=key,
+                received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
             raise MoulinetteError(errno.EINVAL, "bad type")
