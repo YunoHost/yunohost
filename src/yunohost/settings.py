@@ -113,8 +113,9 @@ def _get_settings():
                 if key in settings:
                     settings[key] = value
                 else:
-                    # TODO i18n
-                    logger.warning("Unknown key in settings: '%s', discarding it")
+                    logger.warning(errno.EIO,
+                                   m18n.n('global_settings_unknown_setting_from_settings_file',
+                                          key=key), exc_info=1)
     except Exception as e:
         raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
                               exc_info=1)
