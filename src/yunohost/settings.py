@@ -51,6 +51,24 @@ def settings_set(key, value):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'global_settings_key_doesnt_exists', settings_key=key))
 
+    key_type = settings[key]["type"]
+
+    # TODO i18n
+    if key_type == "bool":
+        if not isinstance(value, bool):
+            raise MoulinetteError(errno.EINVAL, "bad type")
+    elif key_type == "int":
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise MoulinetteError(errno.EINVAL, "bad type")
+    elif key_type == "string":
+        if not isinstance(value, basestring):
+            raise MoulinetteError(errno.EINVAL, "bad type")
+    elif key_type == "enum":
+        if value not in settings[key]["choices"]:
+            raise MoulinetteError(errno.EINVAL, "bad type")
+    else:
+        raise MoulinetteError()  # TODO
+
     settings[key]["value"] = value
 
     _save_settings(settings)
