@@ -108,6 +108,7 @@
     "firewall_reloaded": "The firewall has been reloaded",
     "firewall_rules_cmd_failed": "Some firewall rules commands have failed. For more information, see the log",
     "format_datetime_short": "%m/%d/%Y %I:%M %p",
+    "global_settings_bad_choice_for_enum": "Bad value for setting {setting:s}, received {received_type:s}, except {expected_type:s}",
     "global_settings_bad_type_for_setting": "Bad type for setting {setting:s}, received {received_type:s}, except {expected_type:s}",
     "global_settings_cant_open_settings": "Failed to open settings file, reason: {reason:s}",
     "global_settings_cant_serialize_setings": "Failed to serialzed settings data, reason: {reason:s}",
