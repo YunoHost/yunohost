@@ -128,6 +128,15 @@ def _get_settings():
     if not os.path.exists(SETTINGS_PATH):
         return settings
 
+    unknown_settings = {}
+    unknown_settings_path = SETTINGS_PATH_OTHER_LOCATION % "unknown"
+
+    if os.path.exists(unknown_settings_path):
+        try:
+            unknown_settings = json.load(open(unknown_settings_path, "r"))
+        except Exception as e:
+            logger.warning("Error while loading unknown settings %s" % e)
+
     try:
         with open(SETTINGS_PATH) as settings_fd:
             local_settings = json.load(settings_fd)
@@ -138,9 +147,16 @@ def _get_settings():
                 else:
                     logger.warning(m18n.n('global_settings_unknown_setting_from_settings_file',
                                           setting_key=key))
+                    unknown_settings[key] = value
     except Exception as e:
         raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
                               exc_info=1)
+
+    if unknown_settings:
+        try:
+            _save_settings(unknown_settings, location=unknown_settings_path)
+        except Exception as e:
+            logger.warning("Failed to save uknown settings (because %s), abording." % e)
 
     return settings
 
