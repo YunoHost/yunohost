@@ -127,13 +127,14 @@ def _save_settings(settings):
     try:
         result = json.dumps(settings, indent=4)
     except Exception as e:
-        raise MoulinetteError(errno.EINVAL, m18n.n('global_settings_cant_serialize_setings',
-                                                   reason=e),
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('global_settings_cant_serialize_setings', reason=e),
                               exc_info=1)
 
     try:
         with open(SETTINGS_PATH, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
-        raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_write_settings', reason=e),
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('global_settings_cant_write_settings', reason=e),
                               exc_info=1)
