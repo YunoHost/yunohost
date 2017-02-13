@@ -370,12 +370,12 @@ def app_change_url(auth, app, domain, path):
 
     app_checkurl(auth, '%s%s' % (domain, path), app)
 
-    if not os.path.exists(os.path.join(apps_setting_path, app, "scripts", "change_url")):
+    if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
         raise MoulinetteError(errno.EINVAL, "This application '%s' doesn't "
                               "support url modification yet. Maybe you should "
                               "upgrade the application." % app)
 
-    manifest = json.load(open(os.path.join(apps_setting_path, app, "manifest.json")))
+    manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
 
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
@@ -402,18 +402,18 @@ def app_change_url(auth, app, domain, path):
     else:
         env_dict["YNH_APP_NEW_PATH_TRIMED"] = path
 
-    if os.path.exists(os.path.join(app_tmp_folder, "scripts")):
-        shutil.rmtree(os.path.join(app_tmp_folder, "scripts"))
+    if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
+        shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
 
-    shutil.copytree(os.path.join(apps_setting_path, app, "scripts"),
-                    os.path.join(app_tmp_folder, "scripts"))
+    shutil.copytree(os.path.join(APPS_SETTING_PATH, app, "scripts"),
+                    os.path.join(APP_TMP_FOLDER, "scripts"))
 
     # Execute App change_url script
-    os.system('chown -R admin: %s' % install_tmp)
-    os.system('chmod +x %s' % os.path.join(os.path.join(app_tmp_folder, "scripts")))
-    os.system('chmod +x %s' % os.path.join(os.path.join(app_tmp_folder, "scripts", "change_url")))
+    os.system('chown -R admin: %s' % INSTALL_TMP)
+    os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
+    os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
     # XXX journal
-    if hook_exec(os.path.join(app_tmp_folder, 'scripts/change_url'), args=args_list, env=env_dict) != 0:
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict) != 0:
         logger.error("Failed to change '%s' url." % app)
 
         # restore values modified by app_checkurl
