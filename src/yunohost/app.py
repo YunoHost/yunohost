@@ -364,9 +364,7 @@ def app_change_url(auth, app, domain, path):
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
-    old_path_trimed = old_path
-    if old_path_trimed.endswith("/"):
-        old_path_trimed = old_path_trimed[:-1]
+    old_path_trimed = old_path.rstrip("/")
 
     app_checkurl(auth, '%s%s' % (domain, path), app)
 
@@ -397,10 +395,7 @@ def app_change_url(auth, app, domain, path):
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
     env_dict["YNH_APP_NEW_PATH"] = path
 
-    if path.endswith("/"):
-        env_dict["YNH_APP_NEW_PATH_TRIMED"] = path[:-1]
-    else:
-        env_dict["YNH_APP_NEW_PATH_TRIMED"] = path
+    env_dict["YNH_APP_NEW_PATH_TRIMED"] = path.rstrip("/")
 
     if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
         shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
