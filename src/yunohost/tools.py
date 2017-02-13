@@ -163,6 +163,28 @@ def tools_maindomain(auth, new_domain=None):
         logger.warning("%s" % e, exc_info=1)
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
+    # Set hostname
+    pretty_hostname = "(YunoHost/%s)" % new_domain
+    commands = [
+        "sudo hostnamectl --static    set-hostname".split() + [new_domain],
+        "sudo hostnamectl --transient set-hostname".split() + [new_domain],
+        "sudo hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
+    ]
+
+    for command in commands:
+        p = subprocess.Popen(command,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+        out, _ = p.communicate()
+
+        if p.returncode != 0:
+            logger.warning(command)
+            logger.warning(out)
+            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
+        else:
+            logger.info(out)
+
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
