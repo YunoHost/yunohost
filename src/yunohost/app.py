@@ -366,6 +366,9 @@ def app_change_url(auth, app, domain, path):
 
     old_path_trimed = old_path.rstrip("/")
 
+    if (domain.strip().lower(), path.rstrip("/").strip()) == (old_domain, old_path_trimed.strip()):
+        raise MoulinetteError(errno.EINVAL, "The old and new domain/url_path are identical ('%s%s'), nothing to do." % (domain, path))
+
     app_checkurl(auth, '%s%s' % (domain, path), app)
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
