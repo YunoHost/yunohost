@@ -32,7 +32,7 @@
     "app_upgraded": "{app:s} a été mis à jour",
     "appslist_fetched": "La liste d'applications a été récupérée",
     "appslist_removed": "La liste d'applications a été supprimée",
-    "appslist_retrieve_error": "Impossible de récupérer la liste d'applications distante",
+    "appslist_retrieve_error": "Impossible de récupérer la liste d'applications distante: {error}",
     "appslist_unknown": "Liste d'applications inconnue",
     "ask_current_admin_password": "Mot de passe d'administration actuel",
     "ask_email": "Adresse courriel",
@@ -82,7 +82,7 @@
     "domain_dyndns_invalid": "Domaine incorrect pour un usage avec DynDNS",
     "domain_dyndns_root_unknown": "Domaine DynDNS principal inconnu",
     "domain_exists": "Le domaine existe déjà",
-    "domain_uninstall_app_first": "Une ou plusieurs applications sont installées sur ce domaine. Veuillez d'abord les désinstaller avant de supprimer ce domaine. ",
+    "domain_uninstall_app_first": "Une ou plusieurs applications sont installées sur ce domaine. Veuillez d'abord les désinstaller avant de supprimer ce domaine",
     "domain_unknown": "Domaine inconnu",
     "domain_zone_exists": "Le fichier de zone DNS existe déjà",
     "domain_zone_not_found": "Fichier de zone DNS introuvable pour le domaine {:s}",
@@ -279,5 +279,7 @@
     "certmanager_acme_not_configured_for_domain": "Le certificat du domaine {domain:s} ne semble pas être correctement installé. Veuillez préalablement exécuter cert-install pour ce domaine.",
     "certmanager_domain_not_resolved_locally": "Le domaine {domain:s} ne peut être déterminé depuis votre serveur YunoHost. Cela peut arriver si vous avez récemment modifié votre enregistrement DNS. Auquel cas, merci d’attendre quelques heures qu’il se propage. Si le problème persiste, envisager d’ajouter {domain:s} au fichier /etc/hosts. (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces vérifications.)",
     "certmanager_http_check_timeout": "Expiration du délai lors de la tentative du serveur de se contacter via HTTP en utilisant son adresse IP publique (domaine {domain:s} avec l’IP {ip:s}). Vous rencontrez peut-être un problème d’hairpinning ou alors le pare-feu/routeur en amont de votre serveur est mal configuré.",
-    "certmanager_couldnt_fetch_intermediate_cert": "Expiration du délai lors de la tentative de récupération du certificat intermédiaire depuis Let’s Encrypt. L’installation/le renouvellement du certificat a été interrompu - veuillez réessayer prochainement."
+    "certmanager_couldnt_fetch_intermediate_cert": "Expiration du délai lors de la tentative de récupération du certificat intermédiaire depuis Let’s Encrypt. L’installation/le renouvellement du certificat a été interrompu - veuillez réessayer prochainement.",
+    "appslist_retrieve_bad_format": "Le fichier récupéré n'est pas une liste d'applications valide",
+    "domain_hostname_failed": "Échec de la création d'un nouveau nom d'hôte"
 }
