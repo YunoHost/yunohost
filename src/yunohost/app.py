@@ -344,7 +344,7 @@ def app_map(app=None, raw=False, user=None):
         if raw:
             if domain not in result:
                 result[domain] = {}
-    result[domain][path] = {
+            result[domain][path] = {
                 'label': app_settings['label'],
                 'id': app_settings['id']
             }
@@ -373,19 +373,19 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     upgraded_apps = []
 
-    # If no app is specified, upgrade all apps
-    apps_to_upgrade = app
+    apps = app
     user_specified_list = True
-    if not apps_to_upgrade:
+    # If no app is specified, upgrade all apps
+    if not apps:
         if not url and not file:
-            apps_to_upgrade = [app["id"] for app in app_list(installed=True)["apps"]]
+            apps = [app["id"] for app in app_list(installed=True)["apps"]]
             user_specified_list = False
     elif not isinstance(app, list):
-        apps_to_upgrade = [app]
+        apps = [app]
 
     logger.info("Upgrading apps %s", ", ".join(app))
 
-    for app_instance_name in apps_to_upgrade:
+    for app_instance_name in apps:
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
