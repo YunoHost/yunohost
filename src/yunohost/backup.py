@@ -25,7 +25,6 @@
 """
 import os
 import re
-import sys
 import json
 import errno
 import time
@@ -43,13 +42,13 @@ from yunohost.app import (
     app_info, app_ssowatconf, _is_installed, _parse_app_instance_name
 )
 from yunohost.hook import (
-    hook_info, hook_callback, hook_exec, custom_hook_folder
+    hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
 )
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 
-backup_path   = '/home/yunohost.backup'
-archives_path = '%s/archives' % backup_path
+BACKUP_PATH = '/home/yunohost.backup'
+ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
 
 logger = getActionLogger('yunohost.backup')
 
@@ -96,7 +95,7 @@ def backup_create(name=None, description=None, output_directory=None,
         output_directory = os.path.abspath(output_directory)
 
         # Check for forbidden folders
-        if output_directory.startswith(archives_path) or \
+        if output_directory.startswith(ARCHIVES_PATH) or \
            re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
                     output_directory):
             raise MoulinetteError(errno.EINVAL,
@@ -119,9 +118,11 @@ def backup_create(name=None, description=None, output_directory=None,
             tmp_dir = output_directory
             env_var['CAN_BIND'] = 0
     else:
-        output_directory = archives_path
-        if not os.path.isdir(archives_path):
-            os.mkdir(archives_path, 0750)
+        output_directory = ARCHIVES_PATH
+
+    # Create archives directory if it does not exists
+    if not os.path.isdir(ARCHIVES_PATH):
+        os.mkdir(ARCHIVES_PATH, 0750)
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_create', args=[tmp_dir, retcode])
@@ -134,7 +135,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Create temporary directory
     if not tmp_dir:
-        tmp_dir = "%s/tmp/%s" % (backup_path, name)
+        tmp_dir = "%s/tmp/%s" % (BACKUP_PATH, name)
         if os.path.isdir(tmp_dir):
             logger.debug("temporary directory for backup '%s' already exists",
                 tmp_dir)
@@ -288,7 +289,7 @@ def backup_create(name=None, description=None, output_directory=None,
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_archive_open_failed'))
 
-        # Add files to the arvhice
+        # Add files to the archive
         try:
             tar.add(tmp_dir, arcname='')
             tar.close()
@@ -298,9 +299,19 @@ def backup_create(name=None, description=None, output_directory=None,
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_creation_failed'))
 
+        # FIXME : it looks weird that the "move info file" is not enabled if
+        # user activated "no_compress" ... or does it really means
+        # "dont_keep_track_of_this_backup_in_history" ?
+
         # Move info file
-        os.rename(tmp_dir + '/info.json',
-                  '{:s}/{:s}.info.json'.format(archives_path, name))
+        shutil.move(tmp_dir + '/info.json',
+                  '{:s}/{:s}.info.json'.format(ARCHIVES_PATH, name))
+
+        # If backuped to a non-default location, keep a symlink of the archive
+        # to that location
+        if output_directory != ARCHIVES_PATH:
+            link = "%s/%s.tar.gz" % (ARCHIVES_PATH, name)
+            os.symlink(archive_file, link)
 
     # Clean temporary directory
     if tmp_dir != output_directory:
@@ -310,7 +321,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Return backup info
     info['name'] = name
-    return { 'archive': info }
+    return {'archive': info}
 
 
 def backup_restore(auth, name, hooks=[], ignore_hooks=False,
@@ -343,19 +354,19 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
         raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
 
     # Check temporary directory
-    tmp_dir = "%s/tmp/%s" % (backup_path, name)
+    tmp_dir = "%s/tmp/%s" % (BACKUP_PATH, name)
     if os.path.isdir(tmp_dir):
         logger.debug("temporary directory for restoration '%s' already exists",
             tmp_dir)
         os.system('rm -rf %s' % tmp_dir)
 
     # Check available disk space
-    statvfs = os.statvfs(backup_path)
+    statvfs = os.statvfs(BACKUP_PATH)
     free_space = statvfs.f_frsize * statvfs.f_bavail
     if free_space < info['size']:
         logger.debug("%dB left but %dB is needed", free_space, info['size'])
         raise MoulinetteError(
-            errno.EIO, m18n.n('not_enough_disk_space', path=backup_path))
+            errno.EIO, m18n.n('not_enough_disk_space', path=BACKUP_PATH))
 
     def _clean_tmp_dir(retcode=0):
         ret = hook_callback('post_backup_restore', args=[tmp_dir, retcode])
@@ -444,7 +455,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                     continue
                 # Add restoration hook from the backup to the system
                 # FIXME: Refactor hook_add and use it instead
-                restore_hook_folder = custom_hook_folder + 'restore'
+                restore_hook_folder = CUSTOM_HOOK_FOLDER + 'restore'
                 filesystem.mkdir(restore_hook_folder, 755, True)
                 for f in tmp_hooks:
                     logger.debug("adding restoration hook '%s' to the system "
@@ -569,7 +580,7 @@ def backup_list(with_info=False, human_readable=False):
 
     try:
         # Retrieve local archives
-        archives = os.listdir(archives_path)
+        archives = os.listdir(ARCHIVES_PATH)
     except OSError:
         logger.debug("unable to iterate over local archives", exc_info=1)
     else:
@@ -588,7 +599,7 @@ def backup_list(with_info=False, human_readable=False):
             d[a] = backup_info(a, human_readable=human_readable)
         result = d
 
-    return { 'archives': result }
+    return {'archives': result}
 
 
 def backup_info(name, with_details=False, human_readable=False):
@@ -601,12 +612,24 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    archive_file = '%s/%s.tar.gz' % (archives_path, name)
-    if not os.path.isfile(archive_file):
+    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
+
+    # Check file exist (even if it's a broken symlink)
+    if not os.path.lexists(archive_file):
         raise MoulinetteError(errno.EIO,
             m18n.n('backup_archive_name_unknown', name=name))
 
-    info_file = "%s/%s.info.json" % (archives_path, name)
+    # If symlink, retrieve the real path
+    if os.path.islink(archive_file):
+        archive_file = os.path.realpath(archive_file)
+
+        # Raise exception if link is broken (e.g. on unmounted external storage)
+        if not os.path.exists(archive_file):
+            raise MoulinetteError(errno.EIO,
+                m18n.n('backup_archive_broken_link', path=archive_file))
+
+    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
+
     try:
         with open(info_file) as f:
             # Retrieve backup info
@@ -620,7 +643,7 @@ def backup_info(name, with_details=False, human_readable=False):
     size = info.get('size', 0)
     if not size:
         tar = tarfile.open(archive_file, "r:gz")
-        size = reduce(lambda x,y: getattr(x, 'size', x)+getattr(y, 'size', y),
+        size = reduce(lambda x, y: getattr(x, 'size', x) + getattr(y, 'size', y),
                       tar.getmembers())
         tar.close()
     if human_readable:
@@ -650,10 +673,10 @@ def backup_delete(name):
     """
     hook_callback('pre_backup_delete', args=[name])
 
-    archive_file = '%s/%s.tar.gz' % (archives_path, name)
+    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
 
-    info_file = "%s/%s.info.json" % (archives_path, name)
-    for backup_file in [archive_file,info_file]:
+    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
+    for backup_file in [archive_file, info_file]:
         if not os.path.isfile(backup_file):
             raise MoulinetteError(errno.EIO,
                 m18n.n('backup_archive_name_unknown', name=backup_file))

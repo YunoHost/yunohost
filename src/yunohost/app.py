@@ -24,10 +24,8 @@
     Manage apps
 """
 import os
-import sys
 import json
 import shutil
-import stat
 import yaml
 import time
 import re
@@ -35,6 +33,7 @@ import socket
 import urlparse
 import errno
 import subprocess
+import requests
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -45,11 +44,11 @@ from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
-repo_path        = '/var/cache/yunohost/repo'
-apps_path        = '/usr/share/yunohost/apps'
-apps_setting_path= '/etc/yunohost/apps/'
-install_tmp      = '/var/cache/yunohost'
-app_tmp_folder   = install_tmp + '/from_file'
+REPO_PATH        = '/var/cache/yunohost/repo'
+APPS_PATH        = '/usr/share/yunohost/apps'
+APPS_SETTING_PATH= '/etc/yunohost/apps/'
+INSTALL_TMP      = '/var/cache/yunohost'
+APP_TMP_FOLDER   = INSTALL_TMP + '/from_file'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -70,7 +69,7 @@ def app_listlists():
     """
     list_list = []
     try:
-        for filename in os.listdir(repo_path):
+        for filename in os.listdir(REPO_PATH):
             if '.json' in filename:
                 list_list.append(filename[:len(filename)-5])
     except OSError:
@@ -89,27 +88,41 @@ def app_fetchlist(url=None, name=None):
 
     """
     # Create app path if not exists
-    try: os.listdir(repo_path)
-    except OSError: os.makedirs(repo_path)
+    if not os.path.exists(REPO_PATH):
+        os.makedirs(REPO_PATH)
 
     if url is None:
         url = 'https://app.yunohost.org/official.json'
         name = 'yunohost'
-    else:
-        if name is None:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_appslist_name_required'))
+    elif name is None:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('custom_appslist_name_required'))
 
-    list_file = '%s/%s.json' % (repo_path, name)
-    if os.system('wget "%s" -O "%s.tmp"' % (url, list_file)) != 0:
-        os.remove('%s.tmp' % list_file)
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
+    # Download file
+    try:
+        applist_request = requests.get(url, timeout=30)
+    except Exception as e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
 
-    # Rename fetched temp list
-    os.rename('%s.tmp' % list_file, list_file)
+    if (applist_request.status_code != 200):
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
 
-    os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
-    os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
+    # Validate app list format
+    # TODO / Possible improvement : better validation for app list (check that
+    # json fields actually look like an app list and not any json file)
+    applist = applist_request.text
+    try:
+        json.loads(applist)
+    except ValueError, e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+
+    # Write app list to file
+    list_file = '%s/%s.json' % (REPO_PATH, name)
+    with open(list_file, "w") as f:
+        f.write(applist)
+
+    # Setup a cron job to re-fetch the list at midnight
+    open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
     logger.success(m18n.n('appslist_fetched'))
 
@@ -123,7 +136,7 @@ def app_removelist(name):
 
     """
     try:
-        os.remove('%s/%s.json' % (repo_path, name))
+        os.remove('%s/%s.json' % (REPO_PATH, name))
         os.remove("/etc/cron.d/yunohost-applist-%s" % name)
     except OSError:
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
@@ -164,13 +177,13 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         applists = app_listlists()['lists']
 
     for applist in applists:
-        with open(os.path.join(repo_path, applist + '.json')) as json_list:
+        with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
             for app, info in json.loads(str(json_list.read())).items():
                 if app not in app_dict:
                     info['repository'] = applist
                     app_dict[app] = info
 
-    for app in os.listdir(apps_setting_path):
+    for app in os.listdir(APPS_SETTING_PATH):
         if app not in app_dict:
             # Look for forks
             if '__' in app:
@@ -178,7 +191,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
                 if original_app in app_dict:
                     app_dict[app] = app_dict[original_app]
                     continue
-            with open( apps_setting_path + app +'/manifest.json') as json_manifest:
+            with open( APPS_SETTING_PATH + app +'/manifest.json') as json_manifest:
                 app_dict[app] = {"manifest":json.loads(str(json_manifest.read()))}
             app_dict[app]['repository'] = None
 
@@ -199,8 +212,8 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
 
                     # Filter only apps with backup and restore scripts
                     if with_backup and (
-                        not os.path.isfile(apps_setting_path + app_id + '/scripts/backup') or
-                        not os.path.isfile(apps_setting_path + app_id + '/scripts/restore')
+                        not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
+                        not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
                     ):
                         continue
 
@@ -256,7 +269,7 @@ def app_info(app, show_status=False, raw=False):
         ret['settings'] = _get_app_settings(app)
         return ret
 
-    app_setting_path = apps_setting_path + app
+    app_setting_path = APPS_SETTING_PATH + app
 
     # Retrieve manifest and status
     with open(app_setting_path + '/manifest.json') as f:
@@ -296,7 +309,7 @@ def app_map(app=None, raw=False, user=None):
                                   m18n.n('app_not_installed', app=app))
         apps = [app,]
     else:
-        apps = os.listdir(apps_setting_path)
+        apps = os.listdir(APPS_SETTING_PATH)
 
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
@@ -384,8 +397,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Check requirements
         _check_manifest_requirements(manifest)
 
-        app_setting_path = apps_setting_path + '/' + app_instance_name
-
+        app_setting_path = APPS_SETTING_PATH +'/'+ app_instance_name
+        
         # Retrieve current app status
         status = _get_app_status(app_instance_name)
         status['remote'] = manifest.get('remote', None)
@@ -404,7 +417,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
         # Execute App upgrade script
-        os.system('chown -hR admin: %s' % install_tmp)
+        os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
@@ -439,7 +452,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.success(m18n.n('upgrade_complete'))
 
 
-def app_install(auth, app, label=None, args=None):
+def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
 
@@ -447,13 +460,14 @@ def app_install(auth, app, label=None, args=None):
         app -- Name, local path or git URL of the app to install
         label -- Custom name for the app
         args -- Serialize arguments for app installation
+        no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
 
     # Fetch or extract sources
-    try: os.listdir(install_tmp)
-    except OSError: os.makedirs(install_tmp)
+    try: os.listdir(INSTALL_TMP)
+    except OSError: os.makedirs(INSTALL_TMP)
 
     status = {
         'installed_at': int(time.time()),
@@ -506,7 +520,7 @@ def app_install(auth, app, label=None, args=None):
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
     # Create app directory
-    app_setting_path = os.path.join(apps_setting_path, app_instance_name)
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
@@ -523,7 +537,7 @@ def app_install(auth, app, label=None, args=None):
     os.system('chown -R admin: '+ extracted_app_folder)
 
     # Execute App install script
-    os.system('chown -hR admin: %s' % install_tmp)
+    os.system('chown -hR admin: %s' % INSTALL_TMP)
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
@@ -540,19 +554,20 @@ def app_install(auth, app, label=None, args=None):
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
-            # Setup environment for remove script
-            env_dict_remove = {}
-            env_dict_remove["YNH_APP_ID"] = app_id
-            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            if not no_remove_on_failure:
+                # Setup environment for remove script
+                env_dict_remove = {}
+                env_dict_remove["YNH_APP_ID"] = app_id
+                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
-            # Execute remove script
-            remove_retcode = hook_exec(
-                os.path.join(extracted_app_folder, 'scripts/remove'),
-                args=[app_instance_name], env=env_dict_remove)
-            if remove_retcode != 0:
-                logger.warning(m18n.n('app_not_properly_removed',
-                                      app=app_instance_name))
+                # Execute remove script
+                remove_retcode = hook_exec(
+                    os.path.join(extracted_app_folder, 'scripts/remove'),
+                    args=[app_instance_name], env=env_dict_remove)
+                if remove_retcode != 0:
+                    logger.warning(m18n.n('app_not_properly_removed',
+                                          app=app_instance_name))
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
@@ -598,7 +613,7 @@ def app_remove(auth, app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
 
-    app_setting_path = apps_setting_path + app
+    app_setting_path = APPS_SETTING_PATH + app
 
     #TODO: display fail messages from script
     try:
@@ -767,7 +782,7 @@ def app_debug(app):
     Keyword argument:
         app
     """
-    with open(apps_setting_path + app + '/manifest.json') as f:
+    with open(APPS_SETTING_PATH + app + '/manifest.json') as f:
         manifest = json.loads(f.read())
 
     return {
@@ -810,6 +825,9 @@ def app_makedefault(auth, app, domain=None):
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
+    except ValueError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
     except IOError:
         ssowat_conf = {}
 
@@ -818,8 +836,13 @@ def app_makedefault(auth, app, domain=None):
 
     ssowat_conf['redirected_urls'][domain +'/'] = app_domain + app_path
 
-    with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-        json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    try:
+        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
+            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    except IOError as e:
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -908,10 +931,6 @@ def app_checkurl(auth, url, app=None):
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
     if domain in apps_map:
-        # Domain already has apps on sub path
-        if path == '/':
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('app_location_install_failed'))
         # Loop through apps
         for p, a in apps_map[domain].items():
             # Skip requested app checking
@@ -921,7 +940,7 @@ def app_checkurl(auth, url, app=None):
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('app_location_already_used'))
-            elif path.startswith(p):
+            elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('app_location_install_failed'))
 
@@ -990,7 +1009,6 @@ def app_ssowatconf(auth):
     redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
     redirected_urls ={}
 
-    apps = {}
     try:
         apps_list = app_list()['apps']
     except:
@@ -1002,24 +1020,24 @@ def app_ssowatconf(auth):
 
     for app in apps_list:
         if _is_installed(app['id']):
-            with open(apps_setting_path + app['id'] +'/settings.yml') as f:
+            with open(APPS_SETTING_PATH + app['id'] +'/settings.yml') as f:
                 app_settings = yaml.load(f)
                 for item in _get_setting(app_settings, 'skipped_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    skipped_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'skipped_regex'):
                     skipped_regex.append(item)
                 for item in _get_setting(app_settings, 'unprotected_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    unprotected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'unprotected_regex'):
                     unprotected_regex.append(item)
                 for item in _get_setting(app_settings, 'protected_uris'):
                     if item[-1:] == '/':
                         item = item[:-1]
-                    protected_urls.append(app_settings['domain'] + app_settings['path'][:-1] + item)
+                    protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
                 for item in _get_setting(app_settings, 'protected_regex'):
                     protected_regex.append(item)
                 if 'redirected_urls' in app_settings:
@@ -1029,6 +1047,9 @@ def app_ssowatconf(auth):
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
+
+    # Authorize ACME challenge url
+    skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -1070,7 +1091,7 @@ def _get_app_settings(app_id):
                               m18n.n('app_not_installed', app=app_id))
     try:
         with open(os.path.join(
-                apps_setting_path, app_id, 'settings.yml')) as f:
+                APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
             settings = yaml.load(f)
         if app_id == settings['id']:
             return settings
@@ -1090,7 +1111,7 @@ def _set_app_settings(app_id, settings):
 
     """
     with open(os.path.join(
-            apps_setting_path, app_id, 'settings.yml'), 'w') as f:
+            APPS_SETTING_PATH, app_id, 'settings.yml'), 'w') as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
@@ -1103,7 +1124,7 @@ def _get_app_status(app_id, format_date=False):
         format_date -- Format date fields
 
     """
-    app_setting_path = apps_setting_path + app_id
+    app_setting_path = APPS_SETTING_PATH + app_id
     if not os.path.isdir(app_setting_path):
         raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
     status = {}
@@ -1136,7 +1157,7 @@ def _get_app_status(app_id, format_date=False):
 
 def _extract_app_from_file(path, remove=False):
     """
-    Unzip or untar application tarball in app_tmp_folder, or copy it from a directory
+    Unzip or untar application tarball in APP_TMP_FOLDER, or copy it from a directory
 
     Keyword arguments:
         path -- Path of the tarball or directory
@@ -1148,22 +1169,22 @@ def _extract_app_from_file(path, remove=False):
     """
     logger.info(m18n.n('extracting'))
 
-    if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
-    os.makedirs(app_tmp_folder)
+    if os.path.exists(APP_TMP_FOLDER): shutil.rmtree(APP_TMP_FOLDER)
+    os.makedirs(APP_TMP_FOLDER)
 
     path = os.path.abspath(path)
 
     if ".zip" in path:
-        extract_result = os.system('unzip %s -d %s > /dev/null 2>&1' % (path, app_tmp_folder))
+        extract_result = os.system('unzip %s -d %s > /dev/null 2>&1' % (path, APP_TMP_FOLDER))
         if remove: os.remove(path)
     elif ".tar" in path:
-        extract_result = os.system('tar -xf %s -C %s > /dev/null 2>&1' % (path, app_tmp_folder))
+        extract_result = os.system('tar -xf %s -C %s > /dev/null 2>&1' % (path, APP_TMP_FOLDER))
         if remove: os.remove(path)
     elif os.path.isdir(path):
-        shutil.rmtree(app_tmp_folder)
+        shutil.rmtree(APP_TMP_FOLDER)
         if path[len(path)-1:] != '/':
             path = path + '/'
-        extract_result = os.system('cp -a "%s" %s' % (path, app_tmp_folder))
+        extract_result = os.system('cp -a "%s" %s' % (path, APP_TMP_FOLDER))
     else:
         extract_result = 1
 
@@ -1171,7 +1192,7 @@ def _extract_app_from_file(path, remove=False):
         raise MoulinetteError(errno.EINVAL, m18n.n('app_extraction_failed'))
 
     try:
-        extracted_app_folder = app_tmp_folder
+        extracted_app_folder = APP_TMP_FOLDER
         if len(os.listdir(extracted_app_folder)) == 1:
             for folder in os.listdir(extracted_app_folder):
                 extracted_app_folder = extracted_app_folder +'/'+ folder
@@ -1209,7 +1230,7 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
 
 def _fetch_app_from_git(app):
     """
-    Unzip or untar application tarball in app_tmp_folder
+    Unzip or untar application tarball in APP_TMP_FOLDER
 
     Keyword arguments:
         app -- App_id or git repo URL
@@ -1218,7 +1239,7 @@ def _fetch_app_from_git(app):
         Dict manifest
 
     """
-    extracted_app_folder = app_tmp_folder
+    extracted_app_folder = APP_TMP_FOLDER
 
     app_tmp_archive = '{0}.zip'.format(extracted_app_folder)
     if os.path.exists(extracted_app_folder):
@@ -1258,8 +1279,13 @@ def _fetch_app_from_git(app):
                 url = url[:tree_index]
                 branch = app[tree_index+6:]
             try:
+                # We use currently git 2.1 so we can't use --shallow-submodules
+                # option. When git will be in 2.9 (with the new debian version)
+                # we will be able to use it. Without this option all the history
+                # of the submodules repo is downloaded.
                 subprocess.check_call([
-                    'git', 'clone', '--depth=1', url, extracted_app_folder])
+                    'git', 'clone', '--depth=1', '--recursive', url,
+                    extracted_app_folder])
                 subprocess.check_call([
                         'git', 'reset', '--hard', branch
                     ], cwd=extracted_app_folder)
@@ -1356,9 +1382,9 @@ def _installed_instance_number(app, last=False):
     if last:
         number = 0
         try:
-            installed_apps = os.listdir(apps_setting_path)
+            installed_apps = os.listdir(APPS_SETTING_PATH)
         except OSError:
-            os.makedirs(apps_setting_path)
+            os.makedirs(APPS_SETTING_PATH)
             return 0
 
         for installed_app in installed_apps:
@@ -1392,7 +1418,7 @@ def _is_installed(app):
         Boolean
 
     """
-    return os.path.isdir(apps_setting_path + app)
+    return os.path.isdir(APPS_SETTING_PATH + app)
 
 
 def _value_for_locale(values):
@@ -1485,7 +1511,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_info
 
     args_dict = OrderedDict()
@@ -1524,6 +1550,13 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
 
                     # Check for a password argument
                     is_password = True if arg_type == 'password' else False
+
+                    if arg_type == 'domain':
+                        arg_default = _get_maindomain()
+                        ask_string += ' (default: {0})'.format(arg_default)
+                        msignals.display(m18n.n('domains_available'))
+                        for domain in domain_list(auth)['domains']:
+                            msignals.display("- {}".format(domain))
 
                     try:
                         input_string = msignals.prompt(ask_string, is_password)

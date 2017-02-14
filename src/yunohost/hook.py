@@ -24,18 +24,15 @@
     Manage hooks
 """
 import os
-import sys
 import re
-import json
 import errno
-import subprocess
 from glob import iglob
 
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
 
-hook_folder = '/usr/share/yunohost/hooks/'
-custom_hook_folder = '/etc/yunohost/hooks.d/'
+HOOK_FOLDER = '/usr/share/yunohost/hooks/'
+CUSTOM_HOOK_FOLDER = '/etc/yunohost/hooks.d/'
 
 logger = log.getActionLogger('yunohost.hook')
 
@@ -52,12 +49,12 @@ def hook_add(app, file):
     path, filename = os.path.split(file)
     priority, action = _extract_filename_parts(filename)
 
-    try: os.listdir(custom_hook_folder + action)
-    except OSError: os.makedirs(custom_hook_folder + action)
+    try: os.listdir(CUSTOM_HOOK_FOLDER + action)
+    except OSError: os.makedirs(CUSTOM_HOOK_FOLDER + action)
 
-    finalpath = custom_hook_folder + action +'/'+ priority +'-'+ app
+    finalpath = CUSTOM_HOOK_FOLDER + action +'/'+ priority +'-'+ app
     os.system('cp %s %s' % (file, finalpath))
-    os.system('chown -hR admin: %s' % hook_folder)
+    os.system('chown -hR admin: %s' % HOOK_FOLDER)
 
     return { 'hook': finalpath }
 
@@ -71,10 +68,10 @@ def hook_remove(app):
 
     """
     try:
-        for action in os.listdir(custom_hook_folder):
-            for script in os.listdir(custom_hook_folder + action):
+        for action in os.listdir(CUSTOM_HOOK_FOLDER):
+            for script in os.listdir(CUSTOM_HOOK_FOLDER + action):
                 if script.endswith(app):
-                    os.remove(custom_hook_folder + action +'/'+ script)
+                    os.remove(CUSTOM_HOOK_FOLDER + action +'/'+ script)
     except OSError: pass
 
 
@@ -92,7 +89,7 @@ def hook_info(action, name):
 
     # Search in custom folder first
     for h in iglob('{:s}{:s}/*-{:s}'.format(
-            custom_hook_folder, action, name)):
+            CUSTOM_HOOK_FOLDER, action, name)):
         priority, _ = _extract_filename_parts(os.path.basename(h))
         priorities.add(priority)
         hooks.append({
@@ -101,7 +98,7 @@ def hook_info(action, name):
         })
     # Append non-overwritten system hooks
     for h in iglob('{:s}{:s}/*-{:s}'.format(
-            hook_folder, action, name)):
+            HOOK_FOLDER, action, name)):
         priority, _ = _extract_filename_parts(os.path.basename(h))
         if priority not in priorities:
             hooks.append({
@@ -186,23 +183,23 @@ def hook_list(action, list_by='name', show_info=False):
         # Append system hooks first
         if list_by == 'folder':
             result['system'] = dict() if show_info else set()
-            _append_folder(result['system'], hook_folder)
+            _append_folder(result['system'], HOOK_FOLDER)
         else:
-            _append_folder(result, hook_folder)
+            _append_folder(result, HOOK_FOLDER)
     except OSError:
         logger.debug("system hook folder not found for action '%s' in %s",
-                     action, hook_folder)
+                     action, HOOK_FOLDER)
 
     try:
         # Append custom hooks
         if list_by == 'folder':
             result['custom'] = dict() if show_info else set()
-            _append_folder(result['custom'], custom_hook_folder)
+            _append_folder(result['custom'], CUSTOM_HOOK_FOLDER)
         else:
-            _append_folder(result, custom_hook_folder)
+            _append_folder(result, CUSTOM_HOOK_FOLDER)
     except OSError:
         logger.debug("custom hook folder not found for action '%s' in %s",
-                     action, custom_hook_folder)
+                     action, CUSTOM_HOOK_FOLDER)
 
     return { 'hooks': result }
 
@@ -315,7 +312,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if path[0] != '/':
         path = os.path.realpath(path)
     if not os.path.isfile(path):
-        raise MoulinetteError(errno.EIO, m18n.g('file_not_exist'))
+        raise MoulinetteError(errno.EIO, m18n.g('file_not_exist', path=path))
 
     # Construct command variables
     cmd_args = ''

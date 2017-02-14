@@ -17,7 +17,7 @@ ynh_backup() {
 
     # validate arguments
     [[ -e "${SRCPATH}" ]] || {
-        echo "Source path '${DESTPATH}' does not exist" >&2
+        echo "Source path '${SRCPATH}' does not exist" >&2
         return 1
     }
 
@@ -65,12 +65,18 @@ ynh_bind_or_cp() {
 
 # Create a directory under /tmp
 #
+# Deprecated helper
+#
 # usage: ynh_mkdir_tmp
 # | ret: the created directory path
 ynh_mkdir_tmp() {
-    TMPDIR="/tmp/$(ynh_string_random 6)"
-    while [ -d $TMPDIR ]; do
-        TMPDIR="/tmp/$(ynh_string_random 6)"
-    done
-    mkdir -p "$TMPDIR" && echo "$TMPDIR"
+    echo "The helper ynh_mkdir_tmp is deprecated." >&2
+    echo "You should use 'mktemp -d' instead and manage permissions \
+properly with chmod/chown." >&2
+    local TMP_DIR=$(mktemp -d)
+
+    # Give rights to other users could be a security risk.
+    # But for retrocompatibility we need it. (This helpers is deprecated)
+    chmod 755 $TMP_DIR
+    echo $TMP_DIR
 }

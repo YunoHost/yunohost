@@ -26,10 +26,17 @@ do_pre_regen() {
       's/^\(listen =\).*/\1 */' \
       "${dovecot_dir}/dovecot.conf"
   fi
+
+  mkdir -p "${dovecot_dir}/yunohost.d"
+  cp pre-ext.conf "${dovecot_dir}/yunohost.d"
+  cp post-ext.conf "${dovecot_dir}/yunohost.d"
 }
 
 do_post_regen() {
   regen_conf_files=$1
+
+  sudo mkdir -p "/etc/dovecot/yunohost.d/pre-ext.d"
+  sudo mkdir -p "/etc/dovecot/yunohost.d/post-ext.d"
 
   # create vmail user
   id vmail > /dev/null 2>&1 \
