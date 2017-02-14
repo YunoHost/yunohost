@@ -362,10 +362,12 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     # If no app is specified, upgrade all apps
     if not app:
-        if (not url and not file):
-            app = os.listdir(APPS_SETTING_PATH)
+        if not url and not file:
+            app = [app["id"] for app in app_list(installed=True)["apps"]]
     elif not isinstance(app, list):
-        app = [ app ]
+        app = [app]
+
+    logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in app:
         installed = _is_installed(app_instance_name)
@@ -376,21 +378,18 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if app_instance_name in upgraded_apps:
             continue
 
-        current_app_dict = app_info(app_instance_name,  raw=True)
-        new_app_dict     = app_info(app_instance_name, raw=True)
+        app_dict = app_info(app_instance_name, raw=True)
+
+        locale_update_time = app_dict['settings'].get('update_time', app_dict['settings']['install_time'])
 
         if file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
-        elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
+        elif 'lastUpdate' not in app_dict or 'git' not in app_dict:
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
-              or ('update_time' not in current_app_dict['settings'] \
-                   and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
-              or ('update_time' in current_app_dict['settings'] \
-                   and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
+        elif app_dict['lastUpdate'] > locale_update_time:
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
             continue
@@ -399,7 +398,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         _check_manifest_requirements(manifest)
 
         app_setting_path = APPS_SETTING_PATH +'/'+ app_instance_name
-
+        
         # Retrieve current app status
         status = _get_app_status(app_instance_name)
         status['remote'] = manifest.get('remote', None)
