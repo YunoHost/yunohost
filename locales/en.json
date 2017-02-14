@@ -7,6 +7,7 @@
     "app_argument_choice_invalid": "Invalid choice for argument '{name:s}', it must be one of {choices:s}",
     "app_argument_invalid": "Invalid value for argument '{name:s}': {error:s}",
     "app_argument_required": "Argument '{name:s}' is required",
+    "app_change_url_identical_domains": "The old and new domain/url_path are identical ('{domain:s}{path:s}'), nothing to do.",
     "app_extraction_failed": "Unable to extract installation files",
     "app_id_invalid": "Invalid app id",
     "app_incompatible": "The app is incompatible with your YunoHost version",
