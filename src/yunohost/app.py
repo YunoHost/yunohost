@@ -421,10 +421,12 @@ def app_change_url(auth, app, domain, path):
 
         return
 
-    # avoid common mistakes
-    os.system("service nginx reload")
-
     app_ssowatconf(auth)
+
+    # avoid common mistakes
+    if os.system("service nginx reload") != 0:
+        nginx_errors = subprocess.check_output("nginx -t")
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors))
 
     logger.success("Successfly changed '%s' url to '%s%s'" % (app, domain, path))
 
