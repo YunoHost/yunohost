@@ -28,6 +28,7 @@
     "app_unsupported_remote_type": "Unsupported remote type used for the app",
     "app_upgrade_failed": "Unable to upgrade {app:s}",
     "app_upgraded": "{app:s} has been upgraded",
+    "app_already_up_to_date": "{app:s} is already up to date",
     "appslist_fetched": "The app list has been fetched",
     "appslist_removed": "The app list has been removed",
     "appslist_retrieve_error": "Unable to retrieve the remote app list: {error}",

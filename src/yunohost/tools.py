@@ -345,8 +345,6 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
 
-        logger.info(m18n.n('done'))
-
         cache.open(None)
         cache.upgrade(True)
 
@@ -357,13 +355,16 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                 'fullname': pkg.fullname,
                 'changelog': pkg.get_changelog()
             })
+        logger.info(m18n.n('done'))
 
-    apps = []
+    upgradable_apps = []
     if not ignore_apps:
         try:
             app_fetchlist()
         except MoulinetteError:
+            # FIXME : silent exception !?
             pass
+<<<<<<< HEAD
         app_list = os.listdir(APPS_SETTING_PATH)
         if len(app_list) > 0:
             for app_id in app_list:
@@ -393,6 +394,23 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         logger.info(m18n.n('packages_no_upgrade'))
 
     return {'packages': packages, 'apps': apps}
+=======
+        app_list_installed = os.listdir(apps_setting_path)
+        for app_id in app_list_installed:
+
+            app_dict = app_info(app_id,  raw=True)
+
+            if app_dict["upgradable"] == "yes":
+                upgradable_apps.append({
+                    'id': app_id,
+                    'label': app_dict['settings']['label']
+                })
+
+    if len(upgradable_apps) == 0 and len(packages) == 0:
+        logger.info(m18n.n('packages_no_upgrade'))
+
+    return {'packages': packages, 'apps': upgradable_apps}
+>>>>>>> b4d237a... Adding a 'upgradable' attribute directly in app_info
 
 
 def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
