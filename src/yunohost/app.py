@@ -92,25 +92,29 @@ def app_fetchlist(url=None, name=None):
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
-    if url is not None and name:
-        app_lists = [(url, name)]
-    elif url is not None and name is None:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('custom_appslist_name_required'))
+    if url is not None:
+        if name:
+            app_lists = [(url, name)]
+        else:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('custom_appslist_name_required'))
+    # FIXME : What if url is not given, but there's a name ?
     else:
         app_lists = []
-        for filename in [x for x in os.listdir(REPO_PATH) if x.endswith(".json")]:
-            base_filename = filename[:-len(".json")]
-            url_filename_path = os.path.join(REPO_PATH, base_filename + ".url")
+        json_list = [x for x in os.listdir(REPO_PATH) if x.endswith(".json")]
+        for json_file in json_list:
+            list_name = json_file.rsplit('.', 1)[0]
+            url_file =  list_name + '.url'
 
-            if os.path.exists(url_filename_path):
-                url = open(url_filename_path, "r").read().strip()
-            else:  # XXX backward compatible code, YunoHost never store the url of the list else where
-                cron_file_path = "/etc/cron.d/yunohost-applist-%s" % base_filename
+            if os.path.exists(url_file):
+                url = open(url_file, "r").read().strip()
+            # XXX backward compatible code, YunoHost never store the url of the list elsewhere
+            else:
+                cron_file_path = "/etc/cron.d/yunohost-applist-%s" % list_name
 
                 if not os.path.exists(cron_file_path):
                     logger.warning("neither %s nor %s exist, is the app list '%s' correctly installed on the system?" %\
-                                                                       (url_filename_path, cron_file_path, base_filename))
+                                                                       (url_file, cron_file_path, list_name))
                     continue
 
                 cron_file_content = open(cron_file_path).read().strip()
@@ -119,18 +123,18 @@ def app_fetchlist(url=None, name=None):
 
                 if maybe_url and maybe_url.groups():
                     url = maybe_url.groups()[0]
-                    open(url_filename_path, "w").write(url)
+                    open(url_file, "w").write(url)
                 else:
                     logger.warning("I could not retreive the url for the app list '%(app_list)s' in the file '%(cron_file_path)s'."
-                                    "Please create a file '%(url_filename_path)s' that contains the url for this applist." % {
-                        "app_list": base_filename,
+                                    "Please create a file '%(url_file)s' that contains the url for this applist." % {
+                        "app_list": list_name,
                         "cron_file_path": cron_file_path,
-                        "url_filename_path": url_filename_path
+                        "url_file": url_file
                     })
 
                     continue
 
-            app_lists.append((url, base_filename))
+            app_lists.append((url, list_name))
 
     for url, name in app_lists:
         # Download file
@@ -160,6 +164,7 @@ def app_fetchlist(url=None, name=None):
         open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
         # TODO display app list name
+        logger.success(name)
         logger.success(m18n.n('appslist_fetched'))
 
 
