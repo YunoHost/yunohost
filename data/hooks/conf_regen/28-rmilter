@@ -21,8 +21,9 @@ do_post_regen() {
   # retrieve variables
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
-  # create DKIM directory
+  # create DKIM directory with proper permission
   sudo mkdir -p /etc/dkim
+  sudo chown _rmilter /etc/dkim
 
   # create DKIM key for domains
   for domain in $domain_list; do
