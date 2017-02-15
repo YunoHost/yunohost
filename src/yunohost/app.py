@@ -95,6 +95,7 @@ def app_fetchlist(url=None, name=None):
     if url is not None:
         if name:
             app_lists = [(url, name)]
+            _register_new_app_list_to_fetch(url, name)
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
@@ -133,6 +134,8 @@ def app_fetchlist(url=None, name=None):
                     })
 
                     continue
+
+                _register_new_app_list_to_fetch(url, name)
 
             app_lists.append((url, name))
 
@@ -1699,6 +1702,16 @@ def _parse_app_instance_name(app_instance_name):
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
+
+
+def _register_new_app_list_to_fetch(url, name):
+    """
+    Add the files that keep track of app lists (and corresponding urls) to
+    be fetched
+    """
+
+    pass
+
 
 def is_true(arg):
     """
