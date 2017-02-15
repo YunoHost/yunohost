@@ -444,7 +444,7 @@ investigate :
 
 """ % (domain, exception_message, stack, logs)
 
-    message = """
+    message = """\
 From: %s
 To: %s
 Subject: %s
