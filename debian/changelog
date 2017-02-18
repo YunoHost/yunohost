@@ -1,3 +1,13 @@
+yunohost (2.5.6) stable; urgency=low
+
+  [ julienmalik ]
+  * [fix] Any address in the range 127.0.0.0/8 is a valid loopback address
+
+  [ opi ]
+  * [fix] Update Rmilter configuration to fix dkim signing.
+
+ -- opi <opi@zeropi.net>  Sat, 18 Feb 2017 15:51:13 +0100
+
 yunohost (2.5.5) stable; urgency=low
 
   Hotfix release
