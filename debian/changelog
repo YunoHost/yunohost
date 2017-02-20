@@ -1,3 +1,62 @@
+yunohost (2.6.0) testing; urgency=low
+
+  Important changes
+
+  - [enh] Add unit test mechanism (#254)
+  - [fix] Any address in the range 127.0.0.0/8 is a valid loopback address for localhost
+  - [enh] include script to reset ldap password (#217)
+  - [enh] Set main domain as hostname (#219)
+  - [enh] New bash helpers for app scripts: ynh_system_user_create, ynh_system_user_delete, helper ynh_find_port
+
+  Thanks to every contributors (Bram, Aleks, Maniack Crudelis, ZeHiro, opi, julienmalik
+
+  Full changes log:
+
+    8486f440fb18d513468b696f84c0efe833298d77 [enh] Add unit test mechanism (#254)
+    45e85fef821bd8c60c9ed1856b3b7741b45e4158 Merge pull request #252 from ZeHiro/fix-785
+    834cf459dcd544919f893e73c6be6a471c7e0554 Please Bram :D
+    088abd694e0b0be8c8a9b7d96a3894baaf436459 Merge branch 'testing' into unstable
+    f80653580cd7be31484496dbe124b88e34ca066b Merge pull request #257 from YunoHost/fix_localhost_address_range
+    f291d11c844d9e6f532f1ec748a5e1eddb24c2f6 [fix] cert-renew email headers appear as text in the body
+    accb78271ebefd4130ea23378d6289ac0fa9d0e4 [fix] Any address in the range 127.0.0.0/8 is a valid loopback address
+    cc4451253917040c3a464dce4c12e9e7cf486b15 Clean app upgrade (#193)
+    d4feb879d44171447be33a65538503223b4a56fb [enh] include script to reset ldap password (#217)
+    1d561123b6f6fad1712c795c31409dedc24d0160 [enh] Set main domain as hostname (#219)
+    0e55b17665cf1cd05c157950cbc5601421910a2e Fixing also get_conf_hashes
+    035100d6dbcd209dceb68af49b593208179b0595 Merge pull request #251 from YunoHost/uppercase_for_global_variables
+    f28be91b5d25120aa13d9861b0b3be840f330ac0 [fix] Uppercase global variable even in comment.
+    5abcaadaeabdd60b40baf6e79fff3273c1dd6108 [fix] handle the case where services[service] is set to null in the services.yml. Fix #785
+    5d3e1c92126d861605bd209ff56b8b0d77d3ff39 Merge pull request #233 from YunoHost/ynh_find_port
+    83dca8e7c6ec4efb206140c234f51dfa5b3f3bf7 Merge pull request #237 from YunoHost/ynh_system_user_create_delete
+    f6c7702dfaf3a7879323a9df60fde6ac58d3aff7 [mod] rename all global variables to uppercase
+    3804f33b2f712eb067a0fcbb6fb5c60f3a813db4 Merge pull request #159 from YunoHost/clean_app_fetchlist
+    8b44276af627ec05ac376c57e098716cacd165f9 Merge branch 'testing' into unstable
+    dea89fc6bb209047058f050352e3c082b9e62f32 Merge pull request #243 from YunoHost/fix-rspamd-rmilter-status
+    dea6177c070b9176e3955c4f32b8a602977cf424 Merge pull request #244 from YunoHost/fix-unattended-upgrade-syntax
+    a61445c9c3d231b9248fd247a0dd3345fc0ac6df Checking for 404 error and valid json format
+    991b64db92e60f3bc92cb1ba4dc25f7e11fb1a8d Merge branch 'unstable' into clean_app_fetchlist
+    730156dd92bbd1b0c479821ffc829e8d4f3d2019 Using request insteqd of urlretrieve, to have timeout
+    5b006dbf0e074f4070f6832d2c64f3b306935e3f Adding info/debug message for fetchlist
+    98d88f2364eda28ddc6b98d45a7fbe2bbbaba3d4 [fix] Unattended upgrades configuration syntax.
+    7d4aa63c430516f815a8cdfd2f517f79565efe2f [fix] Rspamd & Rmilter are no more sockets
+    5be13fd07e12d95f05272b9278129da4be0bc2d7 Merge pull request #220 from YunoHost/conf-hashes-logs
+    901e3df9b604f542f2c460aad05bcc8efc9fd054 Pas de correction de l'argument
+    cd93427a97378ab635c85c0ae9a1e45132d6245c Retire la commande ynh
+    abb9f44b87cfed5fa14be9471b536fc27939d920  Nouveaux helpers ynh_system_user_create et ynh_system_user_delete
+    3e9d086f7ff64f923b2d623df41ec42c88c8a8ef Nouveau helper ynh_find_port
+    0b6ccaf31a8301b50648ec0ba0473d2190384355 Implementing comments
+    5b7536cf1036cecee6fcc187b2d1c3f9b7124093 Style for Bram :)
+    e857f4f0b27d71299c498305b24e4b3f7e4571c4 [mod] Cleaner logs for _get_conf_hashes
+    99f0f761a5e2737b55f9f8b6ce6094b5fd7fb1ca [mod] include execption into appslist_retrieve_error message
+    2aab7bdf1bcc6f025c7c5bf618d0402439abd0f4 [mod] simplify code
+    97128d7d636836068ad6353f331d051121023136 [mod] exception should only be used for exceptional situations and not when buildin functions allow you to do the expected stuff
+    d9081bddef1b2129ad42b05b28a26cc7680f7d51 [mod] directly use python to retreive json list
+    c4cecfcea5f51f1f9fb410358386eb5a6782cdb2 [mod] use python instead of os.system
+    cf3e28786cf829bc042226283399699195e21d79 [mod] remove useless line
+
+
+ -- opi <opi@zeropi.net>  Mon, 20 Feb 2017 16:31:52 +0100
+
 yunohost (2.5.6) stable; urgency=low
 
   [ julienmalik ]
