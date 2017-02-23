@@ -66,8 +66,11 @@ def app_listlists():
     """
     List fetched lists
 
-
     """
+
+    if (_using_legacy_applist_system()):
+        _migrate_applist_system()
+
     list_list = []
     try:
         for filename in os.listdir(REPO_PATH):
@@ -92,10 +95,13 @@ def app_fetchlist(url=None, name=None):
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
+    if (_using_legacy_applist_system()):
+        _migrate_applist_system()
+
     if url is not None:
         if name:
             app_lists = [(url, name)]
-            _register_new_app_list_to_fetch(url, name)
+            _register_new_applist(url, name)
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
@@ -135,7 +141,7 @@ def app_fetchlist(url=None, name=None):
 
                     continue
 
-                _register_new_app_list_to_fetch(url, name)
+                _register_new_applist(url, name)
 
             app_lists.append((url, name))
 
@@ -1704,12 +1710,25 @@ def _parse_app_instance_name(app_instance_name):
     return (appid, app_instance_nb)
 
 
-def _register_new_app_list_to_fetch(url, name):
+def _using_legacy_applist_system():
+    """
+    Return True if we're using the old fetchlist scheme
+    """
+    pass
+
+
+def _migrate_applist_system():
+    """
+    Migrate from the legacy fetchlist system to the new one
+    """
+    pass
+
+
+def _register_new_applist(url, name):
     """
     Add the files that keep track of app lists (and corresponding urls) to
     be fetched
     """
-
     pass
 
 
