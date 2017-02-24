@@ -25,13 +25,18 @@ def setup_function(function):
     for f in files:
         os.remove(f)
 
+    if os.path.exists("/etc/cron.daily/yunohost-fetch-applists"):
+        os.remove("/etc/cron.daily/yunohost-fetch-applists")
+
 
 def teardown_function(function):
     pass
 
+
 ###############################################################################
-#   Test applist_list                                                         #
+#   Test listing of applists and registering of applists                      #
 ###############################################################################
+
 
 def test_applist_list_empty():
     """
@@ -40,9 +45,6 @@ def test_applist_list_empty():
 
     assert app_listlists() == {}
 
-###############################################################################
-#   Test applist register                                                     #
-###############################################################################
 
 def test_applist_list_register_standard():
     """
@@ -66,13 +68,135 @@ def test_applist_list_register_conflict_name():
 
     # Register a new dummy list
     _register_new_applist("https://lol.com/applist.json", "dummy")
+    with pytest.raises(MoulinetteError):
+        _register_new_applist("https://lol.com/applist.json", "dummy2")
 
     applist_dict = app_listlists()
-    assert applist_dict["dummy"] == "https://lol.com/applist.json"
+
+    assert "dummy" in applist_dict.keys()
+    assert "dummy2" not in applist_dict.keys()
+
 
 def test_applist_list_register_conflict_url():
+    """
+    Register two lists with url conflicts
+    """
 
-    pass
+    _register_new_applist("https://lol.com/applist.json", "dummy")
+    with pytest.raises(MoulinetteError):
+        _register_new_applist("https://lol.com/applist.json", "plopette")
+
+    applist_dict = app_listlists()
+
+    assert "dummy" in applist_dict.keys()
+    assert "plopette" not in applist_dict.keys()
+
+
+###############################################################################
+#   Test fetching of applists                                                 #
+###############################################################################
+
+
+def test_applist_fetch():
+    """
+    Do a fetchlist and test yunohost.json got updated.
+    """
+    assert app_listlists() == {}
+
+    _register_new_applist(URL_OFFICIAL_APP_LIST, "yunohost")
+    # Put some dummy content in the json
+    with open(REPO_PATH+"/yunohost.json", "w") as f:
+        f.write("Dummy content")
+
+    with requests_mock.Mocker() as m:
+
+        # Mock the server response with a valid (well, empty, yep) json
+        m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ }')
+
+        official_json_ctime = os.path.getctime(LOCAL_OFFICIAL_APP_LIST)
+        app_fetchlist()
+        new_official_json_ctime = os.path.getctime(LOCAL_OFFICIAL_APP_LIST)
+
+        assert new_official_json_ctime > official_json_ctime
+
+
+def test_applist_fetch_customurl_noname():
+    """
+    Do a fetchlist with a custom url but no name
+    """
+
+    with pytest.raises(MoulinetteError):
+        app_fetchlist(url=URL_OFFICIAL_APP_LIST)
+
+
+def test_applist_fetch_unknownlist():
+    """
+    Do a fetchlist with a name of list that does not exists
+    """
+
+    assert app_listlists() == {}
+
+    with pytest.raises(MoulinetteError):
+        app_fetchlist(name="swag")
+
+
+def test_applist_fetch_badurl():
+    """
+    Do a fetchlist with a bad url
+    """
+
+    with pytest.raises(MoulinetteError):
+        app_fetchlist(url="https://not.a.valid.url/plop.json", name="plop")
+
+
+def test_applist_fetch_badfile():
+    """
+    Do a fetchlist and mock a response with a bad bada 404 or something
+    """
+    assert app_listlists() == {}
+
+    _register_new_applist(URL_OFFICIAL_APP_LIST, "yunohost")
+
+    with requests_mock.Mocker() as m:
+
+        m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ not json lol }')
+
+        with pytest.raises(MoulinetteError):
+            app_fetchlist()
+
+
+def test_applist_fetch_404():
+    """
+    Do a fetchlist and mock a 404 response
+    """
+    assert app_listlists() == {}
+
+    _register_new_applist(URL_OFFICIAL_APP_LIST, "yunohost")
+
+    with requests_mock.Mocker() as m:
+
+        m.register_uri("GET", URL_OFFICIAL_APP_LIST, status_code=404)
+
+        with pytest.raises(MoulinetteError):
+            app_fetchlist()
+
+
+def test_applist_fetch_timeout():
+    """
+    Do a fetchlist and mock a timeout
+    """
+    assert app_listlists() == {}
+
+    _register_new_applist(URL_OFFICIAL_APP_LIST, "yunohost")
+
+    with requests_mock.Mocker() as m:
+
+        m.register_uri("GET", URL_OFFICIAL_APP_LIST,
+                       exc=requests.exceptions.ConnectTimeout)
+
+        with pytest.raises(MoulinetteError):
+            app_fetchlist()
+
 
 ###############################################################################
 #   Test migration from legacy applist system                                 #
@@ -109,6 +233,7 @@ def test_applist_system_migration():
     # Start with no legacy cron, no applist registered
     assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert app_listlists() == {}
+    assert not os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
 
     # Add a few legacy crons
     add_legacy_cron("yunohost", "https://app.yunohost.org/official.json")
@@ -126,6 +251,8 @@ def test_applist_system_migration():
     applist_dict = app_listlists()
     assert applist_dict["yunohost"] == "https://app.yunohost.org/official.json"
     assert applist_dict["dummy"] == "https://swiggitty.swaggy.lol/yolo.json"
+    
+    assert os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
 
 
 def test_applist_system_migration_badcron():
@@ -136,6 +263,7 @@ def test_applist_system_migration_badcron():
     # Start with no legacy cron, no applist registered
     assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert app_listlists() == {}
+    assert not os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
 
     # Add a "bad" legacy cron
     add_legacy_cron("wtflist", "ftp://the.fuck.is.this")
@@ -152,6 +280,8 @@ def test_applist_system_migration_badcron():
 
     # Applist should still be empty
     assert app_listlists() == {}
+    
+    assert os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
 
 
 def test_applist_system_migration_conflict():
@@ -162,6 +292,7 @@ def test_applist_system_migration_conflict():
     # Start with no legacy cron, no applist registered
     assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert app_listlists() == {}
+    assert not os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
 
     # Add a few legacy crons
     add_legacy_cron("yunohost", "https://app.yunohost.org/official.json")
@@ -179,6 +310,5 @@ def test_applist_system_migration_conflict():
     applist_dict = app_listlists()
     assert applist_dict["dummy"] == "https://app.yunohost.org/official.json"
     assert "yunohost" not in applist_dict.keys()
-
-
-
+    
+    assert os.path.exists("/etc/cron.daily/yunohost-fetch-applists")

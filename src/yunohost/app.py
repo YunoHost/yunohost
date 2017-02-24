@@ -68,7 +68,11 @@ def app_listlists():
     List fetched lists
 
     """
+    # Create app path if not exists
+    if not os.path.exists(REPO_PATH):
+        os.makedirs(REPO_PATH)
 
+    # Migrate applist system if needed
     if (_using_legacy_applist_system()):
         _migrate_applist_system()
 
@@ -85,10 +89,10 @@ def app_listlists():
 
 def app_fetchlist(url=None, name=None):
     """
-    Fetch application list(s) from app server
+    Fetch application list(s) from app server. By default, fetch all lists.
 
     Keyword argument:
-        name -- Name of the list (default yunohost)
+        name -- Name of the list
         url -- URL of remote JSON list (default https://app.yunohost.org/official.json)
 
     """
@@ -96,65 +100,45 @@ def app_fetchlist(url=None, name=None):
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
+    # Migrate applist system if needed
     if (_using_legacy_applist_system()):
         _migrate_applist_system()
 
+    # Determine the list of applist to be fetched
+    applists_to_be_fetched = {}
+    # If a url and and a name is given, try to register new list and to fetch
+    # only this list
     if url is not None:
         if name:
-            app_lists = [(url, name)]
             _register_new_applist(url, name)
+            applists_to_be_fetched[name] = url
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
-    # FIXME : What if url is not given, but there's a name ?
+    # If a name is given, look for an applist with that name and fetch it
+    elif name is not None:
+        applists = app_listlists()
+        if name not in applists:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('appslist_unknown', name=name))
+        else:
+            applists_to_be_fetched[name] = applists[name]
+    # Otherwise, fetch all lists
     else:
-        app_lists = []
-        json_list = [x for x in os.listdir(REPO_PATH) if x.endswith(".json")]
-        for json_file in json_list:
-            name = json_file.rsplit('.', 1)[0]
-            url_file = name + '.url'
+        applists_to_be_fetched = app_listlists()
 
-            if os.path.exists(url_file):
-                url = open(url_file, "r").read().strip()
-            # XXX backward compatible code, YunoHost never store the url of the list elsewhere
-            else:
-                cron_file_path = "/etc/cron.d/yunohost-applist-%s" % name
-
-                if not os.path.exists(cron_file_path):
-                    logger.warning("neither %s nor %s exist, is the app list '%s' correctly installed on the system?" %\
-                                                                       (url_file, cron_file_path, name))
-                    continue
-
-                cron_file_content = open(cron_file_path).read().strip()
-
-                maybe_url = re.search("-u (https?://[^ ]+)", cron_file_content)
-
-                if maybe_url and maybe_url.groups():
-                    url = maybe_url.groups()[0]
-                    open(url_file, "w").write(url)
-                else:
-                    logger.warning("I could not retreive the url for the app list '%(app_list)s' in the file '%(cron_file_path)s'."
-                                    "Please create a file '%(url_file)s' that contains the url for this applist." % {
-                        "app_list": name,
-                        "cron_file_path": cron_file_path,
-                        "url_file": url_file
-                    })
-
-                    continue
-
-                _register_new_applist(url, name)
-
-            app_lists.append((url, name))
-
-    for url, name in app_lists:
+    # Fetch all applists to be fetched
+    for name, url in applists_to_be_fetched.items():
         # Download file
         try:
             applist_request = requests.get(url, timeout=30)
         except Exception as e:
-            raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
+            raise MoulinetteError(errno.EBADR, 
+                                  m18n.n('appslist_retrieve_error', error=str(e)))
 
         if (applist_request.status_code != 200):
-            raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+            raise MoulinetteError(errno.EBADR, 
+                                  m18n.n('appslist_retrieve_error', error="404, not found"))
 
         # Validate app list format
         # TODO / Possible improvement : better validation for app list (check that
@@ -163,19 +147,16 @@ def app_fetchlist(url=None, name=None):
         try:
             json.loads(applist)
         except ValueError, e:
-            raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+            raise MoulinetteError(errno.EBADR, 
+                                  m18n.n('appslist_retrieve_bad_format'))
 
         # Write app list to file
         list_file = '%s/%s.json' % (REPO_PATH, name)
         with open(list_file, "w") as f:
             f.write(applist)
 
-        # Setup a cron job to re-fetch the list at midnight
-        open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
-
         # TODO display app list name
-        logger.success(name)
-        logger.success(m18n.n('appslist_fetched'))
+        logger.success(m18n.n('appslist_fetched'), name=name)
 
 
 def app_removelist(name):
@@ -1762,6 +1743,13 @@ def _migrate_applist_system():
             else:
                 os.remove(cron_path)
 
+    _install_applist_fetch_cron()
+
+
+def _install_applist_fetch_cron():
+
+    with open("/etc/cron.daily/yunohost-fetch-applists", "w") as f:
+        f.write('#!/bin/bash\nyunohost app fetchlist > /dev/null 2>&1\n')
 
 
 def _register_new_applist(url, name):
@@ -1774,7 +1762,7 @@ def _register_new_applist(url, name):
 
     # Check if name conflicts with an existing list
     if os.path.exists(applist_url_file):
-        raise MoulinetteError(errno.EEXISTS,
+        raise MoulinetteError(errno.EEXIST,
                               m18n.n('appslist_name_already_tracked', name=name))
 
     # Check if url conflicts with an existing list
@@ -1782,7 +1770,7 @@ def _register_new_applist(url, name):
     for other_applist_url_file in others_applists_url_files:
         other_applist_url = open(other_applist_url_file, "r").read()
         if other_applist_url == url:
-            raise MoulinetteError(errno.EEXISTS,
+            raise MoulinetteError(errno.EEXIST,
                                   m18n.n('appslist_url_already_tracked', url=url))
 
     open(applist_url_file, "w").write(url)
