@@ -34,6 +34,7 @@ import urlparse
 import errno
 import subprocess
 import requests
+import glob
 from collections import OrderedDict
 from urllib import urlretrieve
 
@@ -71,15 +72,15 @@ def app_listlists():
     if (_using_legacy_applist_system()):
         _migrate_applist_system()
 
-    list_list = []
-    try:
-        for filename in os.listdir(REPO_PATH):
-            if '.json' in filename:
-                list_list.append(filename[:len(filename)-5])
-    except OSError:
-        raise MoulinetteError(1, m18n.n('no_appslist_found'))
+    applist_list = {}
 
-    return { 'lists' : list_list }
+    url_files = [f for f in os.listdir(REPO_PATH) if f.endswith(".url")]
+    for url_file in url_files:
+        name = url_file.replace(".url", "")
+        url = open(REPO_PATH+"/"+url_file, "r").read()
+        applist_list[name] = url
+
+    return applist_list
 
 
 def app_fetchlist(url=None, name=None):
@@ -1712,24 +1713,80 @@ def _parse_app_instance_name(app_instance_name):
 
 def _using_legacy_applist_system():
     """
-    Return True if we're using the old fetchlist scheme
+    Return True if we're using the old fetchlist scheme.
+    This is determined by the presence of some cron job yunohost-applist-foo
     """
-    pass
+
+    return (glob.glob("/etc/cron.d/yunohost-applist-*") != [])
 
 
 def _migrate_applist_system():
     """
     Migrate from the legacy fetchlist system to the new one
     """
-    pass
+    legacy_crons = glob.glob("/etc/cron.d/yunohost-applist-*")
+
+    for cron_path in legacy_crons:
+        applist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
+        logger.info(m18n.n('appslist_migrating', name=applist_name))
+
+        # Parse applist url in cron
+        cron_file_content = open(cron_path).read().strip()
+        applist_url_parse = re.search("-u (https?://[^ ]+)", cron_file_content)
+
+        # Abort if we did not find an url
+        if not applist_url_parse or not applist_url_parse.groups():
+            # Bkp the old cron job somewhere else
+            bkp_file = "/etc/yunohost/%s.oldlist.bkp" % applist_name
+            os.rename(cron_path, bkp_file)
+            # Notice the user
+            logger.warning(m18n.n('appslist_could_not_migrate',
+                           name=applist_name,
+                           bkp_file=bkp_file))
+        # Otherwise, register the list and remove the legacy cron
+        else:
+            applist_url = applist_url_parse.groups()[0]
+            try:
+                _register_new_applist(applist_url, applist_name)
+            # Might get an exception if two legacy cron jobs conflict
+            # in terms of url...
+            except Exception as e:
+                logger.error(str(e))
+                # Bkp the old cron job somewhere else
+                bkp_file = "/etc/yunohost/%s.oldlist.bkp" % applist_name
+                os.rename(cron_path, bkp_file)
+                # Notice the user
+                logger.warning(m18n.n('appslist_could_not_migrate',
+                               name=applist_name,
+                               bkp_file=bkp_file))
+            else:
+                os.remove(cron_path)
+
 
 
 def _register_new_applist(url, name):
     """
-    Add the files that keep track of app lists (and corresponding urls) to
-    be fetched
+    Add a .url file to keep track of an applist to be fetched regularly.
+    Raise an exception if url or name conflicts with an existing list.
     """
-    pass
+
+    applist_url_file = "%s/%s.url" % (REPO_PATH, name)
+
+    # Check if name conflicts with an existing list
+    if os.path.exists(applist_url_file):
+        raise MoulinetteError(errno.EEXISTS,
+                              m18n.n('appslist_name_already_tracked', name=name))
+
+    # Check if url conflicts with an existing list
+    others_applists_url_files = glob.glob("%s/*.url" % REPO_PATH)
+    for other_applist_url_file in others_applists_url_files:
+        other_applist_url = open(other_applist_url_file, "r").read()
+        if other_applist_url == url:
+            raise MoulinetteError(errno.EEXISTS,
+                                  m18n.n('appslist_url_already_tracked', url=url))
+
+    open(applist_url_file, "w").write(url)
+    return True
 
 
 def is_true(arg):
