@@ -93,8 +93,7 @@ def app_fetchlist(url=None, name=None):
 
     Keyword argument:
         name -- Name of the list
-        url -- URL of remote JSON list (default https://app.yunohost.org/official.json)
-
+        url -- URL of remote JSON list
     """
     # Create app path if not exists
     if not os.path.exists(REPO_PATH):
@@ -129,25 +128,27 @@ def app_fetchlist(url=None, name=None):
 
     # Fetch all applists to be fetched
     for name, url in applists_to_be_fetched.items():
+
         # Download file
         try:
             applist_request = requests.get(url, timeout=30)
         except Exception as e:
-            raise MoulinetteError(errno.EBADR, 
+            raise MoulinetteError(errno.EBADR,
                                   m18n.n('appslist_retrieve_error', error=str(e)))
 
         if (applist_request.status_code != 200):
-            raise MoulinetteError(errno.EBADR, 
+            raise MoulinetteError(errno.EBADR,
                                   m18n.n('appslist_retrieve_error', error="404, not found"))
 
         # Validate app list format
-        # TODO / Possible improvement : better validation for app list (check that
-        # json fields actually look like an app list and not any json file)
+        # TODO / Possible improvement : better validation for app list (check
+        # that json fields actually look like an app list and not any json
+        # file)
         applist = applist_request.text
         try:
             json.loads(applist)
         except ValueError, e:
-            raise MoulinetteError(errno.EBADR, 
+            raise MoulinetteError(errno.EBADR,
                                   m18n.n('appslist_retrieve_bad_format'))
 
         # Write app list to file
