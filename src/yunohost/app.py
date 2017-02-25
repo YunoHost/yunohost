@@ -78,10 +78,10 @@ def app_listlists():
 
     applist_list = {}
 
-    url_files = [f for f in os.listdir(REPO_PATH) if f.endswith(".url")]
+    url_files = glob.glob("%s/*.url" % REPO_PATH)
     for url_file in url_files:
-        name = url_file.replace(".url", "")
-        url = open(REPO_PATH+"/"+url_file, "r").read()
+        name = os.path.basename(url_file).replace(".url", "")
+        url = open(url_file, "r").read()
         applist_list[name] = url
 
     return applist_list
@@ -126,6 +126,8 @@ def app_fetchlist(url=None, name=None):
     # Otherwise, fetch all lists
     else:
         applists_to_be_fetched = app_listlists()
+
+    print(applists_to_be_fetched)
 
     # Fetch all applists to be fetched
     for name, url in applists_to_be_fetched.items():

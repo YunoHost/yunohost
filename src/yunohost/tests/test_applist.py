@@ -3,12 +3,12 @@ import pytest
 import requests
 import requests_mock
 import glob
+import time
 
 from moulinette.core import MoulinetteError
 
 from yunohost.app import app_fetchlist, app_listlists, _using_legacy_applist_system, _migrate_applist_system, _register_new_applist
 
-LOCAL_OFFICIAL_APP_LIST = "/var/cache/yunohost/repo/yunohost.json"
 URL_OFFICIAL_APP_LIST = "https://app.yunohost.org/official.json"
 REPO_PATH = '/var/cache/yunohost/repo'
 
@@ -46,7 +46,7 @@ def test_applist_list_empty():
     assert app_listlists() == {}
 
 
-def test_applist_list_register_standard():
+def test_applist_list_register():
     """
     Register a new list (no conflicts with existing list)
     """
@@ -113,11 +113,42 @@ def test_applist_fetch():
         # Mock the server response with a valid (well, empty, yep) json
         m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ }')
 
-        official_json_ctime = os.path.getctime(LOCAL_OFFICIAL_APP_LIST)
+        official_json_ctime = os.path.getctime(REPO_PATH+"/yunohost.json")
         app_fetchlist()
-        new_official_json_ctime = os.path.getctime(LOCAL_OFFICIAL_APP_LIST)
+        new_official_json_ctime = os.path.getctime(REPO_PATH+"/yunohost.json")
 
-        assert new_official_json_ctime > official_json_ctime
+    assert new_official_json_ctime > official_json_ctime
+
+
+def test_applist_fetch_single_applist():
+    """
+    Register several list but only fetch one
+    """
+
+    assert app_listlists() == {}
+    _register_new_applist(URL_OFFICIAL_APP_LIST, "yunohost")
+    _register_new_applist("https://lol.com/applist.json", "dummy")
+    # Put some dummy content in the json
+    with open(REPO_PATH+"/yunohost.json", "w") as f:
+        f.write("Dummy content")
+    with open(REPO_PATH+"/dummy.json", "w") as f:
+        f.write("Dummy content")
+
+    time.sleep(1)
+
+    with requests_mock.Mocker() as m:
+
+        # Mock the server response with a valid (well, empty, yep) json
+        m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ }')
+
+        official_json_ctime = os.path.getctime(REPO_PATH+"/yunohost.json")
+        dummy_json_ctime = os.path.getctime(REPO_PATH+"/dummy.json")
+        app_fetchlist(name="yunohost")
+        new_official_json_ctime = os.path.getctime(REPO_PATH+"/yunohost.json")
+        new_dummy_json_ctime = os.path.getctime(REPO_PATH+"/dummy.json")
+
+    assert new_official_json_ctime > official_json_ctime
+    assert new_dummy_json_ctime == dummy_json_ctime
 
 
 def test_applist_fetch_customurl_noname():
