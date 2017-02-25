@@ -134,6 +134,9 @@ def app_fetchlist(url=None, name=None):
         # Download file
         try:
             applist_request = requests.get(url, timeout=30)
+        except requests.exceptions.SSLError:
+            raise MoulinetteError(errno.EBADR,
+                                  m18n.n('appslist_retrieve_error', error="SSL connection error"))
         except Exception as e:
             raise MoulinetteError(errno.EBADR,
                                   m18n.n('appslist_retrieve_error', error=str(e)))

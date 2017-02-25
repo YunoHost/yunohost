@@ -212,6 +212,23 @@ def test_applist_fetch_404():
             app_fetchlist()
 
 
+def test_applist_fetch_sslerror():
+    """
+    Do a fetchlist and mock a timeout
+    """
+    assert app_listlists() == {}
+
+    _register_new_applist(URL_OFFICIAL_APP_LIST, "yunohost")
+
+    with requests_mock.Mocker() as m:
+
+        m.register_uri("GET", URL_OFFICIAL_APP_LIST,
+                       exc=requests.exceptions.SSLError)
+
+        with pytest.raises(MoulinetteError):
+            app_fetchlist()
+
+
 def test_applist_fetch_timeout():
     """
     Do a fetchlist and mock a timeout
