@@ -127,8 +127,6 @@ def app_fetchlist(url=None, name=None):
     else:
         applists_to_be_fetched = app_listlists()
 
-    print(applists_to_be_fetched)
-
     # Fetch all applists to be fetched
     for name, url in applists_to_be_fetched.items():
         # Download file
@@ -158,7 +156,7 @@ def app_fetchlist(url=None, name=None):
             f.write(applist)
 
         # TODO display app list name
-        logger.success(m18n.n('appslist_fetched'), name=name)
+        logger.success(m18n.n('appslist_fetched', name=name))
 
 
 def app_removelist(name):
@@ -169,11 +167,16 @@ def app_removelist(name):
         name -- Name of the list to remove
 
     """
-    try:
-        os.remove('%s/%s.json' % (REPO_PATH, name))
-        os.remove("/etc/cron.d/yunohost-applist-%s" % name)
-    except OSError:
+    if name not in app_listlists().keys():
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
+
+    url_path = '%s/%s.url' % (REPO_PATH, name)
+    json_path = '%s/%s.json' % (REPO_PATH, name)
+
+    if os.path.exists(url_path):
+        os.remove(url_path)
+    if os.path.exists(json_path):
+        os.remove(json_path)
 
     logger.success(m18n.n('appslist_removed'))
 
@@ -203,15 +206,15 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
     else:
         list_dict = []
 
-    try:
-        applists = app_listlists()['lists']
-        applists[0]
-    except (IOError, IndexError):
-        app_fetchlist()
-        applists = app_listlists()['lists']
+    applists = app_listlists()
 
-    for applist in applists:
-        with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
+    for applist in applists.keys():
+
+        json_path = "%s/%s.json" % (REPO_PATH, applist)
+        if not os.path.exists(json_path):
+            app_fetchlist(name=applist)
+
+        with open(json_path) as json_list:
             for app, info in json.loads(str(json_list.read())).items():
                 if app not in app_dict:
                     info['repository'] = applist

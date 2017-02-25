@@ -7,7 +7,7 @@ import time
 
 from moulinette.core import MoulinetteError
 
-from yunohost.app import app_fetchlist, app_listlists, _using_legacy_applist_system, _migrate_applist_system, _register_new_applist
+from yunohost.app import app_fetchlist, app_removelist, app_listlists, _using_legacy_applist_system, _migrate_applist_system, _register_new_applist
 
 URL_OFFICIAL_APP_LIST = "https://app.yunohost.org/official.json"
 REPO_PATH = '/var/cache/yunohost/repo'
@@ -227,6 +227,36 @@ def test_applist_fetch_timeout():
 
         with pytest.raises(MoulinetteError):
             app_fetchlist()
+
+
+###############################################################################
+#   Test remove of applist                                                    #
+###############################################################################
+
+
+def test_applist_remove():
+    """
+    Attempt to remove an unknown list
+    """
+
+    # Assume we're starting with an empty app list
+    assert app_listlists() == {}
+
+    # Register a new dummy list
+    _register_new_applist("https://lol.com/applist.json", "dummy")
+    app_removelist("dummy")
+
+    # Should end up with no list registered
+    assert app_listlists() == {}
+
+
+def test_applist_remove_unknown():
+    """
+    Register a new list then remove it
+    """
+
+    with pytest.raises(MoulinetteError):
+        app_removelist("dummy")
 
 
 ###############################################################################
