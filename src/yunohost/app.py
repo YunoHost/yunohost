@@ -129,6 +129,8 @@ def app_fetchlist(url=None, name=None):
     # Fetch all applists to be fetched
     for name, url in applists_to_be_fetched.items():
 
+        logger.debug("Attempting to fetch list %s at %s" % (name, url))
+
         # Download file
         try:
             applist_request = requests.get(url, timeout=30)
@@ -1754,6 +1756,8 @@ def _migrate_applist_system():
 
 def _install_applist_fetch_cron():
 
+    logger.debug("Installing applist fetch cron job")
+
     with open("/etc/cron.daily/yunohost-fetch-applists", "w") as f:
         f.write('#!/bin/bash\nyunohost app fetchlist > /dev/null 2>&1\n')
 
@@ -1778,6 +1782,8 @@ def _register_new_applist(url, name):
         if other_applist_url == url:
             raise MoulinetteError(errno.EEXIST,
                                   m18n.n('appslist_url_already_tracked', url=url))
+
+    logger.debug("Registering new applist %s at %s" % (name, url))
 
     open(applist_url_file, "w").write(url)
     return True
