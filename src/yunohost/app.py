@@ -72,16 +72,17 @@ def app_listlists():
         os.makedirs(REPO_PATH)
 
     # Migrate applist system if needed
-    if (_using_legacy_applist_system()):
+    # XXX move to a migration when those are implemented
+    if _using_legacy_applist_system():
         _migrate_applist_system()
 
     applist_list = {}
 
     url_files = glob.glob("%s/*.url" % REPO_PATH)
     for url_file in url_files:
-        name = os.path.basename(url_file).replace(".url", "")
-        url = open(url_file, "r").read()
-        applist_list[name] = url
+        name = os.path.basename(url_file).rstrip(".url")
+        with open(url_file, "r") as url:
+            applist_list[name] = url.read().strip()
 
     return applist_list
 
@@ -99,11 +100,13 @@ def app_fetchlist(url=None, name=None):
         os.makedirs(REPO_PATH)
 
     # Migrate applist system if needed
-    if (_using_legacy_applist_system()):
+    # XXX move that to a migration once they are finished
+    if _using_legacy_applist_system():
         _migrate_applist_system()
 
     # Determine the list of applist to be fetched
     applists_to_be_fetched = {}
+
     # If a url and and a name is given, try to register new list and to fetch
     # only this list
     if url is not None:
@@ -113,6 +116,7 @@ def app_fetchlist(url=None, name=None):
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
+
     # If a name is given, look for an applist with that name and fetch it
     elif name is not None:
         applists = app_listlists()
@@ -121,6 +125,7 @@ def app_fetchlist(url=None, name=None):
                                   m18n.n('appslist_unknown', name=name))
         else:
             applists_to_be_fetched[name] = applists[name]
+
     # Otherwise, fetch all lists
     else:
         applists_to_be_fetched = app_listlists()
@@ -140,7 +145,7 @@ def app_fetchlist(url=None, name=None):
             raise MoulinetteError(errno.EBADR,
                                   m18n.n('appslist_retrieve_error', error=str(e)))
 
-        if (applist_request.status_code != 200):
+        if applist_request.status_code != 200:
             raise MoulinetteError(errno.EBADR,
                                   m18n.n('appslist_retrieve_error', error="404, not found"))
 
