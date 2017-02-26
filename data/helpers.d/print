@@ -4,3 +4,16 @@ ynh_die() {
   echo "$1" 1>&2
   exit "${2:-1}"
 }
+
+# Ignore the yunohost-cli log to prevent errors with conditionals commands
+# usage: ynh_no_log COMMAND
+# Simply duplicate the log, execute the yunohost command and replace the log without the result of this command
+# It's a very badly hack...
+ynh_no_log() {
+  ynh_cli_log=/var/log/yunohost/yunohost-cli.log
+  sudo cp -a ${ynh_cli_log} ${ynh_cli_log}-move
+  eval $@
+  exit_code=$?
+  sudo mv ${ynh_cli_log}-move ${ynh_cli_log}
+  return $?
+}
