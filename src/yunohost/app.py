@@ -45,11 +45,12 @@ from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
-REPO_PATH        = '/var/cache/yunohost/repo'
-APPS_PATH        = '/usr/share/yunohost/apps'
-APPS_SETTING_PATH= '/etc/yunohost/apps/'
-INSTALL_TMP      = '/var/cache/yunohost'
-APP_TMP_FOLDER   = INSTALL_TMP + '/from_file'
+REPO_PATH         = '/var/cache/yunohost/repo'
+APPS_PATH         = '/usr/share/yunohost/apps'
+APPS_SETTING_PATH = '/etc/yunohost/apps/'
+INSTALL_TMP       = '/var/cache/yunohost'
+APP_TMP_FOLDER    = INSTALL_TMP + '/from_file'
+APPLISTS_JSON     = '/etc/yunohost/applists.json'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -67,22 +68,14 @@ def app_listlists():
     List fetched lists
 
     """
-    # Create app path if not exists
-    if not os.path.exists(REPO_PATH):
-        os.makedirs(REPO_PATH)
 
     # Migrate applist system if needed
     # XXX move to a migration when those are implemented
     if _using_legacy_applist_system():
         _migrate_applist_system()
 
-    applist_list = {}
-
-    url_files = glob.glob("%s/*.url" % REPO_PATH)
-    for url_file in url_files:
-        name = os.path.basename(url_file).rstrip(".url")
-        with open(url_file, "r") as url:
-            applist_list[name] = url.read().strip()
+    # Get the list
+    applist_list = _read_applist_list()
 
     return applist_list
 
@@ -95,7 +88,7 @@ def app_fetchlist(url=None, name=None):
         name -- Name of the list
         url -- URL of remote JSON list
     """
-    # Create app path if not exists
+    # If needed, create folder where actual applists are stored
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
@@ -104,34 +97,40 @@ def app_fetchlist(url=None, name=None):
     if _using_legacy_applist_system():
         _migrate_applist_system()
 
-    # Determine the list of applist to be fetched
-    applists_to_be_fetched = {}
+    # Read the list of applist...
+    applists = _read_applist_list()
 
-    # If a url and and a name is given, try to register new list and to fetch
-    # only this list
+    # Determine the list of applist to be fetched
+    applists_to_be_fetched = []
+
+    # If a url and and a name is given, try to register new list,
+    # the fetch only this list
     if url is not None:
         if name:
             _register_new_applist(url, name)
-            applists_to_be_fetched[name] = url
+            # Refresh the applists dict
+            applists = _read_applist_list()
+            applists_to_be_fetched = [name]
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
 
     # If a name is given, look for an applist with that name and fetch it
     elif name is not None:
-        applists = app_listlists()
-        if name not in applists:
+        if name not in applists.keys():
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('appslist_unknown', name=name))
         else:
-            applists_to_be_fetched[name] = applists[name]
+            applists_to_be_fetched = [name]
 
     # Otherwise, fetch all lists
     else:
-        applists_to_be_fetched = app_listlists()
+        applists_to_be_fetched = applists.keys()
 
     # Fetch all applists to be fetched
-    for name, url in applists_to_be_fetched.items():
+    for name in applists_to_be_fetched:
+
+        url = applists[name]["url"]
 
         logger.debug("Attempting to fetch list %s at %s" % (name, url))
 
@@ -165,8 +164,14 @@ def app_fetchlist(url=None, name=None):
         with open(list_file, "w") as f:
             f.write(applist)
 
+        now = int(time.time())
+        applists[name]["lastUpdate"] = now
+
         # TODO display app list name
         logger.success(m18n.n('appslist_fetched', name=name))
+
+    # Write updated list of applist
+    _write_applist_list(applists)
 
 
 def app_removelist(name):
@@ -177,16 +182,20 @@ def app_removelist(name):
         name -- Name of the list to remove
 
     """
-    if name not in app_listlists().keys():
+    applists = _read_applist_list()
+
+    # Make sure we know this applist
+    if name not in applists.keys():
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
 
-    url_path = '%s/%s.url' % (REPO_PATH, name)
+    # Remove json
     json_path = '%s/%s.json' % (REPO_PATH, name)
-
-    if os.path.exists(url_path):
-        os.remove(url_path)
     if os.path.exists(json_path):
         os.remove(json_path)
+
+    # Forget about this applist
+    del applists[name]
+    _write_applist_list(applists)
 
     logger.success(m18n.n('appslist_removed'))
 
@@ -216,7 +225,7 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
     else:
         list_dict = []
 
-    applists = app_listlists()
+    applists = _read_applist_list()
 
     for applist in applists.keys():
 
@@ -1769,31 +1778,64 @@ def _install_applist_fetch_cron():
         f.write('#!/bin/bash\nyunohost app fetchlist > /dev/null 2>&1\n')
 
 
+def _read_applist_list():
+    """
+    Read the json corresponding to the list of applists
+    """
+
+    # If file does not exists yet, return empty dict
+    if not os.path.exists(APPLISTS_JSON):
+        return {}
+
+    # Read file content
+    with open(APPLISTS_JSON, "r") as f:
+        applists_json = f.read()
+
+    # Parse json, throw exception if what we got from file is not a valid json
+    try:
+        applists = json.loads(applists_json)
+    except ValueError:
+        raise MoulinetteError(errno.EBADR,
+                              m18n.n('appslist_corrupted_json', filename=APPLISTS_JSON))
+
+    return applists
+
+
+def _write_applist_list(applist_lists):
+    """
+    Update the json containing list of applists
+    """
+
+    # Read file content
+    with open(APPLISTS_JSON, "w") as f:
+        json.dump(applist_lists, f)
+
+
 def _register_new_applist(url, name):
     """
-    Add a .url file to keep track of an applist to be fetched regularly.
+    Add a new applist to be fetched regularly.
     Raise an exception if url or name conflicts with an existing list.
     """
 
-    applist_url_file = "%s/%s.url" % (REPO_PATH, name)
+    applist_list = _read_applist_list()
 
     # Check if name conflicts with an existing list
-    if os.path.exists(applist_url_file):
+    if name in applist_list.keys():
         raise MoulinetteError(errno.EEXIST,
                               m18n.n('appslist_name_already_tracked', name=name))
 
     # Check if url conflicts with an existing list
-    others_applists_url_files = glob.glob("%s/*.url" % REPO_PATH)
-    for other_applist_url_file in others_applists_url_files:
-        other_applist_url = open(other_applist_url_file, "r").read()
-        if other_applist_url == url:
-            raise MoulinetteError(errno.EEXIST,
-                                  m18n.n('appslist_url_already_tracked', url=url))
+    known_applist_urls = [applist["url"] for _, applist in applist_list.items()]
+    if url in known_applist_urls:
+        raise MoulinetteError(errno.EEXIST,
+                              m18n.n('appslist_url_already_tracked', url=url))
 
     logger.debug("Registering new applist %s at %s" % (name, url))
 
-    open(applist_url_file, "w").write(url)
-    return True
+    applist_list[name] = {"url": url,
+                          "lastUpdate": -1}
+
+    _write_applist_list(applist_list)
 
 
 def is_true(arg):
