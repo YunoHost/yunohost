@@ -38,6 +38,7 @@
     "appslist_url_already_tracked": "There is already a registered app list with url {url}.",
     "appslist_migrating": "Migrating app list {name} ...",
     "appslist_could_not_migrate": "Could not migrate app list {name} ! Unable to parse the url... The old cron job has been kept in {bkp_file}.",
+    "appslist_corrupted_json": "Could not load the list of applist. It looks like {filename} is corrupted.",
     "ask_current_admin_password": "Current administration password",
     "ask_email": "Email address",
     "ask_firstname": "First name",
