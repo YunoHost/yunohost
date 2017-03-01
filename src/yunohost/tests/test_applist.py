@@ -172,8 +172,7 @@ def test_applist_fetch_badurl():
     Do a fetchlist with a bad url
     """
 
-    with pytest.raises(MoulinetteError):
-        app_fetchlist(url="https://not.a.valid.url/plop.json", name="plop")
+    app_fetchlist(url="https://not.a.valid.url/plop.json", name="plop")
 
 
 def test_applist_fetch_badfile():
@@ -188,8 +187,7 @@ def test_applist_fetch_badfile():
 
         m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ not json lol }')
 
-        with pytest.raises(MoulinetteError):
-            app_fetchlist()
+        app_fetchlist()
 
 
 def test_applist_fetch_404():
@@ -204,8 +202,7 @@ def test_applist_fetch_404():
 
         m.register_uri("GET", URL_OFFICIAL_APP_LIST, status_code=404)
 
-        with pytest.raises(MoulinetteError):
-            app_fetchlist()
+        app_fetchlist()
 
 
 def test_applist_fetch_sslerror():
@@ -221,8 +218,7 @@ def test_applist_fetch_sslerror():
         m.register_uri("GET", URL_OFFICIAL_APP_LIST,
                        exc=requests.exceptions.SSLError)
 
-        with pytest.raises(MoulinetteError):
-            app_fetchlist()
+        app_fetchlist()
 
 
 def test_applist_fetch_timeout():
@@ -238,8 +234,7 @@ def test_applist_fetch_timeout():
         m.register_uri("GET", URL_OFFICIAL_APP_LIST,
                        exc=requests.exceptions.ConnectTimeout)
 
-        with pytest.raises(MoulinetteError):
-            app_fetchlist()
+        app_fetchlist()
 
 
 ###############################################################################

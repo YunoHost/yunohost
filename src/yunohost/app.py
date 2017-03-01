@@ -138,15 +138,17 @@ def app_fetchlist(url=None, name=None):
         try:
             applist_request = requests.get(url, timeout=30)
         except requests.exceptions.SSLError:
-            raise MoulinetteError(errno.EBADR,
-                                  m18n.n('appslist_retrieve_error', error="SSL connection error"))
+            logger.error(m18n.n('appslist_retrieve_error',
+                                error="SSL connection error"))
+            continue
         except Exception as e:
-            raise MoulinetteError(errno.EBADR,
-                                  m18n.n('appslist_retrieve_error', error=str(e)))
-
+            logger.error(m18n.n('appslist_retrieve_error',
+                                error=str(e)))
+            continue
         if applist_request.status_code != 200:
-            raise MoulinetteError(errno.EBADR,
-                                  m18n.n('appslist_retrieve_error', error="404, not found"))
+            logger.error(m18n.n('appslist_retrieve_error',
+                                error="404, not found"))
+            continue
 
         # Validate app list format
         # TODO / Possible improvement : better validation for app list (check
@@ -156,8 +158,8 @@ def app_fetchlist(url=None, name=None):
         try:
             json.loads(applist)
         except ValueError, e:
-            raise MoulinetteError(errno.EBADR,
-                                  m18n.n('appslist_retrieve_bad_format'))
+            logger.error(m18n.n('appslist_retrieve_bad_format'))
+            continue
 
         # Write app list to file
         list_file = '%s/%s.json' % (REPO_PATH, name)
