@@ -136,6 +136,6 @@ EOF
 #
 # usage: ynh_remove_app_dependencies
 ynh_remove_app_dependencies () {
-    dep_app=${app/_/-}	# Replace all '_' by '-'
+    dep_app=${app//_/-}	# Replace all '_' by '-'
     ynh_package_autoremove ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }
