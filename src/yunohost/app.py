@@ -139,14 +139,17 @@ def app_fetchlist(url=None, name=None):
             applist_request = requests.get(url, timeout=30)
         except requests.exceptions.SSLError:
             logger.error(m18n.n('appslist_retrieve_error',
+                                applist=name,
                                 error="SSL connection error"))
             continue
         except Exception as e:
             logger.error(m18n.n('appslist_retrieve_error',
+                                applist=name,
                                 error=str(e)))
             continue
         if applist_request.status_code != 200:
             logger.error(m18n.n('appslist_retrieve_error',
+                                applist=name,
                                 error="404, not found"))
             continue
 
@@ -158,7 +161,8 @@ def app_fetchlist(url=None, name=None):
         try:
             json.loads(applist)
         except ValueError, e:
-            logger.error(m18n.n('appslist_retrieve_bad_format'))
+            logger.error(m18n.n('appslist_retrieve_bad_format',
+                                applist=name))
             continue
 
         # Write app list to file
