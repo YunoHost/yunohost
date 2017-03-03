@@ -1,4 +1,3 @@
-resolv-file=
 address=/{{ domain }}/{{ ip }}
 txt-record={{ domain }},"v=spf1 mx a -all"
 mx-host={{ domain }},{{ domain }},5
