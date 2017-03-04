@@ -249,5 +249,6 @@
     "certmanager_domain_cert_not_selfsigned": "Il ceritifcato per il dominio {domain:s} non è auto-firmato. Sei sicuro di volere sostituirlo? (Usa --force)",
     "certmanager_certificate_fetching_or_enabling_failed": "L'attivazione del nuovo certificato per {domain:s} sembra fallita in qualche modo...",
     "certmanager_attempt_to_renew_nonLE_cert": "Il certificato per il dominio {domain:s} non è emesso da Let's Encrypt. Impossibile rinnovarlo automaticamente!",
-    "certmanager_attempt_to_renew_valid_cert": "Il certificato per il dominio {domain:s} non è a scadere! Usa --force per ignorare"
+    "certmanager_attempt_to_renew_valid_cert": "Il certificato per il dominio {domain:s} non è a scadere! Usa --force per ignorare",
+    "certmanager_domain_http_not_working": "Sembra che non sia possibile accedere al dominio {domain:s} attraverso HTTP. Verifica la configurazione del DNS e di nginx"
 }
