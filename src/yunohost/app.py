@@ -420,6 +420,10 @@ def app_change_url(auth, app, domain, path):
 
         return
 
+    # this should idealy be done in the change_url script but let's avoid common mistakes
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
+
     app_ssowatconf(auth)
 
     # avoid common mistakes
