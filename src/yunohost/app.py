@@ -372,7 +372,7 @@ def app_change_url(auth, app, domain, path):
     app_checkurl(auth, '%s%s' % (domain, path), app)
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
-        raise MoulinetteError(errno.EINVAL, m18n.n("upgrade the application.", app_name=app))
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
 
     manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
 

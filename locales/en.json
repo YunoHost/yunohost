@@ -7,6 +7,7 @@
     "app_argument_choice_invalid": "Invalid choice for argument '{name:s}', it must be one of {choices:s}",
     "app_argument_invalid": "Invalid value for argument '{name:s}': {error:s}",
     "app_argument_required": "Argument '{name:s}' is required",
+    "app_change_no_change_url_script": "The application {app_name:s} doesn't support changeing it's URL yet, you might need to upgrade it.",
     "app_change_url_identical_domains": "The old and new domain/url_path are identical ('{domain:s}{path:s}'), nothing to do.",
     "app_change_url_failed_nginx_reload": "Failed to reload nginx. Here is the output of 'nginx -t':\n{nginx_errors:s}",
     "app_change_url_no_script": "This application '{app_name:s}' doesn't support url modification yet. Maybe you should upgrade the application.",
