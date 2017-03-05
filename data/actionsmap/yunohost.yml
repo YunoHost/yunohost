@@ -549,9 +549,16 @@ app:
                 -d:
                     full: --domain
                     help: New app domain on which the application will be moved
+                    extra:
+                        ask: ask_main_domain
+                        pattern: *pattern_domain
+                        required: True
                 -p:
                     full: --path
                     help: New path at which the application will be moved
+                    extra:
+                        ask: ask_path
+                        required: True
 
         ### app_setting()
         setting:
