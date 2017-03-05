@@ -307,7 +307,6 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     """
     from moulinette.utils.process import call_async_output
-    from yunohost.app import _value_for_locale
 
     # Validate hook path
     if path[0] != '/':
