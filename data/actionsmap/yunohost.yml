@@ -1351,6 +1351,16 @@ tools:
                     help: Show private data (domain, IP)
                     action: store_true
 
+        ### tools_portavailable()
+        portavailable:
+            action_help: Check availability of a local port
+            api: GET /tools/portavailable
+            arguments:
+                port:
+                    help: Port to check
+                    extra:
+                        pattern: *pattern_port
+
 
 #############################
 #           Hook            #
