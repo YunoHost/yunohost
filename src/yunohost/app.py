@@ -408,6 +408,7 @@ def app_change_url(auth, app, domain, path):
     os.system('chown -R admin: %s' % INSTALL_TMP)
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
+
     # XXX journal
     if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict) != 0:
         logger.error("Failed to change '%s' url." % app)
