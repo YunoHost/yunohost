@@ -1,0 +1,1515 @@
+yunohost (2.6.1) stable; urgency=low
+
+  [ thardev ]
+  * show fail2ban logs on admin web interface #260
+
+  [ ljf ]
+  * [fix] Can't use common.sh on restore operation (#246)
+
+  Thanks to all contributors: thardev, ljf and to the people who are
+  participating to the beta and giving us feedback <3
+
+
+ -- XXX <XXX@XXX>  Day, dd Mon 2017 hh:mm:ss +0100
+
+yunohost (2.6.0) testing; urgency=low
+
+  Important changes
+
+  - [enh] Add unit test mechanism (#254)
+  - [fix] Any address in the range 127.0.0.0/8 is a valid loopback address for localhost
+  - [enh] include script to reset ldap password (#217)
+  - [enh] Set main domain as hostname (#219)
+  - [enh] New bash helpers for app scripts: ynh_system_user_create, ynh_system_user_delete, helper ynh_find_port
+
+  Thanks to every contributors (Bram, Aleks, Maniack Crudelis, ZeHiro, opi, julienmalik
+
+  Full changes log:
+
+    8486f440fb18d513468b696f84c0efe833298d77 [enh] Add unit test mechanism (#254)
+    45e85fef821bd8c60c9ed1856b3b7741b45e4158 Merge pull request #252 from ZeHiro/fix-785
+    834cf459dcd544919f893e73c6be6a471c7e0554 Please Bram :D
+    088abd694e0b0be8c8a9b7d96a3894baaf436459 Merge branch 'testing' into unstable
+    f80653580cd7be31484496dbe124b88e34ca066b Merge pull request #257 from YunoHost/fix_localhost_address_range
+    f291d11c844d9e6f532f1ec748a5e1eddb24c2f6 [fix] cert-renew email headers appear as text in the body
+    accb78271ebefd4130ea23378d6289ac0fa9d0e4 [fix] Any address in the range 127.0.0.0/8 is a valid loopback address
+    cc4451253917040c3a464dce4c12e9e7cf486b15 Clean app upgrade (#193)
+    d4feb879d44171447be33a65538503223b4a56fb [enh] include script to reset ldap password (#217)
+    1d561123b6f6fad1712c795c31409dedc24d0160 [enh] Set main domain as hostname (#219)
+    0e55b17665cf1cd05c157950cbc5601421910a2e Fixing also get_conf_hashes
+    035100d6dbcd209dceb68af49b593208179b0595 Merge pull request #251 from YunoHost/uppercase_for_global_variables
+    f28be91b5d25120aa13d9861b0b3be840f330ac0 [fix] Uppercase global variable even in comment.
+    5abcaadaeabdd60b40baf6e79fff3273c1dd6108 [fix] handle the case where services[service] is set to null in the services.yml. Fix #785
+    5d3e1c92126d861605bd209ff56b8b0d77d3ff39 Merge pull request #233 from YunoHost/ynh_find_port
+    83dca8e7c6ec4efb206140c234f51dfa5b3f3bf7 Merge pull request #237 from YunoHost/ynh_system_user_create_delete
+    f6c7702dfaf3a7879323a9df60fde6ac58d3aff7 [mod] rename all global variables to uppercase
+    3804f33b2f712eb067a0fcbb6fb5c60f3a813db4 Merge pull request #159 from YunoHost/clean_app_fetchlist
+    8b44276af627ec05ac376c57e098716cacd165f9 Merge branch 'testing' into unstable
+    dea89fc6bb209047058f050352e3c082b9e62f32 Merge pull request #243 from YunoHost/fix-rspamd-rmilter-status
+    dea6177c070b9176e3955c4f32b8a602977cf424 Merge pull request #244 from YunoHost/fix-unattended-upgrade-syntax
+    a61445c9c3d231b9248fd247a0dd3345fc0ac6df Checking for 404 error and valid json format
+    991b64db92e60f3bc92cb1ba4dc25f7e11fb1a8d Merge branch 'unstable' into clean_app_fetchlist
+    730156dd92bbd1b0c479821ffc829e8d4f3d2019 Using request insteqd of urlretrieve, to have timeout
+    5b006dbf0e074f4070f6832d2c64f3b306935e3f Adding info/debug message for fetchlist
+    98d88f2364eda28ddc6b98d45a7fbe2bbbaba3d4 [fix] Unattended upgrades configuration syntax.
+    7d4aa63c430516f815a8cdfd2f517f79565efe2f [fix] Rspamd & Rmilter are no more sockets
+    5be13fd07e12d95f05272b9278129da4be0bc2d7 Merge pull request #220 from YunoHost/conf-hashes-logs
+    901e3df9b604f542f2c460aad05bcc8efc9fd054 Pas de correction de l'argument
+    cd93427a97378ab635c85c0ae9a1e45132d6245c Retire la commande ynh
+    abb9f44b87cfed5fa14be9471b536fc27939d920  Nouveaux helpers ynh_system_user_create et ynh_system_user_delete
+    3e9d086f7ff64f923b2d623df41ec42c88c8a8ef Nouveau helper ynh_find_port
+    0b6ccaf31a8301b50648ec0ba0473d2190384355 Implementing comments
+    5b7536cf1036cecee6fcc187b2d1c3f9b7124093 Style for Bram :)
+    e857f4f0b27d71299c498305b24e4b3f7e4571c4 [mod] Cleaner logs for _get_conf_hashes
+    99f0f761a5e2737b55f9f8b6ce6094b5fd7fb1ca [mod] include execption into appslist_retrieve_error message
+    2aab7bdf1bcc6f025c7c5bf618d0402439abd0f4 [mod] simplify code
+    97128d7d636836068ad6353f331d051121023136 [mod] exception should only be used for exceptional situations and not when buildin functions allow you to do the expected stuff
+    d9081bddef1b2129ad42b05b28a26cc7680f7d51 [mod] directly use python to retreive json list
+    c4cecfcea5f51f1f9fb410358386eb5a6782cdb2 [mod] use python instead of os.system
+    cf3e28786cf829bc042226283399699195e21d79 [mod] remove useless line
+
+
+ -- opi <opi@zeropi.net>  Mon, 20 Feb 2017 16:31:52 +0100
+
+yunohost (2.5.6) stable; urgency=low
+
+  [ julienmalik ]
+  * [fix] Any address in the range 127.0.0.0/8 is a valid loopback address
+
+  [ opi ]
+  * [fix] Update Rmilter configuration to fix dkim signing.
+
+ -- opi <opi@zeropi.net>  Sat, 18 Feb 2017 15:51:13 +0100
+
+yunohost (2.5.5) stable; urgency=low
+
+  Hotfix release
+
+  [ ljf ]
+  * [fix] Permission issue on install of some apps 778
+
+ -- opi <opi@zeropi.net>  Thu, 09 Feb 2017 22:27:08 +0100
+
+yunohost (2.5.4) stable; urgency=low
+
+  [ Maniack Crudelis ]
+  * Remove helper ynh_mkdir_tmp
+  * Update filesystem
+
+  [ opi ]
+  * [enh] Add warning about deprecated ynh_mkdir_tmp helper
+  * [enh] Increase fail2ban maxretry on user login, narrow nginx log files
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Jean-Baptiste Holcroft ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Laurent Peuch ]
+  * [mod] start putting timeout in certificate code
+
+  [ Alexandre Aubin ]
+  * Implement timeout exceptions
+  * Implementing opi's comments
+
+  [ JimboJoe ]
+  * ynh_backup: Fix error message when source path doesn't exist
+
+  [ paddy ]
+  * [i18n] Translated using Weblate (Spanish)
+  * [i18n] Translated using Weblate (French)
+
+ -- opi <opi@zeropi.net>  Thu, 02 Feb 2017 11:24:55 +0100
+
+yunohost (2.5.3.1) testing; urgency=low
+
+  * super quickfix release for a typo that break LE certificates
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Tue, 10 Jan 2017 02:58:56 +0100
+
+yunohost (2.5.3) testing; urgency=low
+
+  Love:
+  * [enh][love] Add CONTRIBUTORS.md
+
+  LE:
+  * Check acme challenge conf exists in nginx when renewing cert
+  * Fix bad validity check..
+
+  Fix a situation where to domain for the LE cert can't be locally resolved:
+  * Adding check that domain is resolved locally for cert management
+  * Changing the way to check domain is locally resolved
+
+  Fix a situation where a cert could end up with bad perms for metronome:
+  * Attempt to fix missing perm for metronome in weird cases
+
+  Rspamd cannot be activate on socket anymore:
+  * [fix] new rspamd version replace rspamd.socket with rspamd.service
+  * [fix] Remove residual rmilter socket file
+  * [fix] Postfix can't access rmilter socket due to chroot
+
+  Various:
+  * fix fail2ban rules to take into account failed loggin on ssowat
+  * [fix] Ignore dyndns option is not needed with small domain
+  * [enh] add yaml syntax check in travis.yml
+  * [mod] autopep8 on all files that aren't concerned by a PR
+  * [fix] add timeout to fetchlist's wget
+
+  Thanks to all contributors: Aleks, Bram, ju, ljf, opi, zimo2001 and to the
+  people who are participating to the beta and giving us feedback <3
+
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Mon, 09 Jan 2017 18:38:30 +0100
+
+yunohost (2.5.2) testing; urgency=low
+
+  LDAP admin user:
+  * [fix] wait for admin user to be available after a slapd regen-conf, this fix install on slow hardware/vps
+
+  Dovecot/emails:
+  * [enh] reorder dovecot main configuration so that it is easier to read and extend
+  * [enh] Allow for dovecot configuration extensions
+  * [fix] Can't get mailbos used space if dovecot is down
+
+  Backup:
+  * [fix] Need to create archives_path even for custom output directory
+  * Keep track of backups with custom directory using symlinks
+
+  Security:
+  * [fix] Improve dnssec key generation on low entropy devices
+  * [enh] Add haveged as dependency
+
+  Random broken app installed on slow hardware:
+  * [enh] List available domains when installing an app by CLI.
+
+  Translation:
+  * French by Jibec and Genma
+  * German by Philip Gatzka
+  * Hindi by Anmol
+  * Spanish by Juanu
+
+  Other fixes and improvements:
+  * [enh] remove timeout from cli interface
+  * [fix] [#662](https://dev.yunohost.org/issues/662): missing 'python-openssl' dependency for Let's Encrypt integration.
+  * [fix] --no-remove-on-failure for app install should behave as a flag.
+  * [fix] don't remove trailing char if it's not a slash
+
+  Thanks to all contributors: Aleks, alex, Anmol, Bram, Genma, jibec, ju,
+  Juanu, ljf, Moul, opi, Philip Gatzka and to the people who are participating
+  to the beta and giving us feedback <3
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Fri, 16 Dec 2016 00:49:08 +0100
+
+yunohost (2.5.1) testing; urgency=low
+
+  * [fix] Raise error on malformed SSOwat persistent conf.
+  * [enh] Catch SSOwat persistent configuration write error.
+  * [fix] Write SSOwat configuration file only if needed.
+  * [enh] Display full exception error message.
+  * [enh] cli option to avoid removing an application on installation failure
+  * [mod] give instructions on how to solve the conf.json.persistant parsing error
+  * [fix] avoid random bug on post-install due to nscd cache
+  * [enh] Adding check that user is actually created + minor refactor of ldap/auth init
+  * [fix] Fix the way name of self-CA is determined
+  * [fix] Add missing dependency to nscd package #656
+  * [fix] Refactoring tools_maindomain and disabling removal of main domain to avoid breaking things
+  * [fix] Bracket in passwd from ynh_string_random
+
+  Thanks to all contributors: Aleks, Bram, ju, jibec, ljf, M5oul, opi
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Sun, 11 Dec 2016 15:26:21 +0100
+
+yunohost (2.5.0) testing; urgency=low
+
+  * Certificate management integration (e.g. Let's Encrypt certificate install)
+  * [fix] Support git ynh app with submodules #533 (#174)
+  * [enh] display file path on file_not_exist error
+  * [mod] move a part of os.system calls to native shutil/os
+  * [fix] Can't restore app on a root domain
+
+  Miscellaneous
+
+  * Update backup.py
+  * [mod] autopep8
+  * [mod] trailing spaces
+  * [mod] pep8
+  * [mod] remove useless imports
+  * [mod] more pythonic and explicit tests with more verbose errors
+  * [fix] correctly handle all cases
+  * [mod] simplier condition
+  * [fix] uses https
+  * [mod] uses logger string concatenation api
+  * [mod] small opti, getting domain list can be slow
+  * [mod] pylint
+  * [mod] os.path.join
+  * [mod] remove useless assign
+  * [enh] include tracebak into error email
+  * [mod] remove the summary code concept and switch to code/verbose duet instead
+  * [mod] I only need to reload nginx, not restart it
+  * [mod] top level constants should be upper case (pep8)
+  * Check that the DNS A record matches the global IP now using dnspython and FDN's DNS
+  * Refactored the self-signed cert generation, some steps were overly complicated for no reason
+  * Using a single generic skipped regex for acme challenge in ssowat conf
+  * Adding an option to use the staging Let's Encrypt CA, sort of a dry-run
+  * [enh] Complete readme (#183)
+  * [fix] avoid reverse order log display on web admin
+
+  Thanks to all contributors: Aleks, Bram, JimboJoe, ljf, M5oul
+  Kudos to Aleks for leading the Let's Encrypt integration to YunoHost core \o/
+
+ -- opi <opi@zeropi.net>  Thu, 01 Dec 2016 21:22:19 +0100
+
+yunohost (2.4.2) stable; urgency=low
+
+  [ Laurent Peuch ]
+  * [enh] add empty file for hindie to enable it in weblate
+
+  [ opi ]
+  * [fix] Documentation typo
+
+  [ Laurent Peuch ]
+  * [fix] ensure that multi_instance key value is always a boolean
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Sun, 14 Aug 2016 18:55:10 +0200
+
+yunohost (2.4.1) stable; urgency=low
+
+  [ Bugsbane ]
+  * [i18n] Translated using Weblate (English)
+
+  [ DUBWiSE ]
+  * [i18n] Translated using Weblate (Dutch)
+
+  [ Jean-Baptiste ]
+  * [i18n] Translated using Weblate (French)
+
+  [ jellium ]
+  * [fix] Replace deprecated psutil.BOOT_TIME attribute
+
+  [ Jérôme Lebleu ]
+  * [fix] Set empty app argument value only when it's None
+  * [i18n] Translated using Weblate (English & French)
+
+  [ Juanu ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Laurent Peuch ]
+  * [fix] Use a local variable for extracted app dir (bugfix #326)
+
+  [ vetetix ]
+  * fix issue in dkim dns setting
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Thu, 14 Jul 2016 12:05:35 +0200
+
+yunohost (2.4.0.7) stable; urgency=low
+
+  * [fix] Allow - in app id when parsing app instance name
+  * [ref] Invert no-stats option to with-stats in monitor_enable
+  * [fix] Set /var/mail folder owners and permissions
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 12 Jun 2016 15:58:26 +0200
+
+yunohost (2.4.0.6) stable; urgency=low
+
+  [ Bugsbane ]
+  * [i18n] Fixed minor English grammar errors
+
+  [ Jérôme Lebleu ]
+  * [fix] Harden backup hooks with set options and use ynh_backup
+  * [fix] Set default value for YNH_APP_BACKUP_DIR in ynh_backup helper
+  * [fix] Raise proper MoulinetteError exception in hook_exec
+  * [fix] Use the classic way to create read-only bind mount in ynh_backup
+  * [fix] Escape arguments and env values in hook_exec (bugfix #377)
+
+  [ opi ]
+  * [enh] Comments will save us.
+  * [enh] Use 'source' instead of dot notation, more explicit.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Mon, 30 May 2016 12:15:21 +0200
+
+yunohost (2.4.0.5) stable; urgency=low
+
+  * [enh] Call iptables/ip6tables with --wait option (close #325)
+  * [fix] Catch not implemented prompt signal in app arguments parsing
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 28 May 2016 22:02:02 +0200
+
+yunohost (2.4.0.4) stable; urgency=low
+
+  * [fix] Print string error of MoulinetteError in hook_callback
+  * [fix] Hide cat error if tmp_backup_dir_file doesn't exist in conf_regen
+  * [fix] Rely on systemd is-active to check if mysql is running
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 22 May 2016 16:48:06 +0200
+
+yunohost (2.4.0.3) stable; urgency=low
+
+  [ Laurent Peuch ]
+  * [fix] exit if not run as root instead of raising an obscur exception
+
+  [ Jérôme Lebleu ]
+  * [enh] Add ynh_apt wrapper helper and make use of it
+  * [fix] Save LDAP base before any conf changes in conf_regen hook
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 21 May 2016 18:00:32 +0200
+
+yunohost (2.4.0.2) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Update argument with empty value adding for OrderedDict usage
+  * [fix] Ensure that index.txt CA database exists at SSL regen-conf
+
+  [ opi ]
+  * [fix] Restart Nginx breaks web admin. Reload instead and fixes #330.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 18 May 2016 11:12:52 +0200
+
+yunohost (2.4.0.1) stable; urgency=low
+
+  * [fix] Use ps to check if MySQL is running in conf_regen hook (fix #232)
+  * [fix] Copy app remove script in a tmp file at restoration failure
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 14 May 2016 14:30:48 +0200
+
+yunohost (2.4.0) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Add app hooks after the install to allow modifications
+  * [enh] Also add app hooks after successful upgrade
+  * [enh] Handle password argument type at prompt from app manifest
+  * [enh] Try to remount directory as read-only in ynh_backup (wip #298)
+  * [fix] Prepend backup dir to relative path only and allow absolute in
+    ynh_backup
+  * [fix] Update data_home/mail backup hooks to use ynh_backup helper
+
+  [ opi ]
+  * [fix] Can install app on domain root even if another app is installed
+    in a sub folder.
+
+ -- Jérôme Lebleu <jerome@maroufle.fr>  Sun, 08 May 2016 00:47:49 +0200
+
+yunohost (2.3.15) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Create backup archives path depending of output directory
+  * [enh] Check free space in output directory before backup archive creation
+  * [enh] Create ynh_backup helper based on ynh_bind_or_cp
+  * [enh] Add ynh_die helper to print error message and exit
+  * [enh] Do not clean whole pending conf dir when names are given at regen-conf
+  * [enh] Remove empty pending conf directory at regen-conf
+  * [fix] Handle when new conf is as current system conf in regen-conf
+  * [fix] Remove the app if it restoration failed
+  * [i18n] Rename backup_complete and backup_failed strings
+
+  [ opi ]
+  * [fix] Pass app instance environment variables to remove script.
+  * [fix] Catch IOError on tar creation (backup).
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Fri, 06 May 2016 20:31:12 +0200
+
+yunohost (2.3.14) testing; urgency=low
+
+  [ Jean-Baptiste ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Jérôme Lebleu ]
+  * [enh] Remove client certificate verification from Dovecot and Postfix
+  * [enh] Allow to set env var for executed hooks in hooks_callback
+  * [enh] Do not bind mounting if no backup archive is created (wip #298)
+  * [fix] Do not set default value to mailbox-quota at user_update
+  * [fix] Clean properly backup tmp directory if it already exists (wip #298)
+  * [fix] Remove legacy slapd file after directory creation at regen-conf
+  * [fix] Remove old PAM config file at package postinstall
+  * [i18n] Translated using Weblate (French)
+
+  [ Julien Malik ]
+  * [enh] Support passing env var to hook_exec
+  * [enh] Set env var for each app script and rename app variables
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 30 Apr 2016 20:59:28 +0200
+
+yunohost (2.3.13) testing; urgency=low
+
+  * [cli] Deprecate app_initdb action in flavour of helpers
+  * [cli] Deprecate and rename regenconf action to regen-conf
+  * [enh] Add pre/post script execution callbacks to hook_callback
+  * [enh] Refactor the conf regen for better conflicts handle
+  * [enh] Allow to show the diff between conf in service_regen_conf
+  * [enh] Allow to list pending conf in service_regen_conf
+  * [enh] Add a dry-run option for service_regen_conf
+  * [enh] Update services.yml in yunohost conf_regen and update its content
+  * [enh] Add a yunopaste script to paste data to YunoHost Haste server
+  * [enh] Catch boolean in is_true method of app.py
+  * [enh] Implement the intersection of package version Specifier class
+  * [enh] Implement the union of package version Specifier class
+  * [enh] Implement the intersection of package version SpecifierSet class
+  * [enh] Prevent non-updated multi-instances apps installation (close #126)
+  * [enh] Force new MySQL password set if it's unknown at regen-conf
+  * [fix] Restore MySQL password for root user (bugfix #194)
+  * [fix] Restore current_host and use only one backup path for it
+  * [fix] Use SSL certificate of main domain in Dovecot and Postfix conf
+  * [fix] multi_instance manifest key is generally a string
+  * [fix] Call regen-conf only once passing a list in domain_add/remove
+  * [fix] Remove useless `email_legacy` conf_regen hook
+  * [fix] Import moulinette after dev env check in bin/yunohost{-api,}
+  * [fix] Skip hidden and temp files in hook_list
+  * [deb] Add etckeeper package in Recommends (wip #280)
+  * [deb] Enable yunohost-firewall on service restart at postinst
+  * [doc] Be more verbose when reset the MySQL root password
+  * [doc] Add documentation to contains methods of Specifier/SpecifierSet
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Tue, 26 Apr 2016 16:26:20 +0200
+
+yunohost (2.3.12.1) testing; urgency=low
+
+  * [deb] Rely on dh_installinit to restart yunohost-firewall after upgrade
+  * [deb] Add Install section to yunohost-firewall.service
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 09 Apr 2016 17:22:40 +0200
+
+yunohost (2.3.12) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Use new rspamd configuration system to override metrics
+  * [enh] Allow to set script execution directory in hook_exec
+  * [enh] Add a ynh_user_list helper
+  * [enh] Call app remove script if installation fails
+  * [fix] Move imports at the top in yunohost and yunohost-api
+  * [fix] Use rspamd local.d folder to allow users to override the defaults
+  * [fix] Execute backup/restore app scripts from the backup dir (bugfix #139)
+  * [fix] Regenerate SSOwat conf after apps restoration
+  * [fix] Move imports at the top in backup.py
+  * [fix] Check if the package is actually installed in equivs helper
+  * [fix] Improve control file management in equivs helper
+  * [fix] Remove ending comma in backup.py
+  * [fix] Call yunohost commands with --quiet in setting helpers
+  * [fix] Check for tty in root_handlers before remove it in bin/yunohost
+  * [fix] Use dyndns.yunohost.org instead of dynhost.yunohost.org
+  * [fix] Set found private key and don't validate it in dyndns_update
+  * [fix] Update first registered domain with DynDNS instead of current_host 
+  * [i18n] Rename app_requirements_failed err named variable
+  * [i18n] Update translations from Weblate
+
+  [ opi ]
+  * [enh] Better message during service regenconf.
+  * [enh] Display hook path on error message.
+  * [enh] Use named arguments when calling m18n in service.py
+  * [enh] Use named arguments with m18n. 
+  * [enh] Use named arguments for user_unknown string.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 09 Apr 2016 12:13:10 +0200
+
+moulinette-yunohost (2.2.4) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Update first registered domain with DynDNS instead of current_host
+  * [fix] Set found private key and don't validate it in dyndns_update
+  * [fix] Use dyndns.yunohost.org instead of dynhost.yunohost.org
+
+  [ opi ]
+  * [fix] Catch ConnectionError from requests package
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 27 Mar 2016 16:30:42 +0200
+
+yunohost (2.3.11.2) testing; urgency=low
+
+  * [fix] Don't fail dnsmasq regen if IPv4/6 cannot be retrieved
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 14:57:22 +0100
+
+yunohost (2.3.11.1) testing; urgency=low
+
+  * [deb] Include sysvinit services and files in the package, thanks to
+    nthykier and pabs from #debian-mentor
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 12:38:56 +0100
+
+yunohost (2.3.11) testing; urgency=low
+
+  [ Laurent Peuch ]
+  * [mod] Explain how to start yunohost-firewall service
+
+  [ Jérôme Lebleu ]
+  * [fix] Remove useless API routes for some actions
+  * [fix] Update API route for hook_callback action
+  * [deb] Attempt to improve services management in Debian packaging
+  * [deb] Add missing cron dependency
+  * [deb] Clean debian/control with cosmetic changes
+  * [deb] Fix helpers bash script installation
+
+  [ Julien Malik ]
+  * [enh] Add helper for IP address validation
+  * [enh] move /usr/share/yunohost/apps/helpers to
+    /usr/share/yunohost/helpers since it became of more general use
+  * [enh] Remove unused checkupdate and upgrade scripts
+  * [fix] Validate IP addresses returned by ipX.yunohost.org
+  * [fix] fix lintian script-not-executable
+  * [deb] dh_python2 replaces shebang during build. Using the correct one
+    in source directly
+
+  [ Moul ]
+  * [enh] Add '-a' argument's usage example for app_install
+
+  [ opi ]
+  * [enh] Add diagnosis function. #39
+  * [enh] Redirect most of 404 to maindomain.tld/yunohost/sso
+  * [enh] Add --installed and --with-backup to app_list action (wip #227)
+  * [enh] More explicit backup forbidden directory error message.
+  * [enh] Use dedicated app list domain.
+  * [fix] Use only dyndns.yunohost.org domain.
+  * [fix] Use plain text 502 error page.
+  * [fix] Cleaner Nginx redirection rules. Use permanent only when paths match.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 23 Mar 2016 10:39:34 +0100
+
+yunohost (2.3.10.2) testing; urgency=low
+
+  * [fix] Workaround for the bad people who are not using IPv6 yet
+
+ -- Julien Malik <julien.malik@paraiso.me>  Wed, 09 Mar 2016 08:46:41 +0100
+
+yunohost (2.3.10.1) testing; urgency=low
+
+  * [fix] Oops, debian/install prevent subpackages installation
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Tue, 08 Mar 2016 23:55:28 +0100
+
+yunohost (2.3.10) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Introduce new 'requirements' manifest key (close #113)
+  * [enh] Implement package version specifier and use it for min_version
+  * [enh] Use https to retrieve public IP address
+  * [enh] Use a common method to retrieve public IP address
+  * [enh] Rely on APT python library to retrieve packages version
+  * [fix] Use http to retrieve public IPv6 due to Let's Encrypt restriction
+
+  [ Julien Malik ]
+  * [fix] rspamd/rmilter now uses redis-server instead of memcached
+  * [fix] do not output warnings when services are already
+    uninstalled/disabled (fix #215)
+  * [enh] remove useless '|| true'. set -e does not exit for complex commands
+  * [enh] slaptest outputs on stderr, so generates a WARNING. make it quiet
+  * [enh] first stop rspamd.service, then start rspamd.socket
+  * [fix] use ip6.yunohost.org service to retrieve public IPv6
+  * [fix] Protect against empty files
+
+  [ opi ]
+  * [enh] Add dummy DMARC support if DKIM already supported. #233
+  * [fix] Remove Dovecot autocreate deprecated plugin. Fix #103
+  * [fix] Catch ConnectionError from requests package
+  * [fix] Multiple exceptions syntax.
+  * [fix] Wrong command name.
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Tue, 08 Mar 2016 23:32:52 +0100
+
+yunohost (2.3.9) testing; urgency=low
+
+  [ Cédric Félizard ]
+  * [fix] Don't emit Nginx version
+
+  [ Jérôme Lebleu ]
+  * [enh] Store backup size and check free space before restoring (bugfix #189)
+  * [enh] Allow to install a given git reference of an app
+  * [enh] Add the repository from where the app is defined in app_list
+  * [enh] Add DKIM DNS record in domain_dns_conf (close #198)
+  * [enh] Get completely rid of os.system calls in _fetch_app_from_git
+  * [enh] Attempt to improve readability of domain_dns_conf
+  * [enh] Replace msignals.display by logging
+  * [i18n] Use named arguments for remaining translations in app.py
+  * [fix] Clean tmp directory when restoration is cancelled
+  * [fix] Improve and fix app fetching other than from github
+  * [fix] Start socket and stop rspamd/rmilter services in conf_regen (bugfix #196)
+  * [fix] Restart the service if reloading fails in conf_regen (bugfix #195)
+  * [fix] Review how app settings are initialized and set
+  * [fix] Open port 1900 when enabling UPnP (fix #30)
+  * [fix] Remove useless raw argument in domain_list
+  * [fix] Regenerate Rmilter conf on domain addition for DKIM key
+  * [fix] Add an example for ynh_get_plain_key helper usage
+  * [fix] Keep 'avail' key - removed from glances - in disk fs monitoring
+  * [fix] Be less restricitve on network interfaces name in monitoring
+
+  [ julienmalik ]
+  * [fix] access to /var/lib/metronome/ needs sudo permissions
+  * [fix] missing brackets for testing saferemove output
+  * [fix] misssing sudo when removing files in /etc/nginx
+  * [fix] Set 'app status file not found' log level to debug
+  * [fix] Do not raise if one app upgrade fails and regen SSOwat conf
+
+  [ taziden ]
+  * [enh] hardening postfix tls configuration
+
+  [ Moul ]
+  * [enh] add '-ttl' parameter to 'domain dns conf' command.
+  * [enh] also get ssowat version with '-v' argement.
+
+  [ opi ]
+  * [enh] Replace msignals.display by logging in tools.py
+  * [enh] More descriptive names for XMPP services
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 02 Mar 2016 20:45:41 +0100
+
+yunohost (2.3.8) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Add yunohost-firewall to services.yml
+  * [fix] Handle empty app settings error when it's not correctly installed
+
+  [ opi ]
+  * [fix] head opening tag may have attributes.
+
+  [ zamentur ]
+  * [fix] Add backup/restore hooks for ynh_conf_currenthost
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 13 Feb 2016 19:28:51 +0100
+
+yunohost (2.3.7) testing; urgency=low
+
+  [ Laurent Peuch ]
+  * [enh] new command to generate DNS configuration for a given domain name
+
+  [ Jérôme Lebleu ]
+  * [fix] Save LDAP database when switching to MDB (bugfix #169)
+  * [fix] Review LDAP backup and restore hooks
+  * [enh] Replace msignals.display by logging in backup category
+  * [enh] Add a ynh_app_setting_delete helper
+  * [enh] Update rmilter hook and dependencies for 1.7 release
+  * [enh] Set minimum uid and ignore local users in nslcd.conf
+  * [enh] Use a common function to retrieve app settings
+  * [enh] Check the slapd config file at first in conf_regen
+  * [fix] Validate arguments and app settings in app_map (bugfix #168)
+  * [fix] Replace udisks-glue by udisks2 and only suggest it
+  * [fix] Correct condition syntax in metronome conf_regen hook
+  * [fix] Allow false and 0 as non-empty values for an app argument
+  * [fix] Some improvements and fixes to actions related to app access
+  * [fix] Remove old services and add rmilter/rspamd
+  * [fix] Correct log file of yunohost-api in services.yml
+  * [i18n] Use named variables in app category translations
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 07 Feb 2016 18:56:13 +0100
+
+yunohost (2.3.6) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Pass app id to scripts and remove hook_check action
+  * [enh] Rely only on app_id argument for multi-instances apps
+  * [enh] Add support for app argument 'type' defined in the manifest
+  * [enh] Integrate 'optional' key of arguments in app manifest
+  * [enh] Implement 'boolean' argument type support in app manifest
+  * [enh] Add ping util as recommended package
+  * [enh] Add a helper to check if a user exists on the system
+  * [enh] Provide bash helpers for packages manipulation (wip #97)
+  * [enh] Add ynh_package_update helper and call it in install_from_equivs
+  * [fix] Do not block while set main domain
+  * [fix] Add GRANT OPTION in ynh_mysql_create_db helper
+  * [fix] Validate app argument choice for input value too
+  * [fix] Log rotation is already handled by WatchedFileHandler (fixbug #137)
+  * [fix] Use rmilter as a socket-activated service
+  * [fix] Parse app arguments before creating app folder and settings
+  * [fix] Use INFO logging level if app setting is not found
+  * [fix] Split service_configuration_conflict translation key (fixbug #136)
+  * [fix] Set default value of boolean argument type to false if unset
+  * [fix] Remove useless SPF setting in Postfix configuration (fixbug #150)
+  * [fix] Add procmail to packages dependencies
+  * [i18n] Review translations and keys related to app arguments
+
+  [ Sebastien Badia ]
+  * hooks: Use a more elegant grep command for mysql process check
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Sun, 17 Jan 2016 02:57:53 +0100
+
+yunohost (2.3.5) testing; urgency=low
+
+  [ opi ]
+  * [enh] Get app label for installed app in app list
+  * [enh] Short cache on handlebars templates
+
+  [ Jérôme Lebleu ]
+  * [enh] Allow to pass the admin password as argument in the cli
+  * [enh] Add main domain GET route
+  * [enh] Provide bash helpers for MySQL databases and app settings (wip #97)
+  * [enh] Rename ynh_password bash helper to ynh_string_random
+  * [fix] Check app min_version with yunohost package (fixbug #113)
+  * [fix] Use --output-as instead of deprecated options
+  * [fix] Prevent error if unset variable is treated in utils helper
+  * [doc] Improve usage and add examples for user helpers
+  * [i18n] Update translations from Transifex belatedly
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Thu, 24 Dec 2015 10:55:36 +0100
+
+yunohost (2.3.4) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Make use of call_async_output in hook_exec to get output in real time
+  * [fix] Display a more detailed message when yunohost-firewall is stopped
+  * [fix] Prevent insserv warning when using systemd at package postinst
+  * [fix] Log real exception string error in hook_callback
+  * [fix] Add yunohost-firewall.service but do not enable it
+
+  [ julienmalik ]
+  * [fix] Log for rmilter instead of rspamd
+  * [fix] Do not exit at first service which can't be stopped
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 17 Nov 2015 11:10:42 +0100
+
+yunohost (2.3.3) testing; urgency=low
+
+  * [fix] Do not modify handlers with root_handlers in bin/yunohost
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 15:00:04 +0100
+
+yunohost (2.3.2) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Do not rely on dh_installinit and restart service after upgrade
+  * [fix] Add tty in root handlers if debug is set in bin/yunohost
+
+  [ kload ]
+  * [fix] Do not remove the global_script directory
+  * [fix] Unexpected warnings comming from stderr
+  * [enh] Warn the user about the waiting at the configuration generation
+  * [fix] Delayed upgrade of the package 'yunohost'
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 14:03:39 +0100
+
+yunohost (2.3.1) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Add logrotate configuration
+  * [enh] Allow to set default options for yunohost-api service
+  * [enh] Add bash completion for bin/yunohost
+  * [enh] Make use of new logging facilities in firewall, hook and service
+  * [enh] Refactor bin/yunohost and bin/yunohost-api to follow moulinette
+    changes and provide help for global arguments
+  * [enh] Split stdout/stderr wrapping in hook_exec and add a no_trace option
+  * [fix] Create home directory during login (fixbug #80)
+  * [fix] Keep compat with deprecated --plain and --json in the cli
+  * [fix] Do not restrict warning to tty in service_saferemove
+  * [fix] Enable yunohost-api systemd service manually
+
+  [ kload ]
+  * [fix] Restart Dovecot at the end of Rspamd configuration script
+  * [fix] Translate regenconf messages in English and French
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sun, 15 Nov 2015 00:23:27 +0100
+
+yunohost (2.3.0) testing; urgency=low
+
+  [ breaking changes ]
+  * Merge all packages into one
+  * Wheezy compatibility drop
+
+  [ features ]
+  * Implement a regenconf command
+  * Implement local backup/restore functions
+  * Allow to filter which app to backup/restore
+  * Replace the email stack by Rspamd/Rmilter
+  * Create shallow clone to increase app installation time
+  * Add helper bash functions for apps developers
+  * Update app_info to show app installation status
+  * Implement an app_debug function
+  * IPv6 compatibility enhancement
+
+  [ bugfixes ]
+  * Display YunoHost packages versions (fix #11)
+  * Allow empty app arguments in app_install
+  * Invalidate passwd at user creation/deletion (fix #70)
+  * Fix skipped_urls for each domain and #68
+  * Correct logger object in backup_list (fix #75)
+  * 2nd installation of apps with a hooks directory
+  * Add netcat-openbsd dependency
+  * Ensure that arguments are passed to the hook as string
+  * Use SSL/TLS to fetch app list
+  * IPv6 record in DynDNS
+  * Use sudo to execute hook script
+  * Debian postinst script : only respond to configure
+  * Handle SSL generation better
+  * Ensure that the service yunohost-api is always running
+  * Sieve permission denied
+  * Do not enable yunohost-firewall service at install
+  * Open port 1900 when enabling UPnP (fixes #30)
+
+  [ other ]
+  * Add AGPL license
+  * French translation using Weblate
+
+ -- kload <kload@kload.fr>  Tue, 03 Nov 2015 11:55:19 +0000
+
+moulinette-yunohost (2.3.1) testing; urgency=low
+
+  [ Julien Malik ]
+  * [fix] Indent postinst script uniformly
+  * [enh] postinst : only respond to configure
+  * [lintian] fix output-of-updaterc.d-not-redirected-to-dev-null yunohost-api postinst
+  * [lintian] fix postrm-contains-additional-updaterc.d-calls etc/init.d/yunohost-firewall
+  * [lintian] fix init.d-script-missing-lsb-description
+  * [lintian] fix init.d-script-does-not-implement-required-option etc/init.d/yunohost-api force-reload
+  * [lintian] fix init.d-script-does-not-implement-required-option etc/init.d/yunohost-firewall force-reload
+  * [lintian] fix executable-not-elf-or-script usr/lib/moulinette/yunohost/__init__.py
+  * [lintian] fix script-not-executable for backup/restore hooks
+  * [fix] remove copy-pasted comments
+
+  [ Le Kload ]
+  * [fix] Ensure that arguments are passed to the hook as string
+
+  [ opi ]
+  * [fix] Use SSL/TLS to fetch app list
+
+  [ Jérôme Lebleu ]
+  * [fix] Replace bind9 by dnsmasq in services definition
+
+  [ kload ]
+  * [fix] IPv6 record in DynDNS
+
+  [ Jocelyn Delande ]
+  * [fix] fix UnboundLocalError on ConnectionError
+  * [enh] Determine the public IPv6 locally
+
+ -- kload <kload@kload.fr>  Sun, 27 Sep 2015 10:36:34 +0000
+
+moulinette-yunohost (2.3.0) testing; urgency=low
+
+  [ M5oul ]
+  * Add AGPL license
+
+  [ ZeHiro ]
+  * [fix] Fix skipped_urls for each domain and #68
+
+  [ nahoj ]
+  * typo
+
+  [ Jérôme Lebleu ]
+  * [fix] Correct logger object in backup_list (fix #75)
+
+  [ zamentur ]
+  * [fix] 2nd installation of apps with a hooks directory
+
+  [ Julien Malik ]
+  * Add helper bash functions for apps developers
+
+  [ opi ]
+  * [enh] Add ynh_user_exists helper.
+  * [fix] Use one file for all user related helpers.
+
+  [ Adrien Beudin ]
+  * [fix] add netcat-openbsd packages in depends
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Tue, 08 Sep 2015 14:19:28 +0200
+
+moulinette-yunohost (2.2.3) stable; urgency=low
+
+  * [fix] Catch proper exception in backup_list (fix #65)
+  * [fix] Display YunoHost packages versions (fix #11)
+  * [fix] Allow empty app arguments in app_install
+  * [fix] Invalidate passwd at user creation/deletion (fix #70)
+  * [fix] Add minimum moulinette version in debian/control
+
+ -- Jérôme Lebleu <jerome.lebleu@mailoo.org>  Sat, 18 Jul 2015 16:42:59 +0200
+
+moulinette-yunohost (2.2.2) stable; urgency=low
+
+  * [fix] Avoid cd errors
+
+ -- kload <kload@kload.fr>  Tue, 02 Jun 2015 15:19:07 +0000
+
+moulinette-yunohost (2.2.1) stable; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Retrieve apps settings in a safer way (fix #61)
+  * [enh] Add post_user_delete hook
+
+ -- kload <kload@kload.fr>  Sat, 23 May 2015 15:14:54 +0200
+
+moulinette-yunohost (2.2.0) stable; urgency=low
+
+  * Bumping version to 2.2.0
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 19:15:07 +0000
+
+moulinette-yunohost (2.1.11) testing; urgency=low
+
+  * [fix] Include ca-certificates in dependencies
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 19:07:57 +0000
+
+moulinette-yunohost (2.1.10) testing; urgency=low
+
+  * [fix] Add python-apt to requirements and remove rubygems
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 18:05:37 +0000
+
+moulinette-yunohost (2.1.9) testing; urgency=low
+
+  * [fix] Allow SSH port in TCP only
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 16:13:07 +0000
+
+moulinette-yunohost (2.1.8) testing; urgency=low
+
+  * [fix] Allow old custom applications compatibility
+  * [fix] Mandatory protocol for backward compatibility
+
+ -- kload <kload@kload.fr>  Fri, 08 May 2015 00:52:50 +0000
+
+moulinette-yunohost (2.1.7) testing; urgency=low
+
+  * [fix] Keep username in user list for compatibility
+
+ -- kload <kload@kload.fr>  Tue, 05 May 2015 20:00:55 +0200
+
+moulinette-yunohost (2.1.6) testing; urgency=low
+
+  [ Adrien Beudin ]
+  * remove yunohost-firewall package
+  * fix depends of yunohost-firewall
+
+ -- kload <kload@kload.fr>  Tue, 05 May 2015 11:29:12 +0200
+
+moulinette-yunohost (2.1.5) testing; urgency=low
+
+  [ Adrien Beudin ]
+  * [fix] add bind9utils
+
+  [ Julien VAUBOURG ]
+  * Disable DNS forwarding
+
+ -- kload <kload@kload.fr>  Mon, 04 May 2015 16:26:02 +0200
+
+moulinette-yunohost (2.1.4) testing; urgency=low
+
+  [ Adrien Beudin ]
+  * [fix] yunohost firewall init script
+  * [fix] add depends on yunohost-firewall
+  * [fix] add rules for yunohost-firewall init script
+
+ -- kload <kload@kload.fr>  Fri, 01 May 2015 21:15:30 +0000
+
+moulinette-yunohost (2.1.3) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [enh] Add support for user mailbox size quota
+  * [enh] List users by username
+  * [fix] Adapt broken calls to user_list
+  * [fix] Allow empty users argument in app_add/removeaccess
+
+  [ root ]
+  * [fix] show usage quota status
+
+  [ Adrien Beudin ]
+  * [fix] show usage quota status
+  * Revert "[fix] Allow empty users argument in app_add/removeaccess"
+  * [fix] show usage quota status
+  * [enh] Add check STMP outgoing port
+  * [fix] Remove import subprocess
+
+  [ Jérôme Lebleu ]
+  * Revert "Revert "[fix] Allow empty users argument in app_add/removeaccess""
+
+  [ Adrien Beudin ]
+  * [enh] Add MX check + Refactoring
+  * [fix] user quota
+  * [fix] check mx ID
+  * [fix] remove domain beudi
+  * [fix] network check
+  * [fix] readd yunohost-firewall init script
+
+ -- kload <kload@kload.fr>  Fri, 01 May 2015 15:06:37 +0000
+
+moulinette-yunohost (2.1.2) testing; urgency=low
+
+  [ Jérôme Lebleu ]
+  * [fix] Ooops, so much yolo kills yolo and actionsmap
+  * [fix] Consider new gTLDs in email and domain regex (fix #46)
+  * [fix] Open TCP port 587 for mail submission
+  * [i18n] Update translations from Transifex
+  * [i18n] Remove unused 'yunohost' translation key
+  * [i18n] Fix JSON syntax errors
+  * [fix] Catch ConnectionError from requests package
+
+  [ zamentur ]
+  * [enh] Add app settings to redirect request
+
+  [ Julien Malik ]
+  * [fix] concatenate CA certificate with domain certificate
+  * [fix] Block XMPP Bosh port 5290
+
+ -- Julien Malik <julien.malik@paraiso.me>  Tue, 17 Mar 2015 16:44:04 +0100
+
+moulinette-yunohost (2.1.1) testing; urgency=low
+
+  * Bump version to 2.1.1 to bootstrap new build workflow
+
+ -- Julien Malik <julien.malik@paraiso.me>  Thu, 12 Feb 2015 13:32:37 +0100
+
+moulinette-yunohost (2.0-rc~megusta33) test; urgency=low
+
+  * Test build: [enh] Use dnsmasq
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Wed, 24 Dec 2014 17:04:29 +0100
+
+moulinette-yunohost (2.0-rc~megusta32) test; urgency=low
+
+  * Test build: [enh] Replace udiskie by udisks-glue
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 31 Oct 2014 19:36:18 +0100
+
+moulinette-yunohost (2.0-rc~megusta31) test; urgency=low
+
+  * Test build: [enh] Working backup and restore
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 26 Oct 2014 00:50:34 +0200
+
+moulinette-yunohost (2.0-rc~megusta30) test; urgency=low
+
+  * Test build: Fixes
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 26 Oct 2014 00:16:21 +0200
+
+moulinette-yunohost (2.0-rc~megusta29) test; urgency=low
+
+  * Test build: Restore function WIP
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 25 Oct 2014 23:23:25 +0200
+
+moulinette-yunohost (2.0-rc~megusta28) test; urgency=low
+
+  * Test build: typo
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 25 Oct 2014 20:41:10 +0200
+
+moulinette-yunohost (2.0-rc~megusta27) test; urgency=low
+
+  * Test build: typo
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 25 Oct 2014 20:09:26 +0200
+
+moulinette-yunohost (2.0-rc~megusta26) test; urgency=low
+
+  * Test build: typo
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 25 Oct 2014 19:38:54 +0200
+
+moulinette-yunohost (2.0-rc~megusta25) test; urgency=low
+
+  * Test build: Backup / restore WIP
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 25 Oct 2014 18:58:03 +0200
+
+moulinette-yunohost (2.0-rc~megusta24) test; urgency=low
+
+  * Test build: [enh] add firewall init script
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 16 Sep 2014 14:29:10 +0200
+
+moulinette-yunohost (2.0-rc~megusta23) test; urgency=low
+
+  * Test build: [enh] Add avahi daemon
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 16 Sep 2014 09:43:51 +0200
+
+moulinette-yunohost (2.0-rc~megusta22) megusta; urgency=low
+
+  * Production build: Bump version
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 31 Jul 2014 12:31:32 +0200
+
+moulinette-yunohost (2.0-rc~megusta21) megusta; urgency=low
+
+  * Production build: Bump version
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 31 Jul 2014 12:09:57 +0200
+
+moulinette-yunohost (2.0-rc~megusta20) test; urgency=low
+
+  * Test build: Update from git 31ef39e4e
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 28 Jul 2014 18:09:50 +0200
+
+moulinette-yunohost (2.0-rc~megusta19) megusta; urgency=low
+
+  * Production build: bump version
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 21 Jul 2014 16:23:15 +0200
+
+moulinette-yunohost (2.0-rc~megusta18) megusta; urgency=low
+
+  * Production build: Fix upgrade and various fixes
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 21 Jul 2014 16:16:57 +0200
+
+moulinette-yunohost (2.0-rc~megusta17) test; urgency=low
+
+  * Test build: Various fixes
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 21 Jul 2014 16:10:40 +0200
+
+moulinette-yunohost (2.0-rc~megusta16) test; urgency=low
+
+  * Test build: Update from git fed3e6f67
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 18 Jul 2014 18:37:44 +0200
+
+moulinette-yunohost (2.0-rc~megusta15) megusta; urgency=low
+
+  * Production build: Update from git 496b4910159d
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 01 Jul 2014 19:08:29 +0200
+
+moulinette-yunohost (2.0-rc~megusta14) test; urgency=low
+
+  * Test build: Update from git  496b4910159d
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 01 Jul 2014 19:01:33 +0200
+
+moulinette-yunohost (2.0-rc~megusta13) test; urgency=low
+
+  * Test build: [fix] Init script
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 30 Jun 2014 17:52:52 +0200
+
+moulinette-yunohost (2.0-rc~megusta12) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 28 Jun 2014 15:07:05 +0200
+
+moulinette-yunohost (2.0-rc~megusta11) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 28 Jun 2014 10:59:30 +0200
+
+moulinette-yunohost (2.0-rc~megusta10) test; urgency=low
+
+  * Test build: [fix] Properly separate upnp and firewall
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 26 Jun 2014 12:40:47 +0200
+
+moulinette-yunohost (2.0-rc~megusta9) test; urgency=low
+
+  * Test build: [fix] API init script
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Wed, 25 Jun 2014 22:31:51 +0200
+
+moulinette-yunohost (2.0-rc~megusta8) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 24 Jun 2014 13:56:53 +0200
+
+moulinette-yunohost (2.0-rc~megusta7) megusta; urgency=low
+
+  * Production build: [fix] copy firewall.yml file
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 14 Jun 2014 13:42:34 +0200
+
+moulinette-yunohost (2.0-rc~megusta6) megusta; urgency=low
+
+  * Production build: [fix] Wrong translation key in app module
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 12 Jun 2014 19:13:54 +0200
+
+moulinette-yunohost (2.0-rc~megusta5) test; urgency=low
+
+  * Test build: [fix] Add --no-websocket option to yunohost-api when
+    gevent segfault
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 12 Jun 2014 09:51:56 +0200
+
+moulinette-yunohost (2.0-rc~megusta4) test; urgency=low
+
+  * Test build: [fix] Add --no-websocket option to yunohost-api when
+    gevent segfault
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 12 Jun 2014 09:43:13 +0200
+
+moulinette-yunohost (2.0-rc~megusta3) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 12 Jun 2014 09:28:32 +0200
+
+moulinette-yunohost (2.0-rc~megusta2) megusta; urgency=low
+
+  * Production build: Bump version
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 09 Jun 2014 01:43:09 +0200
+
+moulinette-yunohost (2.0-rc~megusta1) test; urgency=low
+
+  * Bump version
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 09 Jun 2014 00:49:09 +0200
+
+moulinette-yunohost (2.0~megusta44) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 09 Jun 2014 00:49:09 +0200
+
+moulinette-yunohost (2.0~megusta43) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 06 Jun 2014 12:24:33 +0200
+
+moulinette-yunohost (2.0~megusta42) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 02 Jun 2014 22:10:12 +0200
+
+moulinette-yunohost (2.0~megusta41) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 02 Jun 2014 11:29:54 +0200
+
+moulinette-yunohost (2.0~megusta40) test; urgency=low
+
+  * Test build: [fix] Remove --no-ldap argument while fetching applist
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 01 Jun 2014 21:44:08 +0200
+
+moulinette-yunohost (2.0~megusta39) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 31 May 2014 11:37:40 +0200
+
+moulinette-yunohost (2.0~megusta38) test; urgency=low
+
+  * Test build: [fix] Move udsikie init script
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 30 May 2014 13:37:38 +0200
+
+moulinette-yunohost (2.0~megusta37) test; urgency=low
+
+  * Test build: [fix] dependencies
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 29 May 2014 21:34:45 +0200
+
+moulinette-yunohost (2.0~megusta36) test; urgency=low
+
+  * Test build: [fix] dependencies
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 29 May 2014 21:21:52 +0200
+
+moulinette-yunohost (2.0~megusta35) test; urgency=low
+
+  * Test build: [fix] Install udiskie via pip
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 29 May 2014 10:48:21 +0200
+
+moulinette-yunohost (2.0~megusta34) test; urgency=low
+
+  * Test build: [fix] Install udiskie via pip
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 29 May 2014 10:20:24 +0200
+
+moulinette-yunohost (2.0~megusta33) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Wed, 28 May 2014 21:05:27 +0200
+
+moulinette-yunohost (2.0~megusta32) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Wed, 28 May 2014 15:38:24 +0200
+
+moulinette-yunohost (2.0~megusta31) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 27 May 2014 14:44:24 +0200
+
+moulinette-yunohost (2.0~megusta30) test; urgency=low
+
+  * Test build: [fix] Reload SSOwat conf at postinst
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 27 May 2014 13:54:53 +0200
+
+moulinette-yunohost (2.0~megusta29) test; urgency=low
+
+  * Test build: [fix] Reload SSOwat conf at postinst
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 27 May 2014 13:51:08 +0200
+
+moulinette-yunohost (2.0~megusta28) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Tue, 27 May 2014 12:44:06 +0200
+
+moulinette-yunohost (2.0~megusta27) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 26 May 2014 13:40:28 +0200
+
+moulinette-yunohost (2.0~megusta26) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 24 May 2014 21:33:08 +0200
+
+moulinette-yunohost (2.0~megusta25) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 19 May 2014 17:29:32 +0200
+
+moulinette-yunohost (2.0~megusta24) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 19 May 2014 17:28:57 +0200
+
+moulinette-yunohost (2.0~megusta23) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 19 May 2014 13:06:04 +0200
+
+moulinette-yunohost (2.0~megusta22) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 19 May 2014 10:50:53 +0200
+
+moulinette-yunohost (2.0~megusta21) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 19 May 2014 10:38:27 +0200
+
+moulinette-yunohost (2.0~megusta20) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Mon, 19 May 2014 10:34:23 +0200
+
+moulinette-yunohost (2.0~megusta19) test; urgency=low
+
+  * Test build: [enh] Move init script in the moulinette-yunohost
+    package
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 18 May 2014 15:15:23 +0200
+
+moulinette-yunohost (2.0~megusta18) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 18 May 2014 12:11:17 +0200
+
+moulinette-yunohost (2.0~megusta17) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 18 May 2014 11:57:39 +0200
+
+moulinette-yunohost (2.0~megusta16) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sun, 18 May 2014 11:14:48 +0200
+
+moulinette-yunohost (2.0~megusta15) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 17 May 2014 22:30:18 +0200
+
+moulinette-yunohost (2.0~megusta14) test; urgency=low
+
+  * Test build: [fix] Check if firewall.yml is old
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 17 May 2014 22:21:48 +0200
+
+moulinette-yunohost (2.0~megusta13) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 17 May 2014 22:10:52 +0200
+
+moulinette-yunohost (2.0~megusta12) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 17 May 2014 21:58:31 +0200
+
+moulinette-yunohost (2.0~megusta11) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 17 May 2014 00:35:13 +0200
+
+moulinette-yunohost (2.0~megusta10) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Sat, 17 May 2014 00:16:12 +0200
+
+moulinette-yunohost (2.0~megusta9) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 23:19:51 +0200
+
+moulinette-yunohost (2.0~megusta8) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 21:46:50 +0200
+
+moulinette-yunohost (2.0~megusta7) test; urgency=low
+
+  * Test build: Remove cache after upgrade
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 20:57:45 +0200
+
+moulinette-yunohost (2.0~megusta6) test; urgency=low
+
+  * Test build: Update from git
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 20:05:08 +0200
+
+moulinette-yunohost (2.0~megusta5) test; urgency=low
+
+  * Test build: Update init script
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 18:23:14 +0200
+
+moulinette-yunohost (2.0~megusta4) test; urgency=low
+
+  * Test build: actionSSSSS map
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 18:05:45 +0200
+
+moulinette-yunohost (2.0~megusta3) test; urgency=low
+
+  * Test build: actionSSSSS map
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 17:31:04 +0200
+
+moulinette-yunohost (2.0~megusta2) test; urgency=low
+
+  * Test build: Bump version
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 16:28:45 +0200
+
+moulinette-yunohost (2.0~megusta1) test; urgency=low
+
+  * Test build: Add moulinette-yunohost package
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Fri, 16 May 2014 16:05:31 +0200
+
+moulinette-yunohost (1.0~megusta1) megusta; urgency=low
+
+  * Init
+
+ -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 15 May 2014 13:16:03 +0200
+
