@@ -38,7 +38,7 @@ import apt.progress
 
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
+from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, app_map
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp
@@ -555,3 +555,63 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
     return diagnosis
+
+
+def tools_urlavailable(auth, url):
+    """
+    Check availability of a web path
+
+    Keyword argument:
+        url -- Url to check
+    """
+
+    domain, path = _parse_app_url(url)
+
+    # Abort if domain is unknown
+    if domain not in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    # Fetch apps map
+    apps_map = app_map(raw=True)
+
+    # Loop through all apps to check if path is taken by one of them
+    available = "Yes"
+    if domain in apps_map:
+        # Loop through apps
+        for p, a in apps_map[domain].items():
+            if path == p:
+                available = "No"
+            # We also don't want conflicts with other apps starting with
+            # same name
+            elif path.startswith(p) or p.startswith(path):
+                available = "No"
+
+
+    return { "available" : available }
+
+def _parse_app_url(url):
+
+    # We want url to be of the format :
+    #  some.domain.tld/foo
+
+    # Remove http/https prefix if it's there
+    if url.startswith("https://"):
+        url = url[len("https://"):]
+    elif url.startswith("http://"):
+        url = url[len("http://"):]
+
+    # Remove trailing slash
+    url = url.rstrip("/")
+
+    # Check url contains at least a slash
+    if "/" not in url:
+        raise MoulinetteError(errno.EINVAL, m18n.n('invalid_url_format'))
+
+    # Now we extract the domain and uri/path
+    domain = url[:url.index('/')]
+
+    path = url[url.index('/'):]
+    if not path.endswith('/'):
+        path = path + '/'
+
+    return domain, path

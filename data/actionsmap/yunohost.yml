@@ -578,6 +578,19 @@ app:
                     full: --app
                     help: Write domain & path to app settings for further checks
 
+        ### app_bookurl()
+        bookurl:
+            action_help: Book a web path for a given app
+            api: GET /tools/bookurl
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                url:
+                    help: Url to check (domain.tld/foo)
+                app:
+                    help: App which will use the web path
+
         ### app_initdb()
         initdb:
             action_help: Create database and initialize it with optionnal attached script
@@ -1350,6 +1363,17 @@ tools:
                     full: --private
                     help: Show private data (domain, IP)
                     action: store_true
+
+        ### tools_urlavailable()
+        urlavailable:
+            action_help: Check availability of a web path
+            api: GET /tools/urlavailable
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                url:
+                    help: Url to check
 
 
 #############################

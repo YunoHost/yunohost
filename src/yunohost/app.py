@@ -899,6 +899,40 @@ def app_checkport(port):
                               m18n.n('port_unavailable', port=int(port)))
 
 
+def app_bookurl(auth, app, url):
+    """
+    Book a web path for a given app
+
+    Keyword argument:
+        app -- App which will use the web path
+        url -- Url to check (domain.tld/foo)
+
+    """
+
+    domain, path = _parse_app_url(url)
+
+    # We cannot change the url of an app already installed simply by changing
+    # the settings...
+    # FIXME should look into change_url once it's merged
+
+    already_installed = app in app_list(installed=True, raw=True).keys()
+    if already_installed:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_already_installed_cant_change_url'))
+
+
+    # Check the url is available
+
+    from tools import tools_urlavailable, _parse_app_url
+    url_available = tools_urlavailable(auth, url)["available"] is "Yes"
+    if not url_available:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_location_unavailable'))
+
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
+
+
 def app_checkurl(auth, url, app=None):
     """
     Check availability of a web path
@@ -908,6 +942,8 @@ def app_checkurl(auth, url, app=None):
         app -- Write domain & path to app settings for further checks
 
     """
+
+    logger.warning("`app checkurl` is now deprecated. Please use `tools urlavailability` and `app bookurl` instead.")
     from yunohost.domain import domain_list
 
     if "https://" == url[:8]:
@@ -947,6 +983,8 @@ def app_checkurl(auth, url, app=None):
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
         app_setting(app, 'path', value=path)
+
+
 
 
 def app_initdb(user, password=None, db=None, sql=None):
