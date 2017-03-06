@@ -52,7 +52,10 @@ nslcd:
    log: /var/log/syslog
 nsswitch: null
 bind9: null
+tahoe-lafs: null
+memcached: null
 udisks2: null
+udisk-glue: null
 amavis: null
 postgrey: null
 spamassassin: null
