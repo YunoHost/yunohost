@@ -41,6 +41,7 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log
 from yunohost.utils import packages
+from tools import tools_urlavailable, _parse_app_url
 
 logger = getActionLogger('yunohost.app')
 
@@ -923,7 +924,6 @@ def app_bookurl(auth, app, url):
 
     # Check the url is available
 
-    from tools import tools_urlavailable, _parse_app_url
     url_available = tools_urlavailable(auth, url)["available"] is "Yes"
     if not url_available:
         raise MoulinetteError(errno.EINVAL,
