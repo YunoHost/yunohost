@@ -50,10 +50,8 @@ yunohost-firewall:
 nslcd:
    status: service
    log: /var/log/syslog
-nsswitch:
-   status: service
-udisks2:
-   status: service
+nsswitch: null
+udisks2: null
 amavis: null
 postgrey: null
 spamassassin: null
