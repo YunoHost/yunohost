@@ -51,6 +51,7 @@ nslcd:
    status: service
    log: /var/log/syslog
 nsswitch: null
+bind9: null
 udisks2: null
 amavis: null
 postgrey: null
