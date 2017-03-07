@@ -10,13 +10,13 @@
 # usage: ynh_normalize_url_path path_to_normalize
 # | arg: url_path_to_normalize - URL path to normalize before using it
 ynh_normalize_url_path () {
-	path=$1
-	test -n "$path" || ynh_die "ynh_normalize_url_path expect a URL path as first argument and received nothing."
-	if [ "${path:0:1}" != "/" ]; then    # If the first character is not a /
-		path="/$path"    # Add / at begin of path variable
+	path_url=$1
+	test -n "$path_url" || ynh_die "ynh_normalize_url_path expect a URL path as first argument and received nothing."
+	if [ "${path_url:0:1}" != "/" ]; then    # If the first character is not a /
+		path_url="/$path_url"    # Add / at begin of path variable
 	fi
-	if [ "${path:${#path}-1}" == "/" ] && [ ${#path} -gt 1 ]; then    # If the last character is a / and that not the only character.
-		path="${path:0:${#path}-1}"	# Delete the last character
+	if [ "${path_url:${#path_url}-1}" == "/" ] && [ ${#path_url} -gt 1 ]; then    # If the last character is a / and that not the only character.
+		path_url="${path_url:0:${#path_url}-1}"	# Delete the last character
 	fi
-	echo $path
+	echo $path_url
 }
