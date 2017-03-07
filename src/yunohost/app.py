@@ -573,6 +573,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
 
+            app_ssowatconf(auth)
+
             if install_retcode == -1:
                 raise MoulinetteError(errno.EINTR,
                                       m18n.g('operation_interrupted'))
