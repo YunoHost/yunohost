@@ -581,7 +581,7 @@ app:
         ### app_registerurl()
         registerurl:
             action_help: Register a web path for a given app
-            api: GET /tools/registerurl
+            api: PUT /tools/registerurl
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
