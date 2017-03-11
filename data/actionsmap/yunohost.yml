@@ -566,7 +566,7 @@ app:
 
         ### app_checkurl()
         checkurl:
-            action_help: Check availability of a web path
+            action_help: (Deprecated) Check availability of a web path
             api: GET /tools/checkurl
             configuration:
                 authenticate: all
