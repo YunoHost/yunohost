@@ -924,7 +924,7 @@ def app_registerurl(auth, app, url):
 
     # Check the url is available
 
-    url_available = tools_urlavailable(auth, url)["available"] is "Yes"
+    url_available = tools_urlavailable(auth, url)["available"]
     if not url_available:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_location_unavailable'))

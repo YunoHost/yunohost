@@ -575,16 +575,18 @@ def tools_urlavailable(auth, url):
     apps_map = app_map(raw=True)
 
     # Loop through all apps to check if path is taken by one of them
-    available = "Yes"
+    available = True
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
             if path == p:
-                available = "No"
+                available = False
+                break
             # We also don't want conflicts with other apps starting with
             # same name
             elif path.startswith(p) or p.startswith(path):
-                available = "No"
+                available = False
+                break
 
 
     return { "available" : available }
