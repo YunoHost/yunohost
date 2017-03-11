@@ -41,7 +41,6 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log
 from yunohost.utils import packages
-from tools import tools_urlavailable, _parse_app_url
 
 logger = getActionLogger('yunohost.app')
 
@@ -909,6 +908,10 @@ def app_registerurl(auth, app, url):
         url -- Url to check (domain.tld/foo)
 
     """
+
+    # This line can't be moved on top of file, otherwise it creates an infinite
+    # loop of import with tools.py...
+    from tools import tools_urlavailable, _parse_app_url
 
     domain, path = _parse_app_url(url)
 
