@@ -899,21 +899,21 @@ def app_checkport(port):
                               m18n.n('port_unavailable', port=int(port)))
 
 
-def app_registerurl(auth, app, url):
+def app_registerurl(auth, app, domain, path):
     """
-    Book a web path for a given app
+    Book/register a web path for a given app
 
     Keyword argument:
         app -- App which will use the web path
-        url -- Url to check (domain.tld/foo)
-
+        domain -- The domain on which the app should be registered (e.g. your.domain.tld)
+        path -- The path to be registered (e.g. /coffee)
     """
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from tools import tools_urlavailable, _parse_app_url
+    from tools import tools_urlavailable, _normalize_domain_path
 
-    domain, path = _parse_app_url(url)
+    domain, path = _normalize_domain_path(domain, path)
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...
@@ -924,10 +924,9 @@ def app_registerurl(auth, app, url):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_already_installed_cant_change_url'))
 
-
     # Check the url is available
 
-    url_available = tools_urlavailable(auth, url)["available"]
+    url_available = tools_urlavailable(auth, domain, path)["available"]
     if not url_available:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_location_unavailable'))

@@ -557,15 +557,16 @@ def tools_diagnosis(auth, private=False):
     return diagnosis
 
 
-def tools_urlavailable(auth, url):
+def tools_urlavailable(auth, domain, path):
     """
     Check availability of a web path
 
     Keyword argument:
-        url -- Url to check
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
     """
 
-    domain, path = _parse_app_url(url)
+    domain, path = _normalize_domain_path(domain, path)
 
     # Abort if domain is unknown
     if domain not in domain_list(auth)['domains']:
@@ -588,32 +589,22 @@ def tools_urlavailable(auth, url):
                 available = False
                 break
 
+    return {"available": available}
 
-    return { "available" : available }
 
-def _parse_app_url(url):
+def _normalize_domain_path(domain, path):
 
     # We want url to be of the format :
     #  some.domain.tld/foo
 
     # Remove http/https prefix if it's there
-    if url.startswith("https://"):
-        url = url[len("https://"):]
-    elif url.startswith("http://"):
-        url = url[len("http://"):]
+    if domain.startswith("https://"):
+        domain = domain[len("https://"):]
+    elif domain.startswith("http://"):
+        domain = domain[len("http://"):]
 
-    # Remove trailing slash
-    url = url.rstrip("/")
-
-    # Check url contains at least a slash
-    if "/" not in url:
-        raise MoulinetteError(errno.EINVAL, m18n.n('invalid_url_format'))
-
-    # Now we extract the domain and uri/path
-    domain = url[:url.index('/')]
-
-    path = url[url.index('/'):]
-    if not path.endswith('/'):
-        path = path + '/'
+    # Remove trailing slashes
+    domain = domain.rstrip("/")
+    path = "/" + path.strip("/")
 
     return domain, path

@@ -580,16 +580,19 @@ app:
 
         ### app_registerurl()
         registerurl:
-            action_help: Register a web path for a given app
+            action_help: Book/register a web path for a given app
             api: PUT /tools/registerurl
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                url:
-                    help: Url to check (domain.tld/foo)
                 app:
                     help: App which will use the web path
+                domain:
+                    help: The domain on which the app should be registered (e.g. your.domain.tld)
+                path:
+                    help: The path to be registered (e.g. /coffee)
+
 
         ### app_initdb()
         initdb:
@@ -1372,8 +1375,12 @@ tools:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                url:
-                    help: Url to check
+                domain:
+                    help: The domain for the web path (e.g. your.domain.tld)
+                    extra:
+                        pattern: *pattern_domain
+                path:
+                    help: The path to check (e.g. /coffee)
 
 
 #############################
