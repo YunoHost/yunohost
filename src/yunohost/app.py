@@ -900,7 +900,7 @@ def app_checkport(port):
                               m18n.n('port_unavailable', port=int(port)))
 
 
-def app_bookurl(auth, app, url):
+def app_registerurl(auth, app, url):
     """
     Book a web path for a given app
 
@@ -943,7 +943,7 @@ def app_checkurl(auth, url, app=None):
 
     """
 
-    logger.warning("`app checkurl` is now deprecated. Please use `tools urlavailability` and `app bookurl` instead.")
+    logger.warning("`app checkurl` is now deprecated. Please use `tools urlavailability` and `app registerurl` instead.")
     from yunohost.domain import domain_list
 
     if "https://" == url[:8]:

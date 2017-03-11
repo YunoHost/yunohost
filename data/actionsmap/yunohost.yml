@@ -578,10 +578,10 @@ app:
                     full: --app
                     help: Write domain & path to app settings for further checks
 
-        ### app_bookurl()
-        bookurl:
-            action_help: Book a web path for a given app
-            api: GET /tools/bookurl
+        ### app_registerurl()
+        registerurl:
+            action_help: Register a web path for a given app
+            api: GET /tools/registerurl
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
