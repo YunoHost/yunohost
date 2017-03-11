@@ -37,6 +37,11 @@ def teardown_function(function):
     pass
 
 
+def cron_job_is_there():
+    r = os.system("run-parts -v --test /etc/cron.daily/ | grep yunohost-fetch-applists")
+    return r == 0
+
+
 ###############################################################################
 #   Test listing of applists and registering of applists                      #
 ###############################################################################
@@ -64,6 +69,8 @@ def test_applist_list_register():
     applist_dict = app_listlists()
     assert "dummy" in applist_dict.keys()
     assert applist_dict["dummy"]["url"] == "https://lol.com/applist.json"
+
+    assert cron_job_is_there()
 
 
 def test_applist_list_register_conflict_name():
@@ -323,7 +330,7 @@ def test_applist_system_migration():
     assert "dummy" in applist_dict.keys()
     assert applist_dict["dummy"]["url"] == "https://swiggitty.swaggy.lol/yolo.json"
 
-    assert os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
+    assert cron_job_is_there()
 
 
 def test_applist_system_migration_badcron():
@@ -350,8 +357,6 @@ def test_applist_system_migration_badcron():
 
     # Applist should still be empty
     assert app_listlists() == {}
-
-    assert os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
 
 
 def test_applist_system_migration_conflict():
@@ -382,4 +387,4 @@ def test_applist_system_migration_conflict():
     assert applist_dict["dummy"]["url"] == "https://app.yunohost.org/official.json"
     assert "yunohost" not in applist_dict.keys()
 
-    assert os.path.exists("/etc/cron.daily/yunohost-fetch-applists")
+    assert cron_job_is_there()

@@ -35,6 +35,8 @@ import errno
 import subprocess
 import requests
 import glob
+import pwd
+import grp
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -1769,15 +1771,27 @@ def _migrate_applist_system():
             else:
                 os.remove(cron_path)
 
-    _install_applist_fetch_cron()
-
 
 def _install_applist_fetch_cron():
 
+    cron_job_file = "/etc/cron.daily/yunohost-fetch-applists"
+
     logger.debug("Installing applist fetch cron job")
 
-    with open("/etc/cron.daily/yunohost-fetch-applists", "w") as f:
+    with open(cron_job_file, "w") as f:
         f.write('#!/bin/bash\nyunohost app fetchlist > /dev/null 2>&1\n')
+
+    _set_permissions(cron_job_file, "root", "root", 0755)
+
+
+# FIXME - Duplicate from certificate.py, should be moved into a common helper
+# thing...
+def _set_permissions(path, user, group, permissions):
+    uid = pwd.getpwnam(user).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+
+    os.chown(path, uid, gid)
+    os.chmod(path, permissions)
 
 
 def _read_applist_list():
@@ -1838,6 +1852,8 @@ def _register_new_applist(url, name):
                           "lastUpdate": -1}
 
     _write_applist_list(applist_list)
+
+    _install_applist_fetch_cron()
 
 
 def is_true(arg):
