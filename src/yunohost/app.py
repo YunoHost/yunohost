@@ -919,10 +919,12 @@ def app_registerurl(auth, app, domain, path):
     # the settings...
     # FIXME should look into change_url once it's merged
 
-    already_installed = app in app_list(installed=True, raw=True).keys()
-    if already_installed:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_already_installed_cant_change_url'))
+    installed = app in app_list(installed=True, raw=True).keys()
+    if installed:
+        settings = _get_app_settings(app)
+        if "path" in settings.keys() and "domain" in settings.keys():
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('app_already_installed_cant_change_url'))
 
     # Check the url is available
 
