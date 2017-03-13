@@ -960,7 +960,7 @@ settings:
         ### settings_reset()
         reset:
             action_help: reset all settings to their default value
-            api: DELETE /settings/reset
+            api: DELETE /settings
             arguments:
                 -y:
                     full: --yes
