@@ -956,11 +956,6 @@ settings:
                     help: new value
                     extra:
                         required: True
-                -n:
-                    full: --namespace
-                    help: 'The namespace in which the settings is stored (eg: "ssl"))'
-                    extra:
-                        required: True
 
         ### settings_reset()
         reset:
