@@ -144,7 +144,7 @@ def app_removelist(name):
     logger.success(m18n.n('appslist_removed'))
 
 
-def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, with_backup=False):
+def app_list(filter=None, raw=False, installed=False, with_backup=False):
     """
     List apps
 
@@ -157,8 +157,6 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         with_backup -- Return only apps with backup feature (force --installed filter)
 
     """
-    offset = int(offset) if offset else 0
-    limit = int(limit) if limit else 1000
     installed = with_backup or installed
 
     app_dict = {}
@@ -197,17 +195,9 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
 
             app_dict[app]['repository'] = None
 
-    # ???
-    if not (len(app_dict) > offset and limit > 0):
-        return {'apps': list_dict} if not raw else list_dict
-
     # Sort app list
     sorted_app_list = sorted(app_dict.keys())
 
-    # Take into account offset
-    sorted_app_list = sorted_app_list[offset:]
-
-    i = 0
     for app_id in sorted_app_list:
 
         app_info_dict = app_dict[app_id]
@@ -257,12 +247,6 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
                 'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
                 'installed': app_installed
             })
-
-        # Count listed apps and apply limit
-        i += 1
-        if i >= limit:
-            break
-
 
     return {'apps': list_dict} if not raw else list_dict
 
