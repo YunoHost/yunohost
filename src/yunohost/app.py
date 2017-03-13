@@ -144,7 +144,7 @@ def app_removelist(name):
     logger.success(m18n.n('appslist_removed'))
 
 
-def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, with_backup=False):
+def app_list(filter=None, raw=False, installed=False, with_backup=False):
     """
     List apps
 
@@ -157,17 +157,10 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         with_backup -- Return only apps with backup feature (force --installed filter)
 
     """
-    if offset: offset = int(offset)
-    else: offset = 0
-    if limit: limit = int(limit)
-    else: limit = 1000
     installed = with_backup or installed
 
     app_dict = {}
-    if raw:
-        list_dict = {}
-    else:
-        list_dict = []
+    list_dict = {} if raw else []
 
     try:
         applists = app_listlists()['lists']
@@ -176,79 +169,84 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         app_fetchlist()
         applists = app_listlists()['lists']
 
+    # Construct a dictionnary of apps, based on known app lists
     for applist in applists:
         with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
-            for app, info in json.loads(str(json_list.read())).items():
+            for app, info in json.load(json_list).items():
                 if app not in app_dict:
                     info['repository'] = applist
                     app_dict[app] = info
 
+    # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
         if app not in app_dict:
-            # Look for forks
+            # Handle multi-instance case like wordpress__2
             if '__' in app:
                 original_app = app[:app.index('__')]
                 if original_app in app_dict:
                     app_dict[app] = app_dict[original_app]
                     continue
-            with open( APPS_SETTING_PATH + app +'/manifest.json') as json_manifest:
-                app_dict[app] = {"manifest":json.loads(str(json_manifest.read()))}
+                # FIXME : What if it's not !?!?
+
+            with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+                app_dict[app] = {"manifest": json.load(json_manifest)}
+
             app_dict[app]['repository'] = None
 
-    if len(app_dict) > (0 + offset) and limit > 0:
-        sorted_app_dict = {}
-        for sorted_keys in sorted(app_dict.keys())[offset:]:
-            sorted_app_dict[sorted_keys] = app_dict[sorted_keys]
+    # Sort app list
+    sorted_app_list = sorted(app_dict.keys())
 
-        i = 0
-        for app_id, app_info_dict in sorted_app_dict.items():
-            if i < limit:
-                if (filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter:
-                    app_installed = _is_installed(app_id)
+    for app_id in sorted_app_list:
 
-                    # Only installed apps filter
-                    if installed and not app_installed:
-                        continue
+        app_info_dict = app_dict[app_id]
 
-                    # Filter only apps with backup and restore scripts
-                    if with_backup and (
-                        not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
-                        not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
-                    ):
-                        continue
+        # Apply filter if there's one
+        if (filter and
+           (filter not in app_id) and
+           (filter not in app_info_dict['manifest']['name'])):
+            continue
 
-                    if raw:
-                        app_info_dict['installed'] = app_installed
-                        if app_installed:
-                            app_info_dict['status'] = _get_app_status(app_id)
+        # Ignore non-installed app if user wants only installed apps
+        app_installed = _is_installed(app_id)
+        if installed and not app_installed:
+            continue
 
-                        # dirty: we used to have manifest containing multi_instance value in form of a string
-                        # but we've switched to bool, this line ensure retrocompatibility
-                        app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+        # Ignore apps which don't have backup/restore script if user wants
+        # only apps with backup features
+        if with_backup and (
+            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
+            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
+        ):
+            continue
 
-                        list_dict[app_id] = app_info_dict
-                    else:
-                        label = None
-                        if app_installed:
-                            app_info_dict_raw = app_info(app=app_id, raw=True)
-                            label = app_info_dict_raw['settings']['label']
-                        list_dict.append({
-                            'id': app_id,
-                            'name': app_info_dict['manifest']['name'],
-                            'label': label,
-                            'description': _value_for_locale(
-                                app_info_dict['manifest']['description']),
-                            # FIXME: Temporarly allow undefined license
-                            'license': app_info_dict['manifest'].get('license',
-                                m18n.n('license_undefined')),
-                            'installed': app_installed
-                        })
-                    i += 1
-            else:
-               break
-    if not raw:
-        list_dict = { 'apps': list_dict }
-    return list_dict
+        if raw:
+            app_info_dict['installed'] = app_installed
+            if app_installed:
+                app_info_dict['status'] = _get_app_status(app_id)
+
+            # dirty: we used to have manifest containing multi_instance value in form of a string
+            # but we've switched to bool, this line ensure retrocompatibility
+            app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+
+            list_dict[app_id] = app_info_dict
+
+        else:
+            label = None
+            if app_installed:
+                app_info_dict_raw = app_info(app=app_id, raw=True)
+                label = app_info_dict_raw['settings']['label']
+
+            list_dict.append({
+                'id': app_id,
+                'name': app_info_dict['manifest']['name'],
+                'label': label,
+                'description': _value_for_locale(app_info_dict['manifest']['description']),
+                # FIXME: Temporarly allow undefined license
+                'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
+                'installed': app_installed
+            })
+
+    return {'apps': list_dict} if not raw else list_dict
 
 
 def app_info(app, show_status=False, raw=False):
