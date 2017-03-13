@@ -7,6 +7,9 @@ avahi-daemon:
 dnsmasq:
    status: service
    log: /var/log/daemon.log
+fail2ban:
+    status: service
+    log: /var/log/fail2ban.log
 dovecot:
    status: service
    log: [/var/log/mail.log,/var/log/mail.err]
