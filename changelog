@@ -6,6 +6,9 @@ yunohost (2.6.1) stable; urgency=low
   [ ljf ]
   * [fix] Can't use common.sh on restore operation (#246)
 
+  Various:
+  * refactor app_list code by Bram and Aleks
+
   Thanks to all contributors: thardev, ljf and to the people who are
   participating to the beta and giving us feedback <3
 
