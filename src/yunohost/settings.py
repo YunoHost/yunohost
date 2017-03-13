@@ -107,6 +107,11 @@ def settings_reset(yes=False):
 
     settings = _get_settings()
 
+    # For now on, we backup the previous settings in case of but we don't have
+    # any mecanism to take advantage of those backups. It could be a nice
+    # addition but we'll see if this is a common need.
+    # Another solution would be to use etckeeper and integrate those
+    # modification inside of it and take advantage of its git history
     old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.now().strftime("%F_%X")
     _save_settings(settings, location=old_settings_backup_path)
 
@@ -132,6 +137,14 @@ def _get_settings():
     if not os.path.exists(SETTINGS_PATH):
         return settings
 
+    # we have a very strict policy on only allowing settings that we know in
+    # the OrderedDict DEFAULTS
+    # For various reason, while reading the local settings we might encounter
+    # settings that aren't in DEFAULTS, those can come from settings key that
+    # we have removed, errors or the user trying to modify
+    # /etc/yunohost/settings.json
+    # To avoid to simply overwrite them, we store them in
+    # /etc/yunohost/settings-unknown.json in case of
     unknown_settings = {}
     unknown_settings_path = SETTINGS_PATH_OTHER_LOCATION % "unknown"
 
