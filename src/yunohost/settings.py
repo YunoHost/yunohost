@@ -14,8 +14,8 @@ SETTINGS_PATH = "/etc/yunohost/settings.json"
 SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
 # a settings entry is in the form of:
-# name: {type, value, default, description, [possibilities]}
-# possibilities is only for enum
+# name: {type, value, default, description, [choices]}
+# choices is only for enum
 
 # description is implied from the translated strings
 # the key is "global_settings_setting_%s" % key.replace(".", "_")
