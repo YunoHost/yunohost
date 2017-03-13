@@ -173,11 +173,9 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     for applist in applists:
         with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
             for app, info in json.load(json_list).items():
-                if app in app_dict:
-                    continue
-
-                info['repository'] = applist
-                app_dict[app] = info
+                if app not in app_dict:
+                    info['repository'] = applist
+                    app_dict[app] = info
 
     # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
