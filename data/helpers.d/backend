@@ -10,7 +10,7 @@
 #
 # It's possible to use this helper several times, each config will added to same logrotate config file.
 ynh_use_logrotate () {
-	if [ -n "$1" ]; then
+	if [ "$#" -gt 0 ]; then
 		if [ "$(echo ${1##*.})" == "log" ]; then	# Keep only the extension to check if it's a logfile
 			logfile=$1	# In this case, focus logrotate on the logfile
 		else
