@@ -967,6 +967,14 @@ settings:
                     help: Yes I'm sure I want to do that
                     action: store_true
 
+        ### settings_default()
+        default:
+            action_help: set an entry value to its default one
+            api: DELETE /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+
 #############################
 #         Service           #
 #############################
