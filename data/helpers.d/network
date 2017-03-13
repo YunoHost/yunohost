@@ -6,6 +6,7 @@
 #          ynh_normalize_url_path example -> /example
 #          ynh_normalize_url_path /example -> /example
 #          ynh_normalize_url_path /example/ -> /example
+#          ynh_normalize_url_path / -> /
 #
 # usage: ynh_normalize_url_path path_to_normalize
 # | arg: url_path_to_normalize - URL path to normalize before using it
