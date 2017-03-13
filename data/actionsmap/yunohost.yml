@@ -965,7 +965,7 @@ settings:
         ### settings_reset()
         reset:
             action_help: reset all settings to their default value
-            api: POST /settings/reset
+            api: DELETE /settings/reset
             arguments:
                 -y:
                     full: --yes
