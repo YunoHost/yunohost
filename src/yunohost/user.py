@@ -106,7 +106,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
     """
     import pwd
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
 
@@ -163,8 +163,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
     # If it is the first user, add some aliases
     if not auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
-        with open('/etc/yunohost/current_host') as f:
-            main_domain = f.readline().rstrip()
+        main_domain = _get_maindomain()
         aliases = [
             'root@' + main_domain,
             'admin@' + main_domain,

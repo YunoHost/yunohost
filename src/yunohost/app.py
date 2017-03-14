@@ -988,12 +988,10 @@ def app_ssowatconf(auth):
 
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_list
 
-    with open('/etc/yunohost/current_host', 'r') as f:
-        main_domain = f.readline().rstrip()
-
+    main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
 
     users = {}

@@ -35,7 +35,7 @@ import subprocess
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.domain import get_public_ip
+from yunohost.domain import get_public_ip, _get_maindomain
 
 logger = getActionLogger('yunohost.dyndns')
 
@@ -78,8 +78,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     """
     if domain is None:
-        with open('/etc/yunohost/current_host', 'r') as f:
-            domain = f.readline().rstrip()
+        domain = _get_maindomain()
 
     # Verify if domain is available
     try:
