@@ -36,8 +36,8 @@ ynh_exit_properly () {
 # Stop immediatly the execution if an error occured or if a empty variable is used.
 # The execution of the script is derivate to ynh_exit_properly function before exit.
 #
-# Usage: ynh_check_error
-ynh_check_error () {
+# Usage: ynh_abort_if_errors
+ynh_abort_if_errors () {
 	set -eu	# Exit if a command fail, and if a variable is used unset.
 	trap ynh_exit_properly EXIT	# Capturing exit signals on shell script
 }
