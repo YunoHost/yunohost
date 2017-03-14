@@ -93,14 +93,13 @@ ynh_mysql_drop_user() {
 
 # Create a database, an user and its password. Then store the password in the app's config
 #
-# User of database will be stored in db_user's variable.
-# Name of database will be stored in db_name's variable.
-# And password in db_pwd's variable.
+# Password of database will be stored in db_pwd's variable.
+# And store with the name mysqlpwd into the app config.
 #
-# usage: ynh_mysql_generate_db user name
+# usage: ynh_mysql_setup_db user name
 # | arg: user - Owner of the database
 # | arg: name - Name of the database
-ynh_mysql_generate_db () {
+ynh_mysql_setup_db () {
 	db_pwd=$(ynh_string_random)	# Generate a random password
 	ynh_mysql_create_db "$2" "$1" "$db_pwd"	# Create the database
 	ynh_app_setting_set $app mysqlpwd $db_pwd	# Store the password in the app's config
