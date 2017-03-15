@@ -11,7 +11,7 @@
 # }
 # This function is optionnal.
 #
-# Usage: ynh_exit_properly is used only by the helper ynh_check_error.
+# Usage: ynh_exit_properly is used only by the helper ynh_abort_if_errors.
 # You must not use it directly.
 ynh_exit_properly () {
 	exit_code=$?
