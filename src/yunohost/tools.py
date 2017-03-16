@@ -46,7 +46,8 @@ from yunohost.service import service_status, service_regen_conf, service_log
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
-apps_setting_path= '/etc/yunohost/apps/'
+# FIXME this is a duplicate from apps.py
+APPS_SETTING_PATH= '/etc/yunohost/apps/'
 
 logger = getActionLogger('yunohost.tools')
 
@@ -161,6 +162,28 @@ def tools_maindomain(auth, new_domain=None):
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
+
+    # Set hostname
+    pretty_hostname = "(YunoHost/%s)" % new_domain
+    commands = [
+        "sudo hostnamectl --static    set-hostname".split() + [new_domain],
+        "sudo hostnamectl --transient set-hostname".split() + [new_domain],
+        "sudo hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
+    ]
+
+    for command in commands:
+        p = subprocess.Popen(command,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+        out, _ = p.communicate()
+
+        if p.returncode != 0:
+            logger.warning(command)
+            logger.warning(out)
+            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
+        else:
+            logger.info(out)
 
     # Regen configurations
     try:
@@ -341,7 +364,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
             app_fetchlist()
         except MoulinetteError:
             pass
-        app_list = os.listdir(apps_setting_path)
+        app_list = os.listdir(APPS_SETTING_PATH)
         if len(app_list) > 0:
             for app_id in app_list:
                 if '__' in app_id:

@@ -37,6 +37,8 @@ import glob
 
 from OpenSSL import crypto
 from datetime import datetime
+from requests.exceptions import Timeout
+
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 from moulinette.core import MoulinetteError
@@ -442,7 +444,7 @@ investigate :
 
 """ % (domain, exception_message, stack, logs)
 
-    message = """
+    message = """\
 From: %s
 To: %s
 Subject: %s
@@ -567,7 +569,10 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_cert_signing_failed'))
 
-    intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL).text
+    try:
+        intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
+    except Timeout as e:
+        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
 
     # Now save the key and signed certificate
     logger.info("Saving the key and signed certificate...")
@@ -837,7 +842,10 @@ def _dns_ip_match_public_ip(public_ip, domain):
 
 def _domain_is_accessible_through_HTTP(ip, domain):
     try:
-        requests.head("http://" + ip, headers={"Host": domain})
+        requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
+    except Timeout as e:
+        logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
+        return False
     except Exception as e:
         logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
         return False
@@ -852,8 +860,8 @@ def _domain_is_resolved_locally(public_ip, domain):
         logger.debug("Couldn't get domain '%s' ip because: %s" % (domain, e))
         return False
 
-    logger.debug("Domain '%s' ip is %s, except it to be 127.0.0.1 or %s" % (domain, ip, public_ip))
-    return ip in ["127.0.0.1", public_ip]
+    logger.debug("Domain '%s' IP address is resolved to %s, expect it to be %s or in the 127.0.0.0/8 address block" % (domain, public_ip, ip))
+    return ip.startswith("127.") or ip == public_ip
 
 
 def _name_self_CA():

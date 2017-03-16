@@ -33,6 +33,7 @@ import socket
 import urlparse
 import errno
 import subprocess
+import requests
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -43,11 +44,11 @@ from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
-repo_path        = '/var/cache/yunohost/repo'
-apps_path        = '/usr/share/yunohost/apps'
-apps_setting_path= '/etc/yunohost/apps/'
-install_tmp      = '/var/cache/yunohost'
-app_tmp_folder   = install_tmp + '/from_file'
+REPO_PATH        = '/var/cache/yunohost/repo'
+APPS_PATH        = '/usr/share/yunohost/apps'
+APPS_SETTING_PATH= '/etc/yunohost/apps/'
+INSTALL_TMP      = '/var/cache/yunohost'
+APP_TMP_FOLDER   = INSTALL_TMP + '/from_file'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -68,7 +69,7 @@ def app_listlists():
     """
     list_list = []
     try:
-        for filename in os.listdir(repo_path):
+        for filename in os.listdir(REPO_PATH):
             if '.json' in filename:
                 list_list.append(filename[:len(filename)-5])
     except OSError:
@@ -87,27 +88,41 @@ def app_fetchlist(url=None, name=None):
 
     """
     # Create app path if not exists
-    try: os.listdir(repo_path)
-    except OSError: os.makedirs(repo_path)
+    if not os.path.exists(REPO_PATH):
+        os.makedirs(REPO_PATH)
 
     if url is None:
         url = 'https://app.yunohost.org/official.json'
         name = 'yunohost'
-    else:
-        if name is None:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_appslist_name_required'))
+    elif name is None:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('custom_appslist_name_required'))
 
-    list_file = '%s/%s.json' % (repo_path, name)
-    if os.system('wget --timeout=30 "%s" -O "%s.tmp"' % (url, list_file)) != 0:
-        os.remove('%s.tmp' % list_file)
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error'))
+    # Download file
+    try:
+        applist_request = requests.get(url, timeout=30)
+    except Exception as e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
 
-    # Rename fetched temp list
-    os.rename('%s.tmp' % list_file, list_file)
+    if (applist_request.status_code != 200):
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
 
-    os.system("touch /etc/cron.d/yunohost-applist-%s" % name)
-    os.system("echo '00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1' >/etc/cron.d/yunohost-applist-%s" % (url, name, name))
+    # Validate app list format
+    # TODO / Possible improvement : better validation for app list (check that
+    # json fields actually look like an app list and not any json file)
+    applist = applist_request.text
+    try:
+        json.loads(applist)
+    except ValueError, e:
+        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+
+    # Write app list to file
+    list_file = '%s/%s.json' % (REPO_PATH, name)
+    with open(list_file, "w") as f:
+        f.write(applist)
+
+    # Setup a cron job to re-fetch the list at midnight
+    open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
     logger.success(m18n.n('appslist_fetched'))
 
@@ -121,7 +136,7 @@ def app_removelist(name):
 
     """
     try:
-        os.remove('%s/%s.json' % (repo_path, name))
+        os.remove('%s/%s.json' % (REPO_PATH, name))
         os.remove("/etc/cron.d/yunohost-applist-%s" % name)
     except OSError:
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
@@ -129,7 +144,7 @@ def app_removelist(name):
     logger.success(m18n.n('appslist_removed'))
 
 
-def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, with_backup=False):
+def app_list(filter=None, raw=False, installed=False, with_backup=False):
     """
     List apps
 
@@ -142,17 +157,10 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         with_backup -- Return only apps with backup feature (force --installed filter)
 
     """
-    if offset: offset = int(offset)
-    else: offset = 0
-    if limit: limit = int(limit)
-    else: limit = 1000
     installed = with_backup or installed
 
     app_dict = {}
-    if raw:
-        list_dict = {}
-    else:
-        list_dict = []
+    list_dict = {} if raw else []
 
     try:
         applists = app_listlists()['lists']
@@ -161,79 +169,84 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         app_fetchlist()
         applists = app_listlists()['lists']
 
+    # Construct a dictionnary of apps, based on known app lists
     for applist in applists:
-        with open(os.path.join(repo_path, applist + '.json')) as json_list:
-            for app, info in json.loads(str(json_list.read())).items():
+        with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
+            for app, info in json.load(json_list).items():
                 if app not in app_dict:
                     info['repository'] = applist
                     app_dict[app] = info
 
-    for app in os.listdir(apps_setting_path):
+    # Get app list from the app settings directory
+    for app in os.listdir(APPS_SETTING_PATH):
         if app not in app_dict:
-            # Look for forks
+            # Handle multi-instance case like wordpress__2
             if '__' in app:
                 original_app = app[:app.index('__')]
                 if original_app in app_dict:
                     app_dict[app] = app_dict[original_app]
                     continue
-            with open( apps_setting_path + app +'/manifest.json') as json_manifest:
-                app_dict[app] = {"manifest":json.loads(str(json_manifest.read()))}
+                # FIXME : What if it's not !?!?
+
+            with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+                app_dict[app] = {"manifest": json.load(json_manifest)}
+
             app_dict[app]['repository'] = None
 
-    if len(app_dict) > (0 + offset) and limit > 0:
-        sorted_app_dict = {}
-        for sorted_keys in sorted(app_dict.keys())[offset:]:
-            sorted_app_dict[sorted_keys] = app_dict[sorted_keys]
+    # Sort app list
+    sorted_app_list = sorted(app_dict.keys())
 
-        i = 0
-        for app_id, app_info_dict in sorted_app_dict.items():
-            if i < limit:
-                if (filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter:
-                    app_installed = _is_installed(app_id)
+    for app_id in sorted_app_list:
 
-                    # Only installed apps filter
-                    if installed and not app_installed:
-                        continue
+        app_info_dict = app_dict[app_id]
 
-                    # Filter only apps with backup and restore scripts
-                    if with_backup and (
-                        not os.path.isfile(apps_setting_path + app_id + '/scripts/backup') or
-                        not os.path.isfile(apps_setting_path + app_id + '/scripts/restore')
-                    ):
-                        continue
+        # Apply filter if there's one
+        if (filter and
+           (filter not in app_id) and
+           (filter not in app_info_dict['manifest']['name'])):
+            continue
 
-                    if raw:
-                        app_info_dict['installed'] = app_installed
-                        if app_installed:
-                            app_info_dict['status'] = _get_app_status(app_id)
+        # Ignore non-installed app if user wants only installed apps
+        app_installed = _is_installed(app_id)
+        if installed and not app_installed:
+            continue
 
-                        # dirty: we used to have manifest containing multi_instance value in form of a string
-                        # but we've switched to bool, this line ensure retrocompatibility
-                        app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+        # Ignore apps which don't have backup/restore script if user wants
+        # only apps with backup features
+        if with_backup and (
+            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
+            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
+        ):
+            continue
 
-                        list_dict[app_id] = app_info_dict
-                    else:
-                        label = None
-                        if app_installed:
-                            app_info_dict_raw = app_info(app=app_id, raw=True)
-                            label = app_info_dict_raw['settings']['label']
-                        list_dict.append({
-                            'id': app_id,
-                            'name': app_info_dict['manifest']['name'],
-                            'label': label,
-                            'description': _value_for_locale(
-                                app_info_dict['manifest']['description']),
-                            # FIXME: Temporarly allow undefined license
-                            'license': app_info_dict['manifest'].get('license',
-                                m18n.n('license_undefined')),
-                            'installed': app_installed
-                        })
-                    i += 1
-            else:
-               break
-    if not raw:
-        list_dict = { 'apps': list_dict }
-    return list_dict
+        if raw:
+            app_info_dict['installed'] = app_installed
+            if app_installed:
+                app_info_dict['status'] = _get_app_status(app_id)
+
+            # dirty: we used to have manifest containing multi_instance value in form of a string
+            # but we've switched to bool, this line ensure retrocompatibility
+            app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+
+            list_dict[app_id] = app_info_dict
+
+        else:
+            label = None
+            if app_installed:
+                app_info_dict_raw = app_info(app=app_id, raw=True)
+                label = app_info_dict_raw['settings']['label']
+
+            list_dict.append({
+                'id': app_id,
+                'name': app_info_dict['manifest']['name'],
+                'label': label,
+                'description': _value_for_locale(app_info_dict['manifest']['description']),
+                # FIXME: Temporarly allow undefined license
+                'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
+                'installed': app_installed
+            })
+
+    return {'apps': list_dict} if not raw else list_dict
 
 
 def app_info(app, show_status=False, raw=False):
@@ -254,7 +267,7 @@ def app_info(app, show_status=False, raw=False):
         ret['settings'] = _get_app_settings(app)
         return ret
 
-    app_setting_path = apps_setting_path + app
+    app_setting_path = APPS_SETTING_PATH + app
 
     # Retrieve manifest and status
     with open(app_setting_path + '/manifest.json') as f:
@@ -294,7 +307,7 @@ def app_map(app=None, raw=False, user=None):
                                   m18n.n('app_not_installed', app=app))
         apps = [app,]
     else:
-        apps = os.listdir(apps_setting_path)
+        apps = os.listdir(APPS_SETTING_PATH)
 
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
@@ -347,10 +360,12 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     # If no app is specified, upgrade all apps
     if not app:
-        if (not url and not file):
-            app = os.listdir(apps_setting_path)
+        if not url and not file:
+            app = [app["id"] for app in app_list(installed=True)["apps"]]
     elif not isinstance(app, list):
-        app = [ app ]
+        app = [app]
+
+    logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in app:
         installed = _is_installed(app_instance_name)
@@ -361,21 +376,18 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if app_instance_name in upgraded_apps:
             continue
 
-        current_app_dict = app_info(app_instance_name,  raw=True)
-        new_app_dict     = app_info(app_instance_name, raw=True)
+        app_dict = app_info(app_instance_name, raw=True)
+
+        locale_update_time = app_dict['settings'].get('update_time', app_dict['settings']['install_time'])
 
         if file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
-        elif new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
+        elif 'lastUpdate' not in app_dict or 'git' not in app_dict:
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
-              or ('update_time' not in current_app_dict['settings'] \
-                   and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
-              or ('update_time' in current_app_dict['settings'] \
-                   and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
+        elif app_dict['lastUpdate'] > locale_update_time:
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
             continue
@@ -383,8 +395,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Check requirements
         _check_manifest_requirements(manifest)
 
-        app_setting_path = apps_setting_path +'/'+ app_instance_name
-
+        app_setting_path = APPS_SETTING_PATH +'/'+ app_instance_name
+        
         # Retrieve current app status
         status = _get_app_status(app_instance_name)
         status['remote'] = manifest.get('remote', None)
@@ -403,7 +415,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
         # Execute App upgrade script
-        os.system('chown -hR admin: %s' % install_tmp)
+        os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
@@ -452,8 +464,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     from yunohost.hook import hook_add, hook_remove, hook_exec
 
     # Fetch or extract sources
-    try: os.listdir(install_tmp)
-    except OSError: os.makedirs(install_tmp)
+    try: os.listdir(INSTALL_TMP)
+    except OSError: os.makedirs(INSTALL_TMP)
 
     status = {
         'installed_at': int(time.time()),
@@ -506,7 +518,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
     # Create app directory
-    app_setting_path = os.path.join(apps_setting_path, app_instance_name)
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
@@ -523,7 +535,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     os.system('chown -R admin: '+ extracted_app_folder)
 
     # Execute App install script
-    os.system('chown -hR admin: %s' % install_tmp)
+    os.system('chown -hR admin: %s' % INSTALL_TMP)
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
@@ -558,6 +570,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
+
+            app_ssowatconf(auth)
 
             if install_retcode == -1:
                 raise MoulinetteError(errno.EINTR,
@@ -599,7 +613,7 @@ def app_remove(auth, app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
 
-    app_setting_path = apps_setting_path + app
+    app_setting_path = APPS_SETTING_PATH + app
 
     #TODO: display fail messages from script
     try:
@@ -768,7 +782,7 @@ def app_debug(app):
     Keyword argument:
         app
     """
-    with open(apps_setting_path + app + '/manifest.json') as f:
+    with open(APPS_SETTING_PATH + app + '/manifest.json') as f:
         manifest = json.loads(f.read())
 
     return {
@@ -1006,7 +1020,7 @@ def app_ssowatconf(auth):
 
     for app in apps_list:
         if _is_installed(app['id']):
-            with open(apps_setting_path + app['id'] +'/settings.yml') as f:
+            with open(APPS_SETTING_PATH + app['id'] +'/settings.yml') as f:
                 app_settings = yaml.load(f)
                 for item in _get_setting(app_settings, 'skipped_uris'):
                     if item[-1:] == '/':
@@ -1077,7 +1091,7 @@ def _get_app_settings(app_id):
                               m18n.n('app_not_installed', app=app_id))
     try:
         with open(os.path.join(
-                apps_setting_path, app_id, 'settings.yml')) as f:
+                APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
             settings = yaml.load(f)
         if app_id == settings['id']:
             return settings
@@ -1097,7 +1111,7 @@ def _set_app_settings(app_id, settings):
 
     """
     with open(os.path.join(
-            apps_setting_path, app_id, 'settings.yml'), 'w') as f:
+            APPS_SETTING_PATH, app_id, 'settings.yml'), 'w') as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
@@ -1110,7 +1124,7 @@ def _get_app_status(app_id, format_date=False):
         format_date -- Format date fields
 
     """
-    app_setting_path = apps_setting_path + app_id
+    app_setting_path = APPS_SETTING_PATH + app_id
     if not os.path.isdir(app_setting_path):
         raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
     status = {}
@@ -1143,7 +1157,7 @@ def _get_app_status(app_id, format_date=False):
 
 def _extract_app_from_file(path, remove=False):
     """
-    Unzip or untar application tarball in app_tmp_folder, or copy it from a directory
+    Unzip or untar application tarball in APP_TMP_FOLDER, or copy it from a directory
 
     Keyword arguments:
         path -- Path of the tarball or directory
@@ -1155,22 +1169,22 @@ def _extract_app_from_file(path, remove=False):
     """
     logger.info(m18n.n('extracting'))
 
-    if os.path.exists(app_tmp_folder): shutil.rmtree(app_tmp_folder)
-    os.makedirs(app_tmp_folder)
+    if os.path.exists(APP_TMP_FOLDER): shutil.rmtree(APP_TMP_FOLDER)
+    os.makedirs(APP_TMP_FOLDER)
 
     path = os.path.abspath(path)
 
     if ".zip" in path:
-        extract_result = os.system('unzip %s -d %s > /dev/null 2>&1' % (path, app_tmp_folder))
+        extract_result = os.system('unzip %s -d %s > /dev/null 2>&1' % (path, APP_TMP_FOLDER))
         if remove: os.remove(path)
     elif ".tar" in path:
-        extract_result = os.system('tar -xf %s -C %s > /dev/null 2>&1' % (path, app_tmp_folder))
+        extract_result = os.system('tar -xf %s -C %s > /dev/null 2>&1' % (path, APP_TMP_FOLDER))
         if remove: os.remove(path)
     elif os.path.isdir(path):
-        shutil.rmtree(app_tmp_folder)
+        shutil.rmtree(APP_TMP_FOLDER)
         if path[len(path)-1:] != '/':
             path = path + '/'
-        extract_result = os.system('cp -a "%s" %s' % (path, app_tmp_folder))
+        extract_result = os.system('cp -a "%s" %s' % (path, APP_TMP_FOLDER))
     else:
         extract_result = 1
 
@@ -1178,7 +1192,7 @@ def _extract_app_from_file(path, remove=False):
         raise MoulinetteError(errno.EINVAL, m18n.n('app_extraction_failed'))
 
     try:
-        extracted_app_folder = app_tmp_folder
+        extracted_app_folder = APP_TMP_FOLDER
         if len(os.listdir(extracted_app_folder)) == 1:
             for folder in os.listdir(extracted_app_folder):
                 extracted_app_folder = extracted_app_folder +'/'+ folder
@@ -1216,7 +1230,7 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
 
 def _fetch_app_from_git(app):
     """
-    Unzip or untar application tarball in app_tmp_folder
+    Unzip or untar application tarball in APP_TMP_FOLDER
 
     Keyword arguments:
         app -- App_id or git repo URL
@@ -1225,7 +1239,7 @@ def _fetch_app_from_git(app):
         Dict manifest
 
     """
-    extracted_app_folder = app_tmp_folder
+    extracted_app_folder = APP_TMP_FOLDER
 
     app_tmp_archive = '{0}.zip'.format(extracted_app_folder)
     if os.path.exists(extracted_app_folder):
@@ -1368,9 +1382,9 @@ def _installed_instance_number(app, last=False):
     if last:
         number = 0
         try:
-            installed_apps = os.listdir(apps_setting_path)
+            installed_apps = os.listdir(APPS_SETTING_PATH)
         except OSError:
-            os.makedirs(apps_setting_path)
+            os.makedirs(APPS_SETTING_PATH)
             return 0
 
         for installed_app in installed_apps:
@@ -1404,7 +1418,7 @@ def _is_installed(app):
         Boolean
 
     """
-    return os.path.isdir(apps_setting_path + app)
+    return os.path.isdir(APPS_SETTING_PATH + app)
 
 
 def _value_for_locale(values):

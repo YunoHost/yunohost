@@ -44,9 +44,9 @@ from yunohost.domain import get_public_ip
 
 logger = getActionLogger('yunohost.monitor')
 
-glances_uri = 'http://127.0.0.1:61209'
-stats_path = '/var/lib/yunohost/stats'
-crontab_path = '/etc/cron.d/yunohost-monitor'
+GLANCES_URI = 'http://127.0.0.1:61209'
+STATS_PATH = '/var/lib/yunohost/stats'
+CRONTAB_PATH = '/etc/cron.d/yunohost-monitor'
 
 
 def monitor_disk(units=None, mountpoint=None, human_readable=False):
@@ -422,7 +422,7 @@ def monitor_enable(with_stats=False):
                  '3 * * * * root {cmd} week >> /dev/null\n'
                  '6 */4 * * * root {cmd} month >> /dev/null').format(
             cmd='/usr/bin/yunohost --quiet monitor update-stats')
-        with open(crontab_path, 'w') as f:
+        with open(CRONTAB_PATH, 'w') as f:
             f.write(rules)
 
     logger.success(m18n.n('monitor_enabled'))
@@ -447,7 +447,7 @@ def monitor_disable():
 
     # Remove crontab
     try:
-        os.remove(crontab_path)
+        os.remove(CRONTAB_PATH)
     except:
         pass
 
@@ -460,7 +460,7 @@ def _get_glances_api():
 
     """
     try:
-        p = xmlrpclib.ServerProxy(glances_uri)
+        p = xmlrpclib.ServerProxy(GLANCES_URI)
         p.system.methodHelp('getAll')
     except (xmlrpclib.ProtocolError, IOError):
         pass
@@ -552,9 +552,9 @@ def _retrieve_stats(period, date=None):
     # Retrieve pickle file
     if date is not None:
         timestamp = calendar.timegm(date)
-        pkl_file = '%s/%d_%s.pkl' % (stats_path, timestamp, period)
+        pkl_file = '%s/%d_%s.pkl' % (STATS_PATH, timestamp, period)
     else:
-        pkl_file = '%s/%s.pkl' % (stats_path, period)
+        pkl_file = '%s/%s.pkl' % (STATS_PATH, period)
     if not os.path.isfile(pkl_file):
         return False
 
@@ -581,11 +581,11 @@ def _save_stats(stats, period, date=None):
     # Set pickle file name
     if date is not None:
         timestamp = calendar.timegm(date)
-        pkl_file = '%s/%d_%s.pkl' % (stats_path, timestamp, period)
+        pkl_file = '%s/%d_%s.pkl' % (STATS_PATH, timestamp, period)
     else:
-        pkl_file = '%s/%s.pkl' % (stats_path, period)
-    if not os.path.isdir(stats_path):
-        os.makedirs(stats_path)
+        pkl_file = '%s/%s.pkl' % (STATS_PATH, period)
+    if not os.path.isdir(STATS_PATH):
+        os.makedirs(STATS_PATH)
 
     # Limit stats
     if date is None:

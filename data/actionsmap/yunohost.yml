@@ -426,12 +426,6 @@ app:
             action_help: List apps
             api: GET /apps
             arguments:
-                -l:
-                    full: --limit
-                    help: Maximum number of app fetched
-                -o:
-                    full: --offset
-                    help: Starting number for app fetching
                 -f:
                     full: --filter
                     help: Name filter of app_id or app_name
