@@ -1853,7 +1853,7 @@ def _register_new_applist(url, name):
     logger.debug("Registering new applist %s at %s" % (name, url))
 
     applist_list[name] = {"url": url,
-                          "lastUpdate": -1}
+                          "lastUpdate": None}
 
     _write_applist_list(applist_list)
 
