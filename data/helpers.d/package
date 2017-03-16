@@ -116,7 +116,11 @@ ynh_app_dependencies () {
     fi
     version=$(sudo python3 -c "import sys, json;print(json.load(open(\"$manifest_path\"))['version'])")	# Retrieve the version number in the manifest file.
     dep_app=${app//_/-}	# Replace all '_' by '-'
-    cat > ./${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
+
+    if ynh_package_is_installed "${dep_app}-ynh-deps"; then
+		echo "A package named ${dep_app}-ynh-deps is already installed" >&2
+    else
+        cat > ./${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
 Section: misc
 Priority: optional
 Package: ${dep_app}-ynh-deps
@@ -126,9 +130,10 @@ Architecture: all
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
-    ynh_package_install_from_equivs ./${dep_app}-ynh-deps.control \
-        || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
-    ynh_app_setting_set $app apt_dependencies $dependencies
+        ynh_package_install_from_equivs ./${dep_app}-ynh-deps.control \
+            || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        ynh_app_setting_set $app apt_dependencies $dependencies
+    fi
 }
 
 # Remove fake package and its dependencies
