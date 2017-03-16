@@ -33,7 +33,6 @@
     "appslist_unknown": "List {name} unknown.",
     "appslist_retrieve_error": "Unable to retrieve the remote applist {applist}: {error}",
     "appslist_retrieve_bad_format": "Retrieved file for applist {applist} is not a valid app list",
-    "appslist_write_error": "Unable to write applist for list {applist}: {error}",
     "appslist_unknown": "Unknown app list",
     "appslist_name_already_tracked": "There is already a registered app list with name {name}.",
     "appslist_url_already_tracked": "There is already a registered app list with url {url}.",

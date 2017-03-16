@@ -174,8 +174,8 @@ def app_fetchlist(url=None, name=None):
                 f.write(applist)
         except Exception as e:
             raise MoulinetteError(errno.EIO,
-                                  m18n.n('appslist_write_error',
-                                         applist=name, error=str(e)))
+                                  "Error while writing applist %s: %s" %
+                                  (name, str(e)))
 
         now = int(time.time())
         applists[name]["lastUpdate"] = now
@@ -1830,9 +1830,14 @@ def _write_applist_list(applist_lists):
     Update the json containing list of applists
     """
 
-    # Read file content
-    with open(APPLISTS_JSON, "w") as f:
-        json.dump(applist_lists, f)
+    # Write applist list
+    try:
+        with open(APPLISTS_JSON, "w") as f:
+            json.dump(applist_lists, f)
+    except Exception as e:
+            raise MoulinetteError(errno.EIO,
+                                  "Error while writing list of applist %s: %s" %
+                                  (APPLISTS_JSON, str(e)))
 
 
 def _register_new_applist(url, name):
