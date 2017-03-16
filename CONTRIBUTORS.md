@@ -40,6 +40,7 @@ YunoHost core Contributors
 - Sebastien 'sebian' Badia
 - lmangani
 - Julien Vaubourg
+- thardev
 
 
 YunoHost core Translators
