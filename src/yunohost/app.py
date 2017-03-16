@@ -169,8 +169,13 @@ def app_fetchlist(url=None, name=None):
 
         # Write app list to file
         list_file = '%s/%s.json' % (REPO_PATH, name)
-        with open(list_file, "w") as f:
-            f.write(applist)
+        try:
+            with open(list_file, "w") as f:
+                f.write(applist)
+        except Exception as e:
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('appslist_write_error',
+                                         applist=name, error=str(e)))
 
         now = int(time.time())
         applists[name]["lastUpdate"] = now
