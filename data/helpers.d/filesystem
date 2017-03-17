@@ -22,36 +22,23 @@ ynh_backup() {
     }
 
     # prepend the backup directory
-    [[ -n "${YNH_APP_BACKUP_DIR:-}" && "${DESTPATH:0:1}" != "/" ]] \
-        && DESTPATH="${YNH_APP_BACKUP_DIR}/${DESTPATH}"
+    [[ -n "${YNH_BACKUP_DIR:-}" && "${DESTPATH:0:1}" == "/" ]] \
+        && DESTPATH="${DESTPATH#$YNH_BACKUP_DIR/}"
     [[ ! -e "${DESTPATH}" ]] || {
         echo "Destination path '${DESTPATH}' already exist" >&2
         return 1
     }
 
-    # attempt to bind mounting the directory
-    if [[ "${CAN_BIND}" = "1" && "${TO_BIND}" = "1" ]]; then
-        eval $SUDO_CMD mkdir -p "${DESTPATH}"
+    # Create a dir (it was done before copy by the old ynh_backup helpers 
+    local ABS_DIR="${YNH_APP_BACKUP_DIR:-}"
+    [[ -z "${ABS_DIR:-}" ]] && ABS_DIR="${YNH_BACKUP_DIR}"
+    eval $SUDO_CMD mkdir -p $(dirname "${ABS_DIR}/${DESTPATH}")
 
-        if sudo mount --rbind "${SRCPATH}" "${DESTPATH}"; then
-            # try to remount destination directory as read-only
-            sudo mount -o remount,ro,bind "${SRCPATH}" "${DESTPATH}" \
-              || true
-            return 0
-        else
-            CAN_BIND=0
-            echo "Bind mounting seems to be disabled on your system."
-            echo "You have maybe to check your apparmor configuration."
-        fi
-
-        # delete mountpoint directory safely
-        mountpoint -q "${DESTPATH}" && sudo umount -R "${DESTPATH}"
-        eval $SUDO_CMD rm -rf "${DESTPATH}"
-    fi
-
-    # ... or just copy the directory
-    eval $SUDO_CMD mkdir -p $(dirname "${DESTPATH}")
-    eval $SUDO_CMD cp -a "${SRCPATH}" "${DESTPATH}"
+    # Write file to backup into backup_list
+    local REL_DIR="${YNH_APP_RELATIVE_BACKUP_DIR:-}"
+    [[ -n "${REL_DIR:-}" ]] && REL_DIR="${REL_DIR}/"
+    (echo -n "${SRCPATH}"; echo -en "\t"; echo "${REL_DIR}${DESTPATH}") | \
+        eval $SUDO_CMD tee -a ${YNH_BACKUP_CSV}
 }
 
 # Deprecated helper since it's a dangerous one!
