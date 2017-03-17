@@ -185,6 +185,9 @@ def tools_maindomain(auth, new_domain=None):
         else:
             logger.info(out)
 
+    # Generate SSOwat configuration file
+    app_ssowatconf(auth)
+
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
@@ -307,9 +310,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     # New domain config
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
-
-    # Generate SSOwat configuration file
-    app_ssowatconf(auth)
 
     # Change LDAP admin password
     tools_adminpw(auth, password)
