@@ -104,11 +104,12 @@ ynh_package_install_from_equivs () {
     ynh_package_is_installed "$pkgname"
 }
 
-# Install dependencies with a equivs control file
+# Define and install dependencies with a equivs control file
+# This helper can/should only be called once per app
 #
-# usage: ynh_app_dependencies dep [dep [...]]
+# usage: ynh_install_app_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence
-ynh_app_dependencies () {
+ynh_install_app_dependencies () {
     dependencies=$@
     manifest_path="../manifest.json"
     if [ ! -e "$manifest_path" ]; then
