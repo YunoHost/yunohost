@@ -152,6 +152,21 @@ def backup_create(name=None, description=None, output_directory=None,
         'hooks': {},
     }
 
+    # Initialize backup list
+    backup_csv_path = os.path.join(tmp_dir, 'backup.csv')
+    try:
+        backup_csv = open(backup_csv_path, 'a')
+    except:
+        logger.error(m18n.n('backup_csv_creation_failed'))
+
+    def add_into_list(source,dest):
+        try:
+            if dest.endswith("/"):
+                dest=dest+os.path.basename(source)
+            backup_csv.write("{0}\t{1}\n".format(source,dest))
+        except:
+            logger.error(m18n.n('backup_csv_addition_failed'))
+
     # Run system hooks
     if not ignore_hooks:
         # Check hooks availibility
@@ -167,14 +182,15 @@ def backup_create(name=None, description=None, output_directory=None,
 
         if not hooks or hooks_filtered:
             logger.info(m18n.n('backup_running_hooks'))
+            env_var['YNH_BACKUP_DIR'] = tmp_dir
+            env_var['YNH_BACKUP_CSV'] = backup_csv_path
             ret = hook_callback('backup', hooks_filtered, args=[tmp_dir],
                                 env=env_var)
             if ret['succeed']:
                 info['hooks'] = ret['succeed']
 
                 # Save relevant restoration hooks
-                tmp_hooks_dir = tmp_dir + '/hooks/restore'
-                filesystem.mkdir(tmp_hooks_dir, 0750, True, uid='admin')
+                tmp_hooks_dir = 'hooks/restore/'
                 for h in ret['succeed'].keys():
                     try:
                         i = hook_info('restore', h)
@@ -183,7 +199,7 @@ def backup_create(name=None, description=None, output_directory=None,
                                 hook=h), exc_info=1)
                     else:
                         for f in i['hooks']:
-                            shutil.copy(f['path'], tmp_hooks_dir)
+                            add_into_list(f['path'],tmp_hooks_dir)
 
     # Backup apps
     if not ignore_apps:
@@ -213,13 +229,13 @@ def backup_create(name=None, description=None, output_directory=None,
             elif not os.path.isfile(app_restore_script):
                 logger.warning(m18n.n('unrestore_app', app=app_instance_name))
 
-            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_instance_name)
-            tmp_app_bkp_dir = tmp_app_dir + '/backup'
+            tmp_app_dir = 'apps/{:s}'.format(app_instance_name)
+            tmp_app_bkp_dir = os.path.join(tmp_dir ,tmp_app_dir, 'backup')
             logger.info(m18n.n('backup_running_app_script', app=app_instance_name))
             try:
                 # Prepare backup directory for the app
                 filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
-                shutil.copytree(app_setting_path, tmp_app_dir + '/settings')
+                add_into_list(app_setting_path, os.path.join(tmp_app_dir,'settings'))
 
                 # Copy app backup script in a temporary folder and execute it
                 subprocess.call(['install', '-Dm555', app_script, tmp_script])
@@ -232,13 +248,16 @@ def backup_create(name=None, description=None, output_directory=None,
                 env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
                 env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
                 env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
+                env_dict["YNH_BACKUP_DIR"] = tmp_dir
+                env_dict["YNH_BACKUP_CSV"] = backup_csv_path
+                env_dict["YNH_APP_RELATIVE_BACKUP_DIR"] = tmp_app_dir+'/backup'
 
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
                           raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict, user="root")
             except:
                 logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
                 # Cleaning app backup directory
-                shutil.rmtree(tmp_app_dir, ignore_errors=True)
+                shutil.rmtree(os.path.join(tmp_dir, tmp_app_dir), ignore_errors=True)
             else:
                 # Add app info
                 i = app_info(app_instance_name)
@@ -255,28 +274,65 @@ def backup_create(name=None, description=None, output_directory=None,
         _clean_tmp_dir(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
+    # Add unlisted files from backup tmp dir
+    add_into_list(backup_csv_path,'backup.csv')
+    add_into_list(os.path.join(tmp_dir,'info.json'),'info.json')
+    if len(info['apps']) > 0:
+        add_into_list(os.path.join(tmp_dir,'apps'),'apps')
+    if os.path.isdir(os.path.join(tmp_dir,'conf')):
+        add_into_list(os.path.join(tmp_dir,'conf'),'conf')
+    if os.path.isdir(os.path.join(tmp_dir,'data')):
+        add_into_list(os.path.join(tmp_dir,'data'),'data')
+    backup_csv.close()
+    os.system("cp "+tmp_dir+"/backup.csv ~/")
     # Calculate total size
-    backup_size = int(subprocess.check_output(
-        ['du', '-sb', tmp_dir]).split()[0].decode('utf-8'))
+    backup_size = 0
+    with open(backup_csv_path, "r") as backup_csv:
+        for line in backup_csv:
+            line = line.rstrip('\n')
+            source, dest = line.split("\t", 1)
+            if source != os.path.join(tmp_dir,'info.json'):
+                backup_size += int(subprocess.check_output(
+                    ['du', '-sb', source]).split()[0].decode('utf-8'))
     info['size'] = backup_size
 
     # Create backup info file
     with open("%s/info.json" % tmp_dir, 'w') as f:
         f.write(json.dumps(info))
 
+    # Check free space in output directory at first
+    avail_output = subprocess.check_output(
+        ['df', '--block-size=1', '--output=avail', tmp_dir]).split()
+    if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
+        logger.debug('not enough space at %s (free: %s / needed: %d)',
+                    output_directory, avail_output[1], backup_size)
+        _clean_tmp_dir(3)
+        raise MoulinetteError(errno.EIO, m18n.n(
+            'not_enough_disk_space', path=output_directory))
+
+    # Copy files (retro-compatibility)
+    if tmp_dir == output_directory:
+
+        with open(backup_csv_path, "r") as backup_csv:
+            for line in backup_csv:
+                line = line.rstrip('\n')
+                source, dest = line.split("\t", 1)
+                dest = os.path.join(tmp_dir, dest)
+                if source == dest:
+                    continue
+
+                dest_parent = os.path.dirname(dest)
+                if not os.path.exists(dest_parent):
+                     filesystem.mkdir(dest_parent, 0750, True, uid='admin')
+
+                if os.path.isdir(source):
+                    shutil.copytree(source, os.path.join(tmp_dir, dest))
+                else:
+                    shutil.copy(source, os.path.join(tmp_dir, dest))
+
     # Create the archive
     if not no_compress:
         logger.info(m18n.n('backup_creating_archive'))
-
-        # Check free space in output directory at first
-        avail_output = subprocess.check_output(
-            ['df', '--block-size=1', '--output=avail', tmp_dir]).split()
-        if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
-            logger.debug('not enough space at %s (free: %s / needed: %d)',
-                         output_directory, avail_output[1], backup_size)
-            _clean_tmp_dir(3)
-            raise MoulinetteError(errno.EIO, m18n.n(
-                'not_enough_disk_space', path=output_directory))
 
         # Open archive file for writing
         archive_file = "%s/%s.tar.gz" % (output_directory, name)
@@ -291,17 +347,17 @@ def backup_create(name=None, description=None, output_directory=None,
 
         # Add files to the archive
         try:
-            tar.add(tmp_dir, arcname='')
-            tar.close()
+            with open(backup_csv_path, "r") as backup_csv:
+                for line in backup_csv:
+                    line = line.rstrip('\n')
+                    source, dest = line.split("\t", 1)
+                    tar.add(source, arcname=dest)
+                tar.close()
         except IOError as e:
             logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
             _clean_tmp_dir(3)
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_creation_failed'))
-
-        # FIXME : it looks weird that the "move info file" is not enabled if
-        # user activated "no_compress" ... or does it really means
-        # "dont_keep_track_of_this_backup_in_history" ?
 
         # Move info file
         shutil.move(tmp_dir + '/info.json',
@@ -508,9 +564,9 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
             try:
                 # Copy app settings and set permissions
                 # TODO: Copy app hooks too
-                shutil.copytree(tmp_app_dir + '/settings', app_setting_path)
-                filesystem.chmod(app_setting_path, 0555, 0444, True)
-                filesystem.chmod(app_setting_path + '/settings.yml', 0400)
+                shutil.copytree(tmp_settings_dir, app_setting_path)
+                filesystem.chmod(app_setting_path, 0400, 0400, True)
+                filesystem.chown(app_setting_path + '/scripts', 'admin', None, True)
 
                 # Set correct right to the temporary settings folder
                 filesystem.chmod(tmp_settings_dir, 0550, 0550, True)
@@ -554,7 +610,9 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
         _clean_tmp_dir(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
     if result['apps']:
-        app_ssowatconf(auth)
+        # Quickfix: the old app_ssowatconf(auth) instruction failed due to ldap
+        # restore hooks
+        os.system('sudo yunohost app ssowatconf')
 
     _clean_tmp_dir()
     logger.success(m18n.n('restore_complete'))
