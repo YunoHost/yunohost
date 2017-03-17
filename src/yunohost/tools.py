@@ -40,7 +40,7 @@ from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
-from yunohost.dyndns import dyndns_subscribe
+from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log
 from yunohost.monitor import monitor_disk, monitor_system
@@ -209,32 +209,38 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         password -- YunoHost admin password
 
     """
-    dyndns = not ignore_dyndns
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('yunohost_already_installed'))
-    if len(domain.split('.')) >= 3 and not ignore_dyndns:
-        try:
-            r = requests.get('https://dyndns.yunohost.org/domains')
-        except requests.ConnectionError:
-            pass
-        else:
-            dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(domain.split('.')[1:])
 
-            if dyndomain in dyndomains:
-                if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
-                    dyndns = True
-                else:
-                    raise MoulinetteError(errno.EEXIST,
-                                          m18n.n('dyndns_unavailable'))
-            else:
-                dyndns = False
-    else:
+    # Check if yunohost dyndns can handle the given domain
+    # (i.e. is it a .nohost.me ? a .noho.st ?)
+    dyndns_provider = "dyndns.yunohost.org"
+    try:
+        domain_handled_by_yunohost_dyndns = _dyndns_provides(dyndns_provider, domain)
+    # Ignore exceptions... (most likely we don't have internet connectivity)
+    except:
+        logger.warning(m18n.n('dyndns_provider_unreachable', provider=dyndns_provider))
+        domain_handled_by_yunohost_dyndns = False
+
+    # If it's not a .nohost.me / .noho.st, we don't care about dyndns
+    if not domain_handled_by_yunohost_dyndns:
         dyndns = False
+    # Otherwise, we check if it's available...
+    else:
+        if _dyndns_available(dyndns_provider, domain):
+            dyndns = True
+        else:
+            # Well, it's not available but maybe user says he don't care (--ignore-dyndns)
+            if ignore_dyndns:
+                dyndns = False
+            # Otherwise, abort and tell the user domain is not available.
+            else:
+                raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
 
+    # Start install
     logger.info(m18n.n('yunohost_installing'))
 
     # Initialize LDAP for YunoHost
