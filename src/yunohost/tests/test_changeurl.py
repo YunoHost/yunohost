@@ -1,14 +1,15 @@
-import requests
 import time
+import requests
 
 from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
 
 # Instantiate LDAP Authenticator
-auth_identifier = ('ldap', 'ldap-anonymous')
-auth_parameters = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
-auth = init_authenticator(auth_identifier, auth_parameters)
+AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
+AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
+
+auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -19,31 +20,32 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     app_remove(auth, "change_url_app")
 
 
 def install_changeurl_app(path):
-
     app_install(auth, "./tests/apps/change_url_app_ynh",
                 args="domain=%s&path=%s" % (maindomain, path))
 
 
 def check_changeurl_app(path):
-
     appmap = app_map(raw=True)
-    assert path+"/" in appmap[maindomain].keys()
-    assert appmap[maindomain][path+"/"]["id"] == "change_url_app"
+
+    assert path + "/" in appmap[maindomain].keys()
+
+    assert appmap[maindomain][path + "/"]["id"] == "change_url_app"
 
     r = requests.get("https://%s%s/" % (maindomain, path))
     assert r.status_code == 200
 
 
 def test_appchangeurl():
-
     install_changeurl_app("/changeurl")
     check_changeurl_app("/changeurl")
-    app_change_url(auth, "change_url_app", maindomain, "/newchangeurl/") # <<< FIXME: Path must ends with "/" or this ~break the app_map output ! This behavior should be fixed
+
+    app_change_url(auth, "change_url_app", maindomain, "/newchangeurl/")  # <<< FIXME: Path must ends with "/" or this ~break the app_map output ! This behavior should be fixed
     # For some reason the nginx reload can take some time to propagate ...?
+
     time.sleep(2)
+
     check_changeurl_app("/newchangeurl")
