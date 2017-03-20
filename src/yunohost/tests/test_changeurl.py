@@ -1,9 +1,7 @@
-import os
-import pytest
 import requests
 import time
 
-from moulinette.core import MoulinetteError, init_authenticator
+from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
 
