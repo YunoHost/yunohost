@@ -47,44 +47,6 @@ ynh_package_install() {
             -o Dpkg::Options::=--force-confold install $@
 }
 
-# Build and install a package from an equivs control file
-#
-# example: generate an empty control file with `equivs-control`, adjust its
-#          content and use helper to build and install the package:
-#              ynh_package_install_from_equivs /path/to/controlfile
-#
-# usage: ynh_package_install_from_equivs controlfile
-# | arg: controlfile - path of the equivs control file
-ynh_package_install_from_equivs() {
-    controlfile=$1
-
-    # install equivs package as needed
-    ynh_package_is_installed 'equivs' \
-        || ynh_package_install equivs
-
-    # retrieve package information
-    pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)
-    pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)
-    [[ -z "$pkgname" || -z "$pkgversion" ]] \
-        && echo "Invalid control file" && exit 1
-
-    # update packages cache
-    ynh_package_update
-
-    # build and install the package
-    TMPDIR=$(ynh_mkdir_tmp)
-    (cp "$controlfile" "${TMPDIR}/control" \
-     && cd "$TMPDIR" \
-     && equivs-build ./control 1>/dev/null \
-     && sudo dpkg --force-depends \
-          -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f) \
-        && ([[ -n "$TMPDIR" ]] && rm -rf $TMPDIR)
-
-    # check if the package is actually installed
-    ynh_package_is_installed "$pkgname"
-}
-
 # Remove package(s)
 #
 # usage: ynh_package_remove name [name [...]]
@@ -99,4 +61,88 @@ ynh_package_remove() {
 # | arg: name - the package name to remove
 ynh_package_autoremove() {
     ynh_apt autoremove $@
+}
+
+# Build and install a package from an equivs control file
+#
+# example: generate an empty control file with `equivs-control`, adjust its
+#          content and use helper to build and install the package:
+#              ynh_package_install_from_equivs /path/to/controlfile
+#
+# usage: ynh_package_install_from_equivs controlfile
+# | arg: controlfile - path of the equivs control file
+ynh_package_install_from_equivs () {
+    controlfile=$1
+
+    # Check if the equivs package is installed. Or install it.
+    ynh_package_is_installed 'equivs' \
+        || ynh_package_install equivs
+
+    # retrieve package information
+    pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
+    pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number
+    [[ -z "$pkgname" || -z "$pkgversion" ]] \
+        && echo "Invalid control file" && exit 1	# Check if this 2 variables aren't empty.
+
+    # Update packages cache
+    ynh_package_update
+
+    # Build and install the package
+    TMPDIR=$(mktemp -d)
+    # Note that the cd executes into a sub shell
+    # Create a fake deb package with equivs-build and the given control file
+    # Install the fake package without its dependencies with dpkg
+    # Install missing dependencies with ynh_package_install
+    (cp "$controlfile" "${TMPDIR}/control" && cd "$TMPDIR" \
+     && equivs-build ./control 1>/dev/null \
+     && sudo dpkg --force-depends \
+          -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
+     && ynh_package_install -f)
+    [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
+
+    # check if the package is actually installed
+    ynh_package_is_installed "$pkgname"
+}
+
+# Define and install dependencies with a equivs control file
+# This helper can/should only be called once per app
+#
+# usage: ynh_install_app_dependencies dep [dep [...]]
+# | arg: dep - the package name to install in dependence
+ynh_install_app_dependencies () {
+    dependencies=$@
+    manifest_path="../manifest.json"
+    if [ ! -e "$manifest_path" ]; then
+    	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+    fi
+    version=$(sudo python3 -c "import sys, json;print(json.load(open(\"$manifest_path\"))['version'])")	# Retrieve the version number in the manifest file.
+    dep_app=${app//_/-}	# Replace all '_' by '-'
+
+    if ynh_package_is_installed "${dep_app}-ynh-deps"; then
+		echo "A package named ${dep_app}-ynh-deps is already installed" >&2
+    else
+        cat > ./${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
+Section: misc
+Priority: optional
+Package: ${dep_app}-ynh-deps
+Version: ${version}
+Depends: ${dependencies// /, }
+Architecture: all
+Description: Fake package for ${app} (YunoHost app) dependencies
+ This meta-package is only responsible of installing its dependencies.
+EOF
+        ynh_package_install_from_equivs ./${dep_app}-ynh-deps.control \
+            || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        ynh_app_setting_set $app apt_dependencies $dependencies
+    fi
+}
+
+# Remove fake package and its dependencies
+#
+# Dependencies will removed only if no other package need them.
+#
+# usage: ynh_remove_app_dependencies
+ynh_remove_app_dependencies () {
+    dep_app=${app//_/-}	# Replace all '_' by '-'
+    ynh_package_autoremove ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }
