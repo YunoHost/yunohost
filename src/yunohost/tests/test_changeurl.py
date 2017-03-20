@@ -2,7 +2,7 @@ import time
 import requests
 
 from moulinette.core import init_authenticator
-from yunohost.app import app_install, app_change_url, app_remove, app_map
+from yunohost.app import app_install, app_changeurl, app_remove, app_map
 from yunohost.domain import _get_maindomain
 
 # Instantiate LDAP Authenticator
@@ -43,7 +43,7 @@ def test_appchangeurl():
     install_changeurl_app("/changeurl")
     check_changeurl_app("/changeurl")
 
-    app_change_url(auth, "change_url_app", maindomain, "/newchangeurl/")  # <<< FIXME: Path must ends with "/" or this ~break the app_map output ! This behavior should be fixed
+    app_changeurl(auth, "change_url_app", maindomain, "/newchangeurl/")  # <<< FIXME: Path must ends with "/" or this ~break the app_map output ! This behavior should be fixed
     # For some reason the nginx reload can take some time to propagate ...?
 
     time.sleep(2)

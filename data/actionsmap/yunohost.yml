@@ -535,10 +535,10 @@ app:
                     full: --file
                     help: Folder or tarball for upgrade
 
-        ### app_change_url()
-        change_url:
+        ### app_changeurl()
+        changeurl:
             action_help: Change app's URL
-            api: PUT /apps/<app>/change_url
+            api: PUT /apps/<app>/changeurl
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
