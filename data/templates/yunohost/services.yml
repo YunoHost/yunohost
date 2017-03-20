@@ -50,7 +50,7 @@ yunohost-firewall:
 nslcd:
    status: service
    log: /var/log/syslog
-nsswitch: null
+nsswitch: {}
 bind9: null
 tahoe-lafs: null
 memcached: null
