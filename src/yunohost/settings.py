@@ -38,6 +38,13 @@ DEFAULTS = OrderedDict([
 
 
 def settings_get(key):
+    """
+    Get an entry value in the settings
+
+    Keyword argument:
+        key -- Settings key
+
+    """
     settings = _get_settings()
 
     if key not in settings:
@@ -48,10 +55,22 @@ def settings_get(key):
 
 
 def settings_list():
+    """
+    List all entries of the settings
+
+    """
     return _get_settings()
 
 
 def settings_set(key, value):
+    """
+    Set an entry value in the settings
+
+    Keyword argument:
+        key -- Settings key
+        value -- New value
+
+    """
     settings = _get_settings()
 
     if key not in settings:
@@ -92,6 +111,13 @@ def settings_set(key, value):
 
 
 def settings_default(key):
+    """
+    Set an entry value to its default one
+
+    Keyword argument:
+        key -- Settings key
+
+    """
     settings = _get_settings()
 
     if key not in settings:
@@ -103,6 +129,13 @@ def settings_default(key):
 
 
 def settings_reset(yes=False):
+    """
+    Reset all settings to their default value
+
+    Keyword argument:
+        yes -- Yes I'm sure I want to do that
+
+    """
     if not yes:
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'global_settings_reset_not_yes'))
