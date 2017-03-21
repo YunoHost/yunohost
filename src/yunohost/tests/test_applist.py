@@ -381,10 +381,9 @@ def test_applist_system_migration_conflict():
     # No legacy cron job should remain
     assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
 
-    # Only dummy should be listed (bc of alphabetical order during migration)
+    # Only one among "dummy" and "yunohost" should be listed
     applist_dict = app_listlists()
-    assert "dummy" in applist_dict.keys()
-    assert applist_dict["dummy"]["url"] == "https://app.yunohost.org/official.json"
-    assert "yunohost" not in applist_dict.keys()
+    assert (len(applist_dict.keys()) == 1)
+    assert ("dummy" in applist_dict.keys()) or ("yunohost" in applist_dict.keys())
 
     assert cron_job_is_there()
