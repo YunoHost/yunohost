@@ -1734,7 +1734,7 @@ def _using_legacy_applist_system():
     This is determined by the presence of some cron job yunohost-applist-foo
     """
 
-    return (glob.glob("/etc/cron.d/yunohost-applist-*") != [])
+    return glob.glob("/etc/cron.d/yunohost-applist-*") != []
 
 
 def _migrate_applist_system():
@@ -1787,7 +1787,7 @@ def _install_applist_fetch_cron():
     logger.debug("Installing applist fetch cron job")
 
     with open(cron_job_file, "w") as f:
-        f.write('#!/bin/bash\nyunohost app fetchlist > /dev/null 2>&1\n')
+        f.write('#!/bin/bash\n\nyunohost app fetchlist > /dev/null 2>&1\n')
 
     _set_permissions(cron_job_file, "root", "root", 0755)
 
@@ -1849,20 +1849,23 @@ def _register_new_applist(url, name):
     applist_list = _read_applist_list()
 
     # Check if name conflicts with an existing list
-    if name in applist_list.keys():
+    if name in applist_list:
         raise MoulinetteError(errno.EEXIST,
                               m18n.n('appslist_name_already_tracked', name=name))
 
     # Check if url conflicts with an existing list
     known_applist_urls = [applist["url"] for _, applist in applist_list.items()]
+
     if url in known_applist_urls:
         raise MoulinetteError(errno.EEXIST,
                               m18n.n('appslist_url_already_tracked', url=url))
 
     logger.debug("Registering new applist %s at %s" % (name, url))
 
-    applist_list[name] = {"url": url,
-                          "lastUpdate": None}
+    applist_list[name] = {
+        "url": url,
+        "lastUpdate": None
+    }
 
     _write_applist_list(applist_list)
 
