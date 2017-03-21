@@ -11,7 +11,7 @@ backup_dir="${1}/data/home"
 
 # Backup user home
 for f in $(find /home/* -type d -prune | awk -F/ '{print $NF}'); do
-    if [[ ! "$f" =~ ^yunohost|lost\+found ]]; then
+    if [[ ! "$f" =~ ^yunohost|lost\+found|^media$ ]]; then
         ynh_backup "/home/$f" "${backup_dir}/$f" 1
     fi
 done
