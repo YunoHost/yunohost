@@ -1,3 +1,134 @@
+yunohost (2.6.1) testing; urgency=low
+
+  [ Maniack Crudelis ]
+  * Hack dégueux pour éviter d'écrire dans le log cli
+  * [enh] New helpers for equivs use
+  * [enh] New helpers for logrotate
+  * Update package
+  * Restore use of subshell
+
+  [ Trollken ]
+  * [i18n] Translated using Weblate (Portuguese)
+
+  [ rokaz ]
+  * [i18n] Translated using Weblate (Spanish)
+  * [i18n] Translated using Weblate (French)
+
+  [ Jean-Baptiste Holcroft ]
+  * [i18n] Translated using Weblate (French)
+
+  [ rokaz ]
+  * [i18n] Translated using Weblate (English)
+
+  [ Fabian Gruber ]
+  * [i18n] Translated using Weblate (German)
+
+  [ bricabraque ]
+  * [i18n] Translated using Weblate (Italian)
+
+  [ Trollken ]
+  * [i18n] Translated using Weblate (Portuguese)
+
+  [ rokaz ]
+  * [i18n] Translated using Weblate (Spanish)
+
+  [ Fabian Gruber ]
+  * [i18n] Translated using Weblate (German)
+  * [i18n] Translated using Weblate (German)
+
+  [ bricabraque ]
+  * [i18n] Translated using Weblate (Italian)
+
+  [ Fabian Gruber ]
+  * [i18n] Translated using Weblate (German)
+
+  [ Lapineige ]
+  * [i18n] Translated using Weblate (French)
+
+  [ Laurent Peuch ]
+  * [enh] upgrade ciphers suit to more secure ones
+
+  [ ljf (zamentur) ]
+  * [fix] Can't use common.sh on restore operation (#246)
+
+  [ thardev ]
+  * show fail2ban logs on admin web interface
+
+  [ Maniack Crudelis ]
+  * Fix ynh_app_dependencies
+  * Fix ynh_remove_app_dependencies too...
+
+  [ Moul ]
+  * [mod] dnsmasq conf: remove deprecated XMPP DNS record line.
+  * [fix] dnsmasq conf: remove 'resolv-file' line. - there is no file specified for this line. - dns resolution isn't working on some cases: - metronome could not works. - https://forum.yunohost.org/t/xmpp-cant-connect-to-conference-yunohost-org/2142
+
+  [ Laurent Peuch ]
+  * [enh] defaulting running hook_exec as root
+  * [mod] change behavior, admin by default, as to explicitly set root as user
+  * [enh] use root for app related hook_exec
+  * [mod] remove unused import
+  * [fix] run missing backup scripts as root
+  * [enh] run hooks as root
+  * [mod] try to clean a bit app_list code
+
+  [ Alexandre Aubin ]
+  * Trying to add comments and simplify some overly complicated parts
+  * Trying to make offset / limit consistent
+
+  [ Laurent Peuch ]
+  * [mod] remove useless addition
+  * [fix] if a service don't have a 'status' entry, don't list it
+  * [fix] nsswitch and udisks2 aren't used anymore
+  * [fix] we don't use bind9, add null entry to remove it from old services.yml
+  * [enh] add other services to remove
+  * [fix] launch ssowatconf at the end of a broken install to avoid sso bad state
+
+  [ opi ]
+  * [love] adding thardev to contributors
+
+  [ Alexandre Aubin ]
+  * [enh] Trigger exception during unit tests if string key aint defined (#261)
+  * Updating ciphers with recommendation from mozilla with modern compatibility
+
+  [ Maniack Crudelis ]
+  * Failed if $1 not set
+
+  [ Laurent Peuch ]
+  * [mod] remove offset/limit from app_list, they aren't used anymore
+  * [mod] implement ljf comment
+
+  [ Maniack Crudelis ]
+  * Remove use of deprecated helper
+
+  [ opi ]
+  * [enh] Use _get_maindomain helper.
+
+  [ Maniack Crudelis ]
+  * Add app setting
+
+  [ opi ]
+  * [fix] Regenerate SSOwat conf during main_domain operation. #672
+
+  [ Maniack Crudelis ]
+  * Nouveau helper ynh_normalize_url_path (#234)
+  * Prevent to rewrite the previous control file
+
+  [ Alexandre Aubin ]
+  * Rename ynh_app_dependencies to ynh_install_app_dependencies
+
+  [ Maniack Crudelis ]
+  * [enh] New helper ynh_abort_if_errors (#245)
+
+  [ ljf ]
+  * [fix] Apply cipher suite into webadmin nginx conf
+
+  [ Laurent Peuch ]
+  * [fix] only remove a service if it is setted to null
+
+  [ Moul ]
+
+ -- Moul <moul@moul.re>  Thu, 23 Mar 2017 09:53:06 +0000
+
 yunohost (2.6.0) testing; urgency=low
 
   Important changes
