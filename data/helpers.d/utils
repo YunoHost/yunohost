@@ -24,3 +24,19 @@ ynh_get_plain_key() {
         fi
     done
 }
+
+# Curl abstraction to simplify its call
+#
+# Helpfully mostly for curl arguments
+#
+# example: ynh_curl_abstract "value1=$var1&value2=$var2" "/install.php?installButton"
+# 
+# usage: ynh_curl_abstract "data_post" "url_access"
+# | arg: data_post - POST request to send
+# | arg: url_access - Relative path to pointed for POST data sent. Relative to $path_url.
+ynh_curl_abstract () {
+	data_post=$1
+	url_access=$2
+	sleep 1
+	curl -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 --data "$data_post" "https://localhost$path_url$url_access" 2>&1
+}
