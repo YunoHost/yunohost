@@ -51,3 +51,37 @@ ynh_remove_logrotate () {
 		sudo rm "/etc/logrotate.d/$app"
 	fi
 }
+
+# Create a dedicated php-fpm config
+#
+# usage: ynh_add_fpm_config
+ynh_add_fpm_config () {
+	finalphpconf="/etc/php5/fpm/pool.d/$app.conf"
+	ynh_compare_checksum_config "$finalphpconf" 1
+	sudo cp ../conf/php-fpm.conf "$finalphpconf"
+	ynh_substitute_char "__NAMETOCHANGE__" "$app" "$finalphpconf"
+	ynh_substitute_char "__FINALPATH__" "$final_path" "$finalphpconf"
+	ynh_substitute_char "__USER__" "$app" "$finalphpconf"
+	sudo chown root: "$finalphpconf"
+	ynh_store_checksum_config "$finalphpconf"
+
+	if [ -e "../conf/php-fpm.ini" ]
+	then
+		finalphpini="/etc/php5/fpm/conf.d/20-$app.ini"
+		ynh_compare_checksum_config "$finalphpini" 1
+		sudo cp ../conf/php-fpm.ini "$finalphpini"
+		sudo chown root: "$finalphpini"
+		ynh_store_checksum_config "$finalphpini"
+	fi
+
+	sudo systemctl reload php5-fpm
+}
+
+# Remove the dedicated php-fpm config
+#
+# usage: ynh_remove_fpm_config
+ynh_remove_fpm_config () {
+	ynh_secure_remove "/etc/php5/fpm/pool.d/$app.conf"
+	ynh_secure_remove "/etc/php5/fpm/conf.d/20-$app.ini"
+	sudo systemctl reload php5-fpm
+}
