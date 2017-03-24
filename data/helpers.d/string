@@ -9,3 +9,18 @@ ynh_string_random() {
       | tr -c -d 'A-Za-z0-9' \
       | sed -n 's/\(.\{'"${1:-24}"'\}\).*/\1/p'
 }
+
+# Substitute a string by another in a file
+#
+# usage: ynh_substitute_char string_to_find replace_string file_to_analyse
+# | arg: string_to_find - String to replace in the file
+# | arg: replace_string - New string that will replace
+# | arg: file_to_analyse - File where the string will be replaced.
+ynh_substitute_char () {
+	delimit=@
+	match_char=${1//${delimit}/"\\${delimit}"}	# Escape the delimiter if it's in the string.
+	replace_char=${2//${delimit}/"\\${delimit}"}
+	workfile=$3
+
+	sudo sed --in-place "s${delimit}${match_char}${delimit}${replace_char}${delimit}g" "$workfile"
+}
