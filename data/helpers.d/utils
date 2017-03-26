@@ -40,10 +40,10 @@ ynh_get_plain_key() {
 # | arg: dest_dir  - Directory where to setup sources
 # | arg: source_id - Name of the app, if the package contains more than one app
 ynh_setup_source () {
-	local dest_dir=$1
+    local dest_dir=$1
     local src_id=${2:-app} # If the argument is not given, source_id equal "app"
-	# Default value
-	local src_format="tar.gz"
+    # Default value
+    # local src_format="tar.gz"
     local src_sumprg="sha256sum"
     local src_filename="${src_id}.${src_format}"
     local src_in_subdir=true #false if source are directly in the archive root   
@@ -57,27 +57,27 @@ ynh_setup_source () {
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
 
-	if test -e "$local_source"
-	then	# Use the local source file if it is present
-		cp $local_src $src_filename
-	else	# If not, download the source
-		wget -nv -O $src_filename $src_url
+    if test -e "$local_source"
+    then	# Use the local source file if it is present
+    	cp $local_src $src_filename
+    else	# If not, download the source
+    	wget -nv -O $src_filename $src_url
     fi
 
-	# Check the control sum
-	echo "$src_checksum $src_filename" \
-		| ${src_sumprg} -c --status || ynh_die "Corrupt source"
+    # Check the control sum
+    echo "$src_checksum $src_filename" \
+        | ${src_sumprg} -c --status || ynh_die "Corrupt source"
 
-	# Extract source into the app dir
-	sudo mkdir -p "$dest_dir"
-	if [ "$src_format" = "zip" ]
-	then # Zip format
-		# Using of a temp directory, because unzip doesn't manage --strip-components
-		if $src_in_subdir ; then
+    # Extract source into the app dir
+    sudo mkdir -p "$dest_dir"
+    if [ "$src_format" = "zip" ]
+    then # Zip format
+        # Using of a temp directory, because unzip doesn't manage --strip-components
+        if $src_in_subdir ; then
             local tmp_dir=$(mktemp -d)
-		    unzip -quo $src_filename -d "$tmp_dir"
-		    sudo cp -a $tmp_dir/*/. "$dest_dir"
-		    ynh_secure_remove "$tmp_dir"
+            unzip -quo $src_filename -d "$tmp_dir"
+            sudo cp -a $tmp_dir/*/. "$dest_dir"
+            ynh_secure_remove "$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
         fi
@@ -86,24 +86,24 @@ ynh_setup_source () {
         if $src_in_subdir ; then
             strip="--strip-components 1"
         fi
-	    if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
+        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
             sudo tar -xf $src_filename -C "$dest_dir" $strip
-	    else
-		    ynh_die "Archive format unrecognized."
-	    fi
+        else
+            ynh_die "Archive format unrecognized."
+        fi
     fi
 
-	# Apply patches
-	if test -f ../sources/patches/${source_id}-*.patch; then
-		(cd "$dest_dir" \
-			&& for p in ../sources/patches/${source_id}-*.patch; do \
-				sudo patch -p1 < $p; done) \
-			|| ynh_die "Unable to apply patches"
-	fi
+    # Apply patches
+    if test -f ../sources/patches/${source_id}-*.patch; then
+        (cd "$dest_dir" \
+            && for p in ../sources/patches/${source_id}-*.patch; do \
+                sudo patch -p1 < $p; done) \
+            || ynh_die "Unable to apply patches"
+    fi
 
-	# Add supplementary files
-	if test -e "../sources/extra_files"; then
-		sudo cp -a ../sources/extra_files/. "$dest_dir"
-	fi
+    # Add supplementary files
+    if test -e "../sources/extra_files"; then
+        sudo cp -a ../sources/extra_files/. "$dest_dir"
+    fi
 
 }
