@@ -123,7 +123,7 @@ ynh_mysql_remove_db () {
 # Correct the name given in argument for mariadb
 # Avoid invalid characters in your database name
 #
-# Exemple: dbname=$(ynh_make_valid_dbid $app)
+# Exemple: dbname=$(ynh_sanitize_dbid $app)
 #
 # usage: ynh_sanitize_dbid name
 # | arg: name - name to correct/sanitize
