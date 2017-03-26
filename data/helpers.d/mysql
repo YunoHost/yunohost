@@ -121,15 +121,14 @@ ynh_mysql_remove_db () {
 }
 
 # Correct the name given in argument for mariadb
-#
-# Avoid invalid name for your database
+# Avoid invalid characters in your database name
 #
 # Exemple: dbname=$(ynh_make_valid_dbid $app)
 #
-# usage: ynh_make_valid_dbid name
-# | arg: name - name to correct
+# usage: ynh_sanitize_dbid name
+# | arg: name - name to correct/sanitize
 # | ret: the corrected name
-ynh_make_valid_dbid () {
+ynh_sanitize_dbid () {
 	dbid=${1//[-.]/_}	# Mariadb doesn't support - and . in the name of databases. It will be replace by _
 	echo $dbid
 }
