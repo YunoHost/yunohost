@@ -45,7 +45,7 @@ ynh_setup_source () {
     # Default value
     # local src_format="tar.gz"
     local src_sumprg="sha256sum"
-    local src_filename="${src_id}.${src_format}"
+    local src_filename=""
     local src_in_subdir=true #false if source are directly in the archive root   
 
     # Load value from configuration file (see above for a small doc about this file
