@@ -1,9 +1,12 @@
+import pytest
 import time
 import requests
 
 from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_changeurl, app_remove, app_map
 from yunohost.domain import _get_maindomain
+
+from moulinette.core import MoulinetteError
 
 # Instantiate LDAP Authenticator
 AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
@@ -44,8 +47,15 @@ def test_appchangeurl():
     check_changeurl_app("/changeurl")
 
     app_changeurl(auth, "change_url_app", maindomain, "/newchangeurl")
-    # For some reason the nginx reload can take some time to propagate ...?
 
+    # For some reason the nginx reload can take some time to propagate ...?
     time.sleep(2)
 
     check_changeurl_app("/newchangeurl")
+
+def test_appchangeurl_sameurl():
+    install_changeurl_app("/changeurl")
+    check_changeurl_app("/changeurl")
+
+    with pytest.raises(MoulinetteError):
+        app_changeurl(auth, "change_url_app", maindomain, "changeurl")
