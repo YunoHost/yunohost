@@ -572,6 +572,6 @@ def tools_portavailable(port):
         s.connect(("localhost", int(port)))
         s.close()
     except socket.error:
-        return { "available" : "Yes" }
+        return { "available" : True }
     else:
-        return { "available" : "No" }
+        return { "available" : False }
