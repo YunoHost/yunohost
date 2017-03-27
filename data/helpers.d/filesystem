@@ -92,19 +92,19 @@ ynh_secure_remove () {
 	/home/yunohost.app"
 
 	if [[ "$forbidden_path" =~ "$path_to_remove" \
-		# Match all path or subpath in $forbidden_path
+		# Match all paths or subpaths in $forbidden_path
 		|| "$path_to_remove" =~ ^/[[:alnum:]]+$ \
-		# Match all first level path from / (Like /var, /root, etc...)
+		# Match all first level paths from / (Like /var, /root, etc...)
 		|| "${path_to_remove:${#path_to_remove}-1}" = "/" ]]
-		# Match if the path finish by /. Because it's seems there is an empty variable
+		# Match if the path finishes by /. Because it seems there is an empty variable
 	then
-		echo "Avoid deleting of $path_to_remove." >&2
+		echo "Avoid deleting $path_to_remove." >&2
 	else
 		if [ -e "$path_to_remove" ]
 		then
 			sudo rm -R "$path_to_remove"
 		else
-			echo "$path_to_remove doesn't deleted because it's not exist." >&2
+			echo "$path_to_remove wasn't deleted because it doesn't exist." >&2
 		fi
 	fi
 }
