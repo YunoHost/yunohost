@@ -52,7 +52,7 @@ ynh_setup_source () {
     # format)
     source ../conf/${src_id}.src
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
-    if [ src_filename = "" ] ; then
+    if [ "$src_filename" = "" ] ; then
         src_filename="${src_id}.${src_format}"
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
