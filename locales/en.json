@@ -153,7 +153,7 @@
     "packages_upgrade_critical_later": "Critical packages ({packages:s}) will be upgraded later",
     "packages_upgrade_failed": "Unable to upgrade all of the packages",
     "path_removal_failed": "Unable to remove path {:s}",
-    "pattern_backup_archive_name": "Must be a valid filename with alphanumeric and -_. characters only",
+    "pattern_backup_archive_name": "Must be a valid filename with max 30 characters, and alphanumeric and -_. characters only",
     "pattern_domain": "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_email": "Must be a valid email address (e.g. someone@domain.org)",
     "pattern_firstname": "Must be a valid first name",
