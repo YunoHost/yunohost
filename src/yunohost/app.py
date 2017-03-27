@@ -40,7 +40,6 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log
 from yunohost.utils import packages
-from yunohost.tools import tools_portavailable
 
 logger = getActionLogger('yunohost.app')
 
@@ -887,6 +886,10 @@ def app_checkport(port):
         port -- Port to check
 
     """
+
+    # This import cannot be moved on top of file because it create a recursive
+    # import...
+    from yunohost.tools import tools_portavailable
     logger.warning("This function is now deprecated. Please use `tools portavailable` instead.")
     availability = tools_portavailable(port)
     if availability["available"] is "Yes":
