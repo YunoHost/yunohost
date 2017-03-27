@@ -946,8 +946,6 @@ def app_checkurl(auth, url, app=None):
         app -- Write domain & path to app settings for further checks
 
     """
-
-    logger.warning("`app checkurl` is now deprecated. Please use `tools urlavailability` and `app registerurl` instead.")
     from yunohost.domain import domain_list
 
     if "https://" == url[:8]:
@@ -987,8 +985,6 @@ def app_checkurl(auth, url, app=None):
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
         app_setting(app, 'path', value=path)
-
-
 
 
 def app_initdb(user, password=None, db=None, sql=None):

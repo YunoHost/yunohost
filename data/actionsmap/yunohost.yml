@@ -566,8 +566,9 @@ app:
 
         ### app_checkurl()
         checkurl:
-            action_help: (Deprecated) Check availability of a web path
+            action_help: Check availability of a web path
             api: GET /tools/checkurl
+            deprecated: True
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
