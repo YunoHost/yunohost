@@ -361,9 +361,12 @@ def app_changeurl(auth, app, domain, path):
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
-    old_path_trimed = old_path.rstrip("/")
+    # Normalize path and domain format
+    domain = domain.strip().lower()
+    old_path_trimed = '/' + old_path.strip("/").strip() + '/'
+    path = '/' + path.strip("/").strip() + '/'
 
-    if (domain.strip().lower(), path.rstrip("/").strip()) == (old_domain, old_path_trimed.strip()):
+    if (domain, path) == (old_domain, old_path_trimed):
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
 
     # WARNING / FIXME : checkurl will modify the settings
