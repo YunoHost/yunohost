@@ -358,9 +358,6 @@ def app_changeurl(auth, app, domain, path):
         raise MoulinetteError(errno.ENOPKG,
                               m18n.n('app_not_installed', app=app))
 
-    # checkurl will modify the settings
-    # (this is a non intuitive behavior that should be changed)
-    # (or checkurl renamed in reserve_url)
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
@@ -369,6 +366,9 @@ def app_changeurl(auth, app, domain, path):
     if (domain.strip().lower(), path.rstrip("/").strip()) == (old_domain, old_path_trimed.strip()):
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
 
+    # WARNING / FIXME : checkurl will modify the settings
+    # (this is a non intuitive behavior that should be changed)
+    # (or checkurl renamed in reserve_url)
     app_checkurl(auth, '%s%s' % (domain, path), app)
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
