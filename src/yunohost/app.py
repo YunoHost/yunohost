@@ -440,7 +440,8 @@ def app_changeurl(auth, app, domain, path):
 
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors))
 
-    logger.success("Successfly changed '%s' url to '%s%s'" % (app, domain, path))
+    logger.success(m18n.n("app_change_url_success",
+                         app=app, domain=domain, path=path))
 
 
 def app_upgrade(auth, app=[], url=None, file=None):
