@@ -890,7 +890,6 @@ def app_checkport(port):
     # This import cannot be moved on top of file because it create a recursive
     # import...
     from yunohost.tools import tools_portavailable
-    logger.warning("This function is now deprecated. Please use `tools portavailable` instead.")
     availability = tools_portavailable(port)
     if availability["available"] is "Yes":
         logger.success(m18n.n('port_available', port=int(port)))

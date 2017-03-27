@@ -556,6 +556,7 @@ app:
         checkport:
             action_help: Check availability of a local port
             api: GET /tools/checkport
+            deprecated: true
             arguments:
                 port:
                     help: Port to check
