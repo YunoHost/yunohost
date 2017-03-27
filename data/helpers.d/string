@@ -10,13 +10,13 @@ ynh_string_random() {
       | sed -n 's/\(.\{'"${1:-24}"'\}\).*/\1/p'
 }
 
-# Substitute a string by another in a file
+# Substitute/replace a string by another in a file
 #
-# usage: ynh_substitute_char string_to_find replace_string file_to_analyse
-# | arg: string_to_find - String to replace in the file
-# | arg: replace_string - New string that will replace
-# | arg: file_to_analyse - File where the string will be replaced.
-ynh_substitute_char () {
+# usage: ynh_replace_string string_to_find replace_string target_file
+# | arg: string_to_find - String to be searched and replaced in the file
+# | arg: replace_string - String that will replace matches
+# | arg: target_file - File in which the string will be replaced.
+ynh_replace_string () {
 	delimit=@
 	match_char=${1//${delimit}/"\\${delimit}"}	# Escape the delimiter if it's in the string.
 	replace_char=${2//${delimit}/"\\${delimit}"}
