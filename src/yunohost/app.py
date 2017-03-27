@@ -891,7 +891,7 @@ def app_checkport(port):
     # import...
     from yunohost.tools import tools_portavailable
     availability = tools_portavailable(port)
-    if availability["available"] is "Yes":
+    if availability["available"]:
         logger.success(m18n.n('port_available', port=int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,
