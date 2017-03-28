@@ -21,6 +21,12 @@ do_pre_regen() {
   ynh_validate_ip6 "$ipv6" || ipv6=''
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
+  # add general conf file
+  cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
+
+  # add resolver file
+  cp plain/resolv.dnsmasq.conf ${pending_dir}/etc/resolv.dnsmasq.conf
+
   # add domain conf files
   for domain in $domain_list; do
     cat domain.tpl \
