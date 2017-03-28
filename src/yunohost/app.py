@@ -1495,6 +1495,22 @@ def _check_manifest_requirements(manifest):
                                      pkgname=pkgname, version=version,
                                      spec=spec))
 
+    # Handle backward-incompatible change introduced in yunohost >= 2.3.6
+    # See https://dev.yunohost.org/issues/156
+    if 'multi_instance' in manifest and is_true(manifest['multi_instance']):
+        # Since 'requirements' in manifest is only introduced in stable starting from 2.4
+        # we only check whether 'yunohost' is specified in requirements
+        # and hope that it is for ">= 2.3.6"
+        # This should at least prevent to install multi instance app which have not been
+        # updated since 2.4 is out.
+        # We are not safe against funny packagers who would have updated their manifest
+        # with for example ">= 2.2"
+        if 'yunohost' not in requirements:
+           raise MoulinetteError(
+                errno.EINVAL, m18n.n('minimal_yunohost_version_for_multiinstance_app_unmet',
+                                     version=min_yunohost_version))
+
+
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     """Parse arguments needed for an action from the manifest
 
