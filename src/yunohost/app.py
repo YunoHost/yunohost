@@ -39,7 +39,7 @@ from collections import OrderedDict
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.service import service_log
+from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
@@ -426,7 +426,7 @@ def app_changeurl(auth, app, domain, path):
     app_ssowatconf(auth)
 
     # avoid common mistakes
-    if os.system("service nginx reload") != 0:
+    if _run_service_command("reload", "nginx") == False:
         # grab nginx errors
         # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
         # will return != 0 since we are in a failed state
