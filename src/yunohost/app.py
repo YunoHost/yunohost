@@ -358,6 +358,9 @@ def app_changeurl(auth, app, domain, path):
         raise MoulinetteError(errno.ENOPKG,
                               m18n.n('app_not_installed', app=app))
 
+    if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
+
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
 
@@ -373,9 +376,6 @@ def app_changeurl(auth, app, domain, path):
     # (this is a non intuitive behavior that should be changed)
     # (or checkurl renamed in reserve_url)
     app_checkurl(auth, '%s%s' % (domain, path), app)
-
-    if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
 
     manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
 
