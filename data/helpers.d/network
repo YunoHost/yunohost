@@ -40,10 +40,13 @@ ynh_find_port () {
 
 # Check availability of a web path
 #
-# example: ynh_webpath_available $domain$path
+# example: ynh_webpath_available some.domain.tld /coffee
 #
-# usage: ynh_webpath_available $domain_and_path
-# | arg: domain_and_path - complete path to check
+# usage: ynh_webpath_available domain path
+# | arg: domain - the domain/host of the url
+# | arg: path - the web path to check the availability of
 ynh_webpath_available () {
-	sudo yunohost app checkurl $1 -a $app
+	domain=$1
+	path=$(ynh_normalize_url_path $2)
+	sudo yunohost app checkurl $domain$path -a $app
 }
