@@ -363,10 +363,10 @@ def app_changeurl(auth, app, domain, path):
 
     # Normalize path and domain format
     domain = domain.strip().lower()
-    old_path_trimed = '/' + old_path.strip("/").strip() + '/'
+    old_path = '/' + old_path.strip("/").strip() + '/'
     path = '/' + path.strip("/").strip() + '/'
 
-    if (domain, path) == (old_domain, old_path_trimed):
+    if (domain, path) == (old_domain, old_path):
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
 
     # WARNING / FIXME : checkurl will modify the settings
@@ -393,13 +393,9 @@ def app_changeurl(auth, app, domain, path):
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
-    env_dict["YNH_APP_OLD_PATH"] = old_path
-    env_dict["YNH_APP_OLD_PATH_TRIMED"] = old_path_trimed
-
+    env_dict["YNH_APP_OLD_PATH"] = old_path.rstrip("/")
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
-    env_dict["YNH_APP_NEW_PATH"] = path
-
-    env_dict["YNH_APP_NEW_PATH_TRIMED"] = path.rstrip("/")
+    env_dict["YNH_APP_NEW_PATH"] = path.rstrip("/")
 
     if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
         shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
