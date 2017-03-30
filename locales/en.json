@@ -114,7 +114,6 @@
     "global_settings_cant_serialize_setings": "Failed to serialzed settings data, reason: {reason:s}",
     "global_settings_cant_write_settings": "Failed to write settings file, reason: {reason:s}",
     "global_settings_key_doesnt_exists": "The key '{settings_key:s}' doesn't exists in the global settings, you can see all the available keys by doing 'yunohost settings list",
-    "global_settings_reset_not_yes": "You've ask to reset the global settings but haven't provided the '--yes' cli argument. If you are REALLY sure that you want to reset the setings call this command with '--yes'.",
     "global_settings_reset_success": "Success. Your previous settings have been backuped in {path:s}",
     "global_settings_setting_example_bool": "Example boolean option",
     "global_settings_setting_example_int": "Example int option",
