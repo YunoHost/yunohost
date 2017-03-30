@@ -943,6 +943,9 @@ settings:
             arguments:
                 key:
                     help: Settings key
+                --full:
+                    help: Show more details
+                    action: store_true
 
         ### settings_set()
         set:
@@ -957,18 +960,13 @@ settings:
                     extra:
                         required: True
 
-        ### settings_reset()
-        reset:
+        ### settings_reset_all()
+        reset-all:
             action_help: reset all settings to their default value
             api: DELETE /settings
-            arguments:
-                -y:
-                    full: --yes
-                    help: Yes I'm sure I want to do that
-                    action: store_true
 
-        ### settings_default()
-        default:
+        ### settings_reset()
+        reset:
             action_help: set an entry value to its default one
             api: DELETE /settings/<key>
             arguments:
