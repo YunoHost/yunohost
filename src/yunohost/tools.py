@@ -163,7 +163,8 @@ def tools_maindomain(auth, new_domain=None):
         logger.warning("%s" % e, exc_info=1)
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
-    # Clear nsswitch cache for hosts...
+    # Clear nsswitch cache for hosts to make sure hostname is resolved ...
+    service_regen_conf(['nsswitch'], force=True)
     subprocess.call(['nscd', '-i', 'hosts'])
 
     # Set hostname
