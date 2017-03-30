@@ -13,6 +13,15 @@ do_pre_regen() {
   # create directory for pending conf
   dnsmasq_dir="${pending_dir}/etc/dnsmasq.d"
   mkdir -p "$dnsmasq_dir"
+  etcdefault_dir="${pending_dir}/etc/default"
+  mkdir -p "$etcdefault_dir"
+
+  # add general conf files
+  cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
+  cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
+
+  # add resolver file
+  cat plain/resolv.dnsmasq.conf | grep nameserver | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
 
   # retrieve variables
   ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
@@ -20,12 +29,6 @@ do_pre_regen() {
   ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
-
-  # add general conf file
-  cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
-
-  # add resolver file
-  cp plain/resolv.dnsmasq.conf ${pending_dir}/etc/resolv.dnsmasq.conf
 
   # add domain conf files
   for domain in $domain_list; do
