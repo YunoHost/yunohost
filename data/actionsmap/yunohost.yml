@@ -535,8 +535,8 @@ app:
                     full: --file
                     help: Folder or tarball for upgrade
 
-        ### app_changeurl()
-        changeurl:
+        ### app_change_url()
+        change-url:
             action_help: Change app's URL
             api: PUT /apps/<app>/changeurl
             configuration:

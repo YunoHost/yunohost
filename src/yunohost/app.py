@@ -341,7 +341,7 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
-def app_changeurl(auth, app, domain, path):
+def app_change_url(auth, app, domain, path):
     """
     Modify the URL at which an application is installed.
 

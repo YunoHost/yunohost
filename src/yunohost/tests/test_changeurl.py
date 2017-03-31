@@ -3,7 +3,7 @@ import time
 import requests
 
 from moulinette.core import init_authenticator
-from yunohost.app import app_install, app_changeurl, app_remove, app_map
+from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
 
 from moulinette.core import MoulinetteError
@@ -46,7 +46,7 @@ def test_appchangeurl():
     install_changeurl_app("/changeurl")
     check_changeurl_app("/changeurl")
 
-    app_changeurl(auth, "change_url_app", maindomain, "/newchangeurl")
+    app_change_url(auth, "change_url_app", maindomain, "/newchangeurl")
 
     # For some reason the nginx reload can take some time to propagate ...?
     time.sleep(2)
@@ -58,4 +58,4 @@ def test_appchangeurl_sameurl():
     check_changeurl_app("/changeurl")
 
     with pytest.raises(MoulinetteError):
-        app_changeurl(auth, "change_url_app", maindomain, "changeurl")
+        app_change_url(auth, "change_url_app", maindomain, "changeurl")
