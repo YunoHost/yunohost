@@ -151,7 +151,7 @@
     "packages_upgrade_critical_later": "Los paquetes críticos ({packages:s}) serán actualizados más tarde",
     "packages_upgrade_failed": "No se pudieron actualizar todos los paquetes",
     "path_removal_failed": "No se pudo eliminar la ruta {:s}",
-    "pattern_backup_archive_name": "Debe ser un nombre de archivo válido, solo se admiten caracteres alfanuméricos y los guiones -_",
+    "pattern_backup_archive_name": "Debe ser un nombre de archivo válido, solo se admiten caracteres alfanuméricos, los guiones -_ y el punto.",
     "pattern_domain": "El nombre de dominio debe ser válido (por ejemplo mi-dominio.org)",
     "pattern_email": "Debe ser una dirección de correo electrónico válida (por ejemplo, alguien@dominio.org)",
     "pattern_firstname": "Debe ser un nombre válido",
@@ -273,5 +273,6 @@
     "certmanager_http_check_timeout": "Plazo expirado, el servidor no ha podido contactarse a si mismo a través de HTTP usando su dirección IP pública (dominio {domain:s} con ip {ip:s}). Puede ser debido a hairpinning o a una mala configuración del cortafuego/router al que está conectado su servidor.",
     "certmanager_couldnt_fetch_intermediate_cert": "Plazo expirado, no se ha podido descargar el certificado intermedio de Let's Encrypt. La instalación/renovación del certificado ha sido cancelada - vuelva a intentarlo más tarde.",
     "appslist_retrieve_bad_format": "El archivo recuperado no es una lista de aplicaciones válida",
-    "domain_hostname_failed": "Error al establecer nuevo nombre de host"
+    "domain_hostname_failed": "Error al establecer nuevo nombre de host",
+    "yunohost_ca_creation_success": "Se ha creado la autoridad de certificación local."
 }
