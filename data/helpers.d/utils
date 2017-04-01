@@ -94,7 +94,7 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if test -f ../sources/patches/${source_id}-*.patch; then
+    if [ $(find ../sources/patches/ -type f -name "${source_id}-*.patch"  | wc -l) ]; then
         (cd "$dest_dir" \
             && for p in ../sources/patches/${source_id}-*.patch; do \
                 sudo patch -p1 < $p; done) \
