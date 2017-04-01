@@ -35,7 +35,7 @@ ynh_apt() {
 #
 # usage: ynh_package_update
 ynh_package_update() {
-    ynh_apt update
+    ynh_apt --no-remove update
 }
 
 # Install package(s)
@@ -43,7 +43,7 @@ ynh_package_update() {
 # usage: ynh_package_install name [name [...]]
 # | arg: name - the package name to install
 ynh_package_install() {
-    ynh_apt -o Dpkg::Options::=--force-confdef \
+    ynh_apt --no-remove -o Dpkg::Options::=--force-confdef \
             -o Dpkg::Options::=--force-confold install $@
 }
 
