@@ -27,6 +27,8 @@ ynh_get_plain_key() {
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
 #
+# $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
+#
 # example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
 # 
 # usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
