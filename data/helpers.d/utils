@@ -64,6 +64,7 @@ ynh_get_plain_key() {
 ynh_setup_source () {
     local dest_dir=$1
     local src_id=${2:-app} # If the argument is not given, source_id equal "app"
+    
     # Load value from configuration file (see above for a small doc about this file
     # format)
     local src_url=$(grep 'SOURCE_URL=' "../conf/${src_id}.src" | cut -d= -f2-)
@@ -94,14 +95,15 @@ ynh_setup_source () {
         || ynh_die "Corrupt source"
 
     # Extract source into the app dir
-    sudo mkdir -p "$dest_dir"
+    mkdir -p "$dest_dir"
     if [ "$src_format" = "zip" ]
-    then # Zip format
+    then 
+        # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir ; then
             local tmp_dir=$(mktemp -d)
             unzip -quo $src_filename -d "$tmp_dir"
-            sudo cp -a $tmp_dir/*/. "$dest_dir"
+            cp -a $tmp_dir/*/. "$dest_dir"
             ynh_secure_remove "$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
@@ -123,14 +125,14 @@ ynh_setup_source () {
         local old_dir=$(pwd)
         (cd "$dest_dir" \
             && for p in $old_dir/../sources/patches/${src_id}-*.patch; do \
-                sudo patch -p1 < $p; done) \
+                patch -p1 < $p; done) \
             || ynh_die "Unable to apply patches"
         cd $old_dir
     fi
 
     # Add supplementary files
     if test -e "../sources/extra_files/${src_id}"; then
-        sudo cp -a ../sources/extra_files/$src_id/. "$dest_dir"
+        cp -a ../sources/extra_files/$src_id/. "$dest_dir"
     fi
 
 }
