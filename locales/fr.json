@@ -153,7 +153,7 @@
     "packages_upgrade_critical_later": "Les paquets critiques ({packages:s}) seront mis à jour ultérieurement",
     "packages_upgrade_failed": "Impossible de mettre à jour tous les paquets",
     "path_removal_failed": "Impossible de supprimer le chemin {:s}",
-    "pattern_backup_archive_name": "Doit être un nom de fichier valide composé de caractères alphanumérique et -_. uniquement",
+    "pattern_backup_archive_name": "Doit être un nom de fichier valide composé uniquement de caractères alphanumériques et de -_.",
     "pattern_domain": "Doit être un nom de domaine valide (ex : mon-domaine.org)",
     "pattern_email": "Doit être une adresse courriel valide (ex. : pseudo@domain.org)",
     "pattern_firstname": "Doit être un prénom valide",
