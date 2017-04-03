@@ -2,7 +2,7 @@
 #
 # example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
 #
-# usage: ynh_get_plain_key key [subkey [subsubkey ...]]
+# usage: ynh_get_plain_key key [subkey [subsubkey $YNH_EXECUTION_DIR/...]]
 # | ret: string - the key's value
 ynh_get_plain_key() {
     prefix="#"
@@ -31,7 +31,7 @@ ynh_get_plain_key() {
 # 
 # SOURCE_URL=Address to download the app archive
 # SOURCE_SUM=Control sum
-# # (Optional) Programm to check the integrity (sha256sum, md5sum...)
+# # (Optional) Programm to check the integrity (sha256sum, md5sum$YNH_EXECUTION_DIR/...)
 # # default: sha256
 # SOURCE_SUM_PRG=sha256
 # # (Optional) Archive format
@@ -67,12 +67,12 @@ ynh_setup_source () {
     
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    local src_url=$(grep 'SOURCE_URL=' "../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "../conf/${src_id}.src" | cut -d= -f2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "../conf/${src_id}.src" | cut -d= -f2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "../conf/${src_id}.src" | cut -d= -f2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "../conf/${src_id}.src" | cut -d= -f2-)
+    local src_url=$(grep 'SOURCE_URL=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
     
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -121,18 +121,18 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if (( $(find ../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
+    if (( $(find $YNH_EXECUTION_DIR/../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
         local old_dir=$(pwd)
         (cd "$dest_dir" \
-            && for p in $old_dir/../sources/patches/${src_id}-*.patch; do \
+            && for p in $YNH_EXECUTION_DIR/../sources/patches/${src_id}-*.patch; do \
                 patch -p1 < $p; done) \
             || ynh_die "Unable to apply patches"
         cd $old_dir
     fi
 
     # Add supplementary files
-    if test -e "../sources/extra_files/${src_id}"; then
-        cp -a ../sources/extra_files/$src_id/. "$dest_dir"
+    if test -e "$YNH_EXECUTION_DIR/../sources/extra_files/${src_id}"; then
+        cp -a $YNH_EXECUTION_DIR/../sources/extra_files/$src_id/. "$dest_dir"
     fi
 
 }
