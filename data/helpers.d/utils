@@ -25,15 +25,37 @@ ynh_get_plain_key() {
     done
 }
 
-# Download and uncompress the source from app.src
+# Download, check integrity, uncompress and patch the source from app.src
 #
 # The file conf/app.src need to contains:
 # 
-# src_url="Address to download the app archive"
-# src_sum="Control sum"
-# src_format="tar.gz" # (Optional) default value: tar.gz
-# src_in_subdir=false # (Optional) Put false if source are directly in the archive root
-# src_filename="example.tar.gz" (Optionnal) default value: ${src_id}.${src_format}
+# SOURCE_URL=Address to download the app archive
+# SOURCE_SUM=Control sum
+# # (Optional) Programm to check the integrity (sha256sum, md5sum...)
+# # default: sha256
+# SOURCE_SUM_PRG=sha256
+# # (Optional) Archive format
+# # default: tar.gz
+# SOURCE_FORMAT=tar.gz
+# # (Optional) Put false if source are directly in the archive root
+# # default: true
+# SOURCE_IN_SUBDIR=false
+# # (Optionnal) Name of the local archive (offline setup support)
+# # default: ${src_id}.${src_format}
+# SOURCE_FILENAME=example.tar.gz 
+#
+# Details:
+# This helper download sources from SOURCE_URL if there is no local source
+# archive in /opt/yunohost-apps-src/APP_ID/SOURCE_FILENAME
+# 
+# Next, it check the integrity with "SOURCE_SUM_PRG -c --status" command.
+# 
+# If it's ok, the source archive will be uncompress in $dest_dir. If the
+# SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
+# removed.
+#
+# Finally, patches named sources/patches/${src_id}-*.patch and extra files in
+# sources/extra_files/$src_id will be applyed to dest_dir
 #
 #
 # usage: ynh_setup_source dest_dir [source_id]
@@ -42,31 +64,34 @@ ynh_get_plain_key() {
 ynh_setup_source () {
     local dest_dir=$1
     local src_id=${2:-app} # If the argument is not given, source_id equal "app"
-    # Default value
-    # local src_format="tar.gz"
-    local src_sumprg="sha256sum"
-    local src_filename="${src_id}.${src_format}"
-    local src_in_subdir=true #false if source are directly in the archive root   
-
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    source ../conf/${src_id}.src
+    local src_url=$(grep 'SOURCE_URL=' "../conf/${src_id}.src" | cut -d= -f2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "../conf/${src_id}.src" | cut -d= -f2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "../conf/${src_id}.src" | cut -d= -f2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "../conf/${src_id}.src" | cut -d= -f2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "../conf/${src_id}.src" | cut -d= -f2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "../conf/${src_id}.src" | cut -d= -f2-)
+    
+    # Default value
+    src_sumprg=${src_sumprg:-sha256sum}
+    src_in_subdir=${src_in_subdir:-true}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
-    if [ src_filename = "" ] ; then
+    if [ "$src_filename" = "" ] ; then
         src_filename="${src_id}.${src_format}"
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
 
-    if test -e "$local_source"
-    then	# Use the local source file if it is present
-    	cp $local_src $src_filename
-    else	# If not, download the source
-    	wget -nv -O $src_filename $src_url
+    if test -e "$local_src"
+    then    # Use the local source file if it is present
+        cp $local_src $src_filename
+    else    # If not, download the source
+        wget -nv -O $src_filename $src_url
     fi
 
     # Check the control sum
-    echo "$src_checksum $src_filename" \
-        | ${src_sumprg} -c --status || ynh_die "Corrupt source"
+    echo "${src_sum} ${src_filename}" | ${src_sumprg} -c --status \
+        || ynh_die "Corrupt source"
 
     # Extract source into the app dir
     sudo mkdir -p "$dest_dir"
@@ -94,16 +119,18 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if test -f ../sources/patches/${source_id}-*.patch; then
+    if (( $(find ../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
+        local old_dir=$(pwd)
         (cd "$dest_dir" \
-            && for p in ../sources/patches/${source_id}-*.patch; do \
+            && for p in $old_dir/../sources/patches/${src_id}-*.patch; do \
                 sudo patch -p1 < $p; done) \
             || ynh_die "Unable to apply patches"
+        cd $old_dir
     fi
 
     # Add supplementary files
-    if test -e "../sources/extra_files"; then
-        sudo cp -a ../sources/extra_files/. "$dest_dir"
+    if test -e "../sources/extra_files/${src_id}"; then
+        sudo cp -a ../sources/extra_files/$src_id/. "$dest_dir"
     fi
 
 }
