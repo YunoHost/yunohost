@@ -70,6 +70,9 @@ def backup_create(name=None, description=None, output_directory=None,
         ignore_apps -- Do not backup apps
 
     """
+
+    import csv
+
     # TODO: Add a 'clean' argument to clean output directory
     tmp_dir = None
     env_var = {}
@@ -155,16 +158,19 @@ def backup_create(name=None, description=None, output_directory=None,
     # Initialize backup list
     backup_csv_path = os.path.join(tmp_dir, 'backup.csv')
     try:
-        backup_csv = open(backup_csv_path, 'a')
-    except:
+        backup_file = open(backup_csv_path, 'w')
+        field_names = ['source', 'dest']
+        backup_csv = csv.DictWriter(backup_csv, fieldnames=field_names, \
+                                    quoting=csv.QUOTE_ALL)
+    except (IOError, OSError, csv.Error):
         logger.error(m18n.n('backup_csv_creation_failed'))
 
     def add_into_list(source,dest):
         try:
             if dest.endswith("/"):
-                dest=dest+os.path.basename(source)
-            backup_csv.write("{0}\t{1}\n".format(source,dest))
-        except:
+                dest=os.path.join(dest,os.path.basename(source))
+            backup_csv.writerow({'source': source, 'dest': dest})
+        except csv.Error:
             logger.error(m18n.n('backup_csv_addition_failed'))
 
     # Run system hooks
@@ -283,14 +289,15 @@ def backup_create(name=None, description=None, output_directory=None,
         add_into_list(os.path.join(tmp_dir,'conf'),'conf')
     if os.path.isdir(os.path.join(tmp_dir,'data')):
         add_into_list(os.path.join(tmp_dir,'data'),'data')
-    backup_csv.close()
+    backup_file.close()
     os.system("cp "+tmp_dir+"/backup.csv ~/")
+
     # Calculate total size
     backup_size = 0
-    with open(backup_csv_path, "r") as backup_csv:
-        for line in backup_csv:
-            line = line.rstrip('\n')
-            source, dest = line.split("\t", 1)
+    with open(backup_csv_path, "r") as backup_file:
+        backup_csv = csv.DictReader(backup_file, fieldnames=field_names)
+        for row in backup_csv:
+            source = row['source']
             if source != os.path.join(tmp_dir,'info.json'):
                 backup_size += int(subprocess.check_output(
                     ['du', '-sb', source]).split()[0].decode('utf-8'))
@@ -313,11 +320,11 @@ def backup_create(name=None, description=None, output_directory=None,
     # Copy files (retro-compatibility)
     if tmp_dir == output_directory:
 
-        with open(backup_csv_path, "r") as backup_csv:
-            for line in backup_csv:
-                line = line.rstrip('\n')
-                source, dest = line.split("\t", 1)
-                dest = os.path.join(tmp_dir, dest)
+        with open(backup_csv_path, "r") as backup_file:
+            backup_csv = csv.DictReader(backup_file, fieldnames=field_names)
+            for row in backup_csv:
+                source = row['source']
+                dest = os.path.join(tmp_dir, row['dest'])
                 if source == dest:
                     continue
 
@@ -347,11 +354,10 @@ def backup_create(name=None, description=None, output_directory=None,
 
         # Add files to the archive
         try:
-            with open(backup_csv_path, "r") as backup_csv:
-                for line in backup_csv:
-                    line = line.rstrip('\n')
-                    source, dest = line.split("\t", 1)
-                    tar.add(source, arcname=dest)
+            with open(backup_csv_path, "r") as backup_file:
+                backup_csv = csv.DictReader(backup_file, fieldnames=field_names)
+                for row in backup_csv:
+                    tar.add(row['source'], arcname=row['dest'])
                 tar.close()
         except IOError as e:
             logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
