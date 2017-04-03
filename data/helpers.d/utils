@@ -114,7 +114,7 @@ ynh_setup_source () {
             strip="--strip-components 1"
         fi
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
-            sudo tar -xf $src_filename -C "$dest_dir" $strip
+            tar -xf $src_filename -C "$dest_dir" $strip
         else
             ynh_die "Archive format unrecognized."
         fi
