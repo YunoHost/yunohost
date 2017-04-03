@@ -326,6 +326,9 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         cmd_script = path
 
+    # Add Execution dir to environment var
+    env['YNH_EXECUTION_DIR'] = chdir
+
     # Construct command to execute
     if user == "root":
         command = ['sh', '-c']
