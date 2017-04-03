@@ -64,6 +64,7 @@ ynh_get_plain_key() {
 ynh_setup_source () {
     local dest_dir=$1
     local src_id=${2:-app} # If the argument is not given, source_id equal "app"
+    
     # Load value from configuration file (see above for a small doc about this file
     # format)
     local src_url=$(grep 'SOURCE_URL=' "../conf/${src_id}.src" | cut -d= -f2-)
@@ -96,15 +97,16 @@ ynh_setup_source () {
     # Extract source into the app dir
     sudo mkdir -p "$dest_dir"
     if [ "$src_format" = "zip" ]
-    then # Zip format
+    then 
+        # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir ; then
-            local tmp_dir=$(mktemp -d)
-            unzip -quo $src_filename -d "$tmp_dir"
+            local tmp_dir=$(sudo mktemp -d)
+            sudo unzip -quo $src_filename -d "$tmp_dir"
             sudo cp -a $tmp_dir/*/. "$dest_dir"
             ynh_secure_remove "$tmp_dir"
         else
-            unzip -quo $src_filename -d "$dest_dir"
+            sudo nzip -quo $src_filename -d "$dest_dir"
         fi
     else
         local strip=""
