@@ -152,7 +152,8 @@ def app_fetchlist(url=None, name=None):
         if applist_request.status_code != 200:
             logger.error(m18n.n('appslist_retrieve_error',
                                 applist=name,
-                                error="404, not found"))
+                                error="Server returned code %s " %
+                                str(applist_request.status_code)))
             continue
 
         # Validate app list format
