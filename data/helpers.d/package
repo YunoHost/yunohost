@@ -35,7 +35,7 @@ ynh_apt() {
 #
 # usage: ynh_package_update
 ynh_package_update() {
-    ynh_apt --no-remove update
+    ynh_apt update
 }
 
 # Install package(s)
