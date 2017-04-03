@@ -37,7 +37,9 @@ ynh_backup() {
     # Write file to backup into backup_list
     local REL_DIR="${YNH_APP_RELATIVE_BACKUP_DIR:-}"
     [[ -n "${REL_DIR:-}" ]] && REL_DIR="${REL_DIR}/"
-    (echo -n "${SRCPATH}"; echo -en "\t"; echo "${REL_DIR}${DESTPATH}") | \
+    local SRC=$(echo "${SRCPATH}" | sed -r 's/"/\"\"/g')
+    local DEST=$(echo "${REL_DIR}${DESTPATH}" | sed -r 's/"/\"\"/g')
+    (echo -n "\"${SRC}\",\"${DEST}\"") | \
         eval $SUDO_CMD tee -a ${YNH_BACKUP_CSV}
 }
 
