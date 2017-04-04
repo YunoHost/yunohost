@@ -391,12 +391,9 @@ app:
 
         ### app_fetchlist()
         fetchlist:
-            action_help: Fetch application lists from app servers.
+            action_help: Fetch application lists from app servers, or register a new one.
             api: PUT /appslists
             arguments:
-                -u:
-                    full: --url
-                    help: URL of remote JSON list. To be specified with -n to register a new list.
                 -n:
                     full: --name
                     help: Name of the list to fetch (fetches all registered lists if empty)
@@ -404,6 +401,9 @@ app:
                         pattern: &pattern_listname
                             - !!str ^[a-z0-9_]+$
                             - "pattern_listname"
+                -u:
+                    full: --url
+                    help: URL of a new application list to register. To be specified with -n.
 
         ### app_listlists()
         listlists:
