@@ -52,7 +52,7 @@ APPS_PATH         = '/usr/share/yunohost/apps'
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
 INSTALL_TMP       = '/var/cache/yunohost'
 APP_TMP_FOLDER    = INSTALL_TMP + '/from_file'
-APPLISTS_JSON     = '/etc/yunohost/applists.json'
+APPSLISTS_JSON     = '/etc/yunohost/appslists.json'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -71,15 +71,15 @@ def app_listlists():
 
     """
 
-    # Migrate applist system if needed
+    # Migrate appslist system if needed
     # XXX move to a migration when those are implemented
-    if _using_legacy_applist_system():
-        _migrate_applist_system()
+    if _using_legacy_appslist_system():
+        _migrate_appslist_system()
 
     # Get the list
-    applist_list = _read_applist_list()
+    appslist_list = _read_appslist_list()
 
-    return applist_list
+    return appslist_list
 
 
 def app_fetchlist(url=None, name=None):
@@ -90,102 +90,101 @@ def app_fetchlist(url=None, name=None):
         name -- Name of the list
         url -- URL of remote JSON list
     """
-    # If needed, create folder where actual applists are stored
+    # If needed, create folder where actual appslists are stored
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
-    # Migrate applist system if needed
+    # Migrate appslist system if needed
     # XXX move that to a migration once they are finished
-    if _using_legacy_applist_system():
-        _migrate_applist_system()
+    if _using_legacy_appslist_system():
+        _migrate_appslist_system()
 
-    # Read the list of applist...
-    applists = _read_applist_list()
+    # Read the list of appslist...
+    appslists = _read_appslist_list()
 
-    # Determine the list of applist to be fetched
-    applists_to_be_fetched = []
+    # Determine the list of appslist to be fetched
+    appslists_to_be_fetched = []
 
     # If a url and and a name is given, try to register new list,
     # the fetch only this list
     if url is not None:
         if name:
-            _register_new_applist(url, name)
-            # Refresh the applists dict
-            applists = _read_applist_list()
-            applists_to_be_fetched = [name]
+            _register_new_appslist(url, name)
+            # Refresh the appslists dict
+            appslists = _read_appslist_list()
+            appslists_to_be_fetched = [name]
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
 
-    # If a name is given, look for an applist with that name and fetch it
+    # If a name is given, look for an appslist with that name and fetch it
     elif name is not None:
-        if name not in applists.keys():
+        if name not in appslists.keys():
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('appslist_unknown', name=name))
+                                  m18n.n('appslist_unknown', appslist=name))
         else:
-            applists_to_be_fetched = [name]
+            appslists_to_be_fetched = [name]
 
     # Otherwise, fetch all lists
     else:
-        applists_to_be_fetched = applists.keys()
+        appslists_to_be_fetched = appslists.keys()
 
-    # Fetch all applists to be fetched
-    for name in applists_to_be_fetched:
+    # Fetch all appslists to be fetched
+    for name in appslists_to_be_fetched:
 
-        url = applists[name]["url"]
+        url = appslists[name]["url"]
 
         logger.debug("Attempting to fetch list %s at %s" % (name, url))
 
         # Download file
         try:
-            applist_request = requests.get(url, timeout=30)
+            appslist_request = requests.get(url, timeout=30)
         except requests.exceptions.SSLError:
             logger.error(m18n.n('appslist_retrieve_error',
-                                applist=name,
+                                appslist=name,
                                 error="SSL connection error"))
             continue
         except Exception as e:
             logger.error(m18n.n('appslist_retrieve_error',
-                                applist=name,
+                                appslist=name,
                                 error=str(e)))
             continue
-        if applist_request.status_code != 200:
+        if appslist_request.status_code != 200:
             logger.error(m18n.n('appslist_retrieve_error',
-                                applist=name,
+                                appslist=name,
                                 error="Server returned code %s " %
-                                str(applist_request.status_code)))
+                                str(appslist_request.status_code)))
             continue
 
         # Validate app list format
         # TODO / Possible improvement : better validation for app list (check
         # that json fields actually look like an app list and not any json
         # file)
-        applist = applist_request.text
+        appslist = appslist_request.text
         try:
-            json.loads(applist)
+            json.loads(appslist)
         except ValueError, e:
             logger.error(m18n.n('appslist_retrieve_bad_format',
-                                applist=name))
+                                appslist=name))
             continue
 
         # Write app list to file
         list_file = '%s/%s.json' % (REPO_PATH, name)
         try:
             with open(list_file, "w") as f:
-                f.write(applist)
+                f.write(appslist)
         except Exception as e:
             raise MoulinetteError(errno.EIO,
-                                  "Error while writing applist %s: %s" %
+                                  "Error while writing appslist %s: %s" %
                                   (name, str(e)))
 
         now = int(time.time())
-        applists[name]["lastUpdate"] = now
+        appslists[name]["lastUpdate"] = now
 
-        # TODO display app list name
-        logger.success(m18n.n('appslist_fetched', name=name))
+        logger.success(m18n.n('appslist_fetched', appslist=name))
 
-    # Write updated list of applist
-    _write_applist_list(applists)
+    # Write updated list of appslist
+    _write_appslist_list(appslists)
 
 
 def app_removelist(name):
@@ -196,10 +195,10 @@ def app_removelist(name):
         name -- Name of the list to remove
 
     """
-    applists = _read_applist_list()
+    appslists = _read_appslist_list()
 
-    # Make sure we know this applist
-    if name not in applists.keys():
+    # Make sure we know this appslist
+    if name not in appslists.keys():
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
 
     # Remove json
@@ -207,9 +206,9 @@ def app_removelist(name):
     if os.path.exists(json_path):
         os.remove(json_path)
 
-    # Forget about this applist
-    del applists[name]
-    _write_applist_list(applists)
+    # Forget about this appslist
+    del appslists[name]
+    _write_appslist_list(appslists)
 
     logger.success(m18n.n('appslist_removed'))
 
@@ -232,18 +231,18 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     app_dict = {}
     list_dict = {} if raw else []
 
-    applists = _read_applist_list()
+    appslists = _read_appslist_list()
 
-    for applist in applists.keys():
+    for appslist in appslists.keys():
 
-        json_path = "%s/%s.json" % (REPO_PATH, applist)
+        json_path = "%s/%s.json" % (REPO_PATH, appslist)
         if not os.path.exists(json_path):
-            app_fetchlist(name=applist)
+            app_fetchlist(name=appslist)
 
         with open(json_path) as json_list:
             for app, info in json.loads(str(json_list.read())).items():
                 if app not in app_dict:
-                    info['repository'] = applist
+                    info['repository'] = appslist
                     app_dict[app] = info
 
     # Get app list from the app settings directory
@@ -1729,63 +1728,63 @@ def _parse_app_instance_name(app_instance_name):
     return (appid, app_instance_nb)
 
 
-def _using_legacy_applist_system():
+def _using_legacy_appslist_system():
     """
     Return True if we're using the old fetchlist scheme.
-    This is determined by the presence of some cron job yunohost-applist-foo
+    This is determined by the presence of some cron job yunohost-appslist-foo
     """
 
-    return glob.glob("/etc/cron.d/yunohost-applist-*") != []
+    return glob.glob("/etc/cron.d/yunohost-appslist-*") != []
 
 
-def _migrate_applist_system():
+def _migrate_appslist_system():
     """
     Migrate from the legacy fetchlist system to the new one
     """
-    legacy_crons = glob.glob("/etc/cron.d/yunohost-applist-*")
+    legacy_crons = glob.glob("/etc/cron.d/yunohost-appslist-*")
 
     for cron_path in legacy_crons:
-        applist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
-        logger.info(m18n.n('appslist_migrating', name=applist_name))
+        appslist_name = os.path.basename(cron_path).replace("yunohost-appslist-", "")
+        logger.info(m18n.n('appslist_migrating', name=appslist_name))
 
-        # Parse applist url in cron
+        # Parse appslist url in cron
         cron_file_content = open(cron_path).read().strip()
-        applist_url_parse = re.search("-u (https?://[^ ]+)", cron_file_content)
+        appslist_url_parse = re.search("-u (https?://[^ ]+)", cron_file_content)
 
         # Abort if we did not find an url
-        if not applist_url_parse or not applist_url_parse.groups():
+        if not appslist_url_parse or not appslist_url_parse.groups():
             # Bkp the old cron job somewhere else
-            bkp_file = "/etc/yunohost/%s.oldlist.bkp" % applist_name
+            bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
             os.rename(cron_path, bkp_file)
             # Notice the user
             logger.warning(m18n.n('appslist_could_not_migrate',
-                           name=applist_name,
+                           name=appslist_name,
                            bkp_file=bkp_file))
         # Otherwise, register the list and remove the legacy cron
         else:
-            applist_url = applist_url_parse.groups()[0]
+            appslist_url = appslist_url_parse.groups()[0]
             try:
-                _register_new_applist(applist_url, applist_name)
+                _register_new_appslist(appslist_url, appslist_name)
             # Might get an exception if two legacy cron jobs conflict
             # in terms of url...
             except Exception as e:
                 logger.error(str(e))
                 # Bkp the old cron job somewhere else
-                bkp_file = "/etc/yunohost/%s.oldlist.bkp" % applist_name
+                bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
                 os.rename(cron_path, bkp_file)
                 # Notice the user
                 logger.warning(m18n.n('appslist_could_not_migrate',
-                               name=applist_name,
+                               name=appslist_name,
                                bkp_file=bkp_file))
             else:
                 os.remove(cron_path)
 
 
-def _install_applist_fetch_cron():
+def _install_appslist_fetch_cron():
 
-    cron_job_file = "/etc/cron.daily/yunohost-fetch-applists"
+    cron_job_file = "/etc/cron.daily/yunohost-fetch-appslists"
 
-    logger.debug("Installing applist fetch cron job")
+    logger.debug("Installing appslist fetch cron job")
 
     with open(cron_job_file, "w") as f:
         f.write('#!/bin/bash\n\nyunohost app fetchlist > /dev/null 2>&1\n')
@@ -1803,74 +1802,74 @@ def _set_permissions(path, user, group, permissions):
     os.chmod(path, permissions)
 
 
-def _read_applist_list():
+def _read_appslist_list():
     """
-    Read the json corresponding to the list of applists
+    Read the json corresponding to the list of appslists
     """
 
     # If file does not exists yet, return empty dict
-    if not os.path.exists(APPLISTS_JSON):
+    if not os.path.exists(APPSLISTS_JSON):
         return {}
 
     # Read file content
-    with open(APPLISTS_JSON, "r") as f:
-        applists_json = f.read()
+    with open(APPSLISTS_JSON, "r") as f:
+        appslists_json = f.read()
 
     # Parse json, throw exception if what we got from file is not a valid json
     try:
-        applists = json.loads(applists_json)
+        appslists = json.loads(appslists_json)
     except ValueError:
         raise MoulinetteError(errno.EBADR,
-                              m18n.n('appslist_corrupted_json', filename=APPLISTS_JSON))
+                              m18n.n('appslist_corrupted_json', filename=APPSLISTS_JSON))
 
-    return applists
+    return appslists
 
 
-def _write_applist_list(applist_lists):
+def _write_appslist_list(appslist_lists):
     """
-    Update the json containing list of applists
+    Update the json containing list of appslists
     """
 
-    # Write applist list
+    # Write appslist list
     try:
-        with open(APPLISTS_JSON, "w") as f:
-            json.dump(applist_lists, f)
+        with open(APPSLISTS_JSON, "w") as f:
+            json.dump(appslist_lists, f)
     except Exception as e:
             raise MoulinetteError(errno.EIO,
-                                  "Error while writing list of applist %s: %s" %
-                                  (APPLISTS_JSON, str(e)))
+                                  "Error while writing list of appslist %s: %s" %
+                                  (APPSLISTS_JSON, str(e)))
 
 
-def _register_new_applist(url, name):
+def _register_new_appslist(url, name):
     """
-    Add a new applist to be fetched regularly.
+    Add a new appslist to be fetched regularly.
     Raise an exception if url or name conflicts with an existing list.
     """
 
-    applist_list = _read_applist_list()
+    appslist_list = _read_appslist_list()
 
     # Check if name conflicts with an existing list
-    if name in applist_list:
+    if name in appslist_list:
         raise MoulinetteError(errno.EEXIST,
                               m18n.n('appslist_name_already_tracked', name=name))
 
     # Check if url conflicts with an existing list
-    known_applist_urls = [applist["url"] for _, applist in applist_list.items()]
+    known_appslist_urls = [appslist["url"] for _, appslist in appslist_list.items()]
 
-    if url in known_applist_urls:
+    if url in known_appslist_urls:
         raise MoulinetteError(errno.EEXIST,
                               m18n.n('appslist_url_already_tracked', url=url))
 
-    logger.debug("Registering new applist %s at %s" % (name, url))
+    logger.debug("Registering new appslist %s at %s" % (name, url))
 
-    applist_list[name] = {
+    appslist_list[name] = {
         "url": url,
         "lastUpdate": None
     }
 
-    _write_applist_list(applist_list)
+    _write_appslist_list(appslist_list)
 
-    _install_applist_fetch_cron()
+    _install_appslist_fetch_cron()
 
 
 def is_true(arg):
