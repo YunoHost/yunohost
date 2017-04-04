@@ -199,7 +199,7 @@ def app_removelist(name):
 
     # Make sure we know this appslist
     if name not in appslists.keys():
-        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
+        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
 
     # Remove json
     json_path = '%s/%s.json' % (REPO_PATH, name)
@@ -210,7 +210,7 @@ def app_removelist(name):
     del appslists[name]
     _write_appslist_list(appslists)
 
-    logger.success(m18n.n('appslist_removed'))
+    logger.success(m18n.n('appslist_removed', appslist=name))
 
 
 def app_list(filter=None, raw=False, installed=False, with_backup=False):
@@ -1745,7 +1745,7 @@ def _migrate_appslist_system():
 
     for cron_path in legacy_crons:
         appslist_name = os.path.basename(cron_path).replace("yunohost-appslist-", "")
-        logger.info(m18n.n('appslist_migrating', name=appslist_name))
+        logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
 
         # Parse appslist url in cron
         cron_file_content = open(cron_path).read().strip()
@@ -1758,7 +1758,7 @@ def _migrate_appslist_system():
             os.rename(cron_path, bkp_file)
             # Notice the user
             logger.warning(m18n.n('appslist_could_not_migrate',
-                           name=appslist_name,
+                           appslist=appslist_name,
                            bkp_file=bkp_file))
         # Otherwise, register the list and remove the legacy cron
         else:
@@ -1774,7 +1774,7 @@ def _migrate_appslist_system():
                 os.rename(cron_path, bkp_file)
                 # Notice the user
                 logger.warning(m18n.n('appslist_could_not_migrate',
-                               name=appslist_name,
+                               appslist=appslist_name,
                                bkp_file=bkp_file))
             else:
                 os.remove(cron_path)
