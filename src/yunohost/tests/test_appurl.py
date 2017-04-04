@@ -40,11 +40,11 @@ def test_normalize_domain_path():
 def test_urlavailable():
 
     # Except the maindomain/macnuggets to be available
-    assert domain_url_available(auth, maindomain, "/macnuggets")["available"]
+    assert domain_url_available(auth, maindomain, "/macnuggets")
 
     # We don't know the domain yolo.swag
     with pytest.raises(MoulinetteError):
-        assert domain_url_available(auth, "yolo.swag", "/macnuggets")["available"]
+        assert domain_url_available(auth, "yolo.swag", "/macnuggets")
 
 
 def test_registerurl():
@@ -52,7 +52,7 @@ def test_registerurl():
     app_install(auth, "./tests/apps/register_url_app_ynh",
             args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"))
 
-    assert not domain_url_available(auth, maindomain, "/urlregisterapp")["available"]
+    assert not domain_url_available(auth, maindomain, "/urlregisterapp")
 
     # Try installing at same location
     with pytest.raises(MoulinetteError):

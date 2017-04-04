@@ -311,7 +311,7 @@ def domain_url_available(auth, domain, path):
                 available = False
                 break
 
-    return {"available": available}
+    return available
 
 
 def get_public_ip(protocol=4):

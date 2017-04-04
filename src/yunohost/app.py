@@ -927,9 +927,7 @@ def app_register_url(auth, app, domain, path):
                                   m18n.n('app_already_installed_cant_change_url'))
 
     # Check the url is available
-
-    url_available = domain_url_available(auth, domain, path)["available"]
-    if not url_available:
+    if not domain_url_available(auth, domain, path):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_location_unavailable'))
 
