@@ -567,19 +567,21 @@ def tools_diagnosis(auth, private=False):
     return diagnosis
 
 def tools_public_key():
-    default_key_path = '/root/.ssh/id_rsa_ynh'
-    pub = os.path.exists('/root/.ssh/id_rsa_ynh.pub')
-    private = os.path.exists('/root/.ssh/id_rsa_ynh')
+    key_path = '/root/.ssh/id_rsa_ynh'
+    pub = os.path.exists(key_path+'.pub')
+    private = os.path.exists(key_path)
 
     if pub and (not private):
-        os.remove('/root/.ssh/id_rsa_ynh.pub')
+        os.remove(key_path+'.pub')
+        pub = not pub
     elif (not pub) and private:
-        os.remove('/root/.ssh/id_rsa_ynh')
+        os.remove(key_path)
+        private = not private
 
     if (not pub) and (not private):
-        os.system('ssh-keygen -P "" -f %s >/dev/null' % default_key_path)
+        os.system('ssh-keygen -P "" -f %s >/dev/null' % key_path)
 
-    with open('/root/.ssh/id_rsa_ynh.pub', 'rt') as f:
+    with open(key_path+'.pub', 'rt') as f:
         return f.readline().strip('\n')
         
 
