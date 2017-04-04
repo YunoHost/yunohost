@@ -1345,6 +1345,11 @@ tools:
                     help: Show private data (domain, IP)
                     action: store_true
 
+        ### tools_public_key()
+        public-key:
+            action_help: Get public key or generate a new one
+            api: GET /public-key
+
 
 #############################
 #           Hook            #

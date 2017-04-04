@@ -565,3 +565,23 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
     return diagnosis
+
+def tools_public_key():
+    default_key_path = '/root/.ssh/id_rsa_ynh'
+    pub = os.path.exists('/root/.ssh/id_rsa_ynh.pub')
+    private = os.path.exists('/root/.ssh/id_rsa_ynh')
+
+    if pub and (not private):
+        os.remove('/root/.ssh/id_rsa_ynh.pub')
+    elif (not pub) and private:
+        os.remove('/root/.ssh/id_rsa_ynh')
+
+    if (not pub) and (not private):
+        os.system('ssh-keygen -P "" -f %s >/dev/null' % default_key_path)
+
+    with open('/root/.ssh/id_rsa_ynh.pub', 'rt') as f:
+        return f.readline().strip('\n')
+        
+
+
+
