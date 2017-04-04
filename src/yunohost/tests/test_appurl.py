@@ -3,8 +3,7 @@ import pytest
 from moulinette.core import MoulinetteError, init_authenticator
 
 from yunohost.app import app_install, app_remove
-from yunohost.tools import _normalize_domain_path, tools_urlavailable
-from yunohost.domain import _get_maindomain
+from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
 
 # Instantiate LDAP Authenticator
 auth_identifier = ('ldap', 'ldap-anonymous')
@@ -41,11 +40,11 @@ def test_normalize_domain_path():
 def test_urlavailable():
 
     # Except the maindomain/macnuggets to be available
-    assert tools_urlavailable(auth, maindomain, "/macnuggets")["available"]
+    assert domain_url_available(auth, maindomain, "/macnuggets")["available"]
 
     # We don't know the domain yolo.swag
     with pytest.raises(MoulinetteError):
-        assert tools_urlavailable(auth, "yolo.swag", "/macnuggets")["available"]
+        assert domain_url_available(auth, "yolo.swag", "/macnuggets")["available"]
 
 
 def test_registerurl():
@@ -53,7 +52,7 @@ def test_registerurl():
     app_install(auth, "./tests/apps/register_url_app_ynh",
             args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"))
 
-    assert not tools_urlavailable(auth, maindomain, "/urlregisterapp")["available"]
+    assert not domain_url_available(auth, maindomain, "/urlregisterapp")["available"]
 
     # Try installing at same location
     with pytest.raises(MoulinetteError):

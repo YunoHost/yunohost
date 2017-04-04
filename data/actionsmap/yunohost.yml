@@ -368,6 +368,21 @@ domain:
                     help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
                     action: store_true
 
+        ### domain_url_available()
+        url-available:
+            action_help: Check availability of a web path
+            api: GET /domain/urlavailable
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                domain:
+                    help: The domain for the web path (e.g. your.domain.tld)
+                    extra:
+                        pattern: *pattern_domain
+                path:
+                    help: The path to check (e.g. /coffee)
+
 
          ### domain_info()
 #        info:
@@ -579,8 +594,8 @@ app:
                     full: --app
                     help: Write domain & path to app settings for further checks
 
-        ### app_registerurl()
-        registerurl:
+        ### app_register_url()
+        register-url:
             action_help: Book/register a web path for a given app
             api: PUT /tools/registerurl
             configuration:
@@ -1367,21 +1382,6 @@ tools:
                     full: --private
                     help: Show private data (domain, IP)
                     action: store_true
-
-        ### tools_urlavailable()
-        urlavailable:
-            action_help: Check availability of a web path
-            api: GET /tools/urlavailable
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-            arguments:
-                domain:
-                    help: The domain for the web path (e.g. your.domain.tld)
-                    extra:
-                        pattern: *pattern_domain
-                path:
-                    help: The path to check (e.g. /coffee)
 
 
 #############################

@@ -38,7 +38,7 @@ import apt.progress
 
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, app_map
+from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp
@@ -555,56 +555,3 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
     return diagnosis
-
-
-def tools_urlavailable(auth, domain, path):
-    """
-    Check availability of a web path
-
-    Keyword argument:
-        domain -- The domain for the web path (e.g. your.domain.tld)
-        path -- The path to check (e.g. /coffee)
-    """
-
-    domain, path = _normalize_domain_path(domain, path)
-
-    # Abort if domain is unknown
-    if domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
-
-    # Fetch apps map
-    apps_map = app_map(raw=True)
-
-    # Loop through all apps to check if path is taken by one of them
-    available = True
-    if domain in apps_map:
-        # Loop through apps
-        for p, a in apps_map[domain].items():
-            if path == p:
-                available = False
-                break
-            # We also don't want conflicts with other apps starting with
-            # same name
-            elif path.startswith(p) or p.startswith(path):
-                available = False
-                break
-
-    return {"available": available}
-
-
-def _normalize_domain_path(domain, path):
-
-    # We want url to be of the format :
-    #  some.domain.tld/foo
-
-    # Remove http/https prefix if it's there
-    if domain.startswith("https://"):
-        domain = domain[len("https://"):]
-    elif domain.startswith("http://"):
-        domain = domain[len("http://"):]
-
-    # Remove trailing slashes
-    domain = domain.rstrip("/")
-    path = "/" + path.strip("/")
-
-    return domain, path

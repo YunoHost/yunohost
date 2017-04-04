@@ -899,7 +899,7 @@ def app_checkport(port):
                               m18n.n('port_unavailable', port=int(port)))
 
 
-def app_registerurl(auth, app, domain, path):
+def app_register_url(auth, app, domain, path):
     """
     Book/register a web path for a given app
 
@@ -911,7 +911,7 @@ def app_registerurl(auth, app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from tools import tools_urlavailable, _normalize_domain_path
+    from domain import domain_url_available, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -928,7 +928,7 @@ def app_registerurl(auth, app, domain, path):
 
     # Check the url is available
 
-    url_available = tools_urlavailable(auth, domain, path)["available"]
+    url_available = domain_url_available(auth, domain, path)["available"]
     if not url_available:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_location_unavailable'))
