@@ -1352,8 +1352,8 @@ tools:
                     help: Show private data (domain, IP)
                     action: store_true
 
-        ### tools_portavailable()
-        portavailable:
+        ### tools_port_available()
+        port-available:
             action_help: Check availability of a local port
             api: GET /tools/portavailable
             arguments:

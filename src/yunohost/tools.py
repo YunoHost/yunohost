@@ -558,7 +558,7 @@ def tools_diagnosis(auth, private=False):
     return diagnosis
 
 
-def tools_portavailable(port):
+def tools_port_available(port):
     """
     Check availability of a local port
 
