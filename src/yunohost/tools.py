@@ -164,7 +164,6 @@ def tools_maindomain(auth, new_domain=None):
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
     # Clear nsswitch cache for hosts to make sure hostname is resolved ...
-    service_regen_conf(['nsswitch'], force=True)
     subprocess.call(['nscd', '-i', 'hosts'])
 
     # Set hostname
@@ -312,6 +311,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
                                   m18n.n('yunohost_ca_creation_failed'))
 
     # New domain config
+    service_regen_conf(['nsswitch'], force=True)
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
 
