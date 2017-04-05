@@ -1349,6 +1349,9 @@ tools:
         public-key:
             action_help: Get public key or generate a new one
             api: GET /public-key
+            configuration:
+                authenticate: false
+                lock: false
 
 
 #############################
