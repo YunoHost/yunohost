@@ -391,28 +391,28 @@ app:
 
         ### app_fetchlist()
         fetchlist:
-            action_help: Fetch application list from app server
+            action_help: Fetch application lists from app servers, or register a new one.
             api: PUT /appslists
             arguments:
-                -u:
-                    full: --url
-                    help: URL of remote JSON list (default https://app.yunohost.org/official.json)
                 -n:
                     full: --name
-                    help: Name of the list (default yunohost)
+                    help: Name of the list to fetch (fetches all registered lists if empty)
                     extra:
                         pattern: &pattern_listname
                             - !!str ^[a-z0-9_]+$
                             - "pattern_listname"
+                -u:
+                    full: --url
+                    help: URL of a new application list to register. To be specified with -n.
 
         ### app_listlists()
         listlists:
-            action_help: List fetched lists
+            action_help: List registered application lists
             api: GET /appslists
 
         ### app_removelist()
         removelist:
-            action_help: Remove list from the repositories
+            action_help: Remove and forget about a given application list
             api: DELETE /appslists
             arguments:
                 name:

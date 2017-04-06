@@ -38,7 +38,7 @@ import apt.progress
 
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
+from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp
@@ -326,6 +326,15 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
+
+    # Setup the default official app list with cron job
+    try:
+        app_fetchlist(name="yunohost",
+                      url="https://app.yunohost.org/official.json")
+    except Exception as e:
+        logger.warning(str(e))
+
+    _install_appslist_fetch_cron()
 
     os.system('touch /etc/yunohost/installed')
 
