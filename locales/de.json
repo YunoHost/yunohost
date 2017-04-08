@@ -21,8 +21,8 @@
     "app_unknown": "Unbekannte App",
     "app_upgrade_failed": "{app:s} konnte nicht aktualisiert werden",
     "app_upgraded": "{app:s} wurde erfolgreich aktualisiert",
-    "appslist_fetched": "Appliste wurde erfolgreich heruntergelanden",
-    "appslist_removed": "Appliste wurde erfolgreich entfernt",
+    "appslist_fetched": "Appliste {appslist:s} wurde erfolgreich heruntergelanden",
+    "appslist_removed": "Appliste {appslist:s} wurde erfolgreich entfernt",
     "appslist_retrieve_error": "Entfernte Appliste kann nicht empfangen werden: {error}",
     "appslist_unknown": "Unbekannte Appliste",
     "ask_current_admin_password": "Derzeitiges Administrator-Kennwort",
@@ -131,7 +131,7 @@
     "packages_upgrade_critical_later": "Ein wichtiges Paket ({packages:s}) wird später aktualisiert",
     "packages_upgrade_failed": "Es konnten nicht alle Pakete aktualisiert werden",
     "path_removal_failed": "Pfad {:s} konnte nicht entfernt werden",
-    "pattern_backup_archive_name": "Ein gültiger Dateiname kann nur aus alphanumerischen und -_. bestehen",
+    "pattern_backup_archive_name": "Ein gültiger Dateiname kann nur aus maximal 30 alphanumerischen sowie  -_. Zeichen bestehen",
     "pattern_domain": "Muss ein gültiger Domainname sein (z.B. meine-domain.org)",
     "pattern_email": "Muss eine gültige E-Mail Adresse sein (z.B. someone@domain.org)",
     "pattern_firstname": "Muss ein gültiger Vorname sein",
@@ -278,5 +278,11 @@
     "certmanager_http_check_timeout": "Eine Zeitüberschreitung ist aufgetreten als der Server versuchte sich selbst über HTTP mit der öffentlichen IP (Domain {domain:s} mit der IP {ip:s}) zu erreichen. Möglicherweise ist dafür hairpinning oder eine misskonfigurierte Firewall/Router deines Servers dafür verantwortlich.",
     "certmanager_couldnt_fetch_intermediate_cert": "Eine Zeitüberschreitung ist aufgetreten als der Server versuchte die Teilzertifikate von Let's Encrypt zusammenzusetzen. Die Installation/Erneuerung des Zertifikats wurde abgebrochen - bitte versuche es später erneut.",
     "appslist_retrieve_bad_format": "Die empfangene Datei ist keine gültige Appliste",
-    "domain_hostname_failed": "Erstellen des neuen Hostnamens fehlgeschlagen"
+    "domain_hostname_failed": "Erstellen des neuen Hostnamens fehlgeschlagen",
+    "appslist_name_already_tracked": "Es gibt bereits eine registrierte App-Liste mit Namen {name:s}.",
+    "appslist_url_already_tracked": "Es gibt bereits eine registrierte Anwendungsliste mit dem URL {url:s}.",
+    "appslist_migrating": "Migriere Anwendungsliste {appslist:s} ...",
+    "appslist_could_not_migrate": "Konnte Anwendungsliste  {appslist:s} nicht migrieren. Konnte URL nicht verarbeiten... Der alte Cron-Job wurde unter {bkp_file:s} beibehalten.",
+    "appslist_corrupted_json": "Konnte die Anwendungslisten. Es scheint, dass {filename:s} beschädigt ist.",
+    "yunohost_ca_creation_success": "Die lokale Zertifizierungs-Authorität wurde angelegt."
 }
