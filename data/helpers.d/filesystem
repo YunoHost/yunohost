@@ -1,46 +1,140 @@
 CAN_BIND=${CAN_BIND:-1}
 
 # Mark a file or a directory for backup
-# Note: currently, SRCPATH will be copied or binded to DESTPATH
+# 
+# Note: this helper could be used in backup hook or in backup script inside an
+# app package
 #
-# usage: ynh_backup srcdir destdir to_bind no_root
-# | arg: srcdir - directory to bind or copy
-# | arg: destdir - mountpoint or destination directory
-# | arg: to_bind - 1 to bind mounting the directory if possible
-# | arg: no_root - 1 to execute commands as current user
+# Details: ynh_backup writes SRC and the relative DEST into a CSV file. Then,
+# it try to bind or symlink the DEST to the SRC, if it isn't possible it just
+# do a copy.  
+# 
+# If DEST is ended by a slash it complete this path with the basename of SRC.
+#
+# usage: ynh_backup src [dest [is_big [arg]]]
+# | arg: src - file or directory to bind or symlink or copy. it shouldn't be in
+# the backup dir. 
+# | arg: dest - destination file or directory inside the
+# backup dir
+# | arg: is_big - 1 to indicate data are big (mail, video, image ...)
+# | arg: arg - Deprecated arg
 ynh_backup() {
-    local SRCPATH=$1
-    local DESTPATH=$2
-    local TO_BIND=${3:-0}
-    local SUDO_CMD="sudo"
-    [[ "${4:-}" = "1" ]] && SUDO_CMD=
+    local SRC_PATH=$1
+    local DEST_PATH=${2:-}
+    local IS_BIG=${3:-0}
 
     # validate arguments
-    [[ -e "${SRCPATH}" ]] || {
-        echo "Source path '${SRCPATH}' does not exist" >&2
+    [[ -e "${SRC_PATH}" ]] || {
+        echo "Source path '${SRC_PATH}' does not exist" >&2
         return 1
     }
+    
+    # Transform SRCPATH as absolute path
+    SRC_PATH="$(realpath $SRC_PATH)"
 
-    # prepend the backup directory
-    [[ -n "${YNH_BACKUP_DIR:-}" && "${DESTPATH:0:1}" == "/" ]] \
-        && DESTPATH="${DESTPATH#$YNH_BACKUP_DIR/}"
-    [[ ! -e "${DESTPATH}" ]] || {
-        echo "Destination path '${DESTPATH}' already exist" >&2
+    # If unspecified DESTPATH=SRCPATH
+    [[ -z "$DEST_PATH" ]] && \
+        DESTPATH="${SRC_PATH#/}"
+    
+    # Transform DEST_PATH into relative path
+    [[ "${DEST_PATH:0:1}" == "/" ]] \
+        && DEST_PATH="${DEST_PATH#$YNH_CWD/}"
+    
+    # Complete DEST_PATH if ended by a /
+    [[ "${DEST_PATH: -1}" == "/" ]] \
+        &&  DEST_PATH="${DEST_PATH}/$(basename $SRC_PATH)"
+
+    # Check if DEST_PATH already exists in tmp archive
+    [[ ! -e "${DEST_PATH}" ]] || {
+        echo "Destination path '${DEST_PATH}' already exist" >&2
         return 1
     }
-
-    # Create a dir (it was done before copy by the old ynh_backup helpers 
-    local ABS_DIR="${YNH_APP_BACKUP_DIR:-}"
-    [[ -z "${ABS_DIR:-}" ]] && ABS_DIR="${YNH_BACKUP_DIR}"
-    eval $SUDO_CMD mkdir -p $(dirname "${ABS_DIR}/${DESTPATH}")
 
     # Write file to backup into backup_list
-    local REL_DIR="${YNH_APP_RELATIVE_BACKUP_DIR:-}"
-    [[ -n "${REL_DIR:-}" ]] && REL_DIR="${REL_DIR}/"
-    local SRC=$(echo "${SRCPATH}" | sed -r 's/"/\"\"/g')
-    local DEST=$(echo "${REL_DIR}${DESTPATH}" | sed -r 's/"/\"\"/g')
-    (echo -n "\"${SRC}\",\"${DEST}\"") | \
-        eval $SUDO_CMD tee -a ${YNH_BACKUP_CSV}
+    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR}"
+    REL_DIR="${REL_DIR%/}/"
+    local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
+    local DEST=$(echo "${REL_DIR}${DEST_PATH}" | sed -r 's/"/\"\"/g')
+    DEST="${DEST#/}"
+    (echo -n "\"${SRC}\",\"${DEST}\"") | tee -a ${YNH_BACKUP_CSV}
+    
+    # attempt to bind mounting the directory
+    mkdir -p $(dirname "${DEST_PATH}")
+    if [[ "${CAN_BIND}" = "1" ]]; then
+        if [[ -d ${SRC_PATH} ]]; then
+            mkdir -p "${DEST_PATH}"
+
+            if mount -r --rbind "${SRC_PATH}" "${DEST_PATH}"; then
+                return 0
+            else
+                CAN_BIND=0
+                echo "Bind mounting seems to be disabled on your system."
+                echo "You have maybe to check your apparmor configuration."
+    
+                # delete mountpoint directory safely
+                mountpoint -q "${DEST_PATH}" && sudo umount -R "${DEST_PATH}"
+            fi
+        
+
+        elif [[ -f ${SRC_PATH} || -L ${SRC_PATH} ]]; then
+            ln -P "${SRC_PATH}" "${DEST_PATH}"
+            return 0
+        fi
+    fi
+    [[ -d ${SRC_PATH} ]] && \
+        SRC_PATH="${SRC_PATH}/."
+    
+    cp -a "${SRC_PATH}" "${DEST_PATH}"
+}
+
+# Restore all files linked to the restore hook or to the restore app script
+#
+# usage: ynh_restore
+#
+ynh_restore () {
+    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
+    REL_DIR="${REL_DIR%/}/"
+    grep -ohP "^\".*\",\"$REL_DIR.*\"$" ${YNH_BACKUP_CSV} | \
+    while read line; do
+        local ORIGIN_PATH=$(echo $line | grep -ohP "^\"\K.*(?=\",\".*\"$)")
+        local ARCHIVE_PATH=$(echo $line | grep -ohP "^\".*\",\"\K.*(?=\"$)")
+        ynh_restore_file $ARCHIVE_PATH $ORIGIN_PATH
+    done
+}
+
+# Restore a file or a directory 
+#
+# Use the registered path in backup_list by ynh_backup to restore the file at
+# the good place.
+#
+# usage: ynh_restore_file ORIGIN_PATH [ DEST_PATH ]
+# | arg: ORIGIN_PATH - Path where was located the file or the directory before
+# to be backuped or relative path to $YNH_CWD where it is located in the backup archive
+# | arg: DEST_PATH   - Path where restore the file or the dir, if unspecified,
+# the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
+# the archive, the destination will be searched into backup.csv
+#
+ynh_restore_file () {
+    local ORIGIN_PATH=/${1#/}
+    local ARCHIVE_PATH=$YNH_CWD${ORIGIN_PATH}
+    # Default value for DEST_PATH = /$ORIGIN_PATH
+    local DEST_PATH=${2:-$ORIGIN_PATH}
+    
+    # If ORIGIN_PATH doesn't exist, check a corresponding path in CSV
+    if [[ ! -e "$ARCHIVE_PATH" ]]; then
+        ARCHIVE_PATH=$YNH_CWD/$(grep -ohP "^\"$ORIGIN_PATH\",\"\K.*(?=\"$)" ${YNH_BACKUP_CSV})
+    fi
+    
+    
+    # Restore ORIGIN_PATH into DEST_PATH
+    if [[ -d ${ARCHIVE_PATH} ]]; then
+       mkdir -p $DEST_PATH
+       ARCHIVE_PATH="${ARCHIVE_PATH}/."
+    else
+       mkdir -p $(dirname $DEST_PATH)
+    fi
+    cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
+    
 }
 
 # Deprecated helper since it's a dangerous one!
@@ -49,7 +143,7 @@ ynh_bind_or_cp() {
     local NO_ROOT=0
     [[ "${AS_ROOT}" = "1" ]] || NO_ROOT=1
     echo "This helper is deprecated, you should use ynh_backup instead" >&2
-    ynh_backup "$1" "$2" 1 "$NO_ROOT"
+    ynh_backup "$1" "$2" 1
 }
 
 # Create a directory under /tmp
