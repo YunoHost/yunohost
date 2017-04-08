@@ -32,7 +32,7 @@
     "appslist_removed": "The application list {appslist:s} has been removed",
     "appslist_unknown": "Application list {appslist:s} unknown.",
     "appslist_retrieve_error": "Unable to retrieve the remote application list {appslist:s}: {error:s}",
-    "appslist_retrieve_bad_format": "Retrieved file for application list {appslist:s} is not a valid app list",
+    "appslist_retrieve_bad_format": "Retrieved file for application list {appslist:s} is not valid",
     "appslist_name_already_tracked": "There is already a registered application list with name {name:s}.",
     "appslist_url_already_tracked": "There is already a registered application list with url {url:s}.",
     "appslist_migrating": "Migrating application list {appslist:s} ...",
