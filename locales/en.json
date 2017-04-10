@@ -32,7 +32,7 @@
     "appslist_removed": "The application list {appslist:s} has been removed",
     "appslist_unknown": "Application list {appslist:s} unknown.",
     "appslist_retrieve_error": "Unable to retrieve the remote application list {appslist:s}: {error:s}",
-    "appslist_retrieve_bad_format": "Retrieved file for application list {appslist:s} is not a valid app list",
+    "appslist_retrieve_bad_format": "Retrieved file for application list {appslist:s} is not valid",
     "appslist_name_already_tracked": "There is already a registered application list with name {name:s}.",
     "appslist_url_already_tracked": "There is already a registered application list with url {url:s}.",
     "appslist_migrating": "Migrating application list {appslist:s} ...",
@@ -274,7 +274,7 @@
     "domain_cannot_remove_main": "Cannot remove main domain. Set a new main domain first",
     "certmanager_self_ca_conf_file_not_found": "Configuration file not found for self-signing authority (file: {file:s})",
     "certmanager_acme_not_configured_for_domain": "Certificate for domain {domain:s} does not appear to be correctly installed. Please run cert-install for this domain first.",
-    "certmanager_http_check_timeout": "Timed out when server tried to contact itself through HTTP using public IP address (domain {domain:s} with ip {ip:s}). You may be experiencing hairpinning or the firewall/router ahead of your server is misconfigured.",
+    "certmanager_http_check_timeout": "Timed out when server tried to contact itself through HTTP using public IP address (domain {domain:s} with ip {ip:s}). You may be experiencing hairpinning issue or the firewall/router ahead of your server is misconfigured.",
     "certmanager_couldnt_fetch_intermediate_cert": "Timed out when trying to fetch intermediate certificate from Let's Encrypt. Certificate installation/renewal aborted - please try again later.",
     "certmanager_unable_to_parse_self_CA_name": "Unable to parse name of self-signing authority (file: {file:s})"
 }
