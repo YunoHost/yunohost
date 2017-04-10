@@ -280,7 +280,7 @@
     "certmanager_domain_not_resolved_locally": "Le domaine {domain:s} ne peut être déterminé depuis votre serveur YunoHost. Cela peut arriver si vous avez récemment modifié votre enregistrement DNS. Auquel cas, merci d’attendre quelques heures qu’il se propage. Si le problème persiste, envisager d’ajouter {domain:s} au fichier /etc/hosts. (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces vérifications.)",
     "certmanager_http_check_timeout": "Expiration du délai lors de la tentative du serveur de se contacter via HTTP en utilisant son adresse IP publique (domaine {domain:s} avec l’IP {ip:s}). Vous rencontrez peut-être un problème d’hairpinning ou alors le pare-feu/routeur en amont de votre serveur est mal configuré.",
     "certmanager_couldnt_fetch_intermediate_cert": "Expiration du délai lors de la tentative de récupération du certificat intermédiaire depuis Let’s Encrypt. L’installation/le renouvellement du certificat a été interrompu - veuillez réessayer prochainement.",
-    "appslist_retrieve_bad_format": "Le fichier récupéré pour la liste d’applications {appslist:s} n’est pas une liste d’applications valide",
+    "appslist_retrieve_bad_format": "Le fichier récupéré pour la liste d’applications {appslist:s} n’est pas valide",
     "domain_hostname_failed": "Échec de la création d'un nouveau nom d'hôte",
     "yunohost_ca_creation_success": "L’autorité locale de certification a été créée.",
     "appslist_name_already_tracked": "Une liste d’applications ayant le nom {name:s} est déjà enregistrée.",
