@@ -41,7 +41,7 @@ from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 
 from yunohost.app import (
-    app_info, app_ssowatconf, _is_installed, _parse_app_instance_name
+    app_info, _is_installed, _parse_app_instance_name
 )
 from yunohost.hook import (
     hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -51,6 +51,7 @@ from yunohost.tools import tools_postinstall
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
+MARGIN_SPACE_SIZE = 100
 
 logger = getActionLogger('yunohost.backup')
 
@@ -372,8 +373,8 @@ class Archive:
             raise MoulinetteError(errno.EIO, m18n.n(
                 'not_enough_disk_space', path=output_directory))
 
-    # Copy prepared files into a dir
     def _copy_files(output_directory):
+        """ Copy prepared files into a dir """
         def _copy_path(source, dest):
             dest = os.path.join(self.collect_dir, dest)
             if source == dest:
@@ -392,8 +393,8 @@ class Archive:
 
         self._call_for_each_path(_copy_path)
 
-    # Compress prepared files
     def _tar_files(output_directory):
+        """ Compress prepared files """
         # Check free space in output
         self.check_is_enough_free_space(output_directory)
 
@@ -403,10 +404,10 @@ class Archive:
             tar = tarfile.open(archive_file, "w:gz")
         except:
             logger.debug("unable to open '%s' for writing",
-                        archive_file, exc_info=1)
+                         archive_file, exc_info=1)
             self.clean(2)
             raise MoulinetteError(errno.EIO,
-                                m18n.n('backup_archive_open_failed'))
+                                  m18n.n('backup_archive_open_failed'))
 
         # Add files to the archive
         def _tar_path(source, dest):
@@ -418,7 +419,7 @@ class Archive:
             logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
             self.clean(3)
             raise MoulinetteError(errno.EIO,
-                                m18n.n('backup_creation_failed'))
+                                  m18n.n('backup_creation_failed'))
 
         # Move info file
         shutil.copy(os.path.join(self.collect_dir, 'info.json'),
@@ -434,10 +435,10 @@ class Archive:
         # TODO
         pass
 
-    # Backup prepared files with borg
     def _borg_files(repo):
+        """ Backup prepared files with borg """
         self.mount_csv_listed_files()
-        #TODO run borg create command
+        # TODO run borg create command
         raise MoulinetteError(
                 errno.EIO, m18n.n('backup_borg_not_implemented'))
 
@@ -451,24 +452,24 @@ class Archive:
             self.clean()
 
 
-
-
 class BackupArchive:
-    info = {}
-    # Initialize restauration summary result
+    """
+    BackupArchive represent a past backup.
+    Currently it's a tar.gz file, but it could be another kind of archive
+    """
     result = {
         'apps': [],
         'hooks': {},
     }
 
-    def __init__(self, name, repo=''):
+    def __init__(self, name, repo=None):
         # Retrieve and open the archive
-        info = backup_info(name)
-        archive_path = info['path']
+        self.info = backup_info(name)
+        self.archive_path = info['path']
 
-
-    def restore(self):
-        self.mount()
+    def restore(self, hooks=[], apps=[]):
+        """ Restore the archive """
+        self._mount()
 
         # Check if YunoHost is installed
         if not os.path.isfile('/etc/yunohost/installed'):
@@ -478,66 +479,122 @@ class BackupArchive:
                     domain = f.readline().rstrip()
             except IOError:
                 logger.debug("unable to retrieve current_host from the backup",
-                            exc_info=1)
-                raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+                             exc_info=1)
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('backup_invalid_archive'))
 
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'yunohost', True)
-        self.restore_hooks()
-        self.restore_apps()
+
+        self._check_free_space(hooks, apps)
+
+        if hooks is not None:
+            self._restore_hooks(hooks)
+
+        if apps is not None:
+            self._restore_apps(apps)
         self.clean()
 
-    def mount(self, path=''):
+    def _mount(self, mnt_path=None):
+        """
+        Mount the archive. We avoid copy to be able to restore on system without
+        too many space.
+        """
+
+        # Check mount directory
+        if mnt_path is None:
+            self.mnt_path = os.path.join(BACKUP_PATH, "tmp", name)
+        else:
+            self.mnt_path = mnt_path
+
+        if os.path.isdir(mnt_path):
+            logger.debug("temporary directory for restoration '%s' already exists",
+                         mnt_path)
+            # TODO unmount
+            os.system('rm -rf %s' % mnt_path)
+
+        # Check the archive can be open
         try:
-            tar = tarfile.open(archive_file, "r:gz")
+            tar = tarfile.open(self.archive_file, "r:gz")
         except:
             logger.debug("cannot open backup archive '%s'",
-                archive_file, exc_info=1)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_archive_open_failed'))
-
-        # Check temporary directory
-        tmp_dir = "%s/tmp/%s" % (BACKUP_PATH, name)
-        if os.path.isdir(tmp_dir):
-            logger.debug("temporary directory for restoration '%s' already exists",
-                tmp_dir)
-            os.system('rm -rf %s' % tmp_dir)
-
-        # Check available disk space
-        statvfs = os.statvfs(BACKUP_PATH)
-        free_space = statvfs.f_frsize * statvfs.f_bavail
-        if free_space < info['size']:
-            logger.debug("%dB left but %dB is needed", free_space, info['size'])
-            raise MoulinetteError(
-                errno.EIO, m18n.n('not_enough_disk_space', path=BACKUP_PATH))
-
-
-        # Extract the tarball
-        logger.info(m18n.n('backup_extracting_archive'))
-        tar.extractall(tmp_dir)
+                         self.archive_file, exc_info=1)
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('backup_archive_open_failed'))
         tar.close()
 
-    def restore_hooks(self, hooks=[]):
+        # Mount the tarball
+        logger.info(m18n.n('backup_mounting_archive'))
+        ret = subprocess.call(['archivemount', '-o readonly',
+                               self.archive_path, mnt_path])
+        if ret != 0:
+            logger.debug("cannot mount backup archive '%s'",
+                         self.archive_file, exc_info=1)
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('backup_archive_mount_failed'))
+
+        self._read_info_files()
+
+    def _check_free_space(self, hooks, apps):
+        """ Check available disk space """
+        statvfs = os.statvfs(BACKUP_PATH)
+        free_space = statvfs.f_frsize * statvfs.f_bavail
+        needed_space = self.info['size'] + MARGIN_SPACE_SIZE * 1024 * 1024
+        if free_space < needed_space:
+
+            if hooks == [] and apps == []:
+                logger.debug("%dB left but %dB is needed", free_space,
+                             needed_space)
+                raise MoulinetteError(
+                    errno.EIO, m18n.n('not_enough_disk_space',
+                                      path=BACKUP_PATH))
+
+            # TODO partial restore don't need all backup size
+            # We should compute size for each apps and for each hooks
+            # how to know the dependencies size ?
+
+            # Different behaviour if it's only conf hook restoration
+            data_hooks = [hook for hook in hooks if hooks.startswith('data')]
+            if apps is not None or data_hooks != []:
+                logger.warning(m18n.n('may_be_not_enough_disk_space',
+                                      free_space=free_space,
+                                      needed_space=needed_space))
+            elif free_space < CONF_MARGIN_SPACE_SIZE * 1024 * 1024:
+                logger.debug("%dB left but %dB is needed for security",
+                             free_space,
+                             CONF_MARGIN_SPACE_SIZE * 1024 * 1024)
+                raise MoulinetteError(errno.EIO, m18n.n('not_enough_disk_space',
+                                                        path=BACKUP_PATH))
+
+    def _restore_hooks(self, hooks=[]):
+        """ Restore user and system hooks """
+
         # Filter hooks to execute
-        hooks_list = set(info['hooks'].keys())
-        _is_hook_in_backup = lambda h: True
+        hooks_list = set(self.info['hooks'].keys())
         if hooks:
-            def _is_hook_in_backup(h):
+            def _is_hook_to_restore(h):
                 if h in hooks_list:
                     return True
                 logger.error(m18n.n('backup_archive_hook_not_exec', hook=h))
                 return False
         else:
+            def _is_hook_to_restore(h):
+                return True
             hooks = hooks_list
 
         # Check hooks availibility
         hooks_filtered = set()
         for h in hooks:
-            if not _is_hook_in_backup(h):
+            if not _is_hook_to_restore(h):
                 continue
             try:
                 hook_info('restore', h)
             except:
-                tmp_hooks = glob('{:s}/hooks/restore/*-{:s}'.format(tmp_dir, h))
+                # If this restore hook doesn't exist, we add it in custom hook
+                # FIXME: so if the restore hook exist we use the new one and not
+                # the one from backup. So hook should not break compatibility...
+                tmp_hooks = glob('{:s}/hooks/restore/*-{:s}'.format(
+                    self.mnt_path, h))
                 if not tmp_hooks:
                     logger.exception(m18n.n('restore_hook_unavailable', hook=h))
                     continue
@@ -547,18 +604,19 @@ class BackupArchive:
                 filesystem.mkdir(restore_hook_folder, 755, True)
                 for f in tmp_hooks:
                     logger.debug("adding restoration hook '%s' to the system "
-                        "from the backup archive '%s'", f, archive_file)
+                                 "from the backup archive '%s'", f,
+                                 archive_file)
                     shutil.copy(f, restore_hook_folder)
             hooks_filtered.add(h)
 
         if hooks_filtered:
             logger.info(m18n.n('restore_running_hooks'))
-            ret = hook_callback('restore', hooks_filtered, args=[tmp_dir])
-            result['hooks'] = ret['succeed']
+            ret = hook_callback('restore', hooks_filtered, args=[self.mnt_path])
+            self.result['hooks'] = ret['succeed']
 
-    def restore_apps(self, apps=[]):
+    def _restore_apps(self, apps=[]):
         # Filter applications to restore
-        apps_list = set(info['apps'].keys())
+        apps_list = set(self.info['apps'].keys())
         apps_filtered = set()
         if apps:
             for a in apps:
@@ -570,79 +628,92 @@ class BackupArchive:
             apps_filtered = apps_list
 
         for app_instance_name in apps_filtered:
-            tmp_app_dir = '{:s}/apps/{:s}'.format(tmp_dir, app_instance_name)
-            tmp_app_bkp_dir = tmp_app_dir + '/backup'
+            self._restore_app(app_instance_name)
 
-            # Parse app instance name and id
-            # TODO: Use app_id to check if app is installed?
-            app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
+    def _restore_app(self, app_instance_name):
+        tmp_app_dir = os.path.join(self.mnt_path, 'apps', app_instance_name)
+        tmp_app_bkp_dir = os.path.join(tmp_app_dir, 'backup')
 
-            # Check if the app is not already installed
-            if _is_installed(app_instance_name):
-                logger.error(m18n.n('restore_already_installed_app',
-                        app=app_instance_name))
-                continue
+        # Parse app instance name and id
+        # TODO: Use app_id to check if app is installed?
+        app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
 
-            # Check if the app has a restore script
-            app_script = tmp_app_dir + '/settings/scripts/restore'
-            if not os.path.isfile(app_script):
-                logger.warning(m18n.n('unrestore_app', app=app_instance_name))
-                continue
+        # Check if the app is not already installed
+        if _is_installed(app_instance_name):
+            logger.error(m18n.n('restore_already_installed_app',
+                                app=app_instance_name))
+            return
 
-            tmp_settings_dir = tmp_app_dir + '/settings'
-            app_setting_path = '/etc/yunohost/apps/' + app_instance_name
-            logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
-            try:
-                # Copy app settings and set permissions
-                # TODO: Copy app hooks too
-                shutil.copytree(tmp_settings_dir, app_setting_path)
-                filesystem.chmod(app_setting_path, 0400, 0400, True)
-                filesystem.chown(app_setting_path + '/scripts', 'admin', None, True)
+        # Check if the app has a restore script
+        app_script = os.path.join(tmp_app_dir, 'settings/scripts/restore')
+        if not os.path.isfile(app_script):
+            logger.warning(m18n.n('unrestore_app', app=app_instance_name))
+            return
 
-                # Set correct right to the temporary settings folder
-                filesystem.chmod(tmp_settings_dir, 0550, 0550, True)
-                filesystem.chown(tmp_settings_dir, 'admin', None, True)
+        tmp_settings_dir = os.path.join(tmp_app_dir, 'settings')
+        app_setting_path = os.path.join('/etc/yunohost/apps/',
+                                        app_instance_name)
+        logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
+        try:
+            # Copy app settings and set permissions
+            # TODO: Copy app hooks too
+            shutil.copytree(tmp_settings_dir, app_setting_path)
+            filesystem.chmod(app_setting_path, 0400, 0400, True)
+            filesystem.chown(os.path.join(app_setting_path, 'scripts'),
+                             'admin', None, True)
 
-                # Prepare env. var. to pass to script
-                env_dict = {}
-                env_dict["YNH_APP_ID"] = app_id
-                env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-                env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-                env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
+            # Set correct right to the temporary settings folder
+            filesystem.chmod(tmp_settings_dir, 0550, 0550, True)
+            filesystem.chown(tmp_settings_dir, 'admin', None, True)
 
-                # Execute app restore script
-                hook_exec(app_script, args=[tmp_app_bkp_dir, app_instance_name],
-                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
-            except:
-                logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
+            # Prepare env. var. to pass to script
+            env_dict = {}
+            env_dict["YNH_APP_ID"] = app_id
+            env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
 
-                app_script = tmp_app_dir + '/settings/scripts/remove'
+            # Execute app restore script
+            hook_exec(app_script, args=[tmp_app_bkp_dir, app_instance_name],
+                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+        except:
+            logger.exception(m18n.n('restore_app_failed',
+                                    app=app_instance_name))
 
-                # Setup environment for remove script
-                env_dict_remove = {}
-                env_dict_remove["YNH_APP_ID"] = app_id
-                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            app_script = os.path.join(tmp_app_dir, 'settings/scripts/remove')
 
-                # Execute remove script
-                # TODO: call app_remove instead
-                if hook_exec(app_script, args=[app_instance_name],
-                             env=env_dict_remove) != 0:
-                    logger.warning(m18n.n('app_not_properly_removed',
-                                          app=app_instance_name))
+            # Setup environment for remove script
+            env_dict_remove = {}
+            env_dict_remove["YNH_APP_ID"] = app_id
+            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-                # Cleaning app directory
-                shutil.rmtree(app_setting_path, ignore_errors=True)
-            else:
-                result['apps'].append(app_instance_name)
+            # Execute remove script
+            # TODO: call app_remove instead
+            if hook_exec(app_script, args=[app_instance_name],
+                         env=env_dict_remove) != 0:
+                logger.warning(m18n.n('app_not_properly_removed',
+                                      app=app_instance_name))
 
-    def clean(self):
-        if result['apps']:
-            # Quickfix: the old app_ssowatconf(auth) instruction failed due to ldap
-            # restore hooks
+            # Cleaning app directory
+            shutil.rmtree(app_setting_path, ignore_errors=True)
+
+            # TODO Cleaning app hooks
+        else:
+            self.result['apps'].append(app_instance_name)
+
+    def clean(self, retcode=0):
+        if self.result['apps']:
+            # Quickfix: the old app_ssowatconf(auth) instruction failed due to
+            # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
-        #def _clean_tmp_dir(retcode=0):
-        ret = hook_callback('post_backup_restore', args=[tmp_dir, retcode])
+        ret = subprocess.call(['umount', self.mnt_path])
+        if ret != 0:
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('can_not_umount_restore_path',
+                                         path=self.mnt_path))
+        ret = hook_callback('post_backup_restore', args=[self.mnt_path,
+                                                         retcode])
         if not ret['failed']:
             filesystem.rm(tmp_dir, True, True)
         else:
@@ -650,16 +721,16 @@ class BackupArchive:
 
     def _read_info_files(self):
         # Retrieve backup info
-        info_file = "%s/info.json" % tmp_dir
+        info_file = os.path.join(self.mnt_path, "info.json")
         try:
             with open(info_file, 'r') as f:
-                info = json.load(f)
+                self.info = json.load(f)
         except IOError:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
             raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
         else:
             logger.debug("restoring from backup '%s' created on %s", name,
-                time.ctime(info['created_at']))
+                         time.ctime(self.info['created_at']))
 
 
 def backup_create(name=None, description=None, output_directory=None,
@@ -736,6 +807,12 @@ def backup_create(name=None, description=None, output_directory=None,
         else:
             methods = ['tar']  # In future, borg will be the default actions
 
+    if ignore_hooks:
+        hooks = None
+
+    if ignore_apps:
+        apps = None
+
     # Prepare files to backup
     if no_compress:
         archive = Archive(name, description, collect_dir=output_directory)
@@ -775,7 +852,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
     # Validate what to restore
     if ignore_hooks and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
-            m18n.n('restore_action_required'))
+                              m18n.n('restore_action_required'))
 
     # TODO don't ask this question for restoring apps only and certain hooks
     # Check if YunoHost is installed
@@ -792,25 +869,23 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 if i == 'y' or i == 'Y':
                     force = True
             if not force:
-                _clean_tmp_dir()
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
 
+    if ignore_hooks:
+        hooks = None
+
+    if ignore_apps:
+        apps = None
+
     # TODO Partial app restore could not work if ldap is not restored before
+    # TODO repair mysql if broken and it's a complete restore
 
     backup = BackupArchive(name)
 
-    backup.mount()
-
-    # Run system hooks
-    if not ignore_hooks:
-        backup.restore_hooks(hooks)
-
-    # Add apps restore hook
-    if not ignore_apps:
-        backup.restore_apps(apps)
+    backup.restore(hooks, apps)
 
     # Check if something has been restored
-    if backup.success:
+    if not backup.success:
         backup.clean(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
 
@@ -870,7 +945,7 @@ def backup_info(name, with_details=False, human_readable=False):
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
         raise MoulinetteError(errno.EIO,
-            m18n.n('backup_archive_name_unknown', name=name))
+                              m18n.n('backup_archive_name_unknown', name=name))
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -879,7 +954,8 @@ def backup_info(name, with_details=False, human_readable=False):
         # Raise exception if link is broken (e.g. on unmounted external storage)
         if not os.path.exists(archive_file):
             raise MoulinetteError(errno.EIO,
-                m18n.n('backup_archive_broken_link', path=archive_file))
+                                  m18n.n('backup_archive_broken_link',
+                                         path=archive_file))
 
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
