@@ -140,9 +140,9 @@ class Archive:
             getattr(self, "_" + method + "_files")(output_directory)
             logger.info(m18n.n('backup_method_' + method + '_finished'))
         else:
-            logger.info(m18n.n('backup_applying_method_custom'))
+            logger.info(m18n.n('backup_applying_method_custom', method=method))
             self._hook_files(method, output_directory)
-            logger.info(m18n.n('backup_method_custom_finished'))
+            logger.info(m18n.n('backup_method_custom_finished', method=method))
 
     def clean(self, retcode=-1):
         """ Call post_backup_create hooks and delete collect_dir """
@@ -245,7 +245,7 @@ class Archive:
 
         # Execute hooks
         ret = hook_callback('backup', hooks_filtered, args=[self.collect_dir],
-                            env=self._get_env_var())
+                            env=self._get_env_var(), chdir=self.collect_dir)
         if ret['succeed']:
             self.info['hooks'] = ret['succeed']
 
