@@ -28,18 +28,18 @@ ynh_backup() {
         echo "Source path '${SRC_PATH}' does not exist" >&2
         return 1
     }
-    
+
     # Transform SRCPATH as absolute path
     SRC_PATH="$(realpath $SRC_PATH)"
 
     # If unspecified DESTPATH=SRCPATH
     [[ -z "$DEST_PATH" ]] && \
         DESTPATH="${SRC_PATH#/}"
-    
+
     # Transform DEST_PATH into relative path
     [[ "${DEST_PATH:0:1}" == "/" ]] \
-        && DEST_PATH="${DEST_PATH#$YNH_CWD/}"
-    
+        && DEST_PATH="${DEST_PATH#$YNH_CWD/}"i
+
     # Complete DEST_PATH if ended by a /
     [[ "${DEST_PATH: -1}" == "/" ]] \
         &&  DEST_PATH="${DEST_PATH}/$(basename $SRC_PATH)"
@@ -56,8 +56,9 @@ ynh_backup() {
     local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
     local DEST=$(echo "${REL_DIR}${DEST_PATH}" | sed -r 's/"/\"\"/g')
     DEST="${DEST#/}"
-    (echo -n "\"${SRC}\",\"${DEST}\"") | sudo tee -a ${YNH_BACKUP_CSV}
-    
+    (echo "\"${SRC}\",\"${DEST}\"") | sudo tee -a ${YNH_BACKUP_CSV}
+
+    mkdir -p $(dirname "${DEST_PATH}")
 }
 
 # Restore all files linked to the restore hook or to the restore app script
