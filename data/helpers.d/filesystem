@@ -56,35 +56,8 @@ ynh_backup() {
     local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
     local DEST=$(echo "${REL_DIR}${DEST_PATH}" | sed -r 's/"/\"\"/g')
     DEST="${DEST#/}"
-    (echo -n "\"${SRC}\",\"${DEST}\"") | tee -a ${YNH_BACKUP_CSV}
+    (echo -n "\"${SRC}\",\"${DEST}\"") | sudo tee -a ${YNH_BACKUP_CSV}
     
-    # attempt to bind mounting the directory
-    mkdir -p $(dirname "${DEST_PATH}")
-    if [[ "${CAN_BIND}" = "1" ]]; then
-        if [[ -d ${SRC_PATH} ]]; then
-            mkdir -p "${DEST_PATH}"
-
-            if mount -r --rbind "${SRC_PATH}" "${DEST_PATH}"; then
-                return 0
-            else
-                CAN_BIND=0
-                echo "Bind mounting seems to be disabled on your system."
-                echo "You have maybe to check your apparmor configuration."
-    
-                # delete mountpoint directory safely
-                mountpoint -q "${DEST_PATH}" && sudo umount -R "${DEST_PATH}"
-            fi
-        
-
-        elif [[ -f ${SRC_PATH} || -L ${SRC_PATH} ]]; then
-            ln -P "${SRC_PATH}" "${DEST_PATH}"
-            return 0
-        fi
-    fi
-    [[ -d ${SRC_PATH} ]] && \
-        SRC_PATH="${SRC_PATH}/."
-    
-    cp -a "${SRC_PATH}" "${DEST_PATH}"
 }
 
 # Restore all files linked to the restore hook or to the restore app script

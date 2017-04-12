@@ -76,7 +76,7 @@ class Archive:
         self.name = name
         self.collect_dir = collect_dir
         if self.collect_dir is None:
-            self.collect_dir = os.path.join(ARCHIVES_PATH, name)
+            self.collect_dir = os.path.join(BACKUP_PATH, name)
             self.bindable = True
         else:
             self.bindable = False
@@ -84,7 +84,7 @@ class Archive:
         self._init_collect_dir()
         self._init_csv()
 
-    def collect_files(hooks=[], apps=[]):
+    def collect_files(self, hooks=[], apps=[]):
         """
         Collect all files to backup
         hooks: list of backup hooks to execute, if hooks is an empty list,
@@ -93,9 +93,9 @@ class Archive:
         apps: list of apps to backup. Backup all apps, if apps is an empty list.
         Backup nothing if apps is None
         """
-        archive._collect_hooks_files(hooks_filtered)
+        self._collect_hooks_files(hooks)
 
-        archive._collect_apps_files(apps_list)
+        self._collect_apps_files(apps)
 
         # Check if something has been saved
         if not self.info['hooks'] and not self.info['apps']:
@@ -114,13 +114,13 @@ class Archive:
         self.csv_file.close()
 
         # Calculate total size
-        self.info['size'] = _compute_backup_size()
+        self._compute_backup_size()
 
         # Create backup info file
         with open("%s/info.json" % self.collect_dir, 'w') as f:
-            f.write(json.dumps(self.nfo))
+            f.write(json.dumps(self.info))
 
-    def backup(methods='tar', output_directory=None):
+    def backup(self, methods='tar', output_directory=None):
         """
         Apply backup methods
 
@@ -132,17 +132,19 @@ class Archive:
             for method in methods:
                 self.backup(method, output_directory)
             return
+        else:
+            method=methods
 
         if method in ["copy", "tar", "borg"]:
             logger.info(m18n.n('backup_applying_method_' + method))
-            getattr(self, "_" + method + "_files")()
+            getattr(self, "_" + method + "_files")(output_directory)
             logger.info(m18n.n('backup_method_' + method + '_finished'))
         else:
             logger.info(m18n.n('backup_applying_method_custom'))
-            self._hook_files(method)
+            self._hook_files(method, output_directory)
             logger.info(m18n.n('backup_method_custom_finished'))
 
-    def clean(retcode=-1):
+    def clean(self, retcode=-1):
         """ Call post_backup_create hooks and delete collect_dir """
         ret = hook_callback('post_backup_create', args=[self.collect_dir,
                                                         retcode])
@@ -156,12 +158,12 @@ class Archive:
         # if is_tmp_preparation_dir:
         #     _clean_preparation_dir()
 
-    def _define_backup_name():
+    def _define_backup_name(self):
         """ Define backup name """
         # FIXME: case where this name already exist
         return time.strftime('%Y%m%d-%H%M%S')
 
-    def _init_collect_dir():
+    def _init_collect_dir(self):
         """ Initialize preparation directory """
 
         if not self.collect_dir:
@@ -176,25 +178,25 @@ class Archive:
                 raise MoulinetteError(
                     errno.EIO, m18n.n('backup_output_directory_not_empty'))
 
-    def _init_csv():
+    def _init_csv(self):
         """ Initialize backup list """
         self.csv_path = os.path.join(self.collect_dir, 'backup.csv')
         try:
             self.csv_file = open(self.csv_path, 'w')
-            field_names = ['source', 'dest']
-            self.csv = csv.DictWriter(self.csv_file, fieldnames=field_names,
+            self.fieldnames = ['source', 'dest']
+            self.csv = csv.DictWriter(self.csv_file, fieldnames=self.fieldnames,
                                       quoting=csv.QUOTE_ALL)
         except (IOError, OSError, csv.Error):
             logger.error(m18n.n('backup_csv_creation_failed'))
 
-    def _get_env_var():
+    def _get_env_var(self):
         """ Define environment variable for hooks call """
         env_var = {}
         env_var['YNH_BACKUP_DIR'] = self.collect_dir
         env_var['YNH_BACKUP_CSV'] = self.csv_path
         return env_var
 
-    def _mark_for_backup(source, dest=None):
+    def _mark_for_backup(self, source, dest=None):
         """
         Mark file or directory to backup
 
@@ -220,7 +222,7 @@ class Archive:
         except csv.Error:
             logger.error(m18n.n('backup_csv_addition_failed'))
 
-    def _collect_hooks_files(hooks=[]):
+    def _collect_hooks_files(self, hooks=[]):
         """
         Prepare backup for each selected system part
         """
@@ -264,7 +266,7 @@ class Archive:
             # FIXME: support hooks failure
             pass
 
-    def _collect_apps_files(apps=[]):
+    def _collect_apps_files(self, apps=[]):
         """ Prepare backup for each selected apps """
 
         if apps is None:
@@ -284,7 +286,7 @@ class Archive:
         for app_instance_name in apps_filtered:
             self._collect_app_files(app_instance_name)
 
-    def _collect_app_files(app_instance_name):
+    def _collect_app_files(self, app_instance_name):
         app_setting_path = os.path.join('/etc/yunohost/apps/',
                                         app_instance_name)
 
@@ -341,27 +343,33 @@ class Archive:
         finally:
             filesystem.rm(tmp_script, force=True)
 
-    def _call_for_each_path(callback):
+    def _call_for_each_path(self, callback):
         """ Call a callback for each path in csv """
         result = 0
         with open(self.csv_path, "r") as backup_file:
-            backup_csv = csv.DictReader(backup_file, fieldnames=field_names)
+            backup_csv = csv.DictReader(backup_file, fieldnames=self.fieldnames)
             for row in backup_csv:
-                result += callback(row['source'], row['dest'])
+                ret = callback(self, row['source'], row['dest'])
+                if ret != None:
+                    result += ret
         return result
 
-    def _compute_backup_size():
+    def _compute_backup_size(self):
         """ Compute backup size """
         # FIXME Database dump will be loaded, so dump should use almost the
         # double of their space
         # FIXME Some archive will set up dependencies, those are not in this
         # size info
-        def _compte_path_size(source, dest):
-            return int(subprocess.check_output(['du', '-sb', source])
-                       .split()[0].decode('utf-8'))
+        def _compute_path_size(self, source, dest):
+            if dest != "info.json":
+                return int(subprocess.check_output(['du', '-sb', source])
+                           .split()[0].decode('utf-8'))
+            else:
+                return 0
         self.info['size'] = self._call_for_each_path(_compute_path_size)
+        return self.info['size']
 
-    def _check_is_enough_free_space(output_directory):
+    def _check_is_enough_free_space(self, output_directory):
         """ Check free space in output directory at first """
         backup_size = self.info['size']
         cmd = ['df', '--block-size=1', '--output=avail', output_directory]
@@ -373,9 +381,9 @@ class Archive:
             raise MoulinetteError(errno.EIO, m18n.n(
                 'not_enough_disk_space', path=output_directory))
 
-    def _copy_files(output_directory):
+    def _copy_files(self, output_directory):
         """ Copy prepared files into a dir """
-        def _copy_path(source, dest):
+        def _copy_path(self, source, dest):
             dest = os.path.join(self.collect_dir, dest)
             if source == dest:
                 return
@@ -393,13 +401,13 @@ class Archive:
 
         self._call_for_each_path(_copy_path)
 
-    def _tar_files(output_directory):
+    def _tar_files(self, output_directory):
         """ Compress prepared files """
         # Check free space in output
-        self.check_is_enough_free_space(output_directory)
+        self._check_is_enough_free_space(output_directory)
 
         # Open archive file for writing
-        archive_file = os.path.join(output_directory, name + 'tar.gz')
+        archive_file = os.path.join(output_directory, self.name + 'tar.gz')
         try:
             tar = tarfile.open(archive_file, "w:gz")
         except:
@@ -410,7 +418,7 @@ class Archive:
                                   m18n.n('backup_archive_open_failed'))
 
         # Add files to the archive
-        def _tar_path(source, dest):
+        def _tar_path(self, source, dest):
             tar.add(source, arcname=dest)
         try:
             self._call_for_each_path(_tar_path)
@@ -431,18 +439,42 @@ class Archive:
         if not os.path.isfile(link):
             os.symlink(archive_file, link)
 
-    def _mount_csv_listed_files():
-        # TODO
-        pass
+    def _mount_csv_listed_files(self):
+        """ Mount all csv src in their related path """
+        def _bind_path(self, src, dest):
+            # FIXME io excpetion
+            dest = os.path.join(self.collect_dir, dest)
+            filesystem.mkdir(os.path.dirname(dest), parent=True)
+            if self.bindable:
+                if os.path.isdir(src):
+                    filesystem.mkdir(dest, parent=True)
+                    ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
+                    if ret == 0:
+                        return
+                    else:
+                        logger.warning(m18n.n("bind_mouting_disable"))
+                        subprocess.call(["mountpoint", "-q", dest,
+                                        "&&", "umount", "-R", dest])
+                elif os.path.isfile(src) or os.path.islink(src):
+                    # os.chdir(os.path.dirname(dest))
+                    os.link(src, dest)
+                    return
+            if os.path.isdir(src) or os.path.ismount(src):
+                subprocess.call(["cp", "-a", os.path.join(src, "."), dest])
+                shutil.copytree(src, dest, symlinks=True)
+            else:
+                shutil.copy(src, dest)
 
-    def _borg_files(repo):
+        self._call_for_each_path(_bind_path)
+
+    def _borg_files(self, repo):
         """ Backup prepared files with borg """
         self.mount_csv_listed_files()
         # TODO run borg create command
         raise MoulinetteError(
                 errno.EIO, m18n.n('backup_borg_not_implemented'))
 
-    def _hook_files(method, output_directory):
+    def _hook_files(self, method, output_directory):
         """ Apply a hook on prepared files """
         if method.startwith('mount_'):
             self._mount_csv_listed_files()
@@ -806,12 +838,12 @@ def backup_create(name=None, description=None, output_directory=None,
             methods = ['copy']
         else:
             methods = ['tar']  # In future, borg will be the default actions
+    logger.debug(hooks)
+    if not ignore_hooks and hooks is None:
+        hooks = []
 
-    if ignore_hooks:
-        hooks = None
-
-    if ignore_apps:
-        apps = None
+    if not ignore_apps and apps is None:
+        apps = []
 
     # Prepare files to backup
     if no_compress:
@@ -831,7 +863,7 @@ def backup_create(name=None, description=None, output_directory=None,
     logger.success(m18n.n('backup_created'))
 
     # Return backup info
-    archive.info['name'] = name
+    archive.info['name'] = archive.name
     return {'archive': archive.info}
 
 
