@@ -58,7 +58,7 @@ ynh_backup() {
     DEST="${DEST#/}"
     echo "\"${SRC}\",\"${DEST}\"" | sudo tee --append ${YNH_BACKUP_CSV} > /dev/null
 
-    mkdir -p $(dirname "${DEST_PATH}")
+    sudo mkdir -p $(dirname "${DEST_PATH}")
 }
 
 # Restore all files linked to the restore hook or to the restore app script

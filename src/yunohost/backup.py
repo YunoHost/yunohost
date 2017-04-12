@@ -128,6 +128,7 @@ class Archive:
         """
         if output_directory is None:
             output_directory = ARCHIVES_PATH
+
         if not isinstance(methods, basestring):
             for method in methods:
                 self.backup(method, output_directory)
@@ -149,14 +150,16 @@ class Archive:
         ret = hook_callback('post_backup_create', args=[self.collect_dir,
                                                         retcode])
         if not ret['failed']:
-            filesystem.rm(self.collect_dir, True, True)
+            if self._is_temp_collect_dir:
+                filesystem.rm(self.collect_dir, True, True)
             return True
         else:
             logger.warning(m18n.n('backup_cleaning_failed'))
             return False
-        # # Clean temporary directory
-        # if is_tmp_preparation_dir:
-        #     _clean_preparation_dir()
+
+    @property
+    def _is_temp_collect_dir(self):
+        return self.collect_dir == os.path.join(BACKUP_PATH, self.name)
 
     def _define_backup_name(self):
         """ Define backup name """
@@ -866,7 +869,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
     # Define output_directory
     if output_directory:
-        self.output_directory = os.path.abspath(output_directory)
+        output_directory = os.path.abspath(output_directory)
 
     # Define methods (retro-compat)
     if methods == []:
