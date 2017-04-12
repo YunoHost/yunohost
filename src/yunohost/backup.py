@@ -291,8 +291,8 @@ class Archive:
                                         app_instance_name)
 
         # Check if the app has a backup and restore script
-        app_script = os.path.join(app_setting_path, '/scripts/backup')
-        app_restore_script = os.path.join(app_setting_path, '/scripts/restore')
+        app_script = os.path.join(app_setting_path, 'scripts/backup')
+        app_restore_script = os.path.join(app_setting_path, 'scripts/restore')
         if not os.path.isfile(app_script):
             logger.warning(m18n.n('unbackup_app', app=app_instance_name))
             return
@@ -309,13 +309,13 @@ class Archive:
             self._mark_for_backup(app_setting_path, settings_dir)
 
             # Copy app backup script in a temporary folder and execute it
-            tmp_script, _ = tempfile.mkstemp(prefix='backup_')
+            _, tmp_script = tempfile.mkstemp(prefix='backup_')
             subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
             # Prepare env. var. to pass to script
             app_id, app_instance_nb = _parse_app_instance_name(
                 app_instance_name)
-            env_dict = self.get_env_var()
+            env_dict = self._get_env_var()
             env_dict["YNH_APP_ID"] = app_id
             env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
