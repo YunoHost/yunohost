@@ -82,7 +82,7 @@ class Archive:
             self.bindable = False
 
         self._init_collect_dir()
-        self._init_csv()
+        self._open_csv()
 
     def collect_files(self, hooks=[], apps=[]):
         """
@@ -178,11 +178,11 @@ class Archive:
                 raise MoulinetteError(
                     errno.EIO, m18n.n('backup_output_directory_not_empty'))
 
-    def _init_csv(self):
+    def _open_csv(self):
         """ Initialize backup list """
         self.csv_path = os.path.join(self.collect_dir, 'backup.csv')
         try:
-            self.csv_file = open(self.csv_path, 'w')
+            self.csv_file = open(self.csv_path, 'a')
             self.fieldnames = ['source', 'dest']
             self.csv = csv.DictWriter(self.csv_file, fieldnames=self.fieldnames,
                                       quoting=csv.QUOTE_ALL)
@@ -246,6 +246,7 @@ class Archive:
         # Execute hooks
         ret = hook_callback('backup', hooks_filtered, args=[self.collect_dir],
                             env=self._get_env_var(), chdir=self.collect_dir)
+
         if ret['succeed']:
             self.info['hooks'] = ret['succeed']
 
@@ -323,6 +324,7 @@ class Archive:
 
             hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
                       raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+
         except:
             logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
 
@@ -407,7 +409,7 @@ class Archive:
         self._check_is_enough_free_space(output_directory)
 
         # Open archive file for writing
-        archive_file = os.path.join(output_directory, self.name + 'tar.gz')
+        archive_file = os.path.join(output_directory, self.name + '.tar.gz')
         try:
             tar = tarfile.open(archive_file, "w:gz")
         except:
@@ -497,7 +499,8 @@ class BackupArchive:
     def __init__(self, name, repo=None):
         # Retrieve and open the archive
         self.info = backup_info(name)
-        self.archive_path = info['path']
+        self.archive_path = self.info['path']
+        self.name = name
 
     def restore(self, hooks=[], apps=[]):
         """ Restore the archive """
@@ -527,6 +530,11 @@ class BackupArchive:
             self._restore_apps(apps)
         self.clean()
 
+    @property
+    def success(self):
+        return self.result['hooks'] or self.result['apps']
+
+
     def _mount(self, mnt_path=None):
         """
         Mount the archive. We avoid copy to be able to restore on system without
@@ -535,33 +543,48 @@ class BackupArchive:
 
         # Check mount directory
         if mnt_path is None:
-            self.mnt_path = os.path.join(BACKUP_PATH, "tmp", name)
+            self.mnt_path = os.path.join(BACKUP_PATH, "tmp", self.name)
         else:
             self.mnt_path = mnt_path
 
-        if os.path.isdir(mnt_path):
-            logger.debug("temporary directory for restoration '%s' already exists",
-                         mnt_path)
-            # TODO unmount
-            os.system('rm -rf %s' % mnt_path)
+        if os.path.ismount(self.mnt_path):
+            logger.debug("An already mounting point '%s' already exists",
+                         self.mnt_path)
+            ret = subprocess.call(['umount', self.mnt_path])
+            if ret == 0:
+                subprocess.call(['rmdir', self.mnt_path])
+                logger.debug("Unmount dir: {}".format(self.mnt_path))
+            else:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('restore_removing_tmp_dir_failed'))
+        elif os.path.isdir(self.mnt_path):
+            logger.debug("temporary restore directory '%s' already exists",
+                         self.mnt_path)
+            ret = subprocess.call(['rm', '-Rf', self.mnt_path])
+            if ret == 0:
+                logger.debug("Delete dir: {}".format(self.mnt_path))
+            else:
+                raise MoulinetteError(errno.EIO,
+                                      m18n.n('restore_removing_tmp_dir_failed'))
 
         # Check the archive can be open
         try:
-            tar = tarfile.open(self.archive_file, "r:gz")
+            tar = tarfile.open(self.archive_path, "r:gz")
         except:
             logger.debug("cannot open backup archive '%s'",
-                         self.archive_file, exc_info=1)
+                         self.archive_path, exc_info=1)
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_archive_open_failed'))
         tar.close()
 
         # Mount the tarball
-        logger.info(m18n.n('backup_mounting_archive'))
-        ret = subprocess.call(['archivemount', '-o readonly',
-                               self.archive_path, mnt_path])
+        logger.info(m18n.n('restore_mounting_archive', path=self.mnt_path))
+        filesystem.mkdir(self.mnt_path, parents=True)
+        ret = subprocess.call(['archivemount', '-o', 'readonly',
+                               self.archive_path, self.mnt_path])
         if ret != 0:
             logger.debug("cannot mount backup archive '%s'",
-                         self.archive_file, exc_info=1)
+                         self.archive_path, exc_info=1)
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_archive_mount_failed'))
 
@@ -637,7 +660,7 @@ class BackupArchive:
                 for f in tmp_hooks:
                     logger.debug("adding restoration hook '%s' to the system "
                                  "from the backup archive '%s'", f,
-                                 archive_file)
+                                 self.archive_path)
                     shutil.copy(f, restore_hook_folder)
             hooks_filtered.add(h)
 
@@ -663,6 +686,15 @@ class BackupArchive:
             self._restore_app(app_instance_name)
 
     def _restore_app(self, app_instance_name):
+        def copytree(src, dst, symlinks=False, ignore=None):
+            for item in os.listdir(src):
+                s = os.path.join(src, item)
+                d = os.path.join(dst, item)
+                if os.path.isdir(s):
+                    shutil.copytree(s, d, symlinks, ignore)
+                else:
+                    shutil.copy2(s, d)
+
         tmp_app_dir = os.path.join(self.mnt_path, 'apps', app_instance_name)
         tmp_app_bkp_dir = os.path.join(tmp_app_dir, 'backup')
 
@@ -687,16 +719,19 @@ class BackupArchive:
                                         app_instance_name)
         logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
         try:
+            # Copy scripts to a writable temporary folder
+            tmp_scripts_dir = tempfile.mkdtemp(prefix='restore')
+            copytree(os.path.join(tmp_settings_dir, 'scripts'), tmp_scripts_dir)
+            filesystem.chmod(tmp_scripts_dir, 0550, 0550, True)
+            filesystem.chown(tmp_scripts_dir, 'admin', None, True)
+            app_script = os.path.join(tmp_scripts_dir, 'restore')
+
             # Copy app settings and set permissions
             # TODO: Copy app hooks too
             shutil.copytree(tmp_settings_dir, app_setting_path)
             filesystem.chmod(app_setting_path, 0400, 0400, True)
             filesystem.chown(os.path.join(app_setting_path, 'scripts'),
                              'admin', None, True)
-
-            # Set correct right to the temporary settings folder
-            filesystem.chmod(tmp_settings_dir, 0550, 0550, True)
-            filesystem.chown(tmp_settings_dir, 'admin', None, True)
 
             # Prepare env. var. to pass to script
             env_dict = {}
@@ -712,7 +747,7 @@ class BackupArchive:
             logger.exception(m18n.n('restore_app_failed',
                                     app=app_instance_name))
 
-            app_script = os.path.join(tmp_app_dir, 'settings/scripts/remove')
+            app_script = os.path.join(tmp_script_dir, 'settings/scripts/remove')
 
             # Setup environment for remove script
             env_dict_remove = {}
@@ -733,23 +768,26 @@ class BackupArchive:
             # TODO Cleaning app hooks
         else:
             self.result['apps'].append(app_instance_name)
+        finally:
+            # Cleaning temporary scripts directory
+            shutil.rmtree(tmp_scripts_dir, ignore_errors=True)
 
     def clean(self, retcode=0):
         if self.result['apps']:
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
-        ret = subprocess.call(['umount', self.mnt_path])
-        if ret != 0:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('can_not_umount_restore_path',
-                                         path=self.mnt_path))
         ret = hook_callback('post_backup_restore', args=[self.mnt_path,
                                                          retcode])
-        if not ret['failed']:
-            filesystem.rm(tmp_dir, True, True)
-        else:
+        if ret['failed']:
             logger.warning(m18n.n('restore_cleaning_failed'))
+
+        if os.path.ismount(self.mnt_path):
+            ret = subprocess.call(['umount', self.mnt_path])
+            if ret != 0:
+                logger.warning(m18n.n('restore_cleaning_failed'))
+            else:
+                filesystem.rm(self.mnt_path, True, True)
 
     def _read_info_files(self):
         # Retrieve backup info
@@ -761,7 +799,7 @@ class BackupArchive:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
             raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
         else:
-            logger.debug("restoring from backup '%s' created on %s", name,
+            logger.debug("restoring from backup '%s' created on %s", self.name,
                          time.ctime(self.info['created_at']))
 
 
@@ -903,11 +941,11 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
             if not force:
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
 
-    if ignore_hooks:
-        hooks = None
+    if not ignore_hooks and hooks is None:
+        hooks = []
 
-    if ignore_apps:
-        apps = None
+    if not ignore_apps and apps is None:
+        apps = []
 
     # TODO Partial app restore could not work if ldap is not restored before
     # TODO repair mysql if broken and it's a complete restore
@@ -917,12 +955,12 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
     backup.restore(hooks, apps)
 
     # Check if something has been restored
-    if not backup.success:
+    if backup.success:
+        backup.clean()
+        logger.success(m18n.n('restore_complete'))
+    else:
         backup.clean(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
-
-    backup.clean()
-    logger.success(m18n.n('restore_complete'))
 
     return backup.result
 
