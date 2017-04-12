@@ -38,7 +38,7 @@ ynh_backup() {
 
     # Transform DEST_PATH into relative path
     [[ "${DEST_PATH:0:1}" == "/" ]] \
-        && DEST_PATH="${DEST_PATH#$YNH_CWD/}"i
+        && DEST_PATH="${DEST_PATH#$YNH_CWD/}"
 
     # Complete DEST_PATH if ended by a /
     [[ "${DEST_PATH: -1}" == "/" ]] \
@@ -56,7 +56,7 @@ ynh_backup() {
     local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
     local DEST=$(echo "${REL_DIR}${DEST_PATH}" | sed -r 's/"/\"\"/g')
     DEST="${DEST#/}"
-    (echo "\"${SRC}\",\"${DEST}\"") | sudo tee -a ${YNH_BACKUP_CSV}
+    echo "\"${SRC}\",\"${DEST}\"" | sudo tee --append ${YNH_BACKUP_CSV} > /dev/null
 
     mkdir -p $(dirname "${DEST_PATH}")
 }
