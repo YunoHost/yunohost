@@ -195,9 +195,20 @@ class Archive:
     def _get_env_var(self):
         """ Define environment variable for hooks call """
         env_var = {}
+
+        _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
         env_var['YNH_BACKUP_DIR'] = self.collect_dir
-        env_var['YNH_BACKUP_CSV'] = self.csv_path
+        env_var['YNH_BACKUP_CSV'] = tmp_csv
         return env_var
+
+    def _commit_path_in_csv(self, tmp_csv):
+        """ Commit collected path from system or app hooks """
+        with open(tmp_csv, 'r') as input:
+            while True:
+                data = input.read(100000)
+                if data == '':  # end of file reached
+                    break
+                self.csv_file.write(data)
 
     def _mark_for_backup(self, source, dest=None):
         """
@@ -247,10 +258,12 @@ class Archive:
         logger.info(m18n.n('backup_running_hooks'))
 
         # Execute hooks
+        env_dict = self._get_env_var()
         ret = hook_callback('backup', hooks_filtered, args=[self.collect_dir],
-                            env=self._get_env_var(), chdir=self.collect_dir)
+                            env=env_dict, chdir=self.collect_dir)
 
         if ret['succeed']:
+            self._commit_path_in_csv(env_dict["YNH_BACKUP_CSV"])
             self.info['hooks'] = ret['succeed']
 
             # Save relevant restoration hooks
@@ -310,7 +323,6 @@ class Archive:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
             settings_dir = os.path.join(tmp_app_dir, 'settings')
-            self._mark_for_backup(app_setting_path, settings_dir)
 
             # Copy app backup script in a temporary folder and execute it
             _, tmp_script = tempfile.mkstemp(prefix='backup_')
@@ -328,6 +340,8 @@ class Archive:
             hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
                       raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
 
+            self._commit_path_in_csv(env_dict["YNH_BACKUP_CSV"])
+            self._mark_for_backup(app_setting_path, settings_dir)
         except:
             logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
 
@@ -347,6 +361,7 @@ class Archive:
             }
         finally:
             filesystem.rm(tmp_script, force=True)
+            filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     def _call_for_each_path(self, callback):
         """ Call a callback for each path in csv """
