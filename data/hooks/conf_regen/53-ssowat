@@ -1,0 +1,175 @@
+#!/bin/bash
+
+python - <<PYTHONPROGRAM
+# Standard python libs
+import os
+import sys
+import json
+import argparse
+
+# Yunohost specific
+sys.path.append('/usr/lib/moulinette/')
+from moulinette.core import init_authenticator
+from yunohost.domain import domain_list, _get_maindomain 
+from yunohost.user import user_list
+from yunohost.app import app_map, app_list, _is_installed, _get_app_settings
+
+# Black dirty magic to have m18n existing because app_list needs it...
+class M18n:
+    def __init__(self):
+        self.locale = "en"
+        self.default_locale = "en"
+
+    def n(self, key, *args, **kwargs):
+        pass
+
+import __builtin__
+__builtin__.__dict__['m18n'] = M18n()
+# End black magic
+
+
+def do_init_regen():
+    if os.geteuid() != 0:
+        raise Exception("You must be root to run this script")
+
+    do_pre_regen("")
+
+def do_pre_regen(pending_dir):
+
+    ssowat_conf_dir = "%s/etc/ssowat" % pending_dir
+    ssowat_conf = "%s/conf.json" % ssowat_conf_dir
+
+    # Prepare output directory
+    try:
+        os.makedirs(ssowat_conf_dir)
+    except:
+        pass
+
+    # Instantiate LDAP Authenticator
+    AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
+    AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
+    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+
+    # Fetch domains and main domain
+    main_domain = _get_maindomain()
+    domains = domain_list(auth)['domains']
+
+    # Fetch the map of user access to each apps
+    users = {}
+    for username in user_list(auth)['users'].keys():
+        users[username] = app_map(user=username)
+    
+    skipped_urls = []
+    skipped_regex = []
+    unprotected_urls = []
+    unprotected_regex = []
+    protected_urls = []
+    protected_regex = []
+    redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
+    redirected_urls ={}
+
+    try:
+        apps_installed_list = app_list(installed=True)['apps']
+    except:
+        apps_installed_list = []
+        
+    def _get_setting(settings, name):
+        s = settings.get(name, None)
+        return s.split(',') if s else []
+
+    for app in apps_installed_list:
+        
+        app_settings = _get_app_settings(app['id'])
+        app_domain = app_settings['domain'] 
+        app_path = app_settings['path'].rstrip('/')
+        app_url = app_domain+app_path
+
+        for item in _get_setting(app_settings, 'skipped_uris'):
+            item = item.rstrip('/')
+            skipped_urls.append(app_url + item)
+        for item in _get_setting(app_settings, 'skipped_regex'):
+            skipped_regex.append(item)
+        for item in _get_setting(app_settings, 'unprotected_uris'):
+            item = item.rstrip('/')
+            unprotected_urls.append(app_url + item)
+        for item in _get_setting(app_settings, 'unprotected_regex'):
+            unprotected_regex.append(item)
+        for item in _get_setting(app_settings, 'protected_uris'):
+            item = item.rstrip('/')
+            protected_urls.append(app_url + item)
+        for item in _get_setting(app_settings, 'protected_regex'):
+            protected_regex.append(item)
+        if 'redirected_urls' in app_settings:
+            redirected_urls.update(app_settings['redirected_urls'])
+        if 'redirected_regex' in app_settings:
+            redirected_regex.update(app_settings['redirected_regex'])
+
+    for domain in domains:
+        skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
+
+    # Authorize ACME challenge url
+    skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
+
+    # Prepare configuration dictionnary
+    conf_dict = {
+        'portal_domain': main_domain,
+        'portal_path': '/yunohost/sso/',
+        'additional_headers': {
+            'Auth-User': 'uid',
+            'Remote-User': 'uid',
+            'Name': 'cn',
+            'Email': 'mail'
+        },
+        'domains': domains,
+        'skipped_urls': skipped_urls,
+        'unprotected_urls': unprotected_urls,
+        'protected_urls': protected_urls,
+        'skipped_regex': skipped_regex,
+        'unprotected_regex': unprotected_regex,
+        'protected_regex': protected_regex,
+        'redirected_urls': redirected_urls,
+        'redirected_regex': redirected_regex,
+        'users': users,
+    }
+
+    # Write json conf
+    with open(ssowat_conf, "w+") as f:
+        json.dump(conf_dict, f, sort_keys=True, indent=4)
+
+def do_post_regen(regen_conf_files):
+
+    # Nothing to do in particular
+    pass
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('action')
+    parser.add_argument('force',   nargs='?', default="0")
+    parser.add_argument('dry_run', nargs='?', default="0")
+    parser.add_argument('files',   nargs='?', default=None)
+    #args = parser.parse_args()
+    args = parser.parse_args(["$1", "$2", "$3", "$4"])
+
+    # Clean force and dry_run
+    if args.force == "0":
+        args.force = False
+    else:
+        args.force = True
+    if args.dry_run == "0":
+        args.dry_run = False
+    else:
+        args.dry_run = True
+
+    # Call the proper action
+    if args.action == "pre":
+        do_pre_regen(args.files)
+    elif args.action == "post":
+        do_post_regen(args.files)
+    elif args.action == "init":
+        do_init_regen()
+    else:
+        raise ValueError("Hook called with unknown action '%s'" % args.action)
+
+main()
+PYTHONPROGRAM
