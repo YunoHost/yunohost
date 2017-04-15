@@ -17,9 +17,10 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program; if not, see http://www.gnu.org/licenses
 
-    yunohost_certificate.py
+    io.py
 
-    Manage certificates, in particular Let's encrypt
+    Helpers for common IO operations (writing / reading file, fetching stuff
+    from URL, setting permissions, ...)
 """
 
 import os
@@ -39,7 +40,7 @@ from moulinette.utils.log import getActionLogger
 logger = getActionLogger('yunohost.io')
 
 
-def _read_file(file_path):
+def read_from_file(file_path):
     """
     Read a regular text file
 
@@ -68,14 +69,13 @@ def _read_file(file_path):
     return file_content
 
 
-def _read_json(file_path):
+def read_from_json(file_path):
     """
     Read a json file
 
     Keyword argument:
         file_path -- Path to the json file
     """
-    assert isinstance(file_path, str)
 
     # Read file
     file_content = _read_file(file_path)
@@ -89,24 +89,38 @@ def _read_json(file_path):
 
     return loaded_json
 
-
-def _write_json(file_path, input_dict):
+def write_to_file(file_path, data)
     """
-    Write a dictionnary to a json file
+    Write a single string or a list of string to a text file.
+    The text file will be overwritten by default.
+    
+    Keyword argument:
+        file_path -- Path to the output json file
+        data -- The data to write (must be a string or list of string)
+    """
+
+def append_to_file(file_path, data):
+
+    pass
+    
+
+def write_to_json(file_path, data):
+    """
+    Write a dictionnary or a list to a json file
 
     Keyword argument:
-        file_path -- Path to the json file
-        input_dict -- The dictionnary to write
+        file_path -- Path to the output json file
+        data -- The data to write (must be a dict or a list)
     """
 
     # Assumptions
     assert isinstance(file_path, str)
-    assert isinstance(input_dict, dict)
+    assert isinstance(data, dict) or isinstance(data, list)
 
     # Write dict to file
     try:
         with open(file_path, "w") as f:
-            json.dump(input_dict, f)
+            json.dump(data, f)
     except IOError as e:
         raise MoulinetteError(errno.EACCES,
                               m18n.n('io_cannot_write_file', file=file_path))
@@ -116,7 +130,7 @@ def _write_json(file_path, input_dict):
                                      file=file_path, error=str(e)))
 
 
-def _remove_file(file_path):
+def remove_file(file_path):
     """
     Remove a regular file if it exists
 
@@ -135,10 +149,10 @@ def _remove_file(file_path):
                                          file=file_path, error=str(e)))
 
 
-def _set_permissions(file_path, user, group, permissions):
-    """
-    Change permissions of a given file.
-    Example : _set_permissions("/etc/swag", "root", "www-data", 0750)
+def set_permissions(file_path, user, group, permissions):
+    """    
+    Change permissions of a given file or directory.
+    Example : set_permissions("/etc/swag", "root", "www-data", 0750)
 
     Keyword argument:
         file_path -- Path to the json file
@@ -153,30 +167,39 @@ def _set_permissions(file_path, user, group, permissions):
     assert isinstance(permissions, int)
 
     # Check file exist
+    # TODO / FIXME handle case for directory
     if not os.path.isfile(file_path):
         raise MoulinetteError(errno.EROENT,
                               m18n.n('io_no_such_file', file=file_path))
 
+    # TODO / FIXME : check the uid and gid exists
+
     uid = pwd.getpwnam(user).pw_uid
     gid = grp.getgrnam(group).gr_gid
 
-    os.chown(file_path, uid, gid)
-    os.chmod(file_path, permissions)
+    try:
+        os.chown(file_path, uid, gid)
+        os.chmod(file_path, permissions)
+    except:
+        # TODO / FIXME handle exceptions
+        pass
 
 
-def _download_text_data(url):
+def download_text(url, timeout=30):
     """
     Download text from a url and returns the raw text
 
     Keyword argument:
         url -- The url to download the data from
+        timeout -- Number of seconds allowed for download to effectively start
+        before giving up
     """
     # Assumptions
     assert isinstance(file_path, str)
 
     # Download file
     try:
-        r = requests.get(url, timeout=30)
+        r = requests.get(url, timeout=timeout)
     # SSL exceptions
     except requests.exceptions.SSLError:
         raise MoulinetteError(errno.EBADE,
@@ -200,8 +223,9 @@ def _download_text_data(url):
 
     return r.text
 
+def download_json(url, timeout=30):
 
-def _run_shell_commands(command_list):
+def run_shell_commands(command_list):
 
     # Still very work in progress
     # Maybe have another argument to know what exception to raise if something
