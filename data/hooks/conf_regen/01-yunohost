@@ -65,7 +65,7 @@ with open('/etc/yunohost/services.yml') as f:
 updated = False
 for service, conf in new_services.items():
     # remove service with empty conf
-    if not conf:
+    if conf is None:
         if service in services:
             print("removing '{0}' from services".format(service))
             del services[service]

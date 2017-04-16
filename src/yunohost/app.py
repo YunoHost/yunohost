@@ -29,11 +29,13 @@ import shutil
 import yaml
 import time
 import re
-import socket
 import urlparse
 import errno
 import subprocess
 import requests
+import glob
+import pwd
+import grp
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
@@ -44,11 +46,12 @@ from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
-REPO_PATH        = '/var/cache/yunohost/repo'
-APPS_PATH        = '/usr/share/yunohost/apps'
-APPS_SETTING_PATH= '/etc/yunohost/apps/'
-INSTALL_TMP      = '/var/cache/yunohost'
-APP_TMP_FOLDER   = INSTALL_TMP + '/from_file'
+REPO_PATH         = '/var/cache/yunohost/repo'
+APPS_PATH         = '/usr/share/yunohost/apps'
+APPS_SETTING_PATH = '/etc/yunohost/apps/'
+INSTALL_TMP       = '/var/cache/yunohost'
+APP_TMP_FOLDER    = INSTALL_TMP + '/from_file'
+APPSLISTS_JSON     = '/etc/yunohost/appslists.json'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -65,66 +68,122 @@ def app_listlists():
     """
     List fetched lists
 
-
     """
-    list_list = []
-    try:
-        for filename in os.listdir(REPO_PATH):
-            if '.json' in filename:
-                list_list.append(filename[:len(filename)-5])
-    except OSError:
-        raise MoulinetteError(1, m18n.n('no_appslist_found'))
 
-    return { 'lists' : list_list }
+    # Migrate appslist system if needed
+    # XXX move to a migration when those are implemented
+    if _using_legacy_appslist_system():
+        _migrate_appslist_system()
+
+    # Get the list
+    appslist_list = _read_appslist_list()
+
+    return appslist_list
 
 
 def app_fetchlist(url=None, name=None):
     """
-    Fetch application list from app server
+    Fetch application list(s) from app server. By default, fetch all lists.
 
     Keyword argument:
-        name -- Name of the list (default yunohost)
-        url -- URL of remote JSON list (default https://app.yunohost.org/official.json)
-
+        name -- Name of the list
+        url -- URL of remote JSON list
     """
-    # Create app path if not exists
+    # If needed, create folder where actual appslists are stored
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
-    if url is None:
-        url = 'https://app.yunohost.org/official.json'
-        name = 'yunohost'
-    elif name is None:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('custom_appslist_name_required'))
+    # Migrate appslist system if needed
+    # XXX move that to a migration once they are finished
+    if _using_legacy_appslist_system():
+        _migrate_appslist_system()
 
-    # Download file
-    try:
-        applist_request = requests.get(url, timeout=30)
-    except Exception as e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
+    # Read the list of appslist...
+    appslists = _read_appslist_list()
 
-    if (applist_request.status_code != 200):
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+    # Determine the list of appslist to be fetched
+    appslists_to_be_fetched = []
 
-    # Validate app list format
-    # TODO / Possible improvement : better validation for app list (check that
-    # json fields actually look like an app list and not any json file)
-    applist = applist_request.text
-    try:
-        json.loads(applist)
-    except ValueError, e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+    # If a url and and a name is given, try to register new list,
+    # the fetch only this list
+    if url is not None:
+        if name:
+            _register_new_appslist(url, name)
+            # Refresh the appslists dict
+            appslists = _read_appslist_list()
+            appslists_to_be_fetched = [name]
+        else:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('custom_appslist_name_required'))
 
-    # Write app list to file
-    list_file = '%s/%s.json' % (REPO_PATH, name)
-    with open(list_file, "w") as f:
-        f.write(applist)
+    # If a name is given, look for an appslist with that name and fetch it
+    elif name is not None:
+        if name not in appslists.keys():
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('appslist_unknown', appslist=name))
+        else:
+            appslists_to_be_fetched = [name]
 
-    # Setup a cron job to re-fetch the list at midnight
-    open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
+    # Otherwise, fetch all lists
+    else:
+        appslists_to_be_fetched = appslists.keys()
 
-    logger.success(m18n.n('appslist_fetched'))
+    # Fetch all appslists to be fetched
+    for name in appslists_to_be_fetched:
+
+        url = appslists[name]["url"]
+
+        logger.debug("Attempting to fetch list %s at %s" % (name, url))
+
+        # Download file
+        try:
+            appslist_request = requests.get(url, timeout=30)
+        except requests.exceptions.SSLError:
+            logger.error(m18n.n('appslist_retrieve_error',
+                                appslist=name,
+                                error="SSL connection error"))
+            continue
+        except Exception as e:
+            logger.error(m18n.n('appslist_retrieve_error',
+                                appslist=name,
+                                error=str(e)))
+            continue
+        if appslist_request.status_code != 200:
+            logger.error(m18n.n('appslist_retrieve_error',
+                                appslist=name,
+                                error="Server returned code %s " %
+                                str(appslist_request.status_code)))
+            continue
+
+        # Validate app list format
+        # TODO / Possible improvement : better validation for app list (check
+        # that json fields actually look like an app list and not any json
+        # file)
+        appslist = appslist_request.text
+        try:
+            json.loads(appslist)
+        except ValueError, e:
+            logger.error(m18n.n('appslist_retrieve_bad_format',
+                                appslist=name))
+            continue
+
+        # Write app list to file
+        list_file = '%s/%s.json' % (REPO_PATH, name)
+        try:
+            with open(list_file, "w") as f:
+                f.write(appslist)
+        except Exception as e:
+            raise MoulinetteError(errno.EIO,
+                                  "Error while writing appslist %s: %s" %
+                                  (name, str(e)))
+
+        now = int(time.time())
+        appslists[name]["lastUpdate"] = now
+
+        logger.success(m18n.n('appslist_fetched', appslist=name))
+
+    # Write updated list of appslist
+    _write_appslist_list(appslists)
 
 
 def app_removelist(name):
@@ -135,16 +194,25 @@ def app_removelist(name):
         name -- Name of the list to remove
 
     """
-    try:
-        os.remove('%s/%s.json' % (REPO_PATH, name))
-        os.remove("/etc/cron.d/yunohost-applist-%s" % name)
-    except OSError:
-        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
+    appslists = _read_appslist_list()
 
-    logger.success(m18n.n('appslist_removed'))
+    # Make sure we know this appslist
+    if name not in appslists.keys():
+        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
+
+    # Remove json
+    json_path = '%s/%s.json' % (REPO_PATH, name)
+    if os.path.exists(json_path):
+        os.remove(json_path)
+
+    # Forget about this appslist
+    del appslists[name]
+    _write_appslist_list(appslists)
+
+    logger.success(m18n.n('appslist_removed', appslist=name))
 
 
-def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, with_backup=False):
+def app_list(filter=None, raw=False, installed=False, with_backup=False):
     """
     List apps
 
@@ -157,98 +225,95 @@ def app_list(offset=None, limit=None, filter=None, raw=False, installed=False, w
         with_backup -- Return only apps with backup feature (force --installed filter)
 
     """
-    if offset: offset = int(offset)
-    else: offset = 0
-    if limit: limit = int(limit)
-    else: limit = 1000
     installed = with_backup or installed
 
     app_dict = {}
-    if raw:
-        list_dict = {}
-    else:
-        list_dict = []
+    list_dict = {} if raw else []
 
-    try:
-        applists = app_listlists()['lists']
-        applists[0]
-    except (IOError, IndexError):
-        app_fetchlist()
-        applists = app_listlists()['lists']
+    appslists = _read_appslist_list()
 
-    for applist in applists:
-        with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
+    for appslist in appslists.keys():
+
+        json_path = "%s/%s.json" % (REPO_PATH, appslist)
+        if not os.path.exists(json_path):
+            app_fetchlist(name=appslist)
+
+        with open(json_path) as json_list:
             for app, info in json.loads(str(json_list.read())).items():
                 if app not in app_dict:
-                    info['repository'] = applist
+                    info['repository'] = appslist
                     app_dict[app] = info
 
+    # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
         if app not in app_dict:
-            # Look for forks
+            # Handle multi-instance case like wordpress__2
             if '__' in app:
                 original_app = app[:app.index('__')]
                 if original_app in app_dict:
                     app_dict[app] = app_dict[original_app]
                     continue
-            with open( APPS_SETTING_PATH + app +'/manifest.json') as json_manifest:
-                app_dict[app] = {"manifest":json.loads(str(json_manifest.read()))}
+                # FIXME : What if it's not !?!?
+
+            with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+                app_dict[app] = {"manifest": json.load(json_manifest)}
+
             app_dict[app]['repository'] = None
 
-    if len(app_dict) > (0 + offset) and limit > 0:
-        sorted_app_dict = {}
-        for sorted_keys in sorted(app_dict.keys())[offset:]:
-            sorted_app_dict[sorted_keys] = app_dict[sorted_keys]
+    # Sort app list
+    sorted_app_list = sorted(app_dict.keys())
 
-        i = 0
-        for app_id, app_info_dict in sorted_app_dict.items():
-            if i < limit:
-                if (filter and ((filter in app_id) or (filter in app_info_dict['manifest']['name']))) or not filter:
-                    app_installed = _is_installed(app_id)
+    for app_id in sorted_app_list:
 
-                    # Only installed apps filter
-                    if installed and not app_installed:
-                        continue
+        app_info_dict = app_dict[app_id]
 
-                    # Filter only apps with backup and restore scripts
-                    if with_backup and (
-                        not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
-                        not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
-                    ):
-                        continue
+        # Apply filter if there's one
+        if (filter and
+           (filter not in app_id) and
+           (filter not in app_info_dict['manifest']['name'])):
+            continue
 
-                    if raw:
-                        app_info_dict['installed'] = app_installed
-                        if app_installed:
-                            app_info_dict['status'] = _get_app_status(app_id)
+        # Ignore non-installed app if user wants only installed apps
+        app_installed = _is_installed(app_id)
+        if installed and not app_installed:
+            continue
 
-                        # dirty: we used to have manifest containing multi_instance value in form of a string
-                        # but we've switched to bool, this line ensure retrocompatibility
-                        app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+        # Ignore apps which don't have backup/restore script if user wants
+        # only apps with backup features
+        if with_backup and (
+            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
+            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
+        ):
+            continue
 
-                        list_dict[app_id] = app_info_dict
-                    else:
-                        label = None
-                        if app_installed:
-                            app_info_dict_raw = app_info(app=app_id, raw=True)
-                            label = app_info_dict_raw['settings']['label']
-                        list_dict.append({
-                            'id': app_id,
-                            'name': app_info_dict['manifest']['name'],
-                            'label': label,
-                            'description': _value_for_locale(
-                                app_info_dict['manifest']['description']),
-                            # FIXME: Temporarly allow undefined license
-                            'license': app_info_dict['manifest'].get('license',
-                                m18n.n('license_undefined')),
-                            'installed': app_installed
-                        })
-                    i += 1
-            else:
-               break
-    if not raw:
-        list_dict = { 'apps': list_dict }
-    return list_dict
+        if raw:
+            app_info_dict['installed'] = app_installed
+            if app_installed:
+                app_info_dict['status'] = _get_app_status(app_id)
+
+            # dirty: we used to have manifest containing multi_instance value in form of a string
+            # but we've switched to bool, this line ensure retrocompatibility
+            app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
+
+            list_dict[app_id] = app_info_dict
+
+        else:
+            label = None
+            if app_installed:
+                app_info_dict_raw = app_info(app=app_id, raw=True)
+                label = app_info_dict_raw['settings']['label']
+
+            list_dict.append({
+                'id': app_id,
+                'name': app_info_dict['manifest']['name'],
+                'label': label,
+                'description': _value_for_locale(app_info_dict['manifest']['description']),
+                # FIXME: Temporarly allow undefined license
+                'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
+                'installed': app_installed
+            })
+
+    return {'apps': list_dict} if not raw else list_dict
 
 
 def app_info(app, show_status=False, raw=False):
@@ -434,7 +499,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
-        if hook_exec(extracted_app_folder +'/scripts/upgrade', args=args_list, env=env_dict) != 0:
+        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
             now = int(time.time())
@@ -562,7 +627,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict)
+            args=args_list, env=env_dict, user="root")
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
     except:
@@ -579,7 +644,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
                 # Execute remove script
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
-                    args=[app_instance_name], env=env_dict_remove)
+                    args=[app_instance_name], env=env_dict_remove, user="root")
                 if remove_retcode != 0:
                     logger.warning(m18n.n('app_not_properly_removed',
                                           app=app_instance_name))
@@ -587,6 +652,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
+
+            app_ssowatconf(auth)
 
             if install_retcode == -1:
                 raise MoulinetteError(errno.EINTR,
@@ -647,7 +714,7 @@ def app_remove(auth, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict) == 0:
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
 
     if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
@@ -902,16 +969,52 @@ def app_checkport(port):
         port -- Port to check
 
     """
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(("localhost", int(port)))
-        s.close()
-    except socket.error:
+
+    # This import cannot be moved on top of file because it create a recursive
+    # import...
+    from yunohost.tools import tools_portavailable
+    availability = tools_portavailable(port)
+    if availability["available"]:
         logger.success(m18n.n('port_available', port=int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('port_unavailable', port=int(port)))
+
+
+def app_register_url(auth, app, domain, path):
+    """
+    Book/register a web path for a given app
+
+    Keyword argument:
+        app -- App which will use the web path
+        domain -- The domain on which the app should be registered (e.g. your.domain.tld)
+        path -- The path to be registered (e.g. /coffee)
+    """
+
+    # This line can't be moved on top of file, otherwise it creates an infinite
+    # loop of import with tools.py...
+    from domain import domain_url_available, _normalize_domain_path
+
+    domain, path = _normalize_domain_path(domain, path)
+
+    # We cannot change the url of an app already installed simply by changing
+    # the settings...
+    # FIXME should look into change_url once it's merged
+
+    installed = app in app_list(installed=True, raw=True).keys()
+    if installed:
+        settings = _get_app_settings(app)
+        if "path" in settings.keys() and "domain" in settings.keys():
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('app_already_installed_cant_change_url'))
+
+    # Check the url is available
+    if not domain_url_available(auth, domain, path):
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_location_unavailable'))
+
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
 
 
 def app_checkurl(auth, url, app=None):
@@ -1003,12 +1106,10 @@ def app_ssowatconf(auth):
 
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_list
 
-    with open('/etc/yunohost/current_host', 'r') as f:
-        main_domain = f.readline().rstrip()
-
+    main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
 
     users = {}
@@ -1673,6 +1774,151 @@ def _parse_app_instance_name(app_instance_name):
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
+
+
+def _using_legacy_appslist_system():
+    """
+    Return True if we're using the old fetchlist scheme.
+    This is determined by the presence of some cron job yunohost-appslist-foo
+    """
+
+    return glob.glob("/etc/cron.d/yunohost-appslist-*") != []
+
+
+def _migrate_appslist_system():
+    """
+    Migrate from the legacy fetchlist system to the new one
+    """
+    legacy_crons = glob.glob("/etc/cron.d/yunohost-appslist-*")
+
+    for cron_path in legacy_crons:
+        appslist_name = os.path.basename(cron_path).replace("yunohost-appslist-", "")
+        logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
+
+        # Parse appslist url in cron
+        cron_file_content = open(cron_path).read().strip()
+        appslist_url_parse = re.search("-u (https?://[^ ]+)", cron_file_content)
+
+        # Abort if we did not find an url
+        if not appslist_url_parse or not appslist_url_parse.groups():
+            # Bkp the old cron job somewhere else
+            bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
+            os.rename(cron_path, bkp_file)
+            # Notice the user
+            logger.warning(m18n.n('appslist_could_not_migrate',
+                           appslist=appslist_name,
+                           bkp_file=bkp_file))
+        # Otherwise, register the list and remove the legacy cron
+        else:
+            appslist_url = appslist_url_parse.groups()[0]
+            try:
+                _register_new_appslist(appslist_url, appslist_name)
+            # Might get an exception if two legacy cron jobs conflict
+            # in terms of url...
+            except Exception as e:
+                logger.error(str(e))
+                # Bkp the old cron job somewhere else
+                bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
+                os.rename(cron_path, bkp_file)
+                # Notice the user
+                logger.warning(m18n.n('appslist_could_not_migrate',
+                               appslist=appslist_name,
+                               bkp_file=bkp_file))
+            else:
+                os.remove(cron_path)
+
+
+def _install_appslist_fetch_cron():
+
+    cron_job_file = "/etc/cron.daily/yunohost-fetch-appslists"
+
+    logger.debug("Installing appslist fetch cron job")
+
+    with open(cron_job_file, "w") as f:
+        f.write('#!/bin/bash\n\nyunohost app fetchlist > /dev/null 2>&1\n')
+
+    _set_permissions(cron_job_file, "root", "root", 0755)
+
+
+# FIXME - Duplicate from certificate.py, should be moved into a common helper
+# thing...
+def _set_permissions(path, user, group, permissions):
+    uid = pwd.getpwnam(user).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+
+    os.chown(path, uid, gid)
+    os.chmod(path, permissions)
+
+
+def _read_appslist_list():
+    """
+    Read the json corresponding to the list of appslists
+    """
+
+    # If file does not exists yet, return empty dict
+    if not os.path.exists(APPSLISTS_JSON):
+        return {}
+
+    # Read file content
+    with open(APPSLISTS_JSON, "r") as f:
+        appslists_json = f.read()
+
+    # Parse json, throw exception if what we got from file is not a valid json
+    try:
+        appslists = json.loads(appslists_json)
+    except ValueError:
+        raise MoulinetteError(errno.EBADR,
+                              m18n.n('appslist_corrupted_json', filename=APPSLISTS_JSON))
+
+    return appslists
+
+
+def _write_appslist_list(appslist_lists):
+    """
+    Update the json containing list of appslists
+    """
+
+    # Write appslist list
+    try:
+        with open(APPSLISTS_JSON, "w") as f:
+            json.dump(appslist_lists, f)
+    except Exception as e:
+            raise MoulinetteError(errno.EIO,
+                                  "Error while writing list of appslist %s: %s" %
+                                  (APPSLISTS_JSON, str(e)))
+
+
+def _register_new_appslist(url, name):
+    """
+    Add a new appslist to be fetched regularly.
+    Raise an exception if url or name conflicts with an existing list.
+    """
+
+    appslist_list = _read_appslist_list()
+
+    # Check if name conflicts with an existing list
+    if name in appslist_list:
+        raise MoulinetteError(errno.EEXIST,
+                              m18n.n('appslist_name_already_tracked', name=name))
+
+    # Check if url conflicts with an existing list
+    known_appslist_urls = [appslist["url"] for _, appslist in appslist_list.items()]
+
+    if url in known_appslist_urls:
+        raise MoulinetteError(errno.EEXIST,
+                              m18n.n('appslist_url_already_tracked', url=url))
+
+    logger.debug("Registering new appslist %s at %s" % (name, url))
+
+    appslist_list[name] = {
+        "url": url,
+        "lastUpdate": None
+    }
+
+    _write_appslist_list(appslist_list)
+
+    _install_appslist_fetch_cron()
+
 
 def is_true(arg):
     """

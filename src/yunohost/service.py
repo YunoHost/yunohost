@@ -201,11 +201,12 @@ def service_status(names=[]):
                                   m18n.n('service_unknown', service=name))
 
         status = None
-        if 'status' not in services[name] or \
-                services[name]['status'] == 'service':
+        if services[name].get('status') == 'service':
             status = 'service %s status' % name
-        else:
+        elif "status" in services[name]:
             status = str(services[name]['status'])
+        else:
+            continue
 
         runlevel = 5
         if 'runlevel' in services[name].keys():
@@ -645,7 +646,7 @@ def _get_conf_hashes(service):
     if service not in services:
         logger.debug("Service %s is not in services.yml yet.", service)
         return {}
-    elif 'conffiles' not in services[service]:
+    elif services[service] is None or 'conffiles' not in services[service]:
         logger.debug("No configuration files for service %s.", service)
         return {}
     else:
@@ -658,6 +659,11 @@ def _update_conf_hashes(service, hashes):
                  service, hashes)
     services = _get_services()
     service_conf = services.get(service, {})
+
+    # Handle the case where services[service] is set to null in the yaml
+    if service_conf is None:
+        service_conf = {}
+
     service_conf['conffiles'] = hashes
     services[service] = service_conf
     _save_services(services)

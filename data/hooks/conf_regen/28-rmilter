@@ -7,8 +7,14 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/rmilter
 
+  # Install main configuration
   install -D -m 644 rmilter.conf \
     "${pending_dir}/etc/rmilter.conf"
+
+  # Install DKIM specific configuration
+  install -D -m 644 ynh_dkim.conf \
+    "${pending_dir}/etc/rmilter.conf.d/ynh_dkim.conf"
+
   # Remove old socket file (we stopped using it, since rspamd 1.3.1)
   # Regen-conf system need an empty file to delete it
   install -D -m 644 /dev/null \
@@ -21,8 +27,9 @@ do_post_regen() {
   # retrieve variables
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
-  # create DKIM directory
+  # create DKIM directory with proper permission
   sudo mkdir -p /etc/dkim
+  sudo chown _rmilter /etc/dkim
 
   # create DKIM key for domains
   for domain in $domain_list; do

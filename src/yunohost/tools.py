@@ -31,6 +31,7 @@ import errno
 import logging
 import subprocess
 import pwd
+import socket
 from collections import OrderedDict
 
 import apt
@@ -38,7 +39,7 @@ import apt.progress
 
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list
+from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import dyndns_subscribe
 from yunohost.firewall import firewall_upnp
@@ -185,6 +186,9 @@ def tools_maindomain(auth, new_domain=None):
         else:
             logger.info(out)
 
+    # Generate SSOwat configuration file
+    app_ssowatconf(auth)
+
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
@@ -288,34 +292,50 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     # Create SSL CA
     service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-    command_list = [
+    commands = [
         'echo "01" > %s/serial' % ssl_dir,
         'rm %s/index.txt'       % ssl_dir,
         'touch %s/index.txt'    % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
-        'sed -i "s/yunohost.org/%s/g" %s/openssl.ca.cnf ' % (domain, ssl_dir),
+        'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
         'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch' % (ssl_dir, ssl_dir, ssl_dir),
         'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
         'update-ca-certificates'
     ]
 
-    for command in command_list:
-        if os.system(command) != 0:
+    for command in commands:
+        p = subprocess.Popen(
+            command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        out, _ = p.communicate()
+
+        if p.returncode != 0:
+            logger.warning(out)
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('yunohost_ca_creation_failed'))
+        else:
+            logger.debug(out)
+
+    logger.success(m18n.n('yunohost_ca_creation_success'))
 
     # New domain config
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
-
-    # Generate SSOwat configuration file
-    app_ssowatconf(auth)
 
     # Change LDAP admin password
     tools_adminpw(auth, password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
+
+    # Setup the default official app list with cron job
+    try:
+        app_fetchlist(name="yunohost",
+                      url="https://app.yunohost.org/official.json")
+    except Exception as e:
+        logger.warning(str(e))
+
+    _install_appslist_fetch_cron()
 
     os.system('touch /etc/yunohost/installed')
 
@@ -544,3 +564,22 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
     return diagnosis
+
+
+def tools_port_available(port):
+    """
+    Check availability of a local port
+
+    Keyword argument:
+        port -- Port to check
+
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)
+        s.connect(("localhost", int(port)))
+        s.close()
+    except socket.error:
+        return True
+    else:
+        return False

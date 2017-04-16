@@ -7,6 +7,9 @@ avahi-daemon:
 dnsmasq:
    status: service
    log: /var/log/daemon.log
+fail2ban:
+    status: service
+    log: /var/log/fail2ban.log
 dovecot:
    status: service
    log: [/var/log/mail.log,/var/log/mail.err]
@@ -47,10 +50,12 @@ yunohost-firewall:
 nslcd:
    status: service
    log: /var/log/syslog
-nsswitch:
-   status: service
-udisks2:
-   status: service
+nsswitch: {}
+bind9: null
+tahoe-lafs: null
+memcached: null
+udisks2: null
+udisk-glue: null
 amavis: null
 postgrey: null
 spamassassin: null

@@ -17,7 +17,7 @@ do_pre_regen() {
   # retrieve variables
   ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
   ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-  ipv6=$(curl -s -6 http://ip6.yunohost.org 2>/dev/null || true)
+  ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
