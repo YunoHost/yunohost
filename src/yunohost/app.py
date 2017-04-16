@@ -966,6 +966,42 @@ def app_checkport(port):
                               m18n.n('port_unavailable', port=int(port)))
 
 
+def app_register_url(auth, app, domain, path):
+    """
+    Book/register a web path for a given app
+
+    Keyword argument:
+        app -- App which will use the web path
+        domain -- The domain on which the app should be registered (e.g. your.domain.tld)
+        path -- The path to be registered (e.g. /coffee)
+    """
+
+    # This line can't be moved on top of file, otherwise it creates an infinite
+    # loop of import with tools.py...
+    from domain import domain_url_available, _normalize_domain_path
+
+    domain, path = _normalize_domain_path(domain, path)
+
+    # We cannot change the url of an app already installed simply by changing
+    # the settings...
+    # FIXME should look into change_url once it's merged
+
+    installed = app in app_list(installed=True, raw=True).keys()
+    if installed:
+        settings = _get_app_settings(app)
+        if "path" in settings.keys() and "domain" in settings.keys():
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('app_already_installed_cant_change_url'))
+
+    # Check the url is available
+    if not domain_url_available(auth, domain, path):
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_location_unavailable'))
+
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
+
+
 def app_checkurl(auth, url, app=None):
     """
     Check availability of a web path
