@@ -29,7 +29,6 @@ import shutil
 import yaml
 import time
 import re
-import socket
 import urlparse
 import errno
 import subprocess
@@ -955,12 +954,12 @@ def app_checkport(port):
         port -- Port to check
 
     """
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(("localhost", int(port)))
-        s.close()
-    except socket.error:
+
+    # This import cannot be moved on top of file because it create a recursive
+    # import...
+    from yunohost.tools import tools_portavailable
+    availability = tools_portavailable(port)
+    if availability["available"]:
         logger.success(m18n.n('port_available', port=int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,

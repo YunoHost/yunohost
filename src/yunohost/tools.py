@@ -31,6 +31,7 @@ import errno
 import logging
 import subprocess
 import pwd
+import socket
 from collections import OrderedDict
 
 import apt
@@ -574,3 +575,22 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
     return diagnosis
+
+
+def tools_port_available(port):
+    """
+    Check availability of a local port
+
+    Keyword argument:
+        port -- Port to check
+
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)
+        s.connect(("localhost", int(port)))
+        s.close()
+    except socket.error:
+        return True
+    else:
+        return False
