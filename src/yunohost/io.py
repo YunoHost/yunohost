@@ -49,9 +49,9 @@ def read_from_file(file_path):
     """
     assert isinstance(file_path, str)
 
-    # Check file exist
+    # Check file exists
     if not os.path.isfile(file_path):
-        raise MoulinetteError(errno.EROENT,
+        raise MoulinetteError(errno.ENOENT,
                               m18n.n('io_no_such_file', file=file_path))
 
     # Open file and read content
@@ -63,7 +63,7 @@ def read_from_file(file_path):
                               m18n.n('io_cannot_open_file', file=file_path))
     except Exception as e:
         raise MoulinetteError(errno.EIO,
-                              m18n.n('io_unknown_error_opening_file',
+                              m18n.n('io_unknown_error_reading_file',
                                      file=file_path, error=str(e)))
 
     return file_content
@@ -89,20 +89,52 @@ def read_from_json(file_path):
 
     return loaded_json
 
-def write_to_file(file_path, data)
+
+def write_to_file(file_path, data, file_mode="w")
     """
     Write a single string or a list of string to a text file.
     The text file will be overwritten by default.
-    
+
     Keyword argument:
-        file_path -- Path to the output json file
+        file_path -- Path to the output file
+        data -- The data to write (must be a string or list of string)
+        file_mode -- Mode used when writing the file. Option meant to be used
+        by append_to_file to avoid duplicating the code of this function.
+    """
+    assert isinstance(data, str) or isinstance(data, list)
+
+    # If a single string, make if a list
+    if isinstance(data, str):
+        data = [data]
+    # If already a list, check these are strings
+    else:
+        for element in data:
+            assert isinstance(element, str)
+
+    try:
+        with open(file_path, mode) as f:
+            for string in data:
+                f.write(string)
+    except IOError as e:
+        raise MoulinetteError(errno.EACCES,
+                              m18n.n('io_cannot_open_file', file=file_path))
+    except Exception as e:
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('io_unknown_error_writing_file',
+                                     file=file_path, error=str(e)))
+
+
+def append_to_file(file_path, data):
+    """
+    Append a single string or a list of string to a text file.
+
+    Keyword argument:
+        file_path -- Path to the output file
         data -- The data to write (must be a string or list of string)
     """
 
-def append_to_file(file_path, data):
+    write_to_file(file_path, data, mode="a")
 
-    pass
-    
 
 def write_to_json(file_path, data):
     """
@@ -150,12 +182,12 @@ def remove_file(file_path):
 
 
 def set_permissions(file_path, user, group, permissions):
-    """    
+    """
     Change permissions of a given file or directory.
     Example : set_permissions("/etc/swag", "root", "www-data", 0750)
 
     Keyword argument:
-        file_path -- Path to the json file
+        file_path -- Path to the file or directory
         user -- Some user name
         group -- Some unix group name
         permissions -- Permissions to set, preferrably in octal format
@@ -167,22 +199,32 @@ def set_permissions(file_path, user, group, permissions):
     assert isinstance(permissions, int)
 
     # Check file exist
-    # TODO / FIXME handle case for directory
-    if not os.path.isfile(file_path):
-        raise MoulinetteError(errno.EROENT,
+    if not (os.path.isfile(file_path) or os.path.isdir(file_path)):
+        raise MoulinetteError(errno.ENOENT,
                               m18n.n('io_no_such_file', file=file_path))
 
-    # TODO / FIXME : check the uid and gid exists
+    # Check user exists
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+    except KeyError:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('io_no_such_user', user=user))
 
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
+    # Check group exists
+    try:
+        gid = grp.getgrnam(group).gr_gid
+    except KeyError:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('io_no_such_group', group=group))
 
+    # Actually try to change the permissions
     try:
         os.chown(file_path, uid, gid)
         os.chmod(file_path, permissions)
     except:
-        # TODO / FIXME handle exceptions
-        pass
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('io_could_not_change_permissions',
+                                     file=file_path))
 
 
 def download_text(url, timeout=30):
@@ -223,24 +265,59 @@ def download_text(url, timeout=30):
 
     return r.text
 
+
 def download_json(url, timeout=30):
 
+    # Fetch the data
+    text = download_text(url, timeout)
+
+    # Try to load json to check if it's syntaxically correct
+    try:
+        loaded_json = json.loads(file_content)
+    except ValueError:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('io_corrupted_json', file=file_path))
+
+    return loaded_json
+
+
 def run_shell_commands(command_list):
+    """
+    Run a list of 'raw' shell commands using subprocess.
+    If a command returns something else than 0, an error will be thrown.
 
-    # Still very work in progress
-    # Maybe have another argument to know what exception to raise if something
-    # goes wrong ?
+    Keyword argument:
+        command_list -- List of commands to be ran. Each command can be directly
+        a string (the whole command), or a list of strings (each element being
+        the arguments).
+    """
 
+    # Validate that input command list is a (list of str) or (list of list (of
+    # str))
+    assert isinstance(command_list, list)
     for command in command_list:
-        p = subprocess.Popen(command_list.split(),
+        assert isinstance(command, str) or isinstance(command, list)
+
+    # Run each command with subprocess
+    for command in command_list:
+
+        if isinstance(command, str):
+            command = command.split()
+
+        # stderr is redirected to stdout
+        p = subprocess.Popen(command,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
 
         out, _ = p.communicate()
 
+        # If error occured, display stdout(+stderr) in the warning stream, and
+        # throw error
         if p.returncode != 0:
             logger.warning(out)
             raise MoulinetteError(errno.EIO,
-                                  m18n.n('io_error_running_shell_command'))
+                                  m18n.n('io_error_running_shell_command',
+                                         command=command))
+        # Else, display stdout(+stderr) in info stream only
         else:
             logger.info(out)
