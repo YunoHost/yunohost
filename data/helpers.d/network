@@ -48,5 +48,5 @@ ynh_find_port () {
 ynh_webpath_available () {
 	domain=$1
 	path=$(ynh_normalize_url_path $2)
-	sudo yunohost app checkurl $domain$path -a $app
+	sudo yunohost domain url-available $domain $path
 }
