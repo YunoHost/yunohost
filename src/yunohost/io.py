@@ -63,7 +63,7 @@ def read_from_file(file_path):
                               m18n.n('io_cannot_open_file', file=file_path))
     except Exception as e:
         raise MoulinetteError(errno.EIO,
-                              m18n.n('io_unknown_error_reading_file',
+                              m18n.n('io_error_reading_file',
                                      file=file_path, error=str(e)))
 
     return file_content
@@ -85,12 +85,12 @@ def read_from_json(file_path):
         loaded_json = json.loads(file_content)
     except ValueError:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('io_corrupted_json', file=file_path))
+                              m18n.n('io_corrupted_json', ressource=file_path))
 
     return loaded_json
 
 
-def write_to_file(file_path, data, file_mode="w")
+def write_to_file(file_path, data, file_mode="w"):
     """
     Write a single string or a list of string to a text file.
     The text file will be overwritten by default.
@@ -117,10 +117,10 @@ def write_to_file(file_path, data, file_mode="w")
                 f.write(string)
     except IOError as e:
         raise MoulinetteError(errno.EACCES,
-                              m18n.n('io_cannot_open_file', file=file_path))
+                              m18n.n('io_cannot_write_file', file=file_path))
     except Exception as e:
         raise MoulinetteError(errno.EIO,
-                              m18n.n('io_unknown_error_writing_file',
+                              m18n.n('io_error_writing_file',
                                      file=file_path, error=str(e)))
 
 
@@ -158,7 +158,7 @@ def write_to_json(file_path, data):
                               m18n.n('io_cannot_write_file', file=file_path))
     except Exception as e:
         raise MoulinetteError(errno.EIO,
-                              m18n.n('io_unknown_error_writing_file',
+                              m18n.n('io_error_writing_file',
                                      file=file_path, error=str(e)))
 
 
@@ -177,7 +177,7 @@ def remove_file(file_path):
             os.remove(file_path)
         except Exception as e:
             raise MoulinetteError(errno.EIO,
-                                  m18n.n('io_unknown_error_removing_file',
+                                  m18n.n('io_error_removing_file',
                                          file=file_path, error=str(e)))
 
 
@@ -221,10 +221,10 @@ def set_permissions(file_path, user, group, permissions):
     try:
         os.chown(file_path, uid, gid)
         os.chmod(file_path, permissions)
-    except:
+    except Exception as e:
         raise MoulinetteError(errno.EIO,
-                              m18n.n('io_could_not_change_permissions',
-                                     file=file_path))
+                              m18n.n('io_error_changing_file_permissions',
+                                     file=file_path, error=str(e)))
 
 
 def download_text(url, timeout=30):
@@ -237,31 +237,33 @@ def download_text(url, timeout=30):
         before giving up
     """
     # Assumptions
-    assert isinstance(file_path, str)
+    assert isinstance(url, str)
 
     # Download file
     try:
         r = requests.get(url, timeout=timeout)
+    # Invalid URL
+    except requests.exceptions.ConnectionError:
+        raise MoulinetteError(errno.EBADE,
+                              m18n.n('io_invalid_url', url=url))
     # SSL exceptions
     except requests.exceptions.SSLError:
         raise MoulinetteError(errno.EBADE,
-                              m18n.n('io_download_ssl_error',
-                                     url=url))
+                              m18n.n('io_download_ssl_error', url=url))
     # Timeout exceptions
     except requests.exceptions.Timeout:
         raise MoulinetteError(errno.ETIME,
-                              m18n.n('io_download_timeout',
-                                     url=url))
+                              m18n.n('io_download_timeout', url=url))
     # Unknown stuff
-    except Exception:
+    except Exception as e:
         raise MoulinetteError(errno.ECONNRESET,
                               m18n.n('io_download_unknown_error',
-                                     url=url))
+                                     url=url, error=str(e)))
     # Assume error if status code is not 200 (OK)
     if r.status_code != 200:
         raise MoulinetteError(errno.EBADE,
                               m18n.n('io_download_bad_status_code',
-                                     url=url, code=r.status_code))
+                                     url=url, code=str(r.status_code)))
 
     return r.text
 
@@ -276,7 +278,7 @@ def download_json(url, timeout=30):
         loaded_json = json.loads(file_content)
     except ValueError:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('io_corrupted_json', file=file_path))
+                              m18n.n('io_corrupted_json', ressource=url))
 
     return loaded_json
 
