@@ -275,7 +275,7 @@ def download_json(url, timeout=30):
 
     # Try to load json to check if it's syntaxically correct
     try:
-        loaded_json = json.loads(file_content)
+        loaded_json = json.loads(text)
     except ValueError:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('io_corrupted_json', ressource=url))

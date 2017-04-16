@@ -7,7 +7,7 @@ import time
 
 from moulinette.core import MoulinetteError
 
-from yunohost.io import download_text
+from yunohost.io import download_text, download_json
 
 #read_from_file
 #read_from_json
@@ -76,4 +76,26 @@ def test_download_timeout():
         
         with pytest.raises(MoulinetteError):
             fetched_text = download_text(TEST_URL)
+
+
+def test_download_json():
+
+    with requests_mock.Mocker() as m:
+        m.register_uri("GET", TEST_URL, text='{ "foo":"bar" }')
+
+        fetched_json = download_json(TEST_URL)
+    
+    assert "foo" in fetched_json.keys()
+    assert fetched_json["foo"] == "bar"
+
+
+def test_download_json_badjson():
+
+    with requests_mock.Mocker() as m:
+        m.register_uri("GET", TEST_URL, text='{ not json lol }')
+
+        with pytest.raises(MoulinetteError):
+            download_json(TEST_URL)
+    
+
 
