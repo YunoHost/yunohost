@@ -356,6 +356,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         ignore_packages -- Ignore apt cache update and changelog
 
     """
+    # "packages" will list upgradable packages
     packages = []
     if not ignore_packages:
         cache = apt.Cache()
@@ -364,8 +365,6 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
-
-        logger.info(m18n.n('done'))
 
         cache.open(None)
         cache.upgrade(True)
@@ -377,37 +376,27 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                 'fullname': pkg.fullname,
                 'changelog': pkg.get_changelog()
             })
+        logger.info(m18n.n('done'))
 
+    # "apps" will list upgradable packages
     apps = []
     if not ignore_apps:
         try:
             app_fetchlist()
         except MoulinetteError:
+            # FIXME : silent exception !?
             pass
-        app_list = os.listdir(APPS_SETTING_PATH)
-        if len(app_list) > 0:
-            for app_id in app_list:
-                if '__' in app_id:
-                    original_app_id = app_id[:app_id.index('__')]
-                else:
-                    original_app_id = app_id
 
-                current_app_dict = app_info(app_id,  raw=True)
-                new_app_dict     = app_info(original_app_id, raw=True)
+        app_list_installed = os.listdir(APPS_SETTING_PATH)
+        for app_id in app_list_installed:
 
-                # Custom app
-                if new_app_dict is None or 'lastUpdate' not in new_app_dict or 'git' not in new_app_dict:
-                    continue
+            app_dict = app_info(app_id,  raw=True)
 
-                if (new_app_dict['lastUpdate'] > current_app_dict['lastUpdate']) \
-                      or ('update_time' not in current_app_dict['settings'] \
-                           and (new_app_dict['lastUpdate'] > current_app_dict['settings']['install_time'])) \
-                      or ('update_time' in current_app_dict['settings'] \
-                           and (new_app_dict['lastUpdate'] > current_app_dict['settings']['update_time'])):
-                    apps.append({
-                        'id': app_id,
-                        'label': current_app_dict['settings']['label']
-                    })
+            if app_dict["upgradable"] == "yes":
+                apps.append({
+                    'id': app_id,
+                    'label': app_dict['settings']['label']
+                })
 
     if len(apps) == 0 and len(packages) == 0:
         logger.info(m18n.n('packages_no_upgrade'))

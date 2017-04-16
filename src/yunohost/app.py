@@ -332,6 +332,19 @@ def app_info(app, show_status=False, raw=False):
     if raw:
         ret = app_list(filter=app, raw=True)[app]
         ret['settings'] = _get_app_settings(app)
+
+        # Determine upgradability
+        local_update_time = ret['settings'].get('update_time', ret['settings']['install_time'])
+
+        if 'lastUpdate' not in ret or 'git' not in ret:
+            upgradable = "url_required"
+        elif ret['lastUpdate'] > local_update_time:
+            upgradable = "yes"
+        else:
+            upgradable = "no"
+
+        ret['upgradable'] = upgradable
+
         return ret
 
     app_setting_path = APPS_SETTING_PATH + app
@@ -425,16 +438,19 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     upgraded_apps = []
 
+    apps = app
+    user_specified_list = True
     # If no app is specified, upgrade all apps
-    if not app:
+    if not apps:
         if not url and not file:
-            app = [app["id"] for app in app_list(installed=True)["apps"]]
+            apps = [app["id"] for app in app_list(installed=True)["apps"]]
+            user_specified_list = False
     elif not isinstance(app, list):
-        app = [app]
+        apps = [app]
 
     logger.info("Upgrading apps %s", ", ".join(app))
 
-    for app_instance_name in app:
+    for app_instance_name in apps:
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
@@ -445,18 +461,18 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         app_dict = app_info(app_instance_name, raw=True)
 
-        locale_update_time = app_dict['settings'].get('update_time', app_dict['settings']['install_time'])
-
         if file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
-        elif 'lastUpdate' not in app_dict or 'git' not in app_dict:
+        elif app_dict["upgradable"] == "url_required":
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif app_dict['lastUpdate'] > locale_update_time:
+        elif app_dict["upgradable"] == "yes":
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
+            if user_specified_list:
+                logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
             continue
 
         # Check requirements
@@ -515,7 +531,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
     app_ssowatconf(auth)
 
     logger.success(m18n.n('upgrade_complete'))
-
 
 def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
