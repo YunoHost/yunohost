@@ -40,7 +40,7 @@ from moulinette.utils.log import getActionLogger
 logger = getActionLogger('yunohost.io')
 
 
-def read_from_file(file_path):
+def read_file(file_path):
     """
     Read a regular text file
 
@@ -69,7 +69,7 @@ def read_from_file(file_path):
     return file_content
 
 
-def read_from_json(file_path):
+def read_json(file_path):
     """
     Read a json file
 
@@ -78,7 +78,7 @@ def read_from_json(file_path):
     """
 
     # Read file
-    file_content = _read_file(file_path)
+    file_content = read_file(file_path)
 
     # Try to load json to check if it's syntaxically correct
     try:
@@ -172,13 +172,16 @@ def remove_file(file_path):
     # Assumptions
     assert isinstance(file_path, str)
 
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-        except Exception as e:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('io_error_removing_file',
-                                         file=file_path, error=str(e)))
+    if not os.path.exists(file_path):
+        raise MoulinetteError(errno.ENOENT,
+                              m18n.n('io_no_such_file', file=file_path))
+
+    try:
+        os.remove(file_path)
+    except Exception as e:
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('io_error_removing_file',
+                                     file=file_path, error=str(e)))
 
 
 def set_permissions(file_path, user, group, permissions):

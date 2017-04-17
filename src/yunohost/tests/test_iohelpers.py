@@ -9,15 +9,14 @@ from stat import *
 
 from moulinette.core import MoulinetteError
 
-from yunohost.io import download_text, download_json, set_permissions
+from yunohost.io import download_text, download_json, set_permissions, read_file, read_json, remove_file
 
 # TODO:
-#read_from_file
-#read_from_json
+
 #write_to_file
 #append_to_file
 #write_to_json
-#remove_file
+
 #run_shell_commands
 
 
@@ -26,13 +25,17 @@ from yunohost.io import download_text, download_json, set_permissions
 TEST_URL = "https://some.test.url/yolo.txt"
 TMP_TEST_DIR = "/tmp/test_iohelpers"
 TMP_TEST_FILE = "%s/foofile" % TMP_TEST_DIR
+TMP_TEST_JSON = "%s/barjson" % TMP_TEST_DIR
 NON_ROOT_USER = "admin"
 NON_ROOT_GROUP = "mail"
 
 def setup_function(function):
     os.system("rm -rf %s" % TMP_TEST_DIR)
     os.system("mkdir %s" % TMP_TEST_DIR)
-    os.system("touch %s" % TMP_TEST_FILE)
+    os.system("echo 'foo\nbar' > %s" % TMP_TEST_FILE)
+    os.system("echo '{ \"foo\":\"bar\" }' > %s" % TMP_TEST_JSON)
+    os.system("chmod 700 %s" % TMP_TEST_FILE)
+    os.system("chmod 700 %s" % TMP_TEST_JSON)
 
 
 def teardown_function(function):
@@ -44,6 +47,63 @@ def teardown_function(function):
 def switch_to_non_root_user():
     nonrootuser = pwd.getpwnam(NON_ROOT_USER).pw_uid
     os.seteuid(nonrootuser)
+
+
+###############################################################################
+#   Test file read                                                            #
+###############################################################################
+
+
+def test_read_file():
+
+    content = read_file(TMP_TEST_FILE)
+    assert content == "foo\nbar\n"
+
+
+def test_read_file_badfile():
+
+    with pytest.raises(MoulinetteError):
+        read_file(TMP_TEST_FILE+"nope")
+
+
+def test_read_file_badpermissions():
+
+    switch_to_non_root_user()
+    with pytest.raises(MoulinetteError):
+        read_file(TMP_TEST_FILE)
+
+
+def test_read_json():
+
+    content = read_json(TMP_TEST_JSON)
+    assert "foo" in content.keys()
+    assert content["foo"] == "bar"
+
+
+def test_read_json_badjson():
+
+    os.system("echo '{ not valid json lol }' > %s" % TMP_TEST_JSON)
+    
+    with pytest.raises(MoulinetteError):
+        content = read_json(TMP_TEST_JSON)
+
+
+###############################################################################
+#   Test file remove                                                          #
+###############################################################################
+
+
+def test_remove_file():
+
+    remove_file(TMP_TEST_FILE)
+    assert not os.path.exists(TMP_TEST_FILE)
+
+
+def test_remove_file_badpermissions():
+
+    switch_to_non_root_user()
+    with pytest.raises(MoulinetteError):
+        remove_file(TMP_TEST_FILE)
 
 
 ###############################################################################
@@ -60,7 +120,7 @@ def get_permissions(file_path):
 def test_setpermissions_file():
 
     # Check we're at the default permissions
-    assert get_permissions(TMP_TEST_FILE) == ("root", "root", "644")
+    assert get_permissions(TMP_TEST_FILE) == ("root", "root", "700")
 
     # Change the permissions
     set_permissions(TMP_TEST_FILE, NON_ROOT_USER, NON_ROOT_GROUP, 0111)
