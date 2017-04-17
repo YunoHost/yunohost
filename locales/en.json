@@ -122,6 +122,7 @@
     "io_error_writing_file":  "Error when writing file {file:s}: {error:s}",
     "io_error_removing_file": "Error when removing file {file:s}: {error:s}",
     "io_error_changing_file_permissions": "Error when changing permissions for {file:s}: {error:s}",
+    "io_command_unknown": "Command '{command:s}' unknown ?",
     "io_error_running_shell_command": "Error when running command '{command:s}'",
     "io_invalid_url": "Invalid url {url:s} (does this site exists ?)",
     "io_download_ssl_error": "SSL error when connecting to {url:s}",

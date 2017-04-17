@@ -309,9 +309,15 @@ def run_shell_commands(command_list):
             command = command.split()
 
         # stderr is redirected to stdout
-        p = subprocess.Popen(command,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+        try:
+            p = subprocess.Popen(command,
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
+        except OSError:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('io_command_unknown',
+                                         command=' '.join(command)))
 
         out, _ = p.communicate()
 
@@ -321,7 +327,7 @@ def run_shell_commands(command_list):
             logger.warning(out)
             raise MoulinetteError(errno.EIO,
                                   m18n.n('io_error_running_shell_command',
-                                         command=command))
+                                         command=' '.join(command)))
         # Else, display stdout(+stderr) in info stream only
         else:
             logger.info(out)

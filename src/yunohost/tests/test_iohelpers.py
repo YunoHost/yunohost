@@ -9,11 +9,7 @@ from stat import *
 
 # Yunohost specific
 from moulinette.core import MoulinetteError
-from yunohost.io import download_text, download_json, set_permissions, read_file, read_json, remove_file, write_to_file, append_to_file, write_to_json
-
-# TODO :
-#run_shell_commands
-
+from yunohost.io import download_text, download_json, set_permissions, read_file, read_json, remove_file, write_to_file, append_to_file, write_to_json, run_shell_commands
 
 # We define a dummy context with test folders and files
 
@@ -339,4 +335,43 @@ def test_download_json_badjson():
 
         with pytest.raises(MoulinetteError):
             download_json(TEST_URL)
+
+
+###############################################################################
+#   Test run shell commands                                                   #
+###############################################################################
+
+def test_run_shell_command_list():
+
+    commands = [ "rm -f %s" % TMP_TEST_FILE ]
+
+    assert os.path.exists(TMP_TEST_FILE)
+    run_shell_commands(commands)
+    assert not os.path.exists(TMP_TEST_FILE)
+
+
+def test_run_shell_command_listoflist():
+
+    commands = [ [ "rm", "-f", TMP_TEST_FILE ] ]
+
+    assert os.path.exists(TMP_TEST_FILE)
+    run_shell_commands(commands)
+    assert not os.path.exists(TMP_TEST_FILE)
+
+
+def test_run_shell_badcommand():
+
+    commands = [ "yolo swag" ]
+
+    with pytest.raises(MoulinetteError):
+        run_shell_commands(commands)
+
+
+def test_run_shell_command_badpermissions():
+
+    commands = [ "rm -f %s" % TMP_TEST_FILE ]
+
+    switch_to_non_root_user()
+    with pytest.raises(MoulinetteError):
+        run_shell_commands(commands)
 
