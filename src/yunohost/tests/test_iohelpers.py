@@ -64,38 +64,56 @@ def test_setpermissions_file():
 
     # Change the permissions
     set_permissions(TMP_TEST_FILE, NON_ROOT_USER, NON_ROOT_GROUP, 0111)
-    
+
     # Check the permissions got changed
     assert get_permissions(TMP_TEST_FILE) == (NON_ROOT_USER, NON_ROOT_GROUP, "111")
 
     # Change the permissions again
     set_permissions(TMP_TEST_FILE, "root", "root", 0777)
-    
+
     # Check the permissions got changed
     assert get_permissions(TMP_TEST_FILE) == ("root", "root", "777")
- 
 
-def test_setpermissions_file_permissiondenied():
+
+def test_setpermissions_directory():
+
+    # Check we're at the default permissions
+    assert get_permissions(TMP_TEST_DIR) == ("root", "root", "755")
+
+    # Change the permissions
+    set_permissions(TMP_TEST_DIR, NON_ROOT_USER, NON_ROOT_GROUP, 0111)
+
+    # Check the permissions got changed
+    assert get_permissions(TMP_TEST_DIR) == (NON_ROOT_USER, NON_ROOT_GROUP, "111")
+
+    # Change the permissions again
+    set_permissions(TMP_TEST_DIR, "root", "root", 0777)
+
+    # Check the permissions got changed
+    assert get_permissions(TMP_TEST_DIR) == ("root", "root", "777")
+
+
+def test_setpermissions_permissiondenied():
 
     switch_to_non_root_user()
-    
+
     with pytest.raises(MoulinetteError):
         set_permissions(TMP_TEST_FILE, NON_ROOT_USER, NON_ROOT_GROUP, 0111)
 
 
-def test_setpermissions_file_badfile():
+def test_setpermissions_badfile():
 
     with pytest.raises(MoulinetteError):
         set_permissions("/foo/bar/yolo", NON_ROOT_USER, NON_ROOT_GROUP, 0111)
 
 
-def test_setpermissions_file_baduser():
+def test_setpermissions_baduser():
 
     with pytest.raises(MoulinetteError):
         set_permissions(TMP_TEST_FILE, "foo", NON_ROOT_GROUP, 0111)
 
 
-def test_setpermissions_file_badgroup():
+def test_setpermissions_badgroup():
 
     with pytest.raises(MoulinetteError):
         set_permissions(TMP_TEST_FILE, NON_ROOT_USER, "foo", 0111)
@@ -112,7 +130,7 @@ def test_download():
         m.register_uri("GET", TEST_URL, text='some text')
 
         fetched_text = download_text(TEST_URL)
-    
+
     assert fetched_text == "some text"
 
 
@@ -120,31 +138,31 @@ def test_download_badurl():
 
     with pytest.raises(MoulinetteError):
         fetched_text = download_text(TEST_URL)
-    
+
 
 def test_download_404():
-    
+
     with requests_mock.Mocker() as m:
         m.register_uri("GET", TEST_URL, status_code=404)
-        
+
         with pytest.raises(MoulinetteError):
             fetched_text = download_text(TEST_URL)
-    
+
 
 def test_download_sslerror():
-    
+
     with requests_mock.Mocker() as m:
         m.register_uri("GET", TEST_URL, exc=requests.exceptions.SSLError)
-        
+
         with pytest.raises(MoulinetteError):
             fetched_text = download_text(TEST_URL)
 
 
 def test_download_timeout():
- 
+
     with requests_mock.Mocker() as m:
         m.register_uri("GET", TEST_URL, exc=requests.exceptions.ConnectTimeout)
-        
+
         with pytest.raises(MoulinetteError):
             fetched_text = download_text(TEST_URL)
 
@@ -155,7 +173,7 @@ def test_download_json():
         m.register_uri("GET", TEST_URL, text='{ "foo":"bar" }')
 
         fetched_json = download_json(TEST_URL)
-    
+
     assert "foo" in fetched_json.keys()
     assert fetched_json["foo"] == "bar"
 
@@ -167,4 +185,4 @@ def test_download_json_badjson():
 
         with pytest.raises(MoulinetteError):
             download_json(TEST_URL)
-    
+
