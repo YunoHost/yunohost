@@ -41,7 +41,7 @@ from collections import OrderedDict
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.service import service_log
+from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
@@ -417,6 +417,105 @@ def app_map(app=None, raw=False, user=None):
             result[domain + path] = app_settings['label']
 
     return result
+
+
+def app_change_url(auth, app, domain, path):
+    """
+    Modify the URL at which an application is installed.
+
+    Keyword argument:
+        app -- Taget app instance name
+        domain -- New app domain on which the application will be moved
+        path -- New path at which the application will be move
+
+    """
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app))
+
+    if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
+
+    old_domain = app_setting(app, "domain")
+    old_path = app_setting(app, "path")
+
+    # Normalize path and domain format
+    domain = domain.strip().lower()
+    old_path = '/' + old_path.strip("/").strip() + '/'
+    path = '/' + path.strip("/").strip() + '/'
+
+    if (domain, path) == (old_domain, old_path):
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
+
+    # WARNING / FIXME : checkurl will modify the settings
+    # (this is a non intuitive behavior that should be changed)
+    # (or checkurl renamed in reserve_url)
+    app_checkurl(auth, '%s%s' % (domain, path), app)
+
+    manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
+
+    # Retrieve arguments list for change_url script
+    # TODO: Allow to specify arguments
+    args_odict = _parse_args_from_manifest(manifest, 'change_url', auth=auth)
+    args_list = args_odict.values()
+    args_list.append(app)
+
+    # Prepare env. var. to pass to script
+    env_dict = _make_environment_dict(args_odict)
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+    env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
+    env_dict["YNH_APP_OLD_PATH"] = old_path.rstrip("/")
+    env_dict["YNH_APP_NEW_DOMAIN"] = domain
+    env_dict["YNH_APP_NEW_PATH"] = path.rstrip("/")
+
+    if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
+        shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
+
+    shutil.copytree(os.path.join(APPS_SETTING_PATH, app, "scripts"),
+                    os.path.join(APP_TMP_FOLDER, "scripts"))
+
+    # Execute App change_url script
+    os.system('chown -R admin: %s' % INSTALL_TMP)
+    os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
+    os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
+
+    # XXX journal
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict) != 0:
+        logger.error("Failed to change '%s' url." % app)
+
+        # restore values modified by app_checkurl
+        # see begining of the function
+        app_setting(app, "domain", value=old_domain)
+        app_setting(app, "path", value=old_path)
+
+        return
+
+    # this should idealy be done in the change_url script but let's avoid common mistakes
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
+
+    app_ssowatconf(auth)
+
+    # avoid common mistakes
+    if _run_service_command("reload", "nginx") == False:
+        # grab nginx errors
+        # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
+        # will return != 0 since we are in a failed state
+        nginx_errors = subprocess.check_output("nginx -t; exit 0",
+                                               stderr=subprocess.STDOUT,
+                                               shell=True).rstrip()
+
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors))
+
+    logger.success(m18n.n("app_change_url_success",
+                         app=app, domain=domain, path=path))
 
 
 def app_upgrade(auth, app=[], url=None, file=None):
