@@ -102,19 +102,17 @@ def write_to_file(file_path, data, file_mode="w"):
         by append_to_file to avoid duplicating the code of this function.
     """
     assert isinstance(data, str) or isinstance(data, list)
+    assert not os.path.isdir(file_path)
 
-    # If a single string, make if a list
-    if isinstance(data, str):
-        data = [data]
-    # If already a list, check these are strings
-    else:
+    # If data is a list, check elements are strings and build a single string
+    if not isinstance(data, str):
         for element in data:
             assert isinstance(element, str)
+        data = '\n'.join(data)
 
     try:
-        with open(file_path, mode) as f:
-            for string in data:
-                f.write(string)
+        with open(file_path, file_mode) as f:
+            f.write(data)
     except IOError as e:
         raise MoulinetteError(errno.EACCES,
                               m18n.n('io_cannot_write_file', file=file_path))
@@ -133,7 +131,7 @@ def append_to_file(file_path, data):
         data -- The data to write (must be a string or list of string)
     """
 
-    write_to_file(file_path, data, mode="a")
+    write_to_file(file_path, data, file_mode="a")
 
 
 def write_to_json(file_path, data):
@@ -148,6 +146,7 @@ def write_to_json(file_path, data):
     # Assumptions
     assert isinstance(file_path, str)
     assert isinstance(data, dict) or isinstance(data, list)
+    assert not os.path.isdir(file_path)
 
     # Write dict to file
     try:

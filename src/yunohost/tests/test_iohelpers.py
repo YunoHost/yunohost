@@ -1,22 +1,17 @@
+
+# General python lib
 import os
+import pwd
 import pytest
 import requests
 import requests_mock
-import glob
-import time
-import pwd
 from stat import *
 
+# Yunohost specific
 from moulinette.core import MoulinetteError
+from yunohost.io import download_text, download_json, set_permissions, read_file, read_json, remove_file, write_to_file, append_to_file, write_to_json
 
-from yunohost.io import download_text, download_json, set_permissions, read_file, read_json, remove_file
-
-# TODO:
-
-#write_to_file
-#append_to_file
-#write_to_json
-
+# TODO :
 #run_shell_commands
 
 
@@ -29,7 +24,9 @@ TMP_TEST_JSON = "%s/barjson" % TMP_TEST_DIR
 NON_ROOT_USER = "admin"
 NON_ROOT_GROUP = "mail"
 
+
 def setup_function(function):
+
     os.system("rm -rf %s" % TMP_TEST_DIR)
     os.system("mkdir %s" % TMP_TEST_DIR)
     os.system("echo 'foo\nbar' > %s" % TMP_TEST_FILE)
@@ -39,12 +36,14 @@ def setup_function(function):
 
 
 def teardown_function(function):
+
     os.seteuid(0)
     os.system("rm -rf /tmp/test_iohelpers/")
 
 
 # Helper to try stuff as non-root
 def switch_to_non_root_user():
+
     nonrootuser = pwd.getpwnam(NON_ROOT_USER).pw_uid
     os.seteuid(nonrootuser)
 
@@ -83,9 +82,104 @@ def test_read_json():
 def test_read_json_badjson():
 
     os.system("echo '{ not valid json lol }' > %s" % TMP_TEST_JSON)
-    
+
     with pytest.raises(MoulinetteError):
         content = read_json(TMP_TEST_JSON)
+
+
+###############################################################################
+#   Test file write                                                           #
+###############################################################################
+
+
+def test_write_to_existing_file():
+
+    assert os.path.exists(TMP_TEST_FILE)
+    write_to_file(TMP_TEST_FILE, "yolo\nswag")
+    assert read_file(TMP_TEST_FILE) == "yolo\nswag"
+
+
+def test_write_to_new_file():
+
+    new_file = "%s/barfile" % TMP_TEST_DIR
+    assert not os.path.exists(new_file)
+    write_to_file(new_file, "yolo\nswag")
+    assert os.path.exists(new_file)
+    assert read_file(new_file) == "yolo\nswag"
+
+
+def test_write_to_existing_file_badpermissions():
+
+    assert os.path.exists(TMP_TEST_FILE)
+    switch_to_non_root_user()
+    with pytest.raises(MoulinetteError):
+        write_to_file(TMP_TEST_FILE, "yolo\nswag")
+
+
+def test_write_to_new_file_badpermissions():
+
+    switch_to_non_root_user()
+    new_file = "%s/barfile" % TMP_TEST_DIR
+    assert not os.path.exists(new_file)
+    with pytest.raises(MoulinetteError):
+        write_to_file(new_file, "yolo\nswag")
+
+
+def test_write_to_folder():
+
+    with pytest.raises(AssertionError):
+        write_to_file(TMP_TEST_DIR, "yolo\nswag")
+
+
+def test_write_to_file_with_a_list():
+
+    assert os.path.exists(TMP_TEST_FILE)
+    write_to_file(TMP_TEST_FILE, [ "yolo", "swag" ])
+    assert read_file(TMP_TEST_FILE) == "yolo\nswag"
+
+
+def test_append_to_existing_file():
+
+    assert os.path.exists(TMP_TEST_FILE)
+    append_to_file(TMP_TEST_FILE, "yolo\nswag")
+    assert read_file(TMP_TEST_FILE) == "foo\nbar\nyolo\nswag"
+
+
+def test_append_to_new_file():
+
+    new_file = "%s/barfile" % TMP_TEST_DIR
+    assert not os.path.exists(new_file)
+    append_to_file(new_file, "yolo\nswag")
+    assert os.path.exists(new_file)
+    assert read_file(new_file) == "yolo\nswag"
+
+
+def text_write_dict_to_json():
+
+    dummy_dict = { "foo": 42, "bar": [ "a", "b", "c"] }
+    write_to_json(TMP_TEST_FILE, dummy_dict)
+    j = read_json(TMP_TEST_FILE)
+    assert "foo" in j.keys()
+    assert "bar" in j.keys()
+    assert j["foo"] == 42
+    assert j["bar"] == ["a", "b", "c"]
+    assert read_file(TMP_TEST_FILE) == "foo\nbar\nyolo\nswag"
+
+
+def text_write_list_to_json():
+
+    dummy_list = [ "foo", "bar", "baz" ]
+    write_to_json(TMP_TEST_FILE, dummy_list)
+    j = read_json(TMP_TEST_FILE)
+    assert j == [ "foo", "bar", "baz" ]
+
+
+def test_write_to_json_badpermissions():
+
+    switch_to_non_root_user()
+    dummy_dict = { "foo": 42, "bar": [ "a", "b", "c"] }
+    with pytest.raises(MoulinetteError):
+        write_to_json(TMP_TEST_FILE, dummy_dict)
 
 
 ###############################################################################
