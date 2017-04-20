@@ -1937,7 +1937,8 @@ def _install_appslist_fetch_cron():
     cron_job.append("#!/bin/bash")
     # We add a random delay between 0 and 60 min to avoid every instance fetching
     # the appslist at the same time every night
-    cron_job.append("(sleep $((RANDOM%3600)); yunohost app fetchlist > /dev/null 2>&1) &")
+    cron_job.append("(sleep $((RANDOM%3600));")
+    cron_job.append("yunohost app fetchlist > /dev/null 2>&1) &")
 
     with open(cron_job_file, "w") as f:
         f.write('\n'.join(cron_job))
