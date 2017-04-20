@@ -198,67 +198,26 @@ def domain_dns_conf(domain, ttl=None):
         ttl -- Time to live
 
     """
+
     ttl = 3600 if ttl is None else ttl
-    ip4 = ip6 = None
 
-    # A/AAAA records
-    ip4 = get_public_ip()
-    result = (
-        "@ {ttl} IN A {ip4}\n"
-        "* {ttl} IN A {ip4}\n"
-    ).format(ttl=ttl, ip4=ip4)
+    dns_conf = _build_dns_conf(domain, ttl)
 
-    try:
-        ip6 = get_public_ip(6)
-    except:
-        pass
-    else:
-        result += (
-            "@ {ttl} IN AAAA {ip6}\n"
-            "* {ttl} IN AAAA {ip6}\n"
-        ).format(ttl=ttl, ip6=ip6)
+    result = ""
 
-    # Jabber/XMPP
-    result += ("\n"
-        "_xmpp-client._tcp {ttl} IN SRV 0 5 5222 {domain}.\n"
-        "_xmpp-server._tcp {ttl} IN SRV 0 5 5269 {domain}.\n"
-        "muc {ttl} IN CNAME @\n"
-        "pubsub {ttl} IN CNAME @\n"
-        "vjud {ttl} IN CNAME @\n"
-               ).format(ttl=ttl, domain=domain)
+    result += "# Basic ipv4/ipv6 records"
+    for record in dns_conf["basic"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    # Email
-    result += ('\n'
-        '@ {ttl} IN MX 10 {domain}.\n'
-        '@ {ttl} IN TXT "v=spf1 a mx ip4:{ip4}'
-               ).format(ttl=ttl, domain=domain, ip4=ip4)
-    if ip6 is not None:
-        result += ' ip6:{ip6}'.format(ip6=ip6)
-    result += ' -all"'
+    result += "\n\n"
+    result += "# XMPP"
+    for record in dns_conf["xmpp"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    # DKIM
-    try:
-        with open('/etc/dkim/{domain}.mail.txt'.format(domain=domain)) as f:
-            dkim_content = f.read()
-    except IOError:
-        pass
-    else:
-        dkim = re.match((
-            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
-            '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
-            '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
-            '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
-        )
-        if dkim:
-            result += '\n{host}. {ttl} IN TXT "v={v}; k={k}; p={p}"'.format(
-                host='{0}.{1}'.format(dkim.group('host'), domain), ttl=ttl,
-                v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')
-            )
-
-            # If DKIM is set, add dummy DMARC support
-            result += '\n_dmarc {ttl} IN TXT "v=DMARC1; p=none"'.format(
-                ttl=ttl
-            )
+    result += "\n\n"
+    result += "# Mail"
+    for record in dns_conf["mail"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     return result
 
@@ -357,3 +316,92 @@ def _normalize_domain_path(domain, path):
     path = "/" + path.strip("/")
 
     return domain, path
+
+
+# DNS conf
+
+def _build_dns_conf(domain, ttl=3600):
+
+    # Init output / groups
+    dnsconf = {}
+    dnsconf["basic"] = []
+    dnsconf["xmpp"] = []
+    dnsconf["mail"] = []
+
+    try:
+        ipv4 = get_public_ip()
+    except:
+        ipv4 = None
+    try:
+        ipv6 = get_public_ip(6)
+    except:
+        ipv6 = None
+
+    def _dns_record(name, ttl, type_, value):
+
+        return { "name": name,
+                 "ttl": ttl,
+                 "type": type_,
+                 "value": value
+        }
+
+    # Basic ipv4/ipv6 records
+    if ipv4:
+        dnsconf["basic"].append(_dns_record("@", ttl, "A", ipv4))
+        dnsconf["basic"].append(_dns_record("*", ttl, "A", ipv4))
+
+    if ipv6:
+        dnsconf["basic"].append(_dns_record("@", ttl, "AAAA", ipv6))
+        dnsconf["basic"].append(_dns_record("*", ttl, "AAAA", ipv6))
+
+    # XMPP
+    dnsconf["xmpp"].append(_dns_record("_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain))
+    dnsconf["xmpp"].append(_dns_record("_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain))
+    dnsconf["xmpp"].append(_dns_record("muc", ttl, "CNAME", "@"))
+    dnsconf["xmpp"].append(_dns_record("pubsub", ttl, "CNAME", "@"))
+    dnsconf["xmpp"].append(_dns_record("vjud", ttl, "CNAME", "@"))
+
+    # Email
+    dnsconf["mail"].append(_dns_record("@", ttl, "MX", "10 %s." % domain))
+
+        # SPF record
+    spf_record = '"v=spf1 a mx'
+    if ipv4:
+        spf_record += ' ip4:{ip4}'.format(ip4=ipv4)
+    if ipv6:
+        spf_record += ' ip6:{ip6}'.format(ip6=ipv6)
+    spf_record += ' -all"'
+
+    dnsconf["mail"].append(_dns_record("@", ttl, "TXT", spf_record))
+
+        # DKIM/DMARC record
+    dkim_host, dkim_publickey = _get_DKIM(domain)
+    if dkim_host:
+        dnsconf["mail"].append(_dns_record(dkim_host, ttl, "TXT", dkim_publickey))
+        dnsconf["mail"].append(_dns_record("_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'))
+
+    return dnsconf
+
+
+def _get_DKIM(domain):
+    DKIM_file = '/etc/dkim/{domain}.mail.txt'.format(domain=domain)
+
+    if not os.path.isfile(DKIM_file):
+        return (None, None)
+
+    with open(DKIM_file) as f:
+        dkim_content = f.read()
+
+    dkim = re.match((
+        r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
+        '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
+        '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
+        '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
+    )
+
+    if dkim:
+        return (dkim.group('host'),
+                '"v={v}; k={k}; p={p}"'.format(
+                v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')))
+    else:
+        return (None, None)
