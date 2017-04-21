@@ -35,7 +35,7 @@ import subprocess
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.domain import get_public_ip, _get_maindomain
+from yunohost.domain import get_public_ip, _get_maindomain, _build_dns_conf
 
 logger = getActionLogger('yunohost.dyndns')
 
@@ -205,41 +205,45 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         lines = [
             'server %s' % dyn_host,
             'zone %s' % host,
-            'update delete %s. A' % domain,
-            'update delete %s. AAAA' % domain,
-            'update delete %s. MX' % domain,
-            'update delete %s. TXT' % domain,
-            'update delete pubsub.%s. A' % domain,
-            'update delete pubsub.%s. AAAA' % domain,
-            'update delete muc.%s. A' % domain,
-            'update delete muc.%s. AAAA' % domain,
-            'update delete vjud.%s. A' % domain,
-            'update delete vjud.%s. AAAA' % domain,
-            'update delete _xmpp-client._tcp.%s. SRV' % domain,
-            'update delete _xmpp-server._tcp.%s. SRV' % domain,
-            'update add %s. 1800 A %s' % (domain, ipv4),
-            'update add %s. 14400 MX 5 %s.' % (domain, domain),
-            'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
-            'update add pubsub.%s. 1800 A %s' % (domain, ipv4),
-            'update add muc.%s. 1800 A %s' % (domain, ipv4),
-            'update add vjud.%s. 1800 A %s' % (domain, ipv4),
-            'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
-            'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain)
         ]
-        if ipv6 is not None:
-            lines += [
-                'update add %s. 1800 AAAA %s' % (domain, ipv6),
-                'update add pubsub.%s. 1800 AAAA %s' % (domain, ipv6),
-                'update add muc.%s. 1800 AAAA %s' % (domain, ipv6),
-                'update add vjud.%s. 1800 AAAA %s' % (domain, ipv6),
-            ]
+
+        dns_conf = _build_dns_conf(domain)
+        all_records = []
+        for records in dns_conf.values():
+            all_records.extend(records)
+
+        # (For some reason) here we want the format with everytime the entire,
+        # full domain shown explicitly, not just "muc" or "@", it should
+        # be muc.the.domain.tld. or the.domain.tld
+
+        # Delete the old records for all domain/subdomains
+        for record in all_records:
+            record["domain"] = domain
+            action = "update delete {name}.{domain}.".format(**record)
+            action = action.replace(" @.", " ")
+            lines.append(action)
+
+        # Add the up to date record stuff
+        for record in all_records:
+            record["domain"] = domain
+
+            # Use explicit domain instead of @ for values
+            if record["value"] == "@":
+                record["value"] = domain
+
+            action = "update add {name}.{domain}. {ttl} {type} {value}".format(**record)
+            action = action.replace(" @.", " ")
+            lines.append(action)
+
         lines += [
             'show',
             'send'
         ]
+
         with open('/etc/yunohost/dyndns/zone', 'w') as zone:
-            for line in lines:
-                zone.write(line + '\n')
+            zone.write('\n'.join(lines))
+
+        return
 
         if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) == 0:
             logger.success(m18n.n('dyndns_ip_updated'))
