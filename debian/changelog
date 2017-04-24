@@ -1,3 +1,37 @@
+yunohost (2.6.2) testing; urgency=low
+
+  New Features
+  ------------
+
+  * [enh] Allow applications to ship a script to change its url (#185)
+  * New helper ynh_replace_string (#280)
+  * New helper ynh_local_curl (#288)
+
+  Fixes
+  -----
+
+  * Fix for missing YunoHost tiles (#276)
+  * [fix] Properly define app upgradability / Fix app part of tools update (#255)
+  * [fix] Properly manage resolv.conf, dns resolvers and dnsmasq (#290)
+  * [fix] Add random delay to app fetchlist cron job (#297)
+
+  Improvements
+  -------------
+
+  * [fix] Avoid to remove a apt package accidentally (#292)
+  * [enh] Refactor applist management (#160)
+  * [enh] Add libnss-mdns as Debian dependency. (#279)
+  * [enh] ip6.yunohost is now served through HTTPS.
+  * [enh] Adding new port availability checker (#266)
+  * [fix] Split checkurl into two functions : availability + booking (#267)
+  * [enh] Cleaner postinstall logs during CA creation (#250)
+  * Allow underscore in backup name
+  * Rewrite text for "appslist_retrieve_bad_format"
+  * Rewrite text for "certmanager_http_check_timeout"
+  * Updated Spanish, German, Italian, French, German and Dutch translations
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Apr 2017 09:07:51 -0400
+
 yunohost (2.6.1) testing; urgency=low
 
   [ Maniack Crudelis ]
