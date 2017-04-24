@@ -164,14 +164,40 @@ def tools_maindomain(auth, new_domain=None):
         logger.warning("%s" % e, exc_info=1)
         raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
 
-    # Clear nsswitch cache for hosts to make sure hostname is resolved ...
+    _set_hostname(new_domain)
+
+    # Generate SSOwat configuration file
+    app_ssowatconf(auth)
+
+    # Regen configurations
+    try:
+        with open('/etc/yunohost/installed', 'r') as f:
+            service_regen_conf()
+    except IOError:
+        pass
+
+    logger.success(m18n.n('maindomain_changed'))
+
+
+def _set_hostname(hostname, pretty_hostname=None):
+    """
+    Change the machine hostname using hostnamectl
+    """
+
+    if _is_inside_container():
+        logger.warning("You are inside a container and hostname cannot easily be changed")
+        return
+
+    if not pretty_hostname:
+        pretty_hostname = "(YunoHost/%s)" % hostname
+
+    # First clear nsswitch cache for hosts to make sure hostname is resolved...
     subprocess.call(['nscd', '-i', 'hosts'])
 
-    # Set hostname
-    pretty_hostname = "(YunoHost/%s)" % new_domain
+    # Then call hostnamectl
     commands = [
-        "sudo hostnamectl --static    set-hostname".split() + [new_domain],
-        "sudo hostnamectl --transient set-hostname".split() + [new_domain],
+        "sudo hostnamectl --static    set-hostname".split() + [hostname],
+        "sudo hostnamectl --transient set-hostname".split() + [hostname],
         "sudo hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
     ]
 
@@ -189,17 +215,21 @@ def tools_maindomain(auth, new_domain=None):
         else:
             logger.info(out)
 
-    # Generate SSOwat configuration file
-    app_ssowatconf(auth)
 
-    # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r') as f:
-            service_regen_conf()
-    except IOError:
-        pass
+def _is_inside_container():
+    """
+    Check if we're inside a container (i.e. LXC)
 
-    logger.success(m18n.n('maindomain_changed'))
+    Returns True or False
+    """
+
+    p = subprocess.Popen("sudo grep -qa container=lxc /proc/1/environ".split(),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+
+    out, _ = p.communicate()
+
+    return p.returncode == 0
 
 
 def tools_postinstall(domain, password, ignore_dyndns=False):
