@@ -46,9 +46,12 @@ ynh_local_curl () {
 	do
 		POST_data="${POST_data}${arg}&"
 	done
-	# (Remove the last character, which is an unecessary '&')
-	POST_data=${POST_data::-1}
+	if [ -n "$POST_data" ]
+	then
+		# Add --data arg and remove the last character, which is an unecessary '&'
+		POST_data="--data \"${POST_data::-1}\""
+	fi
 
 	# Curl the URL
-	curl -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 --data "$POST_data" "$full_page_url" 2>&1
+	curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
 }
