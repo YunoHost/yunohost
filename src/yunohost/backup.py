@@ -207,11 +207,7 @@ class Archive:
     def _commit_path_in_csv(self, tmp_csv):
         """ Commit collected path from system or app hooks """
         with open(tmp_csv, 'r') as input:
-            while True:
-                data = input.read(100000)
-                if data == '':  # end of file reached
-                    break
-                self.csv_file.write(data)
+            self.csv_file.write(input.read())
 
     def _mark_for_backup(self, source, dest=None):
         """
