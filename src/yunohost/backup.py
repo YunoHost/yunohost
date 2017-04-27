@@ -63,6 +63,12 @@ class Archive:
     """
 
     def __init__(self, name=None, description='', collect_dir=None):
+        """
+        name: string The name of this backup (without spaces)
+        description: string A description for this future backup archive
+        collect_dir: None|string A path where prepare the archive
+        """
+
         self.info = {
             'description': description or '',
             'created_at': int(time.time()),
@@ -76,7 +82,7 @@ class Archive:
         self.name = name
         self.collect_dir = collect_dir
         if self.collect_dir is None:
-            self.collect_dir = os.path.join(BACKUP_PATH, name)
+            self.collect_dir = os.path.join(BACKUP_PATH, 'tmp', name)
             self.bindable = True
         else:
             self.bindable = False
@@ -168,9 +174,6 @@ class Archive:
 
     def _init_collect_dir(self):
         """ Initialize preparation directory """
-
-        if not self.collect_dir:
-            self.collect_dir = "%s/tmp/%s" % (BACKUP_PATH, name)
 
         if not os.path.isdir(self.collect_dir):
             filesystem.mkdir(self.collect_dir, 0750, parents=True, uid='admin')
