@@ -103,11 +103,13 @@ class Archive:
     def collect_files(self, hooks=[], apps=[]):
         """
         Collect all files to backup
-        hooks: list of backup hooks to execute, if hooks is an empty list,
-        backup all hooks. If it's None, backup nothing
+        hooks: list of system part which backup hooks should be executed.
+        If hooks is an empty list, it will backup all hooks. If it's None,
+        backup nothing
 
-        apps: list of apps to backup. Backup all apps, if apps is an empty list.
-        Backup nothing if apps is None
+        apps: list of apps which backup script should be executed.
+        If apps is an empty list, it will backup all apps. If it's None,
+        backup nothing.
         """
         self._collect_hooks_files(hooks)
 
