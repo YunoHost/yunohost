@@ -327,6 +327,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         cmd_script = path
 
     # Add Execution dir to environment var
+    if env is None:
+        env = {}
     env['YNH_CWD'] = chdir
 
     # Construct command to execute
