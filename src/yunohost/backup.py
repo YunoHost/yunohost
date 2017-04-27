@@ -68,13 +68,10 @@ class Archive:
         description: string A description for this future backup archive
         collect_dir: None|string A path where prepare the archive
         """
-
-        self.info = {
-            'description': description or '',
-            'created_at': int(time.time()),
-            'apps': {},
-            'hooks': {},
-        }
+        self.description = description or ''
+        self.created_at = int(time.time())
+        self.apps_return = {}
+        self.hooks_return = {}
         # Define backup name
         if not name:
             name = self._define_backup_name()
@@ -90,6 +87,19 @@ class Archive:
         self._init_collect_dir()
         self._open_csv()
 
+    @property
+    def info(self):
+        return {
+            'description': self.description,
+            'created_at': self.created_at,
+            'info': self.size,
+            'apps': self.apps_return,
+            'hooks': self.hooks_return
+        }
+
+    def __repr__(self):
+        return json.dumps(self.info)
+
     def collect_files(self, hooks=[], apps=[]):
         """
         Collect all files to backup
@@ -104,14 +114,14 @@ class Archive:
         self._collect_apps_files(apps)
 
         # Check if something has been saved
-        if not self.info['hooks'] and not self.info['apps']:
+        if not self.hooks_return and not self.apps_return:
             self.clean(1)
             raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
         # Add unlisted files from backup tmp dir
         self._mark_for_backup('backup.csv')
         self._mark_for_backup('info.json')
-        if len(self.info['apps']) > 0:
+        if len(self.apps_return) > 0:
             self._mark_for_backup('apps')
         if os.path.isdir(os.path.join(self.collect_dir, 'conf')):
             self._mark_for_backup('conf')
@@ -263,7 +273,7 @@ class Archive:
 
         if ret['succeed']:
             self._commit_path_in_csv(env_dict["YNH_BACKUP_CSV"])
-            self.info['hooks'] = ret['succeed']
+            self.hooks_return = ret['succeed']
 
             # Save relevant restoration hooks
             tmp_hooks_dir = 'hooks/restore/'
@@ -353,7 +363,7 @@ class Archive:
         else:
             # Add app info
             i = app_info(app_instance_name)
-            self.info['apps'][app_instance_name] = {
+            self.apps_return[app_instance_name] = {
                 'version': i['version'],
                 'name': i['name'],
                 'description': i['description'],
@@ -385,12 +395,12 @@ class Archive:
                            .split()[0].decode('utf-8'))
             else:
                 return 0
-        self.info['size'] = self._call_for_each_path(_compute_path_size)
-        return self.info['size']
+        self.size = self._call_for_each_path(_compute_path_size)
+        return self.size
 
     def _check_is_enough_free_space(self, output_directory):
         """ Check free space in output directory at first """
-        backup_size = self.info['size']
+        backup_size = self.size
         cmd = ['df', '--block-size=1', '--output=avail', output_directory]
         avail_output = subprocess.check_output(cmd).split()
         if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
@@ -501,7 +511,6 @@ class Archive:
                             args=[self.collect_dir, output_directory])
         if ret['failed']:
             self.clean()
-
 
 class BackupArchive:
     """
