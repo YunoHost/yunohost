@@ -52,6 +52,9 @@ ynh_backup() {
     # ... or just copy the directory
     eval $SUDO_CMD mkdir -p $(dirname "${DESTPATH}")
     eval $SUDO_CMD cp -a "${SRCPATH}" "${DESTPATH}"
+
+    # Store the source path
+    echo "${DESTPATH} ${SRCPATH}" | tee -a backup_list > /dev/null
 }
 
 # Deprecated helper since it's a dangerous one!
@@ -79,4 +82,24 @@ properly with chmod/chown." >&2
     # But for retrocompatibility we need it. (This helpers is deprecated)
     chmod 755 $TMP_DIR
     echo $TMP_DIR
+}
+
+# Restore a file or a directory to the stored path
+#
+# Use the registered path in backup_list by ynh_backup to restore the file at the good place.
+#
+# usage: ynh_restore_file file_to_restore
+# | arg: file_to_restore - File or directory to restore
+ynh_restore_file () {
+	file_and_dest=$(grep "^$1" backup_list)
+	backup_file=${file_and_dest%% *}
+	backup_dest=${file_and_dest#* }
+	if [ -f "$backup_dest" ]; then
+		ynh_die "There is already a file at this path: $backup_dest"
+	fi
+	if test -d "$backup_file"; then
+		sudo cp -a "$backup_file/." "$backup_dest"
+	else
+		sudo cp -a "$backup_file" "$backup_dest"
+	fi
 }
