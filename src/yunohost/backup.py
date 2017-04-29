@@ -1289,7 +1289,7 @@ def backup_delete(name):
 
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
     for backup_file in [archive_file, info_file]:
-        if not os.path.isfile(backup_file):
+        if not os.path.isfile(backup_file) and not os.path.islink(backup_file):
             raise MoulinetteError(errno.EIO,
                 m18n.n('backup_archive_name_unknown', name=backup_file))
         try:
