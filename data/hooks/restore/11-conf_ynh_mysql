@@ -8,8 +8,8 @@ service mysql status >/dev/null 2>&1 \
 [ -f /etc/yunohost/mysql ] \
   && curr_pwd=$(sudo cat /etc/yunohost/mysql)
 new_pwd=$(sudo cat "${backup_dir}/root_pwd" || sudo cat "${backup_dir}/mysql")
-[ -z "$curr_pwd"] && curr_pwd="yunohost"
-[ -z "$new_pwd"] && {
+[ -z "$curr_pwd" ] && curr_pwd="yunohost"
+[ -z "$new_pwd" ] && {
     . /usr/share/yunohost/helpers.d/string
     new_pwd=$(ynh_string_random 10)
 }
