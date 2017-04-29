@@ -4,7 +4,7 @@ import requests
 import os
 
 from moulinette.core import init_authenticator
-from yunohost.app import app_install, app_remove
+from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed as app_is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
 from yunohost.domain import _get_maindomain, domain_list
@@ -18,6 +18,12 @@ AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
 AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
 
 def setup_function(function):
+
+    os.system("mkdir -p /etc/ssowat/")
+
+    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+    app_ssowatconf(auth)
+
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
@@ -42,6 +48,9 @@ def uninstall_test_apps_if_needed():
     if app_is_installed("backup_recommended_app"):
         app_remove(auth, "backup_recommended_app")
 
+    if app_is_installed("wordpress"):
+        app_remove(auth, "wordpress")
+
 
 def install_app(app, path):
 
@@ -51,6 +60,8 @@ def install_app(app, path):
 
 
 def test_backup_and_restore_sys():
+
+    assert os.system("which archivemount >/dev/null") == 0
 
     backup_create(ignore_hooks=False, ignore_apps=True)
 
@@ -79,6 +90,8 @@ def test_backup_and_restore_recommended_app():
 
 
 def _test_backup_and_restore_app(app):
+
+    assert os.system("which archivemount >/dev/null") == 0
 
     # These are files we know should be installed by the app
     app_files = []
@@ -120,9 +133,26 @@ def _test_backup_and_restore_app(app):
         assert os.path.exists(f)
 
 
-def test_restore_backup_from_Ynh2p4():
-    #TODO
-    pass
+def test_restore_wordpress_from_Ynh2p4():
+
+    assert os.system("which archivemount >/dev/null") == 0
+
+    assert len(backup_list()["archives"]) == 0
+
+    os.system("mkdir -p /home/yunohost.backup/archives")
+
+    os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.info.json \
+               /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
+
+    os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.tar.gz \
+               /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
+
+    archives = backup_list()["archives"]
+    assert len(backup_list()["archives"]) == 1
+
+    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+    backup_restore(auth, name=archives[0], ignore_hooks=True,
+                   ignore_apps=False, apps=["wordpress"])
 
 
 def test_backup_script_failure_handling():
