@@ -189,7 +189,7 @@ class BackupManager:
             except MoulinetteError as e:
                 self.clean(2)
                 raise e
-            logger.info(m18n.n('backup_method_' + method.name + '_finished'))
+            logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def clean(self, retcode=-1):
         """ Call post_backup_create hooks and delete work_dir """
