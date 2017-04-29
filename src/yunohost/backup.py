@@ -56,6 +56,8 @@ MARGIN_SPACE_SIZE = 100
 logger = getActionLogger('yunohost.backup')
 
 
+
+
 class BackupManager:
     """
     This class collect files to backup in a list and apply one or several backup
@@ -203,6 +205,15 @@ class BackupManager:
             logger.warning(m18n.n('backup_cleaning_failed'))
             return False
 
+    def _get_env_var(self):
+        """ Define environment variable for hooks call """
+        env_var = {}
+
+        _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
+        env_var['YNH_BACKUP_DIR'] = self.work_dir
+        env_var['YNH_BACKUP_CSV'] = tmp_csv
+        return env_var
+
     @property
     def _is_temp_work_dir(self):
         return self.work_dir == os.path.join(BACKUP_PATH, self.name)
@@ -255,15 +266,6 @@ class BackupManager:
             except csv.Error:
                 logger.error(m18n.n('backup_csv_addition_failed'))
         self.csv_file.close()
-
-    def _get_env_var(self):
-        """ Define environment variable for hooks call """
-        env_var = {}
-
-        _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
-        env_var['YNH_BACKUP_DIR'] = self.work_dir
-        env_var['YNH_BACKUP_CSV'] = tmp_csv
-        return env_var
 
     def _import_to_list_to_backup(self, tmp_csv):
         """ Commit collected path from system or app hooks """
@@ -926,11 +928,11 @@ class RestoreManager:
         logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
         try:
             # Copy scripts to a writable temporary folder
-            tmp_scripts_dir = tempfile.mkdtemp(prefix='restore')
-            copytree(os.path.join(tmp_settings_dir, 'scripts'), tmp_scripts_dir)
-            filesystem.chmod(tmp_scripts_dir, 0550, 0550, True)
-            filesystem.chown(tmp_scripts_dir, 'admin', None, True)
-            app_script = os.path.join(tmp_scripts_dir, 'restore')
+            tmp_script_dir = tempfile.mkdtemp(prefix='restore')
+            copytree(os.path.join(tmp_settings_dir, 'scripts'), tmp_script_dir)
+            filesystem.chmod(tmp_script_dir, 0550, 0550, True)
+            filesystem.chown(tmp_script_dir, 'admin', None, True)
+            app_script = os.path.join(tmp_script_dir, 'restore')
 
             # Copy app settings and set permissions
             # TODO: Copy app hooks too
@@ -940,7 +942,7 @@ class RestoreManager:
                              'admin', None, True)
 
             # Prepare env. var. to pass to script
-            env_dict = {}
+            env_dict = self._get_env_var()
             env_dict["YNH_APP_ID"] = app_id
             env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
@@ -953,7 +955,7 @@ class RestoreManager:
             logger.exception(m18n.n('restore_app_failed',
                                     app=app_instance_name))
 
-            app_script = os.path.join(tmp_script_dir, 'settings/scripts/remove')
+            app_script = os.path.join(tmp_script_dir, 'remove')
 
             # Setup environment for remove script
             env_dict_remove = {}
@@ -976,7 +978,7 @@ class RestoreManager:
             self.result['apps'].append(app_instance_name)
         finally:
             # Cleaning temporary scripts directory
-            shutil.rmtree(tmp_scripts_dir, ignore_errors=True)
+            shutil.rmtree(tmp_script_dir, ignore_errors=True)
 
     def clean(self, retcode=0):
         if self.result['apps']:
@@ -1008,6 +1010,12 @@ class RestoreManager:
             logger.debug("restoring from backup '%s' created on %s", self.name,
                          time.ctime(self.info['created_at']))
 
+    def _get_env_var(self):
+        """ Define environment variable for hooks call """
+        env_var = {}
+        env_var['YNH_BACKUP_DIR'] = self.work_dir
+        env_var['YNH_BACKUP_CSV'] = os.path.join(self.work_dir, "backup.csv")
+        return env_var
 
 def backup_create(name=None, description=None, output_directory=None,
                   no_compress=False, ignore_hooks=False, hooks=[],
@@ -1139,7 +1147,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
     # TODO don't ask this question for restoring apps only and certain hooks
     # Check if YunoHost is installed
-    if os.path.isfile('/etc/yunohost/installed') and ignore_hooks:
+    if os.path.isfile('/etc/yunohost/installed') and not ignore_hooks:
         logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
