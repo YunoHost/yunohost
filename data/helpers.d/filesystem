@@ -86,7 +86,7 @@ properly with chmod/chown." >&2
 # usage: ynh_store_file_checksum file
 # | arg: file - The file on which the checksum will performed, then stored.
 ynh_store_file_checksum () {
-	checksum_setting_name=checksum_${1//[\/ ]/_}	# Replace all '/' and ' ' by '_'
+	local checksum_setting_name=checksum_${1//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	ynh_app_setting_set $app $checksum_setting_name $(sudo md5sum "$1" | cut -d' ' -f1)
 }
 
@@ -101,10 +101,10 @@ ynh_store_file_checksum () {
 #
 # | ret: Return the name a the backup file, or nothing
 ynh_backup_if_checksum_is_different () {
-	file=$1
-	compress_backup=${2:-0}	# If $2 is empty, compress_backup will set at 0
-	checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	checksum_value=$(ynh_app_setting_get $app $checksum_setting_name)
+	local file=$1
+	local compress_backup=${2:-0}	# If $2 is empty, compress_backup will set at 0
+	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
+	local checksum_value=$(ynh_app_setting_get $app $checksum_setting_name)
 	if [ -n "$checksum_value" ]
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
