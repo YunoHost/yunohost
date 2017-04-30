@@ -9,6 +9,7 @@ from yunohost.app import _is_installed as app_is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
 from yunohost.domain import _get_maindomain, domain_list
 from moulinette.core import MoulinetteError
+import yunohost.hook
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -155,11 +156,49 @@ def test_restore_wordpress_from_Ynh2p4():
                    ignore_apps=False, apps=["wordpress"])
 
 
-def test_backup_script_failure_handling():
-    # TODO
-    pass
+def test_backup_script_failure_handling(monkeypatch, mocker):
+
+    def custom_hook_exec(name, args=None, env=None, chdir=None, no_trace=None,
+            raise_on_error=None):
+
+        if os.path.basename(name).startswith("backup_"):
+            raise Exception
+        else:
+            return True
+
+    app = "backup_recommended_app"
+
+    # Install the app
+    install_app("%s_ynh" % app, "/yolo")
+
+    assert app_is_installed(app)
+
+    # Create a backup of this app and simulate a crash (patching the backup
+    # call with monkeypatch). We also patch m18n to check later it's been called
+    # with the expected error message key
+    monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
+    mocker.patch.object(m18n, "n")
+
+    with pytest.raises(MoulinetteError):
+        backup_create(ignore_hooks=True, ignore_apps=False, apps=[app])
+
+    m18n.n.assert_any_call('backup_app_failed', app='backup_recommended_app')
 
 
-def test_restore_script_failure_handling():
+def test_restore_script_failure_handling(monkeypatch):
+
     #TODO
     pass
+
+
+
+# Test that system hooks are not executed with --ignore--hooks
+
+# Test that tmp dir is correctly deleted after backup (both if backup fails or
+# succeed)
+
+# Test no space available
+
+# Test the copy method, not just the tar method ?
+
+
