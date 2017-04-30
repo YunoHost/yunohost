@@ -96,7 +96,7 @@ ynh_store_file_checksum () {
 # This helper is primarily meant to allow to easily backup personalised/manually 
 # modified config files.
 #
-# $app should be defined globally when calling this helper
+# $app should be defined when calling this helper
 #
 # usage: ynh_backup_if_checksum_is_different file [compress]
 # | arg: file - The file on which the checksum test will be perfomed.
