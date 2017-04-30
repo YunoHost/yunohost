@@ -83,6 +83,8 @@ properly with chmod/chown." >&2
 
 # Calculate and store a file checksum into the app settings
 #
+# $app should be defined globally when calling this helper
+#
 # usage: ynh_store_file_checksum file
 # | arg: file - The file on which the checksum will performed, then stored.
 ynh_store_file_checksum () {
@@ -93,6 +95,8 @@ ynh_store_file_checksum () {
 # Verify the checksum and backup the file if it's different
 # This helper is primarily meant to allow to easily backup personalised/manually 
 # modified config files.
+#
+# $app should be defined globally when calling this helper
 #
 # usage: ynh_backup_if_checksum_is_different file [compress]
 # | arg: file - The file on which the checksum test will be perfomed.
