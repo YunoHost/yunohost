@@ -63,10 +63,10 @@ ynh_add_systemd_config () {
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${final_path:-}"; then
-		ynh_substitute_char "__FINALPATH__" "$final_path" "$finalsystemdconf"
+		ynh_replace_string "__FINALPATH__" "$final_path" "$finalsystemdconf"
 	fi
 	if test -n "${app:-}"; then
-		ynh_substitute_char "__APP__" "$app" "$finalsystemdconf"
+		ynh_replace_string "__APP__" "$app" "$finalsystemdconf"
 	fi
 	ynh_store_checksum_config "$finalsystemdconf"
 
