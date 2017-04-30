@@ -63,19 +63,19 @@ ynh_add_nginx_config () {
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${path_url:-}"; then
-		ynh_substitute_char "__PATH__" "$path_url" "$finalnginxconf"
+		ynh_replace_string "__PATH__" "$path_url" "$finalnginxconf"
 	fi
 	if test -n "${domain:-}"; then
-		ynh_substitute_char "__DOMAIN__" "$domain" "$finalnginxconf"
+		ynh_replace_string "__DOMAIN__" "$domain" "$finalnginxconf"
 	fi
 	if test -n "${port:-}"; then
-		ynh_substitute_char "__PORT__" "$port" "$finalnginxconf"
+		ynh_replace_string "__PORT__" "$port" "$finalnginxconf"
 	fi
 	if test -n "${app:-}"; then
-		ynh_substitute_char "__NAME__" "$app" "$finalnginxconf"
+		ynh_replace_string "__NAME__" "$app" "$finalnginxconf"
 	fi
 	if test -n "${final_path:-}"; then
-		ynh_substitute_char "__FINALPATH__" "$final_path" "$finalnginxconf"
+		ynh_replace_string "__FINALPATH__" "$final_path" "$finalnginxconf"
 	fi
 	ynh_store_checksum_config "$finalnginxconf"
 
