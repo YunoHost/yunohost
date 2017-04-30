@@ -59,9 +59,9 @@ ynh_add_fpm_config () {
 	finalphpconf="/etc/php5/fpm/pool.d/$app.conf"
 	ynh_compare_checksum_config "$finalphpconf" 1
 	sudo cp ../conf/php-fpm.conf "$finalphpconf"
-	ynh_substitute_char "__NAMETOCHANGE__" "$app" "$finalphpconf"
-	ynh_substitute_char "__FINALPATH__" "$final_path" "$finalphpconf"
-	ynh_substitute_char "__USER__" "$app" "$finalphpconf"
+	ynh_replace_string "__NAMETOCHANGE__" "$app" "$finalphpconf"
+	ynh_replace_string "__FINALPATH__" "$final_path" "$finalphpconf"
+	ynh_replace_string "__USER__" "$app" "$finalphpconf"
 	sudo chown root: "$finalphpconf"
 	ynh_store_checksum_config "$finalphpconf"
 
