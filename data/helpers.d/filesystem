@@ -83,7 +83,7 @@ properly with chmod/chown." >&2
 
 # Calculate and store a file checksum into the app settings
 #
-# $app should be defined globally when calling this helper
+# $app should be defined when calling this helper
 #
 # usage: ynh_store_file_checksum file
 # | arg: file - The file on which the checksum will performed, then stored.
