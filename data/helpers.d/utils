@@ -37,14 +37,15 @@ ynh_get_plain_key() {
 ynh_backup_after_failed_upgrade () {
 	echo "Upgrade failed." >&2
 	app_bck=${app//_/-}	# Replace all '_' by '-'
+	
         # Check if an existing backup can be found before removing and restoring the application.
 	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
-    then
-    	# Remove the application then restore it
-	sudo yunohost app remove $app
-        # Restore the backup
-	sudo yunohost backup restore --ignore-hooks $app_bck-pre-upgrade$backup_number --apps $app --force
-	ynh_die "The app was restored to the way it was before the failed upgrade."
+    	then
+		# Remove the application then restore it
+		sudo yunohost app remove $app
+		# Restore the backup
+		sudo yunohost backup restore --ignore-hooks $app_bck-pre-upgrade$backup_number --apps $app --force
+		ynh_die "The app was restored to the way it was before the failed upgrade."
 	fi
 }
 
@@ -61,10 +62,11 @@ ynh_backup_before_upgrade () {
 	backup_number=1
 	old_backup_number=2
 	app_bck=${app//_/-}	# Replace all '_' by '-'
+	
     	# Check if a backup already exists with the prefix 1
 	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
     	then
-        # Prefix becomes 2 to preserve the previous backup
+        	# Prefix becomes 2 to preserve the previous backup
 		backup_number=2
 		old_backup_number=1
 	fi
