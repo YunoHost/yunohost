@@ -216,7 +216,7 @@ class BackupManager:
 
     @property
     def _is_temp_work_dir(self):
-        return self.work_dir == os.path.join(BACKUP_PATH, self.name)
+        return self.work_dir == os.path.join(BACKUP_PATH, 'tmp', self.name)
 
     def _define_backup_name(self):
         """ Define backup name """
