@@ -68,7 +68,7 @@ ynh_backup() {
 ynh_restore () {
     local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
     REL_DIR="${REL_DIR%/}/"
-    grep -ohP "^\".*\",\"$REL_DIR.*\"$" ${YNH_BACKUP_CSV} | \
+    sudo grep -ohP $'^\".*\",\"$REL_DIR.*\"$' ${YNH_BACKUP_CSV} | \
     while read line; do
         local ORIGIN_PATH=$(echo $line | grep -ohP "^\"\K.*(?=\",\".*\"$)")
         local ARCHIVE_PATH=$(echo $line | grep -ohP "^\".*\",\"\K.*(?=\"$)")
@@ -76,6 +76,19 @@ ynh_restore () {
     done
 }
 
+_get_archive_path () {
+    sudo python $1 $2 - <<END
+import sys
+import csv
+
+with open(sys.argv[1], "r") as backup_file:
+    backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
+    for row in backup_csv:
+        if row['source']==sys.argv[2]:
+            return row['dest']
+    raise Exception()
+END
+}
 # Restore a file or a directory 
 #
 # Use the registered path in backup_list by ynh_backup to restore the file at
@@ -96,18 +109,17 @@ ynh_restore_file () {
     
     # If ORIGIN_PATH doesn't exist, check a corresponding path in CSV
     if [[ ! -e "$ARCHIVE_PATH" ]]; then
-        ARCHIVE_PATH=$YNH_CWD/$(grep -ohP "^\"$ORIGIN_PATH\",\"\K.*(?=\"$)" ${YNH_BACKUP_CSV})
+        ARCHIVE_PATH=$YNH_CWD/$(_get_archive_path ${YNH_BACKUP_CSV} $ORIGIN_PATH)
     fi
-    
     
     # Restore ORIGIN_PATH into DEST_PATH
     if [[ -d ${ARCHIVE_PATH} ]]; then
-       mkdir -p $DEST_PATH
+       sudo mkdir -p $DEST_PATH
        ARCHIVE_PATH="${ARCHIVE_PATH}/."
     else
-       mkdir -p $(dirname $DEST_PATH)
+       sudo mkdir -p $(dirname $DEST_PATH)
     fi
-    cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
+    sudo cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
     
 }
 
