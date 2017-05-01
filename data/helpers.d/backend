@@ -57,13 +57,13 @@ ynh_remove_logrotate () {
 # usage: ynh_add_fpm_config
 ynh_add_fpm_config () {
 	finalphpconf="/etc/php5/fpm/pool.d/$app.conf"
-	ynh_compare_checksum_config "$finalphpconf" 1
+	ynh_backup_if_checksum_is_different "$finalphpconf" 1
 	sudo cp ../conf/php-fpm.conf "$finalphpconf"
 	ynh_replace_string "__NAMETOCHANGE__" "$app" "$finalphpconf"
 	ynh_replace_string "__FINALPATH__" "$final_path" "$finalphpconf"
 	ynh_replace_string "__USER__" "$app" "$finalphpconf"
 	sudo chown root: "$finalphpconf"
-	ynh_store_checksum_config "$finalphpconf"
+	ynh_store_file_checksum "$finalphpconf"
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
@@ -82,6 +82,6 @@ ynh_add_fpm_config () {
 # usage: ynh_remove_fpm_config
 ynh_remove_fpm_config () {
 	ynh_secure_remove "/etc/php5/fpm/pool.d/$app.conf"
-	ynh_secure_remove "/etc/php5/fpm/conf.d/20-$app.ini"
+	ynh_secure_remove "/etc/php5/fpm/conf.d/20-$app.ini" 2>&1
 	sudo systemctl reload php5-fpm
 }
