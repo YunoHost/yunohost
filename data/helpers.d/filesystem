@@ -34,11 +34,14 @@ ynh_backup() {
 
     # If unspecified DESTPATH=SRCPATH
     [[ -z "$DEST_PATH" ]] && \
-        DESTPATH="${SRC_PATH#/}"
+        DEST_PATH="${SRC_PATH#/}"
 
     # Transform DEST_PATH into relative path
     [[ "${DEST_PATH:0:1}" == "/" ]] \
         && DEST_PATH="${DEST_PATH#$YNH_CWD/}"
+
+    [[ "${DEST_PATH:0:1}" == "/" ]] \
+        && DEST_PATH="${DEST_PATH#/}"
 
     # Complete DEST_PATH if ended by a /
     [[ "${DEST_PATH: -1}" == "/" ]] \
@@ -77,17 +80,17 @@ ynh_restore () {
 }
 
 _get_archive_path () {
-    sudo python $1 $2 - <<END
+    sudo python -c "
 import sys
 import csv
-
-with open(sys.argv[1], "r") as backup_file:
+with open(sys.argv[1], 'r') as backup_file:
     backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
     for row in backup_csv:
         if row['source']==sys.argv[2]:
-            return row['dest']
-    raise Exception()
-END
+            print row['dest']
+            sys.exit(0)
+    raise Exception()" $1 $2
+    return $?
 }
 # Restore a file or a directory 
 #
@@ -107,9 +110,10 @@ ynh_restore_file () {
     # Default value for DEST_PATH = /$ORIGIN_PATH
     local DEST_PATH=${2:-$ORIGIN_PATH}
     
-    # If ORIGIN_PATH doesn't exist, check a corresponding path in CSV
-    if [[ ! -e "$ARCHIVE_PATH" ]]; then
-        ARCHIVE_PATH=$YNH_CWD/$(_get_archive_path ${YNH_BACKUP_CSV} $ORIGIN_PATH)
+    # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
+    sudo test -e $ARCHIVE_PATH
+    if [ $? -ne 0 ]; then
+        ARCHIVE_PATH=$YNH_BACKUP_DIR/$(_get_archive_path ${YNH_BACKUP_CSV} $ORIGIN_PATH)
     fi
     
     # Restore ORIGIN_PATH into DEST_PATH
