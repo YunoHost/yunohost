@@ -3,6 +3,7 @@ import time
 import requests
 import os
 import shutil
+from mock import ANY
 
 from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_remove, app_ssowatconf
@@ -26,7 +27,6 @@ def setup_function(function):
     reset_ssowat_conf()
     delete_all_backups()
     uninstall_test_apps_if_needed()
-
 
 def teardown_function(function):
 
@@ -255,10 +255,62 @@ def test_restore_script_failure_handling(monkeypatch, mocker):
     assert not app_is_installed("wordpress")
 
 
+def test_backup_not_enough_free_space(monkeypatch, mocker):
+
+    def custom_subprocess(command):
+        if command[0] == "df":
+            return "lol? 0"
+        elif command[0] == "du":
+            return "999999999999999999999"
+        else:
+            raise Exception("subprocess called with something else than df or du")
+
+    # Install the app
+    app = "backup_recommended_app"
+    install_app("%s_ynh" % app, "/yolo")
+    assert app_is_installed(app)
+
+    monkeypatch.setattr("subprocess.check_output", custom_subprocess)
+    mocker.spy(m18n, "n")
+
+    with pytest.raises(MoulinetteError):
+        backup_create(ignore_hooks=True, ignore_apps=False, apps=[app])
+
+    m18n.n.assert_any_call('not_enough_disk_space', path=ANY)
+
+
+
+def test_restore_not_enough_free_space(monkeypatch, mocker):
+
+    def custom_os_statvfs(path):
+        class Stat:
+            f_frsize = 0
+            f_bavail = 0
+        return Stat()
+
+    assert len(backup_list()["archives"]) == 0
+    add_archive_wordpress_from_2p4()
+    assert len(backup_list()["archives"]) == 1
+
+    monkeypatch.setattr("os.statvfs", custom_os_statvfs)
+    mocker.spy(m18n, "n")
+
+    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+
+    assert not app_is_installed("wordpress")
+
+    with pytest.raises(MoulinetteError):
+        backup_restore(auth, name=backup_list()["archives"][0],
+                             ignore_hooks=True,
+                             ignore_apps=False,
+                             apps=["wordpress"])
+
+    m18n.n.assert_any_call('may_be_not_enough_disk_space', path="/home/yunohost.backup")
+    m18n.n.assert_any_call('restore_nothings_done')
+    assert not app_is_installed("wordpress")
+
 
 # Test that system hooks are not executed with --ignore--hooks
-
-# Test no space available
 
 # Test the copy method, not just the tar method ?
 
