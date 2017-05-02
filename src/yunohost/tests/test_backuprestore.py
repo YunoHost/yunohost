@@ -22,9 +22,7 @@ def setup_function(function):
 
     assert backup_test_dependencies_are_met()
 
-    if not tmp_backup_directory_is_empty():
-        shutil.rmtree("/home/yunohost.backup/tmp/")
-
+    clean_tmp_backup_directory()
     reset_ssowat_conf()
     delete_all_backups()
     uninstall_test_apps_if_needed()
@@ -59,8 +57,21 @@ def tmp_backup_directory_is_empty():
     if not os.path.exists("/home/yunohost.backup/tmp/"):
         return True
     else:
-        print os.listdir('/home/yunohost.backup/tmp/')
         return len(os.listdir('/home/yunohost.backup/tmp/')) == 0
+
+def clean_tmp_backup_directory():
+
+    if tmp_backup_directory_is_empty():
+        return
+
+    for f in os.listdir('/home/yunohost.backup/tmp/'):
+        print f
+        try:
+            os.system("umount /home/yunohost.backup/tmp/%s" % f)
+        except:
+            shutil.rmtree("/home/yunohost.backup/tmp/%s" % f)
+
+    shutil.rmtree("/home/yunohost.backup/tmp/")
 
 def reset_ssowat_conf():
 
@@ -207,7 +218,7 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     # call with monkeypatch). We also patch m18n to check later it's been called
     # with the expected error message key
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
-    mocker.patch.object(m18n, "n")
+    mocker.spy(m18n, "n")
 
     with pytest.raises(MoulinetteError):
         backup_create(ignore_hooks=True, ignore_apps=False, apps=[app])
@@ -215,10 +226,33 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     m18n.n.assert_any_call('backup_app_failed', app='backup_recommended_app')
 
 
-def test_restore_script_failure_handling(monkeypatch):
+def test_restore_script_failure_handling(monkeypatch, mocker):
 
-    #TODO
-    pass
+    def custom_hook_exec(name, *args, **kwargs):
+        if os.path.basename(name).startswith("restore"):
+            monkeypatch.undo()
+            raise Exception
+
+    assert len(backup_list()["archives"]) == 0
+    add_archive_wordpress_from_2p4()
+    assert len(backup_list()["archives"]) == 1
+
+    monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
+    mocker.spy(m18n, "n")
+
+    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+
+    assert not app_is_installed("wordpress")
+
+    with pytest.raises(MoulinetteError):
+        backup_restore(auth, name=backup_list()["archives"][0],
+                             ignore_hooks=True,
+                             ignore_apps=False,
+                             apps=["wordpress"])
+
+    m18n.n.assert_any_call('restore_app_failed', app='wordpress')
+    m18n.n.assert_any_call('restore_nothings_done')
+    assert not app_is_installed("wordpress")
 
 
 
