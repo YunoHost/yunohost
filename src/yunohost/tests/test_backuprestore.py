@@ -3,6 +3,7 @@ import time
 import requests
 import os
 import shutil
+import subprocess
 from mock import ANY
 
 from moulinette.core import init_authenticator
@@ -102,12 +103,18 @@ def clean_tmp_backup_directory():
     if tmp_backup_directory_is_empty():
         return
 
+    mount_lines = subprocess.check_output("mount").split("\n")
+
+    points_to_umount = [ line.split(" ")[2]
+                         for line in mount_lines
+                            if  len(line) >= 3
+                            and line.split(" ")[2].startswith("/home/yunohost.backup/tmp") ]
+
+    for point in reversed(points_to_umount):
+        os.system("umount %s" % point)
+
     for f in os.listdir('/home/yunohost.backup/tmp/'):
-        print f
-        try:
-            os.system("umount /home/yunohost.backup/tmp/%s" % f)
-        except:
-            shutil.rmtree("/home/yunohost.backup/tmp/%s" % f)
+        shutil.rmtree("/home/yunohost.backup/tmp/%s" % f)
 
     shutil.rmtree("/home/yunohost.backup/tmp/")
 
@@ -156,13 +163,45 @@ def add_archive_wordpress_from_2p4():
 #  Actual tests                                                               #
 ###############################################################################
 
-def test_backup_and_restore_sys():
+def test_backup_only_ldap():
+
+    # Crate the backup
+    backup_create(ignore_hooks=False, ignore_apps=True, hooks=["conf_ldap"])
+
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["apps"] == {}
+    assert len(archives_info["hooks"].keys()) == 1
+    assert "conf_ldap" in archives_info["hooks"].keys()
+
+
+def test_backup_sys_stuff_that_does_not_exists():
+
+    # Crate the backup
+    backup_create(ignore_hooks=False, ignore_apps=True, hooks=["yolol"])
+
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["apps"] == {}
+    assert archives_info["hooks"] == {}
+
+
+def test_backup_and_restore_all_sys():
 
     # Crate the backup
     backup_create(ignore_hooks=False, ignore_apps=True)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["apps"] == {}
+    assert (len(archives_info["hooks"].keys()) ==
+            len(os.listdir("/usr/share/yunohost/hooks/backup/")))
 
     # Remove ssowat conf
     assert os.path.exists("/etc/ssowat/conf.json")
@@ -196,6 +235,11 @@ def _test_backup_and_restore_app(app):
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["hooks"] == {}
+    assert len(archives_info["apps"].keys()) == 1
+    assert "app" in archives_info["apps"].keys()
 
     # Uninstall the app
     app_remove(auth, app)
@@ -311,5 +355,7 @@ def test_restore_not_enough_free_space(monkeypatch, mocker):
 
 
 # Test that system hooks are not executed with --ignore--hooks
+
+# Test ynh_restore
 
 # Test the copy method, not just the tar method ?
