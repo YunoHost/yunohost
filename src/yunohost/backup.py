@@ -644,6 +644,8 @@ class TarBackupMethod(BackupMethod):
         # Add files to the archive
         try:
             for path in self.manager.paths_to_backup:
+                # Add the "source" into the archive and transform the path into
+                # "dest"
                 tar.add(path['source'], arcname=path['dest'])
             tar.close()
         except IOError:
