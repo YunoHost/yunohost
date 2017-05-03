@@ -759,10 +759,6 @@ class RestoreManager:
     BackupArchive represent a past backup.
     Currently it's a tar.gz file, but it could be another kind of archive
     """
-    result = {
-        'apps': [],
-        'hooks': {},
-    }
 
     def __init__(self, name, repo=None, method='tar'):
         # Retrieve and open the archive
@@ -770,6 +766,10 @@ class RestoreManager:
         self.archive_path = self.info['path']
         self.name = name
         self.method = BackupMethod.create(method)
+        self.result = {
+            'apps': [],
+            'hooks': {},
+        }
 
     def restore(self, hooks=[], apps=[]):
         """ Restore the archive """
