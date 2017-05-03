@@ -308,7 +308,7 @@ class BackupManager:
         ret = hook_callback('backup', hooks_filtered, args=[self.work_dir],
                             env=env_dict, chdir=self.work_dir)
 
-        if ret['succeed']:
+        if len(ret['succeed']) > 0:
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
             self.hooks_return = ret['succeed']
 
