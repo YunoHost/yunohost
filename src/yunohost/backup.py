@@ -52,6 +52,7 @@ from yunohost.tools import tools_postinstall
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
 MARGIN_SPACE_SIZE = 100
+CONF_MARGIN_SPACE_SIZE = 10
 
 logger = getActionLogger('yunohost.backup')
 
@@ -186,24 +187,8 @@ class BackupManager:
 
         for method in self.methods:
             logger.info(m18n.n('backup_applying_method_' + method.method_name))
-            try:
-                method.backup(self)
-            except MoulinetteError as e:
-                self.clean(2)
-                raise e
+            method.mount_and_backup(self)
             logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
-
-    def clean(self, retcode=-1):
-        """ Call post_backup_create hooks and delete work_dir """
-        ret = hook_callback('post_backup_create', args=[self.work_dir,
-                                                        retcode])
-        if not ret['failed']:
-            if self._is_temp_work_dir:
-                filesystem.rm(self.work_dir, True, True)
-            return True
-        else:
-            logger.warning(m18n.n('backup_cleaning_failed'))
-            return False
 
     def _get_env_var(self):
         """ Define environment variable for hooks call """
@@ -457,13 +442,46 @@ class BackupMethod(object):
     def need_mount(self):
         return False
 
-    def backup(self, backup_manager):
+    def mount_and_backup(self, backup_manager):
         self.manager = backup_manager
         if self.need_mount():
             self._mount_csv_listed_files()
 
+        try:
+            self.backup()
+        finally:
+            self.clean()
+
     def mount(self, restore_manager):
         self.manager = restore_manager
+
+    def clean(self):
+        """ Umount subdir of work_dir """
+        if self.need_mount():
+            if self._recursive_umount(self.work_dir) > 0:
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('backup_cleaning_failed'))
+
+        if self.manager._is_temp_work_dir:
+            filesystem.rm(self.work_dir, True, True)
+
+    def _recursive_umount(directory):
+
+        mount_lines = subprocess.check_output("mount").split("\n")
+
+        points_to_umount = [ line.split(" ")[2]
+                            for line in mount_lines
+                                if  len(line) >= 3
+                                and line.split(" ")[2].startswith(directory) ]
+        ret = 0
+        for point in reversed(points_to_umount):
+            ret = subprocess.call(["umount", point])
+            if ret != 0:
+                ret = 1
+                logger.warning(m18n.n('backup_cleaning_failed', point))
+                continue
+
+        return ret
 
     def _check_is_enough_free_space(self):
         """ Check free space in output directory at first """
@@ -474,7 +492,7 @@ class BackupMethod(object):
             logger.debug('not enough space at %s (free: %s / needed: %d)',
                          output_directory, avail_output[1], backup_size)
             raise MoulinetteError(errno.EIO, m18n.n(
-                'not_enough_disk_space', path=output_directory))
+                'not_enough_disk_space', path=self.repo))
 
     def _mount_csv_listed_files(self):
         """ Mount all csv src in their related path """
@@ -502,7 +520,6 @@ class BackupMethod(object):
                 shutil.copytree(src, dest, symlinks=True)
             else:
                 shutil.copy(src, dest)
-
 
     @classmethod
     def create(cls, method, **kwargs):
@@ -532,10 +549,8 @@ class CopyBackupMethod(BackupMethod):
     def method_name(self):
         return 'copy'
 
-    def backup(self, output_directory):
+    def backup(self):
         """ Copy prepared files into a dir """
-        super(CopyBackupMethod, self).backup()
-
         # Check free space in output
         self._check_is_enough_free_space()
 
@@ -584,10 +599,8 @@ class TarBackupMethod(BackupMethod):
     def method_name(self):
         return 'tar'
 
-    def backup(self, backup_manager):
+    def backup(self):
         """ Compress prepared files """
-        super(TarBackupMethod, self).backup(backup_manager)
-
         # Check free space in output
         self._check_is_enough_free_space()
 
@@ -656,7 +669,7 @@ class BorgBackupMethod(BackupMethod):
     def method_name(self):
         return 'borg'
 
-    def backup(self, repo):
+    def backup(self):
         """ Backup prepared files with borg """
         super(CopyBackupMethod, self).backup()
 
@@ -670,9 +683,11 @@ class BorgBackupMethod(BackupMethod):
 
 
 class CustomBackupMethod(BackupMethod):
+
     def __init__(self, repo = None, **kwargs):
         super(CustomBackupMethod, self).__init__(repo)
         self.args = kwargs
+        self._need_mount = None
 
     @property
     def method_name(self):
@@ -687,9 +702,8 @@ class CustomBackupMethod(BackupMethod):
             raise MoulinetteError(errno.EIO,
                                   m18n.n('backup_custom_need_mount_error'))
 
-    def backup(self, backup_manager):
+    def backup(self):
         """ Apply a hook on prepared files """
-        super(CustomBackupMethod, self).backup(backup_manager)
 
         ret = hook_callback('backup_method', method,
                             args=self._get_args('backup'))
@@ -731,34 +745,33 @@ class RestoreManager:
 
         self._mount()
 
+        try:
+            self._check_free_space(hooks, apps)
+            self._postinstall_if_needed()
+            self._restore_system(hooks)
+            self._restore_apps(apps)
+        finally:
+            self.clean()
+
+    def _postinstall_if_needed(self):
         # Check if YunoHost is installed
         if not os.path.isfile('/etc/yunohost/installed'):
             # Retrieve the domain from the backup
             try:
-                with open("%s/conf/ynh/current_host" % tmp_dir, 'r') as f:
+                with open("%s/conf/ynh/current_host" % self.work_dir, 'r') as f:
                     domain = f.readline().rstrip()
             except IOError:
                 logger.debug("unable to retrieve current_host from the backup",
-                             exc_info=1)
+                            exc_info=1)
                 raise MoulinetteError(errno.EIO,
-                                      m18n.n('backup_invalid_archive'))
+                                    m18n.n('backup_invalid_archive'))
 
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'yunohost', True)
 
-        self._check_free_space(hooks, apps)
-
-        if hooks is not None:
-            self._restore_hooks(hooks)
-
-        if apps is not None:
-            self._restore_apps(apps)
-        self.clean()
-
     @property
     def success(self):
         return self.result['hooks'] or self.result['apps']
-
 
     def _mount(self, mnt_path=None):
         """
@@ -819,10 +832,10 @@ class RestoreManager:
             # Different behaviour if it's only conf hook restoration
             data_hooks = [hook for hook in hooks if hooks.startswith('data')]
             if apps is not None or data_hooks != []:
-                logger.warning(m18n.n('may_be_not_enough_disk_space',
+                logger.warning(m18n.n('restore_may_be_not_enough_disk_space',
                                       free_space=free_space,
                                       needed_space=needed_space))
-            elif free_space < CONF_MARGIN_SPACE_SIZE * 1024 * 1024:
+            if free_space < CONF_MARGIN_SPACE_SIZE * 1024 * 1024:
                 logger.debug("%dB left but %dB is needed for security",
                              free_space,
                              CONF_MARGIN_SPACE_SIZE * 1024 * 1024)
@@ -831,6 +844,9 @@ class RestoreManager:
 
     def _restore_hooks(self, hooks=[]):
         """ Restore user and system hooks """
+
+        if hooks is None:
+            return
 
         # Filter hooks to execute
         hooks_list = set(self.info['hooks'].keys())
@@ -878,6 +894,10 @@ class RestoreManager:
             self.result['hooks'] = ret['succeed']
 
     def _restore_apps(self, apps=[]):
+
+        if apps is None:
+            return
+
         # Filter applications to restore
         apps_list = set(self.info['apps'].keys())
         apps_filtered = set()
@@ -980,22 +1000,18 @@ class RestoreManager:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_script_dir, ignore_errors=True)
 
-    def clean(self, retcode=0):
+    def clean(self):
         if self.result['apps']:
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
-        ret = hook_callback('post_backup_restore', args=[self.work_dir,
-                                                         retcode])
-        if ret['failed']:
-            logger.warning(m18n.n('restore_cleaning_failed'))
 
         if os.path.ismount(self.work_dir):
-            ret = subprocess.call(['umount', self.work_dir])
+            ret = subprocess.call(["umount", self.work_dir])
             if ret != 0:
                 logger.warning(m18n.n('restore_cleaning_failed'))
-            else:
-                filesystem.rm(self.work_dir, True, True)
+        filesystem.rm(self.work_dir, True, True)
+
 
     def _read_info_files(self):
         # Retrieve backup info
@@ -1115,9 +1131,6 @@ def backup_create(name=None, description=None, output_directory=None,
     # Apply backup methods on prepared files
     backup_manager.backup()
 
-    # Clean tmp dir
-    backup_manager.clean()
-
     logger.success(m18n.n('backup_created'))
 
     # Return backup info
@@ -1177,10 +1190,8 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
     # Check if something has been restored
     if restore_manager.success:
-        restore_manager.clean()
         logger.success(m18n.n('restore_complete'))
     else:
-        restore_manager.clean(1)
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
 
     return restore_manager.result
