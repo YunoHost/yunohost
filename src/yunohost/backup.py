@@ -802,7 +802,6 @@ class RestoreManager:
 
     @property
     def success(self):
-        logger
         return self.result['hooks'] or self.result['apps']
 
     def _mount(self, mnt_path=None):
