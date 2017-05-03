@@ -94,9 +94,6 @@ class BackupManager:
         # Apply backup methods
         backup_manager.backup()
 
-        # Clean tmp dir
-        backup_mananger.clean()
-
     """
 
     def __init__(self, name=None, description='', work_dir=None):
