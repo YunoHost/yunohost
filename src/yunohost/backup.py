@@ -51,9 +51,9 @@ from yunohost.tools import tools_postinstall
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
-MARGIN_SPACE_SIZE = 100
+APP_MARGIN_SPACE_SIZE = 100
 CONF_MARGIN_SPACE_SIZE = 10
-
+POSTINSTALL_ESTIMATE_SPACE_SIZE = 5
 logger = getActionLogger('yunohost.backup')
 
 
@@ -111,6 +111,11 @@ class BackupManager:
         self.hooks_return = {}
         self.methods = []
         self.paths_to_backup = []
+        self.size_details = {
+            'hooks':{},
+            'apps':{}
+        }
+
         # Define backup name
         if not name:
             name = self._define_backup_name()
@@ -130,6 +135,7 @@ class BackupManager:
             'description': self.description,
             'created_at': self.created_at,
             'size': self.size,
+            'size_details': self.size_details,
             'apps': self.apps_return,
             'hooks': self.hooks_return
         }
@@ -407,16 +413,41 @@ class BackupManager:
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     def _compute_backup_size(self):
-        """ Compute backup size """
+        """
+        Compute backup global size and details size for each apps and hooks
+        """
         # FIXME Database dump will be loaded, so dump should use almost the
         # double of their space
         # FIXME Some archive will set up dependencies, those are not in this
         # size info
         self.size = 0
+        for hook_key in self.hooks_return:
+            self.size_details['hooks'][hook_key] = 0
+        for app_key in self.apps_return:
+            self.size_details['apps'][app_key] = 0
+
         for row in self.paths_to_backup:
             if row['dest'] != "info.json":
-                self.size += int(subprocess.check_output(['du', '-sb', row['source']])
+                size = int(subprocess.check_output(['du', '-sb', row['source']])
                            .split()[0].decode('utf-8'))
+
+                # Add size to apps details
+                splitted_dest = row['dest'].split('/')
+                category = splitted_dest[0]
+                if category == 'apps':
+                    for app_key in self.apps_return:
+                        if row['dest'].startswith('apps/'+app_key):
+                            self.size_details['apps'][app_key] += size
+                            break
+                # OR Add size to the correct hooks details
+                elif category == 'data' or category == 'conf':
+                    for hook_key in self.hooks_return:
+                        if row['dest'].startswith(hook_key.replace('_', '/')):
+                            self.size_details['hooks'][hook_key] += size
+                            break
+
+                self.size += size
+
         return self.size
 
 
@@ -490,7 +521,7 @@ class BackupMethod(object):
         avail_output = subprocess.check_output(cmd).split()
         if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
             logger.debug('not enough space at %s (free: %s / needed: %d)',
-                         output_directory, avail_output[1], backup_size)
+                         self.repo, avail_output[1], backup_size)
             raise MoulinetteError(errno.EIO, m18n.n(
                 'not_enough_disk_space', path=self.repo))
 
@@ -811,36 +842,54 @@ class RestoreManager:
 
         self._read_info_files()
 
+    def _compute_needed_space(self, hooks, apps):
+        """
+        Define needed space to be able to backup
+        return:
+            size - needed space to backup
+            margin - margin to be sure the backup don't fail by missing spaces
+        """
+        margin = CONF_MARGIN_SPACE_SIZE * 1024 * 1024
+        if (hooks == [] and apps == []) or 'size_details' not in self.info:
+            size = self.info['size']
+            if 'size_details' not in self.info or \
+               self.info['size_details']['apps'] != {}:
+                margin = APP_MARGIN_SPACE_SIZE * 1024 * 1024
+        # Partial restore don't need all backup size
+        else:
+            size = 0
+            for hook in hooks:
+                size += self.info['size_details']['hooks'][hook]
+
+            # TODO how to know the dependencies size ?
+            for app in apps:
+                size += self.info['size_details']['apps'][app]
+                margin = APP_MARGIN_SPACE_SIZE * 1024 * 1024
+
+        if not os.path.isfile('/etc/yunohost/installed'):
+            size += POSTINSTALL_ESTIMATE_SPACE_SIZE * 1024 * 1024
+        return (size, margin)
+
     def _check_free_space(self, hooks, apps):
         """ Check available disk space """
         statvfs = os.statvfs(BACKUP_PATH)
         free_space = statvfs.f_frsize * statvfs.f_bavail
-        needed_space = self.info['size'] + MARGIN_SPACE_SIZE * 1024 * 1024
-        if free_space < needed_space:
-
-            if hooks == [] and apps == []:
-                logger.debug("%dB left but %dB is needed", free_space,
-                             needed_space)
-                raise MoulinetteError(
-                    errno.EIO, m18n.n('not_enough_disk_space',
-                                      path=BACKUP_PATH))
-
-            # TODO partial restore don't need all backup size
-            # We should compute size for each apps and for each hooks
-            # how to know the dependencies size ?
-
-            # Different behaviour if it's only conf hook restoration
-            data_hooks = [hook for hook in hooks if hooks.startswith('data')]
-            if apps is not None or data_hooks != []:
-                logger.warning(m18n.n('restore_may_be_not_enough_disk_space',
-                                      free_space=free_space,
-                                      needed_space=needed_space))
-            if free_space < CONF_MARGIN_SPACE_SIZE * 1024 * 1024:
-                logger.debug("%dB left but %dB is needed for security",
-                             free_space,
-                             CONF_MARGIN_SPACE_SIZE * 1024 * 1024)
-                raise MoulinetteError(errno.EIO, m18n.n('not_enough_disk_space',
-                                                        path=BACKUP_PATH))
+        (needed_space, margin) = self._compute_needed_space(hooks, apps)
+        if free_space >= needed_space + margin:
+            return True
+        elif free_space > needed_space:
+            # TODO Add --force options to avoid the error raising
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('restore_may_be_not_enough_disk_space',
+                                  free_space=free_space,
+                                  needed_space=needed_space,
+                                  margin=margin))
+        else:
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('restore_not_enough_disk_space',
+                                  free_space=free_space,
+                                  needed_space=needed_space,
+                                  margin=margin))
 
     def _restore_hooks(self, hooks=[]):
         """ Restore user and system hooks """
