@@ -193,13 +193,23 @@ class BackupManager:
             method.mount_and_backup(self)
             logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
 
-    def _get_env_var(self):
+    def _get_env_var(self, app=None):
         """ Define environment variable for hooks call """
         env_var = {}
 
         _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
         env_var['YNH_BACKUP_DIR'] = self.work_dir
         env_var['YNH_BACKUP_CSV'] = tmp_csv
+
+        if app is not None:
+            app_id, app_instance_nb = _parse_app_instance_name(app)
+            env_var["YNH_APP_ID"] = app_id
+            env_var["YNH_APP_INSTANCE_NAME"] = app
+            env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            tmp_app_dir = os.path.join('apps/', app)
+            tmp_app_bkp_dir = os.path.join(self.work_dir, tmp_app_dir, 'backup')
+            env_var["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
+
         return env_var
 
     @property
@@ -356,65 +366,75 @@ class BackupManager:
         for app_instance_name in apps_filtered:
             self._collect_app_files(app_instance_name)
 
-    def _collect_app_files(self, app_instance_name):
-        app_setting_path = os.path.join('/etc/yunohost/apps/',
-                                        app_instance_name)
+    def _collect_app_files(self, app):
+        """
+        Add files to backup for the app into the paths_to_backup dict.
+
+        app - string - an app name already installed to backup
+        """
+        app_setting_path = os.path.join('/etc/yunohost/apps/', app)
 
         # Check if the app has a backup and restore script
-        app_script = os.path.join(app_setting_path, 'scripts/backup')
-        app_restore_script = os.path.join(app_setting_path, 'scripts/restore')
-        if not os.path.isfile(app_script):
-            logger.warning(m18n.n('unbackup_app', app=app_instance_name))
+        if self._warn_if_app_has_no_backup(app):
             return
-        elif not os.path.isfile(app_restore_script):
-            logger.warning(m18n.n('unrestore_app', app=app_instance_name))
+        self._warn_if_app_has_no_restore(app)
 
-        tmp_app_dir = os.path.join('apps/', app_instance_name)
-        tmp_app_bkp_dir = os.path.join(self.work_dir, tmp_app_dir, 'backup')
-        logger.info(m18n.n('backup_running_app_script', app=app_instance_name))
+        env_dict = self._get_env_var(app)
+        tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
+        logger.info(m18n.n('backup_running_app_script', app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
-            settings_dir = os.path.join(tmp_app_dir, 'settings')
 
             # Copy app backup script in a temporary folder and execute it
             _, tmp_script = tempfile.mkstemp(prefix='backup_')
+            app_script = os.path.join(app_setting_path, 'scripts/backup')
             subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
-            # Prepare env. var. to pass to script
-            app_id, app_instance_nb = _parse_app_instance_name(
-                app_instance_name)
-            env_dict = self._get_env_var()
-            env_dict["YNH_APP_ID"] = app_id
-            env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-            env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
-
-            hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
+            hook_exec(tmp_script, args=[tmp_app_bkp_dir, app],
                       raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
-            self._add_to_list_to_backup(app_setting_path, settings_dir)
         except:
-            logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
-
-            # Cleaning app backup directory
-            abs_tmp_app_dir = os.path.join(self.work_dir, tmp_app_dir)
-            shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
-
-            # Remove added path from csv
-            # TODO
+            self._clean_app_backup_env(app)
+            logger.exception(m18n.n('backup_app_failed', app=app))
         else:
+            # Add settings of the app to the list
+            tmp_app_dir = os.path.join('apps/', app)
+            settings_dir = os.path.join(tmp_app_dir, 'settings')
+            self._add_to_list_to_backup(app_setting_path, settings_dir)
+
             # Add app info
-            i = app_info(app_instance_name)
-            self.apps_return[app_instance_name] = {
+            i = app_info(app)
+            self.apps_return[app] = {
                 'version': i['version'],
                 'name': i['name'],
                 'description': i['description'],
             }
+        # Remove tmp files in all situations
         finally:
             filesystem.rm(tmp_script, force=True)
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
+
+    def _warn_if_app_has_no_backup(self, app):
+        app_setting_path = os.path.join('/etc/yunohost/apps/', app)
+        app_script = os.path.join(app_setting_path, 'scripts/backup')
+        if not os.path.isfile(app_script):
+            logger.warning(m18n.n('unbackup_app', app=app))
+            return True
+        return False
+
+    def _warn_if_app_has_no_restore(self, app):
+        app_setting_path = os.path.join('/etc/yunohost/apps/', app)
+        app_restore_script = os.path.join(app_setting_path, 'scripts/restore')
+        if not os.path.isfile(app_restore_script):
+            logger.warning(m18n.n('unrestore_app', app=app))
+
+
+    def _clean_app_backup_env(self, app):
+        """ Cleaning app backup directory """
+        abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
+        shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
 
     def _compute_backup_size(self):
         """
@@ -524,8 +544,9 @@ class BackupMethod(object):
         cmd = ['df', '--block-size=1', '--output=avail', self.repo]
         avail_output = subprocess.check_output(cmd).split()
         if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
+            free_space = avail_output[1] if len(avail_output)>= 2 else '?'
             logger.debug('not enough space at %s (free: %s / needed: %d)',
-                         self.repo, avail_output[1], backup_size)
+                         self.repo, free_space, backup_size)
             raise MoulinetteError(errno.EIO, m18n.n(
                 'not_enough_disk_space', path=self.repo))
 
