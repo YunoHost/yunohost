@@ -47,7 +47,7 @@ ynh_find_port () {
 # | arg: path - the web path to check the availability of
 ynh_webpath_available () {
 	local domain=$1
-	local path=$(ynh_normalize_url_path $2)
+	local path=$2
 	sudo yunohost domain url-available $domain $path
 }
 
@@ -63,5 +63,6 @@ ynh_webpath_register () {
 	local app=$1
 	local domain=$2
 	local path=$(ynh_normalize_url_path $3)
-	sudo yunohost app register-url $app $domain $path
+	ynh_webpath_available $domain $path && \
+	  sudo yunohost app register-url $app $domain $path
 }
