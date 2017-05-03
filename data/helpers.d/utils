@@ -135,6 +135,7 @@ ynh_setup_source () {
     if test -e "$YNH_EXECUTION_DIR/../sources/extra_files/${src_id}"; then
         cp -a $YNH_EXECUTION_DIR/../sources/extra_files/$src_id/. "$dest_dir"
     fi
+}
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
 #
