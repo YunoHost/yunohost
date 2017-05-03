@@ -163,7 +163,7 @@ class BackupManager:
 
         # Check if something has been saved
         if not self.hooks_return and not self.apps_return:
-            self.clean(1)
+            filesystem.rm(self.work_dir, True, True)
             raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
         # Add unlisted files from backup tmp dir
@@ -779,7 +779,7 @@ class RestoreManager:
         try:
             self._check_free_space(hooks, apps)
             self._postinstall_if_needed()
-            self._restore_system(hooks)
+            self._restore_hooks(hooks)
             self._restore_apps(apps)
         finally:
             self.clean()
@@ -858,13 +858,15 @@ class RestoreManager:
         # Partial restore don't need all backup size
         else:
             size = 0
-            for hook in hooks:
-                size += self.info['size_details']['hooks'][hook]
+            if hooks is not None:
+                for hook in hooks:
+                    size += self.info['size_details']['hooks'][hook]
 
             # TODO how to know the dependencies size ?
-            for app in apps:
-                size += self.info['size_details']['apps'][app]
-                margin = APP_MARGIN_SPACE_SIZE * 1024 * 1024
+            if apps is not None:
+                for app in apps:
+                    size += self.info['size_details']['apps'][app]
+                    margin = APP_MARGIN_SPACE_SIZE * 1024 * 1024
 
         if not os.path.isfile('/etc/yunohost/installed'):
             size += POSTINSTALL_ESTIMATE_SPACE_SIZE * 1024 * 1024
@@ -1157,10 +1159,16 @@ def backup_create(name=None, description=None, output_directory=None,
         else:
             methods = ['tar']  # In future, borg will be the default actions
     logger.debug(hooks)
-    if not ignore_hooks and hooks is None:
+
+
+    if ignore_hooks:
+        hooks = None
+    elif hooks is None:
         hooks = []
 
-    if not ignore_apps and apps is None:
+    if ignore_apps:
+        apps = None
+    elif apps is None:
         apps = []
 
     # Prepare files to backup
@@ -1224,10 +1232,14 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
             if not force:
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
 
-    if not ignore_hooks and hooks is None:
+    if ignore_hooks:
+        hooks = None
+    elif hooks is None:
         hooks = []
 
-    if not ignore_apps and apps is None:
+    if ignore_apps:
+        apps = None
+    elif apps is None:
         apps = []
 
     # TODO Partial app restore could not work if ldap is not restored before
