@@ -225,19 +225,24 @@ class BackupManager:
 
     def _write_csv(self):
         """
-        Initialize backup list
+        Write the backup list into a CSV
 
-        The goal of this csv is to list all directories and files which need to be backup in this archive.
-        For the moment, this CSV contains 2 columns. The first column `source` is the path of the source (dir or file).
-        The second `dest` is the path where it could be placed in the archive.
+        The goal of this csv is to list all directories and files which need to
+        be backup in this archive.  For the moment, this CSV contains 2 columns.
+        The first column `source` is the path of the source (dir or file).  The
+        second `dest` is the path where it could be placed in the archive.
 
         This CSV is filled by app backup scripts and system/user backup hooks.
         Files in the work_dir are automatically added.
 
-        With this CSV, "backup methods" are able to apply their backup strategy on data listed in it.
-        It's possible to tar each path (tar methods), to mount each dir into the work_dir, to copy each files (copy methods) or to call a specific hooks.
+        With this CSV, "backup methods" are able to apply their backup strategy
+        on data listed in it.  It's possible to tar each path (tar methods), to
+        mount each dir into the work_dir, to copy each files (copy methods) or
+        to call a specific hooks.
 
-        Note: some future backups methods (like borg) are not able to specify a different place than the original path. That's why the ynh_restore_file helpers use primarily the SOURCE_PATH as argument.
+        Note: some future backups methods (like borg) are not able to specify a
+        different place than the original path. That's why the ynh_restore_file
+        helpers use primarily the SOURCE_PATH as argument.
         """
         self.csv_path = os.path.join(self.work_dir, 'backup.csv')
         try:
