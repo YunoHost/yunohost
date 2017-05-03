@@ -347,8 +347,10 @@ def test_restore_not_enough_free_space(monkeypatch, mocker):
                              ignore_apps=False,
                              apps=["wordpress"])
 
-    m18n.n.assert_any_call('may_be_not_enough_disk_space', path="/home/yunohost.backup")
-    m18n.n.assert_any_call('restore_nothings_done')
+    m18n.n.assert_any_call('restore_not_enough_disk_space',
+        free_space=0,
+        margin=ANY,
+        needed_space=ANY)
     assert not _is_installed("wordpress")
 
 

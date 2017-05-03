@@ -187,6 +187,8 @@
     "restore_failed": "Unable to restore the system",
     "restore_hook_unavailable": "Restoration hook '{hook:s}' not available on your system",
     "restore_mounting_archive": "Mounting archive into '{path:s}'",
+    "restore_may_be_not_enough_disk_space": "Your system seems not to have enough disk space (freespace: {freespace:s} B, needed space: {neededspace:s} B, security margin: {margin:s} B)",
+    "restore_not_enough_disk_space": "Not enough disk space (freespace: {freespace:s} B, needed space: {neededspace:s} B)",
     "restore_nothings_done": "Nothing has been restored",
     "restore_running_app_script": "Running restore script of app '{app:s}'...",
     "restore_running_hooks": "Running restoration hooks...",
