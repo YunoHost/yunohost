@@ -285,6 +285,8 @@ class BackupManager:
     def _collect_hooks_files(self, hooks=[]):
         """
         Prepare backup for each selected system part
+        It concerns hooks in data/hooks/backup/ (system hooks) and in
+        /etc/yunohost/hooks.d/backup/ (user hooks)
         """
 
         if hooks is None:
