@@ -23,6 +23,8 @@ auth = None
 
 def setup_function(function):
 
+    print ""
+
     global auth
     auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
@@ -51,10 +53,9 @@ def setup_function(function):
         install_app("backup_recommended_app_ynh", "/yolo")
         assert app_is_installed("backup_recommended_app")
 
-    print ""
-
 def teardown_function(function):
 
+    print ""
     global auth
     auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
@@ -239,7 +240,7 @@ def _test_backup_and_restore_app(app):
     archives_info = backup_info(archives[0], with_details=True)
     assert archives_info["hooks"] == {}
     assert len(archives_info["apps"].keys()) == 1
-    assert "app" in archives_info["apps"].keys()
+    assert app in archives_info["apps"].keys()
 
     # Uninstall the app
     app_remove(auth, app)
@@ -353,8 +354,6 @@ def test_restore_not_enough_free_space(monkeypatch, mocker):
         needed_space=ANY)
     assert not _is_installed("wordpress")
 
-
-# Test that system hooks are not executed with --ignore--hooks
 
 # Test ynh_restore
 
