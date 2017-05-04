@@ -1726,7 +1726,8 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    from yunohost.domain import domain_list, _get_maindomain
+    from yunohost.domain import (domain_list, _get_maindomain,
+                                 domain_url_available, _normalize_domain_path)
     from yunohost.user import user_info
 
     args_dict = OrderedDict()
@@ -1831,6 +1832,33 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                             m18n.n('app_argument_choice_invalid',
                                 name=arg_name, choices='0, 1'))
             args_dict[arg_name] = arg_value
+
+        # END loop over action_args...
+
+        # If there's only one "domain" and "path", validate that domain/path
+        # is an available url and normalize the path.
+
+        domain_args = [arg["name"] for arg in action_args
+                                      if arg.get("type","string") == "domain"]
+        path_args = [arg["name"] for arg in action_args
+                                      if arg.get("type","string") == "path"]
+
+        if len(domain_args) == 1 and len(path_args) == 1:
+
+            domain = args_dict[domain_args[0]]
+            path = args_dict[path_args[0]]
+            domain, path = _normalize_domain_path(domain, path)
+
+            # Check the url is available
+            if not domain_url_available(auth, domain, path):
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('app_location_unavailable'))
+
+            # (We save this normalized path so that the install script have a
+            # standard path format to deal with no matter what the user inputted)
+            args_dict[path_args[0]] = path
+
+
     return args_dict
 
 def _make_environment_dict(args_dict):
