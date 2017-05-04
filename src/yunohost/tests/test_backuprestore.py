@@ -175,41 +175,39 @@ def add_archive_wordpress_from_2p4():
 def test_backup_only_ldap():
 
     # Crate the backup
-    backup_create(ignore_hooks=False, ignore_apps=True, hooks=["conf_ldap"])
+    backup_create(ignore_system=False, ignore_apps=True, system=["conf_ldap"])
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
 
     archives_info = backup_info(archives[0], with_details=True)
     assert archives_info["apps"] == {}
-    assert len(archives_info["hooks"].keys()) == 1
-    assert "conf_ldap" in archives_info["hooks"].keys()
+    assert len(archives_info["system"].keys()) == 1
+    assert "conf_ldap" in archives_info["system"].keys()
 
 
-def test_backup_sys_stuff_that_does_not_exists():
+def test_backup_system_part_that_does_not_exists(mocker):
+    
+    mocker.spy(m18n, "n")
 
     # Crate the backup
-    backup_create(ignore_hooks=False, ignore_apps=True, hooks=["yolol"])
+    with pytest.raises(MoulinetteError):
+        backup_create(ignore_system=False, ignore_apps=True, system=["yolol"])
 
-    archives = backup_list()["archives"]
-    assert len(archives) == 1
-
-    archives_info = backup_info(archives[0], with_details=True)
-    assert archives_info["apps"] == {}
-    assert archives_info["hooks"] == {}
-
+    m18n.n.assert_any_call('backup_hook_unknown', hook="yolol")
+    m18n.n.assert_any_call('backup_nothings_done')
 
 def test_backup_and_restore_all_sys():
 
     # Crate the backup
-    backup_create(ignore_hooks=False, ignore_apps=True)
+    backup_create(ignore_system=False, ignore_apps=True)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
 
     archives_info = backup_info(archives[0], with_details=True)
     assert archives_info["apps"] == {}
-    assert (len(archives_info["hooks"].keys()) ==
+    assert (len(archives_info["system"].keys()) ==
             len(os.listdir("/usr/share/yunohost/hooks/backup/")))
 
     # Remove ssowat conf
@@ -219,7 +217,7 @@ def test_backup_and_restore_all_sys():
 
     # Restore the backup
     backup_restore(auth, name=archives[0], force=True,
-                   ignore_hooks=False, ignore_apps=True)
+                   ignore_system=False, ignore_apps=True)
 
     # Check ssowat conf is back
     assert os.path.exists("/etc/ssowat/conf.json")
@@ -244,13 +242,13 @@ def test_backup_and_restore_with_ynh_restore():
 def _test_backup_and_restore_app(app):
 
     # Create a backup of this app
-    backup_create(ignore_hooks=True, ignore_apps=False, apps=[app])
+    backup_create(ignore_system=True, ignore_apps=False, apps=[app])
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
 
     archives_info = backup_info(archives[0], with_details=True)
-    assert archives_info["hooks"] == {}
+    assert archives_info["system"] == {}
     assert len(archives_info["apps"].keys()) == 1
     assert app in archives_info["apps"].keys()
 
@@ -259,7 +257,7 @@ def _test_backup_and_restore_app(app):
     assert not app_is_installed(app)
 
     # Restore the app
-    backup_restore(auth, name=archives[0], ignore_hooks=True,
+    backup_restore(auth, name=archives[0], ignore_system=True,
                    ignore_apps=False, apps=[app])
 
     assert app_is_installed(app)
@@ -269,7 +267,7 @@ def _test_backup_and_restore_app(app):
 def test_restore_wordpress_from_Ynh2p4():
 
     backup_restore(auth, name=backup_list()["archives"][0],
-                         ignore_hooks=True,
+                         ignore_system=True,
                          ignore_apps=False,
                          apps=["wordpress"])
 
@@ -291,7 +289,7 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     mocker.spy(m18n, "n")
 
     with pytest.raises(MoulinetteError):
-        backup_create(ignore_hooks=True, ignore_apps=False, apps=["backup_recommended_app"])
+        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call('backup_app_failed', app='backup_recommended_app')
 
@@ -311,7 +309,7 @@ def test_restore_script_failure_handling(monkeypatch, mocker):
 
     with pytest.raises(MoulinetteError):
         backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_hooks=True,
+                             ignore_system=True,
                              ignore_apps=False,
                              apps=["wordpress"])
 
@@ -335,7 +333,7 @@ def test_backup_not_enough_free_space(monkeypatch, mocker):
     mocker.spy(m18n, "n")
 
     with pytest.raises(MoulinetteError):
-        backup_create(ignore_hooks=True, ignore_apps=False, apps=["backup_recommended_app"])
+        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call('not_enough_disk_space', path=ANY)
 
@@ -356,7 +354,7 @@ def test_restore_not_enough_free_space(monkeypatch, mocker):
 
     with pytest.raises(MoulinetteError):
         backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_hooks=True,
+                             ignore_system=True,
                              ignore_apps=False,
                              apps=["wordpress"])
 

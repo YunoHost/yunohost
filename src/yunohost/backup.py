@@ -75,7 +75,7 @@ class BackupManager:
     With this list, "backup methods" are able to apply their backup strategy on
     data listed in it.  It's possible to tar each path (tar methods), to mount
     each dir into the work_dir, to copy each files (copy method) or to call a
-    specific hooks (custom method).
+    custom method (via a custom script).
 
     Note: some future backups methods (like borg) are not able to specify a
     different place than the original path. That's why the ynh_restore_file
@@ -88,8 +88,9 @@ class BackupManager:
         backup_manager.add(BackupMethod.create('copy','/mnt/local_fs'))
         backup_manager.add(BackupMethod.create('tar','/mnt/remote_fs'))
 
-        # Collect hooks and apps files
-        backup_manager.collect_files(["data"], ["wordpress"])
+        # Collect system and apps files
+        backup_manager.collect_files(system=["data"],
+                                     apps=["wordpress"])
 
         # Apply backup methods
         backup_manager.backup()
@@ -105,11 +106,11 @@ class BackupManager:
         self.description = description or ''
         self.created_at = int(time.time())
         self.apps_return = {}
-        self.hooks_return = {}
+        self.system_return = {}
         self.methods = []
         self.paths_to_backup = []
         self.size_details = {
-            'hooks':{},
+            'system':{},
             'apps':{}
         }
 
@@ -134,7 +135,7 @@ class BackupManager:
             'size': self.size,
             'size_details': self.size_details,
             'apps': self.apps_return,
-            'hooks': self.hooks_return
+            'system': self.system_return
         }
 
     def __repr__(self):
@@ -143,23 +144,23 @@ class BackupManager:
     def add(self, method):
         self.methods.append(method)
 
-    def collect_files(self, hooks=[], apps=[]):
+    def collect_files(self, system=[], apps=[]):
         """
         Collect all files to backup
-        hooks: list of system part which backup hooks should be executed.
-        If hooks is an empty list, it will backup all hooks. If it's None,
-        backup nothing
+        system: list of system part for which backup system should be executed.
+        If system is an empty list, it will backup all system. If it's None,
+        nothing will be backuped.
 
         apps: list of apps which backup script should be executed.
         If apps is an empty list, it will backup all apps. If it's None,
         backup nothing.
         """
-        self._collect_hooks_files(hooks)
+        self._collect_system_files(system)
 
         self._collect_apps_files(apps)
 
         # Check if something has been saved
-        if not self.hooks_return and not self.apps_return:
+        if not self.system_return and not self.apps_return:
             filesystem.rm(self.work_dir, True, True)
             raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
@@ -194,7 +195,9 @@ class BackupManager:
             logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def _get_env_var(self, app=None):
-        """ Define environment variable for hooks call """
+        """ Define environment variable for backup scripts/hooks 
+            (apps or system)
+        """
         env_var = {}
 
         _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
@@ -242,13 +245,14 @@ class BackupManager:
         The first column `source` is the path of the source (dir or file).  The
         second `dest` is the path where it could be placed in the archive.
 
-        This CSV is filled by app backup scripts and system/user backup hooks.
+        This CSV is filled by app backup scripts and system/user hooks.
         Files in the work_dir are automatically added.
 
         With this CSV, "backup methods" are able to apply their backup strategy
         on data listed in it.  It's possible to tar each path (tar methods), to
         mount each dir into the work_dir, to copy each files (copy methods) or
-        to call a specific hooks.
+        a custom method (via a custom script).
+
 
         Note: some future backups methods (like borg) are not able to specify a
         different place than the original path. That's why the ynh_restore_file
@@ -271,7 +275,7 @@ class BackupManager:
         self.csv_file.close()
 
     def _import_to_list_to_backup(self, tmp_csv):
-        """ Commit collected path from system or app hooks """
+        """ Commit collected path from system hooks or app scripts """
         _call_for_each_path(self, BackupManager._add_to_list_to_backup, tmp_csv)
 
     def _add_to_list_to_backup(self, source, dest=None):
@@ -297,51 +301,79 @@ class BackupManager:
             dest = os.path.join(dest, os.path.basename(source))
         self.paths_to_backup.append({'source': source, 'dest': dest})
 
-    def _collect_hooks_files(self, hooks=[]):
+    def _collect_system_files(self, system_parts=[]):
         """
         Prepare backup for each selected system part
-        It concerns hooks in data/hooks/backup/ (system hooks) and in
-        /etc/yunohost/hooks.d/backup/ (user hooks)
+
+        This corresponds to scripts in data/hooks/backup/ (system hooks) and
+        to those in /etc/yunohost/hooks.d/backup/ (user hooks)
         """
 
-        if hooks is None:
+        # If None, nothing is backuped
+        if system_parts is None:
             return
 
-        # Check hooks availibility
-        hooks_filtered = set()
-        if hooks:
-            for hook in hooks:
+        # If we want to backup everything
+        # If the user manually specified which parts to backuped, we need to
+        # check that each part actually has a backup script available
+        parts_that_can_be_backuped = set()
+        if system_parts != []:
+            for part in system_parts:
                 try:
-                    hook_info('backup', hook)
+                    hook_info('backup', part)
                 except:
-                    logger.error(m18n.n('backup_hook_unknown', hook=hook))
+                    # (If not, we inform the user but keep going with other
+                    # parts)
+                    logger.error(m18n.n('backup_hook_unknown', hook=part))
                 else:
-                    hooks_filtered.add(hook)
+                    parts_that_can_be_backuped.add(part)
 
         logger.info(m18n.n('backup_running_hooks'))
 
-        # Execute hooks
+        # Prepare environnement
         env_dict = self._get_env_var()
-        ret = hook_callback('backup', hooks_filtered, args=[self.work_dir],
-                            env=env_dict, chdir=self.work_dir)
 
-        if len(ret['succeed']) > 0:
+        # Actual call to backup scripts/hooks
+
+        # Here we need a check because, for hook_callback, "empty set" means
+        # 'every hook you can find'
+        # parts_that_can_be_backuped can be "empty set" because no valid
+        # part to backup was found (e.g. requesting to backup only something
+        # that does not exists). In that case, we don't want to run anything.
+        # But "empty set" can be valid if the user wanted to backup everything.
+        # (Hence the following condition)
+
+        if parts_that_can_be_backuped != set() or system_parts == []:
+            ret = hook_callback('backup',
+                                parts_that_can_be_backuped,
+                                args=[self.work_dir],
+                                env=env_dict,
+                                chdir=self.work_dir)
+        else:
+            ret = {'succeed':[]}
+
+        # FIXME : ideally, this should be transformed into :
+        # for each part that succeeded:
+        #   ...
+        # for each part that failed:
+        #  ....
+        if ret['succeed'] != []:
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
-            self.hooks_return = ret['succeed']
+            self.system_return = ret['succeed']
 
             # Save relevant restoration hooks
-            tmp_hooks_dir = 'hooks/restore/'
-            filesystem.mkdir(os.path.join(self.work_dir, tmp_hooks_dir),
+            tmp_system_dir = 'hooks/restore/'
+            filesystem.mkdir(os.path.join(self.work_dir, tmp_system_dir),
                              0750, True, uid='admin')
-            for h in ret['succeed'].keys():
+            for part in ret['succeed'].keys():
                 try:
-                    i = hook_info('restore', h)
+                    i = hook_info('restore', part)
                 except:
-                    logger.warning(m18n.n('restore_hook_unavailable', hook=h),
+                    logger.warning(m18n.n('restore_hook_unavailable', hook=part),
                                    exc_info=1)
                 else:
                     for f in i['hooks']:
-                        self._add_to_list_to_backup(f['path'], tmp_hooks_dir)
+                        self._add_to_list_to_backup(f['path'], tmp_system_dir)
         else:
             # FIXME: support hooks failure
             pass
@@ -438,15 +470,15 @@ class BackupManager:
 
     def _compute_backup_size(self):
         """
-        Compute backup global size and details size for each apps and hooks
+        Compute backup global size and details size for each apps and system part
         """
         # FIXME Database dump will be loaded, so dump should use almost the
         # double of their space
         # FIXME Some archive will set up dependencies, those are not in this
         # size info
         self.size = 0
-        for hook_key in self.hooks_return:
-            self.size_details['hooks'][hook_key] = 0
+        for system_key in self.system_return:
+            self.size_details['system'][system_key] = 0
         for app_key in self.apps_return:
             self.size_details['apps'][app_key] = 0
 
@@ -463,11 +495,11 @@ class BackupManager:
                         if row['dest'].startswith('apps/'+app_key):
                             self.size_details['apps'][app_key] += size
                             break
-                # OR Add size to the correct hooks details
+                # OR Add size to the correct system element
                 elif category == 'data' or category == 'conf':
-                    for hook_key in self.hooks_return:
-                        if row['dest'].startswith(hook_key.replace('_', '/')):
-                            self.size_details['hooks'][hook_key] += size
+                    for system_key in self.system_return:
+                        if row['dest'].startswith(system_key.replace('_', '/')):
+                            self.size_details['system'][system_key] += size
                             break
 
                 self.size += size
@@ -761,7 +793,7 @@ class CustomBackupMethod(BackupMethod):
                                   m18n.n('backup_custom_need_mount_error'))
 
     def backup(self):
-        """ Apply a hook on prepared files """
+        """ Launch a custom script """
 
         ret = hook_callback('backup_method', method,
                             args=self._get_args('backup'))
@@ -795,18 +827,18 @@ class RestoreManager:
         self.method = BackupMethod.create(method)
         self.result = {
             'apps': [],
-            'hooks': {},
+            'system': {},
         }
 
-    def restore(self, hooks=[], apps=[]):
+    def restore(self, system=[], apps=[]):
         """ Restore the archive """
 
         self._mount()
 
         try:
-            self._check_free_space(hooks, apps)
+            self._check_free_space(system, apps)
             self._postinstall_if_needed()
-            self._restore_hooks(hooks)
+            self._restore_system(system)
             self._restore_apps(apps)
         finally:
             self.clean()
@@ -829,7 +861,7 @@ class RestoreManager:
 
     @property
     def success(self):
-        return self.result['hooks'] or self.result['apps']
+        return self.result['system'] or self.result['apps']
 
     def _mount(self, mnt_path=None):
         """
@@ -869,7 +901,7 @@ class RestoreManager:
 
         self._read_info_files()
 
-    def _compute_needed_space(self, hooks, apps):
+    def _compute_needed_space(self, system, apps):
         """
         Define needed space to be able to backup
         return:
@@ -877,7 +909,7 @@ class RestoreManager:
             margin - margin to be sure the backup don't fail by missing spaces
         """
         margin = CONF_MARGIN_SPACE_SIZE * 1024 * 1024
-        if (hooks == [] and apps == []) or 'size_details' not in self.info:
+        if (system == [] and apps == []) or 'size_details' not in self.info:
             size = self.info['size']
             if 'size_details' not in self.info or \
                self.info['size_details']['apps'] != {}:
@@ -885,9 +917,9 @@ class RestoreManager:
         # Partial restore don't need all backup size
         else:
             size = 0
-            if hooks is not None:
-                for hook in hooks:
-                    size += self.info['size_details']['hooks'][hook]
+            if system is not None:
+                for system_element in system:
+                    size += self.info['size_details']['system'][system_element]
 
             # TODO how to know the dependencies size ?
             if apps is not None:
@@ -899,11 +931,11 @@ class RestoreManager:
             size += POSTINSTALL_ESTIMATE_SPACE_SIZE * 1024 * 1024
         return (size, margin)
 
-    def _check_free_space(self, hooks, apps):
+    def _check_free_space(self, system, apps):
         """ Check available disk space """
         statvfs = os.statvfs(BACKUP_PATH)
         free_space = statvfs.f_frsize * statvfs.f_bavail
-        (needed_space, margin) = self._compute_needed_space(hooks, apps)
+        (needed_space, margin) = self._compute_needed_space(system, apps)
         if free_space >= needed_space + margin:
             return True
         elif free_space > needed_space:
@@ -920,56 +952,82 @@ class RestoreManager:
                                   needed_space=needed_space,
                                   margin=margin))
 
-    def _restore_hooks(self, hooks=[]):
-        """ Restore user and system hooks """
+    def _restore_system(self, system_parts_to_restore=[]):
+        """ Restore user and system parts """
 
-        if hooks is None:
+        # If nothing to restore, nothing to do
+        if system_parts_to_restore is None:
             return
 
-        # Filter hooks to execute
-        hooks_list = set(self.info['hooks'].keys())
-        if hooks:
-            def _is_hook_to_restore(h):
-                if h in hooks_list:
-                    return True
-                logger.error(m18n.n('backup_archive_hook_not_exec', hook=h))
-                return False
+        # Look for the list of system parts available in the archive
+        available_system_parts = set(self.info['system'].keys())
+
+        # If we want to restore everything (because empty list means everything)
+        # Define the list of stuff to restore as everything available in the
+        # archive
+        if system_parts_to_restore == []:
+            system_parts_to_restore = available_system_parts
+            restoring_everything = True
         else:
-            def _is_hook_to_restore(h):
-                return True
-            hooks = hooks_list
+            restoring_everything = False
 
-        # Check hooks availibility
-        hooks_filtered = set()
-        for h in hooks:
-            if not _is_hook_to_restore(h):
-                continue
-            try:
-                hook_info('restore', h)
-            except:
-                # If this restore hook doesn't exist, we add it in custom hook
-                # FIXME: so if the restore hook exist we use the new one and not
-                # the one from backup. So hook should not break compatibility...
-                tmp_hooks = glob('{:s}/hooks/restore/*-{:s}'.format(
-                    self.work_dir, h))
-                if not tmp_hooks:
-                    logger.exception(m18n.n('restore_hook_unavailable', hook=h))
+        # Now we check that for each part we want to restore, there's a
+        # restore script available
+        parts_that_can_be_restored = set()
+        for part in system_parts_to_restore:
+
+            # If the user manually specified which parts to restore...
+            if not restoring_everything:
+                # And if the part is not available in the archive,
+                if part not in available_system_parts:
+                    # Show an error and go to next part
+                    logger.error(m18n.n("backup_archive_system_part_not_available",
+                                        part=part))
                     continue
-                # Add restoration hook from the backup to the system
-                # FIXME: Refactor hook_add and use it instead
-                restore_hook_folder = CUSTOM_HOOK_FOLDER + 'restore'
-                filesystem.mkdir(restore_hook_folder, 755, True)
-                for f in tmp_hooks:
-                    logger.debug("adding restoration hook '%s' to the system "
-                                 "from the backup archive '%s'", f,
-                                 self.archive_path)
-                    shutil.copy(f, restore_hook_folder)
-            hooks_filtered.add(h)
 
-        if hooks_filtered:
+            # Now, look for the restore script on the current system
+            try:
+                hook_info('restore', part)
+            except:
+                # If this restore hook doesn't exist, we look for it in the
+                # archive and we add it as a custom hook.
+
+                # FIXME: so if the restore hook exist we use the new one and not
+                # the one from backup. So hook should not break compatibility..
+
+                # FIXME: wrap this in a nice function because it's the longest
+                # and most complex piece of code in this function but definitely
+                # not the most important to understand here :/
+
+                # Attempt to find it (or them) in the archive
+                hook_paths = '{:s}/hooks/restore/*-{:s}'.format(self.work_dir, part)
+                hook_paths = glob(hook_paths)
+
+                # If we didn't find it, skip it
+                if len(hook_paths) == 0:
+                    logger.exception(m18n.n('restore_hook_unavailable', part=part))
+                    continue
+
+                # Otherwise, add it from the archive to the system
+                # FIXME: Refactor hook_add and use it instead
+                custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
+                filesystem.mkdir(custom_restore_hook_folder, 755, True)
+                for hook_path in hook_paths:
+                    logger.debug("Adding restoration script '%s' to the system "
+                                 "from the backup archive '%s'", hook_path,
+                                 self.archive_path)
+                    shutil.copy(hook_path, custom_restore_hook_folder)
+
+            parts_that_can_be_restored.add(part)
+
+        # Actual call to the restore scripts/hooks (if there's something that
+        # can be restored)
+        if parts_that_can_be_restored != []:
             logger.info(m18n.n('restore_running_hooks'))
-            ret = hook_callback('restore', hooks_filtered, args=[self.work_dir])
-            self.result['hooks'] = ret['succeed']
+            ret = hook_callback('restore',
+                                parts_that_can_be_restored,
+                                args=[self.work_dir])
+            self.result['system'] = ret['succeed']
 
     def _restore_apps(self, apps=[]):
 
@@ -1111,32 +1169,48 @@ class RestoreManager:
         env_var['YNH_BACKUP_CSV'] = os.path.join(self.work_dir, "backup.csv")
         return env_var
 
-def backup_create(name=None, description=None, output_directory=None,
-                  no_compress=False, ignore_hooks=False, hooks=[],
-                  ignore_apps=False, apps=[], methods=[]):
+def backup_create(name=None, description=None, methods=[],
+                  output_directory=None, no_compress=False,
+                  ignore_system=False, system=[],
+                  ignore_apps=False, apps=[],
+                  ignore_hooks=False, hooks=[]):
     """
     Create a backup local archive
 
     Keyword arguments:
         name -- Name of the backup archive
         description -- Short description of the backup
+        method -- Method of backup to use
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
-        hooks -- List of backup hooks names to execute
-        ignore_hooks -- Do not execute backup hooks
+        system -- List of system elements to backup
+        ignore_system -- Ignore system elements
         apps -- List of application names to backup
         ignore_apps -- Do not backup apps
 
+        hooks -- (Deprecated) Renamed to "system"
+        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     # TODO: Add a 'clean' argument to clean output directory
 
+    # Historical, deprecated options
+    if ignore_hooks != False:
+        logger.warning("--ignore-hooks is deprecated and will be removed in the"
+                       "future. Please use --ignore-system instead.")
+        ignore_system = ignore_hooks
+    if hooks != []:
+        logger.warning("--hooks is deprecated and will be removed in the"
+                       "future. Please use --system instead.")
+        system = hooks
+
+
     def _prevalidate_backup_call(name, output_directory, no_compress,
-                                 ignore_hooks, ignore_apps, methods):
+                                 ignore_system, ignore_apps, methods):
         """ Validate backup request is conform """
 
         # Validate what to backup
-        if ignore_hooks and ignore_apps:
+        if ignore_system and ignore_apps:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('backup_action_required'))
 
@@ -1167,7 +1241,7 @@ def backup_create(name=None, description=None, output_directory=None,
 
 
     # Validate backup request is conform
-    _prevalidate_backup_call(name, output_directory, no_compress, ignore_hooks,
+    _prevalidate_backup_call(name, output_directory, no_compress, ignore_system,
                              ignore_apps, methods)
 
     # Create yunohost archives directory if it does not exists
@@ -1185,13 +1259,14 @@ def backup_create(name=None, description=None, output_directory=None,
             methods = ['copy']
         else:
             methods = ['tar']  # In future, borg will be the default actions
-    logger.debug(hooks)
 
+    # FIXME : debug message to be removed ?
+    logger.debug(system)
 
-    if ignore_hooks:
-        hooks = None
-    elif hooks is None:
-        hooks = []
+    if ignore_system:
+        system = None
+    elif system is None:
+        system = []
 
     if ignore_apps:
         apps = None
@@ -1209,8 +1284,8 @@ def backup_create(name=None, description=None, output_directory=None,
     for method in BackupMethod.create(methods):
         backup_manager.add(method)
 
-    # Collect hooks and apps files
-    backup_manager.collect_files(hooks, apps)
+    # Collect system and apps files
+    backup_manager.collect_files(system, apps)
 
     # Apply backup methods on prepared files
     backup_manager.backup()
@@ -1223,28 +1298,46 @@ def backup_create(name=None, description=None, output_directory=None,
     return {'archive': info}
 
 
-def backup_restore(auth, name, hooks=[], ignore_hooks=False,
-                   apps=[], ignore_apps=False, force=False):
+def backup_restore(auth, name,
+                   system=[], ignore_system=False,
+                   apps=[], ignore_apps=False,
+                   hooks=[], ignore_hooks=False,
+                   force=False):
     """
     Restore from a local backup archive
 
     Keyword argument:
         name -- Name of the local backup archive
-        hooks -- List of restoration hooks names to execute
-        ignore_hooks -- Do not execute backup hooks
+        force -- Force restauration on an already installed system
+        system -- List of system parts to restore
+        ignore_system -- Do not restore any system parts
         apps -- List of application names to restore
         ignore_apps -- Do not restore apps
-        force -- Force restauration on an already installed system
 
+        hooks -- (Deprecated) Renamed to "system"
+        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
+
+    # Historical, deprecated options
+    if ignore_hooks != False:
+        logger.warning("--ignore-hooks is deprecated and will be removed in the"
+                       "future. Please use --ignore-system instead.")
+        ignore_system = ignore_hooks
+    if hooks != []:
+        logger.warning("--hooks is deprecated and will be removed in the"
+                       "future. Please use --system instead.")
+        system = hooks
+
     # Validate what to restore
-    if ignore_hooks and ignore_apps:
+    if ignore_system and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('restore_action_required'))
 
-    # TODO don't ask this question for restoring apps only and certain hooks
+    # TODO don't ask this question when restoring apps only and certain system
+    # parts
+
     # Check if YunoHost is installed
-    if os.path.isfile('/etc/yunohost/installed') and not ignore_hooks:
+    if os.path.isfile('/etc/yunohost/installed') and not ignore_system:
         logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
@@ -1259,10 +1352,10 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
             if not force:
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
 
-    if ignore_hooks:
-        hooks = None
-    elif hooks is None:
-        hooks = []
+    if ignore_system:
+        system = None
+    elif system is None:
+        system = []
 
     if ignore_apps:
         apps = None
@@ -1274,7 +1367,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
     restore_manager = RestoreManager(name)
 
-    restore_manager.restore(hooks, apps)
+    restore_manager.restore(system, apps)
 
     # Check if something has been restored
     if restore_manager.success:
@@ -1377,8 +1470,12 @@ def backup_info(name, with_details=False, human_readable=False):
     }
 
     if with_details:
-        for d in ['apps', 'hooks']:
-            result[d] = info[d]
+        result["apps"] = info["apps"]
+        # Historically 'system' was 'hooks'
+        if "hooks" in info.keys():
+            result["system"] = info["hooks"]
+        else:
+            result["system"] = info["system"]
     return result
 
 
