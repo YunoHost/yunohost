@@ -72,6 +72,8 @@
     "backup_output_directory_required": "You must provide an output directory for the backup",
     "backup_running_app_script": "Running backup script of app '{app:s}'...",
     "backup_running_hooks": "Running backup hooks...",
+    "backup_with_no_backup_script_for_app": "App {app:s} has no backup script. Ignoring.",
+    "backup_with_no_restore_script_for_app": "App {app:s} has no restore script, you won't be able to automatically restore the backup of this app.",
     "custom_app_url_required": "You must provide a URL to upgrade your custom app {app:s}",
     "custom_appslist_name_required": "You must provide a name for your custom app list",
     "diagnostic_debian_version_error": "Can't retrieve the Debian version: {error}",

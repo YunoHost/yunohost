@@ -169,7 +169,7 @@ def add_archive_wordpress_from_2p4():
                /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
 
 ###############################################################################
-#  Actual tests                                                               #
+#  System backup                                                              #
 ###############################################################################
 
 def test_backup_only_ldap():
@@ -187,7 +187,7 @@ def test_backup_only_ldap():
 
 
 def test_backup_system_part_that_does_not_exists(mocker):
-    
+
     mocker.spy(m18n, "n")
 
     # Crate the backup
@@ -196,6 +196,10 @@ def test_backup_system_part_that_does_not_exists(mocker):
 
     m18n.n.assert_any_call('backup_hook_unknown', hook="yolol")
     m18n.n.assert_any_call('backup_nothings_done')
+
+###############################################################################
+#  System backup and restore                                                  #
+###############################################################################
 
 def test_backup_and_restore_all_sys():
 
@@ -223,54 +227,9 @@ def test_backup_and_restore_all_sys():
     assert os.path.exists("/etc/ssowat/conf.json")
 
 
-@pytest.mark.with_backup_legacy_app_installed
-def test_backup_and_restore_legacy_app():
-
-    _test_backup_and_restore_app("backup_legacy_app")
-
-
-@pytest.mark.with_backup_recommended_app_installed
-def test_backup_and_restore_recommended_app():
-
-    _test_backup_and_restore_app("backup_recommended_app")
-
-@pytest.mark.with_backup_recommended_app_installed_with_ynh_restore
-def test_backup_and_restore_with_ynh_restore():
-
-    _test_backup_and_restore_app("backup_recommended_app")
-
-def _test_backup_and_restore_app(app):
-
-    # Create a backup of this app
-    backup_create(ignore_system=True, ignore_apps=False, apps=[app])
-
-    archives = backup_list()["archives"]
-    assert len(archives) == 1
-
-    archives_info = backup_info(archives[0], with_details=True)
-    assert archives_info["system"] == {}
-    assert len(archives_info["apps"].keys()) == 1
-    assert app in archives_info["apps"].keys()
-
-    # Uninstall the app
-    app_remove(auth, app)
-    assert not app_is_installed(app)
-
-    # Restore the app
-    backup_restore(auth, name=archives[0], ignore_system=True,
-                   ignore_apps=False, apps=[app])
-
-    assert app_is_installed(app)
-
-
-@pytest.mark.with_wordpress_archive_from_2p4
-def test_restore_wordpress_from_Ynh2p4():
-
-    backup_restore(auth, name=backup_list()["archives"][0],
-                         ignore_system=True,
-                         ignore_apps=False,
-                         apps=["wordpress"])
-
+###############################################################################
+#  App backup                                                                 #
+###############################################################################
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_script_failure_handling(monkeypatch, mocker):
@@ -293,9 +252,96 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
 
     m18n.n.assert_any_call('backup_app_failed', app='backup_recommended_app')
 
+@pytest.mark.with_backup_recommended_app_installed
+def test_backup_not_enough_free_space(monkeypatch, mocker):
+
+    def custom_subprocess(command):
+        if command[0] == "df":
+            return "lol? 0"
+        elif command[0] == "du":
+            return "999999999999999999999"
+        else:
+            raise Exception("subprocess called with something else than df or du")
+
+    monkeypatch.setattr("subprocess.check_output", custom_subprocess)
+    mocker.spy(m18n, "n")
+
+    with pytest.raises(MoulinetteError):
+        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+
+    m18n.n.assert_any_call('not_enough_disk_space', path=ANY)
+
+
+def test_backup_app_not_installed(mocker):
+
+    assert not _is_installed("wordpress")
+
+    mocker.spy(m18n, "n")
+
+    with pytest.raises(MoulinetteError):
+        backup_create(ignore_system=True, ignore_apps=False, apps=["wordpress"])
+
+    m18n.n.assert_any_call("unbackup_app", app="wordpress")
+    m18n.n.assert_any_call('backup_nothings_done')
+
+
+@pytest.mark.with_backup_recommended_app_installed
+def test_backup_app_with_no_backup_script(mocker):
+
+    backup_script = "/etc/yunohost/apps/backup_recommended_app/scripts/backup"
+    os.system("rm %s" % backup_script)
+    assert not os.path.exists(backup_script)
+
+    mocker.spy(m18n, "n")
+
+    with pytest.raises(MoulinetteError):
+        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+
+    m18n.n.assert_any_call("backup_with_no_backup_script_for_app", app="backup_recommended_app")
+    m18n.n.assert_any_call('backup_nothings_done')
+
+
+@pytest.mark.with_backup_recommended_app_installed
+def test_backup_app_with_no_restore_script(mocker):
+
+    restore_script = "/etc/yunohost/apps/backup_recommended_app/scripts/restore"
+    os.system("rm %s" % restore_script)
+    assert not os.path.exists(restore_script)
+
+    mocker.spy(m18n, "n")
+
+    # Backuping an app with no restore script will only display a warning to the
+    # user...
+
+    backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+
+    m18n.n.assert_any_call("backup_with_no_restore_script_for_app", app="backup_recommended_app")
+
+
+def test_backup_with_different_output_directory():
+    pass
+
+
+def test_backup_with_no_compress():
+    # Or "copy" method
+    pass
+
+
+###############################################################################
+#  App restore                                                                #
+###############################################################################
 
 @pytest.mark.with_wordpress_archive_from_2p4
-def test_restore_script_failure_handling(monkeypatch, mocker):
+def test_restore_app_wordpress_from_Ynh2p4():
+
+    backup_restore(auth, name=backup_list()["archives"][0],
+                         ignore_system=True,
+                         ignore_apps=False,
+                         apps=["wordpress"])
+
+
+@pytest.mark.with_wordpress_archive_from_2p4
+def test_restore_app_script_failure_handling(monkeypatch, mocker):
 
     def custom_hook_exec(name, *args, **kwargs):
         if os.path.basename(name).startswith("restore"):
@@ -318,28 +364,8 @@ def test_restore_script_failure_handling(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
-@pytest.mark.with_backup_recommended_app_installed
-def test_backup_not_enough_free_space(monkeypatch, mocker):
-
-    def custom_subprocess(command):
-        if command[0] == "df":
-            return "lol? 0"
-        elif command[0] == "du":
-            return "999999999999999999999"
-        else:
-            raise Exception("subprocess called with something else than df or du")
-
-    monkeypatch.setattr("subprocess.check_output", custom_subprocess)
-    mocker.spy(m18n, "n")
-
-    with pytest.raises(MoulinetteError):
-        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
-
-    m18n.n.assert_any_call('not_enough_disk_space', path=ANY)
-
-
 @pytest.mark.with_wordpress_archive_from_2p4
-def test_restore_not_enough_free_space(monkeypatch, mocker):
+def test_restore_app_not_enough_free_space(monkeypatch, mocker):
 
     def custom_os_statvfs(path):
         class Stat:
@@ -365,34 +391,90 @@ def test_restore_not_enough_free_space(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
-def test_backup_app_not_installed():
-    pass
+@pytest.mark.with_wordpress_archive_from_2p4
+def test_restore_app_not_in_backup(mocker):
+
+    assert not _is_installed("wordpress")
+    assert not _is_installed("yoloswag")
+
+    mocker.spy(m18n, "n")
+
+    with pytest.raises(MoulinetteError):
+        backup_restore(auth, name=backup_list()["archives"][0],
+                             ignore_system=True,
+                             ignore_apps=False,
+                             apps=["yoloswag"])
+
+    m18n.n.assert_any_call('backup_archive_app_not_found', app="yoloswag")
+    assert not _is_installed("wordpress")
+    assert not _is_installed("yoloswag")
 
 
-def test_restore_app_not_in_backup():
-    pass
+@pytest.mark.with_wordpress_archive_from_2p4
+def test_restore_app_already_installed(mocker):
+
+    assert not _is_installed("wordpress")
+
+    backup_restore(auth, name=backup_list()["archives"][0],
+                         ignore_system=True,
+                         ignore_apps=False,
+                         apps=["wordpress"])
+
+    assert _is_installed("wordpress")
+
+    mocker.spy(m18n, "n")
+    with pytest.raises(MoulinetteError):
+        backup_restore(auth, name=backup_list()["archives"][0],
+                             ignore_system=True,
+                             ignore_apps=False,
+                             apps=["wordpress"])
+
+    m18n.n.assert_any_call('restore_already_installed_app', app="wordpress")
+    m18n.n.assert_any_call('restore_nothings_done')
+
+    assert _is_installed("wordpress")
 
 
-def test_restore_app_already_installed():
-    pass
+@pytest.mark.with_backup_legacy_app_installed
+def test_backup_and_restore_legacy_app():
+
+    _test_backup_and_restore_app("backup_legacy_app")
 
 
-def test_backup_an_app_with_no_backup_script():
-    pass
+@pytest.mark.with_backup_recommended_app_installed
+def test_backup_and_restore_recommended_app():
+
+    _test_backup_and_restore_app("backup_recommended_app")
 
 
-def test_backup_an_app_with_no_restore_script():
-    pass
+@pytest.mark.with_backup_recommended_app_installed_with_ynh_restore
+def test_backup_and_restore_with_ynh_restore():
+
+    _test_backup_and_restore_app("backup_recommended_app")
 
 
-def test_backup_with_different_output_directory():
-    pass
+def _test_backup_and_restore_app(app):
+
+    # Create a backup of this app
+    backup_create(ignore_system=True, ignore_apps=False, apps=[app])
+
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["system"] == {}
+    assert len(archives_info["apps"].keys()) == 1
+    assert app in archives_info["apps"].keys()
+
+    # Uninstall the app
+    app_remove(auth, app)
+    assert not app_is_installed(app)
+
+    # Restore the app
+    backup_restore(auth, name=archives[0], ignore_system=True,
+                   ignore_apps=False, apps=[app])
+
+    assert app_is_installed(app)
 
 
-def test_backup_with_no_compress():
-    # Or "copy" method
-    pass
-
-
-# Test ynh_restore
 

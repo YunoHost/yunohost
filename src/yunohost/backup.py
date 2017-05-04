@@ -195,7 +195,7 @@ class BackupManager:
             logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def _get_env_var(self, app=None):
-        """ Define environment variable for backup scripts/hooks 
+        """ Define environment variable for backup scripts/hooks
             (apps or system)
         """
         env_var = {}
@@ -381,21 +381,27 @@ class BackupManager:
     def _collect_apps_files(self, apps=[]):
         """ Prepare backup for each selected apps """
 
+        # If apps is None, we backup no apps
         if apps is None:
             return
-        # Filter applications to backup
-        apps_list = set(os.listdir('/etc/yunohost/apps'))
-        apps_filtered = set()
-        if apps:
-            for a in apps:
-                if a not in apps_list:
-                    logger.warning(m18n.n('unbackup_app', app=a))
-                else:
-                    apps_filtered.add(a)
-        else:
-            apps_filtered = apps_list
 
-        for app_instance_name in apps_filtered:
+        # Filter applications to backup
+        apps_installed = set(os.listdir('/etc/yunohost/apps'))
+        apps_that_will_be_backuped = set()
+
+        # If "apps" is empty list, backup every app installed
+        if apps == []:
+            apps_that_will_be_backuped = apps_installed
+        # Otherwise, check that every app requested for backup is installed
+        else:
+            for app in apps:
+                if app not in apps_installed:
+                    logger.warning(m18n.n('unbackup_app', app=app))
+                else:
+                    apps_that_will_be_backuped.add(app)
+
+        # And now, collect file for each app to backup
+        for app_instance_name in apps_that_will_be_backuped:
             self._collect_app_files(app_instance_name)
 
     def _collect_app_files(self, app):
@@ -452,7 +458,7 @@ class BackupManager:
         app_setting_path = os.path.join('/etc/yunohost/apps/', app)
         app_script = os.path.join(app_setting_path, 'scripts/backup')
         if not os.path.isfile(app_script):
-            logger.warning(m18n.n('unbackup_app', app=app))
+            logger.warning(m18n.n('backup_with_no_backup_script_for_app', app=app))
             return True
         return False
 
@@ -460,7 +466,7 @@ class BackupManager:
         app_setting_path = os.path.join('/etc/yunohost/apps/', app)
         app_restore_script = os.path.join(app_setting_path, 'scripts/restore')
         if not os.path.isfile(app_restore_script):
-            logger.warning(m18n.n('unrestore_app', app=app))
+            logger.warning(m18n.n('backup_with_no_restore_script_for_app', app=app))
 
 
     def _clean_app_backup_env(self, app):
@@ -1031,23 +1037,30 @@ class RestoreManager:
 
     def _restore_apps(self, apps=[]):
 
+        # None means "restore no apps"
         if apps is None:
             return
 
-        # Filter applications to restore
-        apps_list = set(self.info['apps'].keys())
-        apps_filtered = set()
-        if apps:
-            for a in apps:
-                if a not in apps_list:
-                    logger.error(m18n.n('backup_archive_app_not_found', app=a))
-                else:
-                    apps_filtered.add(a)
-        else:
-            apps_filtered = apps_list
+        # List apps available in the archive
+        apps_in_archive = set(self.info['apps'].keys())
 
-        for app_instance_name in apps_filtered:
-            self._restore_app(app_instance_name)
+        apps_that_will_be_restored = set()
+
+        # Apps = [] means "restore every app in the archive"
+        if apps == []:
+            apps_that_will_be_restored = apps_in_archive
+        # Otherwise, we need to check that the apps choosen by the user are
+        # effectively in the archive
+        else:
+            for app in apps:
+                if app not in apps_in_archive:
+                    logger.error(m18n.n('backup_archive_app_not_found', app=app))
+                else:
+                    apps_that_will_be_restored.add(app)
+
+        # Now, restore each individual app
+        for app in apps_that_will_be_restored:
+            self._restore_app(app)
 
     def _restore_app(self, app_instance_name):
         def copytree(src, dst, symlinks=False, ignore=None):
