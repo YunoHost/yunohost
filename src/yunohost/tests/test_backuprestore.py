@@ -50,7 +50,14 @@ def setup_function(function):
 
     if "with_backup_recommended_app_installed" in markers:
         assert not app_is_installed("backup_recommended_app")
-        install_app("backup_recommended_app_ynh", "/yolo")
+        install_app("backup_recommended_app_ynh", "/yolo",
+                    "&helper_to_test=ynh_restore_file")
+        assert app_is_installed("backup_recommended_app")
+
+    if "with_backup_recommended_app_installed_with_ynh_restore" in markers:
+        assert not app_is_installed("backup_recommended_app")
+        install_app("backup_recommended_app_ynh", "/yolo",
+                    "&helper_to_test=ynh_restore")
         assert app_is_installed("backup_recommended_app")
 
 def teardown_function(function):
@@ -144,10 +151,11 @@ def uninstall_test_apps_if_needed():
         app_remove(auth, "wordpress")
 
 
-def install_app(app, path):
+def install_app(app, path, additionnal_args=""):
 
     app_install(auth, "./tests/apps/%s" % app,
-                args="domain=%s&path=%s" % (maindomain, path))
+                args="domain=%s&path=%s%s" % (maindomain, path,
+                                              additionnal_args))
 
 
 def add_archive_wordpress_from_2p4():
@@ -228,6 +236,10 @@ def test_backup_and_restore_recommended_app():
 
     _test_backup_and_restore_app("backup_recommended_app")
 
+@pytest.mark.with_backup_recommended_app_installed_with_ynh_restore
+def test_backup_and_restore_with_ynh_restore():
+
+    _test_backup_and_restore_app("backup_recommended_app")
 
 def _test_backup_and_restore_app(app):
 
