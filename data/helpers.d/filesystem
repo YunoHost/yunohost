@@ -71,10 +71,10 @@ ynh_backup() {
 ynh_restore () {
     local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
     REL_DIR="${REL_DIR%/}/"
-    sudo grep -ohP $'^\".*\",\"$REL_DIR.*\"$' ${YNH_BACKUP_CSV} | \
+    sudo cat ${YNH_BACKUP_CSV} | tr -d $'\r' | grep -ohP "^\".*\",\"$REL_DIR.*\"$" | \
     while read line; do
         local ORIGIN_PATH=$(echo $line | grep -ohP "^\"\K.*(?=\",\".*\"$)")
-        local ARCHIVE_PATH=$(echo $line | grep -ohP "^\".*\",\"\K.*(?=\"$)")
+        local ARCHIVE_PATH=$(echo $line | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
         ynh_restore_file $ARCHIVE_PATH $ORIGIN_PATH
     done
 }
