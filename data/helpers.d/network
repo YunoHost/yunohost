@@ -62,7 +62,6 @@ ynh_webpath_available () {
 ynh_webpath_register () {
 	local app=$1
 	local domain=$2
-	local path=$(ynh_normalize_url_path $3)
-	ynh_webpath_available $domain $path && \
-	  sudo yunohost app register-url $app $domain $path
+	local path=$3
+	sudo yunohost app register-url $app $domain $path
 }
