@@ -177,12 +177,16 @@ class BackupManager:
         # If the user manually specified which parts to backuped, we need to
         # check that each part actually has a backup script available
         else:
-            self.targets["system"] = []
-            for part in system_parts:
-                if part not in available_system_backup_hooks:
-                    logger.error(m18n.n('backup_hook_unknown', hook=part))
-                else:
-                    self.targets["system"].append(part)
+            self.targets["system"] = [ part for part in system_parts
+                                       if part in available_system_backup_hooks ]
+
+            # Display an error for each part asked by the user but which is
+            # unknown
+            unknown_parts = [ part for part in system_parts
+                              if part not in available_system_backup_hooks ]
+
+            for part in unknown_parts :
+                logger.error(m18n.n('backup_hook_unknown', hook=part))
 
         #
         # Apps
@@ -199,13 +203,15 @@ class BackupManager:
         # If the user manually specified which apps to backup, we need to
         # check that each app is actually installed
         else:
-            self.targets["apps"] = []
-            for app in apps:
+            self.targets["apps"] = [ app for app in apps
+                                     if app in apps_installed ]
 
-                if app not in apps_installed:
-                    logger.warning(m18n.n('unbackup_app', app=app))
-                else:
-                    self.targets["apps"].append(app)
+            # Display an error for each app asked by the user but which is
+            # unknown
+            unknown_apps = [ app for app in apps
+                             if app not in apps_installed ]
+            for app in unknown_apps:
+                logger.error(m18n.n('unbackup_app', app=app))
 
         # Additionnaly, we need to check that each targetted app has a
         # backup and restore scripts
@@ -871,15 +877,17 @@ class RestoreManager:
         # Otherwise, we need to check that each part asked to restore are
         # available
         else:
-            self.targets["system"] = []
-            for system_part in system_parts:
-                # If not available, show an error
-                if system_part not in system_parts_in_archive:
-                    logger.error(m18n.n("backup_archive_system_part_not_available",
-                                        part=system_part))
-                # Else, add it to targets
-                else:
-                    self.targets["system"].append(system_part)
+            self.targets["system"] = [ part for part in system_parts
+                                       if part in system_parts_in_archive ]
+
+            unavailable_parts = [ part for part in system_parts
+                                  if part in system_parts_in_archive ]
+
+            # Display an error for each part that the user want to restore
+            # but is not available in the archive
+            for system_part in unavailable_parts:
+                logger.error(m18n.n("backup_archive_system_part_not_available",
+                                    part=system_part))
 
         # Now we need to check that the restore hook is actually available for
         # all targets we want to restore
@@ -933,11 +941,15 @@ class RestoreManager:
         # Otherwise, we need to check that the apps choosen by the user are
         # effectively in the archive
         else:
-            self.targets["apps"] = []
-            for app in apps:
-                if app in apps_in_archive:
-                    self.targets["apps"].append(app)
-                else:
+            self.targets["apps"] = [ app for app in apps
+                                         if app in apps_in_archive]
+
+            unavailable_apps = [ app for app in apps
+                                     if app not in apps_in_archive ]
+
+            # Display an error for each app that the user want to restore
+            # but is not available in the archive
+            for app in unavailable_apps:
                     logger.error(m18n.n('backup_archive_app_not_found', app=app))
 
 
