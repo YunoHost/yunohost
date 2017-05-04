@@ -690,18 +690,25 @@ backup:
                     full: --no-compress
                     help: Do not create an archive file
                     action: store_true
-                --hooks:
-                    help: List of backup hooks names to execute
+                --system:
+                    help: List of system parts to backup (all by default)
                     nargs: "*"
-                --ignore-hooks:
-                    help: Do not execute backup hooks
-                    action: store_true
                 --apps:
-                    help: List of application names to backup
+                    help: List of application names to backup (all by default)
                     nargs: "*"
+                --hooks:
+                    help: (Deprecated) See --system
+                    nargs: "*"
+                --ignore-system:
+                    help: Do not backup system
+                    action: store_true
                 --ignore-apps:
                     help: Do not backup apps
                     action: store_true
+                --ignore-hooks:
+                    help: (Deprecated) See --ignore-system
+                    action: store_true
+
 
         ### backup_restore()
         restore:
@@ -714,17 +721,23 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
-                --hooks:
-                    help: List of restauration hooks names to execute
+                --system:
+                    help: List of system parts to restore (all by default)
                     nargs: "*"
                 --apps:
-                    help: List of application names to restore
+                    help: List of application names to restore (all by default)
                     nargs: "*"
+                --hooks:
+                    help: (Deprecated) See --system
+                    nargs: "*"
+                --ignore-system:
+                    help: Do not restore system parts
+                    action: store_true
                 --ignore-apps:
                     help: Do not restore apps
                     action: store_true
                 --ignore-hooks:
-                    help: Do not restore hooks
+                    help: (Deprecated) See --ignore-system
                     action: store_true
                 --force:
                     help: Force restauration on an already installed system
