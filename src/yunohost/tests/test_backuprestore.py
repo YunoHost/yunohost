@@ -355,6 +355,34 @@ def test_restore_not_enough_free_space(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
+def test_backup_app_not_installed():
+    pass
+
+
+def test_restore_app_not_in_backup():
+    pass
+
+
+def test_restore_app_already_installed():
+    pass
+
+
+def test_backup_an_app_with_no_backup_script():
+    pass
+
+
+def test_backup_an_app_with_no_restore_script():
+    pass
+
+
+def test_backup_with_different_output_directory():
+    pass
+
+
+def test_backup_with_no_compress():
+    # Or "copy" method
+    pass
+
+
 # Test ynh_restore
 
-# Test the copy method, not just the tar method ?
