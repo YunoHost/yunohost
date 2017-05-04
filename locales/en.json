@@ -53,6 +53,7 @@
     "backup_archive_name_exists": "The backup's archive name already exists",
     "backup_archive_name_unknown": "Unknown local backup archive named '{name:s}'",
     "backup_archive_open_failed": "Unable to open the backup archive",
+    "backup_archive_mount_failed": "Mounting the backup archive failed",
     "backup_cleaning_failed": "Unable to clean-up the temporary backup directory",
     "backup_created": "Backup created",
     "backup_creating_archive": "Creating the backup archive...",
