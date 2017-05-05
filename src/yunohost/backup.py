@@ -51,9 +51,9 @@ from yunohost.tools import tools_postinstall
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
-APP_MARGIN_SPACE_SIZE = 100
-CONF_MARGIN_SPACE_SIZE = 10
-POSTINSTALL_ESTIMATE_SPACE_SIZE = 5
+APP_MARGIN_SPACE_SIZE = 100  # In MB
+CONF_MARGIN_SPACE_SIZE = 10  # IN MB
+POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 logger = getActionLogger('yunohost.backup')
 
 
@@ -1150,6 +1150,7 @@ class CustomBackupMethod(BackupMethod):
         """Return the arguments to give to the custom script"""
         return [action, self.work_dir, self.name, self.repo, self.manager.size,
                 self.manager.description]
+
 
 class RestoreManager:
     """RestoreManager allow to restore a past backup archive
