@@ -1633,9 +1633,6 @@ def backup_create(name=None, description=None, methods=[],
         else:
             methods = ['tar']  # In future, borg will be the default actions
 
-    # FIXME : debug message to be removed ?
-    logger.debug(system)
-
     if ignore_system:
         system = None
     elif system is None:
