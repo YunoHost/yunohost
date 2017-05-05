@@ -1628,9 +1628,7 @@ def backup_create(name=None, description=None, methods=[],
 
     # Define methods (retro-compat)
     if methods == []:
-        if no_compress and not output_directory:
-            methods = ['mount']
-        elif no_compress:
+        if no_compress:
             methods = ['copy']
         else:
             methods = ['tar']  # In future, borg will be the default actions
