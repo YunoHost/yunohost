@@ -85,6 +85,8 @@ class BackupManager:
         work_dir (getter) # FIXME currently it's not a getter
         is_tmp_work_dir (getter)
         paths_to_backup (getter) # FIXME not a getter and list is not protected
+        name (getter) # FIXME currently it's not a getter
+        size (getter) # FIXME currently it's not a getter
 
     Public methods:
         add(self, method)
@@ -671,31 +673,107 @@ class BackupManager:
 
 
 class BackupMethod(object):
-    """
-    Abstract class
+    """BackupMethod is an abstract class that represents a way to backup and
+    restore a list of files.
+
+    Those kind of object could be used by a BackupManager or by a
+    RestoreManager. Some methods are reserved for BackupManager and others for
+    RestoreManager.
+
+    BackupMethod has a factory method "create" let you create backup methods
+    instances. Currently, there are 3 BackupMethods implemented:
+
+    CopyBackupMethod -- This method just do an uncompress copy of each file in a
+    location, and could be the inverse for restoring
+
+    TarBackupMethod -- This method compress all files to backup in archive. To
+    restore it try to mount the archive with archivemount (fuse). Some system
+    don't support fuse.
+
+    CustomBackupMethod -- This one use a bash hook "backup_method" to do the
+    backup/restore operations. A user can add his own hook inside
+    /etc/yunohost/hooks.d/backup_method/
+
+    Public properties:
+        method_name
+    Public methods:
+        mount_and_backup(self, backup_manager)
+        mount(self, restore_manager)
+        create(cls, method, **kwargs)
+
+    Usage:
+        method = BackupMethod.create("tar")
+        method.mount_and_backup(backup_manager)
+        #or
+        method = BackupMethod.create("copy")
+        method.mount(restore_manager)
     """
     def __init__(self, repo = None):
+        """BackupMethod constructors
+
+        Note it is an abstract class. You should use the "create" class method
+        to create instance.
+
+        Args:
+        repo -- (string|None) A string that represent the repo where put or get
+        the backup. It could be a path, and in future a BackupRepository object.
+        If None, the default repo is used /home/yunohost.backup/archives/
+        """
         self.repo = ARCHIVES_PATH if repo is None else repo
 
     @property
     def method_name(self):
+        """Return the string name of a BackupMethod (eg "tar" or "copy")"""
         raise MoulinetteError(errno.EINVAL, m18n.n('backup_abstract_method'))
 
     @property
     def name(self):
+        """Return the backup name"""
         return self.manager.name
 
     @property
     def work_dir(self):
+        """Return the working directory
+
+        For a BackupManager, it is the directory where we prepare the files to
+        backup
+
+        For a RestoreManager, it is the directory where we mount the archive
+        before restoring"""
         return self.manager.work_dir
 
     def need_mount(self):
+        """Return True if this backup method need to organize path to backup by
+        binding its in the working directory before to backup its.
+
+        Indeed, some methods like tar or copy method don't need to organize
+        files before to add it inside the archive, but others like borgbackup
+        are not able to organize directly the files. In this case we have the
+        choice to organize in the working directory before to put in the archive
+        or to organize after mounting the archive before the restoring
+        operation.
+
+        The default behaviour is to return False. To change it override the
+        method.
+
+        Note it's not a property because some overrided methods could do long
+        treatment to get this info
+        """
         return False
 
     def mount_and_backup(self, backup_manager):
+        """Run the backup on files listed by  the BackupManager instance
+
+        This method shouldn't be overrided, prefer overriding self.backup() and
+        self.clean()
+
+        Args:
+        backup_manager -- (BackupManager) A backup manager instance that has
+        already done the files collection step.
+        """
         self.manager = backup_manager
         if self.need_mount():
-            self._mount_csv_listed_files()
+            self._organize_files()
 
         try:
             self.backup()
@@ -703,10 +781,25 @@ class BackupMethod(object):
             self.clean()
 
     def mount(self, restore_manager):
+        """Mount the archive from RestoreManager instance in the working
+        directory
+
+        This method should be extended.
+
+        Args:
+        restore_manager -- (RestoreManager) A restore manager instance contains
+        an archive to restore.
+        """
         self.manager = restore_manager
 
     def clean(self):
-        """ Umount subdir of work_dir """
+        """Umount sub directories of working dirextories and delete it if
+        temporary
+
+        Exceptions:
+        backup_cleaning_failed -- Raise if we were not able to unmount sub
+        directories of the working directories
+        """
         if self.need_mount():
             if self._recursive_umount(self.work_dir) > 0:
                 raise MoulinetteError(errno.EINVAL,
@@ -716,7 +809,11 @@ class BackupMethod(object):
             filesystem.rm(self.work_dir, True, True)
 
     def _recursive_umount(directory):
+        """Recursively umount sub directories of a directory
 
+        Args:
+        directory -- a directory path
+        """
         mount_lines = subprocess.check_output("mount").split("\n")
 
         points_to_umount = [ line.split(" ")[2]
@@ -734,7 +831,14 @@ class BackupMethod(object):
         return ret
 
     def _check_is_enough_free_space(self):
-        """ Check free space in output directory at first """
+        """Check free space in output directory at first
+
+        Exceptions:
+        not_enough_disk_space -- Raise if there isn't enough space.
+            Currently, the size needed is very approximative, in some case the
+            exception could be raised even if there is enough disk space
+        """
+        # TODO Improve partial restore support
         backup_size = self.manager.size
         cmd = ['df', '--block-size=1', '--output=avail', self.repo]
         avail_output = subprocess.check_output(cmd).split()
@@ -745,8 +849,20 @@ class BackupMethod(object):
             raise MoulinetteError(errno.EIO, m18n.n(
                 'not_enough_disk_space', path=self.repo))
 
-    def _mount_csv_listed_files(self):
-        """ Mount all csv src in their related path """
+    def _organize_files(self):
+        """Mount all csv src in their related path
+
+        The goal is to organize the files app by app and hook by hook, before
+        backup or before the restore operation (in the case of an unorganize
+        archive).
+
+        The usage of binding could be strange for a user because the du -sb
+        command will return that the working directory is big.
+
+        Exceptions:
+        ?
+        """
+        # TODO Support to run this before a restore (and not only before backup)
         for path in self.manager.paths_to_backup:
             # FIXME io excpetion
             src = path['src']
@@ -764,8 +880,10 @@ class BackupMethod(object):
                                         "&&", "umount", "-R", dest])
                 elif os.path.isfile(src) or os.path.islink(src):
                     # os.chdir(os.path.dirname(dest))
+                    # FIXME Hardlink can't be done if not in same filesystem
                     os.link(src, dest)
                     return
+            # TODO May be ask user before to copy big amount of data ???
             if os.path.isdir(src) or os.path.ismount(src):
                 subprocess.call(["cp", "-a", os.path.join(src, "."), dest])
                 shutil.copytree(src, dest, symlinks=True)
@@ -774,7 +892,17 @@ class BackupMethod(object):
 
     @classmethod
     def create(cls, method, **kwargs):
+        """ Factory method to create instance of BackupMethod
 
+        Args:
+        method -- (string) The method name of an existing BackupMethod. If the
+        name is unknown the CustomBackupMethod will be tried
+
+        ...    -- Specific args for the method, could be the repo target by the
+        method
+
+        Return a BackupMethod instance
+        """
         if not isinstance(method, basestring):
             methods = []
             for m in method:
@@ -793,6 +921,9 @@ class BackupMethod(object):
 
 
 class CopyBackupMethod(BackupMethod):
+    """This class just do an uncompress copy of each file in a
+    location, and could be the inverse for restoring
+    """
     def __init__(self, repo = None):
         super(CopyBackupMethod, self).__init__(repo)
 
@@ -801,7 +932,7 @@ class CopyBackupMethod(BackupMethod):
         return 'copy'
 
     def backup(self):
-        """ Copy prepared files into a dir """
+        """ Copy prepared files into a the repo """
         # Check free space in output
         self._check_is_enough_free_space()
 
@@ -822,6 +953,13 @@ class CopyBackupMethod(BackupMethod):
                 shutil.copy(source, dest)
 
     def mount(self):
+        """ Mount the uncompress backup in readonly mode to the working
+        directory
+
+        Exceptions:
+        backup_no_uncompress_archive_dir -- Raised if the repo doesn't exists
+        backup_cant_mount_uncompress_archive -- Raised if the binding failed
+        """
         super(CopyBackupMethod, self).mount()
 
         if not os.path.isdir(self.repo):
@@ -842,6 +980,10 @@ class CopyBackupMethod(BackupMethod):
 
 
 class TarBackupMethod(BackupMethod):
+    """This class compress all files to backup in archive. To
+    restore it try to mount the archive with archivemount (fuse). Some system
+    don't support fuse.
+    """
 
     def __init__(self, repo=None):
         super(TarBackupMethod, self).__init__(repo)
@@ -851,7 +993,16 @@ class TarBackupMethod(BackupMethod):
         return 'tar'
 
     def backup(self):
-        """ Compress prepared files """
+        """ Compress prepared files
+
+        It adds the info.json in /home/yunohost.backup/archives and if the
+        compress archive isn't located here, add a symlink to the archive to.
+
+        Exceptions:
+        backup_archive_open_failed -- Raised if we can't open the archive
+        backup_creation_failed -- Raised if we can't write in the compress
+            archive
+        """
         # Check free space in output
         self._check_is_enough_free_space()
 
@@ -890,6 +1041,11 @@ class TarBackupMethod(BackupMethod):
         """
         Mount the archive. We avoid copy to be able to restore on system without
         too many space.
+
+        Exceptions:
+        backup_archive_open_failed -- Raised if the archive can't be open
+        backup_archive_mount_failed -- Raised if the system don't support
+        archivemount
         """
         super(TarBackupMethod, self).mount(restore_manager)
 
@@ -907,6 +1063,8 @@ class TarBackupMethod(BackupMethod):
         ret = subprocess.call(['archivemount', '-o', 'readonly',
                                self._archive_file, self.work_dir])
         if ret != 0:
+            # FIXME in this case we should ask the user if we could make an
+            # extraction (with a warning about disk space and waiting time
             logger.debug("cannot mount backup archive '%s'",
                          self._archive_file, exc_info=1)
             raise MoulinetteError(errno.EIO,
@@ -914,6 +1072,7 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        """Return the compress archive path"""
         return os.path.join(self.repo, self.name + '.tar.gz')
 
 
@@ -936,7 +1095,10 @@ class BorgBackupMethod(BackupMethod):
 
 
 class CustomBackupMethod(BackupMethod):
-
+    """This class use a bash hook "backup_method" to do the
+    backup/restore operations. A user can add his own hook inside
+    /etc/yunohost/hooks.d/backup_method/
+    """
     def __init__(self, repo = None, **kwargs):
         super(CustomBackupMethod, self).__init__(repo)
         self.args = kwargs
@@ -947,6 +1109,11 @@ class CustomBackupMethod(BackupMethod):
         return 'borg'
 
     def need_mount(self):
+        """Call the backup_method hook to know if we need to organize files
+
+        Exceptions:
+        backup_custom_need_mount_error -- Raised if the hook failed
+        """
         ret = hook_callback('backup_method', method,
                             args=self._get_args('need_mount'))
         if ret['succeed']:
@@ -956,7 +1123,11 @@ class CustomBackupMethod(BackupMethod):
                                   m18n.n('backup_custom_need_mount_error'))
 
     def backup(self):
-        """ Launch a custom script """
+        """Launch a custom script to backup
+
+        Exceptions:
+        backup_custom_backup_error -- Raised if the custom script failed
+        """
 
         ret = hook_callback('backup_method', method,
                             args=self._get_args('backup'))
@@ -965,6 +1136,11 @@ class CustomBackupMethod(BackupMethod):
                                   m18n.n('backup_custom_backup_error'))
 
     def mount(self, restore_manager):
+        """Launch a custom script to mount the custom archive
+
+        Exceptions:
+        backup_custom_mount_error -- Raised if the custom script failed
+        """
         super(CustomBackupMethod, self).mount(restore_manager)
         ret = hook_callback('backup_method', method,
                             args=self._get_args('mount'))
@@ -973,6 +1149,7 @@ class CustomBackupMethod(BackupMethod):
                                   m18n.n('backup_custom_mount_error'))
 
     def _get_args(self, action):
+        """Return the arguments to give to the custom script"""
         return [action, self.work_dir, self.name, self.repo, self.manager.size,
                 self.manager.description]
 
