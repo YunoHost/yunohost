@@ -831,14 +831,12 @@ class BackupMethod(object):
         return ret
 
     def _check_is_enough_free_space(self):
-        """Check free space in output directory at first
+        """Check free space in repository or output directory before to backup
 
         Exceptions:
         not_enough_disk_space -- Raise if there isn't enough space.
-            Currently, the size needed is very approximative, in some case the
-            exception could be raised even if there is enough disk space
         """
-        # TODO Improve partial restore support
+        # TODO How to do with distant repo or with deduplicated backup ?
         backup_size = self.manager.size
         cmd = ['df', '--block-size=1', '--output=avail', self.repo]
         avail_output = subprocess.check_output(cmd).split()
@@ -1154,12 +1152,43 @@ class CustomBackupMethod(BackupMethod):
                 self.manager.description]
 
 class RestoreManager:
-    """
-    BackupArchive represent a past backup.
+    """RestoreManager allow to restore a past backup archive
+
     Currently it's a tar.gz file, but it could be another kind of archive
+
+    Public properties:
+        info (getter)i # FIXME
+        work_dir (getter) # FIXME currently it's not a getter
+        name (getter) # FIXME currently it's not a getter
+        success (getter)
+        result (getter) # FIXME
+
+    Public methods:
+        set_targets(self, system_parts=[], apps=[])
+        restore(self)
+
+    Usage:
+        restore_manager = RestoreManager(name)
+
+        restore_manager.set_targets(None, ['wordpress__3'])
+
+        restore_manager.restore()
+
+        if restore_manager.success:
+            logger.success(m18n.n('restore_complete'))
+
+        return restore_manager.result
     """
 
     def __init__(self, name, repo=None, method='tar'):
+        """RestoreManager constructor
+
+        Args:
+        name -- (string) Archive name
+        repo -- (string|None) Repository where is this archive, it could be a
+                path (default: /home/yunohost.backup/archives)
+        method -- (string) Method name to use to mount the archive
+        """
         # Retrieve and open the archive
         self.info = backup_info(name, with_details=True)
         self.archive_path = self.info['path']
@@ -1170,8 +1199,25 @@ class RestoreManager:
             'system': {},
         }
 
-
     def set_targets(self, system_parts=[], apps=[]):
+        """
+        Define and validate targets to be restored (list of system parts,
+        apps..)
+
+        Args:
+        system_parts -- (list) list of system parts which should be restored. If
+        it's an empty list, it will restore all system part in the archive.
+        If it's None, nothing will be restored.
+
+        apps         -- (list) list of apps which should be restored. If apps is
+        an empty list, all apps in the archive will be restored. If it's None,
+        no apps will be restored.
+
+        Exceptions:
+        backup_archive_system_part_not_availablei -- Raised if the system part
+        isn't in the archive
+        backup_archive_app_not_found -- Raised if the app isn't in the archive
+        """
 
         self.targets = {}
 
@@ -1266,9 +1312,12 @@ class RestoreManager:
             for app in unavailable_apps:
                     logger.error(m18n.n('backup_archive_app_not_found', app=app))
 
-
     def restore(self):
-        """ Restore the archive """
+        """Restore the archive
+
+        Restore system parts and apps after mounting the archive, checking free
+        space and postinstall if needed
+        """
 
         self._mount()
 
@@ -1280,7 +1329,18 @@ class RestoreManager:
         finally:
             self.clean()
 
+    @property
+    def success(self):
+        """Return true if the RestoreManager has restored something"""
+        return self.result['system'] or self.result['apps']
+
     def _postinstall_if_needed(self):
+        """Post install yunohost if needed
+
+        Exceptions:
+        backup_invalid_archive -- Raised if the current_host isn't in the
+        archive
+        """
         # Check if YunoHost is installed
         if not os.path.isfile('/etc/yunohost/installed'):
             # Retrieve the domain from the backup
@@ -1290,27 +1350,27 @@ class RestoreManager:
             except IOError:
                 logger.debug("unable to retrieve current_host from the backup",
                             exc_info=1)
+                # FIXME include the current_host by default ?
                 raise MoulinetteError(errno.EIO,
                                     m18n.n('backup_invalid_archive'))
 
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'yunohost', True)
 
-    @property
-    def success(self):
-        return self.result['system'] or self.result['apps']
-
-    def _mount(self, mnt_path=None):
+    def _mount(self):
         """
         Mount the archive. We avoid copy to be able to restore on system without
         too many space.
+
+        Use the mount method from the BackupMethod instance and read info about
+        this archive
+
+        Exceptions:
+        restore_removing_tmp_dir_failed -- Raised if it's not possible to remove
+        the working directory
         """
 
-        # Check mount directory
-        if mnt_path is None:
-            self.work_dir = os.path.join(BACKUP_PATH, "tmp", self.name)
-        else:
-            self.work_dir = mnt_path
+        self.work_dir = os.path.join(BACKUP_PATH, "tmp", self.name)
 
         if os.path.ismount(self.work_dir):
             logger.debug("An already mounting point '%s' already exists",
@@ -1339,18 +1399,19 @@ class RestoreManager:
         self._read_info_files()
 
     def _compute_needed_space(self):
-        """
-        Define needed space to be able to backup
-        return:
-            size - needed space to backup
-            margin - margin to be sure the backup don't fail by missing spaces
-        """
+        """Compute needed space to be able to restore
 
+        Return:
+        size   -- (int) needed space to backup in bytes
+        margin -- (int) margin to be sure the backup don't fail by missing space
+                  in bytes
+        """
         system = self.targets["system"]
         apps = self.targets["apps"]
         restore_all_system = (system == self.info['system'].keys())
         restore_all_apps = (apps == self.info['apps'].keys())
 
+        # If complete restore operations (or legacy archive)
         margin = CONF_MARGIN_SPACE_SIZE * 1024 * 1024
         if (restore_all_system and restore_all_apps) or 'size_details' not in self.info:
             size = self.info['size']
@@ -1375,7 +1436,13 @@ class RestoreManager:
         return (size, margin)
 
     def _check_free_space(self):
-        """ Check available disk space """
+        """ Check available disk space
+
+        Exceptions:
+        restore_may_be_not_enough_disk_space -- Raised if there isn't enough
+        space to cover the security margin space
+        restore_not_enough_disk_space -- Raised if there isn't enough space
+        """
         statvfs = os.statvfs(BACKUP_PATH)
         free_space = statvfs.f_frsize * statvfs.f_bavail
         (needed_space, margin) = self._compute_needed_space()
@@ -1404,6 +1471,7 @@ class RestoreManager:
 
         logger.info(m18n.n('restore_running_hooks'))
 
+        # FIXME Add environment variables !!!!
         ret = hook_callback('restore',
                             self.targets["system"],
                             args=[self.work_dir])
@@ -1411,16 +1479,36 @@ class RestoreManager:
         self.result['system'] = ret['succeed']
 
     def _restore_apps(self):
-
-        # If nothing to restore, return immediately
-        if self.targets["apps"] == []:
-            return
-
-        # Now, restore each individual app
+        """Restore all apps targeted"""
         for app in self.targets["apps"]:
             self._restore_app(app)
 
     def _restore_app(self, app_instance_name):
+        """Restore an app
+
+        Environment variables:
+        YNH_BACKUP_DIR -- The backup working directory (in
+                          "/home/yunohost.backup/tmp/BACKUPNAME" or could be
+                          defined by the user)
+        YNH_BACKUP_CSV -- A temporary CSV where the script whould list paths toi
+                          backup
+        YNH_APP_BACKUP_DIR -- The directory where the script should put
+                              temporary files to backup like database dump,
+                              files in this directory don't need to be added to
+                              the temporary CSV.
+        YNH_APP_ID     -- The app id (eg wordpress)
+        YNH_APP_INSTANCE_NAME -- The app instance name (eg wordpress__3)
+        YNH_APP_INSTANCE_NUMBER  -- The app instance number (eg 3)
+
+        Args:
+        app_instance_name -- (string) The app name to restore (no app with this
+        name should be already install)
+
+        Exceptions:
+        restore_already_installed_app -- Raised if an app with this app instance
+        name already exists
+        restore_app_failed -- Raised if the restore bash script failed
+        """
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
                 s = os.path.join(src, item)
@@ -1434,7 +1522,6 @@ class RestoreManager:
         tmp_app_bkp_dir = os.path.join(tmp_app_dir, 'backup')
 
         # Parse app instance name and id
-        # TODO: Use app_id to check if app is installed?
         app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
 
         # Check if the app is not already installed
@@ -1508,6 +1595,8 @@ class RestoreManager:
             shutil.rmtree(tmp_script_dir, ignore_errors=True)
 
     def clean(self):
+        """End a restore operations by cleaning the working directory and
+        regenerate ssowat conf"""
         if self.result['apps']:
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
@@ -1519,8 +1608,12 @@ class RestoreManager:
                 logger.warning(m18n.n('restore_cleaning_failed'))
         filesystem.rm(self.work_dir, True, True)
 
-
     def _read_info_files(self):
+        """Read the info containing in an archive
+
+        Exceptions:
+        backup_invalid_archive -- Raised if we can't read the info
+        """
         # Retrieve backup info
         info_file = os.path.join(self.work_dir, "info.json")
         try:
