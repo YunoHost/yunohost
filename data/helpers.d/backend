@@ -57,7 +57,7 @@ ynh_remove_logrotate () {
 # usage: ynh_add_nginx_config
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
-	ynh_compare_checksum_config "$finalnginxconf" 1
+	ynh_backup_if_checksum_is_different "$finalnginxconf" 1
 	sudo cp ../conf/nginx.conf "$finalnginxconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
