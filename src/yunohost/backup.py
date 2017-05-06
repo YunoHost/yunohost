@@ -116,6 +116,10 @@ class BackupManager:
             'system':{},
             'apps':{}
         }
+        self.results = {
+            "system": {},
+            "apps": {}
+        }
 
         # Define backup name
         if not name:
@@ -143,6 +147,22 @@ class BackupManager:
 
     def __repr__(self):
         return json.dumps(self.info)
+
+    def set_result(self, category, element, value):
+
+        levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
+
+        assert value in levels
+
+        if element not in self.results[category].keys():
+            self.results[category][element] = value
+        else:
+            currentValue = self.results[category][element]
+            if (levels.index(currentValue) > levels.index(value)):
+                return
+            else:
+                self.results[category][element] = value
+
 
     def add(self, method):
         self.methods.append(method)
@@ -187,6 +207,7 @@ class BackupManager:
 
             for part in unknown_parts :
                 logger.error(m18n.n('backup_hook_unknown', hook=part))
+                self.set_result("system", part, "Skipped")
 
         #
         # Apps
@@ -212,6 +233,8 @@ class BackupManager:
                              if app not in apps_installed ]
             for app in unknown_apps:
                 logger.error(m18n.n('unbackup_app', app=app))
+                self.set_result("apps", app, "Skipped")
+
 
         # Additionnaly, we need to check that each targetted app has a
         # backup and restore scripts
@@ -225,9 +248,20 @@ class BackupManager:
                 if not os.path.isfile(backup_script_path):
                     logger.warning(m18n.n('backup_with_no_backup_script_for_app', app=app))
                     self.targets["apps"].remove(app)
+                    self.set_result("apps", app, "Skipped")
 
                 elif not os.path.isfile(restore_script_path):
                     logger.warning(m18n.n('backup_with_no_restore_script_for_app', app=app))
+                    self.set_result("apps", app, "Warning")
+
+        #
+        # Init result
+        #
+
+        # For target with no result yet (like 'Skipped'), set it as unknown
+        for category in [ "apps", "system" ]:
+            for target in self.targets[category]:
+                self.set_result(category, target, "Unknown")
 
 
     def collect_files(self):
@@ -238,10 +272,15 @@ class BackupManager:
 
         self._collect_apps_files()
 
-        # Check if something has been saved
-        if not self.system_return and not self.apps_return:
+        # Check if something has been saved ('success' or 'warning')
+        all_results = self.results["system"].values() + \
+                      self.results["apps"].values()
+
+        if (not "Success" in all_results) and \
+           (not "Warning" in all_results):
             filesystem.rm(self.work_dir, True, True)
             raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
+
 
         # Add unlisted files from backup tmp dir
         self._add_to_list_to_backup('backup.csv')
@@ -407,34 +446,37 @@ class BackupManager:
                             env=env_dict,
                             chdir=self.work_dir)
 
-        # FIXME : ideally, this should be transformed into :
-        # for each part that succeeded:
-        #   ...
-        # for each part that failed:
-        #  ....
-        if ret['succeed'] != []:
-            self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
-            self.system_return = ret['succeed']
+        if ret["succeed"] != []:
+            self.system_return = ret["succeed"]
 
-            # Save relevant restoration hooks
-            tmp_system_dir = 'hooks/restore/'
-            filesystem.mkdir(os.path.join(self.work_dir, tmp_system_dir),
-                             0750, True, uid='admin')
+        # Add files from targets (which they put in the CSV) to the list of
+        # files to backup
+        self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
 
-            restore_hooks = hook_list("restore")["hooks"]
+        # Save restoration hooks for each part that suceeded (and which have
+        # a restore hook available)
 
-            for part in ret['succeed'].keys():
-                if part in restore_hooks:
-                    part_restore_hooks = hook_info("restore", part)["hooks"]
-                    for hook in part_restore_hooks:
-                        self._add_to_list_to_backup(hook["path"], tmp_system_dir)
-                else:
-                    logger.warning(m18n.n('restore_hook_unavailable', hook=part),
-                                   exc_info=1)
+        restore_hooks_dir = os.path.join(self.work_dir, "hooks", "restore")
+        if not os.path.exists(restore_hooks_dir):
+            filesystem.mkdir(restore_hooks_dir, mode=0750,
+                             parents=True, uid='admin')
 
-        else:
-            # FIXME: support hooks failure
-            pass
+        restore_hooks = hook_list("restore")["hooks"]
+
+        for part in ret['succeed'].keys():
+            if part in restore_hooks:
+                part_restore_hooks = hook_info("restore", part)["hooks"]
+                for hook in part_restore_hooks:
+                    self._add_to_list_to_backup(hook["path"], "hooks/restore/")
+                self.set_result("system", part, "Success")
+            else:
+                logger.warning(m18n.n('restore_hook_unavailable', hook=part))
+                self.set_result("system", part, "Warning")
+
+        for part in ret['failed'].keys():
+            logger.error(m18n.n('backup_system_part_failed', part=part))
+            self.set_result("system", part, "Error")
+
 
     def _collect_apps_files(self, apps=[]):
         """ Prepare backup for each selected apps """
@@ -471,6 +513,7 @@ class BackupManager:
         except:
             self._clean_app_backup_env(app)
             logger.exception(m18n.n('backup_app_failed', app=app))
+            self.set_result("apps", app, "Error")
         else:
             # Add settings of the app to the list
             tmp_app_dir = os.path.join('apps/', app)
@@ -484,6 +527,8 @@ class BackupManager:
                 'name': i['name'],
                 'description': i['description'],
             }
+            self.set_result("apps", app, "Success")
+
         # Remove tmp files in all situations
         finally:
             filesystem.rm(tmp_script, force=True)
@@ -851,11 +896,34 @@ class RestoreManager:
         self.archive_path = self.info['path']
         self.name = name
         self.method = BackupMethod.create(method)
-        self.result = {
-            'apps': [],
-            'system': {},
+        self.results = {
+            "system": {},
+            "apps": {}
         }
 
+    def set_result(self, category, element, value):
+
+        levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
+
+        assert value in levels
+
+        if element not in self.results[category].keys():
+            self.results[category][element] = value
+        else:
+            currentValue = self.results[category][element]
+            if (levels.index(currentValue) > levels.index(value)):
+                return
+            else:
+                self.results[category][element] = value
+
+    @property
+    def success(self):
+
+        all_results = self.results["system"].values() + \
+                      self.results["apps"].values()
+
+        return "Success" in all_results \
+            or "Warning" in all_results
 
     def set_targets(self, system_parts=[], apps=[]):
 
@@ -888,6 +956,7 @@ class RestoreManager:
             for system_part in unavailable_parts:
                 logger.error(m18n.n("backup_archive_system_part_not_available",
                                     part=system_part))
+                self.set_result("system", system_part, "Skipped")
 
         # Now we need to check that the restore hook is actually available for
         # all targets we want to restore
@@ -913,6 +982,7 @@ class RestoreManager:
             if len(hook_paths) == 0:
                 logger.exception(m18n.n('restore_hook_unavailable', part=system_part))
                 self.targets["system"].remove(system_part)
+                self.set_result("system", system_part, "Skipped")
                 continue
 
             # Otherwise, add it from the archive to the system
@@ -951,6 +1021,16 @@ class RestoreManager:
             # but is not available in the archive
             for app in unavailable_apps:
                     logger.error(m18n.n('backup_archive_app_not_found', app=app))
+                    self.set_result("apps", app, "Skipped")
+
+        #
+        # Init result
+        #
+
+        # For target with no result yet (like 'Skipped'), set it as unknown
+        for category in [ "apps", "system" ]:
+            for target in self.targets[category]:
+                self.set_result(category, target, "Unknown")
 
 
     def restore(self):
@@ -981,10 +1061,6 @@ class RestoreManager:
 
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'yunohost', True)
-
-    @property
-    def success(self):
-        return self.result['system'] or self.result['apps']
 
     def _mount(self, mnt_path=None):
         """
@@ -1094,7 +1170,12 @@ class RestoreManager:
                             self.targets["system"],
                             args=[self.work_dir])
 
-        self.result['system'] = ret['succeed']
+        for part in ret['succeed'].keys():
+            self.set_result("system", part, "Success")
+
+        for part in ret['failed'].keys():
+            logger.error(m18n.n('restore_system_part_failed', part=part))
+            self.set_result("system", part, "Error")
 
     def _restore_apps(self):
 
@@ -1167,6 +1248,7 @@ class RestoreManager:
         except:
             logger.exception(m18n.n('restore_app_failed',
                                     app=app_instance_name))
+            self.set_result("apps", app_instance_name, "Error")
 
             app_script = os.path.join(tmp_script_dir, 'remove')
 
@@ -1186,15 +1268,16 @@ class RestoreManager:
             # Cleaning app directory
             shutil.rmtree(app_setting_path, ignore_errors=True)
 
+
             # TODO Cleaning app hooks
         else:
-            self.result['apps'].append(app_instance_name)
+            self.set_result("apps", app_instance_name, "Success")
         finally:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_script_dir, ignore_errors=True)
 
     def clean(self):
-        if self.result['apps']:
+        if self.results['apps']:
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
@@ -1357,9 +1440,10 @@ def backup_create(name=None, description=None, methods=[],
     logger.success(m18n.n('backup_created'))
 
     # Return backup info
-    info = backup_manager.info
-    info['name'] = backup_manager.name
-    return {'archive': info}
+    #info = backup_manager.info
+    #info['name'] = backup_manager.name
+    #return {'archive': info}
+    return backup_manager.results
 
 
 def backup_restore(auth, name,
@@ -1440,7 +1524,7 @@ def backup_restore(auth, name,
     else:
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
 
-    return restore_manager.result
+    return restore_manager.results
 
 
 def backup_list(with_info=False, human_readable=False):
