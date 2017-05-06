@@ -37,3 +37,31 @@ ynh_find_port () {
 	done
 	echo $port
 }
+
+# Check availability of a web path
+#
+# example: ynh_webpath_available some.domain.tld /coffee
+#
+# usage: ynh_webpath_available domain path
+# | arg: domain - the domain/host of the url
+# | arg: path - the web path to check the availability of
+ynh_webpath_available () {
+	local domain=$1
+	local path=$2
+	sudo yunohost domain url-available $domain $path
+}
+
+# Register/book a web path for an app
+#
+# example: ynh_webpath_register wordpress some.domain.tld /coffee
+#
+# usage: ynh_webpath_register app domain path
+# | arg: app - the app for which the domain should be registered
+# | arg: domain - the domain/host of the web path
+# | arg: path - the web path to be registered
+ynh_webpath_register () {
+	local app=$1
+	local domain=$2
+	local path=$3
+	sudo yunohost app register-url $app $domain $path
+}
