@@ -86,6 +86,21 @@ ynh_mysql_create_user() {
         "CREATE USER '${1}'@'localhost' IDENTIFIED BY '${2}';"
 }
 
+# Check if a mysql user exists
+#
+# usage: ynh_mysql_user_exists user
+# | arg: user - the user for which to check existence
+function ynh_mysql_user_exists()
+{
+   local user=$1
+   if [[ -z $(ynh_mysql_execute_as_root "SELECT User from mysql.user WHERE User = '$user';") ]]
+   then
+      return 1
+   else
+      return 0
+   fi
+}
+
 # Drop a user
 #
 # usage: ynh_mysql_drop_user user
@@ -125,8 +140,11 @@ ynh_mysql_remove_db () {
 	else
 		echo "Database $db_name not found" >&2
 	fi
-	
-	ynh_mysql_drop_user $db_user	# Remove the associated user to database
+
+	# Remove mysql user if it exists
+        if $(ynh_mysql_user_exists $db_user); then
+		ynh_mysql_drop_user $db_user
+	fi
 }
 
 # Sanitize a string intended to be the name of a database
