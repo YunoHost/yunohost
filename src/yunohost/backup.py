@@ -1411,11 +1411,6 @@ class RestoreManager:
         finally:
             self.clean()
 
-    @property
-    def success(self):
-        """Return true if the RestoreManager has restored something"""
-        return self.result['system'] or self.result['apps']
-
     def _postinstall_if_needed(self):
         """Post install yunohost if needed
 
@@ -1686,7 +1681,9 @@ class RestoreManager:
     def clean(self):
         """End a restore operations by cleaning the working directory and
         regenerate ssowat conf"""
-        if self.result['apps']:
+
+        if "Success" in self.results["apps"].values() \
+        or "Warning" in self.results["apps"].values():
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
