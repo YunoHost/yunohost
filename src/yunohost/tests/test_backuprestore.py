@@ -318,10 +318,11 @@ def test_backup_app_with_no_restore_script(mocker):
     m18n.n.assert_any_call("backup_with_no_restore_script_for_app", app="backup_recommended_app")
 
 
+@pytest.mark.skip(reason="Test not implemented yet.")
 def test_backup_with_different_output_directory():
     pass
 
-
+@pytest.mark.skip(reason="Test not implemented yet.")
 def test_backup_with_no_compress():
     # Or "copy" method
     pass
