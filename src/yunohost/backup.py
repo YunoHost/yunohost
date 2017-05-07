@@ -2037,12 +2037,19 @@ def backup_info(name, with_details=False, human_readable=False):
 
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
+    if not os.path.exists(info_file):
+        tar = tarfile.open(archive_file, "r:gz")
+        info_dir = info_file + '.d'
+        tar.extract('info.json', path=info_dir)
+        tar.close()
+        shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+        os.rmdir(info_dir)
+
     try:
         with open(info_file) as f:
             # Retrieve backup info
             info = json.load(f)
     except:
-        # TODO: Attempt to extract backup info file from tarball
         logger.debug("unable to load '%s'", info_file, exc_info=1)
         raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
 
