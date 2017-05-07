@@ -1617,7 +1617,9 @@ class TarBackupMethod(BackupMethod):
         backup_creation_failed -- Raised if we can't write in the compress
             archive
         """
-        filesystem.mkdir(self.repo, 0750, parents=True, uid='admin')
+
+        if not os.path.exists(self.repo):
+            filesystem.mkdir(self.repo, 0750, parents=True, uid='admin')
 
         # Check free space in output
         self._check_is_enough_free_space()
@@ -1941,7 +1943,7 @@ def backup_create(name=None, description=None, methods=[],
 
     logger.success(m18n.n('backup_created'))
 
-    return backup_manager.results
+    return {'name': backup_manager.name, 'results': backup_manager.results}
 
 
 def backup_restore(auth, name,
