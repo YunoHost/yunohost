@@ -1564,7 +1564,7 @@ class RestoreManager:
     #   Archive mounting                                                      #
     ###########################################################################
 
-    def _mount(self):
+    def mount(self):
         """
         Mount the archive. We avoid copy to be able to restore on system without
         too many space.
@@ -1684,8 +1684,6 @@ class RestoreManager:
         Restore system parts and apps after mounting the archive, checking free
         space and postinstall if needed
         """
-
-        self._mount()
 
         try:
             self._check_free_space()
@@ -1873,6 +1871,10 @@ def backup_create(name=None, description=None, methods=[],
 
     # TODO: Add a 'clean' argument to clean output directory
 
+    ###########################################################################
+    #   Validate / parse arguments                                            #
+    ###########################################################################
+
     # Historical, deprecated options
     if ignore_hooks != False:
         logger.warning("--ignore-hooks is deprecated and will be removed in the"
@@ -1884,52 +1886,35 @@ def backup_create(name=None, description=None, methods=[],
                        "future. Please use --system instead.")
         system = hooks
 
+    # Validate that there's something to backup
+    if ignore_system and ignore_apps:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('backup_action_required'))
 
-    def _prevalidate_backup_call(name, output_directory, no_compress,
-                                 ignore_system, ignore_apps, methods):
-        """ Validate backup request is conform """
+    # Validate there is no archive with the same name
+    if name and name in backup_list()['archives']:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('backup_archive_name_exists'))
 
-        # Validate what to backup
-        if ignore_system and ignore_apps:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('backup_action_required'))
-
-        # Validate there is no archive with the same name
-        if name and name in backup_list()['archives']:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('backup_archive_name_exists'))
-
-        # Validate output_directory option
-        if output_directory:
-            output_directory = os.path.abspath(output_directory)
-
-            # Check for forbidden folders
-            if output_directory.startswith(ARCHIVES_PATH) or \
-            re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
-                     output_directory):
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('backup_output_directory_forbidden'))
-
-            # Check that output directory is empty
-            if os.path.isdir(output_directory) and no_compress and \
-                    os.listdir(output_directory):
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('backup_output_directory_not_empty'))
-        elif no_compress:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('backup_output_directory_required'))
-
-
-    # Validate backup request is conform
-    _prevalidate_backup_call(name, output_directory, no_compress, ignore_system,
-                             ignore_apps, methods)
-
-    # Create yunohost archives directory if it does not exists
-    _create_archive_dir()
-
-    # Define output_directory
+    # Validate output_directory option
     if output_directory:
         output_directory = os.path.abspath(output_directory)
+
+        # Check for forbidden folders
+        if output_directory.startswith(ARCHIVES_PATH) or \
+        re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
+                 output_directory):
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('backup_output_directory_forbidden'))
+
+        # Check that output directory is empty
+        if os.path.isdir(output_directory) and no_compress and \
+                os.listdir(output_directory):
+            raise MoulinetteError(errno.EIO,
+                                  m18n.n('backup_output_directory_not_empty'))
+    elif no_compress:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('backup_output_directory_required'))
 
     # Define methods (retro-compat)
     if methods == []:
@@ -1948,6 +1933,13 @@ def backup_create(name=None, description=None, methods=[],
     elif apps is None:
         apps = []
 
+    ###########################################################################
+    #   Intialize                                                             #
+    ###########################################################################
+
+    # Create yunohost archives directory if it does not exists
+    _create_archive_dir()
+
     # Prepare files to backup
     if no_compress:
         backup_manager = BackupManager(name, description,
@@ -1962,6 +1954,10 @@ def backup_create(name=None, description=None, methods=[],
     # Add backup targets (system and apps)
     backup_manager.set_targets(system, apps)
 
+    ###########################################################################
+    #   Collect files and put them in the archive                             #
+    ###########################################################################
+
     # Collect files to be backup (by calling app backup script / system hooks)
     backup_manager.collect_files()
 
@@ -1970,10 +1966,6 @@ def backup_create(name=None, description=None, methods=[],
 
     logger.success(m18n.n('backup_created'))
 
-    # Return backup info
-    #info = backup_manager.info
-    #info['name'] = backup_manager.name
-    #return {'archive': info}
     return backup_manager.results
 
 
@@ -1997,6 +1989,10 @@ def backup_restore(auth, name,
         ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
+    ###########################################################################
+    #   Validate / parse arguments                                            #
+    ###########################################################################
+
     # Historical, deprecated options
     if ignore_hooks != False:
         logger.warning("--ignore-hooks is deprecated and will be removed in the"
@@ -2011,6 +2007,16 @@ def backup_restore(auth, name,
     if ignore_system and ignore_apps:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('restore_action_required'))
+
+    if ignore_system:
+        system = None
+    elif system is None:
+        system = []
+
+    if ignore_apps:
+        apps = None
+    elif apps is None:
+        apps = []
 
     # TODO don't ask this question when restoring apps only and certain system
     # parts
@@ -2031,23 +2037,24 @@ def backup_restore(auth, name,
             if not force:
                 raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
 
-    if ignore_system:
-        system = None
-    elif system is None:
-        system = []
-
-    if ignore_apps:
-        apps = None
-    elif apps is None:
-        apps = []
-
     # TODO Partial app restore could not work if ldap is not restored before
     # TODO repair mysql if broken and it's a complete restore
+
+    ###########################################################################
+    #   Initialize                                                            #
+    ###########################################################################
 
     restore_manager = RestoreManager(name)
 
     restore_manager.set_targets(system, apps)
+
+    ###########################################################################
+    #   Mount the archive then call the restore for each system part / app    #
+    ###########################################################################
+
+    restore_manager.mount()
     restore_manager.restore()
+
 
     # Check if something has been restored
     if restore_manager.success:
