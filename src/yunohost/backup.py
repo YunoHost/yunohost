@@ -1050,7 +1050,7 @@ class RestoreManager(BackupRestoreManager):
             size += POSTINSTALL_ESTIMATE_SPACE_SIZE * 1024 * 1024
         return (size, margin)
 
-    def _check_free_space(self):
+    def assert_enough_free_space(self):
         """ Check available disk space
 
         Exceptions:
@@ -1090,7 +1090,6 @@ class RestoreManager(BackupRestoreManager):
         """
 
         try:
-            self._check_free_space()
             self._postinstall_if_needed()
             self._restore_system()
             self._restore_apps()
@@ -1683,8 +1682,6 @@ class TarBackupMethod(BackupMethod):
         if ret != 0:
             logger.warning(m18n.n('backup_archive_mount_failed'))
 
-            self.manager._check_free_space()
-
             logger.info(m18n.n("restore_extracting"))
             tar = tarfile.open(self._archive_file, "r:gz")
             tar.extract('info.json', path=self.work_dir)
@@ -2028,6 +2025,8 @@ def backup_restore(auth, name,
     restore_manager = RestoreManager(name)
 
     restore_manager.set_targets(system, apps)
+
+    restore_manager.assert_enough_free_space()
 
     ###########################################################################
     #   Mount the archive then call the restore for each system part / app    #
