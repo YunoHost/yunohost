@@ -1692,11 +1692,17 @@ class TarBackupMethod(BackupMethod):
                 pass
 
             # Extract system parts backup
+            conf_extracted = False
             for system_part in self.manager.targets['system']:
-                if system_part != "conf_ynh_currenthost":
-                    system_part = system_part.replace("_", "/") + "/"
+                # Caution: conf_ynh_currenthost helpers put its files in
+                # conf/ynh
+                if system_part.startswith("conf_"):
+                    if conf_extracted:
+                        continue
+                    system_part = "conf/"
+                    conf_extracted = True
                 else:
-                    system_part = "conf/ynh/current_host"
+                    system_part = system_part.replace("_", "/") + "/"
                 subdir_and_files = [
                     tarinfo for tarinfo in tar.getmembers()
                     if tarinfo.name.startswith(system_part)
