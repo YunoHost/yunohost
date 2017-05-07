@@ -1793,7 +1793,8 @@ def backup_create(name=None, description=None, methods=[],
         logger.warning("--ignore-hooks is deprecated and will be removed in the"
                        "future. Please use --ignore-system instead.")
         ignore_system = ignore_hooks
-    if hooks != []:
+
+    if hooks != [] and hooks is not None:
         logger.warning("--hooks is deprecated and will be removed in the"
                        "future. Please use --system instead.")
         system = hooks
