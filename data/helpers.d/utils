@@ -31,13 +31,13 @@ ynh_get_plain_key() {
 # 
 # SOURCE_URL=Address to download the app archive
 # SOURCE_SUM=Control sum
-# # (Optional) Programm to check the integrity (sha256sum, md5sum$YNH_EXECUTION_DIR/...)
+# # (Optional) Program to check the integrity (sha256sum, md5sum...)
 # # default: sha256
 # SOURCE_SUM_PRG=sha256
 # # (Optional) Archive format
 # # default: tar.gz
 # SOURCE_FORMAT=tar.gz
-# # (Optional) Put false if source are directly in the archive root
+# # (Optional) Put false if sources are directly in the archive root
 # # default: true
 # SOURCE_IN_SUBDIR=false
 # # (Optionnal) Name of the local archive (offline setup support)
@@ -45,17 +45,17 @@ ynh_get_plain_key() {
 # SOURCE_FILENAME=example.tar.gz 
 #
 # Details:
-# This helper download sources from SOURCE_URL if there is no local source
+# This helper downloads sources from SOURCE_URL if there is no local source
 # archive in /opt/yunohost-apps-src/APP_ID/SOURCE_FILENAME
 # 
-# Next, it check the integrity with "SOURCE_SUM_PRG -c --status" command.
+# Next, it checks the integrity with "SOURCE_SUM_PRG -c --status" command.
 # 
-# If it's ok, the source archive will be uncompress in $dest_dir. If the
+# If it's ok, the source archive will be uncompressed in $dest_dir. If the
 # SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
 # removed.
 #
 # Finally, patches named sources/patches/${src_id}-*.patch and extra files in
-# sources/extra_files/$src_id will be applyed to dest_dir
+# sources/extra_files/$src_id will be applied to dest_dir
 #
 #
 # usage: ynh_setup_source dest_dir [source_id]
@@ -63,16 +63,16 @@ ynh_get_plain_key() {
 # | arg: source_id - Name of the app, if the package contains more than one app
 ynh_setup_source () {
     local dest_dir=$1
-    local src_id=${2:-app} # If the argument is not given, source_id equal "app"
+    local src_id=${2:-app} # If the argument is not given, source_id equals "app"
     
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    local src_url=$(grep 'SOURCE_URL=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_EXECUTION_DIR/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -122,18 +122,18 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if (( $(find $YNH_EXECUTION_DIR/../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
+    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
         local old_dir=$(pwd)
         (cd "$dest_dir" \
-            && for p in $YNH_EXECUTION_DIR/../sources/patches/${src_id}-*.patch; do \
+            && for p in $YNH_CWD/../sources/patches/${src_id}-*.patch; do \
                 patch -p1 < $p; done) \
             || ynh_die "Unable to apply patches"
         cd $old_dir
     fi
 
     # Add supplementary files
-    if test -e "$YNH_EXECUTION_DIR/../sources/extra_files/${src_id}"; then
-        cp -a $YNH_EXECUTION_DIR/../sources/extra_files/$src_id/. "$dest_dir"
+    if test -e "$YNH_CWD/../sources/extra_files/${src_id}"; then
+        cp -a $YNH_CWD/../sources/extra_files/$src_id/. "$dest_dir"
     fi
 }
 
