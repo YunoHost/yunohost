@@ -1943,7 +1943,11 @@ def backup_create(name=None, description=None, methods=[],
 
     logger.success(m18n.n('backup_created'))
 
-    return {'name': backup_manager.name, 'results': backup_manager.results}
+    return {
+        'name': backup_manager.name,
+        'size': backup_manager.size,
+        'results': backup_manager.results
+    }
 
 
 def backup_restore(auth, name,
