@@ -343,10 +343,15 @@ def test_backup_with_different_output_directory():
     assert len(archives_info["system"].keys()) == 1
     assert "conf_ssh" in archives_info["system"].keys()
 
-@pytest.mark.skip(reason="Test not implemented yet.")
+@pytest.mark.clean_opt_dir
 def test_backup_with_no_compress():
-    # Or "copy" method
-    pass
+    # Crate the backup
+    backup_create(ignore_system=False, ignore_apps=True, system=["conf_nginx"],
+                  output_directory="/opt/test_backup_output_directory",
+                  no_compress=True,
+                  name="backup")
+
+    assert os.path.exists("/opt/test_backup_output_directory/info.json")
 
 
 ###############################################################################
