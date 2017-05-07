@@ -58,9 +58,70 @@ MB_ALLOWED_TO_ORGANIZE = 10
 logger = getActionLogger('yunohost.backup')
 
 
+class BackupRestoreManager(object):
+    """BackupRestoreManager is an abstract class"""
+    def set_targets(self, system_parts=[], apps=[]):
+        """
+        Define and validate targets to be backuped or to be restored (list of
+        system parts, apps..)
+
+        Args:
+        system_parts -- (list) list of system parts which should be backuped. If
+        it's an empty list, it will backup/restore all. If it's None, nothing
+        will be backuped.
+
+        apps         -- (list) list of apps which should be backuped. If apps is
+        an empty list, it will backup/restore all. If it's None, no apps will be
+        backuped.
+        """
+        self.targets = {}
+
+        self._set_system_parts_targets(system_parts)
+
+        self._set_apps_targets(apps)
+
+        #
+        # Init result
+        #
+
+        # For target with no result yet (like 'Skipped'), set it as unknown
+        for category in ["apps", "system"]:
+            for target in self.targets[category]:
+                self.set_result(category, target, "Unknown")
+
+    def _set_x_targets(self, targets, target_type, target_set, unknown_error):
+        """
+        Define and validate targets to be backuped or to be restored (list of
+        system parts, apps..)
+
+        Args:
+        system_parts -- (list) list of system parts which should be backuped. If
+        it's an empty list, it will backup/restore all. If it's None, nothing
+        will be backuped.
+        """
+        # No system parts to backup
+        if targets is None:
+            self.targets[target_type] = []
+        # Backup all system parts
+        elif targets == []:
+            self.targets[target_type] = target_set
+        # If the user manually specified which parts to backuped, we need to
+        # check that each part actually has a backup script available
+        else:
+            self.targets[target_type] = [part for part in targets
+                                      if part in target_set]
+
+            # Display an error for each part asked by the user but which is
+            # unknown
+            unknown = [part for part in targets
+                       if part not in target_set]
+
+            for part in unknown:
+                unknown_error(part)
+                self.set_result(target_type, part, "Skipped")
 
 
-class BackupManager:
+class BackupManager(BackupRestoreManager):
     """This class collect files to backup in a list and apply one or several
     backup method on it.
 
@@ -234,76 +295,34 @@ class BackupManager:
                 self.results[category][element] = value
 
 
-    def set_targets(self, system_parts=[], apps=[]):
+    def _set_system_parts_targets(self, system_parts=[]):
         """
-        Define and validate targets to be backuped (list of system parts,
-        apps..)
+        Define and validate targetted apps to be backuped
 
         Args:
-        system_parts -- (list) list of system parts which should be backuped. If
-        it's an empty list, it will backup all system. If it's None, nothing
-        will be backuped.
-
         apps         -- (list) list of apps which should be backuped. If apps is
-        an empty list, all apps will be backuped. If it's None, no apps will be
+        an empty list, it will backup all. If it's None, no apps will be
         backuped.
         """
+        def unknown_error(part):
+            logger.error(m18n.n('backup_hook_unknown', hook=part))
 
-        self.targets = {}
+        self._set_x_targets(system_parts, "system", hook_list('backup')["hooks"],
+                           unknown_error)
 
-        #
-        # System
-        #
+    def _set_apps_targets(self, apps=[]):
+        """
+        Define and validate targetted apps to be backuped
 
-        available_system_backup_hooks = hook_list('backup')["hooks"]
-
-        # No system parts to backup
-        if system_parts is None:
-            self.targets["system"] = []
-        # Backup all system parts
-        elif system_parts == []:
-            self.targets["system"] = available_system_backup_hooks
-        # If the user manually specified which parts to backuped, we need to
-        # check that each part actually has a backup script available
-        else:
-            self.targets["system"] = [ part for part in system_parts
-                                       if part in available_system_backup_hooks ]
-
-            # Display an error for each part asked by the user but which is
-            # unknown
-            unknown_parts = [ part for part in system_parts
-                              if part not in available_system_backup_hooks ]
-
-            for part in unknown_parts :
-                logger.error(m18n.n('backup_hook_unknown', hook=part))
-                self.set_result("system", part, "Skipped")
-
-        #
-        # Apps
-        #
-
-        apps_installed = os.listdir('/etc/yunohost/apps')
-
-        # No apps to backup
-        if apps is None:
-            self.targets["apps"] = []
-        # Backup all apps installed
-        elif apps == []:
-            self.targets["apps"] = apps_installed
-        # If the user manually specified which apps to backup, we need to
-        # check that each app is actually installed
-        else:
-            self.targets["apps"] = [ app for app in apps
-                                     if app in apps_installed ]
-
-            # Display an error for each app asked by the user but which is
-            # unknown
-            unknown_apps = [ app for app in apps
-                             if app not in apps_installed ]
-            for app in unknown_apps:
-                logger.error(m18n.n('unbackup_app', app=app))
-                self.set_result("apps", app, "Skipped")
-
+        Args:
+        apps         -- (list) list of apps which should be backuped. If apps is
+        an empty list, it will backup all. If it's None, no apps will be
+        backuped.
+        """
+        def unknown_error(app):
+            logger.error(m18n.n('unbackup_app', app=app))
+        self._set_x_targets(apps, "apps", os.listdir('/etc/yunohost/apps'),
+                           unknown_error)
 
         # Additionnaly, we need to check that each targetted app has a
         # backup and restore scripts
@@ -323,14 +342,6 @@ class BackupManager:
                     logger.warning(m18n.n('backup_with_no_restore_script_for_app', app=app))
                     self.set_result("apps", app, "Warning")
 
-        #
-        # Init result
-        #
-
-        # For target with no result yet (like 'Skipped'), set it as unknown
-        for category in [ "apps", "system" ]:
-            for target in self.targets[category]:
-                self.set_result(category, target, "Unknown")
 
     ###########################################################################
     #   Management of files to backup / "The CSV"                             #
@@ -1297,7 +1308,7 @@ class CustomBackupMethod(BackupMethod):
                 self.manager.description]
 
 
-class RestoreManager:
+class RestoreManager(BackupRestoreManager):
     """RestoreManager allow to restore a past backup archive
 
     Currently it's a tar.gz file, but it could be another kind of archive
@@ -1443,7 +1454,7 @@ class RestoreManager:
             else:
                 self.results[category][element] = value
 
-    def set_targets(self, system_parts=[], apps=[]):
+    def _set_system_parts_targets(self, system_parts=[]):
         """
         Define and validate targets to be restored (list of system parts,
         apps..)
@@ -1452,47 +1463,14 @@ class RestoreManager:
         system_parts -- (list) list of system parts which should be restored. If
         it's an empty list, it will restore all system part in the archive.
         If it's None, nothing will be restored.
-
-        apps         -- (list) list of apps which should be restored. If apps is
-        an empty list, all apps in the archive will be restored. If it's None,
-        no apps will be restored.
-
-        Exceptions:
-        backup_archive_system_part_not_availablei -- Raised if the system part
-        isn't in the archive
-        backup_archive_app_not_found -- Raised if the app isn't in the archive
         """
 
-        self.targets = {}
+        def unknown_error(part):
+            logger.error(m18n.n("backup_archive_system_part_not_available",
+                                part=part))
 
-        #
-        # System
-        #
-
-        # Look for the list of system parts available in the archive
-        system_parts_in_archive = self.info['system'].keys()
-
-        # If asked to restore nothing
-        if system_parts is None:
-            self.targets["system"] = []
-        # If asked to restore everything
-        elif system_parts == []:
-            self.targets["system"] = system_parts_in_archive
-        # Otherwise, we need to check that each part asked to restore are
-        # available
-        else:
-            self.targets["system"] = [ part for part in system_parts
-                                       if part in system_parts_in_archive ]
-
-            unavailable_parts = [ part for part in system_parts
-                                  if part in system_parts_in_archive ]
-
-            # Display an error for each part that the user want to restore
-            # but is not available in the archive
-            for system_part in unavailable_parts:
-                logger.error(m18n.n("backup_archive_system_part_not_available",
-                                    part=system_part))
-                self.set_result("system", system_part, "Skipped")
+        self._set_x_targets(system_parts, "system", self.info['system'].keys(),
+                           unknown_error)
 
         # Now we need to check that the restore hook is actually available for
         # all targets we want to restore
@@ -1531,42 +1509,20 @@ class RestoreManager:
                              self.archive_path)
             shutil.copy(hook_path, custom_restore_hook_folder)
 
-        #
-        # Apps
-        #
+    def _set_apps_targets(self, apps=[]):
+        """
+        Define and validate targetted apps to be backuped
 
-        # List apps available in the archive
-        apps_in_archive = self.info['apps'].keys()
-
-        # None means "restore no apps"
-        if apps is None:
-            self.targets["apps"] = []
-        # Empty list means "everything available in archive"
-        elif apps == []:
-            self.targets["apps"] = apps_in_archive
-        # Otherwise, we need to check that the apps choosen by the user are
-        # effectively in the archive
-        else:
-            self.targets["apps"] = [ app for app in apps
-                                         if app in apps_in_archive]
-
-            unavailable_apps = [ app for app in apps
-                                     if app not in apps_in_archive ]
-
-            # Display an error for each app that the user want to restore
-            # but is not available in the archive
-            for app in unavailable_apps:
-                    logger.error(m18n.n('backup_archive_app_not_found', app=app))
-                    self.set_result("apps", app, "Skipped")
-
-        #
-        # Init result
-        #
-
-        # For target with no result yet (like 'Skipped'), set it as unknown
-        for category in [ "apps", "system" ]:
-            for target in self.targets[category]:
-                self.set_result(category, target, "Unknown")
+        Args:
+        apps         -- (list) list of apps which should be backuped. If apps is
+        an empty list, it will backup all. If it's None, no apps will be
+        backuped.
+        """
+        def unknown_error(app):
+            logger.error(m18n.n('backup_archive_app_not_found',
+                                app=app))
+        self._set_x_targets(apps, "apps", self.info['apps'].keys(),
+                           unknown_error)
 
     ###########################################################################
     #   Archive mounting                                                      #
