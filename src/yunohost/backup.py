@@ -726,10 +726,7 @@ class BackupManager(BackupRestoreManager):
 
         for row in self.paths_to_backup:
             if row['dest'] != "info.json":
-                # We don't do this in python with os.stat because we don't want
-                # to follow symlinks
-                size = int(subprocess.check_output(['du', '-sb', row['source']])
-                           .split()[0].decode('utf-8'))
+                size = disk_usage(row['source'])
 
                 # Add size to apps details
                 splitted_dest = row['dest'].split('/')
@@ -917,11 +914,11 @@ class BackupMethod(object):
         """
         # TODO How to do with distant repo or with deduplicated backup ?
         backup_size = self.manager.size
-        cmd = ['df', '--block-size=1', '--output=avail', self.repo]
-        avail_output = subprocess.check_output(cmd).split()
-        if len(avail_output) < 2 or int(avail_output[1]) < backup_size:
-            free_space = avail_output[1] if len(avail_output)>= 2 else '?'
-            logger.debug('not enough space at %s (free: %s / needed: %d)',
+
+        free_space = free_space_in_directory(self.repo)
+
+        if free_space < backup_size:
+            logger.debug('Not enough space at %s (free: %s / needed: %d)',
                          self.repo, free_space, backup_size)
             raise MoulinetteError(errno.EIO, m18n.n(
                 'not_enough_disk_space', path=self.repo))
@@ -982,13 +979,8 @@ class BackupMethod(object):
         # to mounting error
 
         # Compute size to copy
-        size = 0
-        for path in paths_needed_to_be_copied:
-                # We don't do this in python with os.stat because we don't want
-                # to follow symlinks
-                size += int(subprocess.check_output(['du', '-sb', path['src']])
-                           .split()[0].decode('utf-8'))
-        size = size / 1024 / 1024
+        size = sum(disk_usage(path['src']) for path in paths_needed_to_be_copied)
+        size /= (1024 * 1024) # Convert bytes to megabytes
 
         # Ask confirmation for copying
         if size > MB_ALLOWED_TO_ORGANIZE:
@@ -1618,8 +1610,9 @@ class RestoreManager(BackupRestoreManager):
         space to cover the security margin space
         restore_not_enough_disk_space -- Raised if there isn't enough space
         """
-        statvfs = os.statvfs(BACKUP_PATH)
-        free_space = statvfs.f_frsize * statvfs.f_bavail
+
+        free_space = free_space_in_directory(BACKUP_PATH)
+
         (needed_space, margin) = self._compute_needed_space()
         if free_space >= needed_space + margin:
             return True
@@ -2158,6 +2151,9 @@ def backup_delete(name):
 
     logger.success(m18n.n('backup_deleted'))
 
+###############################################################################
+#   Misc helpers                                                              #
+###############################################################################
 
 def _create_archive_dir():
     """ Create the YunoHost archives directory if doesn't exist """
@@ -2173,3 +2169,17 @@ def _call_for_each_path(self, callback, csv_path=None):
         backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
         for row in backup_csv:
             callback(self, row['source'], row['dest'])
+
+
+def free_space_in_directory(dirpath):
+    stat = os.statvfs(dirpath)
+    return stat.f_frsize * stat.f_bavail
+
+
+def disk_usage(path):
+    # We don't do this in python with os.stat because we don't want
+    # to follow symlinks
+
+    du_output = subprocess.check_output(['du', '-sb', path])
+    return int(du_output.split()[0].decode('utf-8'))
+
