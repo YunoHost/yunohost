@@ -189,8 +189,7 @@ ynh_restore_file () {
     mkdir -p $(dirname "$DEST_PATH")
 
     # Do a move if YNH_BACKUP_DIR is already a copy
-    mountpoint -q $YNH_BACKUP_DIR
-    if [ $? -ne 0 ]; then
+    if [ $(mountpoint -q $YNH_BACKUP_DIR) -ne 0 ]; then
         mv "$ARCHIVE_PATH" "${DEST_PATH}"
     # Do a copy if it's just a mounting point
     else
