@@ -1,13 +1,12 @@
 CAN_BIND=${CAN_BIND:-1}
 
-# Mark a file or a directory for backup
+# Add a file or a directory to the list of paths to backup
 # 
 # Note: this helper could be used in backup hook or in backup script inside an
 # app package
 #
-# Details: ynh_backup writes SRC and the relative DEST into a CSV file. Then,
-# it try to bind or symlink the DEST to the SRC, if it isn't possible it just
-# do a copy.  
+# Details: ynh_backup writes SRC and the relative DEST into a CSV file. And it
+# creates the parent destination directory 
 # 
 # If DEST is ended by a slash it complete this path with the basename of SRC.
 #
@@ -18,34 +17,77 @@ CAN_BIND=${CAN_BIND:-1}
 # backup dir
 # | arg: is_big - 1 to indicate data are big (mail, video, image ...)
 # | arg: arg - Deprecated arg
+#
+# example:
+# # Wordpress app context
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
+# # => This line will be added into CSV file
+# # "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf"
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/nginx.conf"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/nginx.conf"
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
+# 
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf"
+#
+# #Deprecated usages (maintained for retro-compatibility)
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "${backup_dir}/conf/nginx.conf"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/nginx.conf"
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "/conf/"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
+#
 ynh_backup() {
-    local SRC_PATH=$1
-    local DEST_PATH=${2:-}
-    local IS_BIG=${3:-0}
+    # TODO find a way to avoid injection by file strange naming !
+    local SRC_PATH="$1"
+    local DEST_PATH="${2:-}"
+    local IS_BIG="${3:-0}"
 
-    # validate arguments
+    # ==============================================================================
+    # Format correctly source and destination paths
+    # ==============================================================================
+    # Be sure the source path is not empty
     [[ -e "${SRC_PATH}" ]] || {
         echo "Source path '${SRC_PATH}' does not exist" >&2
         return 1
     }
 
-    # Transform SRCPATH as absolute path
-    SRC_PATH="$(realpath $SRC_PATH)"
+    # Transform the source path as an absolute path
+    # If it's a dir remove the ending /
+    SRC_PATH=$(realpath "$SRC_PATH")
 
-    # If unspecified DESTPATH=SRCPATH
-    [[ -z "$DEST_PATH" ]] && \
+    # If there is no destination path, initialize it with the source path
+    # relative to "/".
+    # eg: SRC_PATH=/etc/yunohost -> DEST_PATH=etc/yunohost
+    if [[ -z "$DEST_PATH" ]]; then
+
         DEST_PATH="${SRC_PATH#/}"
 
-    # Transform DEST_PATH into relative path
-    [[ "${DEST_PATH:0:1}" == "/" ]] \
-        && DEST_PATH="${DEST_PATH#$YNH_CWD/}"
+    else
+        if [[ "${DEST_PATH:0:1}" == "/" ]]; then
 
-    [[ "${DEST_PATH:0:1}" == "/" ]] \
-        && DEST_PATH="${DEST_PATH#/}"
+            # If the destination path is an absolute path, transform it as a path
+            # relative to the current working directory ($YNH_CWD)
+            #
+            # If it's an app backup script that run this helper, YNH_CWD is equal to
+            # $YNH_BACKUP_DIR/apps/APP_INSTANCE_NAME/backup/
+            #
+            # If it's a system part backup script, YNH_CWD is equal to $YNH_BACKUP_DIR
+            DEST_PATH="${DEST_PATH#$YNH_CWD/}"
 
-    # Complete DEST_PATH if ended by a /
-    [[ "${DEST_PATH: -1}" == "/" ]] \
-        &&  DEST_PATH="${DEST_PATH}/$(basename $SRC_PATH)"
+            # Case where $2 is an absolute dir but doesn't begin with $YNH_CWD
+            [[ "${DEST_PATH:0:1}" == "/" ]] \
+                && DEST_PATH="${DEST_PATH#/}"
+        fi
+
+        # Complete DEST_PATH if ended by a /
+        [[ "${DEST_PATH: -1}" == "/" ]] \
+            &&  DEST_PATH="${DEST_PATH}/$(basename $SRC_PATH)"
+    fi
 
     # Check if DEST_PATH already exists in tmp archive
     [[ ! -e "${DEST_PATH}" ]] || {
@@ -53,15 +95,25 @@ ynh_backup() {
         return 1
     }
 
-    # Write file to backup into backup_list
+    # Add the relative current working directory to the destination path
     local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR}"
     REL_DIR="${REL_DIR%/}/"
-    local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
-    local DEST=$(echo "${REL_DIR}${DEST_PATH}" | sed -r 's/"/\"\"/g')
-    DEST="${DEST#/}"
-    echo "\"${SRC}\",\"${DEST}\"" | sudo tee --append ${YNH_BACKUP_CSV} > /dev/null
+    DEST_PATH="${REL_DIR}${DEST_PATH}"
+    DEST_PATH="${DEST_PATH#/}"
+    # ==============================================================================
 
-    sudo mkdir -p $(dirname "${DEST_PATH}")
+    # ==============================================================================
+    # Write file to backup into backup_list
+    # ==============================================================================
+    local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
+    local DEST=$(echo "${DEST_PATH}" | sed -r 's/"/\"\"/g')
+    echo "\"${SRC}\",\"${DEST}\"" >> "${YNH_BACKUP_CSV}"
+
+    # ==============================================================================
+
+    # Create the parent dir of the destination path
+    # It's for retro compatibility, some script consider ynh_backup creates this dir
+    mkdir -p $(dirname "$YNH_BACKUP_DIR/${DEST_PATH}")
 }
 
 # Restore all files linked to the restore hook or to the restore app script
@@ -69,17 +121,24 @@ ynh_backup() {
 # usage: ynh_restore
 #
 ynh_restore () {
+    # Deduce the relative path of $YNH_CWD
     local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
     REL_DIR="${REL_DIR%/}/"
-    sudo cat ${YNH_BACKUP_CSV} | tr -d $'\r' | grep -ohP "^\".*\",\"$REL_DIR.*\"$" | \
+
+    # For each destination path begining by $REL_DIR
+    cat ${YNH_BACKUP_CSV} | tr -d $'\r' | grep -ohP "^\".*\",\"$REL_DIR.*\"$" | \
     while read line; do
-        local ORIGIN_PATH=$(echo $line | grep -ohP "^\"\K.*(?=\",\".*\"$)")
-        local ARCHIVE_PATH=$(echo $line | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
-        ynh_restore_file $ARCHIVE_PATH $ORIGIN_PATH
+        local ORIGIN_PATH=$(echo "$line" | grep -ohP "^\"\K.*(?=\",\".*\"$)")
+        local ARCHIVE_PATH=$(echo "$line" | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
+        ynh_restore_file "$ARCHIVE_PATH" "$ORIGIN_PATH"
     done
 }
 
+# Return the path in the archice where has been stocked the origin path
+#
+# usage: _get_archive_path ORIGIN_PATH
 _get_archive_path () {
+    # For security reasons we use csv python library to read the CSV
     sudo python -c "
 import sys
 import csv
@@ -89,9 +148,10 @@ with open(sys.argv[1], 'r') as backup_file:
         if row['source']==sys.argv[2]:
             print row['dest']
             sys.exit(0)
-    raise Exception()" $1 $2
+    raise Exception()" "${YNH_BACKUP_CSV}" "$1"
     return $?
 }
+
 # Restore a file or a directory 
 #
 # Use the registered path in backup_list by ynh_backup to restore the file at
@@ -104,26 +164,36 @@ with open(sys.argv[1], 'r') as backup_file:
 # the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
 # the archive, the destination will be searched into backup.csv
 #
+# examples:
+# ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
+# # if apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf exists, restore it into
+# # /etc/nginx/conf.d/$domain.d/$app.conf
+# # if no, search a correspondance in the csv (eg: conf/nginx.conf) and restore it into
+# # /etc/nginx/conf.d/$domain.d/$app.conf
+#
+# # DON'T GIVE THE ARCHIVE PATH:
+# ynh_restore_file "conf/nginx.conf"
+#
 ynh_restore_file () {
-    local ORIGIN_PATH=/${1#/}
-    local ARCHIVE_PATH=$YNH_CWD${ORIGIN_PATH}
+    local ORIGIN_PATH="/${1#/}"
+    local ARCHIVE_PATH="$YNH_CWD${ORIGIN_PATH}"
     # Default value for DEST_PATH = /$ORIGIN_PATH
-    local DEST_PATH=${2:-$ORIGIN_PATH}
+    local DEST_PATH="${2:-$ORIGIN_PATH}"
     
     # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
-    sudo test -e $ARCHIVE_PATH
+    test -e "$ARCHIVE_PATH"
     if [ $? -ne 0 ]; then
-        ARCHIVE_PATH=$YNH_BACKUP_DIR/$(_get_archive_path ${YNH_BACKUP_CSV} $ORIGIN_PATH)
+        ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
     fi
     
     # Restore ORIGIN_PATH into DEST_PATH
-    if [[ -d ${ARCHIVE_PATH} ]]; then
-       sudo mkdir -p $DEST_PATH
+    if [[ -d "${ARCHIVE_PATH}" ]]; then
+       mkdir -p "$DEST_PATH"
        ARCHIVE_PATH="${ARCHIVE_PATH}/."
     else
-       sudo mkdir -p $(dirname $DEST_PATH)
+       mkdir -p $(dirname "$DEST_PATH")
     fi
-    sudo cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
+    cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
     
 }
 
