@@ -412,6 +412,27 @@ def test_restore_app_not_in_backup(mocker):
 
 
 @pytest.mark.with_wordpress_archive_from_2p4
+def test_restore_app_archivemount_failure(monkeypatch, mocker):
+
+    def custom_subprocess_call(*args, **kwargs):
+        import subprocess as subprocess2
+        if args[0] and args[0][0]=="archivemount":
+            monkeypatch.undo()
+            return 1
+        return subprocess.call(*args, **kwargs)
+
+    monkeypatch.setattr("subprocess.call", custom_subprocess_call)
+    mocker.spy(m18n, "n")
+
+    assert not _is_installed("wordpress")
+
+    backup_restore(auth, name=backup_list()["archives"][0],
+                         ignore_system=True,
+                         ignore_apps=False,
+                         apps=["wordpress"])
+
+    assert _is_installed("wordpress")
+@pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_app_already_installed(mocker):
 
     assert not _is_installed("wordpress")

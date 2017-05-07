@@ -1043,6 +1043,8 @@ class CopyBackupMethod(BackupMethod):
         backup_no_uncompress_archive_dir -- Raised if the repo doesn't exists
         backup_cant_mount_uncompress_archive -- Raised if the binding failed
         """
+        # FIXME: This code is untested because there is no way to run it from
+        # the ynh cli
         super(CopyBackupMethod, self).mount()
 
         if not os.path.isdir(self.repo):
@@ -1146,12 +1148,45 @@ class TarBackupMethod(BackupMethod):
         ret = subprocess.call(['archivemount', '-o', 'readonly',
                                self._archive_file, self.work_dir])
         if ret != 0:
-            # FIXME in this case we should ask the user if we could make an
-            # extraction (with a warning about disk space and waiting time
-            logger.debug("cannot mount backup archive '%s'",
-                         self._archive_file, exc_info=1)
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_archive_mount_failed'))
+            logger.warning(m18n.n('backup_archive_mount_failed'))
+
+            self.manager._check_free_space()
+
+            logger.info(m18n.n("restore_extracting"))
+            tar = tarfile.open(self._archive_file, "r:gz")
+            tar.extract('info.json', path=self.work_dir)
+
+            try:
+                tar.extract('backup.csv', path=self.work_dir)
+            except KeyError:
+                # Old backup archive have no backup.csv file
+                pass
+
+            # Extract system parts backup
+            for system_part in self.manager.targets['system']:
+                subdir_and_files = [
+                    tarinfo for tarinfo in tar.getmembers()
+                    if tarinfo.name.startswith(
+                        system_part.replace("_", "/") + "/")
+                ]
+                tar.extractall(members=subdir_and_files, path=self.work_dir)
+            subdir_and_files = [
+                tarinfo for tarinfo in tar.getmembers()
+                if tarinfo.name.startswith("hooks/restore/")
+            ]
+            tar.extractall(members=subdir_and_files, path=self.work_dir)
+
+
+            # Extract apps backup
+            for app in self.manager.targets['apps']:
+                subdir_and_files = [
+                    tarinfo for tarinfo in tar.getmembers()
+                    if tarinfo.name.startswith("apps/" + app)
+                ]
+                tar.extractall(members=subdir_and_files, path=self.work_dir)
+
+
+
 
     @property
     def _archive_file(self):
@@ -1276,6 +1311,8 @@ class RestoreManager:
         method -- (string) Method name to use to mount the archive
         """
         # Retrieve and open the archive
+        # FIXME this way to get the info is not compatible with copy or custom
+        # backup methods
         self.info = backup_info(name, with_details=True)
         self.archive_path = self.info['path']
         self.name = name

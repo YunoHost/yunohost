@@ -187,6 +187,7 @@
     "restore_cleaning_failed": "Unable to clean-up the temporary restoration directory",
     "restore_complete": "Restore complete",
     "restore_confirm_yunohost_installed": "Do you really want to restore an already installed system? [{answers:s}]",
+    "restore_extracting": "Extracting needed files from the archive...",
     "restore_failed": "Unable to restore the system",
     "restore_hook_unavailable": "Restoration script for '{part:s}' not available on your system and not in the archive either",
     "restore_mounting_archive": "Mounting archive into '{path:s}'",

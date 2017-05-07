@@ -187,14 +187,20 @@ ynh_restore_file () {
     fi
     
     # Restore ORIGIN_PATH into DEST_PATH
-    if [[ -d "${ARCHIVE_PATH}" ]]; then
-       mkdir -p "$DEST_PATH"
-       ARCHIVE_PATH="${ARCHIVE_PATH}/."
+    mkdir -p $(dirname "$DEST_PATH")
+
+    # Do a move if YNH_BACKUP_DIR is already a copy
+    mountpoint -q $YNH_BACKUP_DIR
+    if [ $? -ne 0 ]; then
+        mv "$ARCHIVE_PATH" "${DEST_PATH}"
+    # Do a copy if it's just a mounting point
     else
-       mkdir -p $(dirname "$DEST_PATH")
+        if [[ -d "${ARCHIVE_PATH}" ]]; then
+            ARCHIVE_PATH="${ARCHIVE_PATH}/."
+            mkdir -p "$DEST_PATH"
+        fi
+        cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
     fi
-    cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
-    
 }
 
 # Deprecated helper since it's a dangerous one!
