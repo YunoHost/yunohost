@@ -72,6 +72,12 @@ def teardown_function(function):
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
+    markers = function.__dict__.keys()
+
+    if "clean_opt_dir" in markers:
+        shutil.rmtree("/opt/test_backup_output_directory")
+
+
 ###############################################################################
 #  Helpers                                                                    #
 ###############################################################################
@@ -319,9 +325,23 @@ def test_backup_app_with_no_restore_script(mocker):
     m18n.n.assert_any_call("backup_with_no_restore_script_for_app", app="backup_recommended_app")
 
 
-@pytest.mark.skip(reason="Test not implemented yet.")
+@pytest.mark.clean_opt_dir
 def test_backup_with_different_output_directory():
-    pass
+
+    # Crate the backup
+    backup_create(ignore_system=False, ignore_apps=True, system=["conf_ssh"],
+                  output_directory="/opt/test_backup_output_directory",
+                  name="backup")
+
+    assert os.path.exists("/opt/test_backup_output_directory/backup.tar.gz")
+
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["apps"] == {}
+    assert len(archives_info["system"].keys()) == 1
+    assert "conf_ssh" in archives_info["system"].keys()
 
 @pytest.mark.skip(reason="Test not implemented yet.")
 def test_backup_with_no_compress():

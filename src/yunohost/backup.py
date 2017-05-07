@@ -1503,7 +1503,7 @@ class BackupMethod(object):
                 shutil.copy(src, dest)
 
     @classmethod
-    def create(cls, method, **kwargs):
+    def create(cls, method, *args):
         """ Factory method to create instance of BackupMethod
 
         Args:
@@ -1518,7 +1518,7 @@ class BackupMethod(object):
         if not isinstance(method, basestring):
             methods = []
             for m in method:
-                methods.append(BackupMethod.create(m))
+                methods.append(BackupMethod.create(m, *args))
             return methods
 
         bm_class = {
@@ -1527,9 +1527,9 @@ class BackupMethod(object):
             'borg': BorgBackupMethod
         }
         if method in ["copy", "tar", "borg"]:
-            return bm_class[method](**kwargs)
+            return bm_class[method](*args)
         else:
-            return CustomBackupMethod(**kwargs)
+            return CustomBackupMethod(*args)
 
 
 class CopyBackupMethod(BackupMethod):
@@ -1550,7 +1550,7 @@ class CopyBackupMethod(BackupMethod):
 
         for path in self.manager.paths_to_backup:
             source = path['source']
-            dest = os.path.join(self.manager.work_dir, path['dest'])
+            dest = os.path.join(self.repo, path['dest'])
             if source == dest:
                 logger.debug("Files already copyed")
                 return
@@ -1617,6 +1617,8 @@ class TarBackupMethod(BackupMethod):
         backup_creation_failed -- Raised if we can't write in the compress
             archive
         """
+        filesystem.mkdir(self.repo, 0750, parents=True, uid='admin')
+
         # Check free space in output
         self._check_is_enough_free_space()
 
@@ -1916,7 +1918,12 @@ def backup_create(name=None, description=None, methods=[],
         backup_manager = BackupManager(name, description)
 
     # Add backup methods
-    for method in BackupMethod.create(methods):
+    if output_directory:
+        methods = BackupMethod.create(methods, output_directory)
+    else:
+        methods = BackupMethod.create(methods)
+
+    for method in methods:
         backup_manager.add(method)
 
     # Add backup targets (system and apps)
