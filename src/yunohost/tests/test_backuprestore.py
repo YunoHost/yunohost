@@ -204,6 +204,18 @@ def test_backup_system_part_that_does_not_exists(mocker):
     m18n.n.assert_any_call('backup_nothings_done')
 
 ###############################################################################
+#  System restore from 2.4                                                    #
+###############################################################################
+
+@pytest.mark.skip(reason="Test not implemented yet.")
+def test_restore_system_from_Ynh2p4():
+    pass
+
+@pytest.mark.skip(reason="Test not implemented yet.")
+def test_restore_system_from_Ynh2p4_archivemount_failure():
+    pass
+
+###############################################################################
 #  System backup and restore                                                  #
 ###############################################################################
 
@@ -231,6 +243,12 @@ def test_backup_and_restore_all_sys():
 
     # Check ssowat conf is back
     assert os.path.exists("/etc/ssowat/conf.json")
+
+
+@pytest.mark.skip(reason="Test not implemented yet.")
+def test_backup_and_restore_archivemount_failure():
+    pass
+
 
 
 ###############################################################################
