@@ -255,15 +255,16 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_not_enough_free_space(monkeypatch, mocker):
 
-    def custom_subprocess(command):
-        if command[0] == "df":
-            return "lol? 0"
-        elif command[0] == "du":
-            return "999999999999999999999"
-        else:
-            raise Exception("subprocess called with something else than df or du")
+    def custom_disk_usage(path):
+        return 99999999999999999
 
-    monkeypatch.setattr("subprocess.check_output", custom_subprocess)
+    def custom_free_space_in_directory(dirpath):
+        return 0
+
+    monkeypatch.setattr("yunohost.backup.disk_usage", custom_disk_usage)
+    monkeypatch.setattr("yunohost.backup.free_space_in_directory",
+                        custom_free_space_in_directory)
+
     mocker.spy(m18n, "n")
 
     with pytest.raises(MoulinetteError):
@@ -368,13 +369,11 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
 @pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_app_not_enough_free_space(monkeypatch, mocker):
 
-    def custom_os_statvfs(path):
-        class Stat:
-            f_frsize = 0
-            f_bavail = 0
-        return Stat()
+    def custom_free_space_in_directory(dirpath):
+        return 0
 
-    monkeypatch.setattr("os.statvfs", custom_os_statvfs)
+    monkeypatch.setattr("yunohost.backup.free_space_in_directory",
+                        custom_free_space_in_directory)
     mocker.spy(m18n, "n")
 
     assert not _is_installed("wordpress")
