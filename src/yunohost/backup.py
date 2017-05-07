@@ -54,6 +54,7 @@ ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
 APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
+MB_ALLOWED_TO_ORGANIZE = 10
 logger = getActionLogger('yunohost.backup')
 
 
@@ -149,9 +150,6 @@ class BackupManager:
         self.work_dir = work_dir
         if self.work_dir is None:
             self.work_dir = os.path.join(BACKUP_PATH, 'tmp', name)
-            self.bindable = True
-        else:
-            self.bindable = False
         self._init_work_dir()
 
     @property
@@ -397,7 +395,7 @@ class BackupManager:
         # exists
         if not os.path.isdir(self.work_dir):
             filesystem.mkdir(self.work_dir, 0750, parents=True, uid='admin')
-        elif self.bindable:
+        elif self.is_tmp_work_dir:
             logger.debug("temporary directory for backup '%s' already exists",
                          self.work_dir)
             # FIXME May be we should clean the workdir here
@@ -896,39 +894,81 @@ class BackupMethod(object):
         """Mount all csv src in their related path
 
         The goal is to organize the files app by app and hook by hook, before
-        backup or before the restore operation (in the case of an unorganize
-        archive).
+        custom backup method or before the restore operation (in the case of an
+        unorganize archive).
 
         The usage of binding could be strange for a user because the du -sb
         command will return that the working directory is big.
 
         Exceptions:
-        ?
+        backup_unable_to_organize_files
         """
-        # TODO Support to run this before a restore (and not only before backup)
+        paths_needed_to_be_copied = []
         for path in self.manager.paths_to_backup:
-            # FIXME io excpetion
             src = path['src']
+
+            if self.manager is RestoreManager:
+                # TODO Support to run this before a restore (and not only before
+                # backup). To do that RestoreManager.unorganized_work_dir should
+                # be implemented
+                src = os.path.join(self.unorganized_work_dir, src)
+
             dest = os.path.join(self.work_dir, path['dest'])
-            filesystem.mkdir(os.path.dirname(dest), parent=True)
-            if self.manager.bindable:
-                if os.path.isdir(src):
-                    filesystem.mkdir(dest, parent=True)
-                    ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
-                    if ret == 0:
-                        return
-                    else:
-                        logger.warning(m18n.n("bind_mouting_disable"))
-                        subprocess.call(["mountpoint", "-q", dest,
-                                        "&&", "umount", "-R", dest])
-                elif os.path.isfile(src) or os.path.islink(src):
-                    # os.chdir(os.path.dirname(dest))
-                    # FIXME Hardlink can't be done if not in same filesystem
+            dest_dir = os.path.dirname(dest)
+
+            # Be sure the parent dir of destination exists
+            filesystem.mkdir(dest_dir, parent=True)
+
+            # Try to bind files
+            if os.path.isdir(src):
+                filesystem.mkdir(dest, parent=True)
+                ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
+                if ret == 0:
+                    continue
+                else:
+                    logger.warning(m18n.n("bind_mouting_disable"))
+                    subprocess.call(["mountpoint", "-q", dest,
+                                    "&&", "umount", "-R", dest])
+            elif os.path.isfile(src) or os.path.islink(src):
+                # Create a hardlink if src and dest are on the filesystem
+                if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
                     os.link(src, dest)
-                    return
-            # TODO May be ask user before to copy big amount of data ???
-            if os.path.isdir(src) or os.path.ismount(src):
-                subprocess.call(["cp", "-a", os.path.join(src, "."), dest])
+                    continue
+
+            # Add to the list to copy
+            paths_needed_to_be_copied.append(path)
+
+        if len(paths_needed_to_be_copied) == 0:
+            return
+
+        # Manage the case where we are not able to use mount bind abilities
+        # It could be just for some small files on different filesystems or due
+        # to mounting error
+
+        # Compute size to copy
+        size = 0
+        for path in paths_needed_to_be_copied:
+                # We don't do this in python with os.stat because we don't want
+                # to follow symlinks
+                size += int(subprocess.check_output(['du', '-sb', path['src']])
+                           .split()[0].decode('utf-8'))
+        size = size / 1024 / 1024
+
+        # Ask confirmation for copying
+        if size > MB_ALLOWED_TO_ORGANIZE:
+            try:
+                i = msignals.prompt(m18n.n('backup_ask_for_copying_if_needed',
+                                        answers='y/N', size=size))
+            except NotImplemented:
+                logger.error(m18n.n('backup_unable_to_organize_files'))
+            else:
+                if i != 'y' and i != 'Y':
+                    logger.error(m18n.n('backup_unable_to_organize_files'))
+
+        # Copy unbinded path
+        logger.info(m18n.n('backup_copying_to_organize_the_archive', size=size))
+        for path in paths_needed_to_be_copied:
+            if os.path.isdir(src):
                 shutil.copytree(src, dest, symlinks=True)
             else:
                 shutil.copy(src, dest)
