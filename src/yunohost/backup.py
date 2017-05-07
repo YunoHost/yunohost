@@ -152,6 +152,10 @@ class BackupManager:
             self.work_dir = os.path.join(BACKUP_PATH, 'tmp', name)
         self._init_work_dir()
 
+    ###########################################################################
+    #   Misc helpers                                                          #
+    ###########################################################################
+
     @property
     def info(self):
         """(Getter) Dict containing info about the archive being created"""
@@ -173,6 +177,47 @@ class BackupManager:
     def __repr__(self):
         return json.dumps(self.info)
 
+    def _define_backup_name(self):
+        """Define backup name
+
+        Return:
+            (string) A backup name created from current date 'YYMMDD-HHMMSS'
+        """
+        # FIXME: case where this name already exist
+        return time.strftime('%Y%m%d-%H%M%S')
+
+    def _init_work_dir(self):
+        """Initialize preparation directory
+
+        Ensure the working directory exists and is empty
+
+        exception:
+        backup_output_directory_not_empty -- (MoulinetteError) Raised if the
+            directory was given by the user and isn't empty
+
+        (TODO) backup_cant_clean_tmp_working_directory -- (MoulinetteError)
+            Raised if the working directory isn't empty, is temporary and can't
+            be automaticcaly cleaned
+
+        (TODO) backup_cant_create_working_directory -- (MoulinetteError) Raised
+            if iyunohost can't create the working directory
+        """
+
+        # FIXME replace isdir by exists ? manage better the case where the path
+        # exists
+        if not os.path.isdir(self.work_dir):
+            filesystem.mkdir(self.work_dir, 0750, parents=True, uid='admin')
+        elif self.is_tmp_work_dir:
+            logger.debug("temporary directory for backup '%s' already exists",
+                         self.work_dir)
+            # FIXME May be we should clean the workdir here
+            raise MoulinetteError(
+                    errno.EIO, m18n.n('backup_output_directory_not_empty'))
+
+    ###########################################################################
+    #   Backup target management                                              #
+    ###########################################################################
+
     def set_result(self, category, element, value):
 
         levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
@@ -188,17 +233,6 @@ class BackupManager:
             else:
                 self.results[category][element] = value
 
-
-    def add(self, method):
-        """Add a backup method that will be applyed after the files collection step
-
-        Args:
-        method -- (BackupMethod) A backup method. Currently, you can use those:
-                  TarBackupMethod
-                  CopyBackupMethod
-                  CustomBackupMethod
-        """
-        self.methods.append(method)
 
     def set_targets(self, system_parts=[], apps=[]):
         """
@@ -298,6 +332,98 @@ class BackupManager:
             for target in self.targets[category]:
                 self.set_result(category, target, "Unknown")
 
+    ###########################################################################
+    #   Management of files to backup / "The CSV"                             #
+    ###########################################################################
+
+    def _import_to_list_to_backup(self, tmp_csv):
+        """Commit collected path from system hooks or app scripts
+
+        Args:
+        tmp_csv -- (string) Path to a temporary csv file with source and
+                   destinations column to add to the list of paths to backup
+        """
+        _call_for_each_path(self, BackupManager._add_to_list_to_backup, tmp_csv)
+
+    def _add_to_list_to_backup(self, source, dest=None):
+        """
+        Mark file or directory to backup
+
+        This method add source/dest couple to the "paths_to_backup" list.
+
+        Args:
+        source -- (string) Source path to backup
+
+        dest   -- (string) Destination path in the archive. If it ends by a
+                  slash the basename of the source path will be added. If None,
+                  the source path will be used, so source files will be set up
+                  at the same place and with same name than on the system.
+                  (default: None)
+
+        Usage:
+        self._add_to_list_to_backup('/var/www/wordpress', 'sources')
+        # => "wordpress" dir will be move and rename as "sources"
+
+        self._add_to_list_to_backup('/var/www/wordpress', 'sources/')
+        # => "wordpress" dir will be put inside "sources/" and won't be renamed
+
+        """
+        if dest is None:
+            # TODO check if this code works. It seems strange to add the work
+            # dir. Take care dest shouldn't start with a / .
+            dest = source
+            source = os.path.join(self.work_dir, source)
+        if dest.endswith("/"):
+            dest = os.path.join(dest, os.path.basename(source))
+        self.paths_to_backup.append({'source': source, 'dest': dest})
+
+
+    def _write_csv(self):
+        """Write the backup list into a CSV
+
+        The goal of this csv is to list all directories and files which need to
+        be backup in this archive.  For the moment, this CSV contains 2 columns.
+        The first column `source` is the path of the source (dir or file).  The
+        second `dest` is the path where it could be placed in the archive.
+
+        This CSV is filled by app backup scripts and system/user hooks.
+        Files in the work_dir are automatically added.
+
+        With this CSV, "backup methods" are able to apply their backup strategy
+        on data listed in it.  It's possible to tar each path (tar methods), to
+        mount each dir into the work_dir, to copy each files (copy methods) or
+        a custom method (via a custom script).
+
+        Note: some future backups methods (like borg) are not able to specify a
+        different place than the original path. That's why the ynh_restore_file
+        helpers use primarily the SOURCE_PATH as argument.
+
+        Error:
+        backup_csv_creation_failed -- Raised if the CSV couldn't be created
+        backup_csv_addition_failed -- Raised if we can't write in the CSV
+        """
+        self.csv_path = os.path.join(self.work_dir, 'backup.csv')
+        try:
+            self.csv_file = open(self.csv_path, 'a')
+            self.fieldnames = ['source', 'dest']
+            self.csv = csv.DictWriter(self.csv_file, fieldnames=self.fieldnames,
+                                      quoting=csv.QUOTE_ALL)
+        except (IOError, OSError, csv.Error):
+            logger.error(m18n.n('backup_csv_creation_failed'))
+
+        for row in self.paths_to_backup:
+            try:
+                self.csv.writerow(row)
+            except csv.Error:
+                logger.error(m18n.n('backup_csv_addition_failed'))
+        self.csv_file.close()
+
+
+
+    ###########################################################################
+    #   File collection from system parts and apps                            #
+    ###########################################################################
+
     def collect_files(self):
         """Collect all files to backup, write its into a CSV and create a
         info.json file
@@ -357,91 +483,35 @@ class BackupManager:
         with open("%s/info.json" % self.work_dir, 'w') as f:
             f.write(json.dumps(self.info))
 
-    def backup(self):
-        """Apply backup methods"""
 
-        for method in self.methods:
-            logger.info(m18n.n('backup_applying_method_' + method.method_name))
-            method.mount_and_backup(self)
-            logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
+    def _get_env_var(self, app=None):
+        """ Define environment variables for apps or system backup scripts.
 
-    def _define_backup_name(self):
-        """Define backup name
+        Args:
+        app -- (string|None) The instance name of the app we want the variable
+        environment. If you want a variable environment for a system backup
+        script keep None. (default: None)
 
         Return:
-            (string) A backup name created from current date 'YYMMDD-HHMMSS'
+            (Dictionnary) The environment variables to apply to the script
         """
-        # FIXME: case where this name already exist
-        return time.strftime('%Y%m%d-%H%M%S')
+        env_var = {}
 
-    def _init_work_dir(self):
-        """Initialize preparation directory
+        _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
+        env_var['YNH_BACKUP_DIR'] = self.work_dir
+        env_var['YNH_BACKUP_CSV'] = tmp_csv
 
-        Ensure the working directory exists and is empty
+        if app is not None:
+            app_id, app_instance_nb = _parse_app_instance_name(app)
+            env_var["YNH_APP_ID"] = app_id
+            env_var["YNH_APP_INSTANCE_NAME"] = app
+            env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            tmp_app_dir = os.path.join('apps/', app)
+            tmp_app_bkp_dir = os.path.join(self.work_dir, tmp_app_dir, 'backup')
+            env_var["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
 
-        exception:
-        backup_output_directory_not_empty -- (MoulinetteError) Raised if the
-            directory was given by the user and isn't empty
+        return env_var
 
-        (TODO) backup_cant_clean_tmp_working_directory -- (MoulinetteError)
-            Raised if the working directory isn't empty, is temporary and can't
-            be automaticcaly cleaned
-
-        (TODO) backup_cant_create_working_directory -- (MoulinetteError) Raised
-            if iyunohost can't create the working directory
-        """
-
-        # FIXME replace isdir by exists ? manage better the case where the path
-        # exists
-        if not os.path.isdir(self.work_dir):
-            filesystem.mkdir(self.work_dir, 0750, parents=True, uid='admin')
-        elif self.is_tmp_work_dir:
-            logger.debug("temporary directory for backup '%s' already exists",
-                         self.work_dir)
-            # FIXME May be we should clean the workdir here
-            raise MoulinetteError(
-                    errno.EIO, m18n.n('backup_output_directory_not_empty'))
-
-    def _import_to_list_to_backup(self, tmp_csv):
-        """Commit collected path from system hooks or app scripts
-
-        Args:
-        tmp_csv -- (string) Path to a temporary csv file with source and
-                   destinations column to add to the list of paths to backup
-        """
-        _call_for_each_path(self, BackupManager._add_to_list_to_backup, tmp_csv)
-
-    def _add_to_list_to_backup(self, source, dest=None):
-        """
-        Mark file or directory to backup
-
-        This method add source/dest couple to the "paths_to_backup" list.
-
-        Args:
-        source -- (string) Source path to backup
-
-        dest   -- (string) Destination path in the archive. If it ends by a
-                  slash the basename of the source path will be added. If None,
-                  the source path will be used, so source files will be set up
-                  at the same place and with same name than on the system.
-                  (default: None)
-
-        Usage:
-        self._add_to_list_to_backup('/var/www/wordpress', 'sources')
-        # => "wordpress" dir will be move and rename as "sources"
-
-        self._add_to_list_to_backup('/var/www/wordpress', 'sources/')
-        # => "wordpress" dir will be put inside "sources/" and won't be renamed
-
-        """
-        if dest is None:
-            # TODO check if this code works. It seems strange to add the work
-            # dir. Take care dest shouldn't start with a / .
-            dest = source
-            source = os.path.join(self.work_dir, source)
-        if dest.endswith("/"):
-            dest = os.path.join(dest, os.path.basename(source))
-        self.paths_to_backup.append({'source': source, 'dest': dest})
 
     def _collect_system_files(self):
         """
@@ -586,34 +656,6 @@ class BackupManager:
             filesystem.rm(tmp_script, force=True)
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
-    def _get_env_var(self, app=None):
-        """ Define environment variables for apps or system backup scripts.
-
-        Args:
-        app -- (string|None) The instance name of the app we want the variable
-        environment. If you want a variable environment for a system backup
-        script keep None. (default: None)
-
-        Return:
-            (Dictionnary) The environment variables to apply to the script
-        """
-        env_var = {}
-
-        _, tmp_csv = tempfile.mkstemp(prefix='backupcsv_')
-        env_var['YNH_BACKUP_DIR'] = self.work_dir
-        env_var['YNH_BACKUP_CSV'] = tmp_csv
-
-        if app is not None:
-            app_id, app_instance_nb = _parse_app_instance_name(app)
-            env_var["YNH_APP_ID"] = app_id
-            env_var["YNH_APP_INSTANCE_NAME"] = app
-            env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-            tmp_app_dir = os.path.join('apps/', app)
-            tmp_app_bkp_dir = os.path.join(self.work_dir, tmp_app_dir, 'backup')
-            env_var["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
-
-        return env_var
-
     def _clean_app_backup_env(self, app):
         """ Cleaning app backup directory
 
@@ -624,45 +666,30 @@ class BackupManager:
         abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
         shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
 
-    def _write_csv(self):
-        """Write the backup list into a CSV
+    ###########################################################################
+    #   Actual backup archive creation / method management                    #
+    ###########################################################################
 
-        The goal of this csv is to list all directories and files which need to
-        be backup in this archive.  For the moment, this CSV contains 2 columns.
-        The first column `source` is the path of the source (dir or file).  The
-        second `dest` is the path where it could be placed in the archive.
+    def add(self, method):
+        """Add a backup method that will be applyed after the files collection step
 
-        This CSV is filled by app backup scripts and system/user hooks.
-        Files in the work_dir are automatically added.
-
-        With this CSV, "backup methods" are able to apply their backup strategy
-        on data listed in it.  It's possible to tar each path (tar methods), to
-        mount each dir into the work_dir, to copy each files (copy methods) or
-        a custom method (via a custom script).
-
-        Note: some future backups methods (like borg) are not able to specify a
-        different place than the original path. That's why the ynh_restore_file
-        helpers use primarily the SOURCE_PATH as argument.
-
-        Error:
-        backup_csv_creation_failed -- Raised if the CSV couldn't be created
-        backup_csv_addition_failed -- Raised if we can't write in the CSV
+        Args:
+        method -- (BackupMethod) A backup method. Currently, you can use those:
+                  TarBackupMethod
+                  CopyBackupMethod
+                  CustomBackupMethod
         """
-        self.csv_path = os.path.join(self.work_dir, 'backup.csv')
-        try:
-            self.csv_file = open(self.csv_path, 'a')
-            self.fieldnames = ['source', 'dest']
-            self.csv = csv.DictWriter(self.csv_file, fieldnames=self.fieldnames,
-                                      quoting=csv.QUOTE_ALL)
-        except (IOError, OSError, csv.Error):
-            logger.error(m18n.n('backup_csv_creation_failed'))
+        self.methods.append(method)
 
-        for row in self.paths_to_backup:
-            try:
-                self.csv.writerow(row)
-            except csv.Error:
-                logger.error(m18n.n('backup_csv_addition_failed'))
-        self.csv_file.close()
+
+    def backup(self):
+        """Apply backup methods"""
+
+        for method in self.methods:
+            logger.info(m18n.n('backup_applying_method_' + method.method_name))
+            method.mount_and_backup(self)
+            logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
+
 
     def _compute_backup_size(self):
         """Compute backup global size and details size for each apps and system
@@ -1322,6 +1349,87 @@ class RestoreManager:
             "apps": {}
         }
 
+    ###########################################################################
+    #   Misc helpers                                                          #
+    ###########################################################################
+
+    @property
+    def success(self):
+
+        all_results = self.results["system"].values() + \
+                      self.results["apps"].values()
+
+        return "Success" in all_results \
+            or "Warning" in all_results
+
+    def _read_info_files(self):
+        """Read the info containing in an archive
+
+        Exceptions:
+        backup_invalid_archive -- Raised if we can't read the info
+        """
+        # Retrieve backup info
+        info_file = os.path.join(self.work_dir, "info.json")
+        try:
+            with open(info_file, 'r') as f:
+                self.info = json.load(f)
+
+            # Historically, "system" was "hooks"
+            if "system" not in self.info.keys():
+                self.info["system"] = self.info["hooks"]
+        except IOError:
+            logger.debug("unable to load '%s'", info_file, exc_info=1)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+        else:
+            logger.debug("restoring from backup '%s' created on %s", self.name,
+                         time.ctime(self.info['created_at']))
+
+
+    def _postinstall_if_needed(self):
+        """Post install yunohost if needed
+
+        Exceptions:
+        backup_invalid_archive -- Raised if the current_host isn't in the
+        archive
+        """
+        # Check if YunoHost is installed
+        if not os.path.isfile('/etc/yunohost/installed'):
+            # Retrieve the domain from the backup
+            try:
+                with open("%s/conf/ynh/current_host" % self.work_dir, 'r') as f:
+                    domain = f.readline().rstrip()
+            except IOError:
+                logger.debug("unable to retrieve current_host from the backup",
+                            exc_info=1)
+                # FIXME include the current_host by default ?
+                raise MoulinetteError(errno.EIO,
+                                    m18n.n('backup_invalid_archive'))
+
+            logger.debug("executing the post-install...")
+            tools_postinstall(domain, 'yunohost', True)
+
+    def clean(self):
+        """End a restore operations by cleaning the working directory and
+        regenerate ssowat conf"""
+
+        if "Success" in self.results["apps"].values() \
+        or "Warning" in self.results["apps"].values():
+            # Quickfix: the old app_ssowatconf(auth) instruction failed due to
+            # ldap restore hooks
+            os.system('sudo yunohost app ssowatconf')
+
+        if os.path.ismount(self.work_dir):
+            ret = subprocess.call(["umount", self.work_dir])
+            if ret != 0:
+                logger.warning(m18n.n('restore_cleaning_failed'))
+        filesystem.rm(self.work_dir, True, True)
+
+
+
+    ###########################################################################
+    #   Restore target manangement                                            #
+    ###########################################################################
+
     def set_result(self, category, element, value):
 
         levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
@@ -1336,15 +1444,6 @@ class RestoreManager:
                 return
             else:
                 self.results[category][element] = value
-
-    @property
-    def success(self):
-
-        all_results = self.results["system"].values() + \
-                      self.results["apps"].values()
-
-        return "Success" in all_results \
-            or "Warning" in all_results
 
     def set_targets(self, system_parts=[], apps=[]):
         """
@@ -1471,45 +1570,9 @@ class RestoreManager:
             for target in self.targets[category]:
                 self.set_result(category, target, "Unknown")
 
-    def restore(self):
-        """Restore the archive
-
-        Restore system parts and apps after mounting the archive, checking free
-        space and postinstall if needed
-        """
-
-        self._mount()
-
-        try:
-            self._check_free_space()
-            self._postinstall_if_needed()
-            self._restore_system()
-            self._restore_apps()
-        finally:
-            self.clean()
-
-    def _postinstall_if_needed(self):
-        """Post install yunohost if needed
-
-        Exceptions:
-        backup_invalid_archive -- Raised if the current_host isn't in the
-        archive
-        """
-        # Check if YunoHost is installed
-        if not os.path.isfile('/etc/yunohost/installed'):
-            # Retrieve the domain from the backup
-            try:
-                with open("%s/conf/ynh/current_host" % self.work_dir, 'r') as f:
-                    domain = f.readline().rstrip()
-            except IOError:
-                logger.debug("unable to retrieve current_host from the backup",
-                            exc_info=1)
-                # FIXME include the current_host by default ?
-                raise MoulinetteError(errno.EIO,
-                                    m18n.n('backup_invalid_archive'))
-
-            logger.debug("executing the post-install...")
-            tools_postinstall(domain, 'yunohost', True)
+    ###########################################################################
+    #   Archive mounting                                                      #
+    ###########################################################################
 
     def _mount(self):
         """
@@ -1551,6 +1614,10 @@ class RestoreManager:
         self.method.mount(self)
 
         self._read_info_files()
+
+    ###########################################################################
+    #   Space computation / checks                                            #
+    ###########################################################################
 
     def _compute_needed_space(self):
         """Compute needed space to be able to restore
@@ -1615,6 +1682,28 @@ class RestoreManager:
                                   free_space=free_space,
                                   needed_space=needed_space,
                                   margin=margin))
+
+    ###########################################################################
+    #   "Actual restore" (reverse step of the backup collect part)            #
+    ###########################################################################
+
+    def restore(self):
+        """Restore the archive
+
+        Restore system parts and apps after mounting the archive, checking free
+        space and postinstall if needed
+        """
+
+        self._mount()
+
+        try:
+            self._check_free_space()
+            self._postinstall_if_needed()
+            self._restore_system()
+            self._restore_apps()
+        finally:
+            self.clean()
+
 
     def _restore_system(self):
         """ Restore user and system parts """
@@ -1755,50 +1844,17 @@ class RestoreManager:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_script_dir, ignore_errors=True)
 
-    def clean(self):
-        """End a restore operations by cleaning the working directory and
-        regenerate ssowat conf"""
-
-        if "Success" in self.results["apps"].values() \
-        or "Warning" in self.results["apps"].values():
-            # Quickfix: the old app_ssowatconf(auth) instruction failed due to
-            # ldap restore hooks
-            os.system('sudo yunohost app ssowatconf')
-
-        if os.path.ismount(self.work_dir):
-            ret = subprocess.call(["umount", self.work_dir])
-            if ret != 0:
-                logger.warning(m18n.n('restore_cleaning_failed'))
-        filesystem.rm(self.work_dir, True, True)
-
-    def _read_info_files(self):
-        """Read the info containing in an archive
-
-        Exceptions:
-        backup_invalid_archive -- Raised if we can't read the info
-        """
-        # Retrieve backup info
-        info_file = os.path.join(self.work_dir, "info.json")
-        try:
-            with open(info_file, 'r') as f:
-                self.info = json.load(f)
-
-            # Historically, "system" was "hooks"
-            if "system" not in self.info.keys():
-                self.info["system"] = self.info["hooks"]
-        except IOError:
-            logger.debug("unable to load '%s'", info_file, exc_info=1)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
-        else:
-            logger.debug("restoring from backup '%s' created on %s", self.name,
-                         time.ctime(self.info['created_at']))
-
     def _get_env_var(self):
         """ Define environment variable for hooks call """
         env_var = {}
         env_var['YNH_BACKUP_DIR'] = self.work_dir
         env_var['YNH_BACKUP_CSV'] = os.path.join(self.work_dir, "backup.csv")
         return env_var
+
+
+###############################################################################
+#   "Front-end"                                                               #
+###############################################################################
 
 def backup_create(name=None, description=None, methods=[],
                   output_directory=None, no_compress=False,
