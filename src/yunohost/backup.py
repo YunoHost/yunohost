@@ -1021,7 +1021,7 @@ class CopyBackupMethod(BackupMethod):
 
         for path in self.manager.paths_to_backup:
             source = path['source']
-            dest = os.path.join(self.repo, path['dest'])
+            dest = os.path.join(self.manager.work_dir, path['dest'])
             if source == dest:
                 logger.debug("Files already copyed")
                 return
