@@ -181,8 +181,7 @@ ynh_restore_file () {
     local DEST_PATH="${2:-$ORIGIN_PATH}"
     
     # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
-    test -e "$ARCHIVE_PATH"
-    if [ $? -ne 0 ]; then
+    if [ ! -f "$ARCHIVE_PATH" ]; then
         ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
     fi
     
