@@ -369,8 +369,6 @@ class BackupManager:
 
         """
         if dest is None:
-            # TODO check if this code works. It seems strange to add the work
-            # dir. Take care dest shouldn't start with a / .
             dest = source
             source = os.path.join(self.work_dir, source)
         if dest.endswith("/"):
@@ -1714,10 +1712,11 @@ class RestoreManager:
 
         logger.info(m18n.n('restore_running_hooks'))
 
-        # FIXME Add environment variables !!!!
         ret = hook_callback('restore',
                             self.targets["system"],
-                            args=[self.work_dir])
+                            args=[self.work_dir],
+                            env=self._get_env_var(),
+                            chdir=self.work_dir)
 
         for part in ret['succeed'].keys():
             self.set_result("system", part, "Success")
