@@ -134,7 +134,7 @@ ynh_restore () {
     done
 }
 
-# Return the path in the archice where has been stocked the origin path
+# Return the path in the archive where has been stocked the origin path
 #
 # usage: _get_archive_path ORIGIN_PATH
 _get_archive_path () {
@@ -145,10 +145,11 @@ import csv
 with open(sys.argv[1], 'r') as backup_file:
     backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
     for row in backup_csv:
-        if row['source']==sys.argv[2]:
+        if row['source']==sys.argv[2].strip('\"'):
             print row['dest']
             sys.exit(0)
-    raise Exception()" "${YNH_BACKUP_CSV}" "$1"
+    raise Exception('Original path for %s not found' % sys.argv[2])
+    "  "${YNH_BACKUP_CSV}" "$1"
     return $?
 }
 
@@ -189,7 +190,7 @@ ynh_restore_file () {
     mkdir -p $(dirname "$DEST_PATH")
 
     # Do a move if YNH_BACKUP_DIR is already a copy
-    if [ $(mountpoint -q $YNH_BACKUP_DIR) -ne 0 ]; then
+    if ! $(mountpoint -q $YNH_BACKUP_DIR); then
         mv "$ARCHIVE_PATH" "${DEST_PATH}"
     # Do a copy if it's just a mounting point
     else
