@@ -182,23 +182,23 @@ ynh_restore_file () {
     local DEST_PATH="${2:-$ORIGIN_PATH}"
     
     # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
-    if [ ! -f "$ARCHIVE_PATH" ]; then
+    if [ ! -d "$ARCHIVE_PATH" ] && [ ! -f "$ARCHIVE_PATH" ] && [ ! -L "$ARCHIVE_PATH" ]; then
         ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
     fi
     
     # Restore ORIGIN_PATH into DEST_PATH
     mkdir -p $(dirname "$DEST_PATH")
 
-    # Do a move if YNH_BACKUP_DIR is already a copy
-    if ! $(mountpoint -q $YNH_BACKUP_DIR); then
-        mv "$ARCHIVE_PATH" "${DEST_PATH}"
     # Do a copy if it's just a mounting point
-    else
+    if mountpoint -q $YNH_BACKUP_DIR; then
         if [[ -d "${ARCHIVE_PATH}" ]]; then
             ARCHIVE_PATH="${ARCHIVE_PATH}/."
             mkdir -p "$DEST_PATH"
         fi
         cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
+    # Do a move if YNH_BACKUP_DIR is already a copy
+    else
+        mv "$ARCHIVE_PATH" "${DEST_PATH}"
     fi
 }
 
