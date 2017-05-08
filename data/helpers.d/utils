@@ -161,7 +161,7 @@ ynh_local_curl () {
 	if [ -n "$POST_data" ]
 	then
 		# Add --data arg and remove the last character, which is an unecessary '&'
-		POST_data="--data \"${POST_data::-1}\""
+		POST_data="--data ${POST_data::-1}"
 	fi
 
 	# Curl the URL
