@@ -60,6 +60,11 @@ def setup_function(function):
                     "&helper_to_test=ynh_restore")
         assert app_is_installed("backup_recommended_app")
 
+    if "with_system_archive_from_2p4" in markers:
+        add_archive_system_from_2p4()
+        assert len(backup_list()["archives"]) == 1
+
+
 def teardown_function(function):
 
     print ""
@@ -174,13 +179,24 @@ def add_archive_wordpress_from_2p4():
     os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.tar.gz \
                /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
 
+
+def add_archive_system_from_2p4():
+
+    os.system("mkdir -p /home/yunohost.backup/archives")
+
+    os.system("cp ./tests/apps/backup_system_from_2p4/backup.info.json \
+               /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
+
+    os.system("cp ./tests/apps/backup_system_from_2p4/backup.tar.gz \
+               /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
+
 ###############################################################################
 #  System backup                                                              #
 ###############################################################################
 
 def test_backup_only_ldap():
 
-    # Crate the backup
+    # Create the backup
     backup_create(ignore_system=False, ignore_apps=True, system=["conf_ldap"])
 
     archives = backup_list()["archives"]
@@ -196,7 +212,7 @@ def test_backup_system_part_that_does_not_exists(mocker):
 
     mocker.spy(m18n, "n")
 
-    # Crate the backup
+    # Create the backup
     with pytest.raises(MoulinetteError):
         backup_create(ignore_system=False, ignore_apps=True, system=["yolol"])
 
@@ -204,24 +220,12 @@ def test_backup_system_part_that_does_not_exists(mocker):
     m18n.n.assert_any_call('backup_nothings_done')
 
 ###############################################################################
-#  System restore from 2.4                                                    #
-###############################################################################
-
-@pytest.mark.skip(reason="Test not implemented yet.")
-def test_restore_system_from_Ynh2p4():
-    pass
-
-@pytest.mark.skip(reason="Test not implemented yet.")
-def test_restore_system_from_Ynh2p4_archivemount_failure():
-    pass
-
-###############################################################################
 #  System backup and restore                                                  #
 ###############################################################################
 
 def test_backup_and_restore_all_sys():
 
-    # Crate the backup
+    # Create the backup
     backup_create(ignore_system=False, ignore_apps=True)
 
     archives = backup_list()["archives"]
@@ -245,10 +249,101 @@ def test_backup_and_restore_all_sys():
     assert os.path.exists("/etc/ssowat/conf.json")
 
 
-@pytest.mark.skip(reason="Test not implemented yet.")
-def test_backup_and_restore_archivemount_failure():
-    pass
+def test_backup_and_restore_archivemount_failure(monkeypatch, mocker):
 
+    # Create the backup
+    backup_create(ignore_system=False, ignore_apps=True)
+
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    archives_info = backup_info(archives[0], with_details=True)
+    assert archives_info["apps"] == {}
+    assert (len(archives_info["system"].keys()) ==
+            len(os.listdir("/usr/share/yunohost/hooks/backup/")))
+
+    # Remove ssowat conf
+    assert os.path.exists("/etc/ssowat/conf.json")
+    os.system("rm -rf /etc/ssowat/")
+    assert not os.path.exists("/etc/ssowat/conf.json")
+
+    def custom_subprocess_call(*args, **kwargs):
+        import subprocess as subprocess2
+        if args[0] and args[0][0]=="archivemount":
+            monkeypatch.undo()
+            return 1
+        return subprocess.call(*args, **kwargs)
+
+    monkeypatch.setattr("subprocess.call", custom_subprocess_call)
+    mocker.spy(m18n, "n")
+
+    # Restore the backup
+    backup_restore(auth, name=archives[0], force=True,
+                   ignore_system=False, ignore_apps=True)
+
+    # Check ssowat conf is back
+    assert os.path.exists("/etc/ssowat/conf.json")
+
+
+###############################################################################
+#  System restore from 2.4                                                    #
+###############################################################################
+
+@pytest.mark.with_system_archive_from_2p4
+def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
+
+    # Backup current system
+    backup_create(ignore_system=False, ignore_apps=True)
+    archives = backup_list()["archives"]
+    assert len(archives) == 2
+
+    print archives
+
+    # Restore system archive from 2.4
+    try:
+        backup_restore(auth, name=backup_list()["archives"][1],
+                             ignore_system=False,
+                             ignore_apps=True,
+                             force=True)
+    finally:
+        # Restore system as it was
+        backup_restore(auth, name=backup_list()["archives"][0],
+                             ignore_system=False,
+                             ignore_apps=True,
+                             force=True)
+
+
+@pytest.mark.with_system_archive_from_2p4
+def test_restore_system_from_Ynh2p4_archivemount_failure(monkeypatch, mocker):
+
+    # Backup current system
+    backup_create(ignore_system=False, ignore_apps=True)
+    archives = backup_list()["archives"]
+    assert len(archives) == 2
+
+    print archives
+
+    def custom_subprocess_call(*args, **kwargs):
+        import subprocess as subprocess2
+        if args[0] and args[0][0]=="archivemount":
+            monkeypatch.undo()
+            return 1
+        return subprocess.call(*args, **kwargs)
+
+    monkeypatch.setattr("subprocess.call", custom_subprocess_call)
+
+    try:
+        # Restore system from 2.4
+        backup_restore(auth, name=backup_list()["archives"][1],
+                             ignore_system=False,
+                             ignore_apps=True,
+                             force=True)
+    finally:
+        # Restore system as it was
+        backup_restore(auth, name=backup_list()["archives"][0],
+                             ignore_system=False,
+                             ignore_apps=True,
+                             force=True)
 
 
 ###############################################################################
@@ -346,7 +441,7 @@ def test_backup_app_with_no_restore_script(mocker):
 @pytest.mark.clean_opt_dir
 def test_backup_with_different_output_directory():
 
-    # Crate the backup
+    # Create the backup
     backup_create(ignore_system=False, ignore_apps=True, system=["conf_ssh"],
                   output_directory="/opt/test_backup_output_directory",
                   name="backup")
@@ -363,7 +458,7 @@ def test_backup_with_different_output_directory():
 
 @pytest.mark.clean_opt_dir
 def test_backup_with_no_compress():
-    # Crate the backup
+    # Create the backup
     backup_create(ignore_system=False, ignore_apps=True, system=["conf_nginx"],
                   output_directory="/opt/test_backup_output_directory",
                   no_compress=True,
@@ -474,6 +569,8 @@ def test_restore_app_archivemount_failure(monkeypatch, mocker):
                          apps=["wordpress"])
 
     assert _is_installed("wordpress")
+
+
 @pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_app_already_installed(mocker):
 
