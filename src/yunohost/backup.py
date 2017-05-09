@@ -1149,10 +1149,11 @@ class RestoreManager():
 
         logger.info(m18n.n('restore_running_hooks'))
 
+        env_dict = self._get_env_var()
         ret = hook_callback('restore',
                             system_targets,
                             args=[self.work_dir],
-                            env=self._get_env_var(),
+                            env=env_dict,
                             chdir=self.work_dir)
 
         for part in ret['succeed'].keys():
@@ -1210,62 +1211,64 @@ class RestoreManager():
                 else:
                     shutil.copy2(s, d)
 
-        tmp_app_dir = os.path.join(self.work_dir, 'apps', app_instance_name)
-        tmp_app_bkp_dir = os.path.join(tmp_app_dir, 'backup')
-
-        # Parse app instance name and id
-        app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
-
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
             logger.error(m18n.n('restore_already_installed_app',
                                 app=app_instance_name))
+            self.targets.set_result("apps", app_instance_name, "Error")
             return
+
+        app_dir_in_archive = os.path.join(self.work_dir, 'apps', app_instance_name)
+        app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
+        app_settings_in_archive = os.path.join(app_dir_in_archive, 'settings')
+        app_scripts_in_archive = os.path.join(app_settings_in_archive, 'scripts')
 
         # Check if the app has a restore script
-        app_script = os.path.join(tmp_app_dir, 'settings/scripts/restore')
-        if not os.path.isfile(app_script):
+        app_restore_script_in_archive = os.path.join(app_scripts_in_archive,
+                                                    'restore')
+        if not os.path.isfile(app_restore_script_in_archive):
             logger.warning(m18n.n('unrestore_app', app=app_instance_name))
+            self.targets.set_result("apps", app_instance_name, "Warning")
             return
 
-        tmp_settings_dir = os.path.join(tmp_app_dir, 'settings')
-        app_setting_path = os.path.join('/etc/yunohost/apps/',
-                                        app_instance_name)
         logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
         try:
-            # Copy scripts to a writable temporary folder
-            tmp_script_dir = tempfile.mkdtemp(prefix='restore')
-            copytree(os.path.join(tmp_settings_dir, 'scripts'), tmp_script_dir)
-            filesystem.chmod(tmp_script_dir, 0550, 0550, True)
-            filesystem.chown(tmp_script_dir, 'admin', None, True)
-            app_script = os.path.join(tmp_script_dir, 'restore')
+            # Restore app settings
+            app_settings_new_path = os.path.join('/etc/yunohost/apps/',
+                                                  app_instance_name)
+            app_scripts_new_path = os.path.join(app_settings_new_path, 'scripts')
+            shutil.copytree(app_settings_in_archive, app_settings_new_path)
+            filesystem.chmod(app_settings_new_path, 0400, 0400, True)
+            filesystem.chown(app_scripts_new_path, 'admin', None, True)
 
-            # Copy app settings and set permissions
-            # TODO: Copy app hooks too
-            shutil.copytree(tmp_settings_dir, app_setting_path)
-            filesystem.chmod(app_setting_path, 0400, 0400, True)
-            filesystem.chown(os.path.join(app_setting_path, 'scripts'),
-                             'admin', None, True)
+            # Copy the app scripts to a writable temporary folder
+            # FIXME : use 'install -Dm555' or something similar to what's done
+            # in the backup method ?
+            tmp_folder_for_app_restore = tempfile.mkdtemp(prefix='restore')
+            copytree(app_scripts_in_archive, tmp_folder_for_app_restore)
+            filesystem.chmod(tmp_folder_for_app_restore, 0550, 0550, True)
+            filesystem.chown(tmp_folder_for_app_restore, 'admin', None, True)
+            restore_script = os.path.join(tmp_folder_for_app_restore, 'restore')
 
             # Prepare env. var. to pass to script
-            env_dict = self._get_env_var()
-            env_dict["YNH_APP_ID"] = app_id
-            env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-            env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
+            env_dict = self._get_env_var(app_instance_name)
 
             # Execute app restore script
-            hook_exec(app_script, args=[tmp_app_bkp_dir, app_instance_name],
-                      raise_on_error=True, chdir=tmp_app_bkp_dir,
-                      env=env_dict, user="root")
+            hook_exec(restore_script,
+                      args=[app_backup_in_archive, app_instance_name],
+                      chdir=app_backup_in_archive,
+                      raise_on_error=True,
+                      env=env_dict,
+                      user="root")
         except:
             logger.exception(m18n.n('restore_app_failed',
                                     app=app_instance_name))
             self.targets.set_result("apps", app_instance_name, "Error")
 
-            app_script = os.path.join(tmp_script_dir, 'remove')
+            remove_script = os.path.join(app_scripts_in_archive, 'remove')
 
             # Setup environment for remove script
+            app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
             env_dict_remove = {}
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
@@ -1273,13 +1276,13 @@ class RestoreManager():
 
             # Execute remove script
             # TODO: call app_remove instead
-            if hook_exec(app_script, args=[app_instance_name],
+            if hook_exec(remove_script, args=[app_instance_name],
                          env=env_dict_remove, user="root") != 0:
                 logger.warning(m18n.n('app_not_properly_removed',
                                       app=app_instance_name))
 
             # Cleaning app directory
-            shutil.rmtree(app_setting_path, ignore_errors=True)
+            shutil.rmtree(app_settings_new_path, ignore_errors=True)
 
 
             # TODO Cleaning app hooks
@@ -1287,13 +1290,27 @@ class RestoreManager():
             self.targets.set_result("apps", app_instance_name, "Success")
         finally:
             # Cleaning temporary scripts directory
-            shutil.rmtree(tmp_script_dir, ignore_errors=True)
+            shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)
 
-    def _get_env_var(self):
+
+    def _get_env_var(self, app=None):
         """ Define environment variable for hooks call """
         env_var = {}
         env_var['YNH_BACKUP_DIR'] = self.work_dir
         env_var['YNH_BACKUP_CSV'] = os.path.join(self.work_dir, "backup.csv")
+
+        if app is not None:
+            app_dir_in_archive = os.path.join(self.work_dir, 'apps', app)
+            app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
+
+            # Parse app instance name and id
+            app_id, app_instance_nb = _parse_app_instance_name(app)
+
+            env_var["YNH_APP_ID"] = app_id
+            env_var["YNH_APP_INSTANCE_NAME"] = app
+            env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            env_var["YNH_APP_BACKUP_DIR"] = app_backup_in_archive
+
         return env_var
 
 ###############################################################################
