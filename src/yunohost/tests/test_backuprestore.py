@@ -297,8 +297,6 @@ def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
-    print archives
-
     # Restore system archive from 2.4
     try:
         backup_restore(auth, name=backup_list()["archives"][1],
@@ -320,8 +318,6 @@ def test_restore_system_from_Ynh2p4_archivemount_failure(monkeypatch, mocker):
     backup_create(ignore_system=False, ignore_apps=True)
     archives = backup_list()["archives"]
     assert len(archives) == 2
-
-    print archives
 
     def custom_subprocess_call(*args, **kwargs):
         import subprocess as subprocess2
