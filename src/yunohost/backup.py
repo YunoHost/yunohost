@@ -59,9 +59,40 @@ MB_ALLOWED_TO_ORGANIZE = 10
 logger = getActionLogger('yunohost.backup')
 
 
-class BackupRestoreManager(object):
-    """BackupRestoreManager is an abstract class"""
-    def set_targets(self, system_parts=[], apps=[]):
+class BackupRestoreTargetsManager(object):
+    """
+    BackupRestoreTargetsManager manage the targets
+    in BackupManager and RestoreManager
+    """
+
+    def __init__(self):
+
+        self.targets = {}
+        self.results = {
+            "system": {},
+            "apps": {}
+        }
+
+
+    def set_result(self, category, element, value):
+
+        levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
+
+        assert value in levels
+
+        if element not in self.results[category].keys():
+            self.results[category][element] = value
+        else:
+            currentValue = self.results[category][element]
+            if (levels.index(currentValue) > levels.index(value)):
+                return
+            else:
+                self.results[category][element] = value
+
+
+    def set_wanted(self, category,
+                   wanted_targets, available_targets,
+                   error_if_wanted_target_is_unavailable):
         """
         Define and validate targets to be backuped or to be restored (list of
         system parts, apps..)
@@ -70,60 +101,53 @@ class BackupRestoreManager(object):
         system_parts -- (list) list of system parts which should be backuped. If
         it's an empty list, it will backup/restore all. If it's None, nothing
         will be backuped.
-
-        apps         -- (list) list of apps which should be backuped. If apps is
-        an empty list, it will backup/restore all. If it's None, no apps will be
-        backuped.
         """
-        self.targets = {}
+        # If no targets wanted, set as empty list
+        if wanted_targets is None:
+            self.targets[category] = []
+        # If all targets wanted, use all available targets
+        elif wanted_targets == []:
+            self.targets[category] = available_targets
+        # If the user manually specified which targets to backup, we need to
+        # validate that each target is actually available
+        else:
+            self.targets[category] = [part for part in wanted_targets
+                                               if part in available_targets]
 
-        self._set_system_parts_targets(system_parts)
+            # Display an error for each target asked by the user but which is
+            # unknown
+            unavailable_targets = [part for part in wanted_targets
+                                         if part not in available_targets]
 
-        self._set_apps_targets(apps)
-
-        #
-        # Init result
-        #
+            for target in unavailable_targets:
+                self.set_result(category, target, "Skipped")
+                error_if_wanted_target_is_unavailable(target)
 
         # For target with no result yet (like 'Skipped'), set it as unknown
-        for category in ["apps", "system"]:
+        if self.targets[category] is not None:
             for target in self.targets[category]:
                 self.set_result(category, target, "Unknown")
 
-    def _set_x_targets(self, targets, target_type, target_set, unknown_error):
-        """
-        Define and validate targets to be backuped or to be restored (list of
-        system parts, apps..)
-
-        Args:
-        system_parts -- (list) list of system parts which should be backuped. If
-        it's an empty list, it will backup/restore all. If it's None, nothing
-        will be backuped.
-        """
-        # No system parts to backup
-        if targets is None:
-            self.targets[target_type] = []
-        # Backup all system parts
-        elif targets == []:
-            self.targets[target_type] = target_set
-        # If the user manually specified which parts to backuped, we need to
-        # check that each part actually has a backup script available
-        else:
-            self.targets[target_type] = [part for part in targets
-                                      if part in target_set]
-
-            # Display an error for each part asked by the user but which is
-            # unknown
-            unknown = [part for part in targets
-                       if part not in target_set]
-
-            for part in unknown:
-                unknown_error(part)
-                self.set_result(target_type, part, "Skipped")
+        return self.list(category, exclude=["Skipped"])
 
 
-class BackupManager(BackupRestoreManager):
-    """This class collect files to backup in a list and apply one or several
+    def list(self, category, include=None, exclude=None):
+
+        assert (include and isinstance(include, list) and not exclude) \
+            or (exclude and isinstance(exclude, list) and not include)
+
+        if include:
+            return [target for target in self.targets[category]
+                           if self.results[category][target] in include]
+
+        if exclude:
+            return [target for target in self.targets[category]
+                           if self.results[category][target] not in exclude]
+
+
+class BackupManager():
+    """
+    This class collect files to backup in a list and apply one or several
     backup method on it.
 
     The list contains dict with source and dest properties. The goal of this csv
@@ -198,10 +222,8 @@ class BackupManager(BackupRestoreManager):
             'system': {},
             'apps': {}
         }
-        self.results = {
-            "system": {},
-            "apps": {}
-        }
+        self.targets = BackupRestoreTargetsManager()
+
 
         # Define backup name if needed
         if not name:
@@ -280,23 +302,7 @@ class BackupManager(BackupRestoreManager):
     #   Backup target management                                              #
     ###########################################################################
 
-    def set_result(self, category, element, value):
-
-        levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
-
-        assert value in levels
-
-        if element not in self.results[category].keys():
-            self.results[category][element] = value
-        else:
-            currentValue = self.results[category][element]
-            if (levels.index(currentValue) > levels.index(value)):
-                return
-            else:
-                self.results[category][element] = value
-
-
-    def _set_system_parts_targets(self, system_parts=[]):
+    def set_system_targets(self, system_parts=[]):
         """
         Define and validate targetted apps to be backuped
 
@@ -308,10 +314,12 @@ class BackupManager(BackupRestoreManager):
         def unknown_error(part):
             logger.error(m18n.n('backup_hook_unknown', hook=part))
 
-        self._set_x_targets(system_parts, "system", hook_list('backup')["hooks"],
-                           unknown_error)
+        self.targets.set_wanted("system",
+                                system_parts, hook_list('backup')["hooks"],
+                                unknown_error)
 
-    def _set_apps_targets(self, apps=[]):
+
+    def set_apps_targets(self, apps=[]):
         """
         Define and validate targetted apps to be backuped
 
@@ -322,26 +330,26 @@ class BackupManager(BackupRestoreManager):
         """
         def unknown_error(app):
             logger.error(m18n.n('unbackup_app', app=app))
-        self._set_x_targets(apps, "apps", os.listdir('/etc/yunohost/apps'),
-                           unknown_error)
+
+        target_list = self.targets.set_wanted("apps", apps,
+                                              os.listdir('/etc/yunohost/apps'),
+                                              unknown_error)
 
         # Additionnaly, we need to check that each targetted app has a
         # backup and restore scripts
 
-        if self.targets["apps"] is not None:
-            for app in self.targets["apps"]:
-                app_script_folder = "/etc/yunohost/apps/%s/scripts" % app
-                backup_script_path = os.path.join(app_script_folder, "backup")
-                restore_script_path = os.path.join(app_script_folder, "restore")
+        for app in target_list:
+            app_script_folder = "/etc/yunohost/apps/%s/scripts" % app
+            backup_script_path = os.path.join(app_script_folder, "backup")
+            restore_script_path = os.path.join(app_script_folder, "restore")
 
-                if not os.path.isfile(backup_script_path):
-                    logger.warning(m18n.n('backup_with_no_backup_script_for_app', app=app))
-                    self.targets["apps"].remove(app)
-                    self.set_result("apps", app, "Skipped")
+            if not os.path.isfile(backup_script_path):
+                logger.warning(m18n.n('backup_with_no_backup_script_for_app', app=app))
+                self.targets.set_result("apps", app, "Skipped")
 
-                elif not os.path.isfile(restore_script_path):
-                    logger.warning(m18n.n('backup_with_no_restore_script_for_app', app=app))
-                    self.set_result("apps", app, "Warning")
+            elif not os.path.isfile(restore_script_path):
+                logger.warning(m18n.n('backup_with_no_restore_script_for_app', app=app))
+                self.targets.set_result("apps", app, "Warning")
 
 
     ###########################################################################
@@ -356,6 +364,7 @@ class BackupManager(BackupRestoreManager):
                    destinations column to add to the list of paths to backup
         """
         _call_for_each_path(self, BackupManager._add_to_list_to_backup, tmp_csv)
+
 
     def _add_to_list_to_backup(self, source, dest=None):
         """
@@ -429,7 +438,6 @@ class BackupManager(BackupRestoreManager):
         self.csv_file.close()
 
 
-
     ###########################################################################
     #   File collection from system parts and apps                            #
     ###########################################################################
@@ -459,16 +467,15 @@ class BackupManager(BackupRestoreManager):
         "backup_nothings_done" -- (MoulinetteError) This exception is raised if
         nothing has been listed.
         """
-        self._collect_system_files()
 
+        self._collect_system_files()
         self._collect_apps_files()
 
         # Check if something has been saved ('success' or 'warning')
-        all_results = self.results["system"].values() + \
-                      self.results["apps"].values()
+        successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
+        successfull_system = self.targets.list("system", include=["Success", "Warning"])
 
-        if (not "Success" in all_results) and \
-           (not "Warning" in all_results):
+        if not successfull_apps and not successfull_system:
             filesystem.rm(self.work_dir, True, True)
             raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
 
@@ -538,8 +545,10 @@ class BackupManager(BackupRestoreManager):
                           backup
         """
 
+        system_targets = self.targets.list("system", exclude=["Skipped"])
+
         # If nothing to backup, return immediately
-        if self.targets["system"] == []:
+        if system_targets == []:
             return
 
         logger.info(m18n.n('backup_running_hooks'))
@@ -550,7 +559,7 @@ class BackupManager(BackupRestoreManager):
         # Actual call to backup scripts/hooks
 
         ret = hook_callback('backup',
-                            self.targets["system"],
+                            system_targets,
                             args=[self.work_dir],
                             env=env_dict,
                             chdir=self.work_dir)
@@ -577,21 +586,24 @@ class BackupManager(BackupRestoreManager):
                 part_restore_hooks = hook_info("restore", part)["hooks"]
                 for hook in part_restore_hooks:
                     self._add_to_list_to_backup(hook["path"], "hooks/restore/")
-                self.set_result("system", part, "Success")
+                self.targets.set_result("system", part, "Success")
             else:
                 logger.warning(m18n.n('restore_hook_unavailable', hook=part))
-                self.set_result("system", part, "Warning")
+                self.targets.set_result("system", part, "Warning")
 
         for part in ret['failed'].keys():
             logger.error(m18n.n('backup_system_part_failed', part=part))
-            self.set_result("system", part, "Error")
+            self.targets.set_result("system", part, "Error")
 
 
-    def _collect_apps_files(self, apps=[]):
+    def _collect_apps_files(self):
         """ Prepare backup for each selected apps """
 
-        for app_instance_name in self.targets["apps"]:
+        apps_targets = self.targets.list("apps", exclude=["Skipped"])
+
+        for app_instance_name in apps_targets:
             self._collect_app_files(app_instance_name)
+
 
     def _collect_app_files(self, app):
         """
@@ -643,9 +655,10 @@ class BackupManager(BackupRestoreManager):
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
         except:
-            self._clean_app_backup_env(app)
+            abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
+            shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
             logger.exception(m18n.n('backup_app_failed', app=app))
-            self.set_result("apps", app, "Error")
+            self.targets.set_result("apps", app, "Error")
         else:
             # Add settings of the app to the list
             tmp_app_dir = os.path.join('apps/', app)
@@ -659,22 +672,13 @@ class BackupManager(BackupRestoreManager):
                 'name': i['name'],
                 'description': i['description'],
             }
-            self.set_result("apps", app, "Success")
+            self.targets.set_result("apps", app, "Success")
 
         # Remove tmp files in all situations
         finally:
             filesystem.rm(tmp_script, force=True)
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
-    def _clean_app_backup_env(self, app):
-        """ Cleaning app backup directory
-
-        Args:
-        app -- The app instance name which fail and which the dir in the archive
-               need to be removed
-        """
-        abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
-        shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
 
     ###########################################################################
     #   Actual backup archive creation / method management                    #
@@ -749,8 +753,9 @@ class BackupManager(BackupRestoreManager):
         return self.size
 
 
-class RestoreManager(BackupRestoreManager):
-    """RestoreManager allow to restore a past backup archive
+class RestoreManager():
+    """
+    RestoreManager allow to restore a past backup archive
 
     Currently it's a tar.gz file, but it could be another kind of archive
 
@@ -794,10 +799,7 @@ class RestoreManager(BackupRestoreManager):
         self.archive_path = self.info['path']
         self.name = name
         self.method = BackupMethod.create(method)
-        self.results = {
-            "system": {},
-            "apps": {}
-        }
+        self.targets = BackupRestoreTargetsManager()
 
     ###########################################################################
     #   Misc helpers                                                          #
@@ -806,11 +808,12 @@ class RestoreManager(BackupRestoreManager):
     @property
     def success(self):
 
-        all_results = self.results["system"].values() + \
-                      self.results["apps"].values()
+        successful_apps = self.targets.list("apps", include=["Success", "Warning"])
+        successful_system = self.targets.list("system", include=["Success", "Warning"])
 
-        return "Success" in all_results \
-            or "Warning" in all_results
+        return len(successful_apps) != 0 \
+            or len(successful_system) != 0
+
 
     def _read_info_files(self):
         """Read the info containing in an archive
@@ -858,12 +861,14 @@ class RestoreManager(BackupRestoreManager):
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'yunohost', True)
 
+
     def clean(self):
         """End a restore operations by cleaning the working directory and
         regenerate ssowat conf"""
 
-        if "Success" in self.results["apps"].values() \
-        or "Warning" in self.results["apps"].values():
+        successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
+
+        if successfull_apps != []:
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
@@ -875,27 +880,11 @@ class RestoreManager(BackupRestoreManager):
         filesystem.rm(self.work_dir, True, True)
 
 
-
     ###########################################################################
     #   Restore target manangement                                            #
     ###########################################################################
 
-    def set_result(self, category, element, value):
-
-        levels = [ "Unknown", "Success", "Warning", "Error", "Skipped" ]
-
-        assert value in levels
-
-        if element not in self.results[category].keys():
-            self.results[category][element] = value
-        else:
-            currentValue = self.results[category][element]
-            if (levels.index(currentValue) > levels.index(value)):
-                return
-            else:
-                self.results[category][element] = value
-
-    def _set_system_parts_targets(self, system_parts=[]):
+    def set_system_targets(self, system_parts=[]):
         """
         Define and validate targets to be restored (list of system parts,
         apps..)
@@ -910,8 +899,10 @@ class RestoreManager(BackupRestoreManager):
             logger.error(m18n.n("backup_archive_system_part_not_available",
                                 part=part))
 
-        self._set_x_targets(system_parts, "system", self.info['system'].keys(),
-                           unknown_error)
+        target_list = self.targets.set_wanted("system",
+                                              system_parts,
+                                              self.info['system'].keys(),
+                                              unknown_error)
 
         # Now we need to check that the restore hook is actually available for
         # all targets we want to restore
@@ -919,7 +910,7 @@ class RestoreManager(BackupRestoreManager):
         # These are the hooks on the current installation
         available_restore_system_hooks = hook_list("restore")["hooks"]
 
-        for system_part in self.targets["system"]:
+        for system_part in target_list:
             # By default, we'll use the restore hooks on the current install
             # if available
 
@@ -936,8 +927,7 @@ class RestoreManager(BackupRestoreManager):
             # If we didn't find it, we ain't gonna be able to restore it
             if len(hook_paths) == 0:
                 logger.exception(m18n.n('restore_hook_unavailable', part=system_part))
-                self.targets["system"].remove(system_part)
-                self.set_result("system", system_part, "Skipped")
+                self.targets.set_result("system", system_part, "Skipped")
                 continue
 
             # Otherwise, add it from the archive to the system
@@ -950,20 +940,24 @@ class RestoreManager(BackupRestoreManager):
                              self.archive_path)
             shutil.copy(hook_path, custom_restore_hook_folder)
 
-    def _set_apps_targets(self, apps=[]):
+    def set_apps_targets(self, apps=[]):
         """
         Define and validate targetted apps to be backuped
 
         Args:
-        apps         -- (list) list of apps which should be backuped. If apps is
-        an empty list, it will backup all. If it's None, no apps will be
-        backuped.
+        apps -- (list) list of apps which should be backuped. If apps is an
+                empty list, it will backup all. If it's None, no apps will be
+                backuped.
         """
         def unknown_error(app):
             logger.error(m18n.n('backup_archive_app_not_found',
                                 app=app))
-        self._set_x_targets(apps, "apps", self.info['apps'].keys(),
-                           unknown_error)
+
+        self.targets.set_wanted("apps",
+                                apps,
+                                self.info['apps'].keys(),
+                                unknown_error)
+
 
     ###########################################################################
     #   Archive mounting                                                      #
@@ -1022,8 +1016,8 @@ class RestoreManager(BackupRestoreManager):
         margin -- (int) margin to be sure the backup don't fail by missing space
                   in bytes
         """
-        system = self.targets["system"]
-        apps = self.targets["apps"]
+        system = self.targets.list("system", exclude=["Skipped"])
+        apps = self.targets.list("apps", exclude=["Skipped"])
         restore_all_system = (system == self.info['system'].keys())
         restore_all_apps = (apps == self.info['apps'].keys())
 
@@ -1101,32 +1095,38 @@ class RestoreManager(BackupRestoreManager):
     def _restore_system(self):
         """ Restore user and system parts """
 
+        system_targets = self.targets.list("system", exclude=["Skipped"])
+
         # If nothing to restore, return immediately
-        if self.targets["system"] == []:
+        if system_targets == []:
             return
 
         logger.info(m18n.n('restore_running_hooks'))
 
         ret = hook_callback('restore',
-                            self.targets["system"],
+                            system_targets,
                             args=[self.work_dir],
                             env=self._get_env_var(),
                             chdir=self.work_dir)
 
         for part in ret['succeed'].keys():
-            self.set_result("system", part, "Success")
+            self.targets.set_result("system", part, "Success")
 
         for part in ret['failed'].keys():
             logger.error(m18n.n('restore_system_part_failed', part=part))
-            self.set_result("system", part, "Error")
+            self.targets.set_result("system", part, "Error")
 
         service_regen_conf()
 
 
     def _restore_apps(self):
         """Restore all apps targeted"""
-        for app in self.targets["apps"]:
+
+        apps_targets = self.targets.list("apps", exclude=["Skipped"])
+
+        for app in apps_targets:
             self._restore_app(app)
+
 
     def _restore_app(self, app_instance_name):
         """Restore an app
@@ -1213,7 +1213,7 @@ class RestoreManager(BackupRestoreManager):
         except:
             logger.exception(m18n.n('restore_app_failed',
                                     app=app_instance_name))
-            self.set_result("apps", app_instance_name, "Error")
+            self.targets.set_result("apps", app_instance_name, "Error")
 
             app_script = os.path.join(tmp_script_dir, 'remove')
 
@@ -1236,7 +1236,7 @@ class RestoreManager(BackupRestoreManager):
 
             # TODO Cleaning app hooks
         else:
-            self.set_result("apps", app_instance_name, "Success")
+            self.targets.set_result("apps", app_instance_name, "Success")
         finally:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_script_dir, ignore_errors=True)
@@ -1698,7 +1698,11 @@ class TarBackupMethod(BackupMethod):
 
             # Extract system parts backup
             conf_extracted = False
-            for system_part in self.manager.targets['system']:
+
+            system_targets = self.manager.targets.list("system", exclude=["Skipped"])
+            apps_targets = self.manager.targets.list("apps", exclude=["Skipped"])
+
+            for system_part in system_targets:
                 # Caution: conf_ynh_currenthost helpers put its files in
                 # conf/ynh
                 if system_part.startswith("conf_"):
@@ -1721,7 +1725,7 @@ class TarBackupMethod(BackupMethod):
 
 
             # Extract apps backup
-            for app in self.manager.targets['apps']:
+            for app in apps_targets:
                 subdir_and_files = [
                     tarinfo for tarinfo in tar.getmembers()
                     if tarinfo.name.startswith("apps/" + app)
@@ -1930,7 +1934,8 @@ def backup_create(name=None, description=None, methods=[],
         backup_manager.add(method)
 
     # Add backup targets (system and apps)
-    backup_manager.set_targets(system, apps)
+    backup_manager.set_system_targets(system)
+    backup_manager.set_apps_targets(apps)
 
     ###########################################################################
     #   Collect files and put them in the archive                             #
@@ -1947,7 +1952,7 @@ def backup_create(name=None, description=None, methods=[],
     return {
         'name': backup_manager.name,
         'size': backup_manager.size,
-        'results': backup_manager.results
+        'results': backup_manager.targets.results
     }
 
 
@@ -2028,7 +2033,8 @@ def backup_restore(auth, name,
 
     restore_manager = RestoreManager(name)
 
-    restore_manager.set_targets(system, apps)
+    restore_manager.set_system_targets(system)
+    restore_manager.set_apps_targets(apps)
 
     restore_manager.assert_enough_free_space()
 
@@ -2046,7 +2052,7 @@ def backup_restore(auth, name,
     else:
         raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
 
-    return restore_manager.results
+    return restore_manager.targets.results
 
 
 def backup_list(with_info=False, human_readable=False):
