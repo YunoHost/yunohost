@@ -1072,8 +1072,7 @@ def app_checkport(port):
     # This import cannot be moved on top of file because it create a recursive
     # import...
     from yunohost.tools import tools_port_available
-    availability = tools_port_available(port)
-    if availability["available"]:
+    if tools_port_available(port):
         logger.success(m18n.n('port_available', port=int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,
