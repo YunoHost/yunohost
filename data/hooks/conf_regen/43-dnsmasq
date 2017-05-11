@@ -21,7 +21,7 @@ do_pre_regen() {
   cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
 
   # add resolver file
-  cat plain/resolv.dnsmasq.conf | grep nameserver | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
+  cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
 
   # retrieve variables
   ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
