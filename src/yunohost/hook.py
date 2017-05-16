@@ -275,7 +275,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
                 hook_exec(path, args=hook_args, chdir=chdir, env=env,
-                          no_trace=no_trace, raise_on_error=True)
+                          no_trace=no_trace, raise_on_error=True, user="root")
             except MoulinetteError as e:
                 state = 'failed'
                 logger.error(e.strerror, exc_info=1)
@@ -292,7 +292,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None):
+              chdir=None, env=None, user="admin"):
     """
     Execute hook from a file with arguments
 
@@ -303,10 +303,10 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         no_trace -- Do not print each command that will be executed
         chdir -- The directory from where the script will be executed
         env -- Dictionnary of environment variables to export
+        user -- User with which to run the command
 
     """
     from moulinette.utils.process import call_async_output
-    from yunohost.app import _value_for_locale
 
     # Validate hook path
     if path[0] != '/':
@@ -326,18 +326,27 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         cmd_script = path
 
+    # Add Execution dir to environment var
+    if env is None:
+        env = {}
+    env['YNH_CWD'] = chdir
+
     # Construct command to execute
-    command = ['sudo', '-n', '-u', 'admin', '-H', 'sh', '-c']
+    if user == "root":
+        command = ['sh', '-c']
+    else:
+        command = ['sudo', '-n', '-u', user, '-H', 'sh', '-c']
+
     if no_trace:
         cmd = '/bin/bash "{script}" {args}'
     else:
         # use xtrace on fd 7 which is redirected to stdout
         cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
-    if env:
-        # prepend environment variables
-        cmd = '{0} {1}'.format(
-            ' '.join(['{0}={1}'.format(k, shell_quote(v)) \
-                    for k, v in env.items()]), cmd)
+        
+    # prepend environment variables
+    cmd = '{0} {1}'.format(
+        ' '.join(['{0}={1}'.format(k, shell_quote(v)) \
+                for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):

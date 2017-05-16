@@ -234,7 +234,7 @@ def backup_create(name=None, description=None, output_directory=None,
                 env_dict["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
 
                 hook_exec(tmp_script, args=[tmp_app_bkp_dir, app_instance_name],
-                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict, user="root")
             except:
                 logger.exception(m18n.n('backup_app_failed', app=app_instance_name))
                 # Cleaning app backup directory
@@ -525,7 +525,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
 
                 # Execute app restore script
                 hook_exec(app_script, args=[tmp_app_bkp_dir, app_instance_name],
-                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+                          raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict, user="root")
             except:
                 logger.exception(m18n.n('restore_app_failed', app=app_instance_name))
 
@@ -540,7 +540,7 @@ def backup_restore(auth, name, hooks=[], ignore_hooks=False,
                 # Execute remove script
                 # TODO: call app_remove instead
                 if hook_exec(app_script, args=[app_instance_name],
-                             env=env_dict_remove) != 0:
+                             env=env_dict_remove, user="root") != 0:
                     logger.warning(m18n.n('app_not_properly_removed',
                                           app=app_instance_name))
 
