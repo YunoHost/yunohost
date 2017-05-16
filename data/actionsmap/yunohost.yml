@@ -977,6 +977,55 @@ monitor:
 
 
 #############################
+#         Settings          #
+#############################
+settings:
+    category_help: Manage YunoHost global settings
+    actions:
+
+        ### settings_list()
+        list:
+            action_help: list all entries of the settings
+            api: GET /settings
+
+        ### settings_get()
+        get:
+            action_help: get an entry value in the settings
+            api: GET /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+                --full:
+                    help: Show more details
+                    action: store_true
+
+        ### settings_set()
+        set:
+            action_help: set an entry value in the settings
+            api: POST /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+                -v:
+                    full: --value
+                    help: new value
+                    extra:
+                        required: True
+
+        ### settings_reset_all()
+        reset-all:
+            action_help: reset all settings to their default value
+            api: DELETE /settings
+
+        ### settings_reset()
+        reset:
+            action_help: set an entry value to its default one
+            api: DELETE /settings/<key>
+            arguments:
+                key:
+                    help: Settings key
+
+#############################
 #         Service           #
 #############################
 service:

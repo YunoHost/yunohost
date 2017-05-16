@@ -105,4 +105,3 @@ def pytest_cmdline_main(config):
 
     # Initialize moulinette
     moulinette.init(logging_config=logging, _from_source=False)
-
