@@ -115,7 +115,7 @@ ynh_install_app_dependencies () {
     if [ ! -e "$manifest_path" ]; then
     	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
-    version=$(sudo python3 -c "import sys, json;print(json.load(open(\"$manifest_path\"))['version'])")	# Retrieve the version number in the manifest file.
+    version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
     dep_app=${app//_/-}	# Replace all '_' by '-'
 
     if ynh_package_is_installed "${dep_app}-ynh-deps"; then
