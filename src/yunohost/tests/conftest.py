@@ -3,6 +3,10 @@ import moulinette
 
 sys.path.append("..")
 
+
+def pytest_addoption(parser):
+    parser.addoption("--yunodebug", action="store_true", default=False)
+
 ###############################################################################
 #   Tweak moulinette init to have yunohost namespace                          #
 ###############################################################################
@@ -39,7 +43,7 @@ moulinette.core.Moulinette18n.n = new_m18nn
 ###############################################################################
 
 
-def _init_moulinette():
+def pytest_cmdline_main(config):
     """Configure logging and initialize the moulinette"""
     # Define loggers handlers
     handlers = set(['tty'])
@@ -47,7 +51,10 @@ def _init_moulinette():
 
     # Define loggers level
     level = 'INFO'
-    tty_level = 'SUCCESS'
+    if config.option.yunodebug:
+        tty_level = 'DEBUG'
+    else:
+        tty_level = 'SUCCESS'
 
     # Custom logging configuration
     logging = {
@@ -98,6 +105,3 @@ def _init_moulinette():
 
     # Initialize moulinette
     moulinette.init(logging_config=logging, _from_source=False)
-
-
-_init_moulinette()

@@ -275,13 +275,51 @@ def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
+def domain_url_available(auth, domain, path):
+    """
+    Check availability of a web path
+
+    Keyword argument:
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
+    """
+
+    domain, path = _normalize_domain_path(domain, path)
+
+    # Abort if domain is unknown
+    if domain not in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    # This import cannot be put on top of file because it would create a
+    # recursive import...
+    from yunohost.app import app_map
+
+    # Fetch apps map
+    apps_map = app_map(raw=True)
+
+    # Loop through all apps to check if path is taken by one of them
+    available = True
+    if domain in apps_map:
+        # Loop through apps
+        for p, a in apps_map[domain].items():
+            if path == p:
+                available = False
+                break
+            # We also don't want conflicts with other apps starting with
+            # same name
+            elif path.startswith(p) or p.startswith(path):
+                available = False
+                break
+
+    return available
+
+
 def get_public_ip(protocol=4):
     """Retrieve the public IP address from ip.yunohost.org"""
     if protocol == 4:
         url = 'https://ip.yunohost.org'
     elif protocol == 6:
-        # FIXME: Let's Encrypt does not support IPv6-only hosts yet
-        url = 'http://ip6.yunohost.org'
+        url = 'https://ip6.yunohost.org'
     else:
         raise ValueError("invalid protocol version")
     try:
@@ -301,3 +339,21 @@ def _get_maindomain():
 def _set_maindomain(domain):
     with open('/etc/yunohost/current_host', 'w') as f:
         f.write(domain)
+
+
+def _normalize_domain_path(domain, path):
+
+    # We want url to be of the format :
+    #  some.domain.tld/foo
+
+    # Remove http/https prefix if it's there
+    if domain.startswith("https://"):
+        domain = domain[len("https://"):]
+    elif domain.startswith("http://"):
+        domain = domain[len("http://"):]
+
+    # Remove trailing slashes
+    domain = domain.rstrip("/")
+    path = "/" + path.strip("/")
+
+    return domain, path
