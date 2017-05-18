@@ -675,11 +675,15 @@ class BackupManager():
         # Prepare environment
         env_dict = self._get_env_var(app)
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
+        settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
         logger.info(m18n.n('backup_running_app_script', app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
+
+            # Copy the app settings to be able to call _common.sh
+            shutil.copytree(app_setting_path, settings_dir)
 
             # Copy app backup script in a temporary folder and execute it
             _, tmp_script = tempfile.mkstemp(prefix='backup_')
@@ -696,11 +700,6 @@ class BackupManager():
             logger.exception(m18n.n('backup_app_failed', app=app))
             self.targets.set_result("apps", app, "Error")
         else:
-            # Add settings of the app to the list
-            tmp_app_dir = os.path.join('apps/', app)
-            settings_dir = os.path.join(tmp_app_dir, 'settings')
-            self._add_to_list_to_backup(app_setting_path, settings_dir)
-
             # Add app info
             i = app_info(app)
             self.apps_return[app] = {
