@@ -133,6 +133,7 @@ Description: Fake package for ${app} (YunoHost app) dependencies
 EOF
         ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
             || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        rm /tmp/${dep_app}-ynh-deps.control
         ynh_app_setting_set $app apt_dependencies $dependencies
     fi
 }
