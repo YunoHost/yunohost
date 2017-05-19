@@ -110,7 +110,8 @@ ynh_backup_if_checksum_is_different () {
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
 		then	# If the checksum is now different
-			backup_file="/home/yunohost.conf/backup$file.backup.$(date '+%Y%m%d_%H%M%S')"
+			backup_file="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+			sudo mkdir -p "$(dirname "$backup_file")"
 			sudo cp -a "$file" "$backup_file"	# Backup the current file
 			echo "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file" >&2
 			echo "$backup_file"	# Return the name of the backup file
