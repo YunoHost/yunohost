@@ -26,6 +26,7 @@
 import os
 import re
 import errno
+import logging
 from glob import iglob
 
 from moulinette.core import MoulinetteError
@@ -349,7 +350,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
                 for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
-    if logger.isEnabledFor(log.DEBUG):
+    if logger.isEnabledFor(logging.DEBUG):
         logger.info(m18n.n('executing_command', command=' '.join(command)))
     else:
         logger.info(m18n.n('executing_script', script=path))
