@@ -992,7 +992,7 @@ def app_makedefault(auth, app, domain=None):
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings['domain']
-    app_path   = app_settings['path']
+    app_path = app_settings['path']
 
     if domain is None:
         domain = app_domain
@@ -1015,7 +1015,7 @@ def app_makedefault(auth, app, domain=None):
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
-    ssowat_conf['redirected_urls'][domain +'/'] = app_domain + app_path
+    ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
     try:
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
@@ -1024,10 +1024,108 @@ def app_makedefault(auth, app, domain=None):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
 
+    os.system('chmod 644 /etc/ssowat/conf.json.persistent')
+
+    logger.success(m18n.n('ssowat_conf_updated'))
+
+
+def app_removedefault(auth, app, domain=None):
+    """
+    Remove the default redirection to an app on a domain
+
+    Keyword argument:
+        app
+        domain
+
+    """
+    from yunohost.domain import domain_list
+
+    app_settings = _get_app_settings(app)
+    app_domain = app_settings['domain']
+    app_path = app_settings['path']
+
+    if domain is None:
+        domain = app_domain
+    elif domain not in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    if '/' in app_map(raw=True)[domain]:
+        raise MoulinetteError(errno.EEXIST,
+                              m18n.n('app_location_already_used'))
+
+    try:
+        with open('/etc/ssowat/conf.json.persistent') as json_conf:
+            ssowat_conf = json.loads(str(json_conf.read()))
+    except ValueError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+    except IOError:
+        ssowat_conf = {}
+
+    if 'redirected_urls' not in ssowat_conf:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_not_default', error=e.strerror))
+
+    try:
+        ssowat_conf['redirected_urls'].pop(domain + '/')
+    except IOError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_not_domain_default', error=e.strerror))
+
+    try:
+        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
+            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
+    except IOError as e:
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))
+
+
+def app_checkdefault(auth, app, domain=None):
+    """
+    Check if an app is the default redirecton of a domain
+
+    Keyword argument:
+        app
+        domain
+
+    """
+    from yunohost.domain import domain_list
+
+    app_settings = _get_app_settings(app)
+    app_domain = app_settings['domain']
+    app_path = app_settings['path']
+
+    if domain is None:
+        domain = app_domain
+    elif domain not in domain_list(auth)['domains']:
+        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    if '/' in app_map(raw=True)[domain]:
+        raise MoulinetteError(errno.EEXIST,
+                                m18n.n('app_location_already_used'))
+
+    try:
+        with open('/etc/ssowat/conf.json.persistent') as json_conf:
+            ssowat_conf = json.loads(str(json_conf.read()))
+    except ValueError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+    except IOError:
+        ssowat_conf = {}
+
+    if 'redirected_urls' not in ssowat_conf:
+        return False
+    elif app_domain + '/' in ssowat_conf['redirected_urls']:
+        if app_domain + app_path in ssowat_conf['redirected_urls'][app_domain + '/']:
+            return True
+        else:
+            return False
+    else:
+        return False
 
 
 def app_setting(app, key, value=None, delete=False):

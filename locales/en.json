@@ -24,6 +24,7 @@
     "app_no_upgrade": "No app to upgrade",
     "app_not_correctly_installed": "{app:s} seems to be incorrectly installed",
     "app_not_installed": "{app:s} is not installed",
+   	"app_not_domain_default": "{app:s} is not the domain default",
     "app_not_properly_removed": "{app:s} has not been properly removed",
     "app_package_need_update": "The app package needs to be updated to follow YunoHost changes",
     "app_removed": "{app:s} has been removed",
