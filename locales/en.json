@@ -124,7 +124,7 @@
     "global_settings_bad_choice_for_enum": "Bad value for setting {setting:s}, received {received_type:s}, except {expected_type:s}",
     "global_settings_bad_type_for_setting": "Bad type for setting {setting:s}, received {received_type:s}, except {expected_type:s}",
     "global_settings_cant_open_settings": "Failed to open settings file, reason: {reason:s}",
-    "global_settings_cant_serialize_setings": "Failed to serialzed settings data, reason: {reason:s}",
+    "global_settings_cant_serialize_setings": "Failed to serialized settings data, reason: {reason:s}",
     "global_settings_cant_write_settings": "Failed to write settings file, reason: {reason:s}",
     "global_settings_key_doesnt_exists": "The key '{settings_key:s}' doesn't exists in the global settings, you can see all the available keys by doing 'yunohost settings list",
     "global_settings_reset_success": "Success. Your previous settings have been backuped in {path:s}",
