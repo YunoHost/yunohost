@@ -391,15 +391,21 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     logger.debug("> no changes to system conf has been made")
                     conf_status = 'managed'
                     regenerated = True
-                elif force and to_remove:
+                elif not to_remove:
+                    # If the conf exist but is not managed yet, and is not to be removed,
+                    # we assume that it is safe to regen it, since the file is backuped
+                    # anyway (by default in _regen), as long as we warn the user
+                    # appropriately.
+                    logger.warning(m18n.n('service_conf_new_managed_file',
+                                          conf=system_path, service=service))
+                    regenerated = _regen(system_path, pending_path)
+                    conf_status = 'new'
+                elif force:
                     regenerated = _regen(system_path)
                     conf_status = 'force-removed'
-                elif force:
-                    regenerated = _regen(system_path, pending_path)
-                    conf_status = 'force-updated'
                 else:
-                    logger.warning(m18n.n('service_conf_file_not_managed',
-                                          conf=system_path))
+                    logger.warning(m18n.n('service_conf_file_kept_back',
+                                          conf=system_path, service=service))
                     conf_status = 'unmanaged'
             # -> system conf has not been manually modified
             elif system_hash == saved_hash:
