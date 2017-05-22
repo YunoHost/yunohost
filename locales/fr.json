@@ -296,5 +296,6 @@
     "app_change_url_success": "L’URL de l’application {app:s} a été changée en {domain:s}{path:s}",
     "app_location_unavailable": "Cette URL n’est pas disponible ou est en conflit avec une application existante",
     "app_already_up_to_date": "{app:s} est déjà à jour",
-    "invalid_url_format": "Format d’URL non valide"
+    "invalid_url_format": "Format d’URL non valide",
+    "global_settings_bad_choice_for_enum": "Valeur du paramètre {setting:s} incorrecte. Reçu: {received_type:s}; attendu: {expected_type:s}."
 }
