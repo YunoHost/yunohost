@@ -516,11 +516,15 @@ def tools_diagnosis(auth, private=False):
     else:
         diagnosis['system']['disks'] = {}
         for disk in disks:
-            diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
-                disks[disk]['mnt_point'],
-                disks[disk]['size'],
-                disks[disk]['avail']
-            )
+            if isinstance(disk, str):
+                diagnosis['system']['disks'] = disk
+            else:
+                diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
+                    disks[disk]['mnt_point'],
+                    disks[disk]['size'],
+                    disks[disk]['avail']
+                )
+
 
     try:
         system = monitor_system(units=['cpu', 'memory'], human_readable=True)
