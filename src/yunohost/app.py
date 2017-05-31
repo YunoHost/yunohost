@@ -1877,20 +1877,20 @@ def _parse_app_instance_name(app_instance_name):
 def _using_legacy_appslist_system():
     """
     Return True if we're using the old fetchlist scheme.
-    This is determined by the presence of some cron job yunohost-appslist-foo
+    This is determined by the presence of some cron job yunohost-applist-foo
     """
 
-    return glob.glob("/etc/cron.d/yunohost-appslist-*") != []
+    return glob.glob("/etc/cron.d/yunohost-applist-*") != []
 
 
 def _migrate_appslist_system():
     """
     Migrate from the legacy fetchlist system to the new one
     """
-    legacy_crons = glob.glob("/etc/cron.d/yunohost-appslist-*")
+    legacy_crons = glob.glob("/etc/cron.d/yunohost-applist-*")
 
     for cron_path in legacy_crons:
-        appslist_name = os.path.basename(cron_path).replace("yunohost-appslist-", "")
+        appslist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
         logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
 
         # Parse appslist url in cron
