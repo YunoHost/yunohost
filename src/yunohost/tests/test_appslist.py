@@ -22,7 +22,7 @@ def setup_function(function):
         os.remove(f)
 
     # Clear appslist crons
-    files = glob.glob("/etc/cron.d/yunohost-appslist-*")
+    files = glob.glob("/etc/cron.d/yunohost-applist-*")
     for f in files:
         os.remove(f)
 
@@ -280,7 +280,7 @@ def test_appslist_remove_unknown():
 
 
 def add_legacy_cron(name, url):
-    with open("/etc/cron.d/yunohost-appslist-%s" % name, "w") as f:
+    with open("/etc/cron.d/yunohost-applist-%s" % name, "w") as f:
         f.write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
 
 
@@ -288,7 +288,7 @@ def test_appslist_check_using_legacy_system_testFalse():
     """
     If no legacy cron job is there, the check should return False
     """
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert _using_legacy_appslist_system() is False
 
 
@@ -296,7 +296,7 @@ def test_appslist_check_using_legacy_system_testTrue():
     """
     If there's a legacy cron job, the check should return True
     """
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     add_legacy_cron("yunohost", "https://app.yunohost.org/official.json")
     assert _using_legacy_appslist_system() is True
 
@@ -307,7 +307,7 @@ def test_appslist_system_migration():
     """
 
     # Start with no legacy cron, no appslist registered
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert app_listlists() == {}
     assert not os.path.exists("/etc/cron.daily/yunohost-fetch-appslists")
 
@@ -321,7 +321,7 @@ def test_appslist_system_migration():
     assert _using_legacy_appslist_system() is False
 
     # No legacy cron job should remain
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
 
     # Check they are in app_listlists anyway
     appslist_dict = app_listlists()
@@ -339,7 +339,7 @@ def test_appslist_system_migration_badcron():
     """
 
     # Start with no legacy cron, no appslist registered
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert app_listlists() == {}
     assert not os.path.exists("/etc/cron.daily/yunohost-fetch-appslists")
 
@@ -352,7 +352,7 @@ def test_appslist_system_migration_badcron():
     assert _using_legacy_appslist_system() is False
 
     # No legacy cron should remain, but it should be backuped in /etc/yunohost
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert os.path.exists("/etc/yunohost/wtflist.oldlist.bkp")
 
     # Appslist should still be empty
@@ -365,7 +365,7 @@ def test_appslist_system_migration_conflict():
     """
 
     # Start with no legacy cron, no appslist registered
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
     assert app_listlists() == {}
     assert not os.path.exists("/etc/cron.daily/yunohost-fetch-appslists")
 
@@ -379,7 +379,7 @@ def test_appslist_system_migration_conflict():
     assert _using_legacy_appslist_system() is False
 
     # No legacy cron job should remain
-    assert glob.glob("/etc/cron.d/yunohost-appslist-*") == []
+    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
 
     # Only one among "dummy" and "yunohost" should be listed
     appslist_dict = app_listlists()
