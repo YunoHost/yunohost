@@ -284,5 +284,9 @@
     "appslist_migrating": "Migriere Anwendungsliste {appslist:s} ...",
     "appslist_could_not_migrate": "Konnte Anwendungsliste  {appslist:s} nicht migrieren. Konnte URL nicht verarbeiten... Der alte Cron-Job wurde unter {bkp_file:s} beibehalten.",
     "appslist_corrupted_json": "Konnte die Anwendungslisten. Es scheint, dass {filename:s} beschädigt ist.",
-    "yunohost_ca_creation_success": "Die lokale Zertifizierungs-Authorität wurde angelegt."
+    "yunohost_ca_creation_success": "Die lokale Zertifizierungs-Authorität wurde angelegt.",
+    "app_already_installed_cant_change_url": "Diese Application ist bereits installiert. Die URL kann durch diese Funktion nicht modifiziert werden. Überprüfe ob `app changeurl` verfügbar ist.",
+    "app_change_no_change_url_script": "Die Application {app_name:s} unterstützt das anpassen der URL noch nicht. Sie muss gegebenenfalls erweitert werden.",
+    "app_change_url_failed_nginx_reload": "NGINX konnte nicht neu gestartet werden. Hier ist der Output von 'nginx -t':\n{nginx_errors:s}",
+    "app_change_url_identical_domains": "Die alte und neue domain/url_path sind identisch: ('{domain:s} {path:s}'). Es gibt nichts zu tun."
 }
