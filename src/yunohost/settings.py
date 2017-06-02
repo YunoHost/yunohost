@@ -224,7 +224,7 @@ def _save_settings(settings, location=SETTINGS_PATH):
         result = json.dumps(settings_without_description, indent=4)
     except Exception as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('global_settings_cant_serialize_setings', reason=e),
+                              m18n.n('global_settings_cant_serialize_settings', reason=e),
                               exc_info=1)
 
     try:
