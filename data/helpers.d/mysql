@@ -114,13 +114,15 @@ ynh_mysql_drop_user() {
 # After executing this helper, the password of the created database will be available in $db_pwd
 # It will also be stored as "mysqlpwd" into the app settings.
 #
-# usage: ynh_mysql_setup_db user name
+# usage: ynh_mysql_setup_db user name [pwd]
 # | arg: user - Owner of the database
 # | arg: name - Name of the database
+# | arg: pwd - Password of the database. If not given, a password will be generated
 ynh_mysql_setup_db () {
 	local db_user="$1"
 	local db_name="$2"
-	db_pwd=$(ynh_string_random)	# Generate a random password
+	local new_db_pwd=$(ynh_string_random)	# Generate a random password
+	db_pwd="${3:-$new_db_pwd}"
 	ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
 	ynh_app_setting_set $app mysqlpwd $db_pwd	# Store the password in the app's config
 }
