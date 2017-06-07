@@ -129,10 +129,6 @@ smtpd_recipient_restrictions =
     reject_unauth_destination,
     permit
 
-# SRS
-sender_canonical_maps = regexp:/etc/postfix/sender_canonical
-sender_canonical_classes = envelope_sender
-
 # Ignore some headers
 smtp_header_checks = regexp:/etc/postfix/header_checks
 
