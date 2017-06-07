@@ -122,6 +122,7 @@ ynh_mysql_setup_db () {
 	local db_user="$1"
 	local db_name="$2"
 	local new_db_pwd=$(ynh_string_random)	# Generate a random password
+	# If $3 is not given, use new_db_pwd instead for db_pwd.
 	db_pwd="${3:-$new_db_pwd}"
 	ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
 	ynh_app_setting_set $app mysqlpwd $db_pwd	# Store the password in the app's config
