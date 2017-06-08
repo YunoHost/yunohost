@@ -223,13 +223,14 @@ def _is_inside_container():
     Returns True or False
     """
 
-    p = subprocess.Popen("sudo grep -qa container=lxc /proc/1/environ".split(),
+    # See https://stackoverflow.com/a/37016302
+    p = subprocess.Popen("sudo cat /proc/1/sched".split(),
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
 
-    return p.returncode == 0
+    return out.split()[1] != "(1,"
 
 
 def tools_postinstall(domain, password, ignore_dyndns=False):
