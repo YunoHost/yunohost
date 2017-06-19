@@ -1468,7 +1468,7 @@ class BackupMethod(object):
         if self.manager.is_tmp_work_dir:
             filesystem.rm(self.work_dir, True, True)
 
-    def _recursive_umount(directory):
+    def _recursive_umount(self, directory):
         """
         Recursively umount sub directories of a directory
 
@@ -1525,7 +1525,7 @@ class BackupMethod(object):
         """
         paths_needed_to_be_copied = []
         for path in self.manager.paths_to_backup:
-            src = path['src']
+            src = path['source']
 
             if self.manager is RestoreManager:
                 # TODO Support to run this before a restore (and not only before
@@ -1534,14 +1534,17 @@ class BackupMethod(object):
                 src = os.path.join(self.unorganized_work_dir, src)
 
             dest = os.path.join(self.work_dir, path['dest'])
+            if dest == src:
+                continue
             dest_dir = os.path.dirname(dest)
 
             # Be sure the parent dir of destination exists
-            filesystem.mkdir(dest_dir, parent=True)
+            if not os.path.isdir(dest_dir):
+                filesystem.mkdir(dest_dir, parents=True)
 
             # Try to bind files
             if os.path.isdir(src):
-                filesystem.mkdir(dest, parent=True)
+                filesystem.mkdir(dest, parents=True, force=True)
                 ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
                 if ret == 0:
                     continue
@@ -1560,13 +1563,12 @@ class BackupMethod(object):
 
         if len(paths_needed_to_be_copied) == 0:
             return
-
         # Manage the case where we are not able to use mount bind abilities
         # It could be just for some small files on different filesystems or due
         # to mounting error
 
         # Compute size to copy
-        size = sum(disk_usage(path['src']) for path in paths_needed_to_be_copied)
+        size = sum(disk_usage(path['source']) for path in paths_needed_to_be_copied)
         size /= (1024 * 1024) # Convert bytes to megabytes
 
         # Ask confirmation for copying
@@ -1583,10 +1585,11 @@ class BackupMethod(object):
         # Copy unbinded path
         logger.info(m18n.n('backup_copying_to_organize_the_archive', size=size))
         for path in paths_needed_to_be_copied:
-            if os.path.isdir(src):
-                shutil.copytree(src, dest, symlinks=True)
+            dest = os.path.join(self.work_dir, path['dest'])
+            if os.path.isdir(path['source']):
+                shutil.copytree(path['source'], dest, symlinks=True)
             else:
-                shutil.copy(src, dest)
+                shutil.copy(path['source'], dest)
 
     @classmethod
     def create(cls, method, *args):
@@ -1616,7 +1619,7 @@ class BackupMethod(object):
         if method in ["copy", "tar", "borg"]:
             return bm_class[method](*args)
         else:
-            return CustomBackupMethod(*args)
+            return CustomBackupMethod(method=method, *args)
 
 
 class CopyBackupMethod(BackupMethod):
@@ -1856,9 +1859,10 @@ class CustomBackupMethod(BackupMethod):
     backup/restore operations. A user can add his own hook inside
     /etc/yunohost/hooks.d/backup_method/
     """
-    def __init__(self, repo = None, **kwargs):
+    def __init__(self, repo = None, method = None,**kwargs):
         super(CustomBackupMethod, self).__init__(repo)
         self.args = kwargs
+        self.method = method
         self._need_mount = None
 
 
@@ -1873,13 +1877,14 @@ class CustomBackupMethod(BackupMethod):
         Exceptions:
         backup_custom_need_mount_error -- Raised if the hook failed
         """
-        ret = hook_callback('backup_method', method,
+        if self._need_mount is not None:
+            return self._need_mount
+
+        ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('need_mount'))
-        if ret['succeed']:
-            return True
-        else:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_custom_need_mount_error'))
+
+        self._need_mount = True if ret['succeed'] else False
+        return self._need_mount
 
 
     def backup(self):
@@ -1890,7 +1895,7 @@ class CustomBackupMethod(BackupMethod):
         backup_custom_backup_error -- Raised if the custom script failed
         """
 
-        ret = hook_callback('backup_method', method,
+        ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
         if ret['failed']:
             raise MoulinetteError(errno.EIO,
@@ -1904,7 +1909,7 @@ class CustomBackupMethod(BackupMethod):
         backup_custom_mount_error -- Raised if the custom script failed
         """
         super(CustomBackupMethod, self).mount(restore_manager)
-        ret = hook_callback('backup_method', method,
+        ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
         if ret['failed']:
             raise MoulinetteError(errno.EIO,
