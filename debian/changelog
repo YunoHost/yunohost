@@ -1,3 +1,27 @@
+yunohost (2.6.3) testing; urgency=low
+
+  Major changes
+  -------------
+
+  * [love] Add missing contributors & translators.
+  * [enh] Introduce global settings (#229)
+  * [enh] Refactor backup management to pave the way to borg (#275)
+  * [enh] Changing nginx ciphers to intermediate compatiblity (#298)
+  * [enh] Use ssl-cert group for certificates, instead of metronome (#222)
+  * [enh] Allow regen-conf to manage new files already present on the system (#311)
+  * [apps] New helpers
+      * ynh_secure_remove (#281)
+      * ynh_setup_source (#282)
+      * ynh_webpath_available and ynh_webpath_register (#235)
+      * ynh_mysql_generate_db and ynh_mysql_remove_db (#236)
+      * ynh_store_file_checksum and ynh_backup_if_checksum_is_different (#286)
+  * Misc fixes here and there
+  * [i18n] Update Spanish, German and French translations (#318)
+
+  Thanks to all contributors : Bram, ljf, opi, Maniack C, Alex, JimboJoe, Moul, Jibec, JuanuSt and franzos !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 02 Jun 2017 09:15:05 -0400
+
 yunohost (2.6.2) testing; urgency=low
 
   New Features
