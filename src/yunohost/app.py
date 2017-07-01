@@ -1415,6 +1415,9 @@ def _extract_app_from_file(path, remove=False):
             manifest['lastUpdate'] = int(time.time())
     except IOError:
         raise MoulinetteError(errno.EIO, m18n.n('app_install_files_invalid'))
+    except ValueError as e:
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_manifest_invalid', error=e.strerror))
 
     logger.info(m18n.n('done'))
 
@@ -1508,7 +1511,7 @@ def _fetch_app_from_git(app):
             except subprocess.CalledProcessError:
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
-            except IOError:
+            except ValueError:
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid'))
             else:
@@ -1564,7 +1567,7 @@ def _fetch_app_from_git(app):
             except subprocess.CalledProcessError:
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_sources_fetch_failed'))
-            except IOError:
+            except ValueError:
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid'))
             else:
