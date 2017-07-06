@@ -24,7 +24,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , nginx-extras (>=1.6.2), php5-fpm | php-fpm, php5-ldap | php-ldap, php5-intl | php-intl
  , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , metronome
- , rspamd (>= 1.2.0), rmilter (>=1.7.0), redis-server, opendkim-tools
+ , rspamd (>= 1.6.0), redis-server, opendkim-tools
  , haveged
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
