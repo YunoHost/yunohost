@@ -88,6 +88,7 @@ def migrations_migrate(auth):
 
         migration["module"].MyMigration().migrate() # XXX error handling
 
+        # update the state to include the latest runned migration
         state["last_runned_migration"] = {
             "number": migration["number"],
             "name": migration["name"],
