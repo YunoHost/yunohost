@@ -6,6 +6,8 @@ if [ "$1" = "purge" ]; then
    update-rc.d yunohost-firewall remove >/dev/null
 fi
 
+rm -f /etc/yunohost/installed
+
 #DEBHELPER#
 
 exit 0
