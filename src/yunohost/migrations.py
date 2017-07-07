@@ -110,8 +110,16 @@ def migrations_state():
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"last_runned_migration": None}
     else:
-        # XXX error handling
-        return json.load(open(MIGRATIONS_STATE_PATH))
+        try:
+            return json.load(open(MIGRATIONS_STATE_PATH))
+        except Exception as e:
+            raise MoulinetteError(
+                errno.EINVAL,
+                "Unable to load state json file located at {path}, exception: {exception)".format(
+                    exception=e,
+                    path=MIGRATIONS_STATE_PATH
+                )
+            )
 
 
 def _get_migrations_list():
