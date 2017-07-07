@@ -158,7 +158,7 @@ def _get_migrations_list():
 
 class Migration(object):
     def migrate(self):
-        self.forward() # XXX error handling
+        self.forward()
 
     def forward(self):
         raise NotImplementedError()
