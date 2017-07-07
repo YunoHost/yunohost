@@ -95,9 +95,28 @@ def migrations_migrate(auth):
             "name": migration["name"],
         }
 
-    # XXX error handling
-    state = json.dumps(state, indent=4)
-    open(MIGRATIONS_STATE_PATH, "w").write(state)
+    try:
+        state = json.dumps(state, indent=4)
+    except Exception as e:
+        raise MoulinetteError(
+            errno.EINVAL,
+                "Unable to serialize migration state ('{state}') in json because of exception {exception}".format(
+                exception=e,
+                state=state,
+            )
+        )
+
+    try:
+        open(MIGRATIONS_STATE_PATH, "w").write(state)
+    except Exception as e:
+        raise MoulinetteError(
+            errno.EINVAL,
+                "Unable to save migration state ('{state}') at {path} because of exception {exception}".format(
+                exception=e,
+                path=MIGRATIONS_STATE_PATH,
+                state=state,
+            )
+        )
 
 
 def migrations_state():
