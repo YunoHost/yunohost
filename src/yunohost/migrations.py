@@ -38,19 +38,24 @@ logger = getActionLogger('yunohost.migrations')
 
 def migrations_list(auth):
     """
-    List migrations
+    List existing migrations
     """
 
     migrations = {"migrations": []}
 
-    # XXX DRY
     try:
         import data_migrations
     except ImportError:
+        # not data migrations present, return empty list
         return migrations
 
-    # XXX error handling on __path__[0] and listdir
-    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(data_migrations.__path__[0])):
+    migrations_path = data_migrations.__path__[0]
+
+    if not os.path.exists(migrations_path):
+        logger.warn("Can't access migrations files at path %s".format(migrations_path))
+        return migrations
+
+    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
         migration = migration[:-len(".py")]
         migrations["migrations"].append({
             "number": migration.split("_", 1)[0],
