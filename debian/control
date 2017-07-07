@@ -16,7 +16,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , glances
  , dnsutils, bind9utils, unzip, git, curl, cron
  , ca-certificates, netcat-openbsd, iproute
- , mariadb-server | mysql-server, php5-mysql | php5-mysqlnd | php-mysql | php-mysqlnd
+ , mariadb-server | mysql-server, php-mysql | php-mysqlnd
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, nscd
  , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
@@ -29,7 +29,7 @@ Depends: ${python:Depends}, ${misc:Depends}
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog, etckeeper
- , php5-gd | php-gd, php5-curl | php-curl, php5-gettext | php-gettext, php5-mcrypt | php-mcrypt
+ , php-gd, php-curl, php-gettext, php-mcrypt
  , python-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
