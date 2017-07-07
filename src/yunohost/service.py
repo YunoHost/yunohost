@@ -322,7 +322,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
+        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
