@@ -56,12 +56,7 @@ def migrations_migrate(auth):
     """
     Perform migrations
     """
-
-    if not os.path.exists(MIGRATIONS_STATE_PATH):
-        state = {"last_runned_migration": None}
-    else:
-        # XXX error handling
-        state = json.load(open(MIGRATIONS_STATE_PATH))
+    state = migrations_state()
 
     migrations = []
 
@@ -106,7 +101,6 @@ def migrations_migrate(auth):
 
 
 def migrations_state():
-    # XXX DRY
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"last_runned_migration": None}
     else:
