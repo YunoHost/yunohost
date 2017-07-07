@@ -296,7 +296,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     logger.info(m18n.n('yunohost_installing'))
 
-    service_regen_conf(['nslcd', 'nsswitch'], force=True)
+    service_regen_conf(['nslcd'], force=True)
 
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
