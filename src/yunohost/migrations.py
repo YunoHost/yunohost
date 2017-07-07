@@ -120,6 +120,9 @@ def migrations_migrate(auth):
 
 
 def migrations_state():
+    """
+    Show current migration state
+    """
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"last_runned_migration": None}
     else:
