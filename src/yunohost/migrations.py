@@ -86,7 +86,13 @@ def migrations_migrate(auth):
     for migration in migrations:
         logger.info("Running migration {number} {name}...".format(**migration))
 
-        migration["module"].MyMigration().migrate() # XXX error handling
+        try:
+            migration["module"].MyMigration().migrate()
+        except Exception as e:
+            # migration failed, let's stop here but still update state because
+            # we managed to run the previous ones
+            logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exec_info=1)
+            break
 
         # update the state to include the latest runned migration
         state["last_runned_migration"] = {
