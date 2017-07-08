@@ -105,7 +105,7 @@ def tools_ldapinit():
     auth.update('cn=admin', admin_dict)
 
     # Force nscd to refresh cache to take admin creation into account
-    subprocess.call(['nscd', '-i', 'passwd'])
+    subprocess.call(['nscd', '-i', 'passwd'], stderr=open(os.devnull, 'wb'))
 
     # Check admin actually exists now
     try:
@@ -204,7 +204,7 @@ def _set_hostname(hostname, pretty_hostname=None):
         pretty_hostname = "(YunoHost/%s)" % hostname
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
-    subprocess.call(['nscd', '-i', 'hosts'])
+    subprocess.call(['nscd', '-i', 'hosts'], stderr=open(os.devnull, 'wb'))
 
     # Then call hostnamectl
     commands = [
