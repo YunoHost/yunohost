@@ -52,6 +52,7 @@ def migrations_list(auth):
     return migrations
 
 
+# TODO need a "fake" option and also a migration number as possible argument (same than in django)
 def migrations_migrate(auth):
     """
     Perform migrations
