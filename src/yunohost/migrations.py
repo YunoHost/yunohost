@@ -67,12 +67,32 @@ def migrations_migrate(auth):
            int(migration["number"]) <= int(state["last_runned_migration"]["number"]):
             continue
 
+        try:
+            module = import_module("yunohost.data_migrations.{}".format(migration))
+        except Exception as e:
+            logger.warn("WARNING: failed to load migration {number} {name} because {exception}".format(
+                number=number,
+                name=name,
+                exception=exception,
+            ), exec_info=1)
+
+            # we still want to run migrations up until this point, so only
+            # break instead of raising
+
+            # XXX we need a way, in general, to inform user that unruned
+            # migrations needs to be runed and inform him about the blocking
+            # error and where to report that
+            if migrations:
+                logger.warning("WARNING: abort loading next migrations, all previously loaded migrations will be runed")
+            break
+
+
         migrations.append({
             "number": migration["number"],
             "name": migration["name"]
             # this is python buildin method to import a module using a name, we use that to import the migration
             # has a python object so we'll be able to run it in the next lop
-            "module": import_module("yunohost.data_migrations.{}".format(migration)), # XXX error handling
+            "module": module,
         })
 
     migrations = sorted(migrations, key=lambda x: x["number"])
