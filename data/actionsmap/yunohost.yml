@@ -1506,7 +1506,7 @@ migrations:
         ### migrations_state()
         state:
             action_help: Perform migrations
-            api: GEt /migrations/state
+            api: GET /migrations/state
 
 
 #############################

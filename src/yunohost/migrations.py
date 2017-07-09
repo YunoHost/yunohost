@@ -61,7 +61,7 @@ def migrations_migrate(auth):
 
     migrations = []
 
-    # loading all migrations that haven't already runned
+    # loading all migrations that haven't already runed
     for migration in migrations_list()::
         # skip already runnned migrations
         if state["last_runned_migration"] is not None and\
@@ -91,8 +91,8 @@ def migrations_migrate(auth):
         migrations.append({
             "number": migration["number"],
             "name": migration["name"]
-            # this is python buildin method to import a module using a name, we use that to import the migration
-            # has a python object so we'll be able to run it in the next lop
+            # this is python builtin method to import a module using a name, we use that to import the migration
+            # has a python object so we'll be able to run it in the next loop
             "module": module,
         })
 
