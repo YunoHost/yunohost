@@ -1776,8 +1776,13 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
         # Mount the tarball
-        ret = subprocess.call(['archivemount', '-o', 'readonly',
-                               self._archive_file, self.work_dir])
+        try:
+            ret = subprocess.call(['archivemount', '-o', 'readonly',
+                                   self._archive_file, self.work_dir])
+        except:
+            ret = -1
+
+        # If archivemount failed, extract the archive
         if ret != 0:
             logger.warning(m18n.n('backup_archive_mount_failed'))
 
