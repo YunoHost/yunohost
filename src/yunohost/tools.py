@@ -321,7 +321,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 755 /home/yunohost.app')
 
     # Set hostname to avoid amavis bug
-    if os.system('hostname -d') != 0:
+    if os.system('hostname -d >/dev/null') != 0:
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
