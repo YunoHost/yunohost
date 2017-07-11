@@ -10,6 +10,14 @@ do_init_regen() {
     exit 1
   fi
 
+  LOGFILE="/tmp/yunohost-ssl-init"
+
+  echo "Initializing a local SSL certification authority ..."
+  echo "(logs available in $LOGFILE)"
+
+  rm -f $LOGFILE
+  touch $LOGFILE
+
   # create certs and SSL directories
   mkdir -p "/etc/yunohost/certs/yunohost.org"
   mkdir -p "${ssl_dir}/"{ca,certs,crl,newcerts}
@@ -24,9 +32,10 @@ do_init_regen() {
 
   # create default certificates
   if [[ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ]]; then
+      echo -e "\n# Creating the CA key (?)\n" >>$LOGFILE
       openssl req -x509 -new -config "$openssl_conf" \
         -days 3650 -out "${ssl_dir}/ca/cacert.pem" \
-        -keyout "${ssl_dir}/ca/cakey.pem" -nodes -batch 2>&1
+        -keyout "${ssl_dir}/ca/cakey.pem" -nodes -batch >>$LOGFILE 2>&1
       cp "${ssl_dir}/ca/cacert.pem" \
         /etc/yunohost/certs/yunohost.org/ca.pem
       ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
@@ -35,12 +44,13 @@ do_init_regen() {
   fi
 
   if [[ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]]; then
+      echo -e "\n# Creating initial key and certificate (?)\n" >>$LOGFILE
       openssl req -new -config "$openssl_conf" \
         -days 730 -out "${ssl_dir}/certs/yunohost_csr.pem" \
-        -keyout "${ssl_dir}/certs/yunohost_key.pem" -nodes -batch 2>&1
+        -keyout "${ssl_dir}/certs/yunohost_key.pem" -nodes -batch >>$LOGFILE 2>&1
       openssl ca -config "$openssl_conf" \
         -days 730 -in "${ssl_dir}/certs/yunohost_csr.pem" \
-        -out "${ssl_dir}/certs/yunohost_crt.pem" -batch 2>&1
+        -out "${ssl_dir}/certs/yunohost_crt.pem" -batch >>$LOGFILE 2>&1
 
       last_cert=$(ls $ssl_dir/newcerts/*.pem | sort -V | tail -n 1)
       chmod 640 "${ssl_dir}/certs/yunohost_key.pem"
