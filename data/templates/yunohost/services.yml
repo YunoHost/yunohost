@@ -18,7 +18,7 @@ postfix:
    log: [/var/log/mail.log,/var/log/mail.err]
 rspamd:
    status: systemctl status rspamd.service
-   log: /var/log/mail.log
+   log: /var/log/rspamd/rspamd.log
 redis-server:
    status: service
    log: /var/log/redis/redis-server.log
