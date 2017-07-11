@@ -143,7 +143,7 @@ smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
 # Rmilter
 milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
 milter_protocol = 6
-smtpd_milters = unix:/run/rmilter/rmilter.sock
+smtpd_milters = inet:localhost:11332
 
 # Skip email without checking if milter has died
 milter_default_action = accept
