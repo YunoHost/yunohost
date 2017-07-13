@@ -2,15 +2,15 @@
 #
 # usage: ynh_use_logrotate [logfile] [--non-append]
 # | arg: logfile - absolute path of logfile
-# | option: --non-append - Replace the config file instead of append this new config.
+# | option: --non-append - Replace the config file instead of appending this new config.
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
 # /parentdir/logdir/
 # /parentdir/logdir/logfile.log
 #
-# It's possible to use this helper several times, each config will added to same logrotate config file.
-# Unless if you use the option --non-append
+# It's possible to use this helper several times, each config will be added to the same logrotate config file.
+# Unless you use the option --non-append
 ynh_use_logrotate () {
 	local customtee="tee -a"
 	if [ $# -gt 0 ] && [ "$1" == "--non-append" ]; then
@@ -50,7 +50,7 @@ $logfile {
 }
 EOF
 	sudo mkdir -p $(dirname "$logfile")	# Create the log directory, if not exist
-	cat ${app}-logrotate | sudo $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the others for this app. If a config file already exist
+	cat ${app}-logrotate | sudo $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the existing config file, or replace the whole config file (depending on $customtee)
 }
 
 # Remove the app's logrotate config.
