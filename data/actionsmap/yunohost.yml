@@ -748,6 +748,9 @@ backup:
                     full: --no-compress
                     help: Do not create an archive file
                     action: store_true
+                --methods:
+                    help: List of backup methods to apply (copy or tar by default)
+                    nargs: "*"
                 --system:
                     help: List of system parts to backup (all by default)
                     nargs: "*"
