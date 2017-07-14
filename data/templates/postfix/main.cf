@@ -72,6 +72,7 @@ virtual_alias_domains =
 virtual_minimum_uid = 100 
 virtual_uid_maps = static:vmail 
 virtual_gid_maps = static:mail
+smtpd_sender_login_maps= ldap:/etc/postfix/ldap-accounts.cf
 
 # Dovecot LDA 
 virtual_transport = dovecot 
@@ -113,7 +114,8 @@ smtpd_helo_restrictions =
     permit 
  
 # Requirements for the sender address 
-smtpd_sender_restrictions = 
+smtpd_sender_restrictions =
+    reject_sender_login_mismatch, 
     permit_mynetworks, 
     permit_sasl_authenticated, 
     reject_non_fqdn_sender, 
