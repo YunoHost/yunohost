@@ -18,7 +18,7 @@ do_pre_regen() {
 
   # prepare main.cf conf file
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet | tr '\n' ' ')
 
   cat main.cf \
     | sed "s/{{ main_domain }}/${main_domain}/g" \
@@ -44,7 +44,8 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || { sudo service postfix restart && sudo service postsrsd restart }
+    || { sudo service postfix restart && sudo service postsrsd restart; }
+
 }
 
 FORCE=${2:-0}
