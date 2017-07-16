@@ -1490,17 +1490,11 @@ migrations:
         list:
             action_help: List migrations
             api: GET /migrations
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
 
         ### migrations_migrate()
         migrate:
             action_help: Perform migrations
             api: POST /migrations/migrate
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
 
 
         ### migrations_state()

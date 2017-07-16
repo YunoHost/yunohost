@@ -38,7 +38,7 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
 logger = getActionLogger('yunohost.migrations')
 
 
-def migrations_list(auth):
+def migrations_list():
     """
     List existing migrations
     """
@@ -55,7 +55,7 @@ def migrations_list(auth):
 
 
 # TODO need a "fake" option and also a migration number as possible argument (same than in django)
-def migrations_migrate(auth, target=None):
+def migrations_migrate(target=None):
     """
     Perform migrations
     """
@@ -75,7 +75,7 @@ def migrations_migrate(auth, target=None):
     migrations = []
 
     # loading all migrations
-    for migration in migrations_list(auth)["migrations"]:
+    for migration in migrations_list()["migrations"]:
         logger.debug("Loading migration {number} {name}...".format(
             number=migration["number"],
             name=migration["name"],
