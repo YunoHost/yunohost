@@ -70,7 +70,7 @@ def migrations_migrate(target=None):
     # }
     state = migrations_state()
 
-    last_runed_migration_number = int(state["last_runed_migration"]["number"]) if state["last_runed_migration"] else 0
+    last_runed_migration_number = state["last_runed_migration"]["number"] if state["last_runed_migration"] else 0
 
     migrations = []
 
@@ -153,7 +153,7 @@ def migrations_migrate(target=None):
 
         # update the state to include the latest runed migration
         state["last_runed_migration"] = {
-            "number": migration["number"],
+            "number": int(migration["number"]),
             "name": migration["name"],
         }
 
