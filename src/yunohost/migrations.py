@@ -27,8 +27,10 @@
 import os
 import re
 import json
+import errno
 from importlib import import_module
 from moulinette.utils.log import getActionLogger
+from moulinette.core import MoulinetteError
 
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
@@ -53,44 +55,47 @@ def migrations_list(auth):
 
 
 # TODO need a "fake" option and also a migration number as possible argument (same than in django)
-def migrations_migrate(auth):
+def migrations_migrate(auth, target=None):
     """
     Perform migrations
     """
+
+    # state is a datastructure of that represent the latest runed migration
+    # it has this form:
+    # {
+    #     "last_runed_migration": {
+    #             "number": "00xx",
+    #             "name": "some name",
+    #         }
+    # }
     state = migrations_state()
+
+    last_runed_migration_number = int(state["last_runed_migration"]["number"]) if state["last_runed_migration"] else 0
 
     migrations = []
 
-    # loading all migrations that haven't already runed
-    for migration in migrations_list()::
-        # skip already runnned migrations
-        if state["last_runned_migration"] is not None and\
-           int(migration["number"]) <= int(state["last_runned_migration"]["number"]):
-            continue
+    # loading all migrations
+    for migration in migrations_list(auth)["migrations"]:
+        logger.debug("Loading migration {number} {name}...".format(
+            number=migration["number"],
+            name=migration["name"],
+        ))
 
         try:
-            module = import_module("yunohost.data_migrations.{}".format(migration))
-        except Exception as e:
-            logger.warn("WARNING: failed to load migration {number} {name} because {exception}".format(
-                number=number,
-                name=name,
-                exception=exception,
-            ), exec_info=1)
+            module = import_module("yunohost.data_migrations.{number}_{name}".format(**migration))
+        except Exception:
+            import traceback
+            traceback.print_exc()
 
-            # we still want to run migrations up until this point, so only
-            # break instead of raising
-
-            # XXX we need a way, in general, to inform user that unruned
-            # migrations needs to be runed and inform him about the blocking
-            # error and where to report that
-            if migrations:
-                logger.warning("WARNING: abort loading next migrations, all previously loaded migrations will be runed")
+            raise MoulinetteError(errno.EINVAL, "WARNING: failed to load migration {number} {name}".format(
+                number=migration["number"],
+                name=migration["name"],
+            ))
             break
-
 
         migrations.append({
             "number": migration["number"],
-            "name": migration["name"]
+            "name": migration["name"],
             # this is python builtin method to import a module using a name, we use that to import the migration
             # has a python object so we'll be able to run it in the next loop
             "module": module,
@@ -98,20 +103,56 @@ def migrations_migrate(auth):
 
     migrations = sorted(migrations, key=lambda x: x["number"])
 
-    # run migrations in order
+    if not migrations:
+        logger.info("No migrations to run.")
+        return
+
+    if target is None:
+        target = int(migrations[-1]["number"])
+
+    # TODO check that input is valid
+    #      AND convert to int
+    # TODO add input to actionmaps.yaml
+
+    # no new migrations to run
+    if target == last_runed_migration_number:
+        logger.info("No migrations to run.")
+        return
+
+    # we need to run missing migrations
+    if last_runed_migration_number < target:
+        # drop all already runed migrations
+        migrations = filter(lambda x: int(x["number"]) > last_runed_migration_number, migrations)
+        mode = "forward"
+
+    # we need to go backward on already runed migrations
+    elif last_runed_migration_number > target:
+        # drop all already runed migrations
+        migrations = filter(lambda x: int(x["number"]) < last_runed_migration_number, migrations)
+        mode = "backward"
+
+    else:  # can't happend, this case is handle before
+        raise Exception()
+
+    # effectively run selected migrations
     for migration in migrations:
-        logger.info("Running migration {number} {name}...".format(**migration))
+        logger.warn("Runing migration {number} {name}...".format(**migration))
 
         try:
-            migration["module"].MyMigration().migrate()
+            if mode == "forward":
+                migration["module"].MyMigration().migrate()
+            elif mode == "backward":
+                migration["module"].MyMigration().backward()
+            else:  # can't happend
+                raise Exception()
         except Exception as e:
             # migration failed, let's stop here but still update state because
             # we managed to run the previous ones
-            logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exec_info=1)
+            logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exc_info=1)
             break
 
-        # update the state to include the latest runned migration
-        state["last_runned_migration"] = {
+        # update the state to include the latest runed migration
+        state["last_runed_migration"] = {
             "number": migration["number"],
             "name": migration["name"],
         }
@@ -145,7 +186,7 @@ def migrations_state():
     Show current migration state
     """
     if not os.path.exists(MIGRATIONS_STATE_PATH):
-        return {"last_runned_migration": None}
+        return {"last_runed_migration": None}
     else:
         try:
             return json.load(open(MIGRATIONS_STATE_PATH))
