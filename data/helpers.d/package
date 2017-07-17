@@ -63,6 +63,14 @@ ynh_package_autoremove() {
     ynh_apt autoremove $@
 }
 
+# Purge package(s) and their uneeded dependencies
+#
+# usage: ynh_package_autopurge name [name [...]]
+# | arg: name - the package name to autoremove and purge
+ynh_package_autopurge() {
+    ynh_apt autoremove --purge $@
+}
+
 # Build and install a package from an equivs control file
 #
 # example: generate an empty control file with `equivs-control`, adjust its
@@ -145,5 +153,5 @@ EOF
 # usage: ynh_remove_app_dependencies
 ynh_remove_app_dependencies () {
     dep_app=${app//_/-}	# Replace all '_' by '-'
-    ynh_package_autoremove ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
+    ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }
