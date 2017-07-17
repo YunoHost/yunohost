@@ -170,6 +170,10 @@ def migrations_migrate(target=None, fake=False):
             "name": migration["name"],
         }
 
+    # special case where we want to go back from the start
+    if target == 0:
+        state["last_runed_migration"] = None
+
     try:
         state = json.dumps(state, indent=4)
     except Exception as e:
