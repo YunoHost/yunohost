@@ -49,6 +49,7 @@ def migrations_list():
         migrations["migrations"].append({
             "number": int(migration.split("_", 1)[0]),
             "name": migration.split("_", 1)[1],
+            "file_name": migration,
         })
 
     return migrations
@@ -82,7 +83,7 @@ def migrations_migrate(target=None, fake=False):
         ))
 
         try:
-            module = import_module("yunohost.data_migrations.{number}_{name}".format(**migration))
+            module = import_module("yunohost.data_migrations.{file_name}".format(**migration))
         except Exception:
             import traceback
             traceback.print_exc()
