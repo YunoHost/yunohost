@@ -113,7 +113,7 @@ def migrations_migrate(target=None):
     logger.debug("migration target is {}".format(target))
 
     # TODO check that input is valid
-    #      AND convert to int
+    #       either migration number or 0
     # TODO add input to actionmaps.yaml
 
     # no new migrations to run
