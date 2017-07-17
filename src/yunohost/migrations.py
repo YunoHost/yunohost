@@ -55,7 +55,7 @@ def migrations_list():
 
 
 # TODO need a "fake" option and also a migration number as possible argument (same than in django)
-def migrations_migrate(target=None):
+def migrations_migrate(target=None, fake=False):
     """
     Perform migrations
     """
@@ -114,7 +114,6 @@ def migrations_migrate(target=None):
 
     # TODO check that input is valid
     #       either migration number or 0
-    # TODO add input to actionmaps.yaml
 
     # no new migrations to run
     if target == last_runed_migration_number:
@@ -142,20 +141,24 @@ def migrations_migrate(target=None):
 
     # effectively run selected migrations
     for migration in migrations:
-        logger.warn("Runing migration {number} {name}...".format(**migration))
+        if not fake:
+            logger.warn("Runing migration {number} {name}...".format(**migration))
 
-        try:
-            if mode == "forward":
-                migration["module"].MyMigration().migrate()
-            elif mode == "backward":
-                migration["module"].MyMigration().backward()
-            else:  # can't happend
-                raise Exception()
-        except Exception as e:
-            # migration failed, let's stop here but still update state because
-            # we managed to run the previous ones
-            logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exc_info=1)
-            break
+            try:
+                if mode == "forward":
+                    migration["module"].MyMigration().migrate()
+                elif mode == "backward":
+                    migration["module"].MyMigration().backward()
+                else:  # can't happend
+                    raise Exception()
+            except Exception as e:
+                # migration failed, let's stop here but still update state because
+                # we managed to run the previous ones
+                logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exc_info=1)
+                break
+
+        else:  # if fake
+            logger.warn("Fake migration {number} {name}...".format(**migration))
 
         # update the state to include the latest runed migration
         state["last_runed_migration"] = {
