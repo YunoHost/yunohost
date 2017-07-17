@@ -47,7 +47,7 @@ def migrations_list():
 
     for migration in _get_migrations_list():
         migrations["migrations"].append({
-            "number": migration.split("_", 1)[0],
+            "number": int(migration.split("_", 1)[0]),
             "name": migration.split("_", 1)[1],
         })
 
@@ -108,7 +108,7 @@ def migrations_migrate(target=None, fake=False):
         return
 
     if target is None:
-        target = int(migrations[-1]["number"])
+        target = migrations[-1]["number"]
 
     logger.debug("migration target is {}".format(target))
 
@@ -126,14 +126,14 @@ def migrations_migrate(target=None, fake=False):
     if last_runed_migration_number < target:
         logger.debug("migrating forward")
         # drop all already runed migrations
-        migrations = filter(lambda x: int(x["number"]) > last_runed_migration_number, migrations)
+        migrations = filter(lambda x: x["number"] > last_runed_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already runed migrations
     elif last_runed_migration_number > target:
         logger.debug("migrating backward.")
         # drop all not already runed migrations
-        migrations = filter(lambda x: int(x["number"]) <= last_runed_migration_number, migrations)
+        migrations = filter(lambda x: x["number"] <= last_runed_migration_number, migrations)
         mode = "backward"
 
     else:  # can't happend, this case is handle before
@@ -162,7 +162,7 @@ def migrations_migrate(target=None, fake=False):
 
         # update the state to include the latest runed migration
         state["last_runed_migration"] = {
-            "number": int(migration["number"]),
+            "number": migration["number"],
             "name": migration["name"],
         }
 
