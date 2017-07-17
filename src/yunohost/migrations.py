@@ -108,13 +108,16 @@ def migrations_migrate(target=None, fake=False):
         logger.info("No migrations to run.")
         return
 
+    all_migration_numbers = [x["number"] for x in migrations]
+
     if target is None:
         target = migrations[-1]["number"]
 
-    logger.debug("migration target is {}".format(target))
+    # validate input, target must be "0" or a valid number
+    elif target != 0 and target not in all_migration_numbers:
+        raise MoulinetteError(errno.EINVAL, "Invalide number for target argument, available migrations numbers are 0 or {}".format(", ".join(map(str, all_migration_numbers))))
 
-    # TODO check that input is valid
-    #       either migration number or 0
+    logger.debug("migration target is {}".format(target))
 
     # no new migrations to run
     if target == last_runed_migration_number:
