@@ -110,24 +110,30 @@ def migrations_migrate(target=None):
     if target is None:
         target = int(migrations[-1]["number"])
 
+    logger.debug("migration target is {}".format(target))
+
     # TODO check that input is valid
     #      AND convert to int
     # TODO add input to actionmaps.yaml
 
     # no new migrations to run
     if target == last_runed_migration_number:
-        logger.info("No migrations to run.")
+        logger.warn("no migrations to run")
         return
+
+    logger.debug("last runed migrations is {}".format(last_runed_migration_number))
 
     # we need to run missing migrations
     if last_runed_migration_number < target:
+        logger.debug("migrating forward")
         # drop all already runed migrations
         migrations = filter(lambda x: int(x["number"]) > last_runed_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already runed migrations
     elif last_runed_migration_number > target:
-        # drop all already runed migrations
+        logger.debug("migrating backward.")
+        # drop all not already runed migrations
         migrations = filter(lambda x: int(x["number"]) < last_runed_migration_number, migrations)
         mode = "backward"
 
