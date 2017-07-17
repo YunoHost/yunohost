@@ -1495,6 +1495,11 @@ migrations:
         migrate:
             action_help: Perform migrations
             api: POST /migrations/migrate
+            arguments:
+              -t:
+                  help: target migration number (or 0), latest one by default
+                  type: int
+                  full: --target
 
 
         ### migrations_state()
