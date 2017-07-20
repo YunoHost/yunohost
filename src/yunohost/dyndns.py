@@ -168,95 +168,93 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     except IOError:
         old_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
 
-    if old_ip != ipv4 or old_ipv6 != ipv6:
-        if domain is None:
-            # Retrieve the first registered domain
-            for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
-                match = re_dyndns_private_key.match(path)
-                if not match:
+    # no need to update
+    if old_ip == ipv4 and old_ipv6 == ipv6:
+        return
+
+    if domain is None:
+        # Retrieve the first registered domain
+        for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+            match = re_dyndns_private_key.match(path)
+            if not match:
+                continue
+            _domain = match.group('domain')
+
+            try:
+                # Check if domain is registered
+                if requests.get('https://{0}/test/{1}'.format(
+                        dyn_host, _domain)).status_code == 200:
                     continue
-                _domain = match.group('domain')
-                try:
-                    # Check if domain is registered
-                    if requests.get('https://{0}/test/{1}'.format(
-                            dyn_host, _domain)).status_code == 200:
-                        continue
-                except requests.ConnectionError:
-                    raise MoulinetteError(errno.ENETUNREACH,
-                                          m18n.n('no_internet_connection'))
-                domain = _domain
-                key = path
-                break
-            if not domain:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('dyndns_no_domain_registered'))
+            except requests.ConnectionError:
+                raise MoulinetteError(errno.ENETUNREACH,
+                                      m18n.n('no_internet_connection'))
+            domain = _domain
+            key = path
+            break
+        if not domain:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('dyndns_no_domain_registered'))
 
-        if key is None:
-            keys = glob.glob(
-                '/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
-            if len(keys) > 0:
-                key = keys[0]
-        if not key:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('dyndns_key_not_found'))
+    if key is None:
+        keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
 
-        host = domain.split('.')[1:]
-        host = '.'.join(host)
-        lines = [
-            'server %s' % dyn_host,
-            'zone %s' % host,
-        ]
+        if not keys:
+            raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
 
-        dns_conf = _build_dns_conf(domain)
-        all_records = []
-        for records in dns_conf.values():
-            all_records.extend(records)
+        key = keys[0]
 
+    host = domain.split('.')[1:]
+    host = '.'.join(host)
+
+    lines = [
+        'server %s' % dyn_host,
+        'zone %s' % host,
+    ]
+
+    dns_conf = _build_dns_conf(domain)
+
+    # every dns_conf.values() is a list of :
+    # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
+    for records in dns_conf.values():
         # (For some reason) here we want the format with everytime the entire,
         # full domain shown explicitly, not just "muc" or "@", it should
         # be muc.the.domain.tld. or the.domain.tld
 
         # Delete the old records for all domain/subdomains
-        for record in all_records:
-            record["domain"] = domain
-            action = "update delete {name}.{domain}.".format(**record)
+        for record in records:
+            action = "update delete {name}.{domain}.".format(domain=domain, **record)
             action = action.replace(" @.", " ")
-            lines.append(action)
 
-        # Add the up to date record stuff
-        for record in all_records:
-            record["domain"] = domain
+            lines.append(action)
 
             # Use explicit domain instead of @ for values
             if record["value"] == "@":
                 record["value"] = domain
 
-            action = "update add {name}.{domain}. {ttl} {type} {value}".format(**record)
+            action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")
             lines.append(action)
 
-        lines += [
-            'show',
-            'send'
-        ]
+    lines += [
+        'show',
+        'send'
+    ]
 
-        with open('/etc/yunohost/dyndns/zone', 'w') as zone:
-            zone.write('\n'.join(lines))
+    with open('/etc/yunohost/dyndns/zone', 'w') as zone:
+        zone.write('\n'.join(lines))
 
-        return
+    if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) != 0:
+        os.system('rm -f /etc/yunohost/dyndns/old_ip')
+        os.system('rm -f /etc/yunohost/dyndns/old_ipv6')
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('dyndns_ip_update_failed'))
 
-        if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) == 0:
-            logger.success(m18n.n('dyndns_ip_updated'))
-            with open('/etc/yunohost/dyndns/old_ip', 'w') as f:
-                f.write(ipv4)
-            if ipv6 is not None:
-                with open('/etc/yunohost/dyndns/old_ipv6', 'w') as f:
-                    f.write(ipv6)
-        else:
-            os.system('rm -f /etc/yunohost/dyndns/old_ip')
-            os.system('rm -f /etc/yunohost/dyndns/old_ipv6')
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('dyndns_ip_update_failed'))
+    logger.success(m18n.n('dyndns_ip_updated'))
+    with open('/etc/yunohost/dyndns/old_ip', 'w') as f:
+        f.write(ipv4)
+    if ipv6 is not None:
+        with open('/etc/yunohost/dyndns/old_ipv6', 'w') as f:
+            f.write(ipv6)
 
 
 def dyndns_installcron():
