@@ -213,21 +213,23 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
     dns_conf = _build_dns_conf(domain)
 
+    # Delete the old records for all domain/subdomains
+
     # every dns_conf.values() is a list of :
     # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
     for records in dns_conf.values():
-        # (For some reason) here we want the format with everytime the entire,
-        # full domain shown explicitly, not just "muc" or "@", it should
-        # be muc.the.domain.tld. or the.domain.tld
-
-        # Delete the old records for all domain/subdomains
         for record in records:
             action = "update delete {name}.{domain}.".format(domain=domain, **record)
             action = action.replace(" @.", " ")
-
             lines.append(action)
 
-            # Use explicit domain instead of @ for values
+    # Add the new records for all domain/subdomains
+
+    for records in dns_conf.values():
+        for record in records:
+            # (For some reason) here we want the format with everytime the
+            # entire, full domain shown explicitly, not just "muc" or "@", it
+            # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
 
