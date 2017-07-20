@@ -318,53 +318,72 @@ def _normalize_domain_path(domain, path):
     return domain, path
 
 
-# DNS conf
-
 def _build_dns_conf(domain, ttl=3600):
+    """
+    Internal function that will returns a data structure containing the needed
+    information to generate/adapt the dns configuration
 
-    # Init output / groups
-    dnsconf = {}
-    dnsconf["basic"] = []
-    dnsconf["xmpp"] = []
-    dnsconf["mail"] = []
+    The returned datastructure will have the following form:
+    {
+        "basic": [
+            # if ipv4 available
+            {"type": "A", "name": "@", "value": "123.123.123.123", "ttl": 3600},
+            {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
+            # if ipv6 available
+            {"type": "AAAA", "name": "@", "value": "valid-ipv6", "ttl": 3600},
+            {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
+        ],
+        "xmpp": [
+            {"type": "SRV", "name": "_xmpp-client._tcp", "value": "0 5 5222 domain.tld.", "ttl": 3600},
+            {"type": "SRV", "name": "_xmpp-server._tcp", "value": "0 5 5269 domain.tld.", "ttl": 3600},
+            {"type": "CNAME", "name": "muc", "value": "@", "ttl": 3600},
+            {"type": "CNAME", "name": "pubsub", "value": "@", "ttl": 3600},
+            {"type": "CNAME", "name": "vjud", "value": "@", "ttl": 3600}
+        ],
+        "mail": [
+            {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
+            {"type": "TXT", "name": "@", "value": "\"v=spf1 a mx ip4:123.123.123.123 ipv6:valid-ipv6 -all\"", "ttl": 3600 },
+            {"type": "TXT", "name": "mail._domainkey", "value": "\"v=DKIM1; k=rsa; p=some-super-long-key\"", "ttl": 3600},
+            {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
+        ],
+    }
+    """
 
     try:
         ipv4 = get_public_ip()
     except:
         ipv4 = None
+
     try:
         ipv6 = get_public_ip(6)
     except:
         ipv6 = None
 
-    def _dns_record(name, ttl, type_, value):
-
-        return { "name": name,
-                 "ttl": ttl,
-                 "type": type_,
-                 "value": value
-        }
+    basic = []
 
     # Basic ipv4/ipv6 records
     if ipv4:
-        dnsconf["basic"].append(_dns_record("@", ttl, "A", ipv4))
-        dnsconf["basic"].append(_dns_record("*", ttl, "A", ipv4))
+        basic += [
+            ["@", ttl, "A", ipv4],
+            ["*", ttl, "A", ipv4],
+        ]
 
     if ipv6:
-        dnsconf["basic"].append(_dns_record("@", ttl, "AAAA", ipv6))
-        dnsconf["basic"].append(_dns_record("*", ttl, "AAAA", ipv6))
+        basic += [
+            ["@", ttl, "AAAA", ipv6],
+            ["*", ttl, "AAAA", ipv6],
+        ]
 
     # XMPP
-    dnsconf["xmpp"].append(_dns_record("_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain))
-    dnsconf["xmpp"].append(_dns_record("_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain))
-    dnsconf["xmpp"].append(_dns_record("muc", ttl, "CNAME", "@"))
-    dnsconf["xmpp"].append(_dns_record("pubsub", ttl, "CNAME", "@"))
-    dnsconf["xmpp"].append(_dns_record("vjud", ttl, "CNAME", "@"))
+    xmpp = [
+        ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
+        ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain],
+        ["muc", ttl, "CNAME", "@"],
+        ["pubsub", ttl, "CNAME", "@"],
+        ["vjud", ttl, "CNAME", "@"],
+    ]
 
-    # Email
-    dnsconf["mail"].append(_dns_record("@", ttl, "MX", "10 %s." % domain))
-
-        # SPF record
+    # SPF record
     spf_record = '"v=spf1 a mx'
     if ipv4:
         spf_record += ' ip4:{ip4}'.format(ip4=ipv4)
@@ -372,15 +391,26 @@ def _build_dns_conf(domain, ttl=3600):
         spf_record += ' ip6:{ip6}'.format(ip6=ipv6)
     spf_record += ' -all"'
 
-    dnsconf["mail"].append(_dns_record("@", ttl, "TXT", spf_record))
+    # Email
+    mail = [
+        ["@", ttl, "MX", "10 %s." % domain],
+        ["@", ttl, "TXT", spf_record],
+    ]
 
-        # DKIM/DMARC record
+    # DKIM/DMARC record
     dkim_host, dkim_publickey = _get_DKIM(domain)
-    if dkim_host:
-        dnsconf["mail"].append(_dns_record(dkim_host, ttl, "TXT", dkim_publickey))
-        dnsconf["mail"].append(_dns_record("_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'))
 
-    return dnsconf
+    if dkim_host:
+        mail += [
+            [dkim_host, ttl, "TXT", dkim_publickey],
+            ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
+        ]
+
+    return {
+        "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
+        "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
+        "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
+    }
 
 
 def _get_DKIM(domain):
