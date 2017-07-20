@@ -38,7 +38,7 @@ def check_changeurl_app(path):
 
     assert appmap[maindomain][path + "/"]["id"] == "change_url_app"
 
-    r = requests.get("https://%s%s/" % (maindomain, path))
+    r = requests.get("https://%s%s/" % (maindomain, path), verify=False)
     assert r.status_code == 200
 
 
