@@ -281,6 +281,7 @@ def get_public_ip(protocol=4):
         url = 'https://ip6.yunohost.org'
     else:
         raise ValueError("invalid protocol version")
+
     try:
         return urlopen(url).read().strip()
     except IOError:
@@ -429,9 +430,10 @@ def _get_DKIM(domain):
         '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
     )
 
-    if dkim:
-        return (dkim.group('host'),
-                '"v={v}; k={k}; p={p}"'.format(
-                v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p')))
-    else:
+    if not dkim:
         return (None, None)
+
+    return (
+        dkim.group('host'),
+        '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p'))
+    )
