@@ -124,7 +124,7 @@ def migrations_migrate(target=None, skip=False):
         logger.warn("no migrations to run")
         return
 
-    logger.debug("last run migrations is {}".format(last_run_migration_number))
+    logger.debug("last run migration is {}".format(last_run_migration_number))
 
     # we need to run missing migrations
     if last_run_migration_number < target:
@@ -146,7 +146,7 @@ def migrations_migrate(target=None, skip=False):
     # effectively run selected migrations
     for migration in migrations:
         if not skip:
-            logger.warn("Runing migration {number} {name}...".format(**migration))
+            logger.warn("Running migration {number} {name}...".format(**migration))
 
             try:
                 if mode == "forward":
@@ -158,7 +158,7 @@ def migrations_migrate(target=None, skip=False):
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exc_info=1)
+                logger.error("Migration {number} {name} has failed with exception {exception}, aborting".format(exception=e, **migration), exc_info=1)
                 break
 
         else:  # if skip
@@ -190,7 +190,7 @@ def migrations_migrate(target=None, skip=False):
     except Exception as e:
         raise MoulinetteError(
             errno.EINVAL,
-                "Unable to save migration state ('{state}') at {path} because of exception {exception}".format(
+                "Unable to save migration state ('{state}') in {path} because of exception {exception}".format(
                 exception=e,
                 path=MIGRATIONS_STATE_PATH,
                 state=state,

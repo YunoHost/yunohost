@@ -1508,7 +1508,7 @@ migrations:
 
         ### migrations_state()
         state:
-            action_help: Perform migrations
+            action_help: Show current migrations state
             api: GET /migrations/state
 
 
