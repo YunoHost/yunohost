@@ -139,7 +139,7 @@ def migrations_migrate(target=None, skip=False):
         migrations = filter(lambda x: x["number"] <= last_run_migration_number, migrations)
         mode = "backward"
 
-    else:  # can't happend, this case is handle before
+    else:  # can't happen, this case is handle before
         raise Exception()
 
     # effectively run selected migrations
@@ -152,7 +152,7 @@ def migrations_migrate(target=None, skip=False):
                     migration["module"].MyMigration().migrate()
                 elif mode == "backward":
                     migration["module"].MyMigration().backward()
-                else:  # can't happend
+                else:  # can't happen
                     raise Exception()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
