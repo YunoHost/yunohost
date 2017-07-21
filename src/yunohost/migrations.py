@@ -82,6 +82,9 @@ def migrations_migrate(target=None, skip=False):
         ))
 
         try:
+            # this is python builtin method to import a module using a name, we
+            # use that to import the migration as a python object so we'll be
+            # able to run it in the next loop
             module = import_module("yunohost.data_migrations.{file_name}".format(**migration))
         except Exception:
             import traceback
@@ -96,8 +99,6 @@ def migrations_migrate(target=None, skip=False):
         migrations.append({
             "number": migration["number"],
             "name": migration["name"],
-            # this is python builtin method to import a module using a name, we use that to import the migration
-            # as a python object so we'll be able to run it in the next loop
             "module": module,
         })
 
