@@ -57,7 +57,7 @@ ynh_remove_logrotate () {
 # usage: ynh_add_systemd_config
 ynh_add_systemd_config () {
 	finalsystemdconf="/etc/systemd/system/$app.service"
-	ynh_compare_checksum_config "$finalsystemdconf" 1
+	ynh_backup_if_checksum_is_different "$finalsystemdconf"
 	sudo cp ../conf/systemd.service "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
@@ -68,7 +68,7 @@ ynh_add_systemd_config () {
 	if test -n "${app:-}"; then
 		ynh_replace_string "__APP__" "$app" "$finalsystemdconf"
 	fi
-	ynh_store_checksum_config "$finalsystemdconf"
+	ynh_store_file_checksum "$finalsystemdconf"
 
 	sudo chown root: "$finalsystemdconf"
 	sudo systemctl enable $app
