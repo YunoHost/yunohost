@@ -130,14 +130,14 @@ def migrations_migrate(target=None, skip=False):
     if last_run_migration_number < target:
         logger.debug("migrating forward")
         # drop all already run migrations
-        migrations = filter(lambda x: x["number"] > last_run_migration_number, migrations)
+        migrations = filter(lambda x: target >= x["number"] > last_run_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already run migrations
     elif last_run_migration_number > target:
         logger.debug("migrating backward.")
         # drop all not already run migrations
-        migrations = filter(lambda x: x["number"] <= last_run_migration_number, migrations)
+        migrations = filter(lambda x: target < x["number"] <= last_run_migration_number, migrations)
         mode = "backward"
 
     else:  # can't happen, this case is handle before
