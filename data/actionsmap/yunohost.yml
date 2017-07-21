@@ -1500,9 +1500,9 @@ migrations:
                   help: target migration number (or 0), latest one by default
                   type: int
                   full: --target
-              -f:
-                  help: fake run the migration, use it only if you know what you are doing
-                  full: --fake
+              -s:
+                  help: skip the migration(s), use it only if you know what you are doing
+                  full: --skip
                   action: store_true
 
 

@@ -55,8 +55,7 @@ def migrations_list():
     return migrations
 
 
-# TODO need a "fake" option and also a migration number as possible argument (same than in django)
-def migrations_migrate(target=None, fake=False):
+def migrations_migrate(target=None, skip=False):
     """
     Perform migrations
     """
@@ -145,7 +144,7 @@ def migrations_migrate(target=None, fake=False):
 
     # effectively run selected migrations
     for migration in migrations:
-        if not fake:
+        if not skip:
             logger.warn("Runing migration {number} {name}...".format(**migration))
 
             try:
@@ -161,8 +160,8 @@ def migrations_migrate(target=None, fake=False):
                 logger.error("Migration {number} {name} has failed with exception {exception}, abording".format(exception=e, **migration), exc_info=1)
                 break
 
-        else:  # if fake
-            logger.warn("Fake migration {number} {name}...".format(**migration))
+        else:  # if skip
+            logger.warn("skip migration {number} {name}...".format(**migration))
 
         # update the state to include the latest runed migration
         state["last_runed_migration"] = {
