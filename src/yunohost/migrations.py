@@ -60,17 +60,17 @@ def migrations_migrate(target=None, skip=False):
     Perform migrations
     """
 
-    # state is a datastructure of that represent the latest runed migration
+    # state is a datastructure of that represent the latest run migration
     # it has this form:
     # {
-    #     "last_runed_migration": {
+    #     "last_run_migration": {
     #             "number": "00xx",
     #             "name": "some name",
     #         }
     # }
     state = migrations_state()
 
-    last_runed_migration_number = state["last_runed_migration"]["number"] if state["last_runed_migration"] else 0
+    last_run_migration_number = state["last_run_migration"]["number"] if state["last_run_migration"] else 0
 
     migrations = []
 
@@ -119,24 +119,24 @@ def migrations_migrate(target=None, skip=False):
     logger.debug("migration target is {}".format(target))
 
     # no new migrations to run
-    if target == last_runed_migration_number:
+    if target == last_run_migration_number:
         logger.warn("no migrations to run")
         return
 
-    logger.debug("last runed migrations is {}".format(last_runed_migration_number))
+    logger.debug("last run migrations is {}".format(last_run_migration_number))
 
     # we need to run missing migrations
-    if last_runed_migration_number < target:
+    if last_run_migration_number < target:
         logger.debug("migrating forward")
-        # drop all already runed migrations
-        migrations = filter(lambda x: x["number"] > last_runed_migration_number, migrations)
+        # drop all already run migrations
+        migrations = filter(lambda x: x["number"] > last_run_migration_number, migrations)
         mode = "forward"
 
-    # we need to go backward on already runed migrations
-    elif last_runed_migration_number > target:
+    # we need to go backward on already run migrations
+    elif last_run_migration_number > target:
         logger.debug("migrating backward.")
-        # drop all not already runed migrations
-        migrations = filter(lambda x: x["number"] <= last_runed_migration_number, migrations)
+        # drop all not already run migrations
+        migrations = filter(lambda x: x["number"] <= last_run_migration_number, migrations)
         mode = "backward"
 
     else:  # can't happend, this case is handle before
@@ -163,15 +163,15 @@ def migrations_migrate(target=None, skip=False):
         else:  # if skip
             logger.warn("skip migration {number} {name}...".format(**migration))
 
-        # update the state to include the latest runed migration
-        state["last_runed_migration"] = {
+        # update the state to include the latest run migration
+        state["last_run_migration"] = {
             "number": migration["number"],
             "name": migration["name"],
         }
 
     # special case where we want to go back from the start
     if target == 0:
-        state["last_runed_migration"] = None
+        state["last_run_migration"] = None
 
     try:
         state = json.dumps(state, indent=4)
@@ -202,7 +202,7 @@ def migrations_state():
     Show current migration state
     """
     if not os.path.exists(MIGRATIONS_STATE_PATH):
-        return {"last_runed_migration": None}
+        return {"last_run_migration": None}
     else:
         try:
             return json.load(open(MIGRATIONS_STATE_PATH))
