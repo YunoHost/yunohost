@@ -19,7 +19,7 @@
 
 """
 
-""" yunohost_domain.py
+""" yunohost_migrations.py
 
     Migration framework for our data modifications.
 """
@@ -60,7 +60,7 @@ def migrations_migrate(target=None, skip=False):
     Perform migrations
     """
 
-    # state is a datastructure of that represent the latest run migration
+    # state is a datastructure that represent the last run migration
     # it has this form:
     # {
     #     "last_run_migration": {
@@ -97,7 +97,7 @@ def migrations_migrate(target=None, skip=False):
             "number": migration["number"],
             "name": migration["name"],
             # this is python builtin method to import a module using a name, we use that to import the migration
-            # has a python object so we'll be able to run it in the next loop
+            # as a python object so we'll be able to run it in the next loop
             "module": module,
         })
 
