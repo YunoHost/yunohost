@@ -153,7 +153,7 @@ def migrations_migrate(target=None, skip=False):
                 elif mode == "backward":
                     migration["module"].MyMigration().backward()
                 else:  # can't happen
-                    raise Exception()
+                    raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
