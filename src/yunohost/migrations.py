@@ -30,6 +30,7 @@ import json
 import errno
 from importlib import import_module
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_json, write_to_json
 from moulinette.core import MoulinetteError
 
 
@@ -174,28 +175,7 @@ def migrations_migrate(target=None, skip=False):
     if target == 0:
         state["last_run_migration"] = None
 
-    try:
-        state = json.dumps(state, indent=4)
-    except Exception as e:
-        raise MoulinetteError(
-            errno.EINVAL,
-                "Unable to serialize migration state ('{state}') in json because of exception {exception}".format(
-                exception=e,
-                state=state,
-            )
-        )
-
-    try:
-        open(MIGRATIONS_STATE_PATH, "w").write(state)
-    except Exception as e:
-        raise MoulinetteError(
-            errno.EINVAL,
-                "Unable to save migration state ('{state}') in {path} because of exception {exception}".format(
-                exception=e,
-                path=MIGRATIONS_STATE_PATH,
-                state=state,
-            )
-        )
+    write_to_json(MIGRATIONS_STATE_PATH, state)
 
 
 def migrations_state():
@@ -204,17 +184,8 @@ def migrations_state():
     """
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"last_run_migration": None}
-    else:
-        try:
-            return json.load(open(MIGRATIONS_STATE_PATH))
-        except Exception as e:
-            raise MoulinetteError(
-                errno.EINVAL,
-                "Unable to load state json file located at {path}, exception: {exception)".format(
-                    exception=e,
-                    path=MIGRATIONS_STATE_PATH
-                )
-            )
+
+    return read_json(MIGRATIONS_STATE_PATH)
 
 
 def _get_migrations_list():
