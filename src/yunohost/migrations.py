@@ -60,7 +60,7 @@ def migrations_migrate(target=None, skip=False):
     Perform migrations
     """
 
-    # state is a datastructure that represent the last run migration
+    # state is a datastructure that represents the last run migration
     # it has this form:
     # {
     #     "last_run_migration": {
