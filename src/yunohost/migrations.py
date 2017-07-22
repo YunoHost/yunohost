@@ -26,7 +26,6 @@
 
 import os
 import re
-import json
 import errno
 from importlib import import_module
 from moulinette.utils.log import getActionLogger
