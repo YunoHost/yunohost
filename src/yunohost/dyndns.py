@@ -31,6 +31,7 @@ import base64
 import errno
 import requests
 import subprocess
+import hashlib
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -67,7 +68,8 @@ re_dyndns_private_key = re.compile(
 )
 
 
-def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
+def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None,
+        key=None, recovery_password=None):
     """
     Subscribe to a DynDNS service
 
@@ -77,6 +79,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         subscribe_host -- Dynette HTTP API to subscribe to
 
     """
+
     if domain is None:
         domain = _get_maindomain()
 
@@ -86,6 +89,29 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
             raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+
+    # If no password specified in CLI, ask for one to the user
+    if recovery_password is None and msettings.get('interface') == "cli":
+
+        # Add a small explanation before actually asking for the password
+        msignals.display(m18n.n("dyndns_choose_recovery_password", domain=domain))
+        recovery_password = msignals.prompt(m18n.n("ask_password"), True)
+
+        # Confirm password...
+        if recovery_password != msignals.prompt(m18n.n("confirm_password"), True):
+            raise MoulinetteError(errno.EINVAL, m18n.n('passwords_dont_match'))
+
+    # TODO / FIXME : maybe add constrains on password size?
+
+    if recovery_password == "":
+        recovery_password = None
+
+    # Now maybe we do have a password.
+    # If so, compute the 'actual password' out of it
+    if recovery_password is None:
+        logger.warning(m18n.n('dyndns_no_recovery_password'))
+    else:
+        recovery_password = hashlib.sha256(domain+":"+recovery_password).hexdigest()
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
@@ -103,7 +129,11 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     # Send subscription
     try:
-        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain})
+        data = {'subdomain': domain}
+        if recovery_password:
+            data['recovery_password'] = recovery_password
+        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)),
+                          data=data)
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:
