@@ -76,7 +76,7 @@ def migrations_migrate(target=None, skip=False):
 
     # loading all migrations
     for migration in migrations_list()["migrations"]:
-        logger.debug("Loading migration {number} {name}...".format(
+        logger.debug(m18n.n('migrations_loading_migration',
             number=migration["number"],
             name=migration["name"],
         ))
@@ -90,7 +90,7 @@ def migrations_migrate(target=None, skip=False):
             import traceback
             traceback.print_exc()
 
-            raise MoulinetteError(errno.EINVAL, "WARNING: failed to load migration {number} {name}".format(
+            raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
                 number=migration["number"],
                 name=migration["name"],
             ))
@@ -105,7 +105,7 @@ def migrations_migrate(target=None, skip=False):
     migrations = sorted(migrations, key=lambda x: x["number"])
 
     if not migrations:
-        logger.info("No migrations to run.")
+        logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
     all_migration_numbers = [x["number"] for x in migrations]
@@ -115,27 +115,27 @@ def migrations_migrate(target=None, skip=False):
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
-        raise MoulinetteError(errno.EINVAL, "Invalide number for target argument, available migrations numbers are 0 or {}".format(", ".join(map(str, all_migration_numbers))))
+        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers))))
 
-    logger.debug("migration target is {}".format(target))
+    logger.debug(m18n.n('migrations_current_target', target))
 
     # no new migrations to run
     if target == last_run_migration_number:
-        logger.warn("no migrations to run")
+        logger.warn(m18n.n('migrations_no_migrations_to_run'))
         return
 
-    logger.debug("last run migration is {}".format(last_run_migration_number))
+    logger.debug(m18n.n('migrations_show_last_migration', last_run_migration_number))
 
     # we need to run missing migrations
     if last_run_migration_number < target:
-        logger.debug("migrating forward")
+        logger.debug(m18n.n('migrations_forward'))
         # drop all already run migrations
         migrations = filter(lambda x: target >= x["number"] > last_run_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already run migrations
     elif last_run_migration_number > target:
-        logger.debug("migrating backward.")
+        logger.debug(m18n.n('migrations_backward'))
         # drop all not already run migrations
         migrations = filter(lambda x: target < x["number"] <= last_run_migration_number, migrations)
         mode = "backward"
@@ -146,7 +146,7 @@ def migrations_migrate(target=None, skip=False):
     # effectively run selected migrations
     for migration in migrations:
         if not skip:
-            logger.warn("Running migration {number} {name}...".format(**migration))
+            logger.warn(m18n.n('migrations_show_currently_running_migration', **migration))
 
             try:
                 if mode == "forward":
@@ -158,11 +158,11 @@ def migrations_migrate(target=None, skip=False):
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                logger.error("Migration {number} {name} has failed with exception {exception}, aborting".format(exception=e, **migration), exc_info=1)
+                logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
                 break
 
         else:  # if skip
-            logger.warn("skip migration {number} {name}...".format(**migration))
+            logger.warn(m18n.n('migrations_skip_migration', **migration))
 
         # update the state to include the latest run migration
         state["last_run_migration"] = {
@@ -199,7 +199,7 @@ def _get_migrations_list():
     migrations_path = data_migrations.__path__[0]
 
     if not os.path.exists(migrations_path):
-        logger.warn("Can't access migrations files at path %s".format(migrations_path))
+        logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
         return migrations
 
     for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
