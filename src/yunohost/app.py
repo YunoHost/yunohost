@@ -38,6 +38,7 @@ import pwd
 import grp
 from collections import OrderedDict
 
+from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 

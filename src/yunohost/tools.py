@@ -37,6 +37,7 @@ from collections import OrderedDict
 import apt
 import apt.progress
 
+from moulinette import msettings, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron

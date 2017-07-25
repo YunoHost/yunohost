@@ -46,6 +46,7 @@ from moulinette.utils.log import getActionLogger
 
 import yunohost.domain
 
+from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command
 

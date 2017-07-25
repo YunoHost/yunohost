@@ -28,6 +28,7 @@ import re
 import errno
 from glob import iglob
 
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
 

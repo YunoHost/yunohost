@@ -33,6 +33,7 @@ import shutil
 import hashlib
 from difflib import unified_diff
 
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
