@@ -202,6 +202,8 @@ if __name__ == '__main__':
     if not os.path.isfile('/etc/yunohost/installed') and \
        (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
                           args[0] +' '+ args[1] != 'backup restore')):
+
+        from moulinette import m18n
         # Init i18n
         m18n.load_namespace('yunohost')
         m18n.set_locale(get_locale())
