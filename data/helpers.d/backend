@@ -54,6 +54,14 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
+# This will use a template in ../conf/systemd.service
+# and will replace the following keywords with 
+# global variables that should be defined before calling
+# this helper :
+#
+#   __APP__       by  $app
+#   __FINALPATH__ by  $final_path
+#
 # usage: ynh_add_systemd_config
 ynh_add_systemd_config () {
 	finalsystemdconf="/etc/systemd/system/$app.service"
