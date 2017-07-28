@@ -29,26 +29,29 @@ import shutil
 import yaml
 import time
 import re
-import socket
 import urlparse
 import errno
 import subprocess
 import requests
+import glob
+import pwd
+import grp
 from collections import OrderedDict
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.service import service_log
+from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
-REPO_PATH        = '/var/cache/yunohost/repo'
-APPS_PATH        = '/usr/share/yunohost/apps'
-APPS_SETTING_PATH= '/etc/yunohost/apps/'
-INSTALL_TMP      = '/var/cache/yunohost'
-APP_TMP_FOLDER   = INSTALL_TMP + '/from_file'
+REPO_PATH         = '/var/cache/yunohost/repo'
+APPS_PATH         = '/usr/share/yunohost/apps'
+APPS_SETTING_PATH = '/etc/yunohost/apps/'
+INSTALL_TMP       = '/var/cache/yunohost'
+APP_TMP_FOLDER    = INSTALL_TMP + '/from_file'
+APPSLISTS_JSON     = '/etc/yunohost/appslists.json'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -65,66 +68,122 @@ def app_listlists():
     """
     List fetched lists
 
-
     """
-    list_list = []
-    try:
-        for filename in os.listdir(REPO_PATH):
-            if '.json' in filename:
-                list_list.append(filename[:len(filename)-5])
-    except OSError:
-        raise MoulinetteError(1, m18n.n('no_appslist_found'))
 
-    return { 'lists' : list_list }
+    # Migrate appslist system if needed
+    # XXX move to a migration when those are implemented
+    if _using_legacy_appslist_system():
+        _migrate_appslist_system()
+
+    # Get the list
+    appslist_list = _read_appslist_list()
+
+    return appslist_list
 
 
 def app_fetchlist(url=None, name=None):
     """
-    Fetch application list from app server
+    Fetch application list(s) from app server. By default, fetch all lists.
 
     Keyword argument:
-        name -- Name of the list (default yunohost)
-        url -- URL of remote JSON list (default https://app.yunohost.org/official.json)
-
+        name -- Name of the list
+        url -- URL of remote JSON list
     """
-    # Create app path if not exists
+    # If needed, create folder where actual appslists are stored
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
 
-    if url is None:
-        url = 'https://app.yunohost.org/official.json'
-        name = 'yunohost'
-    elif name is None:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('custom_appslist_name_required'))
+    # Migrate appslist system if needed
+    # XXX move that to a migration once they are finished
+    if _using_legacy_appslist_system():
+        _migrate_appslist_system()
 
-    # Download file
-    try:
-        applist_request = requests.get(url, timeout=30)
-    except Exception as e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error=str(e)))
+    # Read the list of appslist...
+    appslists = _read_appslist_list()
 
-    if (applist_request.status_code != 200):
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_error', error="404, not found"))
+    # Determine the list of appslist to be fetched
+    appslists_to_be_fetched = []
 
-    # Validate app list format
-    # TODO / Possible improvement : better validation for app list (check that
-    # json fields actually look like an app list and not any json file)
-    applist = applist_request.text
-    try:
-        json.loads(applist)
-    except ValueError, e:
-        raise MoulinetteError(errno.EBADR, m18n.n('appslist_retrieve_bad_format'))
+    # If a url and and a name is given, try to register new list,
+    # the fetch only this list
+    if url is not None:
+        if name:
+            _register_new_appslist(url, name)
+            # Refresh the appslists dict
+            appslists = _read_appslist_list()
+            appslists_to_be_fetched = [name]
+        else:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('custom_appslist_name_required'))
 
-    # Write app list to file
-    list_file = '%s/%s.json' % (REPO_PATH, name)
-    with open(list_file, "w") as f:
-        f.write(applist)
+    # If a name is given, look for an appslist with that name and fetch it
+    elif name is not None:
+        if name not in appslists.keys():
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('appslist_unknown', appslist=name))
+        else:
+            appslists_to_be_fetched = [name]
 
-    # Setup a cron job to re-fetch the list at midnight
-    open("/etc/cron.d/yunohost-applist-%s" % name, "w").write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
+    # Otherwise, fetch all lists
+    else:
+        appslists_to_be_fetched = appslists.keys()
 
-    logger.success(m18n.n('appslist_fetched'))
+    # Fetch all appslists to be fetched
+    for name in appslists_to_be_fetched:
+
+        url = appslists[name]["url"]
+
+        logger.debug("Attempting to fetch list %s at %s" % (name, url))
+
+        # Download file
+        try:
+            appslist_request = requests.get(url, timeout=30)
+        except requests.exceptions.SSLError:
+            logger.error(m18n.n('appslist_retrieve_error',
+                                appslist=name,
+                                error="SSL connection error"))
+            continue
+        except Exception as e:
+            logger.error(m18n.n('appslist_retrieve_error',
+                                appslist=name,
+                                error=str(e)))
+            continue
+        if appslist_request.status_code != 200:
+            logger.error(m18n.n('appslist_retrieve_error',
+                                appslist=name,
+                                error="Server returned code %s " %
+                                str(appslist_request.status_code)))
+            continue
+
+        # Validate app list format
+        # TODO / Possible improvement : better validation for app list (check
+        # that json fields actually look like an app list and not any json
+        # file)
+        appslist = appslist_request.text
+        try:
+            json.loads(appslist)
+        except ValueError, e:
+            logger.error(m18n.n('appslist_retrieve_bad_format',
+                                appslist=name))
+            continue
+
+        # Write app list to file
+        list_file = '%s/%s.json' % (REPO_PATH, name)
+        try:
+            with open(list_file, "w") as f:
+                f.write(appslist)
+        except Exception as e:
+            raise MoulinetteError(errno.EIO,
+                                  "Error while writing appslist %s: %s" %
+                                  (name, str(e)))
+
+        now = int(time.time())
+        appslists[name]["lastUpdate"] = now
+
+        logger.success(m18n.n('appslist_fetched', appslist=name))
+
+    # Write updated list of appslist
+    _write_appslist_list(appslists)
 
 
 def app_removelist(name):
@@ -135,13 +194,22 @@ def app_removelist(name):
         name -- Name of the list to remove
 
     """
-    try:
-        os.remove('%s/%s.json' % (REPO_PATH, name))
-        os.remove("/etc/cron.d/yunohost-applist-%s" % name)
-    except OSError:
-        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown'))
+    appslists = _read_appslist_list()
 
-    logger.success(m18n.n('appslist_removed'))
+    # Make sure we know this appslist
+    if name not in appslists.keys():
+        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
+
+    # Remove json
+    json_path = '%s/%s.json' % (REPO_PATH, name)
+    if os.path.exists(json_path):
+        os.remove(json_path)
+
+    # Forget about this appslist
+    del appslists[name]
+    _write_appslist_list(appslists)
+
+    logger.success(m18n.n('appslist_removed', appslist=name))
 
 
 def app_list(filter=None, raw=False, installed=False, with_backup=False):
@@ -162,19 +230,18 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     app_dict = {}
     list_dict = {} if raw else []
 
-    try:
-        applists = app_listlists()['lists']
-        applists[0]
-    except (IOError, IndexError):
-        app_fetchlist()
-        applists = app_listlists()['lists']
+    appslists = _read_appslist_list()
 
-    # Construct a dictionnary of apps, based on known app lists
-    for applist in applists:
-        with open(os.path.join(REPO_PATH, applist + '.json')) as json_list:
-            for app, info in json.load(json_list).items():
+    for appslist in appslists.keys():
+
+        json_path = "%s/%s.json" % (REPO_PATH, appslist)
+        if not os.path.exists(json_path):
+            app_fetchlist(name=appslist)
+
+        with open(json_path) as json_list:
+            for app, info in json.loads(str(json_list.read())).items():
                 if app not in app_dict:
-                    info['repository'] = applist
+                    info['repository'] = appslist
                     app_dict[app] = info
 
     # Get app list from the app settings directory
@@ -265,6 +332,19 @@ def app_info(app, show_status=False, raw=False):
     if raw:
         ret = app_list(filter=app, raw=True)[app]
         ret['settings'] = _get_app_settings(app)
+
+        # Determine upgradability
+        local_update_time = ret['settings'].get('update_time', ret['settings']['install_time'])
+
+        if 'lastUpdate' not in ret or 'git' not in ret:
+            upgradable = "url_required"
+        elif ret['lastUpdate'] > local_update_time:
+            upgradable = "yes"
+        else:
+            upgradable = "no"
+
+        ret['upgradable'] = upgradable
+
         return ret
 
     app_setting_path = APPS_SETTING_PATH + app
@@ -339,6 +419,105 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
+def app_change_url(auth, app, domain, path):
+    """
+    Modify the URL at which an application is installed.
+
+    Keyword argument:
+        app -- Taget app instance name
+        domain -- New app domain on which the application will be moved
+        path -- New path at which the application will be move
+
+    """
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app))
+
+    if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
+
+    old_domain = app_setting(app, "domain")
+    old_path = app_setting(app, "path")
+
+    # Normalize path and domain format
+    domain = domain.strip().lower()
+    old_path = '/' + old_path.strip("/").strip() + '/'
+    path = '/' + path.strip("/").strip() + '/'
+
+    if (domain, path) == (old_domain, old_path):
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
+
+    # WARNING / FIXME : checkurl will modify the settings
+    # (this is a non intuitive behavior that should be changed)
+    # (or checkurl renamed in reserve_url)
+    app_checkurl(auth, '%s%s' % (domain, path), app)
+
+    manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
+
+    # Retrieve arguments list for change_url script
+    # TODO: Allow to specify arguments
+    args_odict = _parse_args_from_manifest(manifest, 'change_url', auth=auth)
+    args_list = args_odict.values()
+    args_list.append(app)
+
+    # Prepare env. var. to pass to script
+    env_dict = _make_environment_dict(args_odict)
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+    env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
+    env_dict["YNH_APP_OLD_PATH"] = old_path.rstrip("/")
+    env_dict["YNH_APP_NEW_DOMAIN"] = domain
+    env_dict["YNH_APP_NEW_PATH"] = path.rstrip("/")
+
+    if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
+        shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
+
+    shutil.copytree(os.path.join(APPS_SETTING_PATH, app, "scripts"),
+                    os.path.join(APP_TMP_FOLDER, "scripts"))
+
+    # Execute App change_url script
+    os.system('chown -R admin: %s' % INSTALL_TMP)
+    os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
+    os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
+
+    # XXX journal
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root") != 0:
+        logger.error("Failed to change '%s' url." % app)
+
+        # restore values modified by app_checkurl
+        # see begining of the function
+        app_setting(app, "domain", value=old_domain)
+        app_setting(app, "path", value=old_path)
+
+        return
+
+    # this should idealy be done in the change_url script but let's avoid common mistakes
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
+
+    app_ssowatconf(auth)
+
+    # avoid common mistakes
+    if _run_service_command("reload", "nginx") == False:
+        # grab nginx errors
+        # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
+        # will return != 0 since we are in a failed state
+        nginx_errors = subprocess.check_output("nginx -t; exit 0",
+                                               stderr=subprocess.STDOUT,
+                                               shell=True).rstrip()
+
+        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors))
+
+    logger.success(m18n.n("app_change_url_success",
+                         app=app, domain=domain, path=path))
+
+
 def app_upgrade(auth, app=[], url=None, file=None):
     """
     Upgrade app
@@ -358,16 +537,19 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     upgraded_apps = []
 
+    apps = app
+    user_specified_list = True
     # If no app is specified, upgrade all apps
-    if not app:
+    if not apps:
         if not url and not file:
-            app = [app["id"] for app in app_list(installed=True)["apps"]]
+            apps = [app["id"] for app in app_list(installed=True)["apps"]]
+            user_specified_list = False
     elif not isinstance(app, list):
-        app = [app]
+        apps = [app]
 
     logger.info("Upgrading apps %s", ", ".join(app))
 
-    for app_instance_name in app:
+    for app_instance_name in apps:
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
@@ -378,18 +560,18 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         app_dict = app_info(app_instance_name, raw=True)
 
-        locale_update_time = app_dict['settings'].get('update_time', app_dict['settings']['install_time'])
-
         if file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
-        elif 'lastUpdate' not in app_dict or 'git' not in app_dict:
+        elif app_dict["upgradable"] == "url_required":
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif app_dict['lastUpdate'] > locale_update_time:
+        elif app_dict["upgradable"] == "yes":
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
+            if user_specified_list:
+                logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
             continue
 
         # Check requirements
@@ -448,7 +630,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
     app_ssowatconf(auth)
 
     logger.success(m18n.n('upgrade_complete'))
-
 
 def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
@@ -887,16 +1068,51 @@ def app_checkport(port):
         port -- Port to check
 
     """
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(("localhost", int(port)))
-        s.close()
-    except socket.error:
+
+    # This import cannot be moved on top of file because it create a recursive
+    # import...
+    from yunohost.tools import tools_port_available
+    if tools_port_available(port):
         logger.success(m18n.n('port_available', port=int(port)))
     else:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('port_unavailable', port=int(port)))
+
+
+def app_register_url(auth, app, domain, path):
+    """
+    Book/register a web path for a given app
+
+    Keyword argument:
+        app -- App which will use the web path
+        domain -- The domain on which the app should be registered (e.g. your.domain.tld)
+        path -- The path to be registered (e.g. /coffee)
+    """
+
+    # This line can't be moved on top of file, otherwise it creates an infinite
+    # loop of import with tools.py...
+    from domain import domain_url_available, _normalize_domain_path
+
+    domain, path = _normalize_domain_path(domain, path)
+
+    # We cannot change the url of an app already installed simply by changing
+    # the settings...
+    # FIXME should look into change_url once it's merged
+
+    installed = app in app_list(installed=True, raw=True).keys()
+    if installed:
+        settings = _get_app_settings(app)
+        if "path" in settings.keys() and "domain" in settings.keys():
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('app_already_installed_cant_change_url'))
+
+    # Check the url is available
+    if not domain_url_available(auth, domain, path):
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('app_location_unavailable'))
+
+    app_setting(app, 'domain', value=domain)
+    app_setting(app, 'path', value=path)
 
 
 def app_checkurl(auth, url, app=None):
@@ -1509,7 +1725,8 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    from yunohost.domain import domain_list, _get_maindomain
+    from yunohost.domain import (domain_list, _get_maindomain,
+                                 domain_url_available, _normalize_domain_path)
     from yunohost.user import user_info
 
     args_dict = OrderedDict()
@@ -1614,6 +1831,33 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
                             m18n.n('app_argument_choice_invalid',
                                 name=arg_name, choices='0, 1'))
             args_dict[arg_name] = arg_value
+
+        # END loop over action_args...
+
+        # If there's only one "domain" and "path", validate that domain/path
+        # is an available url and normalize the path.
+
+        domain_args = [arg["name"] for arg in action_args
+                                      if arg.get("type","string") == "domain"]
+        path_args = [arg["name"] for arg in action_args
+                                      if arg.get("type","string") == "path"]
+
+        if len(domain_args) == 1 and len(path_args) == 1:
+
+            domain = args_dict[domain_args[0]]
+            path = args_dict[path_args[0]]
+            domain, path = _normalize_domain_path(domain, path)
+
+            # Check the url is available
+            if not domain_url_available(auth, domain, path):
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('app_location_unavailable'))
+
+            # (We save this normalized path so that the install script have a
+            # standard path format to deal with no matter what the user inputted)
+            args_dict[path_args[0]] = path
+
+
     return args_dict
 
 def _make_environment_dict(args_dict):
@@ -1656,6 +1900,158 @@ def _parse_app_instance_name(app_instance_name):
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
+
+
+def _using_legacy_appslist_system():
+    """
+    Return True if we're using the old fetchlist scheme.
+    This is determined by the presence of some cron job yunohost-applist-foo
+    """
+
+    return glob.glob("/etc/cron.d/yunohost-applist-*") != []
+
+
+def _migrate_appslist_system():
+    """
+    Migrate from the legacy fetchlist system to the new one
+    """
+    legacy_crons = glob.glob("/etc/cron.d/yunohost-applist-*")
+
+    for cron_path in legacy_crons:
+        appslist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
+        logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
+
+        # Parse appslist url in cron
+        cron_file_content = open(cron_path).read().strip()
+        appslist_url_parse = re.search("-u (https?://[^ ]+)", cron_file_content)
+
+        # Abort if we did not find an url
+        if not appslist_url_parse or not appslist_url_parse.groups():
+            # Bkp the old cron job somewhere else
+            bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
+            os.rename(cron_path, bkp_file)
+            # Notice the user
+            logger.warning(m18n.n('appslist_could_not_migrate',
+                           appslist=appslist_name,
+                           bkp_file=bkp_file))
+        # Otherwise, register the list and remove the legacy cron
+        else:
+            appslist_url = appslist_url_parse.groups()[0]
+            try:
+                _register_new_appslist(appslist_url, appslist_name)
+            # Might get an exception if two legacy cron jobs conflict
+            # in terms of url...
+            except Exception as e:
+                logger.error(str(e))
+                # Bkp the old cron job somewhere else
+                bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
+                os.rename(cron_path, bkp_file)
+                # Notice the user
+                logger.warning(m18n.n('appslist_could_not_migrate',
+                               appslist=appslist_name,
+                               bkp_file=bkp_file))
+            else:
+                os.remove(cron_path)
+
+
+def _install_appslist_fetch_cron():
+
+    cron_job_file = "/etc/cron.daily/yunohost-fetch-appslists"
+
+    logger.debug("Installing appslist fetch cron job")
+
+    cron_job = []
+    cron_job.append("#!/bin/bash")
+    # We add a random delay between 0 and 60 min to avoid every instance fetching
+    # the appslist at the same time every night
+    cron_job.append("(sleep $((RANDOM%3600));")
+    cron_job.append("yunohost app fetchlist > /dev/null 2>&1) &")
+
+    with open(cron_job_file, "w") as f:
+        f.write('\n'.join(cron_job))
+
+    _set_permissions(cron_job_file, "root", "root", 0755)
+
+
+# FIXME - Duplicate from certificate.py, should be moved into a common helper
+# thing...
+def _set_permissions(path, user, group, permissions):
+    uid = pwd.getpwnam(user).pw_uid
+    gid = grp.getgrnam(group).gr_gid
+
+    os.chown(path, uid, gid)
+    os.chmod(path, permissions)
+
+
+def _read_appslist_list():
+    """
+    Read the json corresponding to the list of appslists
+    """
+
+    # If file does not exists yet, return empty dict
+    if not os.path.exists(APPSLISTS_JSON):
+        return {}
+
+    # Read file content
+    with open(APPSLISTS_JSON, "r") as f:
+        appslists_json = f.read()
+
+    # Parse json, throw exception if what we got from file is not a valid json
+    try:
+        appslists = json.loads(appslists_json)
+    except ValueError:
+        raise MoulinetteError(errno.EBADR,
+                              m18n.n('appslist_corrupted_json', filename=APPSLISTS_JSON))
+
+    return appslists
+
+
+def _write_appslist_list(appslist_lists):
+    """
+    Update the json containing list of appslists
+    """
+
+    # Write appslist list
+    try:
+        with open(APPSLISTS_JSON, "w") as f:
+            json.dump(appslist_lists, f)
+    except Exception as e:
+            raise MoulinetteError(errno.EIO,
+                                  "Error while writing list of appslist %s: %s" %
+                                  (APPSLISTS_JSON, str(e)))
+
+
+def _register_new_appslist(url, name):
+    """
+    Add a new appslist to be fetched regularly.
+    Raise an exception if url or name conflicts with an existing list.
+    """
+
+    appslist_list = _read_appslist_list()
+
+    # Check if name conflicts with an existing list
+    if name in appslist_list:
+        raise MoulinetteError(errno.EEXIST,
+                              m18n.n('appslist_name_already_tracked', name=name))
+
+    # Check if url conflicts with an existing list
+    known_appslist_urls = [appslist["url"] for _, appslist in appslist_list.items()]
+
+    if url in known_appslist_urls:
+        raise MoulinetteError(errno.EEXIST,
+                              m18n.n('appslist_url_already_tracked', url=url))
+
+    logger.debug("Registering new appslist %s at %s" % (name, url))
+
+    appslist_list[name] = {
+        "url": url,
+        "lastUpdate": None
+    }
+
+    _write_appslist_list(appslist_list)
+
+    _install_appslist_fetch_cron()
+
 
 def is_true(arg):
     """

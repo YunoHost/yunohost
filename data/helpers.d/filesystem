@@ -1,57 +1,205 @@
 CAN_BIND=${CAN_BIND:-1}
 
-# Mark a file or a directory for backup
-# Note: currently, SRCPATH will be copied or binded to DESTPATH
+# Add a file or a directory to the list of paths to backup
+# 
+# Note: this helper could be used in backup hook or in backup script inside an
+# app package
 #
-# usage: ynh_backup srcdir destdir to_bind no_root
-# | arg: srcdir - directory to bind or copy
-# | arg: destdir - mountpoint or destination directory
-# | arg: to_bind - 1 to bind mounting the directory if possible
-# | arg: no_root - 1 to execute commands as current user
+# Details: ynh_backup writes SRC and the relative DEST into a CSV file. And it
+# creates the parent destination directory 
+# 
+# If DEST is ended by a slash it complete this path with the basename of SRC.
+#
+# usage: ynh_backup src [dest [is_big [arg]]]
+# | arg: src - file or directory to bind or symlink or copy. it shouldn't be in
+# the backup dir. 
+# | arg: dest - destination file or directory inside the
+# backup dir
+# | arg: is_big - 1 to indicate data are big (mail, video, image ...)
+# | arg: arg - Deprecated arg
+#
+# example:
+# # Wordpress app context
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
+# # => This line will be added into CSV file
+# # "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf"
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/nginx.conf"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/nginx.conf"
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
+# 
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf"
+#
+# #Deprecated usages (maintained for retro-compatibility)
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "${backup_dir}/conf/nginx.conf"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/nginx.conf"
+#
+# ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "/conf/"
+# # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
+#
 ynh_backup() {
-    local SRCPATH=$1
-    local DESTPATH=$2
-    local TO_BIND=${3:-0}
-    local SUDO_CMD="sudo"
-    [[ "${4:-}" = "1" ]] && SUDO_CMD=
+    # TODO find a way to avoid injection by file strange naming !
+    local SRC_PATH="$1"
+    local DEST_PATH="${2:-}"
+    local IS_BIG="${3:-0}"
 
-    # validate arguments
-    [[ -e "${SRCPATH}" ]] || {
-        echo "Source path '${SRCPATH}' does not exist" >&2
+    # ==============================================================================
+    # Format correctly source and destination paths
+    # ==============================================================================
+    # Be sure the source path is not empty
+    [[ -e "${SRC_PATH}" ]] || {
+        echo "Source path '${SRC_PATH}' does not exist" >&2
         return 1
     }
 
-    # prepend the backup directory
-    [[ -n "${YNH_APP_BACKUP_DIR:-}" && "${DESTPATH:0:1}" != "/" ]] \
-        && DESTPATH="${YNH_APP_BACKUP_DIR}/${DESTPATH}"
-    [[ ! -e "${DESTPATH}" ]] || {
-        echo "Destination path '${DESTPATH}' already exist" >&2
-        return 1
-    }
+    # Transform the source path as an absolute path
+    # If it's a dir remove the ending /
+    SRC_PATH=$(realpath "$SRC_PATH")
 
-    # attempt to bind mounting the directory
-    if [[ "${CAN_BIND}" = "1" && "${TO_BIND}" = "1" ]]; then
-        eval $SUDO_CMD mkdir -p "${DESTPATH}"
+    # If there is no destination path, initialize it with the source path
+    # relative to "/".
+    # eg: SRC_PATH=/etc/yunohost -> DEST_PATH=etc/yunohost
+    if [[ -z "$DEST_PATH" ]]; then
 
-        if sudo mount --rbind "${SRCPATH}" "${DESTPATH}"; then
-            # try to remount destination directory as read-only
-            sudo mount -o remount,ro,bind "${SRCPATH}" "${DESTPATH}" \
-              || true
-            return 0
-        else
-            CAN_BIND=0
-            echo "Bind mounting seems to be disabled on your system."
-            echo "You have maybe to check your apparmor configuration."
+        DEST_PATH="${SRC_PATH#/}"
+
+    else
+        if [[ "${DEST_PATH:0:1}" == "/" ]]; then
+
+            # If the destination path is an absolute path, transform it as a path
+            # relative to the current working directory ($YNH_CWD)
+            #
+            # If it's an app backup script that run this helper, YNH_CWD is equal to
+            # $YNH_BACKUP_DIR/apps/APP_INSTANCE_NAME/backup/
+            #
+            # If it's a system part backup script, YNH_CWD is equal to $YNH_BACKUP_DIR
+            DEST_PATH="${DEST_PATH#$YNH_CWD/}"
+
+            # Case where $2 is an absolute dir but doesn't begin with $YNH_CWD
+            [[ "${DEST_PATH:0:1}" == "/" ]] \
+                && DEST_PATH="${DEST_PATH#/}"
         fi
 
-        # delete mountpoint directory safely
-        mountpoint -q "${DESTPATH}" && sudo umount -R "${DESTPATH}"
-        eval $SUDO_CMD rm -rf "${DESTPATH}"
+        # Complete DEST_PATH if ended by a /
+        [[ "${DEST_PATH: -1}" == "/" ]] \
+            &&  DEST_PATH="${DEST_PATH}/$(basename $SRC_PATH)"
     fi
 
-    # ... or just copy the directory
-    eval $SUDO_CMD mkdir -p $(dirname "${DESTPATH}")
-    eval $SUDO_CMD cp -a "${SRCPATH}" "${DESTPATH}"
+    # Check if DEST_PATH already exists in tmp archive
+    [[ ! -e "${DEST_PATH}" ]] || {
+        echo "Destination path '${DEST_PATH}' already exist" >&2
+        return 1
+    }
+
+    # Add the relative current working directory to the destination path
+    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR}"
+    REL_DIR="${REL_DIR%/}/"
+    DEST_PATH="${REL_DIR}${DEST_PATH}"
+    DEST_PATH="${DEST_PATH#/}"
+    # ==============================================================================
+
+    # ==============================================================================
+    # Write file to backup into backup_list
+    # ==============================================================================
+    local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
+    local DEST=$(echo "${DEST_PATH}" | sed -r 's/"/\"\"/g')
+    echo "\"${SRC}\",\"${DEST}\"" >> "${YNH_BACKUP_CSV}"
+
+    # ==============================================================================
+
+    # Create the parent dir of the destination path
+    # It's for retro compatibility, some script consider ynh_backup creates this dir
+    mkdir -p $(dirname "$YNH_BACKUP_DIR/${DEST_PATH}")
+}
+
+# Restore all files linked to the restore hook or to the restore app script
+#
+# usage: ynh_restore
+#
+ynh_restore () {
+    # Deduce the relative path of $YNH_CWD
+    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
+    REL_DIR="${REL_DIR%/}/"
+
+    # For each destination path begining by $REL_DIR
+    cat ${YNH_BACKUP_CSV} | tr -d $'\r' | grep -ohP "^\".*\",\"$REL_DIR.*\"$" | \
+    while read line; do
+        local ORIGIN_PATH=$(echo "$line" | grep -ohP "^\"\K.*(?=\",\".*\"$)")
+        local ARCHIVE_PATH=$(echo "$line" | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
+        ynh_restore_file "$ARCHIVE_PATH" "$ORIGIN_PATH"
+    done
+}
+
+# Return the path in the archive where has been stocked the origin path
+#
+# usage: _get_archive_path ORIGIN_PATH
+_get_archive_path () {
+    # For security reasons we use csv python library to read the CSV
+    sudo python -c "
+import sys
+import csv
+with open(sys.argv[1], 'r') as backup_file:
+    backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
+    for row in backup_csv:
+        if row['source']==sys.argv[2].strip('\"'):
+            print row['dest']
+            sys.exit(0)
+    raise Exception('Original path for %s not found' % sys.argv[2])
+    "  "${YNH_BACKUP_CSV}" "$1"
+    return $?
+}
+
+# Restore a file or a directory 
+#
+# Use the registered path in backup_list by ynh_backup to restore the file at
+# the good place.
+#
+# usage: ynh_restore_file ORIGIN_PATH [ DEST_PATH ]
+# | arg: ORIGIN_PATH - Path where was located the file or the directory before
+# to be backuped or relative path to $YNH_CWD where it is located in the backup archive
+# | arg: DEST_PATH   - Path where restore the file or the dir, if unspecified,
+# the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
+# the archive, the destination will be searched into backup.csv
+#
+# examples:
+# ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
+# # if apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf exists, restore it into
+# # /etc/nginx/conf.d/$domain.d/$app.conf
+# # if no, search a correspondance in the csv (eg: conf/nginx.conf) and restore it into
+# # /etc/nginx/conf.d/$domain.d/$app.conf
+#
+# # DON'T GIVE THE ARCHIVE PATH:
+# ynh_restore_file "conf/nginx.conf"
+#
+ynh_restore_file () {
+    local ORIGIN_PATH="/${1#/}"
+    local ARCHIVE_PATH="$YNH_CWD${ORIGIN_PATH}"
+    # Default value for DEST_PATH = /$ORIGIN_PATH
+    local DEST_PATH="${2:-$ORIGIN_PATH}"
+    
+    # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
+    if [ ! -d "$ARCHIVE_PATH" ] && [ ! -f "$ARCHIVE_PATH" ] && [ ! -L "$ARCHIVE_PATH" ]; then
+        ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
+    fi
+    
+    # Restore ORIGIN_PATH into DEST_PATH
+    mkdir -p $(dirname "$DEST_PATH")
+
+    # Do a copy if it's just a mounting point
+    if mountpoint -q $YNH_BACKUP_DIR; then
+        if [[ -d "${ARCHIVE_PATH}" ]]; then
+            ARCHIVE_PATH="${ARCHIVE_PATH}/."
+            mkdir -p "$DEST_PATH"
+        fi
+        cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
+    # Do a move if YNH_BACKUP_DIR is already a copy
+    else
+        mv "$ARCHIVE_PATH" "${DEST_PATH}"
+    fi
 }
 
 # Deprecated helper since it's a dangerous one!
@@ -60,7 +208,7 @@ ynh_bind_or_cp() {
     local NO_ROOT=0
     [[ "${AS_ROOT}" = "1" ]] || NO_ROOT=1
     echo "This helper is deprecated, you should use ynh_backup instead" >&2
-    ynh_backup "$1" "$2" 1 "$NO_ROOT"
+    ynh_backup "$1" "$2" 1
 }
 
 # Create a directory under /tmp
@@ -79,4 +227,70 @@ properly with chmod/chown." >&2
     # But for retrocompatibility we need it. (This helpers is deprecated)
     chmod 755 $TMP_DIR
     echo $TMP_DIR
+}
+
+# Calculate and store a file checksum into the app settings
+#
+# $app should be defined when calling this helper
+#
+# usage: ynh_store_file_checksum file
+# | arg: file - The file on which the checksum will performed, then stored.
+ynh_store_file_checksum () {
+	local checksum_setting_name=checksum_${1//[\/ ]/_}	# Replace all '/' and ' ' by '_'
+	ynh_app_setting_set $app $checksum_setting_name $(sudo md5sum "$1" | cut -d' ' -f1)
+}
+
+# Verify the checksum and backup the file if it's different
+# This helper is primarily meant to allow to easily backup personalised/manually 
+# modified config files.
+#
+# $app should be defined when calling this helper
+#
+# usage: ynh_backup_if_checksum_is_different file
+# | arg: file - The file on which the checksum test will be perfomed.
+#
+# | ret: Return the name a the backup file, or nothing
+ynh_backup_if_checksum_is_different () {
+	local file=$1
+	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
+	local checksum_value=$(ynh_app_setting_get $app $checksum_setting_name)
+	if [ -n "$checksum_value" ]
+	then	# Proceed only if a value was stored into the app settings
+		if ! echo "$checksum_value $file" | sudo md5sum -c --status
+		then	# If the checksum is now different
+			backup_file="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+			sudo mkdir -p "$(dirname "$backup_file")"
+			sudo cp -a "$file" "$backup_file"	# Backup the current file
+			echo "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file" >&2
+			echo "$backup_file"	# Return the name of the backup file
+		fi
+	fi
+}
+
+# Remove a file or a directory securely
+#
+# usage: ynh_secure_remove path_to_remove
+# | arg: path_to_remove - File or directory to remove
+ynh_secure_remove () {
+	path_to_remove=$1
+	forbidden_path=" \
+	/var/www \
+	/home/yunohost.app"
+
+	if [[ "$forbidden_path" =~ "$path_to_remove" \
+		# Match all paths or subpaths in $forbidden_path
+		|| "$path_to_remove" =~ ^/[[:alnum:]]+$ \
+		# Match all first level paths from / (Like /var, /root, etc...)
+		|| "${path_to_remove:${#path_to_remove}-1}" = "/" ]]
+		# Match if the path finishes by /. Because it seems there is an empty variable
+	then
+		echo "Avoid deleting $path_to_remove." >&2
+	else
+		if [ -e "$path_to_remove" ]
+		then
+			sudo rm -R "$path_to_remove"
+		else
+			echo "$path_to_remove wasn't deleted because it doesn't exist." >&2
+		fi
+	fi
 }

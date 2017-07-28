@@ -41,6 +41,7 @@ YunoHost core Contributors
 - lmangani
 - Julien Vaubourg
 - thardev
+- zimo2001
 
 
 YunoHost core Translators
@@ -52,23 +53,32 @@ If you want to help translation, please visit https://translate.yunohost.org/pro
 ### Dutch
 
 - DUBWiSE
+- Jeroen Keerl
 - marut
 
 ### English
 
 - Bugsbane
+- rokaz
 
 ### French
 
 - aoz roon
 - Genma
 - Jean-Baptiste Holcroft
+- Jean P.
 - Jérôme Lebleu
+- Lapineige
+- paddy
+
 
 ### German
 
 - david.bartke
+- Fabian Gruber
 - Felix Bartels
+- Jeroen Keerl
+- martin kistner
 - Philip Gatzka
 
 ### Hindi
@@ -77,11 +87,13 @@ If you want to help translation, please visit https://translate.yunohost.org/pro
 
 ### Italian
 
+- bricabrac
 - Thomas Bille
 
 ### Portuguese
 
 - Deleted User
+- Trollken
 
 ### Spanish
 
