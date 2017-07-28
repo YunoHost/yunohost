@@ -54,6 +54,17 @@ ynh_remove_logrotate () {
 
 # Create a dedicated nginx config
 #
+# This will use a template in ../conf/nginx.conf
+# and will replace the following keywords with 
+# global variables that should be defined before calling
+# this helper :
+#
+#   __PATH__      by  $path_url
+#   __DOMAIN__    by  $domain
+#   __PORT__      by  $port
+#   __NAME__      by  $app
+#   __FINALPATH__ by  $final_path
+#
 # usage: ynh_add_nginx_config
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
