@@ -30,11 +30,11 @@ ynh_get_plain_key() {
 # usage:
 # ynh_backup_before_upgrade
 # ynh_clean_setup () {
-# 	ynh_backup_after_failed_upgrade
+# 	ynh_restore_upgradebackup
 # }
 # ynh_abort_if_errors
 #
-ynh_backup_after_failed_upgrade () {
+ynh_restore_upgradebackup () {
 	echo "Upgrade failed." >&2
 	app_bck=${app//_/-}	# Replace all '_' by '-'
 	
@@ -54,7 +54,7 @@ ynh_backup_after_failed_upgrade () {
 # usage:
 # ynh_backup_before_upgrade
 # ynh_clean_setup () {
-# 	ynh_backup_after_failed_upgrade
+# 	ynh_restore_upgradebackup
 # }
 # ynh_abort_if_errors
 #
