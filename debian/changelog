@@ -1,3 +1,82 @@
+yunohost (2.6.5) stable; urgency=low
+
+  Minor fix
+  ---------
+
+  * Do not crash backup restore if archivemount is not there (#325)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 26 Jul 2017 11:56:09 -0400
+
+yunohost (2.6.4) stable; urgency=low
+
+  Changes
+  -------------
+
+  * Misc fixes here and there
+  * [i18n] Update Spanish, German and French translations (#323)
+
+  Thanks to all contributors : opi, Maniack C, Alex, JuanuSt, franzos, Jibec, Jeroen and beyercenter !
+
+ -- ljf <ljf+yunohost@grimaud.me>  Wed, 21 Jun 2017 17:18:00 -0400
+
+yunohost (2.6.3) testing; urgency=low
+
+  Major changes
+  -------------
+
+  * [love] Add missing contributors & translators.
+  * [enh] Introduce global settings (#229)
+  * [enh] Refactor backup management to pave the way to borg (#275)
+  * [enh] Changing nginx ciphers to intermediate compatiblity (#298)
+  * [enh] Use ssl-cert group for certificates, instead of metronome (#222)
+  * [enh] Allow regen-conf to manage new files already present on the system (#311)
+  * [apps] New helpers
+      * ynh_secure_remove (#281)
+      * ynh_setup_source (#282)
+      * ynh_webpath_available and ynh_webpath_register (#235)
+      * ynh_mysql_generate_db and ynh_mysql_remove_db (#236)
+      * ynh_store_file_checksum and ynh_backup_if_checksum_is_different (#286)
+  * Misc fixes here and there
+  * [i18n] Update Spanish, German and French translations (#318)
+
+  Thanks to all contributors : Bram, ljf, opi, Maniack C, Alex, JimboJoe, Moul, Jibec, JuanuSt and franzos !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 02 Jun 2017 09:15:05 -0400
+
+yunohost (2.6.2) testing; urgency=low
+
+  New Features
+  ------------
+
+  * [enh] Allow applications to ship a script to change its url (#185)
+  * New helper ynh_replace_string (#280)
+  * New helper ynh_local_curl (#288)
+
+  Fixes
+  -----
+
+  * Fix for missing YunoHost tiles (#276)
+  * [fix] Properly define app upgradability / Fix app part of tools update (#255)
+  * [fix] Properly manage resolv.conf, dns resolvers and dnsmasq (#290)
+  * [fix] Add random delay to app fetchlist cron job (#297)
+
+  Improvements
+  -------------
+
+  * [fix] Avoid to remove a apt package accidentally (#292)
+  * [enh] Refactor applist management (#160)
+  * [enh] Add libnss-mdns as Debian dependency. (#279)
+  * [enh] ip6.yunohost is now served through HTTPS.
+  * [enh] Adding new port availability checker (#266)
+  * [fix] Split checkurl into two functions : availability + booking (#267)
+  * [enh] Cleaner postinstall logs during CA creation (#250)
+  * Allow underscore in backup name
+  * Rewrite text for "appslist_retrieve_bad_format"
+  * Rewrite text for "certmanager_http_check_timeout"
+  * Updated Spanish, German, Italian, French, German and Dutch translations
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Apr 2017 09:07:51 -0400
+
 yunohost (2.6.1) testing; urgency=low
 
   [ Maniack Crudelis ]

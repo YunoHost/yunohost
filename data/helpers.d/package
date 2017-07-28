@@ -43,7 +43,7 @@ ynh_package_update() {
 # usage: ynh_package_install name [name [...]]
 # | arg: name - the package name to install
 ynh_package_install() {
-    ynh_apt -o Dpkg::Options::=--force-confdef \
+    ynh_apt --no-remove -o Dpkg::Options::=--force-confdef \
             -o Dpkg::Options::=--force-confold install $@
 }
 
@@ -61,6 +61,14 @@ ynh_package_remove() {
 # | arg: name - the package name to remove
 ynh_package_autoremove() {
     ynh_apt autoremove $@
+}
+
+# Purge package(s) and their uneeded dependencies
+#
+# usage: ynh_package_autopurge name [name [...]]
+# | arg: name - the package name to autoremove and purge
+ynh_package_autopurge() {
+    ynh_apt autoremove --purge $@
 }
 
 # Build and install a package from an equivs control file
@@ -115,13 +123,13 @@ ynh_install_app_dependencies () {
     if [ ! -e "$manifest_path" ]; then
     	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
-    version=$(sudo python3 -c "import sys, json;print(json.load(open(\"$manifest_path\"))['version'])")	# Retrieve the version number in the manifest file.
+    version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
     dep_app=${app//_/-}	# Replace all '_' by '-'
 
     if ynh_package_is_installed "${dep_app}-ynh-deps"; then
 		echo "A package named ${dep_app}-ynh-deps is already installed" >&2
     else
-        cat > ./${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
+        cat > /tmp/${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
 Section: misc
 Priority: optional
 Package: ${dep_app}-ynh-deps
@@ -131,8 +139,9 @@ Architecture: all
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
-        ynh_package_install_from_equivs ./${dep_app}-ynh-deps.control \
+        ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
             || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        rm /tmp/${dep_app}-ynh-deps.control
         ynh_app_setting_set $app apt_dependencies $dependencies
     fi
 }
@@ -144,5 +153,5 @@ EOF
 # usage: ynh_remove_app_dependencies
 ynh_remove_app_dependencies () {
     dep_app=${app//_/-}	# Replace all '_' by '-'
-    ynh_package_autoremove ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
+    ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }

@@ -233,7 +233,7 @@ def firewall_reload(skip_upnp=False):
         ]
 
         # Execute each rule
-        if process.check_commands(rules, callback=_on_rule_command_error):
+        if process.run_commands(rules, callback=_on_rule_command_error):
             errors = True
         reloaded = True
 
@@ -262,7 +262,7 @@ def firewall_reload(skip_upnp=False):
         ]
 
         # Execute each rule
-        if process.check_commands(rules, callback=_on_rule_command_error):
+        if process.run_commands(rules, callback=_on_rule_command_error):
             errors = True
         reloaded = True
 

@@ -1,23 +1,33 @@
 # Use logrotate to manage the logfile
 #
-# usage: ynh_use_logrotate [logfile]
+# usage: ynh_use_logrotate [logfile] [--non-append]
 # | arg: logfile - absolute path of logfile
+# | option: --non-append - Replace the config file instead of appending this new config.
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
 # /parentdir/logdir/
 # /parentdir/logdir/logfile.log
 #
-# It's possible to use this helper several times, each config will added to same logrotate config file.
+# It's possible to use this helper several times, each config will be added to the same logrotate config file.
+# Unless you use the option --non-append
 ynh_use_logrotate () {
-	if [ "$#" -gt 0 ]; then
+	local customtee="tee -a"
+	if [ $# -gt 0 ] && [ "$1" == "--non-append" ]; then
+		customtee="tee"
+		# Destroy this argument for the next command.
+		shift
+	elif [ $# -gt 1 ] && [ "$2" == "--non-append" ]; then
+		customtee="tee"
+	fi
+	if [ $# -gt 0 ]; then
 		if [ "$(echo ${1##*.})" == "log" ]; then	# Keep only the extension to check if it's a logfile
 			logfile=$1	# In this case, focus logrotate on the logfile
 		else
 			logfile=$1/.log	# Else, uses the directory and all logfile into it.
 		fi
 	else
-		logfile="/var/log/${app}/.log" # Without argument, use a defaut directory in /var/log
+		logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
 	fi
 	cat > ./${app}-logrotate << EOF	# Build a config file for logrotate
 $logfile {
@@ -40,7 +50,7 @@ $logfile {
 }
 EOF
 	sudo mkdir -p $(dirname "$logfile")	# Create the log directory, if not exist
-	cat ${app}-logrotate | sudo tee -a /etc/logrotate.d/$app > /dev/null	# Append this config to the others for this app. If a config file already exist
+	cat ${app}-logrotate | sudo $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the existing config file, or replace the whole config file (depending on $customtee)
 }
 
 # Remove the app's logrotate config.
@@ -50,4 +60,38 @@ ynh_remove_logrotate () {
 	if [ -e "/etc/logrotate.d/$app" ]; then
 		sudo rm "/etc/logrotate.d/$app"
 	fi
+}
+
+# Create a dedicated php-fpm config
+#
+# usage: ynh_add_fpm_config
+ynh_add_fpm_config () {
+	finalphpconf="/etc/php5/fpm/pool.d/$app.conf"
+	ynh_backup_if_checksum_is_different "$finalphpconf"
+	sudo cp ../conf/php-fpm.conf "$finalphpconf"
+	ynh_replace_string "__NAMETOCHANGE__" "$app" "$finalphpconf"
+	ynh_replace_string "__FINALPATH__" "$final_path" "$finalphpconf"
+	ynh_replace_string "__USER__" "$app" "$finalphpconf"
+	sudo chown root: "$finalphpconf"
+	ynh_store_file_checksum "$finalphpconf"
+
+	if [ -e "../conf/php-fpm.ini" ]
+	then
+		finalphpini="/etc/php5/fpm/conf.d/20-$app.ini"
+		ynh_backup_if_checksum_is_different "$finalphpini"
+		sudo cp ../conf/php-fpm.ini "$finalphpini"
+		sudo chown root: "$finalphpini"
+		ynh_store_file_checksum "$finalphpini"
+	fi
+
+	sudo systemctl reload php5-fpm
+}
+
+# Remove the dedicated php-fpm config
+#
+# usage: ynh_remove_fpm_config
+ynh_remove_fpm_config () {
+	ynh_secure_remove "/etc/php5/fpm/pool.d/$app.conf"
+	ynh_secure_remove "/etc/php5/fpm/conf.d/20-$app.ini" 2>&1
+	sudo systemctl reload php5-fpm
 }

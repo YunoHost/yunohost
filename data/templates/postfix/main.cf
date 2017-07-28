@@ -60,8 +60,8 @@ mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 
-#### Fit to the maximum message size allowed by GMail or Yahoo ####
-message_size_limit = 26214400
+#### Fit to the maximum message size to 30mb, more than allowed by GMail or Yahoo ####
+message_size_limit = 31457280
 
 # Virtual Domains Control 
 virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf 

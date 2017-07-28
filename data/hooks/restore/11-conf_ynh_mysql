@@ -6,9 +6,13 @@ service mysql status >/dev/null 2>&1 \
 
 # retrieve current and new password
 [ -f /etc/yunohost/mysql ] \
-  && curr_pwd=$(sudo cat /etc/yunohost/mysql) \
-  || curr_pwd="yunohost"
+  && curr_pwd=$(sudo cat /etc/yunohost/mysql)
 new_pwd=$(sudo cat "${backup_dir}/root_pwd" || sudo cat "${backup_dir}/mysql")
+[ -z "$curr_pwd" ] && curr_pwd="yunohost"
+[ -z "$new_pwd" ] && {
+    . /usr/share/yunohost/helpers.d/string
+    new_pwd=$(ynh_string_random 10)
+}
 
 # attempt to change it
 sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
