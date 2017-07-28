@@ -44,7 +44,7 @@ ynh_backup_after_failed_upgrade () {
 		# Remove the application then restore it
 		sudo yunohost app remove $app
 		# Restore the backup
-		sudo yunohost backup restore --ignore-hooks $app_bck-pre-upgrade$backup_number --apps $app --force
+		sudo yunohost backup restore --ignore-system $app_bck-pre-upgrade$backup_number --apps $app --force
 		ynh_die "The app was restored to the way it was before the failed upgrade."
 	fi
 }
@@ -72,7 +72,7 @@ ynh_backup_before_upgrade () {
 	fi
 
 	# Create backup
-	sudo yunohost backup create --ignore-hooks --apps $app --name $app_bck-pre-upgrade$backup_number
+	sudo yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number
 	if [ "$?" -eq 0 ]
     	then
 		# If the backup succeeded, remove the previous backup
