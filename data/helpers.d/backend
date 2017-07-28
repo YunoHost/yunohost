@@ -62,13 +62,51 @@ ynh_remove_logrotate () {
 	fi
 }
 
-# Create a dedicated nginx config
+# Create a dedicated systemd config
 #
-# This will use a template in ../conf/nginx.conf
+# This will use a template in ../conf/systemd.service
 # and will replace the following keywords with 
 # global variables that should be defined before calling
 # this helper :
 #
+#   __APP__       by  $app
+#   __FINALPATH__ by  $final_path
+#
+# usage: ynh_add_systemd_config
+ynh_add_systemd_config () {
+	finalsystemdconf="/etc/systemd/system/$app.service"
+	ynh_backup_if_checksum_is_different "$finalsystemdconf"
+	sudo cp ../conf/systemd.service "$finalsystemdconf"
+
+	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
+	# Substitute in a nginx config file only if the variable is not empty
+	if test -n "${final_path:-}"; then
+		ynh_replace_string "__FINALPATH__" "$final_path" "$finalsystemdconf"
+	fi
+	if test -n "${app:-}"; then
+		ynh_replace_string "__APP__" "$app" "$finalsystemdconf"
+	fi
+	ynh_store_file_checksum "$finalsystemdconf"
+
+	sudo chown root: "$finalsystemdconf"
+	sudo systemctl enable $app
+	sudo systemctl daemon-reload
+}
+
+# Remove the dedicated systemd config
+#
+# usage: ynh_remove_systemd_config
+ynh_remove_systemd_config () {
+	finalsystemdconf="/etc/systemd/system/$app.service"
+	if [ -e "$finalsystemdconf" ]; then
+		sudo systemctl stop $app
+		sudo systemctl disable $app
+		ynh_secure_remove "$finalsystemdconf"
+	fi
+
+# Create a dedicated nginx config
+#
+# This will use a template in ../conf/nginx.conf
 #   __PATH__      by  $path_url
 #   __DOMAIN__    by  $domain
 #   __PORT__      by  $port
