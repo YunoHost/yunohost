@@ -84,6 +84,7 @@ ynh_backup_before_upgrade () {
 	else
 		ynh_die "Backup failed, the upgrade process was aborted."
 	fi
+}
 
 # Download, check integrity, uncompress and patch the source from app.src
 #
