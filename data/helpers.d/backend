@@ -147,6 +147,7 @@ ynh_add_nginx_config () {
 ynh_remove_nginx_config () {
 	ynh_secure_remove "/etc/nginx/conf.d/$domain.d/$app.conf"
 	sudo systemctl reload nginx
+}
 
 # Create a dedicated php-fpm config
 #
