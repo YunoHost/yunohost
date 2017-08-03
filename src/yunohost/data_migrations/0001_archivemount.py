@@ -1,5 +1,5 @@
 import subprocess
-from yunohost.migrations import Migration
+from yunohost.tools import Migration
 
 
 class MyMigration(Migration):
