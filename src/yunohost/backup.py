@@ -2003,7 +2003,7 @@ def backup_create(name=None, description=None, methods=[],
                               m18n.n('backup_output_directory_required'))
 
     # Define methods (retro-compat)
-    if methods == []:
+    if not methods:
         if no_compress:
             methods = ['copy']
         else:
