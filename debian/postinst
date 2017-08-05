@@ -15,7 +15,7 @@ do_configure() {
       yunohost service regen-conf --output-as none
 
       echo "Launching migrations.."
-      yunohost migrations migrate
+      yunohost tools migrations migrate
 
       # restart yunohost-firewall if it's running
       service yunohost-firewall status >/dev/null \
