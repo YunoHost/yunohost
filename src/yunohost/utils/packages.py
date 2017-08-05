@@ -25,6 +25,8 @@ from collections import OrderedDict
 import apt
 from apt_pkg import version_compare
 
+from moulinette import m18n
+
 logger = logging.getLogger('yunohost.utils.packages')
 
 

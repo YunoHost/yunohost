@@ -36,6 +36,7 @@ import tempfile
 from glob import glob
 from collections import OrderedDict
 
+from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger

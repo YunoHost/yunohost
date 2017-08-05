@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from mock import ANY
 
+from moulinette import m18n
 from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed

@@ -37,6 +37,7 @@ import dns.resolver
 import cPickle as pickle
 from datetime import datetime
 
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 

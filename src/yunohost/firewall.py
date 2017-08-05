@@ -33,6 +33,7 @@ except ImportError:
     sys.stderr.write('Error: Yunohost CLI Require miniupnpc lib\n')
     sys.exit(1)
 
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
