@@ -376,6 +376,9 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     _install_appslist_fetch_cron()
 
+    # Init migrations (skip them, no need to run them on a fresh system)
+    tools_migrations_migrate(skip=True)
+
     os.system('touch /etc/yunohost/installed')
 
     # Enable and start YunoHost firewall at boot time
