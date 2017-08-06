@@ -103,6 +103,7 @@ ynh_remove_systemd_config () {
 		sudo systemctl disable $app
 		ynh_secure_remove "$finalsystemdconf"
 	fi
+}
 
 # Create a dedicated nginx config
 #
