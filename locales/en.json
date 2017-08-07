@@ -20,7 +20,7 @@
     "app_location_already_used": "An app is already installed in this location",
     "app_location_install_failed": "Unable to install the app in this location",
     "app_location_unavailable": "This url is not available or conflicts with an already installed app",
-    "app_manifest_invalid": "Invalid app manifest",
+    "app_manifest_invalid": "Invalid app manifest: {error}",
     "app_no_upgrade": "No app to upgrade",
     "app_not_correctly_installed": "{app:s} seems to be incorrectly installed",
     "app_not_installed": "{app:s} is not installed",
