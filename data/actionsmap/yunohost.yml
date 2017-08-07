@@ -1478,6 +1478,37 @@ tools:
                     extra:
                         pattern: *pattern_port
 
+    subcategories:
+
+      migrations:
+          subcategory_help: Manage migrations
+          actions:
+
+              ### tools_migrations_list()
+              list:
+                  action_help: List migrations
+                  api: GET /migrations
+
+              ### tools_migrations_migrate()
+              migrate:
+                  action_help: Perform migrations
+                  api: POST /migrations/migrate
+                  arguments:
+                    -t:
+                        help: target migration number (or 0), latest one by default
+                        type: int
+                        full: --target
+                    -s:
+                        help: skip the migration(s), use it only if you know what you are doing
+                        full: --skip
+                        action: store_true
+
+
+              ### tools_migrations_state()
+              state:
+                  action_help: Show current migrations state
+                  api: GET /migrations/state
+
 
 #############################
 #           Hook            #
