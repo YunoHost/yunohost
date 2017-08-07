@@ -8,18 +8,6 @@ def pytest_addoption(parser):
     parser.addoption("--yunodebug", action="store_true", default=False)
 
 ###############################################################################
-#   Tweak moulinette init to have yunohost namespace                          #
-###############################################################################
-
-
-old_init = moulinette.core.Moulinette18n.__init__
-def monkey_path_i18n_init(self, package, default_locale="en"):
-    old_init(self, package, default_locale)
-    self.load_namespace("yunohost")
-moulinette.core.Moulinette18n.__init__ = monkey_path_i18n_init
-
-
-###############################################################################
 #   Tweak translator to raise exceptions if string keys are not defined       #
 ###############################################################################
 
@@ -34,9 +22,9 @@ def new_translate(self, key, *args, **kwargs):
 moulinette.core.Translator.translate = new_translate
 
 def new_m18nn(self, key, *args, **kwargs):
-    return self._namespace.translate(key, *args, **kwargs)
-moulinette.core.Moulinette18n.n = new_m18nn
+    return self._namespaces[self._current_namespace].translate(key, *args, **kwargs)
 
+moulinette.core.Moulinette18n.n = new_m18nn
 
 ###############################################################################
 #   Init the moulinette to have the cli loggers stuff                         #
@@ -105,3 +93,4 @@ def pytest_cmdline_main(config):
 
     # Initialize moulinette
     moulinette.init(logging_config=logging, _from_source=False)
+    moulinette.m18n.load_namespace('yunohost')
