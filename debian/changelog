@@ -1,3 +1,40 @@
+yunohost (2.7.0) testing; urgency=low
+
+Thanks to all contributors <3 ! (Bram, Maniack C, ljf, Aleks, JimboJoe, anmol26s, e-lie, Ozhiganov)
+
+Major fixes / improvements
+==========================
+
+  * [enh] Add a migration framework (#195)
+  * [enh] Remove m18n (and other globals) black magic (#336)
+  * [fix] Refactor DNS conf management for domains (#299)
+  * [enh] Support custom backup methods (#326)
+
+App helpers
+===========
+
+  * New helper autopurge (#321)
+  * New helpers ynh_add_fpm_config and ynh_remove_fpm_config (#284)
+  * New helpers ynh_restore_upgradebackup and ynh_backup_before_upgrade (#289)
+  * New helpers ynh_add_nginx_config and ynh_remove_nginx_config (#285)
+  * New helpers ynh_add_systemd_config and ynh_remove_systemd_config (#287)
+
+Smaller fixes / improvements
+============================
+
+  * [fix] Run change_url scripts as root as a matter of homogeneity (#329)
+  * [fix] Don't verify SSL during changeurl tests :/ (#332)
+  * [fix] Depreciation warning for --hooks was always shown (#333)
+  * [fix] Logrotate append (#328)
+  * [enh] Check that url is available and normalize path before app install (#304)
+  * [enh] Check that user is legitimate to use an email adress when sending mail (#330)
+  * [fix] Properly catch Invalid manifest json with ValueError. (#324)
+  * [fix] No default backup method (redmine 968) (#339)
+  * [enh] Add a script to test m18n keys usage (#308)
+  * [i18] Started russian translation (#340)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 07 Aug 2017 13:16:08 -0400
+
 yunohost (2.6.5) stable; urgency=low
 
   Minor fix
