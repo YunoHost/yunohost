@@ -47,12 +47,12 @@ from yunohost.utils import packages
 
 logger = getActionLogger('yunohost.app')
 
-REPO_PATH         = '/var/cache/yunohost/repo'
-APPS_PATH         = '/usr/share/yunohost/apps'
+REPO_PATH = '/var/cache/yunohost/repo'
+APPS_PATH = '/usr/share/yunohost/apps'
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
-INSTALL_TMP       = '/var/cache/yunohost'
-APP_TMP_FOLDER    = INSTALL_TMP + '/from_file'
-APPSLISTS_JSON     = '/etc/yunohost/appslists.json'
+INSTALL_TMP = '/var/cache/yunohost'
+APP_TMP_FOLDER = INSTALL_TMP + '/from_file'
+APPSLISTS_JSON = '/etc/yunohost/appslists.json'
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -362,7 +362,7 @@ def app_info(app, show_status=False, raw=False):
         'license': manifest.get('license', m18n.n('license_undefined')),
         # FIXME: Temporarly allow undefined version
         'version': manifest.get('version', '-'),
-        #TODO: Add more info
+        # TODO: Add more info
     }
     if show_status:
         info['status'] = status
@@ -386,7 +386,7 @@ def app_map(app=None, raw=False, user=None):
         if not _is_installed(app):
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('app_not_installed', app=app))
-        apps = [app,]
+        apps = [app, ]
     else:
         apps = os.listdir(APPS_SETTING_PATH)
 
@@ -397,11 +397,11 @@ def app_map(app=None, raw=False, user=None):
         if 'domain' not in app_settings:
             continue
         if user is not None:
-            if ('mode' not in app_settings \
-                    or ('mode' in app_settings \
-                        and app_settings['mode'] == 'private')) \
-                and 'allowed_users' in app_settings \
-                and user not in app_settings['allowed_users'].split(','):
+            if ('mode' not in app_settings
+                or ('mode' in app_settings
+                    and app_settings['mode'] == 'private')) \
+                    and 'allowed_users' in app_settings \
+                    and user not in app_settings['allowed_users'].split(','):
                 continue
 
         domain = app_settings['domain']
@@ -578,8 +578,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Check requirements
         _check_manifest_requirements(manifest)
 
-        app_setting_path = APPS_SETTING_PATH +'/'+ app_instance_name
-        
+        app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
+
         # Retrieve current app status
         status = _get_app_status(app_instance_name)
         status['remote'] = manifest.get('remote', None)
@@ -610,8 +610,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
             # Clean hooks and add new ones
             hook_remove(app_instance_name)
             if 'hooks' in os.listdir(extracted_app_folder):
-                for hook in os.listdir(extracted_app_folder +'/hooks'):
-                    hook_add(app_instance_name, extracted_app_folder +'/hooks/'+ hook)
+                for hook in os.listdir(extracted_app_folder + '/hooks'):
+                    hook_add(app_instance_name, extracted_app_folder + '/hooks/' + hook)
 
             # Store app status
             with open(app_setting_path + '/status.json', 'w+') as f:
@@ -632,6 +632,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     logger.success(m18n.n('upgrade_complete'))
 
+
 def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
@@ -646,8 +647,10 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     from yunohost.hook import hook_add, hook_remove, hook_exec
 
     # Fetch or extract sources
-    try: os.listdir(INSTALL_TMP)
-    except OSError: os.makedirs(INSTALL_TMP)
+    try:
+        os.listdir(INSTALL_TMP)
+    except OSError:
+        os.makedirs(INSTALL_TMP)
 
     status = {
         'installed_at': int(time.time()),
@@ -676,7 +679,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
-    if instance_number > 1 :
+    if instance_number > 1:
         if 'multi_instance' not in manifest or not is_true(manifest['multi_instance']):
             raise MoulinetteError(errno.EEXIST,
                                   m18n.n('app_already_installed', app=app_id))
@@ -714,7 +717,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
 
-    os.system('chown -R admin: '+ extracted_app_folder)
+    os.system('chown -R admin: ' + extracted_app_folder)
 
     # Execute App install script
     os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -763,8 +766,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
     if 'hooks' in os.listdir(extracted_app_folder):
-        for file in os.listdir(extracted_app_folder +'/hooks'):
-            hook_add(app_instance_name, extracted_app_folder +'/hooks/'+ file)
+        for file in os.listdir(extracted_app_folder + '/hooks'):
+            hook_add(app_instance_name, extracted_app_folder + '/hooks/' + file)
 
     # Store app status
     with open(app_setting_path + '/status.json', 'w+') as f:
@@ -797,10 +800,11 @@ def app_remove(auth, app):
 
     app_setting_path = APPS_SETTING_PATH + app
 
-    #TODO: display fail messages from script
+    # TODO: display fail messages from script
     try:
         shutil.rmtree('/tmp/yunohost_remove')
-    except: pass
+    except:
+        pass
 
     os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
     os.system('chown -R admin: /tmp/yunohost_remove')
@@ -817,7 +821,8 @@ def app_remove(auth, app):
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
 
-    if os.path.exists(app_setting_path): shutil.rmtree(app_setting_path)
+    if os.path.exists(app_setting_path):
+        shutil.rmtree(app_setting_path)
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
     app_ssowatconf(auth)
@@ -840,9 +845,9 @@ def app_addaccess(auth, apps, users=[]):
     if not users:
         users = user_list(auth)['users'].keys()
     elif not isinstance(users, list):
-        users = [users,]
+        users = [users, ]
     if not isinstance(apps, list):
-        apps = [apps,]
+        apps = [apps, ]
 
     for app in apps:
         app_settings = _get_app_settings(app)
@@ -875,7 +880,7 @@ def app_addaccess(auth, apps, users=[]):
 
     app_ssowatconf(auth)
 
-    return { 'allowed_users': result }
+    return {'allowed_users': result}
 
 
 def app_removeaccess(auth, apps, users=[]):
@@ -896,9 +901,9 @@ def app_removeaccess(auth, apps, users=[]):
     if not users:
         remove_all = True
     elif not isinstance(users, list):
-        users = [users,]
+        users = [users, ]
     if not isinstance(apps, list):
-        apps = [apps,]
+        apps = [apps, ]
 
     for app in apps:
         app_settings = _get_app_settings(app)
@@ -926,7 +931,7 @@ def app_removeaccess(auth, apps, users=[]):
 
     app_ssowatconf(auth)
 
-    return { 'allowed_users': result }
+    return {'allowed_users': result}
 
 
 def app_clearaccess(auth, apps):
@@ -939,7 +944,8 @@ def app_clearaccess(auth, apps):
     """
     from yunohost.hook import hook_callback
 
-    if not isinstance(apps, list): apps = [apps]
+    if not isinstance(apps, list):
+        apps = [apps]
 
     for app in apps:
         app_settings = _get_app_settings(app)
@@ -971,12 +977,12 @@ def app_debug(app):
         'name': manifest['id'],
         'label': manifest['name'],
         'services': [{
-                "name": x,
-                "logs": [{
-                    "file_name": y,
-                    "file_content": "\n".join(z),
-                } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
-            } for x in sorted(manifest.get("services", []))]
+            "name": x,
+            "logs": [{
+                "file_name": y,
+                "file_content": "\n".join(z),
+            } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
+        } for x in sorted(manifest.get("services", []))]
     }
 
 
@@ -993,7 +999,7 @@ def app_makedefault(auth, app, domain=None):
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings['domain']
-    app_path   = app_settings['path']
+    app_path = app_settings['path']
 
     if domain is None:
         domain = app_domain
@@ -1016,7 +1022,7 @@ def app_makedefault(auth, app, domain=None):
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
-    ssowat_conf['redirected_urls'][domain +'/'] = app_domain + app_path
+    ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
     try:
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
@@ -1024,7 +1030,6 @@ def app_makedefault(auth, app, domain=None):
     except IOError as e:
         raise MoulinetteError(errno.EPERM,
                               m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
-
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -1055,7 +1060,7 @@ def app_setting(app, key, value=None, delete=False):
             del app_settings[key]
         else:
             # FIXME: Allow multiple values for some keys?
-            if key in ['redirected_urls','redirected_regex']:
+            if key in ['redirected_urls', 'redirected_regex']:
                 value = yaml.load(value)
             app_settings[key] = value
         _set_app_settings(app, app_settings)
@@ -1221,8 +1226,8 @@ def app_ssowatconf(auth):
     unprotected_regex = []
     protected_urls = []
     protected_regex = []
-    redirected_regex = { main_domain +'/yunohost[\/]?$': 'https://'+ main_domain +'/yunohost/sso/' }
-    redirected_urls ={}
+    redirected_regex = {main_domain + '/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
+    redirected_urls = {}
 
     try:
         apps_list = app_list()['apps']
@@ -1235,7 +1240,7 @@ def app_ssowatconf(auth):
 
     for app in apps_list:
         if _is_installed(app['id']):
-            with open(APPS_SETTING_PATH + app['id'] +'/settings.yml') as f:
+            with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
                 app_settings = yaml.load(f)
                 for item in _get_setting(app_settings, 'skipped_uris'):
                     if item[-1:] == '/':
@@ -1354,7 +1359,7 @@ def _get_app_status(app_id, format_date=False):
         status = {
             'installed_at': app_setting(app_id, 'install_time'),
             'upgraded_at': app_setting(app_id, 'update_time'),
-            'remote': { 'type': None },
+            'remote': {'type': None},
         }
         with open(app_setting_path + '/status.json', 'w+') as f:
             json.dump(status, f)
@@ -1384,20 +1389,23 @@ def _extract_app_from_file(path, remove=False):
     """
     logger.info(m18n.n('extracting'))
 
-    if os.path.exists(APP_TMP_FOLDER): shutil.rmtree(APP_TMP_FOLDER)
+    if os.path.exists(APP_TMP_FOLDER):
+        shutil.rmtree(APP_TMP_FOLDER)
     os.makedirs(APP_TMP_FOLDER)
 
     path = os.path.abspath(path)
 
     if ".zip" in path:
         extract_result = os.system('unzip %s -d %s > /dev/null 2>&1' % (path, APP_TMP_FOLDER))
-        if remove: os.remove(path)
+        if remove:
+            os.remove(path)
     elif ".tar" in path:
         extract_result = os.system('tar -xf %s -C %s > /dev/null 2>&1' % (path, APP_TMP_FOLDER))
-        if remove: os.remove(path)
+        if remove:
+            os.remove(path)
     elif os.path.isdir(path):
         shutil.rmtree(APP_TMP_FOLDER)
-        if path[len(path)-1:] != '/':
+        if path[len(path) - 1:] != '/':
             path = path + '/'
         extract_result = os.system('cp -a "%s" %s' % (path, APP_TMP_FOLDER))
     else:
@@ -1410,7 +1418,7 @@ def _extract_app_from_file(path, remove=False):
         extracted_app_folder = APP_TMP_FOLDER
         if len(os.listdir(extracted_app_folder)) == 1:
             for folder in os.listdir(extracted_app_folder):
-                extracted_app_folder = extracted_app_folder +'/'+ folder
+                extracted_app_folder = extracted_app_folder + '/' + folder
         with open(extracted_app_folder + '/manifest.json') as json_manifest:
             manifest = json.loads(str(json_manifest.read()))
             manifest['lastUpdate'] = int(time.time())
@@ -1492,7 +1500,7 @@ def _fetch_app_from_git(app):
             tree_index = url.rfind('/tree/')
             if tree_index > 0:
                 url = url[:tree_index]
-                branch = app[tree_index+6:]
+                branch = app[tree_index + 6:]
             try:
                 # We use currently git 2.1 so we can't use --shallow-submodules
                 # option. When git will be in 2.9 (with the new debian version)
@@ -1502,8 +1510,8 @@ def _fetch_app_from_git(app):
                     'git', 'clone', '--depth=1', '--recursive', url,
                     extracted_app_folder])
                 subprocess.check_call([
-                        'git', 'reset', '--hard', branch
-                    ], cwd=extracted_app_folder)
+                    'git', 'reset', '--hard', branch
+                ], cwd=extracted_app_folder)
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
@@ -1519,7 +1527,8 @@ def _fetch_app_from_git(app):
         manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
         try:
             revision = _get_git_last_commit_hash(url, branch)
-        except: pass
+        except:
+            pass
         else:
             manifest['remote']['revision'] = revision
     else:
@@ -1557,9 +1566,9 @@ def _fetch_app_from_git(app):
                     'git', 'clone', app_info['git']['url'],
                     '-b', app_info['git']['branch'], extracted_app_folder])
                 subprocess.check_call([
-                        'git', 'reset', '--hard',
-                        str(app_info['git']['revision'])
-                    ], cwd=extracted_app_folder)
+                    'git', 'reset', '--hard',
+                    str(app_info['git']['revision'])
+                ], cwd=extracted_app_folder)
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
@@ -1712,6 +1721,7 @@ def _check_manifest_requirements(manifest):
                                      pkgname=pkgname, version=version,
                                      spec=spec))
 
+
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
     """Parse arguments needed for an action from the manifest
 
@@ -1861,6 +1871,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
 
     return args_dict
 
+
 def _make_environment_dict(args_dict):
     """
     Convert a dictionnary containing manifest arguments
@@ -1872,8 +1883,9 @@ def _make_environment_dict(args_dict):
     """
     env_dict = {}
     for arg_name, arg_value in args_dict.items():
-        env_dict[ "YNH_APP_ARG_%s" % arg_name.upper() ] = arg_value
+        env_dict["YNH_APP_ARG_%s" % arg_name.upper()] = arg_value
     return env_dict
+
 
 def _parse_app_instance_name(app_instance_name):
     """
@@ -2017,9 +2029,9 @@ def _write_appslist_list(appslist_lists):
         with open(APPSLISTS_JSON, "w") as f:
             json.dump(appslist_lists, f)
     except Exception as e:
-            raise MoulinetteError(errno.EIO,
-                                  "Error while writing list of appslist %s: %s" %
-                                  (APPSLISTS_JSON, str(e)))
+        raise MoulinetteError(errno.EIO,
+                              "Error while writing list of appslist %s: %s" %
+                              (APPSLISTS_JSON, str(e)))
 
 
 def _register_new_appslist(url, name):
@@ -2068,7 +2080,7 @@ def is_true(arg):
     if isinstance(arg, bool):
         return arg
     elif isinstance(arg, basestring):
-        true_list = ['yes', 'Yes', 'true', 'True' ]
+        true_list = ['yes', 'Yes', 'true', 'True']
         for string in true_list:
             if arg == string:
                 return True
@@ -2086,7 +2098,8 @@ def random_password(length=8):
         length -- The string length to generate
 
     """
-    import string, random
+    import string
+    import random
 
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
     return ''.join(random.sample(char_set, length))
