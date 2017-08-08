@@ -2193,7 +2193,11 @@ def backup_list(with_info=False, human_readable=False):
     if result and with_info:
         d = OrderedDict()
         for a in result:
-            d[a] = backup_info(a, human_readable=human_readable)
+            try:
+                d[a] = backup_info(a, human_readable=human_readable)
+            except MoulinetteError, e:
+                logger.warning('%s: %s' % (a, e.strerror))
+
         result = d
 
     return {'archives': result}
@@ -2231,9 +2235,16 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.exists(info_file):
         tar = tarfile.open(archive_file, "r:gz")
         info_dir = info_file + '.d'
-        tar.extract('info.json', path=info_dir)
-        tar.close()
-        shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+        try:
+            tar.extract('info.json', path=info_dir)
+        except KeyError:
+            logger.debug("unable to retrieve '%s' inside the archive",
+                         info_file, exc_info=1)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+        else:
+            shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+        finally:
+            tar.close()
         os.rmdir(info_dir)
 
     try:
