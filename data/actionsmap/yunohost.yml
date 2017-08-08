@@ -1418,6 +1418,15 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                        -a:
+                            full: --algo
+                            help: Algorithm to generate the ssh key
+                            choices:
+                                - dsa
+                                - ecdsa
+                                - ed25519
+                                - rsa
+                                - rsa1
 
                 ### ssh_rootlogin_enable()
                 import:
@@ -1430,6 +1439,11 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                        -k:
+                            full: --key
+                            help: Key as a string
+                            extra:
+                                required: True
 
                 ### ssh_rootlogin_disable()
                 remove:
@@ -1442,6 +1456,11 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                        -k:
+                            full: --key
+                            help: Key file name (without the ".pub")
+                            extra:
+                                required: True
 
         authorized-keys:
             subcategory_help: Manage user's authorized ssh keys
@@ -1470,6 +1489,19 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                        -u:
+                            full: --public
+                            help: Public key
+                            extra:
+                                required: True
+                        -i:
+                            full: --private
+                            help: Private key
+                            extra:
+                                required: True
+                        -n:
+                            full: --name
+                            help: Key name
 
                 ### ssh_rootlogin_disable()
                 remove:
@@ -1482,6 +1514,11 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                        -k:
+                            full: --key
+                            help: Key as a string
+                            extra:
+                                required: True
 
 
 #############################
