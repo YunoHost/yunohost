@@ -1,8 +1,11 @@
 # encoding: utf-8
 
+import pwd
+
+
 # user list + root + admin
 def ssh_user_list(auth):
-    # XXX couldn't resued user_list because it's not customisable enough :(
+    # couldn't resued user_list because it's not customisable enough :(
     user_attrs = {
         'uid': 'username',
         'cn': 'fullname',
@@ -11,8 +14,21 @@ def ssh_user_list(auth):
         'homeDirectory': 'home_path',
     }
 
+    root_unix = pwd.getpwnam("root")
+    root = {
+        'username': 'root',
+        'fullname': '',
+        'mail': '',
+        # TODO ssh-allow using ssh_root_login_status
+        'ssh_allowed': True,
+        'shell': root_unix.pw_shell,
+        'home_path': root_unix.pw_dir,
+    }
+
     query = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
-    users = {}
+    users = {
+        'root': root,
+    }
 
     ldap_result = auth.search('ou=users,dc=yunohost,dc=org', query, user_attrs.keys())
 
