@@ -1484,7 +1484,7 @@ tools:
             api: PUT /shutdown
             arguments:
                 -f:
-                    help: skip the confirmation
+                    help: skip the shutdown confirmation
                     full: --force
                     action: store_true
 
@@ -1494,7 +1494,7 @@ tools:
             api: PUT /reboot
             arguments:
                 -f:
-                    help: skip the confirmation
+                    help: skip the reboot confirmation
                     full: --force
                     action: store_true
 
