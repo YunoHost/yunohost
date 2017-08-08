@@ -1341,14 +1341,24 @@ ssh:
                     api: GET /ssh/user
 
                 ### ssh_user_enable_ssh()
-                enable-ssh:
+                allow-ssh:
                     action_help: Allow the user to uses ssh
                     api: POST /ssh/user/enable-ssh
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
                 ### ssh_user_disable_ssh()
-                disable-ssh:
+                disallow-ssh:
                     action_help: Disallow the user to uses ssh
                     api: POST /ssh/user/disable-ssh
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
         root-login:
             subcategory_help: Manage if it's possible to log in as root in ssh
@@ -1377,21 +1387,41 @@ ssh:
                 list:
                     action_help: Show user's ssh keys
                     api: GET /ssh/key
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
                 ### ssh_rootlogin_enable()
                 add:
                     action_help: Add a new ssh key for this user
                     api: POST /ssh/key/add
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
                 ### ssh_rootlogin_enable()
                 import:
                     action_help: Import a ssh key for this user
                     api: POST /ssh/key/import
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
                 ### ssh_rootlogin_disable()
                 remove:
                     action_help: Remove a ssh key for this user
                     api: DELETE /ssh/key
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
         authorized-keys:
             subcategory_help: Manage user's authorized ssh keys
@@ -1401,16 +1431,31 @@ ssh:
                 list:
                     action_help: Show user's authorized ssh keys
                     api: GET /ssh/authorized-keys
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
                 ### ssh_rootlogin_enable()
                 add:
                     action_help: Add a new authorized ssh key for this user
                     api: POST /ssh/authorized-keys
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
                 ### ssh_rootlogin_disable()
                 remove:
                     action_help: Remove an authorized ssh key for this user
                     api: DELETE /ssh/authorized-keys
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
 
 
 #############################

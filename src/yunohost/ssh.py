@@ -3,11 +3,11 @@ def ssh_user_list():
     pass
 
 
-def ssh_user_enable_ssh(username):
+def ssh_user_allow_ssh(username):
     pass
 
 
-def ssh_user_disable_ssh(username):
+def ssh_user_disallow_ssh(username):
     pass
 
 
