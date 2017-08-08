@@ -1,6 +1,37 @@
+# encoding: utf-8
+
 # user list + root + admin
 def ssh_user_list(auth):
-    pass
+    # XXX couldn't resued user_list because it's not customisable enough :(
+    user_attrs = {
+        'uid': 'username',
+        'cn': 'fullname',
+        'mail': 'mail',
+        'loginShell': 'shell',
+        'homeDirectory': 'home_path',
+    }
+
+    query = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
+    users = {}
+
+    ldap_result = auth.search('ou=users,dc=yunohost,dc=org', query, user_attrs.keys())
+
+    for user in ldap_result:
+        entry = {}
+
+        for key, value in user.items():
+            if key == "loginShell":
+                if value[0].strip() == "/bin/false":
+                    entry["ssh_allowed"] = False
+                else:
+                    entry["ssh_allowed"] = True
+
+            entry[user_attrs[key]] = value[0]
+
+        uid = entry[user_attrs['uid']]
+        users[uid] = entry
+
+    return {'users': users}
 
 
 def ssh_user_allow_ssh(auth, username):
