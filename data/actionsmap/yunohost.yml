@@ -1325,6 +1325,95 @@ dyndns:
 
 
 #############################
+#            SSH            #
+#############################
+ssh:
+    category_help: Manage ssh keys and access
+    actions: {}
+    subcategories:
+        user:
+            subcategory_help: Manage users ssh access
+
+            actions:
+                ### ssh_user_list()
+                list:
+                    action_help: List all users and admin and root with ssh related informations
+                    api: GET /ssh/user
+
+                ### ssh_user_enable_ssh()
+                enable-ssh:
+                    action_help: Allow the user to uses ssh
+                    api: POST /ssh/user/enable-ssh
+
+                ### ssh_user_disable_ssh()
+                disable-ssh:
+                    action_help: Disallow the user to uses ssh
+                    api: POST /ssh/user/disable-ssh
+
+        root-login:
+            subcategory_help: Manage if it's possible to log in as root in ssh
+
+            actions:
+                ### ssh_rootlogin_status()
+                status:
+                    action_help: Show if rootlogin is enabled or disabled
+                    api: GET /ssh/rootlogin
+
+                ### ssh_rootlogin_enable()
+                enable:
+                    action_help: Enable ssh root login
+                    api: POST /ssh/rootlogin/enable
+
+                ### ssh_rootlogin_disable()
+                disable:
+                    action_help: Enable ssh root login
+                    api: POST /ssh/rootlogin/disable
+
+        key:
+            subcategory_help: Manage user's ssh keys
+
+            actions:
+                ### ssh_rootlogin_status()
+                list:
+                    action_help: Show user's ssh keys
+                    api: GET /ssh/key
+
+                ### ssh_rootlogin_enable()
+                add:
+                    action_help: Add a new ssh key for this user
+                    api: POST /ssh/key/add
+
+                ### ssh_rootlogin_enable()
+                import:
+                    action_help: Import a ssh key for this user
+                    api: POST /ssh/key/import
+
+                ### ssh_rootlogin_disable()
+                remove:
+                    action_help: Remove a ssh key for this user
+                    api: DELETE /ssh/key
+
+        authorized-keys:
+            subcategory_help: Manage user's authorized ssh keys
+
+            actions:
+                ### ssh_rootlogin_status()
+                list:
+                    action_help: Show user's authorized ssh keys
+                    api: GET /ssh/authorized-keys
+
+                ### ssh_rootlogin_enable()
+                add:
+                    action_help: Add a new authorized ssh key for this user
+                    api: POST /ssh/authorized-keys
+
+                ### ssh_rootlogin_disable()
+                remove:
+                    action_help: Remove an authorized ssh key for this user
+                    api: DELETE /ssh/authorized-keys
+
+
+#############################
 #           Tools           #
 #############################
 tools:
