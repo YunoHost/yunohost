@@ -2292,21 +2292,21 @@ def backup_delete(name):
         name -- Name of the local backup archive
 
     """
+    if name not in backup_list()["archives"]:
+        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown',
+                                                name=name))
+
     hook_callback('pre_backup_delete', args=[name])
 
     archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
-
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
+
     for backup_file in [archive_file, info_file]:
-        if not os.path.isfile(backup_file) and not os.path.islink(backup_file):
-            raise MoulinetteError(errno.EIO,
-                m18n.n('backup_archive_name_unknown', name=backup_file))
         try:
             os.remove(backup_file)
         except:
             logger.debug("unable to delete '%s'", backup_file, exc_info=1)
-            raise MoulinetteError(errno.EIO,
-                m18n.n('backup_delete_error', path=backup_file))
+            logger.warning(m18n.n('backup_delete_error', path=backup_file))
 
     hook_callback('post_backup_delete', args=[name])
 
