@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import os
 import re
 import pwd
 import subprocess
@@ -150,8 +151,34 @@ def ssh_root_login_disable(auth):
     subprocess.check_call("service sshd reload", shell=True)
 
 
+# XXX should we display private key too?
 def ssh_key_list(auth, username):
-    pass
+    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
+    query = '(&(objectclass=person)(uid=%s))' % username
+    user = auth.search('ou=users,dc=yunohost,dc=org', query, attrs=["homeDirectory"])
+
+    # FIXME handle root and admin
+    # XXX dry
+    if not user:
+        raise Exception("User with username '%s' doesn't exists")
+
+    user_home_directory = user[0]["homeDirectory"][0]
+    ssh_dir = os.path.join(user_home_directory, ".ssh")
+
+    if not os.path.exists(ssh_dir):
+        return {"keys": []}
+
+    keys = []
+
+    for i in os.listdir(ssh_dir):
+        if i.endswith(".pub"):
+            keys.append({
+                ".".join(i.split(".")[:-1]): read_file(os.path.join(ssh_dir, i))
+            })
+
+    return {
+        "keys": keys,
+    }
 
 
 # dsa | ecdsa | ed25519 | rsa | rsa1
