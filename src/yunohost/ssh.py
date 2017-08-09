@@ -2,8 +2,9 @@
 
 import re
 import pwd
+import subprocess
 
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, write_to_file
 
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
@@ -91,6 +92,7 @@ def ssh_user_disallow_ssh(auth, username):
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
 
 
+# XXX should we support all the options?
 def ssh_root_login_status(auth):
     # this is the content of "man sshd_config"
     # PermitRootLogin
@@ -107,11 +109,45 @@ def ssh_root_login_status(auth):
 
 
 def ssh_root_login_enable(auth):
-    pass
+    sshd_config_content = read_file(SSHD_CONFIG_PATH)
+    # TODO rollback to old config if service reload failed
+    # sshd_config_content_backup = sshd_config_content
+
+    if re.search("^ *PermitRootLogin +(no|forced-commands-only|yes|without-password) *$",
+                 sshd_config_content, re.MULTILINE):
+
+        sshd_config_content = re.sub("^ *PermitRootLogin +(yes|without-password) *$",
+                                     "PermitRootLogin yes",
+                                     sshd_config_content,
+                                     flags=re.MULTILINE)
+
+    else:
+        sshd_config_content += "\nPermitRootLogin yes\n"
+
+    write_to_file(SSHD_CONFIG_PATH, sshd_config_content)
+
+    subprocess.check_call("service sshd reload", shell=True)
 
 
 def ssh_root_login_disable(auth):
-    pass
+    sshd_config_content = read_file(SSHD_CONFIG_PATH)
+    # TODO rollback to old config if service reload failed
+    # sshd_config_content_backup = sshd_config_content
+
+    if re.search("^ *PermitRootLogin +(no|forced-commands-only|yes|without-password) *$",
+                 sshd_config_content, re.MULTILINE):
+
+        sshd_config_content = re.sub("^ *PermitRootLogin +(yes|without-password) *$",
+                                     "PermitRootLogin no",
+                                     sshd_config_content,
+                                     flags=re.MULTILINE)
+
+    else:
+        sshd_config_content += "\nPermitRootLogin no\n"
+
+    write_to_file(SSHD_CONFIG_PATH, sshd_config_content)
+
+    subprocess.check_call("service sshd reload", shell=True)
 
 
 def ssh_key_list(auth, username):
