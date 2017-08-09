@@ -1591,15 +1591,18 @@ class BackupMethod(object):
         if size > MB_ALLOWED_TO_ORGANIZE:
             try:
                 i = msignals.prompt(m18n.n('backup_ask_for_copying_if_needed',
-                                        answers='y/N', size=size))
+                                        answers='y/N', size=str(size)))
             except NotImplemented:
-                logger.error(m18n.n('backup_unable_to_organize_files'))
+                raise MoulinetteError(errno.EIO,
+                                     m18n.n('backup_unable_to_organize_files'))
             else:
                 if i != 'y' and i != 'Y':
-                    logger.error(m18n.n('backup_unable_to_organize_files'))
+                    raise MoulinetteError(errno.EIO,
+                                     m18n.n('backup_unable_to_organize_files'))
 
         # Copy unbinded path
-        logger.info(m18n.n('backup_copying_to_organize_the_archive', size=size))
+        logger.info(m18n.n('backup_copying_to_organize_the_archive',
+            size=str(size)))
         for path in paths_needed_to_be_copied:
             dest = os.path.join(self.work_dir, path['dest'])
             if os.path.isdir(path['source']):
