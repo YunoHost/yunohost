@@ -40,6 +40,7 @@ from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import run_commands
 
 from yunohost.app import (
     app_info, _is_installed, _parse_app_instance_name
@@ -1543,25 +1544,37 @@ class BackupMethod(object):
             if not os.path.isdir(dest_dir):
                 filesystem.mkdir(dest_dir, parents=True)
 
-            # Try to bind files
+            # For directory, attempt to mount bind
             if os.path.isdir(src):
                 filesystem.mkdir(dest, parents=True, force=True)
-                ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
-                if ret == 0:
-                    ret = subprocess.call(["mount", "-o", "remount,ro,bind",
-                                           src, dest])
-                    if ret == 0:
-                        continue
-                logger.warning(m18n.n("bind_mouting_disable"))
-                subprocess.call(["mountpoint", "-q", dest,
-                                    "&&", "umount", "-R", dest])
-            elif os.path.isfile(src) or os.path.islink(src):
-                # Create a hardlink if src and dest are on the filesystem
-                if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
-                    os.link(src, dest)
+
+                mount_commands = []
+                mount_commands.append("mount --rbind %s %s" % (src, dest))
+                mount_commands.append("mount -o remount,ro,bind %s" % dest)
+
+                try:
+                    run_commands(mount_commands)
+                except Exception as e:
+                    logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
+                    # To check if dest is mounted, use /proc/mounts that
+                    # escape spaces as \040
+                    is_mounted = "cat /proc/mounts | cut -d ' ' -f 2 | sed -s 's/\\\\040/ /g' | grep -xq '%s'" % dest
+                    if os.system(is_mounted) == 0:
+			umount_command = "umount -R %s" % dest
+                        os.system(umount_command)
+                else:
+                    # Success, go to next file to organize
                     continue
 
-            # Add to the list to copy
+            # For files, create a hardlink
+            elif os.path.isfile(src) or os.path.islink(src):
+                if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
+                    os.link(src, dest)
+                    # Success, go to next file to organize
+                    continue
+
+            # If mountbind or hardlink couldnt be created,
+            # prepare a list of files that need to be copied
             paths_needed_to_be_copied.append(path)
 
         if len(paths_needed_to_be_copied) == 0:
