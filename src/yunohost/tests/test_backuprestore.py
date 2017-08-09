@@ -634,5 +634,21 @@ def _test_backup_and_restore_app(app):
 
     assert app_is_installed(app)
 
+###############################################################################
+#  Some edge cases                                                            #
+###############################################################################
 
+def test_restore_archive_with_no_json(mocker):
+
+    # Create a backup with no info.json associated
+    os.system("touch /tmp/afile")
+    os.system("tar -czvf /home/yunohost.backup/archives/badbackup.tar.gz /tmp/afile")
+
+    assert "badbackup" in backup_list()["archives"]
+
+    mocker.spy(m18n, "n")
+    with pytest.raises(MoulinetteError):
+        backup_restore(auth, name="badbackup", force=True,
+                       ignore_system=False, ignore_apps=False)
+    m18n.n.assert_any_call('backup_invalid_archive')
 
