@@ -40,6 +40,7 @@ from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 from moulinette.utils.process import run_commands
 
 from yunohost.app import (
@@ -1558,9 +1559,11 @@ class BackupMethod(object):
                     logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
                     # To check if dest is mounted, use /proc/mounts that
                     # escape spaces as \040
-                    is_mounted = "cat /proc/mounts | cut -d ' ' -f 2 | sed -s 's/\\\\040/ /g' | grep -xq '%s'" % dest
-                    if os.system(is_mounted) == 0:
-			umount_command = "umount -R %s" % dest
+                    raw_mounts = read_file("/proc/mounts").strip().split('\n')
+                    mounts = [ m.split()[1] for m in raw_mounts ]
+                    mounts = [ m.replace("\\040", " ") for m in mounts ]
+                    if dest in mounts:
+                        umount_command = "umount -R %s" % dest
                         os.system(umount_command)
                 else:
                     # Success, go to next file to organize
