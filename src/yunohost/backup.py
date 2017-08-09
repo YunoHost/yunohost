@@ -41,7 +41,6 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
-from moulinette.utils.process import run_commands
 
 from yunohost.app import (
     app_info, _is_installed, _parse_app_instance_name
@@ -1549,12 +1548,9 @@ class BackupMethod(object):
             if os.path.isdir(src):
                 filesystem.mkdir(dest, parents=True, force=True)
 
-                mount_commands = []
-                mount_commands.append("mount --rbind %s %s" % (src, dest))
-                mount_commands.append("mount -o remount,ro,bind %s" % dest)
-
                 try:
-                    run_commands(mount_commands)
+                    subprocess.check_call(["mount", "--rbind", src, dest])
+                    subprocess.check_call(["mount", "-o", "remount,ro,bind", dest])
                 except Exception as e:
                     logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
                     # To check if dest is mounted, use /proc/mounts that
@@ -1563,8 +1559,7 @@ class BackupMethod(object):
                     mounts = [ m.split()[1] for m in raw_mounts ]
                     mounts = [ m.replace("\\040", " ") for m in mounts ]
                     if dest in mounts:
-                        umount_command = "umount -R %s" % dest
-                        os.system(umount_command)
+                        subprocess.check_call(["umount", "-R", dest])
                 else:
                     # Success, go to next file to organize
                     continue
