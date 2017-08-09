@@ -635,4 +635,30 @@ def _test_backup_and_restore_app(app):
     assert app_is_installed(app)
 
 
+###############################################################################
+#  Misc                                                                       #
+###############################################################################
+
+def test_backup_binds_are_readonly(monkeypatch):
+
+    def custom_mount_and_backup(self, backup_manager):
+        self.manager = backup_manager
+        self._organize_files()
+
+        confssh = os.path.join(self.work_dir, "conf/ssh")
+        output = subprocess.check_output("touch %s/test 2>&1 || true" % confssh,
+                                         shell=True)
+
+        assert "Read-only file system" in output
+
+        if self._recursive_umount(self.work_dir) > 0:
+            raise Exception("Backup cleaning failed !")
+
+        self.clean()
+
+    monkeypatch.setattr("yunohost.backup.BackupMethod.mount_and_backup",
+            custom_mount_and_backup)
+
+    # Create the backup
+    backup_create(ignore_system=False, ignore_apps=True)
 
