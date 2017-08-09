@@ -1548,10 +1548,12 @@ class BackupMethod(object):
                 filesystem.mkdir(dest, parents=True, force=True)
                 ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
                 if ret == 0:
-                    continue
-                else:
-                    logger.warning(m18n.n("bind_mouting_disable"))
-                    subprocess.call(["mountpoint", "-q", dest,
+                    ret = subprocess.call(["mount", "-o", "remount,ro,bind",
+                                           src, dest])
+                    if ret == 0:
+                        continue
+                logger.warning(m18n.n("bind_mouting_disable"))
+                subprocess.call(["mountpoint", "-q", dest,
                                     "&&", "umount", "-R", dest])
             elif os.path.isfile(src) or os.path.islink(src):
                 # Create a hardlink if src and dest are on the filesystem
