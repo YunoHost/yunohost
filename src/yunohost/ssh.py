@@ -25,10 +25,18 @@ def ssh_user_list(auth):
         'home_path': root_unix.pw_dir,
     }
 
-    query = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
-    users = {
-        'root': root,
+    admin_unix = pwd.getpwnam("root")
+    admin = {
+        'username': 'admin',
+        'fullname': '',
+        'mail': '',
+        'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
+        'shell': admin_unix.pw_shell,
+        'home_path': admin_unix.pw_dir,
     }
+
+    query = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
+    users = {}
 
     ldap_result = auth.search('ou=users,dc=yunohost,dc=org', query, user_attrs.keys())
 
@@ -47,7 +55,11 @@ def ssh_user_list(auth):
         uid = entry[user_attrs['uid']]
         users[uid] = entry
 
-    return {'users': users}
+    return {
+        'root': root,
+        'admin': admin,
+        'users': users,
+    }
 
 
 def ssh_user_allow_ssh(auth, username):
