@@ -1566,6 +1566,8 @@ class BackupMethod(object):
 
             # For files, create a hardlink
             elif os.path.isfile(src) or os.path.islink(src):
+                # Can create a hard link only if files are on the same fs
+                # (i.e. we can't if it's on a different fs)
                 if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
                     os.link(src, dest)
                     # Success, go to next file to organize
