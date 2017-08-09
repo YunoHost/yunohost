@@ -1,7 +1,12 @@
 # encoding: utf-8
 
+import re
 import pwd
 
+from moulinette.utils.filesystem import read_file
+
+
+SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
 # user list + root + admin
 def ssh_user_list(auth):
@@ -87,7 +92,18 @@ def ssh_user_disallow_ssh(auth, username):
 
 
 def ssh_root_login_status(auth):
-    pass
+    # this is the content of "man sshd_config"
+    # PermitRootLogin
+    #     Specifies whether root can log in using ssh(1).  The argument must be
+    #     “yes”, “without-password”, “forced-commands-only”, or “no”.  The
+    #     default is “yes”.
+    sshd_config_content = read_file(SSHD_CONFIG_PATH)
+
+    if re.search("^ *PermitRootLogin +(no|forced-commands-only) *$",
+                 sshd_config_content, re.MULTILINE):
+        return {"PermitRootLogin": False}
+
+    return {"PermitRootLogin": True}
 
 
 def ssh_root_login_enable(auth):
