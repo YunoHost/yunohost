@@ -75,6 +75,8 @@ def ssh_user_allow_ssh(auth, username):
 
     query = '(&(objectclass=person)(uid=%s))' % username
 
+    # FIXME handle root and admin
+    # XXX dry
     if not auth.search('ou=users,dc=yunohost,dc=org', query):
         raise Exception("User with username '%s' doesn't exists")
 
@@ -87,6 +89,8 @@ def ssh_user_disallow_ssh(auth, username):
 
     query = '(&(objectclass=person)(uid=%s))' % username
 
+    # FIXME handle root and admin
+    # XXX dry
     if not auth.search('ou=users,dc=yunohost,dc=org', query):
         raise Exception("User with username '%s' doesn't exists")
 
