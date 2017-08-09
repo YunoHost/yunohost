@@ -75,7 +75,15 @@ def ssh_user_allow_ssh(auth, username):
 
 
 def ssh_user_disallow_ssh(auth, username):
-    pass
+    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
+    # TODO it would be good to support different kind of shells
+
+    query = '(&(objectclass=person)(uid=%s))' % username
+
+    if not auth.search('ou=users,dc=yunohost,dc=org', query):
+        raise Exception("User with username '%s' doesn't exists")
+
+    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
 
 
 def ssh_root_login_status(auth):
