@@ -1506,6 +1506,8 @@ ssh:
                         -n:
                             full: --name
                             help: Key name
+                            extra:
+                                required: True
 
                 ### ssh_rootlogin_disable()
                 remove:

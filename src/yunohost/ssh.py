@@ -185,7 +185,6 @@ def ssh_key_add(auth, username, algo, name=None):
     all_keys_name = ssh_key_list(auth, username)["keys"].keys()
 
     user = _get_user(auth, username, ["homeDirectory"])
-
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
@@ -225,8 +224,30 @@ def ssh_key_add(auth, username, algo, name=None):
     subprocess.check_call("ssh-keygen -t {} -f {} -N ''".format(algo, key_path), shell=True)
 
 
-def ssh_key_import(auth, username, public, private, name=None):
-    pass
+def ssh_key_import(auth, username, public, private, name):
+    all_keys_name = ssh_key_list(auth, username)["keys"].keys()
+
+    user = _get_user(auth, username, ["homeDirectory"])
+    if not user:
+        raise Exception("User with username '%s' doesn't exists" % username)
+
+    if not name.startswith("id_"):
+        name = "id_" + name
+
+    if name.endswith(".pub"):
+        # remove ".pub"
+        name = ".".join(name.split(".")[:-1])
+
+    if name in all_keys_name:
+        raise Exception("a key with this name already exists")
+
+    if not os.path.exists(os.path.join(user["homeDirectory"][0], ".ssh")):
+        os.makedirs(os.path.exists(os.path.join(user["homeDirectory"][0], ".ssh")))
+
+    key_path = os.path.join(user["homeDirectory"][0], ".ssh", name)
+
+    write_to_file(key_path, private)
+    write_to_file(key_path + ".pub", public)
 
 
 def ssh_key_remove(auth, username, key):
