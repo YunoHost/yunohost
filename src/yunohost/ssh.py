@@ -342,7 +342,31 @@ def ssh_authorized_keys_add(auth, username, key, comment):
 
 
 def ssh_authorized_keys_remove(auth, username, key):
-    pass
+    user = _get_user(auth, username, ["homeDirectory", "uid"])
+    if not user:
+        raise Exception("User with username '%s' doesn't exists" % username)
+
+    authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
+
+    if not os.path.exists(authorized_keys_file):
+        raise Exception("this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file))
+
+    authorized_keys_content = read_file(authorized_keys_file)
+
+    if key not in authorized_keys_content:
+        raise Exception("Key '{}' is not present in authorized_keys".format(key))
+
+    # don't delete the previous comment because we can't verify if it's legit
+
+    # this regex approach failed for some reasons and I don't know why :(
+    # authorized_keys_content = re.sub("{} *\n?".format(key),
+    #                                  "",
+    #                                  authorized_keys_content,
+    #                                  flags=re.MULTILINE)
+
+    authorized_keys_content = authorized_keys_content.replace(key, "")
+
+    write_to_file(authorized_keys_file, authorized_keys_content)
 
 
 def _get_user(auth, username, attrs=None):
