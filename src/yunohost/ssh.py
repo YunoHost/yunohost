@@ -5,7 +5,7 @@ import re
 import pwd
 import subprocess
 
-from moulinette.utils.filesystem import read_file, write_to_file
+from moulinette.utils.filesystem import read_file, write_to_file, rm
 
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
@@ -250,8 +250,27 @@ def ssh_key_import(auth, username, public, private, name):
     write_to_file(key_path + ".pub", public)
 
 
-def ssh_key_remove(auth, username, key):
-    pass
+def ssh_key_remove(auth, username, name):
+    all_keys_name = ssh_key_list(auth, username)["keys"].keys()
+
+    user = _get_user(auth, username, ["homeDirectory"])
+    if not user:
+        raise Exception("User with username '%s' doesn't exists" % username)
+
+    if name.endswith(".pub"):
+        # remove ".pub"
+        name = ".".join(name.split(".")[:-1])
+
+    if name not in all_keys_name and "id_" + name in all_keys_name:
+        name = "id_" + name
+
+    if name not in all_keys_name:
+        raise Exception("This key doesn't exists")
+
+    key_path = os.path.join(user["homeDirectory"][0], ".ssh", name)
+
+    rm(key_path)
+    rm(key_path + ".pub")
 
 
 def ssh_authorized_keys_list(auth, username):

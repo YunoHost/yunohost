@@ -1460,8 +1460,8 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
-                        -k:
-                            full: --key
+                        -n:
+                            full: --name
                             help: Key file name (without the ".pub")
                             extra:
                                 required: True
