@@ -1418,6 +1418,9 @@ ssh:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
+                        -n:
+                            full: --name
+                            help: Key name
                         -a:
                             full: --algo
                             help: Algorithm to generate the ssh key
@@ -1427,6 +1430,7 @@ ssh:
                                 - ed25519
                                 - rsa
                                 - rsa1
+                            default: rsa
 
                 ### ssh_rootlogin_enable()
                 import:
