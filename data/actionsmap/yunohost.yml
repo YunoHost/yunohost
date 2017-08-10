@@ -1613,8 +1613,8 @@ hook:
 part:
     category_help: Manage partitions
     actions:
-	
-	    ### part_list()
+
+        ### part_list()
         list:
             action_help: List partitions on a device 
             api: GET /part/list/<devpath>
@@ -1625,7 +1625,7 @@ part:
                 authenticate: all
                 authenticator: ldap-anonymous
 
-		### part_all()
+        ### part_all()
         list-all:
             action_help: List available devices 
             api: GET /part/list-all
@@ -1650,7 +1650,7 @@ part:
                 authenticate: all
                 authenticator: ldap-anonymous
 
-		### part_raid()
+        ### part_raid()
         raid:
             action_help: Set Raid flag on a partition 
             api: POST /part/toggle-raid/<devpath>/<index>
@@ -1665,7 +1665,7 @@ part:
                 authenticate: all
                 authenticator: ldap-anonymous
 
-		### part_create()
+        ### part_create()
         create:
             action_help: Create a new partition 
             api: POST /part/create/<devpath>
@@ -1685,7 +1685,7 @@ part:
                     # extra:
                         # pattern: *pattern_index
 
-		### part_type()
+        ### part_type()
         type:
             action_help: Change partition type 
             api: POST /part/type/<devpath>/<index>/<type>
@@ -1713,7 +1713,7 @@ part:
                 devpath:
                     help: Path of the device
 
-		### part_delete()
+        ### part_delete()
         delete:
             action_help: Delete a partition 
             api: DEL /part/delete/<devpath>/<index>
