@@ -274,7 +274,36 @@ def ssh_key_remove(auth, username, name):
 
 
 def ssh_authorized_keys_list(auth, username):
-    pass
+    user = _get_user(auth, username, ["homeDirectory"])
+    if not user:
+        raise Exception("User with username '%s' doesn't exists" % username)
+
+    authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
+
+    if not os.path.exists(authorized_keys_file):
+        return []
+
+    keys = []
+    last_comment = ""
+    for line in read_file(authorized_keys_file).split("\n"):
+        # empty line
+        if not line.strip():
+            continue
+
+        if line.lstrip().startswith("#"):
+            last_comment = line.lstrip().lstrip("#").strip()
+            continue
+
+        # assuming a key per non empty line
+        key = line.strip()
+        keys.append({
+            "key": key,
+            "name": last_comment,
+        })
+
+        last_comment = ""
+
+    return {"keys": keys}
 
 
 def ssh_authorized_keys_add(auth, username, key):
