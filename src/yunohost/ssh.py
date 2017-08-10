@@ -184,7 +184,7 @@ def ssh_key_list(auth, username):
 def ssh_key_add(auth, username, algo, name=None):
     all_keys_name = ssh_key_list(auth, username)["keys"].keys()
 
-    user = _get_user(auth, username, ["homeDirectory"])
+    user = _get_user(auth, username, ["homeDirectory", "uid"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
@@ -214,7 +214,8 @@ def ssh_key_add(auth, username, algo, name=None):
         raise Exception("a key with this name already exists")
 
     if not os.path.exists(os.path.join(user["homeDirectory"][0], ".ssh")):
-        os.makedirs(os.path.exists(os.path.join(user["homeDirectory"][0], ".ssh")))
+        mkdir(os.path.join(user["homeDirectory"][0], ".ssh"),
+              force=True, parents=True, uid=user["uid"][0])
 
     key_path = os.path.join(user["homeDirectory"][0], ".ssh", name)
 
