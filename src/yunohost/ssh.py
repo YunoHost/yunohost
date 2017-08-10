@@ -159,15 +159,16 @@ def ssh_key_list(auth, username):
     ssh_dir = os.path.join(user_home_directory, ".ssh")
 
     if not os.path.exists(ssh_dir):
-        return {"keys": []}
+        return {"keys": {}}
 
-    keys = []
+    keys = {}
 
     for i in os.listdir(ssh_dir):
         if i.endswith(".pub"):
-            keys.append({
-                ".".join(i.split(".")[:-1]): read_file(os.path.join(ssh_dir, i))
-            })
+            # remove ".pub" from name
+            keys[".".join(i.split(".")[:-1])] = {
+                "pub": read_file(os.path.join(ssh_dir, i))
+            }
 
     return {
         "keys": keys,
