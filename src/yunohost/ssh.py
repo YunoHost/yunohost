@@ -190,9 +190,20 @@ def ssh_key_add(auth, username, algo, name=None):
         raise Exception("User with username '%s' doesn't exists" % username)
 
     if name is None:
-        # TODO
-        print "todo"
-        return
+        name = "id_{}".format(algo)
+
+        if name in all_keys_name:
+            # caping to 100 to void infinite loop and because people that won't
+            # be satisfied by this solution will be the super absolute edge
+            # case and will probably never happen
+            for i in range(1, 100):
+                if name + str(i) not in all_keys_name:
+                    name += str(i)
+                    break
+            # this else will be executed if the for loop is never "break"
+            else:
+                raise Exception("No available name for you new ssh key, please provide one using the -n command line option")
+
 
     if not name.startswith("id_"):
         name = "id_" + name
