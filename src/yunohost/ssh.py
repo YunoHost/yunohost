@@ -73,12 +73,8 @@ def ssh_user_allow_ssh(auth, username):
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     # TODO it would be good to support different kind of shells
 
-    query = '(&(objectclass=person)(uid=%s))' % username
-
-    # FIXME handle root and admin
-    # XXX dry
-    if not auth.search('ou=users,dc=yunohost,dc=org', query):
-        raise Exception("User with username '%s' doesn't exists")
+    if not _get_user(auth, username):
+        raise Exception("User with username '%s' doesn't exists" % username)
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
 
@@ -87,12 +83,8 @@ def ssh_user_disallow_ssh(auth, username):
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     # TODO it would be good to support different kind of shells
 
-    query = '(&(objectclass=person)(uid=%s))' % username
-
-    # FIXME handle root and admin
-    # XXX dry
-    if not auth.search('ou=users,dc=yunohost,dc=org', query):
-        raise Exception("User with username '%s' doesn't exists")
+    if not _get_user(auth, username) :
+        raise Exception("User with username '%s' doesn't exists" % username)
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
 
@@ -158,15 +150,12 @@ def ssh_root_login_disable(auth):
 # XXX should we display private key too?
 def ssh_key_list(auth, username):
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
-    query = '(&(objectclass=person)(uid=%s))' % username
-    user = auth.search('ou=users,dc=yunohost,dc=org', query, attrs=["homeDirectory"])
+    user = _get_user(auth, username, attrs=["homeDirectory"])
 
-    # FIXME handle root and admin
-    # XXX dry
     if not user:
-        raise Exception("User with username '%s' doesn't exists")
+        raise Exception("User with username '%s' doesn't exists" % username)
 
-    user_home_directory = user[0]["homeDirectory"][0]
+    user_home_directory = user["homeDirectory"][0]
     ssh_dir = os.path.join(user_home_directory, ".ssh")
 
     if not os.path.exists(ssh_dir):
@@ -215,5 +204,15 @@ def ssh_authorized_keys_remove(auth, username, key):
     pass
 
 
-# TODO
-# arguments in actionmap
+def _get_user(auth, username, attrs=None):
+    # FIXME handle root and admin
+    user = auth.search('ou=users,dc=yunohost,dc=org',
+                       '(&(objectclass=person)(uid=%s))' % username,
+                       attrs)
+
+    assert len(user) in (0, 1)
+
+    if not user:
+        return None
+
+    return user[0]
