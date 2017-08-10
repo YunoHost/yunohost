@@ -1448,6 +1448,9 @@ ssh:
                             help: Key as a string
                             extra:
                                 required: True
+                        -c:
+                            full: --comment
+                            help: Key comment
 
                 ### ssh_rootlogin_disable()
                 remove:

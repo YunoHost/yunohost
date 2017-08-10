@@ -5,7 +5,7 @@ import re
 import pwd
 import subprocess
 
-from moulinette.utils.filesystem import read_file, write_to_file, rm
+from moulinette.utils.filesystem import read_file, write_to_file, rm, chown, chmod, mkdir
 
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
@@ -306,8 +306,38 @@ def ssh_authorized_keys_list(auth, username):
     return {"keys": keys}
 
 
-def ssh_authorized_keys_add(auth, username, key):
-    pass
+def ssh_authorized_keys_add(auth, username, key, comment):
+    user = _get_user(auth, username, ["homeDirectory", "uid"])
+    if not user:
+        raise Exception("User with username '%s' doesn't exists" % username)
+
+    authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
+
+    if not os.path.exists(authorized_keys_file):
+        # ensure ".ssh" exists
+        mkdir(os.path.join(user["homeDirectory"][0], ".ssh"),
+              force=True, parents=True, uid=user["uid"][0])
+
+        # create empty file to set good permissions
+        write_to_file(authorized_keys_file, "")
+        chown(authorized_keys_file, uid=user["uid"][0])
+        chmod(authorized_keys_file, 0600)
+
+    authorized_keys_content = read_file(authorized_keys_file)
+
+    authorized_keys_content += "\n"
+    authorized_keys_content += "\n"
+
+    if comment and comment.strip():
+        if not comment.lstrip().startswith("#"):
+            comment = "# " + comment
+        authorized_keys_content += comment.replace("\n", " ").strip()
+        authorized_keys_content += "\n"
+
+    authorized_keys_content += key.strip()
+    authorized_keys_content += "\n"
+
+    write_to_file(authorized_keys_file, authorized_keys_content)
 
 
 def ssh_authorized_keys_remove(auth, username, key):
