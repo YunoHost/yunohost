@@ -52,7 +52,6 @@ def ssh_user_list(auth):
 
 
 def ssh_user_allow_ssh(auth, username):
-    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     # TODO it would be good to support different kind of shells
 
     if not _get_user(auth, username):
@@ -62,7 +61,6 @@ def ssh_user_allow_ssh(auth, username):
 
 
 def ssh_user_disallow_ssh(auth, username):
-    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     # TODO it would be good to support different kind of shells
 
     if not _get_user(auth, username) :
@@ -375,6 +373,7 @@ def _get_user(auth, username, attrs=None):
             'home_path': admin_unix.pw_dir,
         }
 
+    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     user = auth.search('ou=users,dc=yunohost,dc=org',
                        '(&(objectclass=person)(uid=%s))' % username,
                        attrs)
