@@ -356,8 +356,7 @@ def _get_user(auth, username, attrs=None):
             'username': 'root',
             'fullname': '',
             'mail': '',
-            # TODO ssh-allow using ssh_root_login_status
-            'ssh_allowed': True,
+            'ssh_allowed': ssh_root_login_status(auth)["PermitRootLogin"],
             'shell': root_unix.pw_shell,
             'home_path': root_unix.pw_dir,
         }
