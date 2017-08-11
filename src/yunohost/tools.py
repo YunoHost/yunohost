@@ -39,7 +39,7 @@ from importlib import import_module
 import apt
 import apt.progress
 
-from moulinette import msettings, m18n
+from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json, write_to_json
@@ -630,6 +630,39 @@ def tools_port_available(port):
         return True
     else:
         return False
+
+
+def tools_shutdown(force=False):
+    shutdown = force
+    if not shutdown:
+        try:
+            # Ask confirmation for server shutdown
+            i = msignals.prompt(m18n.n('server_shutdown_confirm', answers='y/N'))
+        except NotImplemented:
+            pass
+        else:
+            if i.lower() == 'y' or i.lower() == 'yes':
+                shutdown = True
+
+    if shutdown:
+        logger.warn(m18n.n('server_shutdown'))
+        subprocess.check_call(['systemctl', 'poweroff'])
+
+
+def tools_reboot(force=False):
+    reboot = force
+    if not reboot:
+        try:
+            # Ask confirmation for restoring
+            i = msignals.prompt(m18n.n('server_reboot_confirm', answers='y/N'))
+        except NotImplemented:
+            pass
+        else:
+            if i.lower() == 'y' or i.lower() == 'yes':
+                reboot = True
+    if reboot:
+        logger.warn(m18n.n('server_reboot'))
+        subprocess.check_call(['systemctl', 'reboot'])
 
 
 def tools_migrations_list():
