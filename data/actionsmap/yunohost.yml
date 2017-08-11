@@ -1633,8 +1633,30 @@ part:
                 authenticate: all
                 authenticator: ldap-anonymous
 
-        ### part_boot()
-        boot:
+        ### part_raid_create()
+        raid-create:
+            action_help: List available devices 
+            api: POST /part/raid-create/tata
+            arguments:
+                device:
+                    help: Name of the newly created device
+                level:
+                    help: Level of the raid system
+                devices:
+                    help: List of devices
+                    nargs: "*"
+
+                    # extra:
+                    #     pattern: &pattern_index
+                    #         - !!str ^(\d+)$
+                    #         - "pattern_index"
+
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### part_toggle_boot()
+        toggle_boot:
             action_help: Set Boot flag on a partition 
             api: POST /part/toggle-boot/<devpath>/<index>
             arguments:
@@ -1650,8 +1672,8 @@ part:
                 authenticate: all
                 authenticator: ldap-anonymous
 
-        ### part_raid()
-        raid:
+        ### part_toggle_raid()
+        toggle_raid:
             action_help: Set Raid flag on a partition 
             api: POST /part/toggle-raid/<devpath>/<index>
             arguments:
@@ -1705,8 +1727,8 @@ part:
                     # extra:
                         # pattern: *pattern_index
 
-        ### part_fresh-disk()
-        fresh-disk:
+        ### part_fresh_disk()
+        fresh_disk:
             action_help: Create a new empty partition table 
             api: POST /part/reset/<devpath>
             arguments:
