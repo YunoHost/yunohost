@@ -1395,7 +1395,7 @@ ssh:
             subcategory_help: Manage user's ssh keys
 
             actions:
-                ### ssh_rootlogin_status()
+                ### ssh_key_list()
                 list:
                     action_help: Show user's ssh keys
                     api: GET /ssh/key
@@ -1407,7 +1407,7 @@ ssh:
                             extra:
                                 pattern: *pattern_username
 
-                ### ssh_rootlogin_enable()
+                ### ssh_key_add()
                 add:
                     action_help: Add a new ssh key for this user
                     api: POST /ssh/key/add
@@ -1432,7 +1432,7 @@ ssh:
                                 - rsa1
                             default: rsa
 
-                ### ssh_rootlogin_enable()
+                ### ssh_key_import()
                 import:
                     action_help: Import a ssh key for this user
                     api: POST /ssh/key/import
@@ -1452,7 +1452,7 @@ ssh:
                             full: --comment
                             help: Key comment
 
-                ### ssh_rootlogin_disable()
+                ### ssh_key_remove()
                 remove:
                     action_help: Remove a ssh key for this user
                     api: DELETE /ssh/key
@@ -1473,7 +1473,7 @@ ssh:
             subcategory_help: Manage user's authorized ssh keys
 
             actions:
-                ### ssh_rootlogin_status()
+                ### ssh_authorized_keys_list()
                 list:
                     action_help: Show user's authorized ssh keys
                     api: GET /ssh/authorized-keys
@@ -1485,7 +1485,7 @@ ssh:
                             extra:
                                 pattern: *pattern_username
 
-                ### ssh_rootlogin_enable()
+                ### ssh_authorized_keys_add()
                 add:
                     action_help: Add a new authorized ssh key for this user
                     api: POST /ssh/authorized-keys
@@ -1512,7 +1512,7 @@ ssh:
                             extra:
                                 required: True
 
-                ### ssh_rootlogin_disable()
+                ### ssh_authorized_keys_remove()
                 remove:
                     action_help: Remove an authorized ssh key for this user
                     api: DELETE /ssh/authorized-keys
