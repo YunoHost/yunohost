@@ -21,26 +21,8 @@ def ssh_user_list(auth):
         'homeDirectory': 'home_path',
     }
 
-    root_unix = pwd.getpwnam("root")
-    root = {
-        'username': 'root',
-        'fullname': '',
-        'mail': '',
-        # TODO ssh-allow using ssh_root_login_status
-        'ssh_allowed': True,
-        'shell': root_unix.pw_shell,
-        'home_path': root_unix.pw_dir,
-    }
-
-    admin_unix = pwd.getpwnam("root")
-    admin = {
-        'username': 'admin',
-        'fullname': '',
-        'mail': '',
-        'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
-        'shell': admin_unix.pw_shell,
-        'home_path': admin_unix.pw_dir,
-    }
+    root = _get_user("root")
+    admin = _get_user("admin")
 
     query = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
     users = {}
@@ -370,7 +352,29 @@ def ssh_authorized_keys_remove(auth, username, key):
 
 
 def _get_user(auth, username, attrs=None):
-    # FIXME handle root and admin
+    if username == "root":
+        root_unix = pwd.getpwnam("root")
+        return {
+            'username': 'root',
+            'fullname': '',
+            'mail': '',
+            # TODO ssh-allow using ssh_root_login_status
+            'ssh_allowed': True,
+            'shell': root_unix.pw_shell,
+            'home_path': root_unix.pw_dir,
+        }
+
+    if username == "admin":
+        admin_unix = pwd.getpwnam("root")
+        return {
+            'username': 'admin',
+            'fullname': '',
+            'mail': '',
+            'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
+            'shell': admin_unix.pw_shell,
+            'home_path': admin_unix.pw_dir,
+        }
+
     user = auth.search('ou=users,dc=yunohost,dc=org',
                        '(&(objectclass=person)(uid=%s))' % username,
                        attrs)
