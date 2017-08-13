@@ -183,12 +183,15 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
             try:
                 # Check if domain is registered
-                if requests.get('https://{0}/test/{1}'.format(
-                        dyn_host, _domain)).status_code == 200:
+                request_url = 'https://{0}/test/{1}'.format(dyn_host, _domain)
+                if requests.get(request_url, timeout=30).status_code == 200:
                     continue
             except requests.ConnectionError:
                 raise MoulinetteError(errno.ENETUNREACH,
                                       m18n.n('no_internet_connection'))
+            except requests.exceptions.Timeout:
+                logger.warning("Correction timed out on {}, skip it".format(
+                                   request_url))
             domain = _domain
             key = path
             break

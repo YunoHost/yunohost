@@ -1478,6 +1478,26 @@ tools:
                     extra:
                         pattern: *pattern_port
 
+        ### tools_shutdown()
+        shutdown:
+            action_help: Shutdown the server
+            api: PUT /shutdown
+            arguments:
+                -f:
+                    help: skip the shutdown confirmation
+                    full: --force
+                    action: store_true
+
+        ### tools_reboot()
+        reboot:
+            action_help: Reboot the server
+            api: PUT /reboot
+            arguments:
+                -f:
+                    help: skip the reboot confirmation
+                    full: --force
+                    action: store_true
+
     subcategories:
 
       migrations:

@@ -2211,7 +2211,11 @@ def backup_list(with_info=False, human_readable=False):
     if result and with_info:
         d = OrderedDict()
         for a in result:
-            d[a] = backup_info(a, human_readable=human_readable)
+            try:
+                d[a] = backup_info(a, human_readable=human_readable)
+            except MoulinetteError, e:
+                logger.warning('%s: %s' % (a, e.strerror))
+
         result = d
 
     return {'archives': result}
@@ -2249,9 +2253,16 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.exists(info_file):
         tar = tarfile.open(archive_file, "r:gz")
         info_dir = info_file + '.d'
-        tar.extract('info.json', path=info_dir)
-        tar.close()
-        shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+        try:
+            tar.extract('info.json', path=info_dir)
+        except KeyError:
+            logger.debug("unable to retrieve '%s' inside the archive",
+                         info_file, exc_info=1)
+            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+        else:
+            shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+        finally:
+            tar.close()
         os.rmdir(info_dir)
 
     try:
@@ -2299,21 +2310,21 @@ def backup_delete(name):
         name -- Name of the local backup archive
 
     """
+    if name not in backup_list()["archives"]:
+        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown',
+                                                name=name))
+
     hook_callback('pre_backup_delete', args=[name])
 
     archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
-
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
+
     for backup_file in [archive_file, info_file]:
-        if not os.path.isfile(backup_file) and not os.path.islink(backup_file):
-            raise MoulinetteError(errno.EIO,
-                m18n.n('backup_archive_name_unknown', name=backup_file))
         try:
             os.remove(backup_file)
         except:
             logger.debug("unable to delete '%s'", backup_file, exc_info=1)
-            raise MoulinetteError(errno.EIO,
-                m18n.n('backup_delete_error', path=backup_file))
+            logger.warning(m18n.n('backup_delete_error', path=backup_file))
 
     hook_callback('post_backup_delete', args=[name])
 
