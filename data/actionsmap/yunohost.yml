@@ -241,18 +241,6 @@ domain:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-            arguments:
-                -f:
-                    full: --filter
-                    help: LDAP filter used to search
-                -l:
-                    full: --limit
-                    help: Maximum number of domain fetched
-                    type: int
-                -o:
-                    full: --offset
-                    help: Starting number for domain fetching
-                    type: int
 
         ### domain_add()
         add:

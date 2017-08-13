@@ -43,7 +43,7 @@ from yunohost.service import service_regen_conf
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list(auth, filter=None, limit=None, offset=None):
+def domain_list(auth):
     """
     List domains
 
@@ -55,19 +55,10 @@ def domain_list(auth, filter=None, limit=None, offset=None):
     """
     result_list = []
 
-    # Set default arguments values
-    if offset is None:
-        offset = 0
-    if limit is None:
-        limit = 1000
-    if filter is None:
-        filter = 'virtualdomain=*'
+    result = auth.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
 
-    result = auth.search('ou=domains,dc=yunohost,dc=org', filter, ['virtualdomain'])
-
-    if len(result) > offset and limit > 0:
-        for domain in result[offset:offset + limit]:
-            result_list.append(domain['virtualdomain'][0])
+    for domain in result:
+        result_list.append(domain['virtualdomain'][0])
 
     return {'domains': result_list}
 
