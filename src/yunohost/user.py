@@ -24,13 +24,13 @@
     Manage users
 """
 import os
+import re
+import json
+import errno
 import crypt
 import random
 import string
-import json
-import errno
 import subprocess
-import re
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
