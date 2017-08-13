@@ -1626,7 +1626,7 @@ part:
                 authenticator: ldap-anonymous
 
         ### part_list_all()
-        list-all:
+        list_all:
             action_help: List available devices 
             api: GET /part/list-all
             configuration:
@@ -1634,7 +1634,7 @@ part:
                 authenticator: ldap-anonymous
 
         ### part_raid_create()
-        raid-create:
+        raid_create:
             action_help: List available devices 
             api: POST /part/raid-create/tata
             arguments:
@@ -1645,6 +1645,9 @@ part:
                 devices:
                     help: List of devices
                     nargs: "*"
+                --force:
+                    help: Confirm raid creation
+                    action: store_true
 
                     # extra:
                     #     pattern: &pattern_index
@@ -1679,10 +1682,10 @@ part:
             arguments:
                 devpath:
                     help: Path of the device
-                index:
-                    help: Index of the partition to toggle Raid flag
-                    extra:
-                        pattern: *pattern_index
+#                index:
+#                    help: Index of the partition to toggle Raid flag
+#                    extra:
+#                        pattern: *pattern_index
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
@@ -1698,34 +1701,38 @@ part:
                     help: Starting address
                     extra:
                         pattern: *pattern_index
-                type:
-                    help: Partition type
-                    # extra:
-                        # pattern: *pattern_index
-                size:
-                    help: Size of the new partition
-                    # extra:
-                        # pattern: *pattern_index
-
-        ### part_type()
-        type:
-            action_help: Change partition type 
-            api: POST /part/type/<devpath>/<index>/<type>
-            arguments:
-                devpath:
-                    help: Path of the device
-                start:
-                    help: Starting address
-                    extra:
-                        pattern: *pattern_index
                 index:
                     help: Index of the partition to delete
                     extra:
                         pattern: *pattern_index
                 type:
-                    help: Hexa type of the partition
+                    help: Partition type
                     # extra:
                         # pattern: *pattern_index
+#                size:
+#                    help: Size of the new partition
+#                    # extra:
+#                        # pattern: *pattern_index
+
+        ### part_type()
+#        type:
+#            action_help: Change partition type 
+#            api: POST /part/type/<devpath>/<index>/<type>
+#            arguments:
+#                devpath:
+#                    help: Path of the device
+#                start:
+#                    help: Starting address
+#                    extra:
+#                        pattern: *pattern_index
+#                index:
+#                    help: Index of the partition to delete
+#                    extra:
+#                        pattern: *pattern_index
+#                type:
+#                    help: Hexa type of the partition
+#                    # extra:
+#                        # pattern: *pattern_index
 
         ### part_fresh_disk()
         fresh_disk:
