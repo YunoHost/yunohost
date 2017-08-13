@@ -40,7 +40,7 @@ from yunohost.service import service_status
 logger = getActionLogger('yunohost.user')
 
 
-def user_list(auth, fields=None, filter=None, limit=None, offset=None):
+def user_list(auth, fields=None):
     """
     List users
 
@@ -59,13 +59,6 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
     attrs = ['uid']
     users = {}
 
-    # Set default arguments values
-    if offset is None:
-        offset = 0
-    if limit is None:
-        limit = 1000
-    if filter is None:
-        filter = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
     if fields:
         keys = user_attrs.keys()
         for attr in fields:
@@ -77,18 +70,18 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
     else:
         attrs = ['uid', 'cn', 'mail', 'mailuserquota']
 
-    result = auth.search('ou=users,dc=yunohost,dc=org', filter, attrs)
+    result = auth.search('ou=users,dc=yunohost,dc=org', '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))', attrs)
 
-    if len(result) > offset and limit > 0:
-        for user in result[offset:offset + limit]:
-            entry = {}
-            for attr, values in user.items():
-                try:
-                    entry[user_attrs[attr]] = values[0]
-                except:
-                    pass
-            uid = entry[user_attrs['uid']]
-            users[uid] = entry
+    for user in result:
+        entry = {}
+        for attr, values in user.items():
+            try:
+                entry[user_attrs[attr]] = values[0]
+            except:
+                pass
+        uid = entry[user_attrs['uid']]
+        users[uid] = entry
+
     return {'users': users}
 
 
