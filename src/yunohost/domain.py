@@ -86,7 +86,7 @@ def domain_add(auth, domain, dyndns=False):
         from yunohost.dyndns import dyndns_subscribe
 
         try:
-            r = requests.get('https://dyndns.yunohost.org/domains')
+            r = requests.get('https://dyndns.yunohost.org/domains', timeout=30)
         except requests.ConnectionError as e:
             raise MoulinetteError(errno.EHOSTUNREACH,
                                   m18n.n('domain_dyndns_dynette_is_unreachable', error=str(e)))
