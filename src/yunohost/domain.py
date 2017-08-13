@@ -33,7 +33,7 @@ import requests
 
 from urllib import urlopen
 
-from moulinette import m18n
+from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
@@ -219,6 +219,10 @@ def domain_dns_conf(domain, ttl=None):
     result += "# Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
+
+    is_cli = True if msettings.get('interface') == 'cli' else False
+    if is_cli:
+        logger.warning(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
 
