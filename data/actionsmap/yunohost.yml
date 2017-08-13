@@ -50,7 +50,6 @@ _global:
                     uri: ldap://localhost:389
                     base_dn: dc=yunohost,dc=org
         argument_auth: true
-        lock: true
     arguments:
         -v:
             full: --version
@@ -259,7 +258,6 @@ domain:
             action_help: Create a custom domain
             api: POST /domains
             configuration:
-                lock: false
                 authenticate: all
             arguments:
                 domain:
@@ -278,7 +276,6 @@ domain:
             action_help: Delete domains
             api: DELETE /domains/<domain>
             configuration:
-                lock: false
                 authenticate: all
             arguments:
                 domain:
@@ -291,7 +288,6 @@ domain:
             action_help: Generate DNS configuration for a domain
             api: GET /domains/<domain>/dns
             configuration:
-                lock: false
                 authenticate:
                     - api
             arguments:
@@ -498,7 +494,6 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: Name, local path or git URL of the app to install
@@ -520,7 +515,6 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: App(s) to delete
@@ -532,7 +526,6 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: App(s) to upgrade (default all)
@@ -551,7 +544,6 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: Target app instance name
@@ -728,8 +720,6 @@ backup:
         create:
             action_help: Create a backup local archive
             api: POST /backup
-            configuration:
-                lock: false
             arguments:
                 -n:
                     full: --name
@@ -778,7 +768,6 @@ backup:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -808,8 +797,6 @@ backup:
         list:
             action_help: List available local backup archives
             api: GET /backup/archives
-            configuration:
-                lock: false
             arguments:
                 -i:
                     full: --with-info
@@ -824,8 +811,6 @@ backup:
         info:
             action_help: Show info about a local backup archive
             api: GET /backup/archives/<name>
-            configuration:
-                lock: false
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -842,8 +827,6 @@ backup:
         delete:
             action_help: Delete a backup archive
             api: DELETE /backup/archives/<name>
-            configuration:
-                lock: false
             arguments:
                 name:
                     help: Name of the archive to delete
@@ -1144,8 +1127,6 @@ service:
         regen-conf:
             action_help: Regenerate the configuration file(s) for a service
             api: PUT /services/regenconf
-            configuration:
-                lock: false
             deprecated_alias:
                 - regenconf
             arguments:
@@ -1390,7 +1371,6 @@ tools:
                 - PUT /domains/main
             configuration:
                 authenticate: all
-                lock: false
             arguments:
                 -n:
                     full: --new-domain
@@ -1404,7 +1384,6 @@ tools:
             api: POST /postinstall
             configuration:
                 authenticate: false
-                lock: false
             arguments:
                 -d:
                     full: --domain
@@ -1428,8 +1407,6 @@ tools:
         update:
             action_help: YunoHost update
             api: PUT /update
-            configuration:
-                lock: false
             arguments:
                 --ignore-apps:
                     help: Ignore apps cache update and changelog
@@ -1445,7 +1422,6 @@ tools:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 --ignore-apps:
                     help: Ignore apps upgrade
@@ -1461,7 +1437,6 @@ tools:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
-                lock: false
             arguments:
                 -p:
                     full: --private
