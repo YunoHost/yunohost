@@ -123,10 +123,10 @@ def user_create(auth, username, firstname, lastname, mail, password,
         raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
 
     # Check that the mail domain exists
-    if mail[mail.find('@') + 1:] not in domain_list(auth)['domains']:
+    if mail.split("@")[1] not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
-                                     domain=mail[mail.find('@') + 1:]))
+                                     domain=mail.split("@")[1]))
 
     # Get random UID/GID
     uid_check = gid_check = 0
