@@ -47,7 +47,7 @@ import yunohost.domain
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
-from yunohost.service import _run_service_command
+from yunohost.service import _run_service_command, service_regen_conf
 
 
 logger = getActionLogger('yunohost.certmanager')
@@ -528,6 +528,9 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _set_permissions(WEBROOT_FOLDER, "root", "www-data", 0650)
     _set_permissions(TMP_FOLDER, "root", "root", 0640)
 
+    # Regen conf for dnsmasq if needed
+    _regen_dnsmasq_if_needed()
+
     # Prepare certificate signing request
     logger.info(
         "Prepare key and certificate signing request (CSR) for %s...", domain)
@@ -844,6 +847,48 @@ def _domain_is_accessible_through_HTTP(ip, domain):
         return False
 
     return True
+
+
+# FIXME / TODO : ideally this should not be needed. There should be a proper
+# mechanism to regularly check the value of the public IP and trigger
+# corresponding hooks (e.g. dyndns update and dnsmasq regen-conf)
+def _regen_dnsmasq_if_needed():
+    """
+    Update the dnsmasq conf if some IPs are not up to date...
+    """
+    try:
+        ipv4 = yunohost.domain.get_public_ip()
+    except:
+        ipv4 = None
+    try:
+        ipv6 = yunohost.domain.get_public_ip(6)
+    except:
+        ipv6 = None
+
+    do_regen = False
+
+    # For all domain files in DNSmasq conf...
+    domainsconf = glob.glob("/etc/dnsmasq.d/*.*")
+    for domainconf in domainsconf:
+
+        # Look for the IP, it's in the lines with this format :
+        # address=/the.domain.tld/11.22.33.44
+        for line in open(domainconf).readlines():
+            if not line.startswith("address"):
+                continue
+            ip = line.strip().split("/")[2]
+
+            # Compared found IP to current IPv4 / IPv6
+            #             IPv6                   IPv4
+            if (":" in ip and ip != ipv6) or (ip != ipv4):
+                do_regen = True
+                break
+
+        if do_regen:
+            break
+
+    if do_regen:
+        service_regen_conf(["dnsmasq"])
 
 
 def _name_self_CA():
