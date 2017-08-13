@@ -47,7 +47,7 @@ class Mdadm(object):
     def __init__(self):
         pass
 
-    def create(self, device, level, devices_list, name = None, chunk = None):
+    def create(self, device, level, devices_list, name = None, chunk = None, force = False):
         errors = []
         can_continue = False
 
@@ -59,40 +59,31 @@ class Mdadm(object):
 
         args += ['-l', level, '-n', str(len(devices_list))]
         args += devices_list
-        child = pexpect.spawn('mdadm', args)
-        child.logfile = sys.stdout
+        self.child = pexpect.spawn('mdadm', args)
+        #self.child.logfile = sys.stdout
         try:
-            while child.expect(['^mdadm:[^\r]+\r\n']) == 0:
-                print("Match first line", child.after)
-                error = { 'error': str(child.after) }
-                try:
-                    ret = child.expect(['^\s+[^\r]*\r\n'])
-                    if ret == 0:
-                        error['detail'] = str(child.after)
-                except Exception as e:
-                    pass
-                print('Damn')
-                print('Full error :', error)
-                #errors.append(error.copy())
-            if child.expect('Continue creating array? ') != 0:
+            errors = self._parse_errors([])
+            if self.child.after.strip() == 'Continue creating array?':
                 can_continue = True
                 if force:
-                    print("sending Y")
-                    child.sendline('Y')                
-                    child.expect('.*')
-                    print("Result :", child.after)
-                    # child.expect(pexpect.EOF)
-                    return { 'warnings': errors, 'result': child.after }
-                else:
-                    #Send kill
-                    pass
+                    self.child.sendline('Y')
+                    self.child.expect('Y\r\n')
+                    result = self._parse_errors([])
+                    ret = self.child.wait()
+                    return { 'warnings': errors, 'result': result, 'success': True if ret == 0 else False }
         except(pexpect.EOF):
-            print("Failed")
-#        print(errors)
+            pass
+
         return { 'errors': errors, 'can_continue': can_continue }
-        #print(ret)
-#        child.sendline('Y')
-        #print(str(child))
+
+    def _parse_errors(self, errors):
+        if self.child.expect(['^mdadm:[^\r]+\r\n', pexpect.EOF, 'Continue creating array\? ']) == 0:
+            error = self.child.after.strip()
+            if self.child.expect(['\s+[^\r]+\r\n', pexpect.EOF]) == 0:
+                error += ' - ' + self.child.after.strip()
+            errors.append(error)
+            return self._parse_errors(errors)
+        return errors
 
 class Fdisk(object):
     """Main program class"""
@@ -477,10 +468,10 @@ def part_fresh_disk(devpath, auth = None):
         raise MoulinetteError(errno.EIO, e.message)
 
 
-def part_raid_create(device, level, devices, auth = None):
+def part_raid_create(device, level, devices, force=False, auth = None):
     try:
         mdadm = Mdadm()
-        ret = mdadm.create(device=device, level=level, devices_list=devices)
+        ret = mdadm.create(device=device, level=level, devices_list=devices, force=force)
         return ret
     except Exception as e:
         raise MoulinetteError(errno.EIO, e.message)
