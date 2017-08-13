@@ -137,7 +137,6 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
-    rdn = 'uid=%s,ou=users' % username
     char_set = string.ascii_uppercase + string.digits
     salt = ''.join(random.sample(char_set, 8))
     salt = '$1$' + salt + '$'
@@ -189,7 +188,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
 
-    if auth.add(rdn, attr_dict):
+    if auth.add('uid=%s,ou=users' % username, attr_dict):
         # Invalidate passwd to take user creation into account
         subprocess.call(['nscd', '-i', 'passwd'])
 
