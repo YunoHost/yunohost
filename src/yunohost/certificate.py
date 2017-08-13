@@ -31,7 +31,6 @@ import grp
 import smtplib
 import requests
 import subprocess
-import socket
 import dns.resolver
 import glob
 
