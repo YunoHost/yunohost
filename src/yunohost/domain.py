@@ -74,8 +74,6 @@ def domain_add(auth, domain, dyndns=False):
     """
     from yunohost.hook import hook_callback
 
-    attr_dict = {'objectClass': ['mailDomain', 'top']}
-
     try:
         auth.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
@@ -108,7 +106,10 @@ def domain_add(auth, domain, dyndns=False):
     try:
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
-        attr_dict['virtualdomain'] = domain
+        attr_dict = {
+            'objectClass': ['mailDomain', 'top'],
+            'virtualdomain': domain,
+        }
 
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
