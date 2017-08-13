@@ -141,6 +141,7 @@ def domain_remove(auth, domain, force=False):
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf
 
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
@@ -167,7 +168,7 @@ def domain_remove(auth, domain, force=False):
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
     service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
-    os.system('yunohost app ssowatconf > /dev/null 2>&1')
+    app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])
 
