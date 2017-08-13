@@ -114,13 +114,10 @@ def domain_add(auth, domain, dyndns=False):
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
 
-        try:
-            with open('/etc/yunohost/installed', 'r') as f:
-                service_regen_conf(names=[
-                    'nginx', 'metronome', 'dnsmasq', 'rmilter'])
-                os.system('yunohost app ssowatconf > /dev/null 2>&1')
-        except IOError:
-            pass
+        if os.path.exists('/etc/yunohost/installed'):
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'rmilter'])
+            os.system('yunohost app ssowatconf > /dev/null 2>&1')
+
     except:
         # Force domain removal silently
         try:
