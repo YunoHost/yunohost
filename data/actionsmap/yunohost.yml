@@ -1715,24 +1715,24 @@ part:
 #                        # pattern: *pattern_index
 
         ### part_type()
-#        type:
-#            action_help: Change partition type 
-#            api: POST /part/type/<devpath>/<index>/<type>
-#            arguments:
-#                devpath:
-#                    help: Path of the device
-#                start:
-#                    help: Starting address
-#                    extra:
-#                        pattern: *pattern_index
-#                index:
-#                    help: Index of the partition to delete
-#                    extra:
-#                        pattern: *pattern_index
-#                type:
-#                    help: Hexa type of the partition
-#                    # extra:
-#                        # pattern: *pattern_index
+        type:
+            action_help: Change partition type 
+            api: POST /part/type/<devpath>/<index>/<type>
+            arguments:
+                devpath:
+                    help: Path of the device
+                start:
+                    help: Starting address
+                    extra:
+                        pattern: *pattern_index
+                index:
+                    help: Index of the partition to delete
+                    extra:
+                        pattern: *pattern_index
+                type:
+                    help: Hexa type of the partition
+                    # extra:
+                        # pattern: *pattern_index
 
         ### part_fresh_disk()
         fresh_disk:
