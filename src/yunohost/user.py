@@ -80,10 +80,9 @@ def user_list(auth, fields=None):
     for user in result:
         entry = {}
         for attr, values in user.items():
-            try:
+            if values:
                 entry[user_attrs[attr]] = values[0]
-            except:
-                pass
+
         uid = entry[user_attrs['uid']]
         users[uid] = entry
 
