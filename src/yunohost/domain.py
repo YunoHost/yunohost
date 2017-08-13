@@ -24,7 +24,6 @@
     Manage domains
 """
 import os
-import datetime
 import re
 import json
 import yaml
