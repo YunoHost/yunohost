@@ -40,6 +40,7 @@ from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 
 from yunohost.app import (
     app_info, _is_installed, _parse_app_instance_name
@@ -1543,23 +1544,37 @@ class BackupMethod(object):
             if not os.path.isdir(dest_dir):
                 filesystem.mkdir(dest_dir, parents=True)
 
-            # Try to bind files
+            # For directory, attempt to mount bind
             if os.path.isdir(src):
                 filesystem.mkdir(dest, parents=True, force=True)
-                ret = subprocess.call(["mount", "-r", "--rbind", src, dest])
-                if ret == 0:
-                    continue
+
+                try:
+                    subprocess.check_call(["mount", "--rbind", src, dest])
+                    subprocess.check_call(["mount", "-o", "remount,ro,bind", dest])
+                except Exception as e:
+                    logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
+                    # To check if dest is mounted, use /proc/mounts that
+                    # escape spaces as \040
+                    raw_mounts = read_file("/proc/mounts").strip().split('\n')
+                    mounts = [ m.split()[1] for m in raw_mounts ]
+                    mounts = [ m.replace("\\040", " ") for m in mounts ]
+                    if dest in mounts:
+                        subprocess.check_call(["umount", "-R", dest])
                 else:
-                    logger.warning(m18n.n("bind_mouting_disable"))
-                    subprocess.call(["mountpoint", "-q", dest,
-                                    "&&", "umount", "-R", dest])
-            elif os.path.isfile(src) or os.path.islink(src):
-                # Create a hardlink if src and dest are on the filesystem
-                if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
-                    os.link(src, dest)
+                    # Success, go to next file to organize
                     continue
 
-            # Add to the list to copy
+            # For files, create a hardlink
+            elif os.path.isfile(src) or os.path.islink(src):
+                # Can create a hard link only if files are on the same fs
+                # (i.e. we can't if it's on a different fs)
+                if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
+                    os.link(src, dest)
+                    # Success, go to next file to organize
+                    continue
+
+            # If mountbind or hardlink couldnt be created,
+            # prepare a list of files that need to be copied
             paths_needed_to_be_copied.append(path)
 
         if len(paths_needed_to_be_copied) == 0:
@@ -1576,15 +1591,18 @@ class BackupMethod(object):
         if size > MB_ALLOWED_TO_ORGANIZE:
             try:
                 i = msignals.prompt(m18n.n('backup_ask_for_copying_if_needed',
-                                        answers='y/N', size=size))
+                                        answers='y/N', size=str(size)))
             except NotImplemented:
-                logger.error(m18n.n('backup_unable_to_organize_files'))
+                raise MoulinetteError(errno.EIO,
+                                     m18n.n('backup_unable_to_organize_files'))
             else:
                 if i != 'y' and i != 'Y':
-                    logger.error(m18n.n('backup_unable_to_organize_files'))
+                    raise MoulinetteError(errno.EIO,
+                                     m18n.n('backup_unable_to_organize_files'))
 
         # Copy unbinded path
-        logger.info(m18n.n('backup_copying_to_organize_the_archive', size=size))
+        logger.info(m18n.n('backup_copying_to_organize_the_archive',
+            size=str(size)))
         for path in paths_needed_to_be_copied:
             dest = os.path.join(self.work_dir, path['dest'])
             if os.path.isdir(path['source']):
