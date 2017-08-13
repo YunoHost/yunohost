@@ -51,11 +51,14 @@ def user_list(auth, fields=None):
         fields -- fields to fetch
 
     """
-    user_attrs = {'uid': 'username',
-                  'cn': 'fullname',
-                  'mail': 'mail',
-                  'maildrop': 'mail-forward',
-                  'mailuserquota': 'mailbox-quota'}
+    user_attrs = {
+        'uid': 'username',
+        'cn': 'fullname',
+        'mail': 'mail',
+        'maildrop': 'mail-forward',
+        'mailuserquota': 'mailbox-quota'
+    }
+
     attrs = ['uid']
     users = {}
 
@@ -70,7 +73,9 @@ def user_list(auth, fields=None):
     else:
         attrs = ['uid', 'cn', 'mail', 'mailuserquota']
 
-    result = auth.search('ou=users,dc=yunohost,dc=org', '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))', attrs)
+    result = auth.search('ou=users,dc=yunohost,dc=org',
+                         '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
+                         attrs)
 
     for user in result:
         entry = {}
