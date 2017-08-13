@@ -83,20 +83,21 @@ def domain_add(auth, domain, dyndns=False):
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
-        from yunohost.dyndns import dyndns_subscribe
 
+        if os.path.exists('/etc/cron.d/yunohost-dyndns'):
+            raise MoulinetteError(errno.EPERM,
+                                  m18n.n('domain_dyndns_already_subscribed'))
         try:
             r = requests.get('https://dyndns.yunohost.org/domains', timeout=30)
         except requests.ConnectionError as e:
             raise MoulinetteError(errno.EHOSTUNREACH,
                                   m18n.n('domain_dyndns_dynette_is_unreachable', error=str(e)))
 
+        from yunohost.dyndns import dyndns_subscribe
+
         dyndomains = json.loads(r.text)
         dyndomain = '.'.join(domain.split('.')[1:])
         if dyndomain in dyndomains:
-            if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('domain_dyndns_already_subscribed'))
             dyndns_subscribe(domain=domain)
         else:
             raise MoulinetteError(errno.EINVAL,
