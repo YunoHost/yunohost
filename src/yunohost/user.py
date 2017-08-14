@@ -136,10 +136,6 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
-    char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
-    salt = ''.join([random.SystemRandom().choice(char_set) for x in range(16)])
-    salt = '$6$' + salt + '$'
-    user_pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount'],
         'givenName': firstname,
@@ -150,7 +146,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
         'mail': mail,
         'maildrop': username,
         'mailuserquota': mailbox_quota,
-        'userPassword': user_pwd,
+        'userPassword': _hash_user_password(password),
         'gidNumber': uid,
         'uidNumber': uid,
         'homeDirectory': '/home/' + username,
@@ -448,3 +444,10 @@ def _convertSize(num, suffix=''):
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
+def _hash_user_password(password):
+    char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
+    salt = ''.join([random.SystemRandom().choice(char_set) for x in range(16)])
+    salt = '$6$' + salt + '$'
+    return '{CRYPT}' + crypt.crypt(str(password), salt)
