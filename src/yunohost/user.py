@@ -129,11 +129,13 @@ def user_create(auth, username, firstname, lastname, mail, password,
                                      domain=mail.split("@")[1]))
 
     # Get random UID/GID
-    uid_check = gid_check = 0
-    while uid_check == 0 and gid_check == 0:
+    all_uid = {x.pw_uid for x in pwd.getpwall()}
+    all_gid = {x.pw_gid for x in pwd.getpwall()}
+
+    uid_guid_found = False
+    while not uid_guid_found:
         uid = str(random.randint(200, 99999))
-        uid_check = os.system("getent passwd %s" % uid)
-        gid_check = os.system("getent group %s" % uid)
+        uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
