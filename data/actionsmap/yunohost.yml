@@ -78,17 +78,6 @@ user:
                --fields:
                     help: fields to fetch
                     nargs: "+"
-               -f:
-                    full: --filter
-                    help: LDAP filter used to search
-               -l:
-                    full: --limit
-                    help: Maximum number of user fetched
-                    type: int
-               -o:
-                    full: --offset
-                    help: Starting number for user fetching
-                    type: int
 
         ### user_create()
         create:
