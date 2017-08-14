@@ -136,7 +136,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
-    char_set = string.ascii_uppercase + string.digits
+    char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
     salt = ''.join([random.SystemRandom().choice(char_set) for x in range(8)])
     salt = '$1$' + salt + '$'
     user_pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
