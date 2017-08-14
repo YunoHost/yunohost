@@ -138,7 +138,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
     fullname = '%s %s' % (firstname, lastname)
     char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
     salt = ''.join([random.SystemRandom().choice(char_set) for x in range(12)])
-    salt = '$1$' + salt + '$'
+    salt = '$6$' + salt + '$'
     user_pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount'],
