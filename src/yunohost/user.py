@@ -289,10 +289,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
 
     if change_password:
-        char_set = string.ascii_uppercase + string.digits
-        salt = ''.join(random.sample(char_set, 8))
-        salt = '$1$' + salt + '$'
-        new_attr_dict['userPassword'] = '{CRYPT}' + crypt.crypt(str(change_password), salt)
+        new_attr_dict['userPassword'] = _hash_user_password(change_password)
 
     if mail:
         auth.validate_uniqueness({'mail': mail})
