@@ -115,11 +115,8 @@ def user_create(auth, username, firstname, lastname, mail, password,
     })
 
     # Validate uniqueness of username in system users
-    try:
-        pwd.getpwnam(username)
-    except KeyError:
-        pass
-    else:
+    all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
+    if username in all_existing_usernames:
         raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
 
     # Check that the mail domain exists
