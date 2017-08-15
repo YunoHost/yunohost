@@ -814,6 +814,30 @@ def tools_migrations_state():
     return read_json(MIGRATIONS_STATE_PATH)
 
 
+def tools_shell(auth):
+    """
+    Launch an (i)python shell in the YunoHost context.
+
+    This is entirely aim for development.
+    """
+
+    logger.warn("The \033[1;34mauth\033[0m is available in this context")
+    try:
+        from IPython import embed
+        embed()
+    except ImportError:
+        logger.warn("You don't have IPython installed, consider installing it as it is way better than the standard shell.")
+        logger.warn("Falling back on the standard shell.")
+
+        import readline # will allow Up/Down/History in the console
+        readline  # to please pyflakes
+        import code
+        vars = globals().copy()
+        vars.update(locals())
+        shell = code.InteractiveConsole(vars)
+        shell.interact()
+
+
 def _get_migrations_list():
     migrations = []
 
