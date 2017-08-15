@@ -814,12 +814,16 @@ def tools_migrations_state():
     return read_json(MIGRATIONS_STATE_PATH)
 
 
-def tools_shell(auth):
+def tools_shell(auth, command=None):
     """
     Launch an (i)python shell in the YunoHost context.
 
     This is entirely aim for development.
     """
+
+    if command:
+        exec(command)
+        return
 
     logger.warn("The \033[1;34mauth\033[0m is available in this context")
     try:

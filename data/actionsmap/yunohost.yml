@@ -1483,6 +1483,10 @@ tools:
             configuration:
                 authenticate: all
             action_help: Launch a development shell
+            arguments:
+                -c:
+                    help: python command to execute
+                    full: --command
 
         ### tools_shutdown()
         shutdown:
