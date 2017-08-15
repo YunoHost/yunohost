@@ -445,6 +445,16 @@ def _convertSize(num, suffix=''):
 
 def _hash_user_password(password):
     char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
+    # This 16 number is chosen according to this documentation stating that
+    # this is the maximum number of salt possible
+    # https://www.safaribooksonline.com/library/view/practical-unix-and/0596003234/ch04s03.html
+    #
+    # SystemRandom is the cryptographically secure random method provided by python stl
+    # You can refer to this https://docs.python.org/2/library/random.html for
+    # confirmation (read the red square), it internally uses /dev/urandom
     salt = ''.join([random.SystemRandom().choice(char_set) for x in range(16)])
+
+    # Using "$6$" means that we uses sha-512 which is the strongest hash available on the system
+    # You can refer to this for more explainations https://www.redpill-linpro.com/techblog/2016/08/16/ldap-password-hash.html
     salt = '$6$' + salt + '$'
     return '{CRYPT}' + crypt.crypt(str(password), salt)
