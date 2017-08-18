@@ -1467,6 +1467,16 @@ tools:
                     extra:
                         pattern: *pattern_port
 
+        ### tools_shell()
+        shell:
+            configuration:
+                authenticate: all
+            action_help: Launch a development shell
+            arguments:
+                -c:
+                    help: python command to execute
+                    full: --command
+
         ### tools_shutdown()
         shutdown:
             action_help: Shutdown the server
