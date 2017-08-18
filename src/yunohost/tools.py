@@ -122,8 +122,11 @@ def tools_adminpw(auth, new_password):
         new_password
 
     """
+    from yunohost.user import _hash_user_password
     try:
-        auth.con.passwd_s('cn=admin,dc=yunohost,dc=org', None, new_password)
+        auth.update("cn=admin", {
+            "userPassword": _hash_user_password(new_password),
+        })
     except:
         logger.exception('unable to change admin password')
         raise MoulinetteError(errno.EPERM,

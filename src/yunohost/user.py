@@ -24,13 +24,13 @@
     Manage users
 """
 import os
+import re
+import json
+import errno
 import crypt
 import random
 import string
-import json
-import errno
 import subprocess
-import re
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -40,7 +40,7 @@ from yunohost.service import service_status
 logger = getActionLogger('yunohost.user')
 
 
-def user_list(auth, fields=None, filter=None, limit=None, offset=None):
+def user_list(auth, fields=None):
     """
     List users
 
@@ -51,21 +51,17 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
         fields -- fields to fetch
 
     """
-    user_attrs = {'uid': 'username',
-                  'cn': 'fullname',
-                  'mail': 'mail',
-                  'maildrop': 'mail-forward',
-                  'mailuserquota': 'mailbox-quota'}
+    user_attrs = {
+        'uid': 'username',
+        'cn': 'fullname',
+        'mail': 'mail',
+        'maildrop': 'mail-forward',
+        'mailuserquota': 'mailbox-quota'
+    }
+
     attrs = ['uid']
     users = {}
 
-    # Set default arguments values
-    if offset is None:
-        offset = 0
-    if limit is None:
-        limit = 1000
-    if filter is None:
-        filter = '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))'
     if fields:
         keys = user_attrs.keys()
         for attr in fields:
@@ -77,18 +73,19 @@ def user_list(auth, fields=None, filter=None, limit=None, offset=None):
     else:
         attrs = ['uid', 'cn', 'mail', 'mailuserquota']
 
-    result = auth.search('ou=users,dc=yunohost,dc=org', filter, attrs)
+    result = auth.search('ou=users,dc=yunohost,dc=org',
+                         '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
+                         attrs)
 
-    if len(result) > offset and limit > 0:
-        for user in result[offset:offset + limit]:
-            entry = {}
-            for attr, values in user.items():
-                try:
-                    entry[user_attrs[attr]] = values[0]
-                except:
-                    pass
-            uid = entry[user_attrs['uid']]
-            users[uid] = entry
+    for user in result:
+        entry = {}
+        for attr, values in user.items():
+            if values:
+                entry[user_attrs[attr]] = values[0]
+
+        uid = entry[user_attrs['uid']]
+        users[uid] = entry
+
     return {'users': users}
 
 
@@ -118,33 +115,27 @@ def user_create(auth, username, firstname, lastname, mail, password,
     })
 
     # Validate uniqueness of username in system users
-    try:
-        pwd.getpwnam(username)
-    except KeyError:
-        pass
-    else:
+    all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
+    if username in all_existing_usernames:
         raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
 
     # Check that the mail domain exists
-    if mail[mail.find('@') + 1:] not in domain_list(auth)['domains']:
+    if mail.split("@")[1] not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
-                                     domain=mail[mail.find('@') + 1:]))
+                                     domain=mail.split("@")[1]))
 
     # Get random UID/GID
-    uid_check = gid_check = 0
-    while uid_check == 0 and gid_check == 0:
+    all_uid = {x.pw_uid for x in pwd.getpwall()}
+    all_gid = {x.pw_gid for x in pwd.getpwall()}
+
+    uid_guid_found = False
+    while not uid_guid_found:
         uid = str(random.randint(200, 99999))
-        uid_check = os.system("getent passwd %s" % uid)
-        gid_check = os.system("getent group %s" % uid)
+        uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
-    rdn = 'uid=%s,ou=users' % username
-    char_set = string.ascii_uppercase + string.digits
-    salt = ''.join(random.sample(char_set, 8))
-    salt = '$1$' + salt + '$'
-    user_pwd = '{CRYPT}' + crypt.crypt(str(password), salt)
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount'],
         'givenName': firstname,
@@ -155,7 +146,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
         'mail': mail,
         'maildrop': username,
         'mailuserquota': mailbox_quota,
-        'userPassword': user_pwd,
+        'userPassword': _hash_user_password(password),
         'gidNumber': uid,
         'uidNumber': uid,
         'homeDirectory': '/home/' + username,
@@ -192,7 +183,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
 
-    if auth.add(rdn, attr_dict):
+    if auth.add('uid=%s,ou=users' % username, attr_dict):
         # Invalidate passwd to take user creation into account
         subprocess.call(['nscd', '-i', 'passwd'])
 
@@ -298,10 +289,7 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
 
     if change_password:
-        char_set = string.ascii_uppercase + string.digits
-        salt = ''.join(random.sample(char_set, 8))
-        salt = '$1$' + salt + '$'
-        new_attr_dict['userPassword'] = '{CRYPT}' + crypt.crypt(str(change_password), salt)
+        new_attr_dict['userPassword'] = _hash_user_password(change_password)
 
     if mail:
         auth.validate_uniqueness({'mail': mail})
@@ -453,3 +441,32 @@ def _convertSize(num, suffix=''):
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
+def _hash_user_password(password):
+    """
+    This function computes and return a salted hash for the password in input.
+    This implementation is inspired from [1].
+
+    The hash follows SHA-512 scheme from Linux/glibc.
+    Hence the {CRYPT} and $6$ prefixes
+    - {CRYPT} means it relies on the OS' crypt lib
+    - $6$ corresponds to SHA-512, the strongest hash available on the system
+
+    The salt is generated using random.SystemRandom(). It is the crypto-secure
+    pseudo-random number generator according to the python doc [2] (c.f. the
+    red square). It internally relies on /dev/urandom
+
+    The salt is made of 16 characters from the set [./a-zA-Z0-9]. This is the
+    max sized allowed for salts according to [3]
+
+    [1] https://www.redpill-linpro.com/techblog/2016/08/16/ldap-password-hash.html
+    [2] https://docs.python.org/2/library/random.html
+    [3] https://www.safaribooksonline.com/library/view/practical-unix-and/0596003234/ch04s03.html
+    """
+
+    char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
+    salt = ''.join([random.SystemRandom().choice(char_set) for x in range(16)])
+
+    salt = '$6$' + salt + '$'
+    return '{CRYPT}' + crypt.crypt(str(password), salt)
