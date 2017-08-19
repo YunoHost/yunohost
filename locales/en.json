@@ -144,6 +144,7 @@
     "domain_deletion_failed": "Unable to delete domain",
     "domain_dns_conf_is_just_a_recommendation": "This command shows you what is the *recommended* configuration. It does not actually set up the DNS configuration for you. It is your responsability to configure your DNS zone in your registrar according to this recommendation.",
     "domain_dyndns_already_subscribed": "You've already subscribed to a DynDNS domain",
+    "domain_dyndns_dynette_is_unreachable": "Unable to reach YunoHost dynette, either your YunoHost is not correctly connected to the internet or the dynette server is down. Error: {error}",
     "domain_dyndns_invalid": "Invalid domain to use with DynDNS",
     "domain_dyndns_root_unknown": "Unknown DynDNS root domain",
     "domain_exists": "Domain already exists",

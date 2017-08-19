@@ -43,7 +43,7 @@ from yunohost.service import service_regen_conf
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list(auth, filter=None, limit=None, offset=None):
+def domain_list(auth):
     """
     List domains
 
@@ -55,19 +55,10 @@ def domain_list(auth, filter=None, limit=None, offset=None):
     """
     result_list = []
 
-    # Set default arguments values
-    if offset is None:
-        offset = 0
-    if limit is None:
-        limit = 1000
-    if filter is None:
-        filter = 'virtualdomain=*'
+    result = auth.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
 
-    result = auth.search('ou=domains,dc=yunohost,dc=org', filter, ['virtualdomain'])
-
-    if len(result) > offset and limit > 0:
-        for domain in result[offset:offset + limit]:
-            result_list.append(domain['virtualdomain'][0])
+    for domain in result:
+        result_list.append(domain['virtualdomain'][0])
 
     return {'domains': result_list}
 
@@ -82,54 +73,53 @@ def domain_add(auth, domain, dyndns=False):
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf
 
-    attr_dict = {'objectClass': ['mailDomain', 'top']}
-
-    if domain in domain_list(auth)['domains']:
+    try:
+        auth.validate_uniqueness({'virtualdomain': domain})
+    except MoulinetteError:
         raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
 
     # DynDNS domain
     if dyndns:
         if len(domain.split('.')) < 3:
             raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
+
+        if os.path.exists('/etc/cron.d/yunohost-dyndns'):
+            raise MoulinetteError(errno.EPERM,
+                                  m18n.n('domain_dyndns_already_subscribed'))
+        try:
+            r = requests.get('https://dyndns.yunohost.org/domains', timeout=30)
+        except requests.ConnectionError as e:
+            raise MoulinetteError(errno.EHOSTUNREACH,
+                                  m18n.n('domain_dyndns_dynette_is_unreachable', error=str(e)))
+
         from yunohost.dyndns import dyndns_subscribe
 
-        try:
-            r = requests.get('https://dyndns.yunohost.org/domains')
-        except requests.ConnectionError:
-            pass
+        dyndomains = json.loads(r.text)
+        dyndomain = '.'.join(domain.split('.')[1:])
+        if dyndomain in dyndomains:
+            dyndns_subscribe(domain=domain)
         else:
-            dyndomains = json.loads(r.text)
-            dyndomain = '.'.join(domain.split('.')[1:])
-            if dyndomain in dyndomains:
-                if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-                    raise MoulinetteError(errno.EPERM,
-                                          m18n.n('domain_dyndns_already_subscribed'))
-                dyndns_subscribe(domain=domain)
-            else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('domain_dyndns_root_unknown'))
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('domain_dyndns_root_unknown'))
 
     try:
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
-        try:
-            auth.validate_uniqueness({'virtualdomain': domain})
-        except MoulinetteError:
-            raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
-
-        attr_dict['virtualdomain'] = domain
+        attr_dict = {
+            'objectClass': ['mailDomain', 'top'],
+            'virtualdomain': domain,
+        }
 
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
 
-        try:
-            with open('/etc/yunohost/installed', 'r') as f:
-                service_regen_conf(names=[
-                    'nginx', 'metronome', 'dnsmasq', 'rmilter'])
-                os.system('yunohost app ssowatconf > /dev/null 2>&1')
-        except IOError:
-            pass
+        # Don't regen these conf if we're still in postinstall
+        if os.path.exists('/etc/yunohost/installed'):
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'rmilter'])
+            app_ssowatconf(auth)
+
     except:
         # Force domain removal silently
         try:
@@ -153,6 +143,7 @@ def domain_remove(auth, domain, force=False):
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf
 
     if not force and domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
@@ -179,7 +170,7 @@ def domain_remove(auth, domain, force=False):
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
     service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
-    os.system('yunohost app ssowatconf > /dev/null 2>&1')
+    app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])
 
