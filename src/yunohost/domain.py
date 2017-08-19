@@ -73,6 +73,7 @@ def domain_add(auth, domain, dyndns=False):
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf
 
     try:
         auth.validate_uniqueness({'virtualdomain': domain})
@@ -114,9 +115,10 @@ def domain_add(auth, domain, dyndns=False):
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
 
+        # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
             service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'rmilter'])
-            os.system('yunohost app ssowatconf > /dev/null 2>&1')
+            app_ssowatconf(auth)
 
     except:
         # Force domain removal silently
