@@ -192,10 +192,11 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     else:
         logger.info("Updated needed, going on...")
 
+    # If domain is not given, try to guess it from keys available...
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
-
-    if key is None:
+    # If key is not given, pick the first file we find with the domain given
+    elif key is None:
         keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
 
         if not keys:
@@ -203,6 +204,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
         key = keys[0]
 
+    # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
     host = domain.split('.')[1:]
     host = '.'.join(host)
 
