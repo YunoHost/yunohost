@@ -38,7 +38,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
 
-from yunohost.domain import get_public_ip, _get_maindomain, _build_dns_conf
+from yunohost.domain import get_public_ips, _get_maindomain, _build_dns_conf
 
 logger = getActionLogger('yunohost.dyndns')
 
@@ -198,29 +198,14 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if os.path.isfile(old_ipv6_file):
         old_ipv6 = read_file(old_ipv6_file).rstrip()
 
-    # Get current IPv4
+    # Get current IPv4 and IPv6
+    (ipv4_, ipv6_) = get_public_ips()
+
     if ipv4 is None:
-        ipv4 = get_public_ip()
+        ipv4 = ipv4_
 
-    # Get current IPv6
     if ipv6 is None:
-        try:
-            ip_route_out = subprocess.check_output(
-                ['ip', 'route', 'get', '2000::']).split('\n')
-
-            if len(ip_route_out) > 0:
-                route = IPRouteLine(ip_route_out[0])
-                if not route.unreachable:
-                    ipv6 = route.src_addr
-
-        except (OSError, ValueError) as e:
-            # Unlikely case "ip route" does not return status 0
-            # or produces unexpected output
-            raise MoulinetteError(errno.EBADMSG,
-                                  "ip route cmd error : {}".format(e))
-
-        if ipv6 is None:
-            logger.info(m18n.n('no_ipv6_connectivity'))
+        ipv6 = ipv6_
 
     # no need to update
     if old_ipv4 == ipv4 and old_ipv6 == ipv6:
