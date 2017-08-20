@@ -246,9 +246,6 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         'send'
     ]
 
-    logger.debug("Zone update info :")
-    logger.debug('\n'.join(lines))
-
     # Write the actions to do to update to a file, to be able to pass it
     # to nsupdate as argument
     write_to_file(DYNDNS_ZONE, '\n'.join(lines))
