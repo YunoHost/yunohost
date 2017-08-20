@@ -129,12 +129,16 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     if domain is None:
         domain = _get_maindomain()
 
+    # Verify if domain is provided by subscribe_host
+    if not _dyndns_provides(subscribe_host, domain):
+        raise MoulinetteError(errno.ENOENT,
+                              m18n.n('dyndns_domain_not_provided',
+                                     domain=domain, provider=subscribe_host))
+
     # Verify if domain is available
-    try:
-        if requests.get('https://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
-            raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
-    except requests.ConnectionError:
-        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+    if not _dyndns_available(subscribe_host, domain):
+        raise MoulinetteError(errno.ENOENT,
+                              m18n.n('dyndns_unavailable', domain=domain))
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
