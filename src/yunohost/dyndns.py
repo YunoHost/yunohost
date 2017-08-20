@@ -256,8 +256,8 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
         subprocess.check_call(command)
     except subprocess.CalledProcessError:
-        rm(OLD_IPV4_FILE)
-        rm(OLD_IPV6_FILE)
+        rm(OLD_IPV4_FILE, force=True)  # Remove file (ignore if non-existent)
+        rm(OLD_IPV6_FILE, force=True)  # Remove file (ignore if non-existent)
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_ip_update_failed'))
 
