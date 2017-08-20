@@ -42,6 +42,9 @@ from yunohost.domain import get_public_ips, _get_maindomain, _build_dns_conf
 
 logger = getActionLogger('yunohost.dyndns')
 
+OLD_IPV4_FILE = '/etc/yunohost/dyndns/old_ip'
+OLD_IPV6_FILE = '/etc/yunohost/dyndns/old_ipv6'
+
 
 def _dyndns_provides(provider, domain):
     """
@@ -159,20 +162,15 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         ipv6 -- IPv6 address to send
 
     """
-
     # Get old ipv4/v6
 
-    old_ipv4_file = '/etc/yunohost/dyndns/old_ip'
-    old_ipv6_file = '/etc/yunohost/dyndns/old_ipv6'
+    old_ipv4, old_ipv6 = (None, None) # (default values)
 
-    # (default values)
-    old_ipv4, old_ipv6 = (None, None)
+    if os.path.isfile(OLD_IPV4_FILE):
+        old_ipv4 = read_file(OLD_IPV4_FILE).rstrip()
 
-    if os.path.isfile(old_ipv4_file):
-        old_ipv4 = read_file(old_ipv4_file).rstrip()
-
-    if os.path.isfile(old_ipv6_file):
-        old_ipv6 = read_file(old_ipv6_file).rstrip()
+    if os.path.isfile(OLD_IPV6_FILE):
+        old_ipv6 = read_file(OLD_IPV6_FILE).rstrip()
 
     # Get current IPv4 and IPv6
     (ipv4_, ipv6_) = get_public_ips()
@@ -262,17 +260,17 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         zone.write('\n'.join(lines))
 
     if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) != 0:
-        rm(old_ipv4_file)
-        rm(old_ipv6_file)
+        rm(OLD_IPV4_FILE)
+        rm(OLD_IPV6_FILE)
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_ip_update_failed'))
 
     logger.success(m18n.n('dyndns_ip_updated'))
 
     if ipv4 is not None:
-        write_to_file(old_ipv4_file, ipv4)
+        write_to_file(OLD_IPV4_FILE, ipv4)
     if ipv6 is not None:
-        write_to_file(old_ipv4_file, ipv4)
+        write_to_file(OLD_IPV4_FILE, ipv4)
 
 
 def dyndns_installcron():
