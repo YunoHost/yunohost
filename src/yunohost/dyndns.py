@@ -255,7 +255,10 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
     logger.info("Now pushing new conf to DynDNS host...")
 
-    if os.system('/usr/bin/nsupdate -k %s %s' % (key, DYNDNS_ZONE)) != 0:
+    try:
+        command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError:
         rm(OLD_IPV4_FILE)
         rm(OLD_IPV6_FILE)
         raise MoulinetteError(errno.EPERM,
