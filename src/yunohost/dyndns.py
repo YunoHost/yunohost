@@ -99,6 +99,23 @@ def _dyndns_provides(provider, domain):
     return (dyndomain in dyndomains)
 
 
+def _dyndns_available(provider, domain):
+
+    logger.debug("Checking if domain %s is available on %s ..."
+                 % (domain, provider))
+
+    try:
+        r = download_json('https://%s/test/%s' % (provider, domain),
+                          expected_status_code=None)
+    except MoulinetteError as e:
+        logger.error(str(e))
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('dyndns_could_not_check_available',
+                                     domain=domain, provider=provider))
+
+    return r == u"Domain %s is available" % domain
+
+
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
