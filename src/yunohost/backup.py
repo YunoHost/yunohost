@@ -1456,8 +1456,7 @@ class BackupMethod(object):
 
         points_to_umount = [line.split(" ")[2]
                             for line in mount_lines
-                            if len(line) >= 3
-                            and line.split(" ")[2].startswith(directory)]
+                            if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
         ret = 0
         for point in reversed(points_to_umount):
             ret = subprocess.call(["umount", point])
@@ -1945,7 +1944,7 @@ def backup_create(name=None, description=None, methods=[],
     ###########################################################################
 
     # Historical, deprecated options
-    if ignore_hooks != False:
+    if ignore_hooks is not False:
         logger.warning("--ignore-hooks is deprecated and will be removed in the"
                        "future. Please use --ignore-system instead.")
         ignore_system = ignore_hooks
@@ -2073,7 +2072,7 @@ def backup_restore(auth, name,
     ###########################################################################
 
     # Historical, deprecated options
-    if ignore_hooks != False:
+    if ignore_hooks is not False:
         logger.warning("--ignore-hooks is deprecated and will be removed in the"
                        "future. Please use --ignore-system instead.")
         ignore_system = ignore_hooks

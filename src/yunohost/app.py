@@ -1544,7 +1544,7 @@ def _fetch_app_from_git(app):
         else:
             raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
 
-        if not 'git' in app_info:
+        if 'git' not in app_info:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('app_unsupported_remote_type'))
         url = app_info['git']['url']
@@ -1852,9 +1852,9 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         # is an available url and normalize the path.
 
         domain_args = [arg["name"] for arg in action_args
-                                      if arg.get("type","string") == "domain"]
+                       if arg.get("type", "string") == "domain"]
         path_args = [arg["name"] for arg in action_args
-                                      if arg.get("type","string") == "path"]
+                     if arg.get("type", "string") == "path"]
 
         if len(domain_args) == 1 and len(path_args) == 1:
 
@@ -1870,7 +1870,6 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             # (We save this normalized path so that the install script have a
             # standard path format to deal with no matter what the user inputted)
             args_dict[path_args[0]] = path
-
 
     return args_dict
 
