@@ -192,29 +192,8 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     else:
         logger.info("Updated needed, going on...")
 
-    re_dyndns_private_key = re.compile(
-        r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
-    )
-
     if domain is None:
-        # Retrieve the first registered domain
-        for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
-            match = re_dyndns_private_key.match(path)
-            if not match:
-                continue
-            _domain = match.group('domain')
-
-            # Verify if domain is registered (i.e., if it's available, skip
-            # current domain beause that's not the one we want to update..)
-            if _dyndns_available(dyn_host, domain):
-                continue
-            else:
-                domain = _domain
-                key = path
-                break
-        if not domain:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('dyndns_no_domain_registered'))
+        (domain, key) = _guess_current_dyndns_domain(dyn_host)
 
     if key is None:
         keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
@@ -312,3 +291,34 @@ def dyndns_removecron():
         raise MoulinetteError(errno.EIO, m18n.n('dyndns_cron_remove_failed'))
 
     logger.success(m18n.n('dyndns_cron_removed'))
+
+
+def _guess_current_dyndns_domain(dyn_host):
+    """
+    This function tries to guess which domain should be updated by
+    "dyndns_update()" because there's not proper management of the current
+    dyndns domain :/ (and at the moment the code doesn't support having several
+    dyndns domain, which is sort of a feature so that people don't abuse the
+    dynette...)
+    """
+
+    re_dyndns_private_key = re.compile(
+        r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
+    )
+
+    # Retrieve the first registered domain
+    for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+        match = re_dyndns_private_key.match(path)
+        if not match:
+            continue
+        _domain = match.group('domain')
+
+        # Verify if domain is registered (i.e., if it's available, skip
+        # current domain beause that's not the one we want to update..)
+        if _dyndns_available(dyn_host, _domain):
+            continue
+        else:
+            return (_domain, path)
+
+    raise MoulinetteError(errno.EINVAL,
+                          m18n.n('dyndns_no_domain_registered'))
