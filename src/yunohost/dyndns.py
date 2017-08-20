@@ -44,6 +44,7 @@ logger = getActionLogger('yunohost.dyndns')
 
 OLD_IPV4_FILE = '/etc/yunohost/dyndns/old_ip'
 OLD_IPV6_FILE = '/etc/yunohost/dyndns/old_ipv6'
+DYNDNS_ZONE = '/etc/yunohost/dyndns/zone'
 
 
 def _dyndns_provides(provider, domain):
@@ -256,10 +257,10 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         'send'
     ]
 
-    with open('/etc/yunohost/dyndns/zone', 'w') as zone:
+    with open(DYNDNS_ZONE, 'w') as zone:
         zone.write('\n'.join(lines))
 
-    if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) != 0:
+    if os.system('/usr/bin/nsupdate -k %s %s' % (key, DYNDNS_ZONE)) != 0:
         rm(OLD_IPV4_FILE)
         rm(OLD_IPV6_FILE)
         raise MoulinetteError(errno.EPERM,
