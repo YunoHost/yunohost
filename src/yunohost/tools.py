@@ -273,8 +273,10 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             is_nohostme_or_nohost = False
 
         if is_nohostme_or_nohost:
-            if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
+            # Check if the domain is available...
+            if _dyndns_available(dyndns_provider, domain):
                 dyndns = True
+            # If not, abort the postinstall
             else:
                 raise MoulinetteError(errno.EEXIST,
                                       m18n.n('dyndns_unavailable'))
