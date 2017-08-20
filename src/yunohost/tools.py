@@ -45,7 +45,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
-from yunohost.dyndns import dyndns_subscribe
+from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log
 from yunohost.monitor import monitor_disk, monitor_system
@@ -253,28 +253,33 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     """
     dyndns = not ignore_dyndns
+    dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('yunohost_already_installed'))
     if len(domain.split('.')) >= 3 and not ignore_dyndns:
+        # Check if yunohost dyndns can handle the given domain
+        # (i.e. is it a .nohost.me ? a .noho.st ?)
         try:
-            r = requests.get('https://dyndns.yunohost.org/domains')
-        except requests.ConnectionError:
-            pass
-        else:
-            dyndomains = json.loads(r.text)
-            dyndomain  = '.'.join(domain.split('.')[1:])
+            is_nohostme_or_nohost = _dyndns_provides(dyndns_provider, domain)
+        # If an exception is thrown, most likely we don't have internet
+        # connectivity or something. Assume that this domain isn't manageable
+        # and inform the user that we could not contact the dyndns host server.
+        except:
+            logger.warning(m18n.n('dyndns_provider_unreachable',
+                                  provider=dyndns_provider))
+            is_nohostme_or_nohost = False
 
-            if dyndomain in dyndomains:
-                if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
-                    dyndns = True
-                else:
-                    raise MoulinetteError(errno.EEXIST,
-                                          m18n.n('dyndns_unavailable'))
+        if is_nohostme_or_nohost:
+            if requests.get('https://dyndns.yunohost.org/test/%s' % domain).status_code == 200:
+                dyndns = True
             else:
-                dyndns = False
+                raise MoulinetteError(errno.EEXIST,
+                                      m18n.n('dyndns_unavailable'))
+        else:
+            dyndns = False
     else:
         dyndns = False
 
