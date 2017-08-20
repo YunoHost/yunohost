@@ -252,14 +252,14 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         password -- YunoHost admin password
 
     """
-    dyndns = not ignore_dyndns
     dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('yunohost_already_installed'))
-    if len(domain.split('.')) >= 3 and not ignore_dyndns:
+
+    if not ignore_dyndns:
         # Check if yunohost dyndns can handle the given domain
         # (i.e. is it a .nohost.me ? a .noho.st ?)
         try:
@@ -272,9 +272,13 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
                                   provider=dyndns_provider))
             is_nohostme_or_nohost = False
 
+        # If this is a nohost.me/noho.st, actually check for availability
         if is_nohostme_or_nohost:
+            # (Except if the user explicitly said he/she doesn't care about dyndns)
+            if ignore_dyndns:
+                dyndns = False
             # Check if the domain is available...
-            if _dyndns_available(dyndns_provider, domain):
+            elif _dyndns_available(dyndns_provider, domain):
                 dyndns = True
             # If not, abort the postinstall
             else:
