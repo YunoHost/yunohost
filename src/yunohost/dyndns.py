@@ -43,29 +43,6 @@ from yunohost.domain import get_public_ips, _get_maindomain, _build_dns_conf
 logger = getActionLogger('yunohost.dyndns')
 
 
-class IPRouteLine(object):
-    """ Utility class to parse an ip route output line
-
-    The output of ip ro is variable and hard to parse completly, it would
-    require a real parser, not just a regexp, so do minimal parsing here...
-
-    >>> a = IPRouteLine('2001:: from :: via fe80::c23f:fe:1e:cafe dev eth0  src 2000:de:beef:ca:0:fe:1e:cafe  metric 0')
-    >>> a.src_addr
-    "2000:de:beef:ca:0:fe:1e:cafe"
-    """
-    regexp = re.compile(
-        r'(?P<unreachable>unreachable)?.*src\s+(?P<src_addr>[0-9a-f:]+).*')
-
-    def __init__(self, line):
-        self.m = self.regexp.match(line)
-        if not self.m:
-            raise ValueError("Not a valid ip route get line")
-
-        # make regexp group available as object attributes
-        for k, v in self.m.groupdict().items():
-            setattr(self, k, v)
-
-
 def _dyndns_provides(provider, domain):
     """
     Checks if a provider provide/manage a given domain.
