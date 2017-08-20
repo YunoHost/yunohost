@@ -165,7 +165,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     """
     # Get old ipv4/v6
 
-    old_ipv4, old_ipv6 = (None, None) # (default values)
+    old_ipv4, old_ipv6 = (None, None)  # (default values)
 
     if os.path.isfile(OLD_IPV4_FILE):
         old_ipv4 = read_file(OLD_IPV4_FILE).rstrip()
@@ -182,9 +182,15 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if ipv6 is None:
         ipv6 = ipv6_
 
+    logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
+    logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+
     # no need to update
     if old_ipv4 == ipv4 and old_ipv6 == ipv6:
+        logger.info("No updated needed.")
         return
+    else:
+        logger.info("Updated needed, going on...")
 
     re_dyndns_private_key = re.compile(
         r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
@@ -220,6 +226,8 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
     host = domain.split('.')[1:]
     host = '.'.join(host)
+
+    logger.debug("Building zone update file ...")
 
     lines = [
         'server %s' % dyn_host,
@@ -257,9 +265,14 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         'send'
     ]
 
+    logger.debug("Zone update info :")
+    logger.debug('\n'.join(lines))
+
     # Write the actions to do to update to a file, to be able to pass it
     # to nsupdate as argument
     write_to_file(DYNDNS_ZONE, '\n'.join(lines))
+
+    logger.info("Now pushing new conf to DynDNS host...")
 
     if os.system('/usr/bin/nsupdate -k %s %s' % (key, DYNDNS_ZONE)) != 0:
         rm(OLD_IPV4_FILE)
