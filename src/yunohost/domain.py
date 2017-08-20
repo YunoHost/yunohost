@@ -82,27 +82,22 @@ def domain_add(auth, domain, dyndns=False):
 
     # DynDNS domain
     if dyndns:
-        if len(domain.split('.')) < 3:
-            raise MoulinetteError(errno.EINVAL, m18n.n('domain_dyndns_invalid'))
 
+        # Do not allow to subscribe to multiple dyndns domains...
         if os.path.exists('/etc/cron.d/yunohost-dyndns'):
             raise MoulinetteError(errno.EPERM,
                                   m18n.n('domain_dyndns_already_subscribed'))
-        try:
-            r = requests.get('https://dyndns.yunohost.org/domains', timeout=30)
-        except requests.ConnectionError as e:
-            raise MoulinetteError(errno.EHOSTUNREACH,
-                                  m18n.n('domain_dyndns_dynette_is_unreachable', error=str(e)))
 
-        from yunohost.dyndns import dyndns_subscribe
+        from yunohost.dyndns import dyndns_subscribe, _dyndns_provides
 
-        dyndomains = json.loads(r.text)
-        dyndomain = '.'.join(domain.split('.')[1:])
-        if dyndomain in dyndomains:
-            dyndns_subscribe(domain=domain)
-        else:
+        # Check that this domain can effectively be provided by
+        # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
+        if not _dyndns_provides("dyndns.yunohost.org", domain):
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('domain_dyndns_root_unknown'))
+
+        # Actually subscribe
+        dyndns_subscribe(domain=domain)
 
     try:
         yunohost.certificate._certificate_install_selfsigned([domain], False)
