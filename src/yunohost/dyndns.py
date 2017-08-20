@@ -166,8 +166,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     old_ipv6_file = '/etc/yunohost/dyndns/old_ipv6'
 
     # (default values)
-    old_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
-    old_ipv4 = '0.0.0.0'
+    old_ipv4, old_ipv6 = (None, None)
 
     if os.path.isfile(old_ipv4_file):
         old_ipv4 = read_file(old_ipv4_file).rstrip()
