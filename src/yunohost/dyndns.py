@@ -35,6 +35,7 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.network import download_json
 
 from yunohost.domain import get_public_ip, _get_maindomain, _build_dns_conf
 
@@ -66,6 +67,36 @@ class IPRouteLine(object):
 re_dyndns_private_key = re.compile(
     r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
 )
+
+
+def _dyndns_provides(provider, domain):
+    """
+    Checks if a provider provide/manage a given domain.
+
+    Keyword arguments:
+        provider -- The url of the provider, e.g. "dyndns.yunohost.org"
+        domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
+
+    Returns:
+        True if the provider provide/manages the domain. False otherwise.
+    """
+
+    logger.debug("Checking if %s is managed by %s ..." % (domain, provider))
+
+    try:
+        # Dyndomains will be a list of domains supported by the provider
+        # e.g. [ "nohost.me", "noho.st" ]
+        dyndomains = download_json('https://%s/domains' % provider, timeout=30)
+    except MoulinetteError as e:
+        logger.error(str(e))
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('dyndns_could_not_check_provide',
+                                     domain=domain, provider=provider))
+
+    # Extract 'dyndomain' from 'domain', e.g. 'nohost.me' from 'foo.nohost.me'
+    dyndomain = '.'.join(domain.split('.')[1:])
+
+    return (dyndomain in dyndomains)
 
 
 def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
