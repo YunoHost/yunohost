@@ -257,8 +257,9 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         'send'
     ]
 
-    with open(DYNDNS_ZONE, 'w') as zone:
-        zone.write('\n'.join(lines))
+    # Write the actions to do to update to a file, to be able to pass it
+    # to nsupdate as argument
+    write_to_file(DYNDNS_ZONE, '\n'.join(lines))
 
     if os.system('/usr/bin/nsupdate -k %s %s' % (key, DYNDNS_ZONE)) != 0:
         rm(OLD_IPV4_FILE)
