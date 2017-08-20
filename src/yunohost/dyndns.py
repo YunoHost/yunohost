@@ -74,7 +74,7 @@ def _dyndns_provides(provider, domain):
     # Extract 'dyndomain' from 'domain', e.g. 'nohost.me' from 'foo.nohost.me'
     dyndomain = '.'.join(domain.split('.')[1:])
 
-    return (dyndomain in dyndomains)
+    return dyndomain in dyndomains
 
 
 def _dyndns_available(provider, domain):
