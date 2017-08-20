@@ -64,10 +64,6 @@ class IPRouteLine(object):
         for k, v in self.m.groupdict().items():
             setattr(self, k, v)
 
-re_dyndns_private_key = re.compile(
-    r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
-)
-
 
 def _dyndns_provides(provider, domain):
     """
@@ -224,6 +220,10 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     # no need to update
     if old_ip == ipv4 and old_ipv6 == ipv6:
         return
+
+    re_dyndns_private_key = re.compile(
+        r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
+    )
 
     if domain is None:
         # Retrieve the first registered domain
