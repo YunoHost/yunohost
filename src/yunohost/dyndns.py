@@ -270,7 +270,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if ipv4 is not None:
         write_to_file(OLD_IPV4_FILE, ipv4)
     if ipv6 is not None:
-        write_to_file(OLD_IPV4_FILE, ipv4)
+        write_to_file(OLD_IPV6_FILE, ipv6)
 
 
 def dyndns_installcron():
