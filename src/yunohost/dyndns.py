@@ -78,7 +78,16 @@ def _dyndns_provides(provider, domain):
 
 
 def _dyndns_available(provider, domain):
+    """
+    Checks if a domain is available from a given provider.
 
+    Keyword arguments:
+        provider -- The url of the provider, e.g. "dyndns.yunohost.org"
+        domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
+
+    Returns:
+        True if the domain is avaible, False otherwise.
+    """
     logger.debug("Checking if domain %s is available on %s ..."
                  % (domain, provider))
 
