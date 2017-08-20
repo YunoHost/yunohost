@@ -50,14 +50,16 @@ def hook_add(app, file):
     path, filename = os.path.split(file)
     priority, action = _extract_filename_parts(filename)
 
-    try: os.listdir(CUSTOM_HOOK_FOLDER + action)
-    except OSError: os.makedirs(CUSTOM_HOOK_FOLDER + action)
+    try:
+        os.listdir(CUSTOM_HOOK_FOLDER + action)
+    except OSError:
+        os.makedirs(CUSTOM_HOOK_FOLDER + action)
 
-    finalpath = CUSTOM_HOOK_FOLDER + action +'/'+ priority +'-'+ app
+    finalpath = CUSTOM_HOOK_FOLDER + action + '/' + priority + '-' + app
     os.system('cp %s %s' % (file, finalpath))
     os.system('chown -hR admin: %s' % HOOK_FOLDER)
 
-    return { 'hook': finalpath }
+    return {'hook': finalpath}
 
 
 def hook_remove(app):
@@ -72,8 +74,9 @@ def hook_remove(app):
         for action in os.listdir(CUSTOM_HOOK_FOLDER):
             for script in os.listdir(CUSTOM_HOOK_FOLDER + action):
                 if script.endswith(app):
-                    os.remove(CUSTOM_HOOK_FOLDER + action +'/'+ script)
-    except OSError: pass
+                    os.remove(CUSTOM_HOOK_FOLDER + action + '/' + script)
+    except OSError:
+        pass
 
 
 def hook_info(action, name):
@@ -134,11 +137,11 @@ def hook_list(action, list_by='name', show_info=False):
             def _append_hook(d, priority, name, path):
                 # Use the priority as key and a dict of hooks names
                 # with their info as value
-                value = { 'path': path }
+                value = {'path': path}
                 try:
                     d[priority][name] = value
                 except KeyError:
-                    d[priority] = { name: value }
+                    d[priority] = {name: value}
         else:
             def _append_hook(d, priority, name, path):
                 # Use the priority as key and the name as value
@@ -160,11 +163,12 @@ def hook_list(action, list_by='name', show_info=False):
                         if h['path'] != path:
                             h['path'] = path
                         return
-                l.append({ 'priority': priority, 'path': path })
+                l.append({'priority': priority, 'path': path})
                 d[name] = l
         else:
             if list_by == 'name':
                 result = set()
+
             def _append_hook(d, priority, name, path):
                 # Add only the name
                 d.add(name)
@@ -202,7 +206,7 @@ def hook_list(action, list_by='name', show_info=False):
         logger.debug("custom hook folder not found for action '%s' in %s",
                      action, CUSTOM_HOOK_FOLDER)
 
-    return { 'hooks': result }
+    return {'hooks': result}
 
 
 def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
@@ -224,7 +228,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             (name, priority, path, succeed) as arguments
 
     """
-    result = { 'succeed': {}, 'failed': {} }
+    result = {'succeed': {}, 'failed': {}}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -242,7 +246,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
         for n in hooks:
             for key in hooks_names.keys():
                 if key == n or key.startswith("%s_" % n) \
-                  and key not in all_hooks:
+                        and key not in all_hooks:
                     all_hooks.append(key)
 
         # Iterate over given hooks names list
@@ -256,7 +260,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             for h in hl:
                 # Update hooks dict
                 d = hooks_dict.get(h['priority'], dict())
-                d.update({ n: { 'path': h['path'] }})
+                d.update({n: {'path': h['path']}})
                 hooks_dict[h['priority']] = d
     if not hooks_dict:
         return result
@@ -343,10 +347,10 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         # use xtrace on fd 7 which is redirected to stdout
         cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
-        
+
     # prepend environment variables
     cmd = '{0} {1}'.format(
-        ' '.join(['{0}={1}'.format(k, shell_quote(v)) \
+        ' '.join(['{0}={1}'.format(k, shell_quote(v))
                 for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
@@ -391,6 +395,7 @@ def _extract_filename_parts(filename):
 # Taken from Python 3 shlex module --------------------------------------------
 
 _find_unsafe = re.compile(r'[^\w@%+=:,./-]', re.UNICODE).search
+
 
 def shell_quote(s):
     """Return a shell-escaped version of the string *s*."""
