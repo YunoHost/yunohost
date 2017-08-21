@@ -283,7 +283,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             # If not, abort the postinstall
             else:
                 raise MoulinetteError(errno.EEXIST,
-                                      m18n.n('dyndns_unavailable'))
+                                      m18n.n('dyndns_unavailable',
+                                             domain=domain))
         else:
             dyndns = False
     else:
