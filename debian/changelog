@@ -1,3 +1,13 @@
+yunohost (2.7.2) stable; urgency=low
+
+  * [mod] pep8
+  * [fix] Explicitly require moulinette and ssowat >= 2.7.1
+  * [fix] Set firewall start as background task (to be done right after postinstall) to avoid lock issues
+
+Thanks to all contributors <3 ! (Bram, Alex)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 22 Aug 2017 21:25:17 -0400
+
 yunohost (2.7.1) testing; urgency=low
 
   ## Security: uses sha-512 to store password and auto upgrade old password on login
