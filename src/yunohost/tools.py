@@ -387,7 +387,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     # Enable and start YunoHost firewall at boot time
     os.system('update-rc.d yunohost-firewall enable')
-    os.system('service yunohost-firewall start')
+    os.system('service yunohost-firewall start &')
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
