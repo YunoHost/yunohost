@@ -361,7 +361,7 @@
     "migrations_show_last_migration": "La dernière migration appliquée est {}",
     "migrations_skip_migration": "Omission de la migration {number} {name}…",
     "server_shutdown": "Le serveur sera éteint",
-    "server_shutdown_confirm": "Le serveur immédiatement être éteint, le voulez-vous vraiment ? {answers:s}",
+    "server_shutdown_confirm": "Le serveur immédiatement être éteint, le voulez-vous vraiment ? [{answers:s}]",
     "server_reboot": "Le serveur va redémarrer",
     "server_reboot_confirm": "Le serveur va redémarrer immédiatement, le voulez-vous vraiment ? [{answers:s}]"
 }
