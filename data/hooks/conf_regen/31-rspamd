@@ -18,6 +18,28 @@ do_post_regen() {
 
   [ -z "$regen_conf_files" ] && exit 0
 
+  # retrieve variables
+  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # create DKIM directory with proper permission
+  sudo mkdir -p /etc/dkim
+  sudo chown _rspamd /etc/dkim
+
+  # create DKIM key for domains
+  for domain in "$domain_list"; do
+    domain_key="/etc/dkim/${domain}.mail.key"
+    [ ! -f $domain_key ] && {
+      sudo opendkim-genkey --domain="$domain" \
+          --selector=mail --directory=/etc/dkim
+      sudo mv /etc/dkim/mail.private "$domain_key"
+      sudo mv /etc/dkim/mail.txt "/etc/dkim/${domain}.mail.txt"
+    }
+  done
+
+  # fix DKIM keys permissions
+  sudo chown _rspamd /etc/dkim/*.mail.key
+  sudo chmod 400 /etc/dkim/*.mail.key
+
   # compile sieve script
   [[ "$regen_conf_files" =~ rspamd\.sieve ]] && {
     sudo sievec /etc/dovecot/global_script/rspamd.sieve
