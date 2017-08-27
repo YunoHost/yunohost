@@ -273,6 +273,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
+            record["value"] = record["value"].replace(";","\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")
