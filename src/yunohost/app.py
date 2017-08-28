@@ -717,6 +717,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
 
+    # Apply dirty patch to make php5 apps compatible with php7
+    _patch_php5(extracted_app_folder)
+
     os.system('chown -R admin: ' + extracted_app_folder)
 
     # Execute App install script
@@ -2105,3 +2108,15 @@ def random_password(length=8):
 
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
     return ''.join(random.sample(char_set, length))
+
+def _patch_php5(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.append("%s/manifest.json" % app_folder)
+
+    for filename in files_to_patch:
+        c = "sed -i  -e 's@/etc/php5@/etc/php/7.0@g' -e 's@php5@php7.0@g' %s" % filename
+        os.system(c)
+
