@@ -511,7 +511,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
         except Exception as e:
             failure = True
             logger.warning('unable to upgrade apps: %s' % str(e))
-            logger.error(m18n.n('app_upgrade_failed'))
+            logger.error(m18n.n('app_upgrade_some_app_failed'))
 
     if not failure:
         logger.success(m18n.n('system_upgraded'))
