@@ -1,21 +1,9 @@
 #!/usr/bin/env python
-import argparse
-import subprocess
-import json
-import os
-import sys
-import base64
-import binascii
-import time
-import hashlib
-import re
-import copy
-import textwrap
-import logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
-    from urllib.request import urlopen  # Python 3
+    from urllib.request import urlopen # Python 3
 except ImportError:
-    from urllib2 import urlopen  # Python 2
+    from urllib2 import urlopen # Python 2
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -23,7 +11,6 @@ DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
-
 
 def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
@@ -178,7 +165,6 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
-
 def main(argv):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -208,5 +194,5 @@ def main(argv):
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__": # pragma: no cover
     main(sys.argv[1:])
