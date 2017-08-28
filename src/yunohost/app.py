@@ -430,7 +430,7 @@ def app_change_url(auth, app, domain, path):
         path -- New path at which the application will be move
 
     """
-    from yunohost.hook import hook_exec
+    from yunohost.hook import hook_exec, hook_callback
 
     installed = _is_installed(app)
     if not installed:
@@ -518,6 +518,8 @@ def app_change_url(auth, app, domain, path):
     logger.success(m18n.n("app_change_url_success",
                          app=app, domain=domain, path=path))
 
+    hook_callback('post_app_change_url', args=args_list, env=env_dict)
+
 
 def app_upgrade(auth, app=[], url=None, file=None):
     """
@@ -529,7 +531,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
-    from yunohost.hook import hook_add, hook_remove, hook_exec
+    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+
 
     # Retrieve interface
     is_api = msettings.get('interface') == 'api'
@@ -628,6 +631,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
             upgraded_apps.append(app_instance_name)
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
+            hook_callback('post_app_upgrade', args=args_list, env=env_dict)
+
+
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
 
@@ -651,7 +657,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
 
     """
-    from yunohost.hook import hook_add, hook_remove, hook_exec
+    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
 
     # Fetch or extract sources
     try:
@@ -790,6 +796,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     logger.success(m18n.n('installation_complete'))
 
+    hook_callback('post_app_install', args=args_list, env=env_dict)
+
 
 def app_remove(auth, app):
     """
@@ -799,7 +807,7 @@ def app_remove(auth, app):
         app -- App(s) to delete
 
     """
-    from yunohost.hook import hook_exec, hook_remove
+    from yunohost.hook import hook_exec, hook_remove, hook_callback
 
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
@@ -827,6 +835,8 @@ def app_remove(auth, app):
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
+
+        hook_callback('post_app_remove', args=args_list, env=env_dict)
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
