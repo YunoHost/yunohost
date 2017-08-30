@@ -2104,4 +2104,4 @@ def random_password(length=8):
     import random
 
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
-    return ''.join(random.sample(char_set, length))
+    return ''.join([random.SystemRandom().choice(char_set) for x in range(length)])
