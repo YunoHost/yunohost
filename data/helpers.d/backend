@@ -123,6 +123,9 @@ ynh_add_nginx_config () {
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${path_url:-}"; then
+		# path_url_slash_less if path_url or a blank value if path_url is only '/'
+		path_url_slash_less=${path_url%/}
+		ynh_replace_string "__PATH__/" "$path_url_slash_less/" "$finalnginxconf"
 		ynh_replace_string "__PATH__" "$path_url" "$finalnginxconf"
 	fi
 	if test -n "${domain:-}"; then
