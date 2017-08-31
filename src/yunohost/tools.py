@@ -78,14 +78,14 @@ def tools_ldapinit():
     for rdn, attr_dict in ldap_map['parents'].items():
         try:
             auth.add(rdn, attr_dict)
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     for rdn, attr_dict in ldap_map['children'].items():
         try:
             auth.add(rdn, attr_dict)
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     admin_dict = {
         'cn': 'admin',
