@@ -1,0 +1,103 @@
+#!/bin/bash
+
+ip=$(hostname --all-ip-address)
+
+i=0
+for key in /etc/ssh/ssh_host_*_key.pub ; do 
+    output=$(ssh-keygen -l -f $key)
+    fingerprint[$i]=" - $(echo $output | cut -d' ' -f2) $(echo $output| cut -d' ' -f4)"
+    i=$(($i + 1))
+done
+
+cat > /etc/issue.net << EOF
+ '.                        '                                    ''     -d.    
+ /M+                       h-   .shh/           //            /NMy-    hMdosso 
+ 'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
+  sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
+   .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
+     mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
+    'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
+     hy      /yy:    :-    -.            -Nh      '                             
+      .                                   
+ 
+IP: ${ip}
+SSH fingerprints:
+${fingerprint[0]}
+${fingerprint[1]}
+${fingerprint[2]}
+${fingerprint[3]}
+${fingerprint[4]}
+EOF
+if [[ ! -f /etc/yunohost/installed ]]
+then
+        if [[ ! -f /etc/yunohost/from_script ]]
+        then
+sleep 5
+chvt 2
+cat << EOF
+ '.                        '                                    ''     -d.    
+ /M+                       h-   .shh/           //            /NMy-    hMdosso 
+ 'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
+  sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
+   .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
+     mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
+    'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
+     hy      /yy:    :-    -.            -Nh      '                             
+      .                                   
+ 
+IP: ${ip}
+SSH fingerprints*:
+${fingerprint[0]}
+${fingerprint[1]}
+${fingerprint[2]}
+${fingerprint[3]}
+${fingerprint[4]}
+EOF
+
+echo -e "\e[m Post-installation \e[0m"
+cat << EOF
+Congratulations! YunoHost has been successfully installed.
+Two more steps are required to activate the services of your server.
+EOF
+read -p "Proceed to post-installation? (y/n) " -n 1
+		RESULT=1
+		while [ $RESULT -gt 0 ]; do
+			if [[ $REPLY =~ ^[Nn]$ ]]; then
+                chvt 1
+				exit 0
+			fi
+                        echo -e "\n"
+			/usr/bin/yunohost tools postinstall
+			let RESULT=$?
+			if [ $RESULT -gt 0 ]; then
+				echo -e "\n"
+				read -p "Retry? (y/n) " -n 1
+			fi
+		done
+    fi
+else # YunoHost is already post-installed
+
+    domain=$(cat /etc/yunohost/current_host)
+cat > /etc/issue << EOF
+ '.                        '                                    ''     -d.    
+ /M+                       h-   .shh/           //            /NMy-    hMdosso 
+ 'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
+  sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
+   .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
+     mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
+    'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
+     hy      /yy:    :-    -.            -Nh      '                             
+      .                                   
+ 
+IP: ${ip}
+SSH fingerprints:
+${fingerprint[0]}
+${fingerprint[1]}
+${fingerprint[2]}
+${fingerprint[3]}
+${fingerprint[4]}
+EOF
+
+
+fi
+
