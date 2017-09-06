@@ -484,7 +484,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     return result
 
 
-def _run_service_command(action, service, need_lock=True):
+def _run_service_command(action, service):
     """
     Run services management command (start, stop, enable, disable, restart, reload)
 
@@ -493,7 +493,8 @@ def _run_service_command(action, service, need_lock=True):
         service -- Service name
 
     """
-    if service not in _get_services().keys():
+    services = _get_services()
+    if service not in services.keys():
         raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
 
     cmd = None
@@ -504,6 +505,8 @@ def _run_service_command(action, service, need_lock=True):
         cmd = 'update-rc.d %s %s' % (service, arg)
     else:
         raise ValueError("Unknown action '%s'" % action)
+
+    need_lock = services[service].get('need_lock')
 
     try:
         # Launch the command
