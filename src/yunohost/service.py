@@ -39,10 +39,10 @@ from moulinette.utils import log, filesystem
 
 from yunohost.hook import hook_callback
 
-
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, 'pending')
+MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
 logger = log.getActionLogger('yunohost.service')
 
@@ -484,7 +484,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     return result
 
 
-def _run_service_command(action, service):
+def _run_service_command(action, service, need_lock=True):
     """
     Run services management command (start, stop, enable, disable, restart, reload)
 
@@ -506,12 +506,59 @@ def _run_service_command(action, service):
         raise ValueError("Unknown action '%s'" % action)
 
     try:
-        ret = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+        # Launch the command
+        logger.debug("Running '%s'" % cmd)
+        p = subprocess.Popen(cmd.split(), stderr=subprocess.STDOUT)
+        # If this command needs a lock (because the service uses yunohost
+        # commands inside), find the PID and add a lock for it
+        if need_lock:
+            PID = _give_lock(action, service, p)
+        # Wait for the command to complete
+        p.communicate()
+        # Remove the lock if one was given
+        if need_lock and PID != 0:
+            _remove_lock(PID)
+
     except subprocess.CalledProcessError as e:
         # TODO: Log output?
         logger.warning(m18n.n('service_cmd_exec_failed', command=' '.join(e.cmd)))
         return False
     return True
+
+
+def _give_lock(action, service, p):
+
+    # Depending of the action, systemctl calls the PID differently :/
+    if action == "start" or action == "restart":
+        systemctl_PID_name = "MainPID"
+    else:
+        systemctl_PID_name = "ControlPID"
+
+    cmd_get_son_PID ="systemctl show %s -p %s" % (service, systemctl_PID_name)
+    son_PID = 0
+    # As long as we did not found the PID and that the command is still running
+    while son_PID == 0 and p.poll() == None:
+        # Call systemctl to get the PID
+        # Output of the command is e.g. ControlPID=1234
+        son_PID = subprocess.check_output(cmd_get_son_PID.split()) \
+                            .strip().split("=")[1]
+        son_PID = int(son_PID)
+        time.sleep(1)
+
+    # If we found a PID
+    if son_PID != 0:
+        # Append the PID to the lock file
+        logger.debug("Giving a lock to PID %s for service %s !"
+                     % (str(son_PID), service))
+        filesystem.append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
+
+    return son_PID
+
+def _remove_lock(PID_to_remove):
+
+    PIDs = filesystem.read_file(MOULINETTE_LOCK).split("\n")
+    PIDs_to_keep = [ PID for PID in PIDs if int(PID) != PID_to_remove ]
+    filesystem.write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
 
 
 def _get_services():
