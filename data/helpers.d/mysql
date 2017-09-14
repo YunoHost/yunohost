@@ -73,7 +73,7 @@ ynh_mysql_drop_db() {
 # | arg: db - the database name to dump
 # | ret: the mysqldump output
 ynh_mysql_dump_db() {
-    mysqldump -u "root" -p"$(sudo cat $MYSQL_ROOT_PWD_FILE)" "$1"
+    mysqldump -u "root" -p"$(sudo cat $MYSQL_ROOT_PWD_FILE)" --single-transaction "$1"
 }
 
 # Create a user
