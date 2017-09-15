@@ -445,8 +445,9 @@ def app_change_url(auth, app, domain, path):
 
     # Normalize path and domain format
     domain = domain.strip().lower()
-    old_path = '/' + old_path.strip("/").strip() + '/'
-    path = '/' + path.strip("/").strip() + '/'
+
+    old_path = normalize_url_path(old_path)
+    path = normalize_url_path(path)
 
     if (domain, path) == (old_domain, old_path):
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
@@ -2105,3 +2106,10 @@ def random_password(length=8):
 
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
     return ''.join([random.SystemRandom().choice(char_set) for x in range(length)])
+
+
+def normalize_url_path(url_path):
+    if url_path.strip("/").strip():
+        return '/' + url_path.strip("/").strip() + '/'
+
+    return "/"
