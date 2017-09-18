@@ -63,8 +63,14 @@ class IPRouteLine(object):
         for k, v in self.m.groupdict().items():
             setattr(self, k, v)
 
-RE_DYNDNS_PRIVATE_KEY = re.compile(
+
+RE_DYNDNS_PRIVATE_KEY_MD5 = re.compile(
     r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
+)
+
+
+RE_DYNDNS_PRIVATE_KEY_SHA512 = re.compile(
+    r'.*/K(?P<domain>[^\s\+]+)\.\+163.+\.private$'
 )
 
 
@@ -176,7 +182,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if domain is None:
         # Retrieve the first registered domain
         for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
-            match = RE_DYNDNS_PRIVATE_KEY.match(path)
+            match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
             if not match:
                 continue
             _domain = match.group('domain')
