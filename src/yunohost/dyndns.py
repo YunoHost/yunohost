@@ -70,7 +70,7 @@ RE_DYNDNS_PRIVATE_KEY_MD5 = re.compile(
 
 
 RE_DYNDNS_PRIVATE_KEY_SHA512 = re.compile(
-    r'.*/K(?P<domain>[^\s\+]+)\.\+163.+\.private$'
+    r'.*/K(?P<domain>[^\s\+]+)\.\+165.+\.private$'
 )
 
 
