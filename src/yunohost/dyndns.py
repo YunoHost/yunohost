@@ -182,9 +182,11 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if domain is None:
         # Retrieve the first registered domain
         for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
-            match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
+            match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
             if not match:
-                continue
+                match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
+                if not match:
+                    continue
             _domain = match.group('domain')
 
             try:
@@ -212,6 +214,11 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
             raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
 
         key = keys[0]
+
+    # this mean that hmac-md5 is used
+    if "+157" in key:
+        print "detecting md5 key"
+        key = _migrate_from_md5_tsig_to_sha512_tsig(key, domain, dyn_host)
 
     host = domain.split('.')[1:]
     host = '.'.join(host)
@@ -267,6 +274,41 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if ipv6 is not None:
         with open('/etc/yunohost/dyndns/old_ipv6', 'w') as f:
             f.write(ipv6)
+
+
+def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
+    public_key_path = private_key_path.rsplit(".private", 1)[0] + ".key"
+    public_key_md5 = open(public_key_path).read().strip().split(' ')[-1]
+
+    os.system('cd /etc/yunohost/dyndns && '
+              'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
+    os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
+
+    # +165 means that this file store a hmac-sha512 key
+    new_key_path = glob.glob('/etc/yunohost/dyndns/*+165*.key')[0]
+    public_key_sha512 = open(new_key_path).read().strip().split(' ', 6)[-1]
+
+    try:
+        r = requests.put('https://%s/migrate_key_to_sha512/' % (dyn_host),
+                         data={
+                               'public_key_md5': base64.b64encode(public_key_md5),
+                               'public_key_sha512': base64.b64encode(public_key_sha512),
+                         })
+    except requests.ConnectionError:
+        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+
+    if r.status_code != 201:
+        print r.text
+        error = json.loads(r.text)['error']
+        print "ERROR:", error
+        # raise MoulinetteError(errno.EPERM,
+        #                       m18n.n('dyndns_registration_failed', error=error))
+        # XXX print warning
+        os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
+        return public_key_path
+
+    os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
+    return new_key_path.rsplit(".key", 1)[0] + ".private"
 
 
 def dyndns_installcron():
