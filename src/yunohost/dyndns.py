@@ -106,7 +106,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
         key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]
         with open(key_file) as f:
-            key = f.readline().strip().split(' ')[-1]
+            key = f.readline().strip().split(' ', 6)[-1]
 
     # Send subscription
     try:
