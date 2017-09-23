@@ -154,7 +154,18 @@ ynh_remove_nginx_config () {
 #
 # usage: ynh_add_fpm_config
 ynh_add_fpm_config () {
-	finalphpconf="/etc/php5/fpm/pool.d/$app.conf"
+	local debian_release=$(lsb_release --codename --short)
+	# Configure PHP-FPM 7.0 by default
+	local fpm_config_dir="/etc/php/7.0/fpm"
+	local fpm_service="php7.0-fpm"
+	# Configure PHP-FPM 5 on Debian Jessie
+	if [ "$debian_release" == "jessie" ]; then
+		fpm_config_dir="/etc/php5/fpm"
+		fpm_service="php5-fpm"
+	fi
+	ynh_app_setting_set $app fpm_config_dir "$fpm_config_dir"
+	ynh_app_setting_set $app fpm_service "$fpm_service"
+	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 	ynh_backup_if_checksum_is_different "$finalphpconf"
 	sudo cp ../conf/php-fpm.conf "$finalphpconf"
 	ynh_replace_string "__NAMETOCHANGE__" "$app" "$finalphpconf"
@@ -165,21 +176,27 @@ ynh_add_fpm_config () {
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
-		finalphpini="/etc/php5/fpm/conf.d/20-$app.ini"
+		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
 		ynh_backup_if_checksum_is_different "$finalphpini"
 		sudo cp ../conf/php-fpm.ini "$finalphpini"
 		sudo chown root: "$finalphpini"
 		ynh_store_file_checksum "$finalphpini"
 	fi
-
-	sudo systemctl reload php5-fpm
+	sudo systemctl reload $fpm_service
 }
 
 # Remove the dedicated php-fpm config
 #
 # usage: ynh_remove_fpm_config
 ynh_remove_fpm_config () {
-	ynh_secure_remove "/etc/php5/fpm/pool.d/$app.conf"
-	ynh_secure_remove "/etc/php5/fpm/conf.d/20-$app.ini" 2>&1
-	sudo systemctl reload php5-fpm
+	local fpm_config_dir=$(ynh_app_setting_get $app fpm_config_dir)
+	local fpm_service=$(ynh_app_setting_get $app fpm_service)
+	# Assume php version 5 if not set
+	if [ -z "$fpm_config_dir" ]; then
+		fpm_config_dir="/etc/php5/fpm"
+		fpm_service="php5-fpm"
+	fi
+	ynh_secure_remove "$fpm_config_dir/pool.d/$app.conf"
+	ynh_secure_remove "$fpm_config_dir/conf.d/20-$app.ini" 2>&1
+	sudo systemctl reload $fpm_service
 }
