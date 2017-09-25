@@ -1,4 +1,9 @@
-/^X-Originating-IP:/ IGNORE
-/^Received:/ IGNORE
-/^User-Agent:/ IGNORE
-/^X-Mailer:/ IGNORE
+/^\s*Received:[^\n]*(.*)/         REPLACE Received: from authenticated-user (PRIMARY_HOSTNAME [PUBLIC_IP])$1
+
+/^\s*User-Agent:/        IGNORE
+/^\s*X-Enigmail:/        IGNORE
+/^\s*X-Mailer:/          IGNORE
+/^\s*X-Originating-IP:/  IGNORE
+/^\s*X-Pgp-Agent:/       IGNORE
+
+/^\s*(Mime-Version:\s*[0-9\.]+)\s.+/ REPLACE $1
