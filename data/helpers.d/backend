@@ -154,12 +154,11 @@ ynh_remove_nginx_config () {
 #
 # usage: ynh_add_fpm_config
 ynh_add_fpm_config () {
-	local debian_release=$(lsb_release --codename --short)
 	# Configure PHP-FPM 7.0 by default
 	local fpm_config_dir="/etc/php/7.0/fpm"
 	local fpm_service="php7.0-fpm"
 	# Configure PHP-FPM 5 on Debian Jessie
-	if [ "$debian_release" == "jessie" ]; then
+	if [ "$(ynh_get_debian_release)" == "jessie" ]; then
 		fpm_config_dir="/etc/php5/fpm"
 		fpm_service="php5-fpm"
 	fi
