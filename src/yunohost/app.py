@@ -451,10 +451,7 @@ def app_change_url(auth, app, domain, path):
     if (domain, path) == (old_domain, old_path):
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
 
-    # WARNING / FIXME : checkurl will modify the settings
-    # (this is a non intuitive behavior that should be changed)
-    # (or checkurl renamed in reserve_url)
-    app_checkurl(auth, '%s%s' % (domain, path), app)
+    domain_url_available(auth, domain, path)
 
     manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
 
