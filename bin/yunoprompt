@@ -11,13 +11,13 @@ done
 
 cat > /etc/issue.net << EOF
  '.                        '                                    ''     -d.    
- /M+                       h-   .shh/           //            /NMy-    hMdosso 
+ /M+                       h-   .shh/           //            /NMy-    hMdosso
  'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
   sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
    .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
      mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
     'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
-     hy      /yy:    :-    -.            -Nh      '                             
+     hy      /yy:    :-    -.            -Nh      '                           
       .                                   
  
 IP: ${ip}
