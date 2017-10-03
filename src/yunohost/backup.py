@@ -166,11 +166,11 @@ class BackupRestoreTargetsManager(object):
             or (exclude and isinstance(exclude, list) and not include)
 
         if include:
-            return [target for target in self.targets[category]
+            return [target.encode("Utf-8") for target in self.targets[category]
                     if self.results[category][target] in include]
 
         if exclude:
-            return [target for target in self.targets[category]
+            return [target.encode("Utf-8") for target in self.targets[category]
                     if self.results[category][target] not in exclude]
 
 

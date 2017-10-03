@@ -55,6 +55,7 @@
     "ask_main_domain": "Main domain",
     "ask_new_admin_password": "New administration password",
     "ask_password": "Password",
+    "ask_path": "Path",
     "backup_abstract_method": "This backup method hasn't yet been implemented",
     "backup_action_required": "You must specify something to save",
     "backup_app_failed": "Unable to back up the app '{app:s}'",
