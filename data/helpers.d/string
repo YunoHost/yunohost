@@ -18,9 +18,6 @@ ynh_string_random() {
 # | arg: target_file - File in which the string will be replaced.
 ynh_replace_string () {
 	delimit=@
-	# Escape the delimiter if it's in the string.
-	match_string=${1//${delimit}/"\\${delimit}"}
-	replace_string=${2//${delimit}/"\\${delimit}"}
 
         # Escape any backslash to preserve them as simple backslash.
         match_string=${match_string//\\/"\\\\"}
@@ -29,6 +26,10 @@ ynh_replace_string () {
         # Escape the & character, who has a special function in sed.
         match_string=${match_string//&/"\&"}
         replace_string=${replace_string//&/"\&"}
+
+	# Escape the delimiter if it's in the string.
+	match_string=${1//${delimit}/"\\${delimit}"}
+	replace_string=${2//${delimit}/"\\${delimit}"}
 
 	workfile=$3
 
