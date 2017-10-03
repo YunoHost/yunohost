@@ -77,7 +77,6 @@ read -p "Proceed to post-installation? (y/n) " -n 1
     fi
 else # YunoHost is already post-installed
 
-    domain=$(cat /etc/yunohost/current_host)
 cat > /etc/issue << EOF
  '.                        '                                    ''     -d.    
  /M+                       h-   .shh/           //            /NMy-    hMdosso
