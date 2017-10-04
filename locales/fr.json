@@ -363,5 +363,7 @@
     "server_shutdown": "Le serveur sera éteint",
     "server_shutdown_confirm": "Le serveur immédiatement être éteint, le voulez-vous vraiment ? [{answers:s}]",
     "server_reboot": "Le serveur va redémarrer",
-    "server_reboot_confirm": "Le serveur va redémarrer immédiatement, le voulez-vous vraiment ? [{answers:s}]"
+    "server_reboot_confirm": "Le serveur va redémarrer immédiatement, le voulez-vous vraiment ? [{answers:s}]",
+    "app_upgrade_some_app_failed": "Impossible de mettre à jour certaines applications",
+    "ask_path": "Chemin"
 }
