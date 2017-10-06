@@ -38,7 +38,7 @@ import pwd
 import grp
 from collections import OrderedDict
 
-from moulinette import msignals, m18n
+from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
@@ -532,6 +532,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
 
+    # Retrieve interface
+    is_api = msettings.get('interface') == 'api'
+
     try:
         app_list()
     except MoulinetteError:
@@ -632,6 +635,10 @@ def app_upgrade(auth, app=[], url=None, file=None):
     app_ssowatconf(auth)
 
     logger.success(m18n.n('upgrade_complete'))
+
+    # Return API logs if it is an API call
+    if is_api:
+        return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
 def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
