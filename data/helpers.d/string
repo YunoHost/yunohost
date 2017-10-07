@@ -21,7 +21,10 @@ ynh_string_random() {
 # references to sub-expressions can be used
 # (see sed manual page for more information)
 ynh_replace_string () {
-	delimit=@
+	local delimit=@
+	local match_string=$1
+	local replace_string=$2
+	local workfile=$3
 
         # Escape any backslash to preserve them as simple backslash.
         match_string=${match_string//\\/"\\\\"}
@@ -32,10 +35,8 @@ ynh_replace_string () {
         replace_string=${replace_string//&/"\&"}
 
 	# Escape the delimiter if it's in the string.
-	match_string=${1//${delimit}/"\\${delimit}"}
-	replace_string=${2//${delimit}/"\\${delimit}"}
-
-	workfile=$3
+	match_string=${match_string//${delimit}/"\\${delimit}"}
+	replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
 	sudo sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$workfile"
 }
