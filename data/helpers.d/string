@@ -24,16 +24,16 @@ ynh_replace_string () {
 	delimit=@
 
         # Escape any backslash to preserve them as simple backslash.
-        match_string=${match_string//\\/"\\\\"}
-        replace_string=${replace_string//\\/"\\\\"}
+        match_string=${1//\\/"\\\\"}
+        replace_string=${2//\\/"\\\\"}
 
         # Escape the & character, who has a special function in sed.
         match_string=${match_string//&/"\&"}
         replace_string=${replace_string//&/"\&"}
 
 	# Escape the delimiter if it's in the string.
-	match_string=${1//${delimit}/"\\${delimit}"}
-	replace_string=${2//${delimit}/"\\${delimit}"}
+	match_string=${match_string//${delimit}/"\\${delimit}"}
+	replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
 	workfile=$3
 
