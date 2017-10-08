@@ -52,7 +52,7 @@ from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
 # FIXME this is a duplicate from apps.py
-APPS_SETTING_PATH= '/etc/yunohost/apps/'
+APPS_SETTING_PATH = '/etc/yunohost/apps/'
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
 
 logger = getActionLogger('yunohost.tools')
@@ -69,7 +69,7 @@ def tools_ldapinit():
     auth = init_authenticator(('ldap', 'default'),
                               {'uri': "ldap://localhost:389",
                                'base_dn': "dc=yunohost,dc=org",
-                               'user_rdn': "cn=admin" })
+                               'user_rdn': "cn=admin"})
     auth.authenticate('yunohost')
 
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
@@ -78,14 +78,14 @@ def tools_ldapinit():
     for rdn, attr_dict in ldap_map['parents'].items():
         try:
             auth.add(rdn, attr_dict)
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     for rdn, attr_dict in ldap_map['children'].items():
         try:
             auth.add(rdn, attr_dict)
-        except:
-            pass
+        except Exception as e:
+            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     admin_dict = {
         'cn': 'admin',
@@ -113,6 +113,7 @@ def tools_ldapinit():
 
     logger.success(m18n.n('ldap_initialized'))
     return auth
+
 
 def tools_adminpw(auth, new_password):
     """
@@ -331,7 +332,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
-    ssowat_conf['redirected_urls']['/'] = domain +'/yunohost/admin'
+    ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
     try:
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
@@ -340,7 +341,6 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
 
-
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -348,8 +348,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     commands = [
         'echo "01" > %s/serial' % ssl_dir,
-        'rm %s/index.txt'       % ssl_dir,
-        'touch %s/index.txt'    % ssl_dir,
+        'rm %s/index.txt' % ssl_dir,
+        'touch %s/index.txt' % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
         'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
         'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch' % (ssl_dir, ssl_dir, ssl_dir),
@@ -399,7 +399,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     # Enable and start YunoHost firewall at boot time
     os.system('update-rc.d yunohost-firewall enable')
-    os.system('service yunohost-firewall start')
+    os.system('service yunohost-firewall start &')
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
@@ -448,7 +448,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         app_list_installed = os.listdir(APPS_SETTING_PATH)
         for app_id in app_list_installed:
 
-            app_dict = app_info(app_id,  raw=True)
+            app_dict = app_info(app_id, raw=True)
 
             if app_dict["upgradable"] == "yes":
                 apps.append({
@@ -496,7 +496,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
             # ... and set a hourly cron up to upgrade critical packages
             if critical_upgrades:
                 logger.info(m18n.n('packages_upgrade_critical_later',
-                                        packages=', '.join(critical_upgrades)))
+                                   packages=', '.join(critical_upgrades)))
                 with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
                     f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade\n' % ' '.join(critical_upgrades))
 
@@ -523,7 +523,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
         except Exception as e:
             failure = True
             logger.warning('unable to upgrade apps: %s' % str(e))
-            logger.error(m18n.n('app_upgrade_failed'))
+            logger.error(m18n.n('app_upgrade_some_app_failed'))
 
     if not failure:
         logger.success(m18n.n('system_upgraded'))
@@ -538,7 +538,7 @@ def tools_diagnosis(auth, private=False):
     Return global info about current yunohost instance to help debugging
 
     """
-    diagnosis = OrderedDict();
+    diagnosis = OrderedDict()
 
     # Debian release
     try:
@@ -579,15 +579,14 @@ def tools_diagnosis(auth, private=False):
                     disks[disk]['avail']
                 )
 
-
     try:
         system = monitor_system(units=['cpu', 'memory'], human_readable=True)
     except MoulinetteError as e:
         logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['memory'] = {
-            'ram' : '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
-            'swap' : '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
+            'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
+            'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
         }
 
     # Services status
@@ -848,7 +847,7 @@ def tools_shell(auth, command=None):
         logger.warn("You don't have IPython installed, consider installing it as it is way better than the standard shell.")
         logger.warn("Falling back on the standard shell.")
 
-        import readline # will allow Up/Down/History in the console
+        import readline  # will allow Up/Down/History in the console
         readline  # to please pyflakes
         import code
         vars = globals().copy()
@@ -879,6 +878,7 @@ def _get_migrations_list():
 
 
 class Migration(object):
+
     def migrate(self):
         self.forward()
 

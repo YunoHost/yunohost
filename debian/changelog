@@ -1,3 +1,51 @@
+yunohost (2.7.2) stable; urgency=low
+
+  * [mod] pep8
+  * [fix] Explicitly require moulinette and ssowat >= 2.7.1
+  * [fix] Set firewall start as background task (to be done right after postinstall) to avoid lock issues
+
+Thanks to all contributors <3 ! (Bram, Alex)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 22 Aug 2017 21:25:17 -0400
+
+yunohost (2.7.1) testing; urgency=low
+
+  ## Security: uses sha-512 to store password and auto upgrade old password on login
+  * [fix] use real random for hash selection (Laurent Peuch)
+  * [enh] use the full length of available chars for salt generation (Laurent Peuch)
+  * [mod] add more salt because life is miserable (Laurent Peuch)
+  * [fix] move to sh512 because it's fucking year 2017 (Laurent Peuch)
+  * [enh] according to https://www.safaribooksonline.com/library/view/practical-unix-and/0596003234/ch04s03.html we can go up to 16 salt caracters (Laurent Peuch)
+  * [fix] also uses sha512 in user_update() (Laurent Peuch)
+  * [fix] uses strong hash for admin password (Laurent Peuch)
+
+  ## Add a reboot/shutdown action
+  * [enh] Add reboot/shutdown actions in tools (#190) (Laurent Peuch, opi)
+
+  ## Change lock mechanism
+  * Remove old 'lock' configuration (Alexandre Aubin)
+  * Removed unusted socket import (Alexandre Aubin)
+
+  ## Various fix
+  ### backup
+  * [fix] Remove check that domain is resolved locally (Alexandre Aubin)
+  * [fix] Tell user that domain dns-conf shows a recommendation only (Alexandre Aubin)
+  * [fix] Backup without info.json (#342) (ljf)
+  * [fix] Make read-only mount bind actually read-only (#343) (ljf)
+  ### dyndns
+  * Regen dnsmasq conf if it's not up to date :| (Alexandre Aubin)
+  * [fix] timeout on request to avoid blocking process (Laurent Peuch) 
+  * Put request url in an intermediate variable (Alexandre Aubin)
+  ### other
+  * clean users.py (Laurent Peuch)
+  * clean domains.py (Laurent Peuch)
+  * [enh] add 'yunohost tools shell' (Laurent Peuch)
+  * Use app_ssowatconf instead of os.system call (Alexandre Aubin)
+
+  Thanks to all contributors <3 ! (Bram, ljf, Aleks, opi)
+
+ -- Laurent Peuch <cortex@worlddomination.be>  Sat, 19 Aug 2017 23:16:44 +0000
+
 yunohost (2.7.0) testing; urgency=low
 
 Thanks to all contributors <3 ! (Bram, Maniack C, ljf, Aleks, JimboJoe, anmol26s, e-lie, Ozhiganov)

@@ -38,7 +38,7 @@ import pwd
 import grp
 from collections import OrderedDict
 
-from moulinette import msignals, m18n
+from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
@@ -445,8 +445,9 @@ def app_change_url(auth, app, domain, path):
 
     # Normalize path and domain format
     domain = domain.strip().lower()
-    old_path = '/' + old_path.strip("/").strip() + '/'
-    path = '/' + path.strip("/").strip() + '/'
+
+    old_path = normalize_url_path(old_path)
+    path = normalize_url_path(path)
 
     if (domain, path) == (old_domain, old_path):
         raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
@@ -530,6 +531,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec
+
+    # Retrieve interface
+    is_api = msettings.get('interface') == 'api'
 
     try:
         app_list()
@@ -631,6 +635,10 @@ def app_upgrade(auth, app=[], url=None, file=None):
     app_ssowatconf(auth)
 
     logger.success(m18n.n('upgrade_complete'))
+
+    # Return API logs if it is an API call
+    if is_api:
+        return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
 def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
@@ -1544,7 +1552,7 @@ def _fetch_app_from_git(app):
         else:
             raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
 
-        if not 'git' in app_info:
+        if 'git' not in app_info:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('app_unsupported_remote_type'))
         url = app_info['git']['url']
@@ -1852,9 +1860,9 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         # is an available url and normalize the path.
 
         domain_args = [arg["name"] for arg in action_args
-                                      if arg.get("type","string") == "domain"]
+                       if arg.get("type", "string") == "domain"]
         path_args = [arg["name"] for arg in action_args
-                                      if arg.get("type","string") == "path"]
+                     if arg.get("type", "string") == "path"]
 
         if len(domain_args) == 1 and len(path_args) == 1:
 
@@ -1870,7 +1878,6 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
             # (We save this normalized path so that the install script have a
             # standard path format to deal with no matter what the user inputted)
             args_dict[path_args[0]] = path
-
 
     return args_dict
 
@@ -2105,4 +2112,11 @@ def random_password(length=8):
     import random
 
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
-    return ''.join(random.sample(char_set, length))
+    return ''.join([random.SystemRandom().choice(char_set) for x in range(length)])
+
+
+def normalize_url_path(url_path):
+    if url_path.strip("/").strip():
+        return '/' + url_path.strip("/").strip() + '/'
+
+    return "/"
