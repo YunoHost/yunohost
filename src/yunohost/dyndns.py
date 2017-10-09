@@ -27,6 +27,7 @@ import os
 import re
 import json
 import glob
+import time
 import base64
 import errno
 import requests
@@ -315,6 +316,10 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
         return public_key_path
 
     os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
+
+    # sleep to wait for dyndns cache invalidation
+    time.sleep(180)
+
     return new_key_path.rsplit(".key", 1)[0] + ".private"
 
 
