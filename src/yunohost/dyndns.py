@@ -299,8 +299,15 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
 
     if r.status_code != 201:
         print r.text
-        error = json.loads(r.text)['error']
-        print "ERROR:", error
+        try:
+            error = json.loads(r.text)['error']
+            print "ERROR:", error
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print e
+            error = r.text
+
         # raise MoulinetteError(errno.EPERM,
         #                       m18n.n('dyndns_registration_failed', error=error))
         # XXX print warning
