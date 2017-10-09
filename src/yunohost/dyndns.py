@@ -315,6 +315,7 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
         os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
         return public_key_path
 
+    # remove old certificates
     os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
 
     # sleep to wait for dyndns cache invalidation
