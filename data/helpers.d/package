@@ -49,6 +49,15 @@ ynh_package_install() {
             -o Dpkg::Options::=--force-confold install $@
 }
 
+# Try to Install package(s)
+#
+# usage: ynh_package_install name [name [...]]
+# | arg: name - the package name to install
+ynh_package_try_install() {
+    ynh_apt -o Dpkg::Options::=--force-confdef \
+            -o Dpkg::Options::=--force-confold install $@
+}
+
 # Remove package(s)
 #
 # usage: ynh_package_remove name [name [...]]
@@ -109,7 +118,7 @@ ynh_package_install_from_equivs () {
      && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f)
+     && ynh_package_try_install -f)
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
