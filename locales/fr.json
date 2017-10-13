@@ -98,7 +98,7 @@
     "dyndns_no_domain_registered": "Aucun domaine n'a été enregistré avec DynDNS",
     "dyndns_registered": "Le domaine DynDNS a été enregistré",
     "dyndns_registration_failed": "Impossible d'enregistrer le domaine DynDNS : {error:s}",
-    "dyndns_unavailable": "Sous-domaine DynDNS indisponible",
+    "dyndns_unavailable": "Le domaine {domain:s} est indisponible.",
     "executing_command": "Exécution de la commande « {command:s} »...",
     "executing_script": "Exécution du script « {script:s} »...",
     "extracting": "Extraction...",
@@ -365,5 +365,7 @@
     "server_reboot": "Le serveur va redémarrer",
     "server_reboot_confirm": "Le serveur va redémarrer immédiatement, le voulez-vous vraiment ? [{answers:s}]",
     "app_upgrade_some_app_failed": "Impossible de mettre à jour certaines applications",
-    "ask_path": "Chemin"
+    "ask_path": "Chemin",
+    "dyndns_could_not_check_provide": "Impossible de vérifier si {provider:s} peut fournir {domain:s}.",
+    "dyndns_domain_not_provided": "Le fournisseur Dyndns {provider:s} ne peut pas fournir le domaine {domain:s}."
 }
