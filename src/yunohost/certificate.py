@@ -791,7 +791,7 @@ def _enable_certificate(domain, new_cert_folder):
 
     logger.info("Restarting services...")
 
-    for service in ("postfix", "dovecot", "metronome"):
+    for service in ("postfix", "dovecot", "prosody"):
         _run_service_command("restart", service)
 
     _run_service_command("reload", "nginx")
