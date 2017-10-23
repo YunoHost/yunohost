@@ -5,36 +5,36 @@ set -e
 do_pre_regen() {
   pending_dir=$1
 
-  cd /usr/share/yunohost/templates/metronome
+  cd /usr/share/yunohost/templates/prosody
 
   # create directories for pending conf
-  metronome_dir="${pending_dir}/etc/metronome"
-  metronome_conf_dir="${metronome_dir}/conf.d"
-  mkdir -p "$metronome_conf_dir"
+  prosody_dir="${pending_dir}/etc/prosody"
+  prosody_conf_dir="${prosody_dir}/conf.d"
+  mkdir -p "$prosody_conf_dir"
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
   # install main conf file
-  cat metronome.cfg.lua \
+  cat prosody.cfg.lua \
     | sed "s/{{ main_domain }}/${main_domain}/g" \
-    > "${metronome_dir}/metronome.cfg.lua"
+    > "${prosody_dir}/prosody.cfg.lua"
 
   # add domain conf files
   for domain in $domain_list; do
     cat domain.tpl.cfg.lua \
       | sed "s/{{ domain }}/${domain}/g" \
-      > "${metronome_conf_dir}/${domain}.cfg.lua"
+      > "${prosody_conf_dir}/${domain}.cfg.lua"
   done
 
   # remove old domain conf files
-  conf_files=$(ls -1 /etc/metronome/conf.d \
+  conf_files=$(ls -1 /etc/prosody/conf.d \
                  | awk '/^[^\.]+\.[^\.]+.*\.cfg\.lua$/ { print $1 }')
   for file in $conf_files; do
     domain=${file%.cfg.lua}
     [[ $domain_list =~ $domain ]] \
-      || touch "${metronome_conf_dir}/${file}"
+      || touch "${prosody_conf_dir}/${file}"
   done
 }
 
@@ -42,19 +42,19 @@ do_post_regen() {
   regen_conf_files=$1
 
   # fix some permissions
-  sudo chown -R metronome: /var/lib/metronome/
-  sudo chown -R metronome: /etc/metronome/conf.d/
+  sudo chown -R prosody: /var/lib/prosody/
+  sudo chown -R prosody: /etc/prosody/conf.d/
 
   # retrieve variables
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
-  # create metronome directories for domains
+  # create prosody directories for domains
   for domain in $domain_list; do
-    sudo mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
+    sudo mkdir -p "/var/lib/prosody/${domain//./%2e}/pep"
   done
 
   [[ -z "$regen_conf_files" ]] \
-    || sudo service metronome restart
+    || sudo service prosody restart
 }
 
 FORCE=${2:-0}
