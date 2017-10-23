@@ -10,5 +10,5 @@ source /usr/share/yunohost/helpers.d/filesystem
 backup_dir="${1}/conf/xmpp"
 
 # Backup the configuration
-ynh_backup /etc/metronome "${backup_dir}/etc"
-ynh_backup /var/lib/metronome "${backup_dir}/var"
+ynh_backup /etc/prosody "${backup_dir}/etc"
+ynh_backup /var/lib/prosody "${backup_dir}/var"
