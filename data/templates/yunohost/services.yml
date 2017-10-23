@@ -33,9 +33,9 @@ glances:
 ssh:
    status: service
    log: /var/log/auth.log
-metronome:
-   status: metronomectl status
-   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
+prosody:
+   status: prosodyctl status
+   log: [/var/log/prosody/prosody.log,/var/log/prosody/prosody.err]
 slapd:
    status: service
    log: /var/log/syslog
