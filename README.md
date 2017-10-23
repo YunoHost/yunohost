@@ -23,7 +23,7 @@ This repository is the core of YunoHost code.
 - [Hooks](https://github.com/YunoHost/yunohost/tree/stable/data/hooks).
 - [Locales](https://github.com/YunoHost/yunohost/tree/stable/locales) for translations of `yunohost` command.
 - [Shell helpers](https://github.com/YunoHost/yunohost/tree/stable/data/helpers.d) for [application packaging](https://yunohost.org/#/packaging_apps_helpers_en).
-- [Modules for the XMPP server Metronome](https://github.com/YunoHost/yunohost/tree/stable/lib/metronome/modules).
+- [Modules for the XMPP server Prosody](https://github.com/YunoHost/yunohost/tree/stable/lib/prosody/modules).
 - [Debian files](https://github.com/YunoHost/yunohost/tree/stable/debian) for package creation.
 
 ## How does it works?
