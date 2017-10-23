@@ -8,6 +8,6 @@ data/templates/* /usr/share/yunohost/templates/
 data/helpers /usr/share/yunohost/
 data/helpers.d/* /usr/share/yunohost/helpers.d/
 debian/conf/pam/* /usr/share/pam-configs/
-lib/metronome/modules/* /usr/lib/metronome/modules/
+lib/prosody/* /usr/lib/prosody/modules/
 locales/* /usr/lib/moulinette/yunohost/locales/
 src/yunohost /usr/lib/moulinette
