@@ -134,7 +134,8 @@ pidfile = "/var/run/prosody/prosody.pid"
 -- server please see https://prosody.im/doc/modules/mod_auth_internal_hashed
 -- for information about using the hashed backend.
 
-authentication = "internal_hashed"
+--authentication = "internal_hashed"
+-- LDAP authentication is used with mod_ldap_auth. See domain templates.
 
 -- Select the storage backend to use. By default Prosody uses flat files
 -- in its configured data directory, but it also supports more backends
@@ -187,10 +188,7 @@ certificates = "certs"
 -- You need to add a VirtualHost entry for each domain you wish Prosody to serve.
 -- Settings under each VirtualHost entry apply *only* to that host.
 
-VirtualHost "localhost"
-
---VirtualHost "example.com"
---	certificate = "/path/to/example.crt"
+Include "conf.d/*.cfg.lua"
 
 ------ Components ------
 -- You can specify components to add hosts that provide special services,
@@ -198,7 +196,7 @@ VirtualHost "localhost"
 -- For more information on components, see https://prosody.im/doc/components
 
 ---Set up a MUC (multi-user chat) room server on conference.example.com:
---Component "conference.example.com" "muc"
+Component "muc.{{ main_domain }}" "muc"
 
 ---Set up an external component (default component port is 5347)
 --
