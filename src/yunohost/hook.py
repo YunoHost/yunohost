@@ -26,6 +26,7 @@
 import os
 import re
 import errno
+import tempfile
 from glob import iglob
 
 from moulinette import m18n
@@ -297,7 +298,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="admin"):
+              chdir=None, env=None, user="admin", enable_stdinfo=False):
     """
     Execute hook from a file with arguments
 
@@ -336,6 +337,12 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         env = {}
     env['YNH_CWD'] = chdir
 
+    if enable_stdinfo:
+        stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
+        env['YNH_STDINFO'] = stdinfo
+    else:
+        stdinfo = None
+
     # Construct command to execute
     if user == "root":
         command = ['sh', '-c']
@@ -361,11 +368,17 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     # Define output callbacks and call command
     callbacks = (
-        lambda l: logger.info(l.rstrip()),
-        lambda l: logger.warning(l.rstrip()),
+        lambda l: logger.debug(l.rstrip()),        # Stdout
+        lambda l: logger.warning(l.rstrip()),      # Stderr
     )
+
+    if stdinfo:
+        callbacks = ( callbacks[0], callbacks[1],
+                       lambda l: logger.info(l.rstrip()))
+
     returncode = call_async_output(
-        command, callbacks, shell=False, cwd=chdir
+        command, callbacks, shell=False, cwd=chdir,
+        stdinfo=stdinfo
     )
 
     # Check and return process' return code
