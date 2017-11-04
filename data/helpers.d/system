@@ -41,3 +41,10 @@ ynh_abort_if_errors () {
 	set -eu	# Exit if a command fail, and if a variable is used unset.
 	trap ynh_exit_properly EXIT	# Capturing exit signals on shell script
 }
+
+# Return the Debian release codename (i.e. jessie, stretch, etc.)
+#
+# usage: ynh_get_debian_release
+ynh_get_debian_release () {
+	echo $(lsb_release --codename --short)
+}
