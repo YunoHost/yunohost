@@ -109,6 +109,9 @@ ynh_backup_before_upgrade () {
 # This helper downloads sources from SOURCE_URL if there is no local source
 # archive in /opt/yunohost-apps-src/APP_ID/SOURCE_FILENAME
 # 
+# If in SOURCE_URL the key __APP_VERSION__ is in, it is replaced by the version
+# from the manifest.
+#
 # Next, it checks the integrity with "SOURCE_SUM_PRG -c --status" command.
 # 
 # If it's ok, the source archive will be uncompressed in $dest_dir. If the
@@ -134,6 +137,19 @@ ynh_setup_source () {
     local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+
+    # Set app version in source file from manifest
+	if [[ "$src_url" =~ "__APP_VERSION__" ]]
+    then
+		local app_version="$(ynh_app_version)"
+		if [[ -n "$app_version" ]]
+		then
+			ynh_replace_string "__APP_VERSION__" "$app_version" "$YNH_CWD/../conf/${src_id}.src"
+		else
+			ynh_die "App version not set in manifest but nessessary to download the source"
+		fi
+		src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+	fi
     
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -227,4 +243,15 @@ ynh_local_curl () {
 
 	# Curl the URL
 	curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
+}
+
+# Get application version from manifest
+#
+# usage: ynh_app_version
+ynh_app_version() {
+   manifest_path="../manifest.json"
+    if [ ! -e "$manifest_path" ]; then
+    	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+    fi
+    echo $(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
 }
