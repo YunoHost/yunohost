@@ -1,7 +1,7 @@
 {
     "action_invalid": "Action « {action:s} » incorrecte",
     "admin_password": "Mot de passe d'administration",
-    "admin_password_change_failed": "Impossible de modifier le mot de passe d'administration",
+    "admin_password_change_failed": "Impossible de changer le mot de passe",
     "admin_password_changed": "Le mot de passe d'administration a été modifié",
     "app_already_installed": "{app:s} est déjà installé",
     "app_argument_choice_invalid": "Choix invalide pour le paramètre « {name:s} », il doit être l'un de {choices:s}",
