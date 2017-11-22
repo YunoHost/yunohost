@@ -59,30 +59,35 @@ ynh_restore_upgradebackup () {
 # ynh_abort_if_errors
 #
 ynh_backup_before_upgrade () {
-	backup_number=1
-	old_backup_number=2
-	app_bck=${app//_/-}	# Replace all '_' by '-'
-	
-    	# Check if a backup already exists with the prefix 1
-	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
-    	then
-        	# Prefix becomes 2 to preserve the previous backup
-		backup_number=2
-		old_backup_number=1
-	fi
+	if [ -e "/etc/yunohost/apps/$app/scripts/backup" ]
+	then
+		backup_number=1
+		old_backup_number=2
+		app_bck=${app//_/-}	# Replace all '_' by '-'
 
-	# Create backup
-	sudo yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number
-	if [ "$?" -eq 0 ]
-    	then
-		# If the backup succeeded, remove the previous backup
-		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$old_backup_number
+		# Check if a backup already exists with the prefix 1
+		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
 		then
-			# Remove the previous backup only if it exists
-			sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
+			# Prefix becomes 2 to preserve the previous backup
+			backup_number=2
+			old_backup_number=1
+		fi
+
+		# Create backup
+		sudo yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number
+		if [ "$?" -eq 0 ]
+		then
+			# If the backup succeeded, remove the previous backup
+			if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$old_backup_number
+			then
+				# Remove the previous backup only if it exists
+				sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
+			fi
+		else
+			ynh_die "Backup failed, the upgrade process was aborted."
 		fi
 	else
-		ynh_die "Backup failed, the upgrade process was aborted."
+		echo "This app doesn't have any backup script." >&2
 	fi
 }
 
