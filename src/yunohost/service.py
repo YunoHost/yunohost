@@ -506,7 +506,7 @@ def _run_service_command(action, service):
     else:
         raise ValueError("Unknown action '%s'" % action)
 
-    need_lock = (services[service].get('need_lock') or False) \
+    need_lock = services[service].get('need_lock', False) \
                 and action in ['start', 'stop', 'restart', 'reload']
 
     try:
