@@ -139,17 +139,17 @@ ynh_setup_source () {
     local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
 
     # Set app version in source file from manifest
-	if [[ "$src_url" =~ "__APP_VERSION__" ]]
+    if [[ "$src_url" =~ "__APP_VERSION__" ]]
     then
-		local app_version="$(ynh_app_version)"
-		if [[ -n "$app_version" ]]
-		then
-			ynh_replace_string "__APP_VERSION__" "$app_version" "$YNH_CWD/../conf/${src_id}.src"
-		else
-			ynh_die "App version not set in manifest but nessessary to download the source"
-		fi
-		src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-	fi
+        local app_version="$(ynh_app_version)"
+        if [[ -n "$app_version" ]]
+        then
+            ynh_replace_string "__APP_VERSION__" "$app_version" "$YNH_CWD/../conf/${src_id}.src"
+        else
+            ynh_die "App version not set in manifest but nessessary to download the source"
+        fi
+            src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+        fi
     
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -249,9 +249,9 @@ ynh_local_curl () {
 #
 # usage: ynh_app_version
 ynh_app_version() {
-   manifest_path="../manifest.json"
+    manifest_path="../manifest.json"
     if [ ! -e "$manifest_path" ]; then
-    	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+        manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
     echo $(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
 }
