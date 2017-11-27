@@ -148,8 +148,8 @@ ynh_setup_source () {
         else
             ynh_die "App version not set in manifest but nessessary to download the source"
         fi
-            src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-        fi
+        src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    fi
     
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
