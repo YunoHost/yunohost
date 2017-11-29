@@ -1,3 +1,14 @@
+yunohost (2.7.4) testing; urgency=low
+
+  * [fix] Update acme-tiny as LE updated its ToS (#386)
+  * [fix] Fix helper for old apps without backup script (#388)
+  * [mod] Remove port 53 from UPnP (but keep it open on local network) (#362)
+  * [i18n] Improve French translation
+
+Thanks to all contributors <3 ! (jibec, Moul, Maniack, Aleks)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 28 Nov 2017 19:01:41 -0500
+
 yunohost (2.7.3) testing; urgency=low
 
   Major changes :
