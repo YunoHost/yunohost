@@ -1,3 +1,9 @@
+yunohost (2.7.5) stable; urgency=low
+
+  (Bumping version number for stable release)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 02 Dec 2017 12:38:00 -0500
+
 yunohost (2.7.4) testing; urgency=low
 
   * [fix] Update acme-tiny as LE updated its ToS (#386)
