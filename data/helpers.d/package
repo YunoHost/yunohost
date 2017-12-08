@@ -47,15 +47,6 @@ ynh_package_install() {
             -o Dpkg::Options::=--force-confold install $@
 }
 
-# Try to Install package(s)
-#
-# usage: ynh_package_install name [name [...]]
-# | arg: name - the package name to install
-ynh_package_try_install() {
-    ynh_apt -o Dpkg::Options::=--force-confdef \
-            -o Dpkg::Options::=--force-confold install $@
-}
-
 # Remove package(s)
 #
 # usage: ynh_package_remove name [name [...]]
@@ -114,7 +105,7 @@ ynh_package_install_from_equivs () {
      && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_try_install -f) || ynh_die "Unable to install dependencies"
+     && ynh_package_install -f) || ynh_die "Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
@@ -149,7 +140,7 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
         ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
-            || (ynh_package_autopurge; ynh_die "Unable to install dependencies")	# Install the fake package and its dependencies
+            || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
         rm /tmp/${dep_app}-ynh-deps.control
         ynh_app_setting_set $app apt_dependencies $dependencies
     fi
