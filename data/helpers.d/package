@@ -124,7 +124,7 @@ ynh_install_app_dependencies () {
     	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
     version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
-    if [ " ${#version}" -eq 0 ]; then
+    if [ ${#version} -eq 0 ]; then
         version="1.0"
     fi
     dep_app=${app//_/-}	# Replace all '_' by '-'
