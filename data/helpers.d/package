@@ -126,7 +126,7 @@ ynh_install_app_dependencies () {
     version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
     if [ " ${#version}" -eq 0 ]; then
         version="1.0"
-    if
+    fi
     dep_app=${app//_/-}	# Replace all '_' by '-'
 
     cat > /tmp/${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
