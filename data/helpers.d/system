@@ -14,7 +14,7 @@
 # Usage: ynh_exit_properly is used only by the helper ynh_abort_if_errors.
 # You must not use it directly.
 ynh_exit_properly () {
-	exit_code=$?
+	local exit_code=$?
 	if [ "$exit_code" -eq 0 ]; then
 			exit 0	# Exit without error if the script ended correctly
 	fi
