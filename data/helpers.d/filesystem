@@ -50,6 +50,7 @@ ynh_backup() {
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
     if [ "$IS_BIG" == "1" ] && [ -n "$BACKUP_CORE_ONLY" ] ; then
+      echo "$SRC_PATH will not be saved, because backup_core_only is set." >&2
       return 0
     fi
     
