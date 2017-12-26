@@ -613,6 +613,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
+        # Apply dirty patch to make php5 apps compatible with php7
+        _patch_php5(extracted_app_folder)
+
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
