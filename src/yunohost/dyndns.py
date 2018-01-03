@@ -90,7 +90,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     # Verify if domain is available
     try:
-        if requests.get('https://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
+        if requests.get('https://%s/test/%s' % (subscribe_host, domain), timeout=30).status_code != 200:
             raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
@@ -112,7 +112,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     # Send subscription
     try:
-        r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain})
+        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:
@@ -296,7 +296,7 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
                          data={
                                'public_key_md5': base64.b64encode(public_key_md5),
                                'public_key_sha512': base64.b64encode(public_key_sha512),
-                         })
+                         }, timeout=30)
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
 
