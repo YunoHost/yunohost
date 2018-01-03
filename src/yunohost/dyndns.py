@@ -302,14 +302,15 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
     if r.status_code != 201:
         try:
             error = json.loads(r.text)['error']
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print e
+            show_traceback = 0
+        except Exception:
+            # failed to decode json
             error = r.text
+            show_traceback = 1
 
         logger.warning(m18n.n('migrate_tsig_failed', domain=domain,
-                              error_code=str(r.status_code), error=error))
+                              error_code=str(r.status_code), error=error),
+                       exc_info=show_traceback)
 
         os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
         return public_key_path
