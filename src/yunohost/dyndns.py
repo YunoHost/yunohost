@@ -97,7 +97,8 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
-            os.makedirs('/etc/yunohost/dyndns')
+            if not os.path.exists('/etc/yunohost/dyndns'):
+                os.makedirs('/etc/yunohost/dyndns')
 
             logger.info(m18n.n('dyndns_key_generating'))
 
