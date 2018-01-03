@@ -320,7 +320,13 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
 
     # sleep to wait for dyndns cache invalidation
     logger.warning(m18n.n('migrate_tsig_wait'))
-    time.sleep(180)
+    time.sleep(60)
+    logger.warning(m18n.n('migrate_tsig_wait_2'))
+    time.sleep(60)
+    logger.warning(m18n.n('migrate_tsig_wait_3'))
+    time.sleep(30)
+    logger.warning(m18n.n('migrate_tsig_wait_4'))
+    time.sleep(30)
 
     logger.warning(m18n.n('migrate_tsig_end'))
     return new_key_path.rsplit(".key", 1)[0] + ".private"
