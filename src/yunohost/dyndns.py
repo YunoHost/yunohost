@@ -219,7 +219,6 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
     # this mean that hmac-md5 is used
     if "+157" in key:
-        print "detecting md5 key"
         key = _migrate_from_md5_tsig_to_sha512_tsig(key, domain, dyn_host)
 
     host = domain.split('.')[1:]
