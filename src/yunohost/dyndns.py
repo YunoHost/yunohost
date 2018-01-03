@@ -278,6 +278,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
 
 def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
+    logger.warning(m18n.n('migrate_tsig_start', domain=domain))
     public_key_path = private_key_path.rsplit(".private", 1)[0] + ".key"
     public_key_md5 = open(public_key_path).read().strip().split(' ')[-1]
 
@@ -299,19 +300,17 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
 
     if r.status_code != 201:
-        print r.text
         try:
             error = json.loads(r.text)['error']
-            print "ERROR:", error
         except Exception as e:
             import traceback
             traceback.print_exc()
             print e
             error = r.text
 
-        # raise MoulinetteError(errno.EPERM,
-        #                       m18n.n('dyndns_registration_failed', error=error))
-        # XXX print warning
+        logger.warning(m18n.n('migrate_tsig_failed', domain=domain,
+                              error_code=str(r.status_code), error=error))
+
         os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
         return public_key_path
 
@@ -319,8 +318,10 @@ def _migrate_from_md5_tsig_to_sha512_tsig(private_key_path, domain, dyn_host):
     os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
 
     # sleep to wait for dyndns cache invalidation
+    logger.warning(m18n.n('migrate_tsig_wait'))
     time.sleep(180)
 
+    logger.warning(m18n.n('migrate_tsig_end'))
     return new_key_path.rsplit(".key", 1)[0] + ".private"
 
 
