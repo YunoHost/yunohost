@@ -6,7 +6,7 @@
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
-# /parentdir/logdir/
+# /parentdir/logdir
 # /parentdir/logdir/logfile.log
 #
 # It's possible to use this helper several times, each config will be added to the same logrotate config file.
@@ -24,7 +24,7 @@ ynh_use_logrotate () {
 		if [ "$(echo ${1##*.})" == "log" ]; then	# Keep only the extension to check if it's a logfile
 			logfile=$1	# In this case, focus logrotate on the logfile
 		else
-			logfile=$1/.log	# Else, uses the directory and all logfile into it.
+			logfile=$1/*.log	# Else, uses the directory and all logfile into it.
 		fi
 	else
 		logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
@@ -123,6 +123,9 @@ ynh_add_nginx_config () {
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${path_url:-}"; then
+		# path_url_slash_less is path_url, or a blank value if path_url is only '/'
+		path_url_slash_less=${path_url%/}
+		ynh_replace_string "__PATH__/" "$path_url_slash_less/" "$finalnginxconf"
 		ynh_replace_string "__PATH__" "$path_url" "$finalnginxconf"
 	fi
 	if test -n "${domain:-}"; then

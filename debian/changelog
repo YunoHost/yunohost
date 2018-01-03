@@ -1,3 +1,48 @@
+yunohost (2.7.5) stable; urgency=low
+
+  (Bumping version number for stable release)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 02 Dec 2017 12:38:00 -0500
+
+yunohost (2.7.4) testing; urgency=low
+
+  * [fix] Update acme-tiny as LE updated its ToS (#386)
+  * [fix] Fix helper for old apps without backup script (#388)
+  * [mod] Remove port 53 from UPnP (but keep it open on local network) (#362)
+  * [i18n] Improve French translation
+
+Thanks to all contributors <3 ! (jibec, Moul, Maniack, Aleks)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 28 Nov 2017 19:01:41 -0500
+
+yunohost (2.7.3) testing; urgency=low
+
+  Major changes :
+
+  * [fix] Refactor/clean madness related to DynDNS (#353)
+  * [i18n] Improve french translation (#355)   
+  * [fix] Use cryptorandom to generate password (#358)
+  * [enh] Support for single app upgrade from the webadmin (#359)
+  * [enh] Be able to give lock to son processes detached by systemctl (#367)
+  * [enh] Make MySQL dumps with a single transaction to ensure backup consistency (#370)  
+
+  Misc fixes/improvements :
+
+  * [enh] Escape some special character in ynh_replace_string (#354)
+  * [fix] Allow dash at the beginning of app settings value (#357)
+  * [enh] Handle root path in nginx conf (#361)
+  * [enh] Add debugging in ldap init (#365)
+  * [fix] Fix app_upgrade_string with missing key 
+  * [fix] Fix for change_url path normalizing with root url (#368)
+  * [fix] Missing 'ask_path' string (#369)
+  * [enh] Remove date from sql dump (#371)
+  * [fix] Fix unicode error in backup/restore (#375)
+  * [fix] Fix an error in ynh_replace_string (#379)
+
+Thanks to all contributors <3 ! (Bram, Maniack C, ljf, JimboJoe, ariasuni, Jibec, Aleks)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 12 Oct 2017 16:18:51 -0400
+
 yunohost (2.7.2) stable; urgency=low
 
   * [mod] pep8

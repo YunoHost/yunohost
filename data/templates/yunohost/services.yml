@@ -47,6 +47,7 @@ yunohost-api:
    log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
    status: service
+   need_lock: true
 nslcd:
    status: service
    log: /var/log/syslog
