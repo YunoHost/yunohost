@@ -57,6 +57,7 @@ def user_list(auth, fields=None):
         'cn': 'fullname',
         'mail': 'mail',
         'maildrop': 'mail-forward',
+        'loginShell': 'shell',
         'mailuserquota': 'mailbox-quota'
     }
 
@@ -72,7 +73,7 @@ def user_list(auth, fields=None):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('field_invalid', attr))
     else:
-        attrs = ['uid', 'cn', 'mail', 'mailuserquota']
+        attrs = ['uid', 'cn', 'mail', 'mailuserquota', 'loginShell']
 
     result = auth.search('ou=users,dc=yunohost,dc=org',
                          '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
@@ -82,6 +83,12 @@ def user_list(auth, fields=None):
         entry = {}
         for attr, values in user.items():
             if values:
+                if attr == "loginShell":
+                    if values[0].strip() == "/bin/false":
+                        entry["ssh_allowed"] = False
+                    else:
+                        entry["ssh_allowed"] = True
+
                 entry[user_attrs[attr]] = values[0]
 
         uid = entry[user_attrs['uid']]
