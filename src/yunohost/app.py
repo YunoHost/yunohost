@@ -581,7 +581,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             continue
 
         # Check requirements
-        _check_manifest_requirements(manifest)
+        _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
@@ -684,7 +684,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     app_id = manifest['id']
 
     # Check requirements
-    _check_manifest_requirements(manifest)
+    _check_manifest_requirements(manifest, app_id)
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -1690,7 +1690,7 @@ def _encode_string(value):
     return value
 
 
-def _check_manifest_requirements(manifest):
+def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
     requirements = manifest.get('requirements', dict())
 
@@ -1708,12 +1708,12 @@ def _check_manifest_requirements(manifest):
         if (not yunohost_req or
                 not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
             raise MoulinetteError(errno.EINVAL, '{0}{1}'.format(
-                m18n.g('colon', m18n.n('app_incompatible')),
-                m18n.n('app_package_need_update')))
+                m18n.g('colon', m18n.n('app_incompatible'), app=app_instance_name),
+                m18n.n('app_package_need_update', app=app_instance_name)))
     elif not requirements:
         return
 
-    logger.info(m18n.n('app_requirements_checking'))
+    logger.info(m18n.n('app_requirements_checking', app=app_instance_name))
 
     # Retrieve versions of each required package
     try:
@@ -1722,7 +1722,7 @@ def _check_manifest_requirements(manifest):
     except packages.PackageException as e:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_requirements_failed',
-                                     error=str(e)))
+                                     error=str(e), app=app_instance_name))
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():
@@ -1731,7 +1731,7 @@ def _check_manifest_requirements(manifest):
             raise MoulinetteError(
                 errno.EINVAL, m18n.n('app_requirements_unmeet',
                                      pkgname=pkgname, version=version,
-                                     spec=spec))
+                                     spec=spec, app=app_instance_name))
 
 
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
