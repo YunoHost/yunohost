@@ -555,6 +555,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in apps:
+        logger.warning(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
