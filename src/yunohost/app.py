@@ -330,6 +330,9 @@ def app_info(app, show_status=False, raw=False):
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
+
+    app_setting_path = APPS_SETTING_PATH + app
+
     if raw:
         ret = app_list(filter=app, raw=True)[app]
         ret['settings'] = _get_app_settings(app)
@@ -345,10 +348,9 @@ def app_info(app, show_status=False, raw=False):
             upgradable = "no"
 
         ret['upgradable'] = upgradable
+        ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
 
         return ret
-
-    app_setting_path = APPS_SETTING_PATH + app
 
     # Retrieve manifest and status
     with open(app_setting_path + '/manifest.json') as f:
