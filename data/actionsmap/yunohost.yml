@@ -203,6 +203,30 @@ user:
                     extra:
                         pattern: *pattern_mailbox_quota
 
+        ### ssh_user_enable_ssh()
+        allow-ssh:
+            action_help: Allow the user to uses ssh
+            api: POST /ssh/user/enable-ssh
+            configuration:
+                authenticate: all
+            arguments:
+                username:
+                    help: Username of the user
+                    extra:
+                        pattern: *pattern_username
+
+        ### ssh_user_disable_ssh()
+        disallow-ssh:
+            action_help: Disallow the user to uses ssh
+            api: POST /ssh/user/disable-ssh
+            configuration:
+                authenticate: all
+            arguments:
+                username:
+                    help: Username of the user
+                    extra:
+                        pattern: *pattern_username
+
         ### user_info()
         info:
             action_help: Get user information

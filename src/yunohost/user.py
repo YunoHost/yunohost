@@ -25,6 +25,7 @@
 """
 import os
 import re
+import pwd
 import json
 import errno
 import crypt
@@ -435,6 +436,36 @@ def user_info(auth, username):
         raise MoulinetteError(167, m18n.n('user_info_failed'))
 
 
+def user_allow_ssh(auth, username):
+    """
+    Allow YunoHost user connect as ssh.
+
+    Keyword argument:
+        username -- User username
+    """
+    # TODO it would be good to support different kind of shells
+
+    if not _get_user_for_ssh(auth, username):
+        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+
+    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
+
+
+def user_disallow_ssh(auth, username):
+    """
+    Disallow YunoHost user connect as ssh.
+
+    Keyword argument:
+        username -- User username
+    """
+    # TODO it would be good to support different kind of shells
+
+    if not _get_user_for_ssh(auth, username) :
+        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+
+    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
+
+
 def _convertSize(num, suffix=''):
     for unit in ['K', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(num) < 1024.0:
@@ -470,3 +501,28 @@ def _hash_user_password(password):
 
     salt = '$6$' + salt + '$'
     return '{CRYPT}' + crypt.crypt(str(password), salt)
+
+
+def _get_user_for_ssh(auth, username, attrs=None):
+    if username == "admin":
+        admin_unix = pwd.getpwnam("admin")
+        return {
+            'username': 'admin',
+            'fullname': '',
+            'mail': '',
+            'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
+            'shell': admin_unix.pw_shell,
+            'home_path': admin_unix.pw_dir,
+        }
+
+    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
+    user = auth.search('ou=users,dc=yunohost,dc=org',
+                       '(&(objectclass=person)(uid=%s))' % username,
+                       attrs)
+
+    assert len(user) in (0, 1)
+
+    if not user:
+        return None
+
+    return user[0]
