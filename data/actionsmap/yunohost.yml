@@ -1462,6 +1462,23 @@ tools:
 
     subcategories:
 
+      yunohost-logs:
+          subcategory_help: Access YunoHost logs
+          actions:
+              ### tools_migrations_list()
+              list:
+                  action_help: List available YunoHost logs
+                  api: GET /yunohost-logs
+
+
+              ### tools_migrations_list()
+              display:
+                  action_help: Display log file content
+                  api: GET /migrations/<log>
+                  arguments:
+                      log:
+                          help: log file name
+
       migrations:
           subcategory_help: Manage migrations
           actions:
