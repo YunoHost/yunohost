@@ -42,8 +42,12 @@ import apt.progress
 from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
+<<<<<<< b60d8ca822d08c8e3fdf8a17505ff3e285b28164
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
+=======
+from moulinette.utils.filesystem import read_json, write_to_json, read_file
+>>>>>>> [mod] move spectre-meltdown check to diagnosis function
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
@@ -632,6 +636,11 @@ def tools_diagnosis(auth, private=False):
 
         diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
 
+    diagnosis['security'] = {
+        # source https://askubuntu.com/questions/992137/how-to-check-that-kpti-is-enabled-on-my-ubuntu
+        "spectre-meltdown": "cpu_insecure" not in read_file("/proc/cpuinfo")
+    }
+
     return diagnosis
 
 
@@ -834,14 +843,6 @@ def tools_migrations_state():
         return {"last_run_migration": None}
 
     return read_json(MIGRATIONS_STATE_PATH)
-
-
-def tools_meltdown_spectre_check():
-    """
-    Check if the installation is vulnerable to meltdown/spectre.
-    """
-    # source https://askubuntu.com/questions/992137/how-to-check-that-kpti-is-enabled-on-my-ubuntu
-    return {"safe": "cpu_insecure" in open("/proc/cpuinfo")}
 
 
 def tools_shell(auth, command=None):

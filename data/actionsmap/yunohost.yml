@@ -1460,11 +1460,6 @@ tools:
                     full: --force
                     action: store_true
 
-        ### tools_reboot()
-        meltdown-spectre-check:
-            action_help: Check if the server is vulnerable to meltdown/spectre
-            api: GET /meltdown-spectre-check
-
     subcategories:
 
       migrations:
