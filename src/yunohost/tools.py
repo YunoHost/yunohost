@@ -836,6 +836,14 @@ def tools_migrations_state():
     return read_json(MIGRATIONS_STATE_PATH)
 
 
+def tools_meltdown_spectre_check():
+    """
+    Check if the installation is vulnerable to meltdown/spectre.
+    """
+    # source https://askubuntu.com/questions/992137/how-to-check-that-kpti-is-enabled-on-my-ubuntu
+    return {"safe": "cpu_insecure" in open("/proc/cpuinfo")}
+
+
 def tools_shell(auth, command=None):
     """
     Launch an (i)python shell in the YunoHost context.
