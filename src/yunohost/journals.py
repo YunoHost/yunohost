@@ -74,6 +74,13 @@ def journals_list(limit=None):
 
 
 def journals_display(file_name):
+    """
+    Display a journal content
+
+    Argument:
+        file_name
+    """
+
     if not os.path.exists(JOURNALS_PATH):
         # TODO raise exception
         return {}

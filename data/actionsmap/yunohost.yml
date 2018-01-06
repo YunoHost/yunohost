@@ -1608,7 +1608,7 @@ journals:
 
         ### journals_display()
         display:
-            action_help: List journals
+            action_help: Display a journal content
             api: GET /journals/<file_name>
             arguments:
                 file_name:
