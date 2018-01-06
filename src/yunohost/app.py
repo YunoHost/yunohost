@@ -621,9 +621,12 @@ def app_upgrade(auth, app=[], url=None, file=None):
             with open(app_setting_path + '/status.json', 'w+') as f:
                 json.dump(status, f)
 
-            # Replace scripts and manifest
-            os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
+            # Replace scripts and manifest and conf (if exists)
+            os.system('rm -rf "%s/scripts" "%s/manifest.json %/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+
+            if os.path.exists(os.path.join(extracted_app_folder, "conf")):
+                os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
 
             # So much win
             upgraded_apps.append(app_instance_name)
@@ -732,6 +735,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
+
+    if os.path.exists(os.path.join(extracted_app_folder, "conf")):
+        os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
 
     # Execute the app install script
     install_retcode = 1
