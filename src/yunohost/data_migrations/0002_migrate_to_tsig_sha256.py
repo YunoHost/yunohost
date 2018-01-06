@@ -1,13 +1,21 @@
 import glob
+import os
+import requests
+import base64
+import time
+
+from moulinette import m18n
+from moulinette.core import MoulinetteError
+from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from moulinette.utils.log import getActionLogger
+from yunohost.dyndns import _guess_current_dyndns_domain
+
 logger = getActionLogger('yunohost.migration')
 
 
-class MigrateToTsigSha512(Migration):
-    "Migrate Dyndns stuff from MD5 TSIG to SHA512 TSIG":
-
+class MyMigration(Migration):
+    "Migrate Dyndns stuff from MD5 TSIG to SHA512 TSIG"
 
     def backward(self):
         # Not possible because that's a non-reversible operation ?
@@ -22,6 +30,7 @@ class MigrateToTsigSha512(Migration):
             (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
         except MoulinetteError:
             logger.warning("migrate_tsig_not_needed")
+            return
 
         logger.warning(m18n.n('migrate_tsig_start', domain=domain))
         public_key_path = private_key_path.rsplit(".private", 1)[0] + ".key"
