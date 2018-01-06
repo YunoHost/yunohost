@@ -1,0 +1,79 @@
+import glob
+
+from yunohost.tools import Migration
+from moulinette.utils.log import getActionLogger
+logger = getActionLogger('yunohost.migration')
+
+
+class MigrateToTsigSha512(Migration):
+    "Migrate Dyndns stuff from MD5 TSIG to SHA512 TSIG":
+
+
+    def backward(self):
+        # Not possible because that's a non-reversible operation ?
+        pass
+
+
+    def forward(self):
+
+        dyn_host="dyndns.yunohost.org"
+
+        try:
+            (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
+        except MoulinetteError:
+            logger.warning("migrate_tsig_not_needed")
+
+        logger.warning(m18n.n('migrate_tsig_start', domain=domain))
+        public_key_path = private_key_path.rsplit(".private", 1)[0] + ".key"
+        public_key_md5 = open(public_key_path).read().strip().split(' ')[-1]
+
+        os.system('cd /etc/yunohost/dyndns && '
+                  'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
+        os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
+
+        # +165 means that this file store a hmac-sha512 key
+        new_key_path = glob.glob('/etc/yunohost/dyndns/*+165*.key')[0]
+        public_key_sha512 = open(new_key_path).read().strip().split(' ', 6)[-1]
+
+        try:
+            r = requests.put('https://%s/migrate_key_to_sha512/' % (dyn_host),
+                             data={
+                               'public_key_md5': base64.b64encode(public_key_md5),
+                               'public_key_sha512': base64.b64encode(public_key_sha512),
+                             }, timeout=30)
+        except requests.ConnectionError:
+            raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+
+        if r.status_code != 201:
+            try:
+                error = json.loads(r.text)['error']
+                show_traceback = 0
+            except Exception:
+                # failed to decode json
+                error = r.text
+                show_traceback = 1
+
+            logger.warning(m18n.n('migrate_tsig_failed', domain=domain,
+                                  error_code=str(r.status_code), error=error),
+                           exc_info=show_traceback)
+
+            os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
+            return public_key_path
+
+        # remove old certificates
+        os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
+
+        # sleep to wait for dyndns cache invalidation
+        logger.warning(m18n.n('migrate_tsig_wait'))
+        time.sleep(60)
+        logger.warning(m18n.n('migrate_tsig_wait_2'))
+        time.sleep(60)
+        logger.warning(m18n.n('migrate_tsig_wait_3'))
+        time.sleep(30)
+        logger.warning(m18n.n('migrate_tsig_wait_4'))
+        time.sleep(30)
+
+        logger.warning(m18n.n('migrate_tsig_end'))
+        return new_key_path.rsplit(".key", 1)[0] + ".private"
+
+
