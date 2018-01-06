@@ -38,13 +38,10 @@ logger = getActionLogger('yunohost.journals')
 
 def journals_list(limit=None):
     """
-    List domains
+    List available journals
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for domain fetching
-        limit -- Maximum number of domain fetched
-
+        limit -- Maximum number of journals per categories
     """
 
     result = {"categories": []}
