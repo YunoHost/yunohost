@@ -3,6 +3,7 @@ import os
 import requests
 import base64
 import time
+import json
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -21,14 +22,13 @@ class MyMigration(Migration):
         # Not possible because that's a non-reversible operation ?
         pass
 
+    def migrate(self, dyn_host="dyndns.yunohost.org", domain=None, private_key_path=None):
 
-    def forward(self, dyn_host="dyndns.yunohost.org", domain=None, private_key_path=None):
-
-        if domain in None or private_key_path is None:
+        if domain is None or private_key_path is None:
             try:
                 (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
-                assert "+157" in private_key_path
-            except MoulinetteError:
+                #assert "+157" in private_key_path
+            except (MoulinetteError, AssertionError):
                 logger.warning("migrate_tsig_not_needed")
                 return
 
@@ -56,18 +56,21 @@ class MyMigration(Migration):
         if r.status_code != 201:
             try:
                 error = json.loads(r.text)['error']
-                show_traceback = 0
             except Exception:
                 # failed to decode json
                 error = r.text
-                show_traceback = 1
 
-            logger.warning(m18n.n('migrate_tsig_failed', domain=domain,
-                                  error_code=str(r.status_code), error=error),
-                           exc_info=show_traceback)
+                import traceback
+                from StringIO import StringIO
+                stack = StringIO()
+                traceback.print_exc(file=stack)
+                logger.error(stack.getvalue())
 
+            # Migration didn't succeed, so we rollback and raise an exception
             os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
-            return public_key_path
+
+            raise MoulinetteError(m18n.n('migrate_tsig_failed', domain=domain,
+                                  error_code=str(r.status_code), error=error))
 
         # remove old certificates
         os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
@@ -83,6 +86,5 @@ class MyMigration(Migration):
         time.sleep(30)
 
         logger.warning(m18n.n('migrate_tsig_end'))
-        return new_key_path.rsplit(".key", 1)[0] + ".private"
-
+        return
 
