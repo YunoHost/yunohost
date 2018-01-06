@@ -57,7 +57,9 @@ def journals_list(limit=None):
 
             journal = journal[:-len(".journal")]
             journal = journal.split("_")
+
             journal_datetime = datetime.strptime(" ".join(journal[-2:]), "%Y-%m-%d %H-%M-%S")
+
             result["categories"][-1]["journals"].append({
                 "started_at": journal_datetime,
                 "name": " ".join(journal[:-2]),
