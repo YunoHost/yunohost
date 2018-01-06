@@ -22,15 +22,15 @@ class MyMigration(Migration):
         pass
 
 
-    def forward(self):
+    def forward(self, dyn_host="dyndns.yunohost.org", domain=None, private_key_path=None):
 
-        dyn_host="dyndns.yunohost.org"
-
-        try:
-            (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
-        except MoulinetteError:
-            logger.warning("migrate_tsig_not_needed")
-            return
+        if domain in None or private_key_path is None:
+            try:
+                (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
+                assert "+157" in private_key_path
+            except MoulinetteError:
+                logger.warning("migrate_tsig_not_needed")
+                return
 
         logger.warning(m18n.n('migrate_tsig_start', domain=domain))
         public_key_path = private_key_path.rsplit(".private", 1)[0] + ".key"
