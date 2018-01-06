@@ -431,6 +431,7 @@ def app_change_url(auth, app, domain, path):
 
     """
     from yunohost.hook import hook_exec
+    from yunohost.journals import Journal
 
     installed = _is_installed(app)
     if not installed:
@@ -488,8 +489,8 @@ def app_change_url(auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
-    # XXX journal
-    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root") != 0:
+    journal = Journal(["change_url", app], "app", args=args_list, env=env_dict)
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root", journa=journal) != 0:
         logger.error("Failed to change '%s' url." % app)
 
         # restore values modified by app_checkurl
