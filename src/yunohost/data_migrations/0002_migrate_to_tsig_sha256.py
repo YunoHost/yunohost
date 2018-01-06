@@ -27,7 +27,7 @@ class MyMigration(Migration):
         if domain is None or private_key_path is None:
             try:
                 (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
-                #assert "+157" in private_key_path
+                assert "+157" in private_key_path
             except (MoulinetteError, AssertionError):
                 logger.warning("migrate_tsig_not_needed")
                 return
@@ -63,7 +63,7 @@ class MyMigration(Migration):
                 import traceback
                 from StringIO import StringIO
                 stack = StringIO()
-                traceback.print_exc(file=stack)
+                traceback.print_stack(file=stack)
                 logger.error(stack.getvalue())
 
             # Migration didn't succeed, so we rollback and raise an exception
