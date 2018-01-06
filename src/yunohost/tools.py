@@ -717,30 +717,10 @@ def tools_migrations_migrate(target=None, skip=False):
 
     # loading all migrations
     for migration in tools_migrations_list()["migrations"]:
-        logger.debug(m18n.n('migrations_loading_migration',
-            number=migration["number"],
-            name=migration["name"],
-        ))
-
-        try:
-            # this is python builtin method to import a module using a name, we
-            # use that to import the migration as a python object so we'll be
-            # able to run it in the next loop
-            module = import_module("yunohost.data_migrations.{file_name}".format(**migration))
-        except Exception:
-            import traceback
-            traceback.print_exc()
-
-            raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-                number=migration["number"],
-                name=migration["name"],
-            ))
-            break
-
         migrations.append({
             "number": migration["number"],
             "name": migration["name"],
-            "module": module,
+            "module": _get_migration_module(migration),
         })
 
     migrations = sorted(migrations, key=lambda x: x["number"])
@@ -875,6 +855,47 @@ def _get_migrations_list():
         migrations.append(migration[:-len(".py")])
 
     return sorted(migrations)
+
+
+def _get_migration_by_name(migration_name, with_module=True):
+    """
+    Low-level / "private" function to find a migration by its name
+    """
+
+    migrations = tools_migrations_list()["migrations"]
+
+    matches = [ m for m in migrations if m["name"] == migration_name ]
+
+    assert len(matches) == 1, "Unable to find migration with name %s" % migration_name
+
+    migration = matches[0]
+
+    if with_module:
+        migration["module"] = _get_migration_module(migration)
+
+    return migration
+
+
+def _get_migration_module(migration):
+
+    logger.debug(m18n.n('migrations_loading_migration',
+        number=migration["number"],
+        name=migration["name"],
+    ))
+
+    try:
+        # this is python builtin method to import a module using a name, we
+        # use that to import the migration as a python object so we'll be
+        # able to run it in the next loop
+        return import_module("yunohost.data_migrations.{file_name}".format(**migration))
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
+            number=migration["number"],
+            name=migration["name"],
+        ))
 
 
 class Migration(object):
