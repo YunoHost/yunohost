@@ -26,9 +26,12 @@
 
 import os
 import yaml
+import errno
 
 from datetime import datetime
 
+from moulinette import m18n
+from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 JOURNALS_PATH = '/var/log/yunohost/journals/'
@@ -84,8 +87,8 @@ def journals_display(file_name):
     """
 
     if not os.path.exists(JOURNALS_PATH):
-        # TODO raise exception
-        return {}
+        raise MoulinetteError(errno.EINVAL,
+                              m18n.n('journal_does_exists', journal=file_name))
 
     for category in os.listdir(JOURNALS_PATH):
         for journal in filter(lambda x: x.endswith(".journal"), os.listdir(os.path.join(JOURNALS_PATH, category))):
@@ -112,8 +115,8 @@ def journals_display(file_name):
                     "logs": logs,
                 }
 
-    # TODO raise exception
-    return {}
+    raise MoulinetteError(errno.EINVAL,
+                          m18n.n('journal_does_exists', journal=file_name))
 
 
 class Journal(object):
