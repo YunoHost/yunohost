@@ -6,7 +6,7 @@ avahi-daemon:
    log: /var/log/daemon.log
 dnsmasq:
    status: service
-   log: /var/log/daemon.log
+   log: /var/log/dnsmasq.log
 fail2ban:
     status: service
     log: /var/log/fail2ban.log
