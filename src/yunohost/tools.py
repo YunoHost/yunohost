@@ -42,6 +42,7 @@ import apt.progress
 from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
@@ -588,6 +589,9 @@ def tools_diagnosis(auth, private=False):
             'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
             'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
         }
+
+    # nginx -t
+    diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
 
     # Services status
     services = service_status()
