@@ -1019,7 +1019,9 @@ def app_makedefault(auth, app, domain=None):
 
     if '/' in app_map(raw=True)[domain]:
         raise MoulinetteError(errno.EEXIST,
-                              m18n.n('app_location_already_used'))
+                              m18n.n('app_make_default_location_already_used',
+                                     app=app, domain=app_domain,
+                                     other_app=app_map(raw=True)[domain]["/"]["id"]))
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
@@ -1172,10 +1174,13 @@ def app_checkurl(auth, url, app=None):
                 continue
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('app_location_already_used'))
+                                      m18n.n('app_location_already_used',
+                                             app=a["id"], path=path))
+            # can't install "/a/b/" if "/a/" exists
             elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('app_location_install_failed'))
+                                      m18n.n('app_location_install_failed',
+                                             other_path=p, other_app=a['id']))
 
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
