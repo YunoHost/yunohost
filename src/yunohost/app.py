@@ -1169,10 +1169,12 @@ def app_checkurl(auth, url, app=None):
                 continue
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('app_location_already_used'))
+                                      m18n.n('app_location_already_used',
+                                             app=a["id"], path=path))
             elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('app_location_install_failed'))
+                                      m18n.n('app_location_install_failed',
+                                             other_path=p, other_app=a['id']))
 
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
