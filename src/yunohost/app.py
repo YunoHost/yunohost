@@ -1016,7 +1016,9 @@ def app_makedefault(auth, app, domain=None):
 
     if '/' in app_map(raw=True)[domain]:
         raise MoulinetteError(errno.EEXIST,
-                              m18n.n('app_location_already_used'))
+                              m18n.n('app_make_default_location_already_used',
+                                     app=app, domain=app_domain,
+                                     other_app=app_map(raw=True)[domain]["/"]["id"]))
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
