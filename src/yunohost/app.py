@@ -1173,6 +1173,7 @@ def app_checkurl(auth, url, app=None):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('app_location_already_used',
                                              app=a["id"], path=path))
+            # can't install "/a/b/" if "/a/" exists
             elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
                                       m18n.n('app_location_install_failed',
