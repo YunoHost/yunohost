@@ -624,6 +624,8 @@ def tools_diagnosis(auth, private=False):
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
+        diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
+
     return diagnosis
 
 
