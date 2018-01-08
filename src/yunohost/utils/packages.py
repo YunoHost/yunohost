@@ -414,6 +414,8 @@ def get_installed_version(*pkgnames, **kwargs):
             if strict:
                 raise UnknownPackage(pkgname)
             logger.warning(m18n.n('package_unknown', pkgname=pkgname))
+            continue
+
         try:
             version = pkg.installed.version
         except AttributeError:
