@@ -188,17 +188,17 @@ def domain_dns_conf(domain, ttl=None):
 
     result = ""
 
-    result += "# Basic ipv4/ipv6 records"
+    result += "; Basic ipv4/ipv6 records"
     for record in dns_conf["basic"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     result += "\n\n"
-    result += "# XMPP"
+    result += "; XMPP"
     for record in dns_conf["xmpp"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     result += "\n\n"
-    result += "# Mail"
+    result += "; Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
