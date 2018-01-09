@@ -101,7 +101,7 @@
     "backup_output_directory_forbidden": "Forbidden output directory. Backups can't be created in /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var or /home/yunohost.backup/archives sub-folders",
     "backup_output_directory_not_empty": "The output directory is not empty",
     "backup_output_directory_required": "You must provide an output directory for the backup",
-    "backup_output_symlink_dir_broken": "You have a broken symlink instead of your archives directory '{path:s}', may be you have a specific setup, to backup your data on an other filesystem, in this case you probably miss to remount or plug your hard dirve or usb key.",
+    "backup_output_symlink_dir_broken": "You have a broken symlink instead of your archives directory '{path:s}'. You may have a specific setup to backup your data on an other filesystem, in this case you probably miss to remount or plug your hard dirve or usb key.",
     "backup_running_app_script": "Running backup script of app '{app:s}'...",
     "backup_running_hooks": "Running backup hooks...",
     "backup_system_part_failed": "Unable to backup the '{part:s}' system part",
