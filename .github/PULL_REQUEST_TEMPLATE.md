@@ -10,6 +10,9 @@
 
 ...
 
+## How to test
+
+...
 
 ## Validation
 
