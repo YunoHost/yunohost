@@ -622,7 +622,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
                 json.dump(status, f)
 
             # Replace scripts and manifest and conf (if exists)
-            os.system('rm -rf "%s/scripts" "%s/manifest.json %/conf"' % (app_setting_path, app_setting_path, app_setting_path))
+            os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
             if os.path.exists(os.path.join(extracted_app_folder, "conf")):
