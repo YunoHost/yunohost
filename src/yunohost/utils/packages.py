@@ -454,7 +454,7 @@ def meets_version_specifier(pkgname, specifier):
 def ynh_packages_version(*args, **kwargs):
     # from cli the received arguments are:
     # (Namespace(_callbacks=deque([]), _tid='_global', _to_return={}), []) {}
-    # they don't seems to serve any purpose
+    # they don't seem to serve any purpose
     """Return the version of each YunoHost package"""
     return get_installed_version(
         'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
