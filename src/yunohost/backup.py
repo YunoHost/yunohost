@@ -2300,7 +2300,7 @@ def backup_delete(name):
 
 def _create_archive_dir():
     """ Create the YunoHost archives directory if doesn't exist """
-    if not os.path.isdir(ARCHIVES_PATH):
+    if not os.path.isdir(ARCHIVES_PATH) and not os.path.islink(ARCHIVES_PATH):
         os.mkdir(ARCHIVES_PATH, 0750)
 
 
