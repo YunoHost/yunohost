@@ -24,19 +24,36 @@ ynh_replace_string () {
 	local delimit=@
 	local match_string=$1
 	local replace_string=$2
-	local workfile=$3
-
-	# Escape any backslash to preserve them as simple backslash.
-	match_string=${match_string//\\/"\\\\"}
-	replace_string=${replace_string//\\/"\\\\"}
-
-	# Escape the & character, who has a special function in sed.
-	match_string=${match_string//&/"\&"}
-	replace_string=${replace_string//&/"\&"}
-
+	local workfile=$
+  
 	# Escape the delimiter if it's in the string.
 	match_string=${match_string//${delimit}/"\\${delimit}"}
 	replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
 	sudo sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$workfile"
+}
+
+# Substitute/replace a special string by another in a file
+#
+# usage: ynh_replace_special_string match_string replace_string target_file
+# | arg: match_string - String to be searched and replaced in the file
+# | arg: replace_string - String that will replace matches
+# | arg: target_file - File in which the string will be replaced.
+#
+# This helper will use ynh_replace_string, but as you can use special
+# characters, you can't use some regular expressions and sub-expressions.
+ynh_replace_special_string () {
+	local match_string=$1
+	local replace_string=$2
+	local workfile=$3
+
+  # Escape any backslash to preserve them as simple backslash.
+  match_string=${match_string//\\/"\\\\"}
+  replace_string=${replace_string//\\/"\\\\"}
+
+	# Escape the & character, who has a special function in sed.
+	match_string=${match_string//&/"\&"}
+	replace_string=${replace_string//&/"\&"}
+
+	ynh_replace_string "$match_string" "$replace_string" "$workfile"
 }
