@@ -40,9 +40,9 @@ ynh_mysql_execute_file_as_root() {
 # | arg: user - the user to grant privilegies
 # | arg: pwd - the password to identify user by
 ynh_mysql_create_db() {
-    db=$1
+    local db=$1
 
-    sql="CREATE DATABASE ${db};"
+    local sql="CREATE DATABASE ${db};"
 
     # grant all privilegies to user
     if [[ $# -gt 1 ]]; then
@@ -159,6 +159,6 @@ ynh_mysql_remove_db () {
 # | arg: name - name to correct/sanitize
 # | ret: the corrected name
 ynh_sanitize_dbid () {
-	dbid=${1//[-.]/_}	# We should avoid having - and . in the name of databases. They are replaced by _
+	local dbid=${1//[-.]/_}	# We should avoid having - and . in the name of databases. They are replaced by _
 	echo $dbid
 }
