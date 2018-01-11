@@ -48,7 +48,7 @@ from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, a
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log
+from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
@@ -399,8 +399,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('touch /etc/yunohost/installed')
 
     # Enable and start YunoHost firewall at boot time
-    os.system('update-rc.d yunohost-firewall enable')
-    os.system('service yunohost-firewall start &')
+    service_enable("yunohost-firewall")
+    service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
