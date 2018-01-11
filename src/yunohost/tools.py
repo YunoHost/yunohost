@@ -42,12 +42,13 @@ import apt.progress
 from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log
+from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 
@@ -398,8 +399,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('touch /etc/yunohost/installed')
 
     # Enable and start YunoHost firewall at boot time
-    os.system('update-rc.d yunohost-firewall enable')
-    os.system('service yunohost-firewall start &')
+    service_enable("yunohost-firewall")
+    service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
@@ -588,6 +589,9 @@ def tools_diagnosis(auth, private=False):
             'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
             'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
         }
+
+    # nginx -t
+    diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
 
     # Services status
     services = service_status()

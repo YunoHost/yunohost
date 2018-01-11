@@ -22,12 +22,12 @@ ynh_use_logrotate () {
 	fi
 	if [ $# -gt 0 ]; then
 		if [ "$(echo ${1##*.})" == "log" ]; then	# Keep only the extension to check if it's a logfile
-			logfile=$1	# In this case, focus logrotate on the logfile
+			local logfile=$1	# In this case, focus logrotate on the logfile
 		else
-			logfile=$1/*.log	# Else, uses the directory and all logfile into it.
+			local logfile=$1/*.log	# Else, uses the directory and all logfile into it.
 		fi
 	else
-		logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
+		local logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
 	fi
 	cat > ./${app}-logrotate << EOF	# Build a config file for logrotate
 $logfile {
@@ -97,7 +97,7 @@ ynh_add_systemd_config () {
 #
 # usage: ynh_remove_systemd_config
 ynh_remove_systemd_config () {
-	finalsystemdconf="/etc/systemd/system/$app.service"
+	local finalsystemdconf="/etc/systemd/system/$app.service"
 	if [ -e "$finalsystemdconf" ]; then
 		sudo systemctl stop $app
 		sudo systemctl disable $app
@@ -124,7 +124,7 @@ ynh_add_nginx_config () {
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${path_url:-}"; then
 		# path_url_slash_less is path_url, or a blank value if path_url is only '/'
-		path_url_slash_less=${path_url%/}
+		local path_url_slash_less=${path_url%/}
 		ynh_replace_string "__PATH__/" "$path_url_slash_less/" "$finalnginxconf"
 		ynh_replace_string "__PATH__" "$path_url" "$finalnginxconf"
 	fi

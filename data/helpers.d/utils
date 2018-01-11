@@ -5,9 +5,9 @@
 # usage: ynh_get_plain_key key [subkey [subsubkey ...]]
 # | ret: string - the key's value
 ynh_get_plain_key() {
-    prefix="#"
-    founded=0
-    key=$1
+    local prefix="#"
+    local founded=0
+    local key=$1
     shift
     while read line; do
         if [[ "$founded" == "1" ]] ; then
@@ -36,7 +36,7 @@ ynh_get_plain_key() {
 #
 ynh_restore_upgradebackup () {
 	echo "Upgrade failed." >&2
-	app_bck=${app//_/-}	# Replace all '_' by '-'
+	local app_bck=${app//_/-}	# Replace all '_' by '-'
 	
         # Check if an existing backup can be found before removing and restoring the application.
 	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
@@ -64,9 +64,9 @@ ynh_backup_before_upgrade () {
 		echo "This app doesn't have any backup script." >&2
 		return
 	fi
-	backup_number=1
-	old_backup_number=2
-	app_bck=${app//_/-}	# Replace all '_' by '-'
+	local backup_number=1
+	local old_backup_number=2
+	local app_bck=${app//_/-}	# Replace all '_' by '-'
 
 	# Check if a backup already exists with the prefix 1
 	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
@@ -94,7 +94,7 @@ ynh_backup_before_upgrade () {
 # Download, check integrity, uncompress and patch the source from app.src
 #
 # The file conf/app.src need to contains:
-# 
+#
 # SOURCE_URL=Address to download the app archive
 # SOURCE_SUM=Control sum
 # # (Optional) Program to check the integrity (sha256sum, md5sum...)
@@ -113,9 +113,9 @@ ynh_backup_before_upgrade () {
 # Details:
 # This helper downloads sources from SOURCE_URL if there is no local source
 # archive in /opt/yunohost-apps-src/APP_ID/SOURCE_FILENAME
-# 
+#
 # Next, it checks the integrity with "SOURCE_SUM_PRG -c --status" command.
-# 
+#
 # If it's ok, the source archive will be uncompressed in $dest_dir. If the
 # SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
 # removed.
@@ -130,7 +130,7 @@ ynh_backup_before_upgrade () {
 ynh_setup_source () {
     local dest_dir=$1
     local src_id=${2:-app} # If the argument is not given, source_id equals "app"
-    
+
     # Load value from configuration file (see above for a small doc about this file
     # format)
     local src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
@@ -139,7 +139,7 @@ ynh_setup_source () {
     local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    
+
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
     src_in_subdir=${src_in_subdir:-true}
@@ -216,10 +216,11 @@ ynh_setup_source () {
 # | arg: ...         - (Optionnal) More POST keys and values
 ynh_local_curl () {
 	# Define url of page to curl
-	full_page_url=https://localhost$path_url$1
+	local full_page_url=https://localhost$path_url$1
 
 	# Concatenate all other arguments with '&' to prepare POST data
-	POST_data=""
+	local POST_data=""
+	local arg=""
 	for arg in "${@:2}"
 	do
 		POST_data="${POST_data}${arg}&"
