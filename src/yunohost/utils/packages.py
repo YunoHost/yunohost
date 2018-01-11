@@ -414,13 +414,29 @@ def get_installed_version(*pkgnames, **kwargs):
             if strict:
                 raise UnknownPackage(pkgname)
             logger.warning(m18n.n('package_unknown', pkgname=pkgname))
+            continue
+
         try:
             version = pkg.installed.version
         except AttributeError:
             if strict:
                 raise UninstalledPackage(pkgname)
             version = None
-        versions[pkgname] = version
+
+        try:
+            # stable, testing, unstable
+            repo = pkg.installed.origins[0].component
+        except AttributeError:
+            if strict:
+                raise UninstalledPackage(pkgname)
+            repo = ""
+
+        versions[pkgname] = {
+            "version": version,
+            # when we don't have component it's because it's from a local
+            # install or from an image (like in vagrant)
+            "repo": repo if repo else "local",
+        }
 
     if len(pkgnames) == 1 and not as_dict:
         return versions[pkgnames[0]]
@@ -436,6 +452,9 @@ def meets_version_specifier(pkgname, specifier):
 # YunoHost related methods ---------------------------------------------------
 
 def ynh_packages_version(*args, **kwargs):
+    # from cli the received arguments are:
+    # (Namespace(_callbacks=deque([]), _tid='_global', _to_return={}), []) {}
+    # they don't seem to serve any purpose
     """Return the version of each YunoHost package"""
     return get_installed_version(
         'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
