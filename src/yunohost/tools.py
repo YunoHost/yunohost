@@ -562,6 +562,8 @@ def tools_diagnosis(auth, private=False):
     # Packages version
     diagnosis['packages'] = ynh_packages_version()
 
+    diagnosis["backports"] = check_output("dpkg -l |awk '/^ii/ && $3 ~ /bpo[6-8]/ {print $2}'").split()
+
     # Server basic monitoring
     diagnosis['system'] = OrderedDict()
     try:
