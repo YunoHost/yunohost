@@ -573,8 +573,8 @@ def tools_diagnosis(auth, private=False):
     else:
         diagnosis['system']['disks'] = {}
         for disk in disks:
-            if isinstance(disk, str):
-                diagnosis['system']['disks'] = disk
+            if isinstance(disks[disk], str):
+                diagnosis['system']['disks'][disk] = disks[disk]
             else:
                 diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
                     disks[disk]['mnt_point'],
