@@ -649,16 +649,16 @@ app:
 
         ### app_change_label()
         change-label:
-            action_help: Change an application label
+            action_help: Change app label
             api: PUT /apps/<app>/label
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
                 app:
-                    help: the application id
+                    help: App ID
                 new_label:
-                    help: the new application label
+                    help: New app label
 
         ### app_addaccess() TODO: Write help
         addaccess:
