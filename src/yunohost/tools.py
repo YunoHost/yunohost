@@ -647,7 +647,7 @@ def _check_if_vulnerable_to_meltdown():
 
     # script taken from https://github.com/speed47/spectre-meltdown-checker
     # script commit id is store directly in the script
-    SCRIPT_PATH = "/usr/share/yunohost/yunohost-config/moulinette/spectre-meltdown-checker.sh"
+    SCRIPT_PATH = "./vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh"
 
     # '--variant 3' corresponds to Meltdown
     # example output from the script:
