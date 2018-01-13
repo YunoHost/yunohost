@@ -643,18 +643,23 @@ def tools_diagnosis(auth, private=False):
 
 
 def _check_if_vulnerable_to_meltdown():
+    # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
+
     # script taken from https://github.com/speed47/spectre-meltdown-checker
     # script commit id is store directly in the script
     SCRIPT_PATH = "/usr/share/yunohost/yunohost-config/moulinette/spectre-meltdown-checker.sh"
 
+    # '--variant 3' corresponds to Meltdown
     # example output from the script:
-    # [{"NAME":"SPECTRE VARIANT 1","CVE":"CVE-2017-5753","VULNERABLE":true,"INFOS":"only 23 opcodes found, should be >= 70, heuristic to be improved when official patches become available"},{"NAME":"SPECTRE VARIANT 2","CVE":"CVE-2017-5715","VULNERABLE":true,"INFOS":"IBRS hardware + kernel support OR kernel with retpoline are needed to mitigate the vulnerability"},{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
-    for CVE in json.loads(check_output("bash %s --batch json" % SCRIPT_PATH)):
-        # meltdown https://security-tracker.debian.org/tracker/CVE-2017-5754
-        if CVE["CVE"] == "CVE-2017-5754":
-            return CVE["VULNERABLE"]
+    # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
+    try:
+        CVEs = json.loads(check_output("bash %s --batch json --variant 3" % SCRIPT_PATH))
+        assert len(CVEs) == 1
+        assert CVEs[0]["NAME"] == "MELTDOWN"
+    except:
+        raise Exception("Something wrong happened when trying to diagnose Meltdown vunerability.")
 
-    raise Exception("We should never get there")
+    return CVEs[0]["VULNERABLE"]
 
 
 def tools_port_available(port):
