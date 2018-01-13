@@ -1320,6 +1320,17 @@ def app_ssowatconf(auth):
     logger.success(m18n.n('ssowat_conf_generated'))
 
 
+def app_change_label(auth, app, new_label):
+    installed = _is_installed(app)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app))
+
+    app_setting(app, "label", value=new_label)
+
+    app_ssowatconf(auth)
+
+
 def _get_app_settings(app_id):
     """
     Get settings of an installed app
