@@ -632,7 +632,34 @@ def tools_diagnosis(auth, private=False):
 
         diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
 
+    diagnosis['security'] = {
+        "CVE-2017-5754": {
+            "name": "meltdown",
+            "vulnerable": _check_if_vulnerable_to_meltdown(),
+        }
+    }
+
     return diagnosis
+
+
+def _check_if_vulnerable_to_meltdown():
+    # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
+
+    # script taken from https://github.com/speed47/spectre-meltdown-checker
+    # script commit id is store directly in the script
+    SCRIPT_PATH = "./vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh"
+
+    # '--variant 3' corresponds to Meltdown
+    # example output from the script:
+    # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
+    try:
+        CVEs = json.loads(check_output("bash %s --batch json --variant 3" % SCRIPT_PATH))
+        assert len(CVEs) == 1
+        assert CVEs[0]["NAME"] == "MELTDOWN"
+    except:
+        raise Exception("Something wrong happened when trying to diagnose Meltdown vunerability.")
+
+    return CVEs[0]["VULNERABLE"]
 
 
 def tools_port_available(port):
