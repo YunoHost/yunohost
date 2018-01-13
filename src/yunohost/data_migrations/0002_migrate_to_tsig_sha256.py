@@ -4,6 +4,7 @@ import requests
 import base64
 import time
 import json
+import errno
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
