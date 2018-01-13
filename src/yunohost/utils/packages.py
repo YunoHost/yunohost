@@ -431,12 +431,15 @@ def get_installed_version(*pkgnames, **kwargs):
                 raise UninstalledPackage(pkgname)
             repo = ""
 
-        versions[pkgname] = {
-            "version": version,
-            # when we don't have component it's because it's from a local
-            # install or from an image (like in vagrant)
-            "repo": repo if repo else "local",
-        }
+        if as_dict:
+            versions[pkgname] = {
+                "version": version,
+                # when we don't have component it's because it's from a local
+                # install or from an image (like in vagrant)
+                "repo": repo if repo else "local",
+            }
+        else:
+            versions[pkgname] = version
 
     if len(pkgnames) == 1 and not as_dict:
         return versions[pkgnames[0]]
@@ -458,4 +461,5 @@ def ynh_packages_version(*args, **kwargs):
     """Return the version of each YunoHost package"""
     return get_installed_version(
         'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
+        as_dict=True
     )
