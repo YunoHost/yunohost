@@ -30,7 +30,7 @@ class MyMigration(Migration):
                 (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
                 assert "+157" in private_key_path
             except (MoulinetteError, AssertionError):
-                logger.warning("migrate_tsig_not_needed")
+                logger.warning(m18n.n("migrate_tsig_not_needed"))
                 return
 
         logger.warning(m18n.n('migrate_tsig_start', domain=domain))

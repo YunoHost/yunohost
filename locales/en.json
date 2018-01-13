@@ -217,6 +217,7 @@
     "migrate_tsig_wait_2": "2min...",
     "migrate_tsig_wait_3": "1min...",
     "migrate_tsig_wait_4": "30 secondes...",
+    "migrate_tsig_not_needed": "You do not appear to use a dyndns domain, so no migration is needed !",
     "migrations_backward": "Migrating backward.",
     "migrations_bad_value_for_target": "Invalide number for target argument, available migrations numbers are 0 or {}",
     "migrations_cant_reach_migration_file": "Can't access migrations files at path %s",
