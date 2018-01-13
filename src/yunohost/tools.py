@@ -42,12 +42,8 @@ import apt.progress
 from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
-<<<<<<< b60d8ca822d08c8e3fdf8a17505ff3e285b28164
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
-=======
-from moulinette.utils.filesystem import read_json, write_to_json, read_file
->>>>>>> [mod] move spectre-meltdown check to diagnosis function
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
@@ -637,11 +633,28 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
 
     diagnosis['security'] = {
-        # source https://askubuntu.com/questions/992137/how-to-check-that-kpti-is-enabled-on-my-ubuntu
-        "spectre-meltdown": "cpu_insecure" not in read_file("/proc/cpuinfo")
+        "CVE-2017-5754": {
+            "name": "meltdown",
+            "vulnerable": _check_if_vulnerable_to_meltdown(),
+        }
     }
 
     return diagnosis
+
+
+def _check_if_vulnerable_to_meltdown():
+    # script taken from https://github.com/speed47/spectre-meltdown-checker
+    # script commit id is store directly in the script
+    SCRIPT_PATH = "/usr/share/yunohost/yunohost-config/moulinette/spectre-meltdown-checker.sh"
+
+    # example output from the script:
+    # [{"NAME":"SPECTRE VARIANT 1","CVE":"CVE-2017-5753","VULNERABLE":true,"INFOS":"only 23 opcodes found, should be >= 70, heuristic to be improved when official patches become available"},{"NAME":"SPECTRE VARIANT 2","CVE":"CVE-2017-5715","VULNERABLE":true,"INFOS":"IBRS hardware + kernel support OR kernel with retpoline are needed to mitigate the vulnerability"},{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
+    for CVE in json.loads(check_output("bash %s --batch json" % SCRIPT_PATH)):
+        # meltdown https://security-tracker.debian.org/tracker/CVE-2017-5754
+        if CVE["CVE"] == "CVE-2017-5754":
+            return CVE["VULNERABLE"]
+
+    raise Exception("We should never get there")
 
 
 def tools_port_available(port):
