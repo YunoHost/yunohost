@@ -24,7 +24,7 @@ ynh_replace_string () {
 	local delimit=@
 	local match_string=$1
 	local replace_string=$2
-	local workfile=$
+	local workfile=$3
   
 	# Escape the delimiter if it's in the string.
 	match_string=${match_string//${delimit}/"\\${delimit}"}
