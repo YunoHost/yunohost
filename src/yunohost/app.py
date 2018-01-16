@@ -2197,5 +2197,10 @@ def _patch_php5(app_folder):
     files_to_patch.append("%s/manifest.json" % app_folder)
 
     for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
         c = "sed -i  -e 's@/etc/php5@/etc/php/7.0@g' -e 's@php5@php7.0@g' %s" % filename
         os.system(c)
