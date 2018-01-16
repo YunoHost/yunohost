@@ -2157,6 +2157,7 @@ def _patch_php5(app_folder):
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
     files_to_patch.append("%s/manifest.json" % app_folder)
 
     for filename in files_to_patch:
