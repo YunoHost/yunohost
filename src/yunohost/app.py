@@ -1149,6 +1149,9 @@ def app_checkurl(auth, url, app=None):
         app -- Write domain & path to app settings for further checks
 
     """
+
+    logger.warning(m18n.n("app_checkurl_is_deprecated"))
+
     from yunohost.domain import domain_list
 
     if "https://" == url[:8]:
