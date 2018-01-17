@@ -637,12 +637,17 @@ def tools_diagnosis(auth, private=False):
 
         diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
 
-    diagnosis['security'] = {
-        "CVE-2017-5754": {
-            "name": "meltdown",
-            "vulnerable": _check_if_vulnerable_to_meltdown(),
+    try:
+        diagnosis['security'] = {
+            "CVE-2017-5754": {
+                "name": "meltdown",
+                "vulnerable": _check_if_vulnerable_to_meltdown(),
+            }
         }
-    }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Unable to check for meltdown vulnerability: %s" % e)
 
     return diagnosis
 
