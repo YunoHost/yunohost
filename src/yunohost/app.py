@@ -2202,5 +2202,8 @@ def _patch_php5(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        c = "sed -i  -e 's@/etc/php5@/etc/php/7.0@g' -e 's@php5@php7.0@g' %s" % filename
+        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
+                   "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
+                   "-e 's@php5@php7.0@g' " \
+                   "%s" % filename
         os.system(c)
