@@ -1543,9 +1543,13 @@ class BackupMethod(object):
                 # Can create a hard link only if files are on the same fs
                 # (i.e. we can't if it's on a different fs)
                 if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
-                    os.link(src, dest)
-                    # Success, go to next file to organize
-                    continue
+                    # Don't hardlink /etc/cron.d files to avoid cron bug
+                    # 'NUMBER OF HARD LINKS > 1' see #1043
+                    cron_path = os.path.abspath('/etc/cron') + '.'
+                    if not os.path.abspath(src).startswith(cron_path):
+                        os.link(src, dest)
+                        # Success, go to next file to organize
+                        continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
