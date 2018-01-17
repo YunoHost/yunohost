@@ -663,11 +663,22 @@ def _check_if_vulnerable_to_meltdown():
     # example output from the script:
     # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
     try:
-        CVEs = json.loads(check_output("bash %s --batch json --variant 3" % SCRIPT_PATH))
+        call = subprocess.Popen("bash %s --batch json --variant 3" %
+                                SCRIPT_PATH, shell=True,
+                                  stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+
+        output, _ = call.communicate()
+        assert call.returncode == 0
+
+        CVEs = json.loads(output)
         assert len(CVEs) == 1
         assert CVEs[0]["NAME"] == "MELTDOWN"
-    except:
-        raise Exception("Something wrong happened when trying to diagnose Meltdown vunerability.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
+        raise Exception("Command output for failed meltdown check: '%s'" % output)
 
     return CVEs[0]["VULNERABLE"]
 
