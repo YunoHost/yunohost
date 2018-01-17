@@ -1,3 +1,10 @@
+yunohost (2.7.6.1) testing; urgency=low
+
+  * [fix] Fix Meltdown diagnosis
+  * [fix] Improve error handling of 'nginx -t' and Metdown diagnosis
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Jan 2018 13:11:02 -0500
+
 yunohost (2.7.6) testing; urgency=low
 
   Major changes:
