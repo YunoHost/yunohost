@@ -593,7 +593,12 @@ def tools_diagnosis(auth, private=False):
         }
 
     # nginx -t
-    diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
+    try:
+        diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Unable to check 'nginx -t', exception: %s" % e)
 
     # Services status
     services = service_status()
