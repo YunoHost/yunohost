@@ -185,7 +185,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
 
     if auth.add('uid=%s,ou=users' % username, attr_dict):
         # Invalidate passwd to take user creation into account
-        subprocess.call(['nscd', '-i', 'passwd'], stderr=open(os.devnull, 'wb'))
+        subprocess.call(['nscd', '-i', 'passwd'])
 
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
@@ -224,7 +224,7 @@ def user_delete(auth, username, purge=False):
 
     if auth.remove('uid=%s,ou=users' % username):
         # Invalidate passwd to take user deletion into account
-        subprocess.call(['nscd', '-i', 'passwd'], stderr=open(os.devnull, 'wb'))
+        subprocess.call(['nscd', '-i', 'passwd'])
 
         # Update SFTP user group
         memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
