@@ -1,3 +1,9 @@
+yunohost (2.7.7) stable; urgency=low
+
+  (Bumping version number for stable release)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Jan 2018 17:45:21 -0500
+
 yunohost (2.7.6.1) testing; urgency=low
 
   * [fix] Fix Meltdown diagnosis
