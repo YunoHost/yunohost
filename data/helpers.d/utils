@@ -64,7 +64,7 @@ ynh_backup_before_upgrade () {
 		echo "This app doesn't have any backup script." >&2
 		return
 	fi
-	local backup_number=1
+	backup_number=1
 	local old_backup_number=2
 	local app_bck=${app//_/-}	# Replace all '_' by '-'
 
