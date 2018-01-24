@@ -370,5 +370,13 @@
     "dyndns_domain_not_provided": "Le fournisseur Dyndns {provider:s} ne peut pas fournir le domaine {domain:s}.",
     "app_make_default_location_already_used": "Impossible de configurer l'app '{app}' par défaut pour le domaine {domain}, déjà utilisé par l'autre app '{other_app}'",
     "app_upgrade_app_name": "Mise à jour de l'application {app}...",
-    "backup_output_symlink_dir_broken": "Vous avez un lien symbolique cassé à la place de votre dossier d’archives « {path:s} ». Vous pourriez avoir une configuration personnalisée pour sauvegarder vos données sur un autre système de fichiers, dans ce cas, vous avez probablement oublié de monter ou de connecter votre disque / clef USB."
+    "backup_output_symlink_dir_broken": "Vous avez un lien symbolique cassé à la place de votre dossier d’archives « {path:s} ». Vous pourriez avoir une configuration personnalisée pour sauvegarder vos données sur un autre système de fichiers, dans ce cas, vous avez probablement oublié de monter ou de connecter votre disque / clef USB.",
+    "migrate_tsig_end": "La migration à hmac-sha512 est terminée",
+    "migrate_tsig_failed": "La migration du domaine dyndns {domain} à hmac-sha512 a échoué, annulation des modifications. Erreur : {error_code} - {error}",
+    "migrate_tsig_start": "L’algorithme de génération des clefs n’est pas suffisamment sécurisé pour la signature TSIG du domaine « {domain} », lancement de la migration vers hmac-sha512 qui est plus sécurisé",
+    "migrate_tsig_wait": "Attendons 3 minutes pour que le serveur dyndns prenne en compte la nouvelle clef…",
+    "migrate_tsig_wait_2": "2 minutes…",
+    "migrate_tsig_wait_3": "1 minute…",
+    "migrate_tsig_wait_4": "30 secondes…",
+    "migrate_tsig_not_needed": "Il ne semble pas que vous utilisez un domaine dyndns, donc aucune migration n’est nécessaire !"
 }
