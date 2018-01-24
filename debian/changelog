@@ -1,3 +1,13 @@
+yunohost (2.7.8) testing; urgency=low
+
+  * [fix] Use HMAC-SHA512 for DynDNS TSIG
+  * [fix] Fix ynh_restore_upgradebackup
+  * [i18n] Improve french translation
+
+ Thanks to all contributors (Bram, Maniack, jibec, Aleks) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 24 Jan 2018 12:15:12 -0500
+
 yunohost (2.7.7) stable; urgency=low
 
   (Bumping version number for stable release)
