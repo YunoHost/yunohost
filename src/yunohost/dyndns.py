@@ -39,7 +39,8 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
 
-from yunohost.domain import get_public_ips, _get_maindomain, _build_dns_conf
+from yunohost.domain import _get_maindomain, _build_dns_conf
+from yunohost.utils.network import get_public_ips
 
 logger = getActionLogger('yunohost.dyndns')
 

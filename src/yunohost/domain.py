@@ -37,6 +37,7 @@ from moulinette.utils.log import getActionLogger
 import yunohost.certificate
 
 from yunohost.service import service_regen_conf
+from yunohost.utils.network import get_public_ip
 
 logger = getActionLogger('yunohost.domain')
 
@@ -318,15 +319,8 @@ def _build_dns_conf(domain, ttl=3600):
     }
     """
 
-    try:
-        ipv4 = get_public_ip()
-    except:
-        ipv4 = None
-
-    try:
-        ipv6 = get_public_ip(6)
-    except:
-        ipv6 = None
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
 
     basic = []
 
