@@ -36,9 +36,9 @@ metronome:
 slapd:
    status: service
    log: /var/log/syslog
-php5-fpm:
+php-fpm:
    status: service
-   log: /var/log/php5-fpm.log
+   log: /var/log/php7.0-fpm.log
 yunohost-api:
    status: service
    log: /var/log/yunohost/yunohost-api.log
@@ -58,3 +58,4 @@ amavis: null
 postgrey: null
 spamassassin: null
 rmilter: null
+php5-fpm: null
