@@ -64,6 +64,10 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
+# usage: ynh_add_systemd_config [Service name] [Source file]
+# | arg: Service name
+# | arg: Systemd source file (for example appname.service)
+#
 # This will use a template in ../conf/systemd.service
 # and will replace the following keywords with 
 # global variables that should be defined before calling
@@ -74,9 +78,11 @@ ynh_remove_logrotate () {
 #
 # usage: ynh_add_systemd_config
 ynh_add_systemd_config () {
-	finalsystemdconf="/etc/systemd/system/$app.service"
+	local service_name="${1:-$app}"
+
+	finalsystemdconf="/etc/systemd/system/$service_name.service"
 	ynh_backup_if_checksum_is_different "$finalsystemdconf"
-	sudo cp ../conf/systemd.service "$finalsystemdconf"
+	sudo cp ../conf/${2:-systemd.service} "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
@@ -89,19 +95,25 @@ ynh_add_systemd_config () {
 	ynh_store_file_checksum "$finalsystemdconf"
 
 	sudo chown root: "$finalsystemdconf"
-	sudo systemctl enable $app
+	sudo systemctl enable $service_name
 	sudo systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config
 #
+# usage: ynh_remove_systemd_config [Service name]
+# | arg: Service name
+#
 # usage: ynh_remove_systemd_config
 ynh_remove_systemd_config () {
-	local finalsystemdconf="/etc/systemd/system/$app.service"
+	local service_name="${1:-$app}"
+
+	local finalsystemdconf="/etc/systemd/system/$service_name.service"
 	if [ -e "$finalsystemdconf" ]; then
-		sudo systemctl stop $app
-		sudo systemctl disable $app
+		sudo systemctl stop $service_name
+		sudo systemctl disable $service_name
 		ynh_secure_remove "$finalsystemdconf"
+		sudo systemctl daemon-reload
 	fi
 }
 
