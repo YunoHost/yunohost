@@ -64,13 +64,13 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
-# usage: ynh_add_systemd_config [Service name] [Source file]
-# | arg: Service name
-# | arg: Systemd source file (for example appname.service)
+# usage: ynh_add_systemd_config [Service name] [Template name]
+# | arg: Service name (optionnal, $app by default)
+# | arg: Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
 #
-# This will use a template in ../conf/systemd.service
-# and will replace the following keywords with 
-# global variables that should be defined before calling
+# This will use the template ../conf/<templatename>.service
+# to generate a systemd config, by replacing the following keywords
+# with global variables that should be defined before calling
 # this helper :
 #
 #   __APP__       by  $app
@@ -102,7 +102,7 @@ ynh_add_systemd_config () {
 # Remove the dedicated systemd config
 #
 # usage: ynh_remove_systemd_config [Service name]
-# | arg: Service name
+# | arg: Service name (optionnal, $app by default)
 #
 # usage: ynh_remove_systemd_config
 ynh_remove_systemd_config () {
