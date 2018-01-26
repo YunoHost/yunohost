@@ -40,7 +40,7 @@ from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
 
 from yunohost.domain import _get_maindomain, _build_dns_conf
-from yunohost.utils.network import get_public_ips
+from yunohost.utils.network import get_public_ip
 
 logger = getActionLogger('yunohost.dyndns')
 
@@ -194,7 +194,8 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         old_ipv6 = read_file(OLD_IPV6_FILE).rstrip()
 
     # Get current IPv4 and IPv6
-    (ipv4_, ipv6_) = get_public_ips()
+    ipv4_ = get_public_ip()
+    ipv6_ = get_public_ip(6)
 
     if ipv4 is None:
         ipv4 = ipv4_

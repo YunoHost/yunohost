@@ -38,11 +38,3 @@ def get_public_ip(protocol=4):
     except IOError:
         return None
 
-
-def get_public_ips():
-
-    ipv4 = get_public_ip()
-    ipv6 = get_public_ip(6)
-
-    return (ipv4, ipv6)
-
