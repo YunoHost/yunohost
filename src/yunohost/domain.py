@@ -30,8 +30,6 @@ import yaml
 import errno
 import requests
 
-from urllib import urlopen
-
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -258,42 +256,6 @@ def domain_url_available(auth, domain, path):
                 break
 
     return available
-
-
-def get_public_ip(protocol=4):
-    """Retrieve the public IP address from ip.yunohost.org"""
-    if protocol == 4:
-        url = 'https://ip.yunohost.org'
-    elif protocol == 6:
-        url = 'https://ip6.yunohost.org'
-    else:
-        raise ValueError("invalid protocol version")
-
-    try:
-        return urlopen(url).read().strip()
-    except IOError:
-        logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
-        raise MoulinetteError(errno.ENETUNREACH,
-                              m18n.n('no_internet_connection'))
-
-def get_public_ips():
-    """
-    Retrieve the public IPv4 and v6 from ip. and ip6.yunohost.org
-
-    Returns a 2-tuple (ipv4, ipv6). ipv4 or ipv6 can be None if they were not
-    found.
-    """
-
-    try:
-        ipv4 = get_public_ip()
-    except:
-        ipv4 = None
-    try:
-        ipv6 = get_public_ip(6)
-    except:
-        ipv6 = None
-
-    return (ipv4, ipv6)
 
 
 def _get_maindomain():
