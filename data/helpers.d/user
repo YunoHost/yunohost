@@ -1,4 +1,4 @@
-# Check if a YunoHost user exists
+# Check if a YunoHost user exists
 #
 # example: ynh_user_exists 'toto' || exit 1
 #
@@ -31,7 +31,7 @@ ynh_user_list() {
       | awk '/^##username$/{getline; print}'
 }
 
-# Check if a user exists on the system
+# Check if a user exists on the system
 #
 # usage: ynh_system_user_exists username
 # | arg: username - the username to check
