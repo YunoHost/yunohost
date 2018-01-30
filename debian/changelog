@@ -1,3 +1,9 @@
+yunohost (2.7.9) stable; urgency=low
+
+  (Bumping version number for stable release)
+
+ -- Alexandre Aubin <alex.aubin.mailoo.org>  Tue, 30 Jan 2018 17:42:00 +0000
+
 yunohost (2.7.8) testing; urgency=low
 
   * [fix] Use HMAC-SHA512 for DynDNS TSIG
