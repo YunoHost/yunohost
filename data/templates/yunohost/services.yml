@@ -36,7 +36,7 @@ metronome:
 slapd:
    status: service
    log: /var/log/syslog
-php-fpm:
+php7.0-fpm:
    status: service
    log: /var/log/php7.0-fpm.log
 yunohost-api:
