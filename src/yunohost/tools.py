@@ -741,7 +741,14 @@ def tools_migrations_list():
     migrations = {"migrations": []}
 
     for migration in _get_migrations_list():
-        migrations["migrations"].append(migration.infos())
+        migrations["migrations"].append({
+            "id": migration.id,
+            "number": migration.number,
+            "name": migration.name,
+            "mode": migration.mode,
+            "description": migration.description,
+            "disclaimer": migration.disclaimer
+        })
 
     return migrations
 
@@ -960,6 +967,7 @@ class Migration(object):
     def backward(self):
         pass
 
+    @property
     def disclaimer(self):
         return None
 
@@ -970,17 +978,9 @@ class Migration(object):
 
     def __init__(self, id_):
         self.id = id_
+        self.number = int(self.id.split("_", 1)[0])
+        self.name = self.id.split("_", 1)[1]
 
+    @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
-
-    def infos(self):
-
-        return {
-            "id": self.id,
-            "number": int(self.id.split("_", 1)[0]),
-            "name": self.id.split("_", 1)[1],
-            "mode": self.mode,
-            "description": self.description(),
-            "disclaimer": self.disclaimer()
-        }
