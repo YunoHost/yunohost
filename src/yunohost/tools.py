@@ -770,26 +770,18 @@ def tools_migrations_migrate(target=None, skip=False):
 
     last_run_migration_number = state["last_run_migration"]["number"] if state["last_run_migration"] else 0
 
-    migrations = []
-
-    # loading all migrations
-    for migration in tools_migrations_list()["migrations"]:
-        migrations.append({
-            "number": migration["number"],
-            "name": migration["name"],
-            "module": _get_migration_module(migration),
-        })
-
-    migrations = sorted(migrations, key=lambda x: x["number"])
+    # load all migrations
+    migrations = _get_migrations_list()
+    migrations = sorted(migrations, key=lambda x: x.number)
 
     if not migrations:
         logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
-    all_migration_numbers = [x["number"] for x in migrations]
+    all_migration_numbers = [x.number for x in migrations]
 
     if target is None:
-        target = migrations[-1]["number"]
+        target = migrations[-1].number
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
@@ -808,14 +800,14 @@ def tools_migrations_migrate(target=None, skip=False):
     if last_run_migration_number < target:
         logger.debug(m18n.n('migrations_forward'))
         # drop all already run migrations
-        migrations = filter(lambda x: target >= x["number"] > last_run_migration_number, migrations)
+        migrations = filter(lambda x: target >= x.number > last_run_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already run migrations
     elif last_run_migration_number > target:
         logger.debug(m18n.n('migrations_backward'))
         # drop all not already run migrations
-        migrations = filter(lambda x: target < x["number"] <= last_run_migration_number, migrations)
+        migrations = filter(lambda x: target < x.number <= last_run_migration_number, migrations)
         mode = "backward"
 
     else:  # can't happen, this case is handle before
@@ -824,19 +816,24 @@ def tools_migrations_migrate(target=None, skip=False):
     # effectively run selected migrations
     for migration in migrations:
         if not skip:
-            logger.warn(m18n.n('migrations_show_currently_running_migration', **migration))
+            logger.warn(m18n.n('migrations_show_currently_running_migration',
+                                number=migration.number, name=migration.name))
 
             try:
                 if mode == "forward":
-                    migration["module"].MyMigration().migrate()
+                    migration.migrate()
                 elif mode == "backward":
-                    migration["module"].MyMigration().backward()
+                    migration.backward()
                 else:  # can't happen
                     raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
+                logger.error(m18n.n('migrations_migration_has_failed',
+                                    exception=e,
+                                    number=migration.number,
+                                    name=migration.name),
+                                    exc_info=1)
                 break
 
         else:  # if skip
@@ -844,8 +841,8 @@ def tools_migrations_migrate(target=None, skip=False):
 
         # update the state to include the latest run migration
         state["last_run_migration"] = {
-            "number": migration["number"],
-            "name": migration["name"],
+            "number": migration.number,
+            "name": migration.name
         }
 
     # special case where we want to go back from the start
