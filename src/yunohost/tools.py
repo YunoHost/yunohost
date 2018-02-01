@@ -950,10 +950,9 @@ def _load_migration(migration_file):
 
 class Migration(object):
 
-    # forward() and backward() are to be implemented by daughter classes
+    # Those are to be implemented by daughter classes
 
-    def migrate(self):
-        self.forward()
+    mode = "auto"
 
     def forward(self):
         raise NotImplementedError()
@@ -961,10 +960,19 @@ class Migration(object):
     def backward(self):
         pass
 
+    def disclaimer(self):
+        return None
+
     # The followings shouldn't be overriden
+
+    def migrate(self):
+        self.forward()
 
     def __init__(self, id_):
         self.id = id_
+
+    def description(self):
+        return m18n.n("migration_description_%s" % self.id)
 
     def infos(self):
 
@@ -972,4 +980,7 @@ class Migration(object):
             "id": self.id,
             "number": int(self.id.split("_", 1)[0]),
             "name": self.id.split("_", 1)[1],
+            "mode": self.mode,
+            "description": self.description(),
+            "disclaimer": self.disclaimer()
         }
