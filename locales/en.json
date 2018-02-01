@@ -236,6 +236,7 @@
     "migrations_show_currently_running_migration": "Running migration {number} {name}...",
     "migrations_show_last_migration": "Last ran migration is {}",
     "migrations_skip_migration": "Skipping migration {number} {name}...",
+    "migrations_to_be_ran_manually":  "Migration {number} {name} has to be ran manually. Please go to Tools > Migrations on the webadmin, or run `yunohost tools migrations migrate`.",
     "monitor_disabled": "The server monitoring has been disabled",
     "monitor_enabled": "The server monitoring has been enabled",
     "monitor_glances_con_failed": "Unable to connect to Glances server",

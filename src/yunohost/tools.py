@@ -753,7 +753,7 @@ def tools_migrations_list():
     return migrations
 
 
-def tools_migrations_migrate(target=None, skip=False):
+def tools_migrations_migrate(target=None, skip=False, auto=False):
     """
     Perform migrations
     """
@@ -816,8 +816,18 @@ def tools_migrations_migrate(target=None, skip=False):
     # effectively run selected migrations
     for migration in migrations:
         if not skip:
-            logger.warn(m18n.n('migrations_show_currently_running_migration',
-                                number=migration.number, name=migration.name))
+
+            # If we are migrating in "automatic mode" (i.e. from debian
+            # configure during an upgrade of the package) but the migration
+            # is to be ran manually by the user
+            if auto and migration.mode == "manual":
+                logger.warn(m18n.n('migrations_to_be_ran_manually',
+                                   number=migration.number, name=migration.name))
+                break
+            else:
+                logger.warn(m18n.n('migrations_show_currently_running_migration',
+                                   number=migration.number, name=migration.name))
+
 
             try:
                 if mode == "forward":
