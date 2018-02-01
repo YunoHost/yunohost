@@ -741,11 +741,7 @@ def tools_migrations_list():
     migrations = {"migrations": []}
 
     for migration in _get_migrations_list():
-        migrations["migrations"].append({
-            "number": int(migration.split("_", 1)[0]),
-            "name": migration.split("_", 1)[1],
-            "file_name": migration,
-        })
+        migrations["migrations"].append(migration.infos())
 
     return migrations
 
@@ -905,54 +901,56 @@ def _get_migrations_list():
         logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
         return migrations
 
-    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
-        migrations.append(migration[:-len(".py")])
+    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+        migrations.append(_load_migration(migration_file))
 
-    return sorted(migrations)
+    return sorted(migrations, key=lambda m: m.id)
 
 
-def _get_migration_by_name(migration_name, with_module=True):
+def _get_migration_by_name(migration_name):
     """
     Low-level / "private" function to find a migration by its name
     """
 
-    migrations = tools_migrations_list()["migrations"]
+    try:
+        import data_migrations
+    except ImportError:
+        raise AssertionError("Unable to find migration with name %s" % migration_name)
 
-    matches = [ m for m in migrations if m["name"] == migration_name ]
+    migrations_path = data_migrations.__path__[0]
+    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
 
-    assert len(matches) == 1, "Unable to find migration with name %s" % migration_name
+    assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
 
-    migration = matches[0]
-
-    if with_module:
-        migration["module"] = _get_migration_module(migration)
-
-    return migration
+    return _load_migration(migrations_found[0])
 
 
-def _get_migration_module(migration):
+def _load_migration(migration_file):
+
+    migration_id = migration_file[:-len(".py")]
 
     logger.debug(m18n.n('migrations_loading_migration',
-        number=migration["number"],
-        name=migration["name"],
+        migration_id=migration_id,
     ))
 
     try:
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        return import_module("yunohost.data_migrations.{file_name}".format(**migration))
+        module = import_module("yunohost.data_migrations.{}".format(migration_id))
+        return module.MyMigration(migration_id)
     except Exception:
         import traceback
         traceback.print_exc()
 
         raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-            number=migration["number"],
-            name=migration["name"],
+            migration_id=migration_id,
         ))
 
 
 class Migration(object):
+
+    # forward() and backward() are to be implemented by daughter classes
 
     def migrate(self):
         self.forward()
@@ -962,3 +960,16 @@ class Migration(object):
 
     def backward(self):
         pass
+
+    # The followings shouldn't be overriden
+
+    def __init__(self, id_):
+        self.id = id_
+
+    def infos(self):
+
+        return {
+            "id": self.id,
+            "number": int(self.id.split("_", 1)[0]),
+            "name": self.id.split("_", 1)[1],
+        }
