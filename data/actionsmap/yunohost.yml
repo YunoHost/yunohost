@@ -1575,6 +1575,13 @@ tools:
               list:
                   action_help: List migrations
                   api: GET /migrations
+                  arguments:
+                    --pending:
+                        help: list only pending migrations
+                        action: store_true
+                    --done:
+                        help: list only migrations already performed
+                        action: store_true
 
               ### tools_migrations_migrate()
               migrate:

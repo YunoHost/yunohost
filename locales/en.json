@@ -230,6 +230,7 @@
     "migrations_current_target": "Migration target is {}",
     "migrations_error_failed_to_load_migration": "ERROR: failed to load migration {migration_id}",
     "migrations_forward": "Migrating forward",
+    "migrations_list_conflict_pending_done": "You cannot use both --previous and --done at the same time.",
     "migrations_loading_migration": "Loading migration {migration_id}...",
     "migrations_migration_has_failed": "Migration {number} {name} has failed with exception {exception}, aborting",
     "migrations_no_migrations_to_run": "No migrations to run",

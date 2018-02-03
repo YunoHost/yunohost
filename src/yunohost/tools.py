@@ -733,24 +733,36 @@ def tools_reboot(force=False):
         subprocess.check_call(['systemctl', 'reboot'])
 
 
-def tools_migrations_list():
+def tools_migrations_list(pending=False, done=False):
     """
     List existing migrations
     """
 
-    migrations = {"migrations": []}
+    # Check for option conflict
+    if pending and done:
+        raise MoulinetteError(errno.EINVAL, m18n.n("migrations_list_conflict_pending_done"))
 
-    for migration in _get_migrations_list():
-        migrations["migrations"].append({
-            "id": migration.id,
-            "number": migration.number,
-            "name": migration.name,
-            "mode": migration.mode,
-            "description": migration.description,
-            "disclaimer": migration.disclaimer
-        })
+    # Get all migrations
+    migrations = _get_migrations_list()
 
-    return migrations
+    # If asked, filter pending or done migrations
+    if pending or done:
+        last_migration = tools_migrations_state()["last_run_migration"]
+        last_migration = last_migration["number"] if last_migration else -1
+        if done:
+            migrations = [m for m in migrations if m.number <= last_migration]
+        if pending:
+            migrations = [m for m in migrations if m.number > last_migration]
+
+    # Reduce to dictionnaries
+    migrations = [{ "id": migration.id,
+                    "number": migration.number,
+                    "name": migration.name,
+                    "mode": migration.mode,
+                    "description": migration.description,
+                    "disclaimer": migration.disclaimer } for migration in migrations ]
+
+    return {"migrations": migrations}
 
 
 def tools_migrations_migrate(target=None, skip=False, auto=False):
