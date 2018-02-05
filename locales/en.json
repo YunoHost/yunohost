@@ -224,6 +224,7 @@
     "migrate_tsig_not_needed": "You do not appear to use a dyndns domain, so no migration is needed !",
     "migration_description_0001_change_cert_group_to_sslcert": "Change certificates group permissions from 'metronome' to 'ssl-cert'",
     "migration_description_0002_migrate_to_tsig_sha256": "Improve security of dyndns TSIG by using SHA512 instead of MD5",
+    "migration_description_0003_migrate_to_stretch": "Upgrade the system to Debian Stretch and YunoHost 3.0",
     "migrations_backward": "Migrating backward.",
     "migrations_bad_value_for_target": "Invalid number for target argument, available migrations numbers are 0 or {}",
     "migrations_cant_reach_migration_file": "Can't access migrations files at path %s",
