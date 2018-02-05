@@ -1599,7 +1599,9 @@ tools:
                     --auto:
                         help: automatic mode, won't run manual migrations, use it only if you know what you are doing
                         action: store_true
-
+                    --accept-disclaimer:
+                        help: accept disclaimers of migration (please read them before using this option)
+                        action: store_true
 
               ### tools_migrations_state()
               state:

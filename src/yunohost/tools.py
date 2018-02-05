@@ -765,7 +765,7 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(target=None, skip=False, auto=False):
+def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclaimer=False):
     """
     Perform migrations
     """
@@ -825,21 +825,34 @@ def tools_migrations_migrate(target=None, skip=False, auto=False):
     else:  # can't happen, this case is handle before
         raise Exception()
 
+    # If we are migrating in "automatic mode" (i.e. from debian
+    # configure during an upgrade of the package) but we are asked to run
+    # migrations is to be ran manually by the user
+    manual_migrations = [m for m in migrations if m.mode == "manual"]
+    if auto and manual_migrations:
+        for m in manual_migrations:
+            logger.warn(m18n.n('migrations_to_be_ran_manually',
+                               number=m.number,
+                               name=m.name))
+        return
+
+    # If some migrations have disclaimers, require the --accept-disclaimer
+    # option
+    migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
+    if not accept_disclaimer and migrations_with_disclaimer:
+        for m in migrations_with_disclaimer:
+            logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                               number=m.number,
+                               name=m.name,
+                               disclaimer=m.disclaimer))
+        return
+
     # effectively run selected migrations
     for migration in migrations:
         if not skip:
 
-            # If we are migrating in "automatic mode" (i.e. from debian
-            # configure during an upgrade of the package) but the migration
-            # is to be ran manually by the user
-            if auto and migration.mode == "manual":
-                logger.warn(m18n.n('migrations_to_be_ran_manually',
-                                   number=migration.number, name=migration.name))
-                break
-            else:
-                logger.warn(m18n.n('migrations_show_currently_running_migration',
-                                   number=migration.number, name=migration.name))
-
+            logger.warn(m18n.n('migrations_show_currently_running_migration',
+                               number=migration.number, name=migration.name))
 
             try:
                 if mode == "forward":
