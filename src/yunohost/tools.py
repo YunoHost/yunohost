@@ -859,7 +859,9 @@ def tools_migrations_migrate(target=None, skip=False, auto=False):
                 break
 
         else:  # if skip
-            logger.warn(m18n.n('migrations_skip_migration', **migration))
+            logger.warn(m18n.n('migrations_skip_migration',
+                               number=migration.number,
+                               name=migration.name))
 
         # update the state to include the latest run migration
         state["last_run_migration"] = {
