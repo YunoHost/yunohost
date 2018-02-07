@@ -14,7 +14,7 @@
     "app_change_url_identical_domains": "The old and new domain/url_path are identical ('{domain:s}{path:s}'), nothing to do.",
     "app_change_url_no_script": "This application '{app_name:s}' doesn't support url modification yet. Maybe you should upgrade the application.",
     "app_change_url_success": "Successfully changed {app:s} url to {domain:s}{path:s}",
-    "app_checkurl_is_deprecated": "Packagers /!\ 'app checkurl' is deprecated ! Please use 'app register-url' instead !",
+    "app_checkurl_is_deprecated": "Packagers /!\\ 'app checkurl' is deprecated ! Please use 'app register-url' instead !",
     "app_extraction_failed": "Unable to extract installation files",
     "app_id_invalid": "Invalid app id",
     "app_incompatible": "The app {app} is incompatible with your YunoHost version",
