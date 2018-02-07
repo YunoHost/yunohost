@@ -2,7 +2,7 @@
 
 """ License
 
-    Copyright (C) 2015 YUNOHOST.ORG
+    Copyright (C) 2017 YUNOHOST.ORG
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
@@ -37,4 +37,3 @@ def get_public_ip(protocol=4):
         return urlopen(url).read().strip()
     except IOError:
         return None
-
