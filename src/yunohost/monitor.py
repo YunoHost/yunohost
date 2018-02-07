@@ -41,7 +41,8 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.domain import get_public_ip, _get_maindomain
+from yunohost.utils.network import get_public_ip
+from yunohost.domain import _get_maindomain
 
 logger = getActionLogger('yunohost.monitor')
 
@@ -210,10 +211,7 @@ def monitor_network(units=None, human_readable=False):
                 else:
                     logger.debug('interface name %s was not found', iname)
         elif u == 'infos':
-            try:
-                p_ipv4 = get_public_ip()
-            except:
-                p_ipv4 = 'unknown'
+            p_ipv4 = get_public_ip() or 'unknown'
 
             l_ip = 'unknown'
             for name, addrs in devices.items():
