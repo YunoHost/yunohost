@@ -330,6 +330,9 @@ def app_info(app, show_status=False, raw=False):
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
+
+    app_setting_path = APPS_SETTING_PATH + app
+
     if raw:
         ret = app_list(filter=app, raw=True)[app]
         ret['settings'] = _get_app_settings(app)
@@ -345,10 +348,9 @@ def app_info(app, show_status=False, raw=False):
             upgradable = "no"
 
         ret['upgradable'] = upgradable
+        ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
 
         return ret
-
-    app_setting_path = APPS_SETTING_PATH + app
 
     # Retrieve manifest and status
     with open(app_setting_path + '/manifest.json') as f:
@@ -555,6 +557,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in apps:
+        logger.warning(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
@@ -580,7 +583,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             continue
 
         # Check requirements
-        _check_manifest_requirements(manifest)
+        _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
@@ -621,9 +624,12 @@ def app_upgrade(auth, app=[], url=None, file=None):
             with open(app_setting_path + '/status.json', 'w+') as f:
                 json.dump(status, f)
 
-            # Replace scripts and manifest
-            os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
+            # Replace scripts and manifest and conf (if exists)
+            os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+
+            if os.path.exists(os.path.join(extracted_app_folder, "conf")):
+                os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
 
             # So much win
             upgraded_apps.append(app_instance_name)
@@ -683,7 +689,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     app_id = manifest['id']
 
     # Check requirements
-    _check_manifest_requirements(manifest)
+    _check_manifest_requirements(manifest, app_id)
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -732,6 +738,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
+
+    if os.path.exists(os.path.join(extracted_app_folder, "conf")):
+        os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
 
     # Execute the app install script
     install_retcode = 1
@@ -1016,7 +1025,9 @@ def app_makedefault(auth, app, domain=None):
 
     if '/' in app_map(raw=True)[domain]:
         raise MoulinetteError(errno.EEXIST,
-                              m18n.n('app_location_already_used'))
+                              m18n.n('app_make_default_location_already_used',
+                                     app=app, domain=app_domain,
+                                     other_app=app_map(raw=True)[domain]["/"]["id"]))
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
@@ -1169,10 +1180,13 @@ def app_checkurl(auth, url, app=None):
                 continue
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('app_location_already_used'))
+                                      m18n.n('app_location_already_used',
+                                             app=a["id"], path=path))
+            # can't install "/a/b/" if "/a/" exists
             elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('app_location_install_failed'))
+                                      m18n.n('app_location_install_failed',
+                                             other_path=p, other_app=a['id']))
 
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
@@ -1304,6 +1318,17 @@ def app_ssowatconf(auth):
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
     logger.success(m18n.n('ssowat_conf_generated'))
+
+
+def app_change_label(auth, app, new_label):
+    installed = _is_installed(app)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app))
+
+    app_setting(app, "label", value=new_label)
+
+    app_ssowatconf(auth)
 
 
 def _get_app_settings(app_id):
@@ -1689,7 +1714,7 @@ def _encode_string(value):
     return value
 
 
-def _check_manifest_requirements(manifest):
+def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
     requirements = manifest.get('requirements', dict())
 
@@ -1707,12 +1732,12 @@ def _check_manifest_requirements(manifest):
         if (not yunohost_req or
                 not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
             raise MoulinetteError(errno.EINVAL, '{0}{1}'.format(
-                m18n.g('colon', m18n.n('app_incompatible')),
-                m18n.n('app_package_need_update')))
+                m18n.g('colon', m18n.n('app_incompatible'), app=app_instance_name),
+                m18n.n('app_package_need_update', app=app_instance_name)))
     elif not requirements:
         return
 
-    logger.info(m18n.n('app_requirements_checking'))
+    logger.info(m18n.n('app_requirements_checking', app=app_instance_name))
 
     # Retrieve versions of each required package
     try:
@@ -1721,7 +1746,7 @@ def _check_manifest_requirements(manifest):
     except packages.PackageException as e:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_requirements_failed',
-                                     error=str(e)))
+                                     error=str(e), app=app_instance_name))
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():
@@ -1730,7 +1755,7 @@ def _check_manifest_requirements(manifest):
             raise MoulinetteError(
                 errno.EINVAL, m18n.n('app_requirements_unmeet',
                                      pkgname=pkgname, version=version,
-                                     spec=spec))
+                                     spec=spec, app=app_instance_name))
 
 
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
