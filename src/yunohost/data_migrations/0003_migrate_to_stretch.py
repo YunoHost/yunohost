@@ -60,8 +60,8 @@ class MyMigration(Migration):
         service_regen_conf(["fail2ban", "postfix", "mysql", "nslcd"], force=True)
 
         ## Clean the mess
-        #apt autoremove --assume-yes
-        #apt clean --assume-yes
+        os.system("apt autoremove --assume-yes")
+        os.system("apt clean --assume-yes")
 
     def check_assertions(self):
 
