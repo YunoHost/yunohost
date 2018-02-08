@@ -1543,9 +1543,13 @@ class BackupMethod(object):
                 # Can create a hard link only if files are on the same fs
                 # (i.e. we can't if it's on a different fs)
                 if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
-                    os.link(src, dest)
-                    # Success, go to next file to organize
-                    continue
+                    # Don't hardlink /etc/cron.d files to avoid cron bug
+                    # 'NUMBER OF HARD LINKS > 1' see #1043
+                    cron_path = os.path.abspath('/etc/cron') + '.'
+                    if not os.path.abspath(src).startswith(cron_path):
+                        os.link(src, dest)
+                        # Success, go to next file to organize
+                        continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
@@ -2301,6 +2305,11 @@ def backup_delete(name):
 def _create_archive_dir():
     """ Create the YunoHost archives directory if doesn't exist """
     if not os.path.isdir(ARCHIVES_PATH):
+        if os.path.lexists(ARCHIVES_PATH):
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('backup_output_symlink_dir_broken',
+                                         path=ARCHIVES_PATH))
+
         os.mkdir(ARCHIVES_PATH, 0750)
 
 
