@@ -44,6 +44,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 import yunohost.domain
+from yunohost.utils.network import get_public_ip
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
@@ -809,7 +810,7 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-    public_ip = yunohost.domain.get_public_ip()
+    public_ip = get_public_ip()
 
     # Check if IP from DNS matches public IP
     if not _dns_ip_match_public_ip(public_ip, domain):
@@ -856,14 +857,9 @@ def _regen_dnsmasq_if_needed():
     """
     Update the dnsmasq conf if some IPs are not up to date...
     """
-    try:
-        ipv4 = yunohost.domain.get_public_ip()
-    except:
-        ipv4 = None
-    try:
-        ipv6 = yunohost.domain.get_public_ip(6)
-    except:
-        ipv6 = None
+
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
 
     do_regen = False
 

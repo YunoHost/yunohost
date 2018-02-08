@@ -498,15 +498,12 @@ def _run_service_command(action, service):
         raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
 
     cmd = None
-    if action in ['start', 'stop', 'restart', 'reload']:
-        cmd = 'service %s %s' % (service, action)
-    elif action in ['enable', 'disable']:
-        arg = 'defaults' if action == 'enable' else 'remove'
-        cmd = 'update-rc.d %s %s' % (service, arg)
+    if action in ['start', 'stop', 'restart', 'reload', 'enable', 'disable']:
+        cmd = 'systemctl %s %s' % (action, service)
     else:
         raise ValueError("Unknown action '%s'" % action)
 
-    need_lock = (services[service].get('need_lock') or False) \
+    need_lock = services[service].get('need_lock', False) \
                 and action in ['start', 'stop', 'restart', 'reload']
 
     try:

@@ -8,12 +8,12 @@
 ynh_validate_ip()
 {
   # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
-  
-  IP_ADDRESS_FAMILY=$1
-  IP_ADDRESS=$2
-  
+
+  local IP_ADDRESS_FAMILY=$1
+  local IP_ADDRESS=$2
+
   [ "$IP_ADDRESS_FAMILY" == "4" ] || [ "$IP_ADDRESS_FAMILY" == "6" ] || return 1
-  
+
   python /dev/stdin << EOF
 import socket
 import sys
