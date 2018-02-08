@@ -57,9 +57,8 @@ class MyMigration(Migration):
         self.unhold(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
         self.apt_install(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
 
-        #yunohost service regen-conf fail2ban --debug --force
-        #yunohost service regen-conf --debug --force # We need this to refresh some conf files modified by upstream packages, e.g. mysql. But this will erase some legit user changes... Gotta think about some UX here :/
-        #
+        service_regen_conf(["fail2ban", "postfix", "mysql", "nslcd"], force=True)
+
         ## Clean the mess
         #apt autoremove --assume-yes
         #apt clean --assume-yes
