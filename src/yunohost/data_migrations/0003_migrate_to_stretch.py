@@ -52,16 +52,15 @@ class MyMigration(Migration):
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "mysql")
 
-        # Upgrade yunohost packages
-        logger.warning(m18n.n("migration_0003_yunohost_upgrade"))
-        self.unhold(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
-        self.apt_install(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
-
-        service_regen_conf(["fail2ban", "postfix", "mysql", "nslcd"], force=True)
-
         ## Clean the mess
         os.system("apt autoremove --assume-yes")
         os.system("apt clean --assume-yes")
+
+        # Upgrade yunohost packages
+        logger.warning(m18n.n("migration_0003_yunohost_upgrade"))
+        self.unhold(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
+        self.upgrade_yunohost_packages()
+        #service_regen_conf(["fail2ban", "postfix", "mysql", "nslcd"], force=True)
 
     def check_assertions(self):
 
@@ -121,20 +120,39 @@ class MyMigration(Migration):
 
         os.system(command)
 
-    def apt_install(self, packages):
+    def upgrade_yunohost_packages(self, packages):
 
-        command = ""
-        command += " DEBIAN_FRONTEND=noninteractive"
-        command += " APT_LISTCHANGES_FRONTEND=none"
-        command += " apt-get install"
-        command += " --assume-yes "
-        command += " ".join(packages)
+        #
+        # Here we use a dirty hack to run a command after the current
+        # "yunohost tools migrations migrate", because the upgrade of
+        # yunohost will also trigger another "yunohost tools migrations migrate"
+        # (also the upgrade of the package, if executed from the webadmin, is
+        # likely to kill/restart the api which is in turn likely to kill this
+        # command before it ends...)
+        #
 
-        logger.debug("Running apt command :\n{}".format(command))
+        MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
+        packages = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
-        command += " 2>&1 | tee -a {}".format(self.logfile)
+        upgrade_command = ""
+        upgrade_command += " DEBIAN_FRONTEND=noninteractive"
+        upgrade_command += " APT_LISTCHANGES_FRONTEND=none"
+        upgrade_command += " apt-get install"
+        upgrade_command += " --assume-yes "
+        upgrade_command += " ".join(packages)
+        upgrade_command += " 2>&1 | tee -a {}".format(self.logfile)
+
+        logger.warning("Activating upgrade of yunohost packages, to be ran right after this command ends.")
+
+        wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
+
+        command = "({} && {}) &".format(wait_until_end_of_yunohost_command,
+                                        upgrade_command)
+
+        logger.debug("Running command :\n{}".format(command))
 
         os.system(command)
+
 
     def apt_dist_upgrade(self, conf_flags):
 
