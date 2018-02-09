@@ -95,7 +95,7 @@ class MyMigration(Migration):
 
     def patch_apt_sources_list(self):
 
-        sources_list = glob.glob("/etc/apt/sources.list.d/*.conf")
+        sources_list = glob.glob("/etc/apt/sources.list.d/*.list")
         sources_list.append("/etc/apt/sources.list")
 
         # TODO / FIXME Is this enough ?
@@ -105,9 +105,8 @@ class MyMigration(Migration):
         # TODO/FIXME : to be seen if we really use 'vinaigrette' as final repo name
         for f in sources_list:
             command = "sed -i -e 's@ jessie @ stretch @g' " \
-                             "-e 's@repo.yunohost@vinaigrette\.yunohost@g' " \
+                             "-e 's@repo.yunohost@vinaigrette.yunohost@g' " \
                              "{}".format(f)
-            print(command)
             os.system(command)
 
     def hold(self, packages):
