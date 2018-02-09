@@ -120,7 +120,7 @@ class MyMigration(Migration):
 
         os.system(command)
 
-    def upgrade_yunohost_packages(self, packages):
+    def upgrade_yunohost_packages(self):
 
         #
         # Here we use a dirty hack to run a command after the current
