@@ -12,6 +12,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command, service_regen_conf
+from yunohost.utils.filesystem import free_space_in_directory
 
 logger = getActionLogger('yunohost.migration')
 
@@ -70,6 +71,8 @@ class MyMigration(Migration):
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
         # Have > 1 Go free space on /var/ ?
+        if free_space_in_directory("/var/") / (1024**3) > 1.0:
+            raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
 
         # System up to date ?
         # (e.g. with apt list --upgradable 2>&1 | grep -c upgradable)
@@ -80,6 +83,9 @@ class MyMigration(Migration):
     def disclaimer(self):
 
         # Backup ?
+
+        # Say that it will take time (up to a few hours depending on network
+        # speed and CPU)
 
         # Problematic apps ? E.g. not official or community+working ?
 
