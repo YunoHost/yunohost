@@ -49,7 +49,7 @@ class MyMigration(Migration):
             os.system(c)
 
         # Reload/restart the php pools
-        _run_service_command("restart", "php-fpm")
+        _run_service_command("restart", "php7.0-fpm")
 
     def backward(self):
 
