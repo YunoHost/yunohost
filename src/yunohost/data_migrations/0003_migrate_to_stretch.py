@@ -71,7 +71,7 @@ class MyMigration(Migration):
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
         # Have > 1 Go free space on /var/ ?
-        if free_space_in_directory("/var/") / (1024**3) > 1.0:
+        if free_space_in_directory("/var/") / (1024**3) < 1.0:
             raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
 
         # System up to date ?
