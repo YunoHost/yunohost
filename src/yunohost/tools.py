@@ -33,8 +33,9 @@ import logging
 import subprocess
 import pwd
 import socket
-from collections import OrderedDict
+from xmlrpclib import Fault
 from importlib import import_module
+from collections import OrderedDict
 
 import apt
 import apt.progress
@@ -569,7 +570,7 @@ def tools_diagnosis(auth, private=False):
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except MoulinetteError as e:
+    except (MoulinetteError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
