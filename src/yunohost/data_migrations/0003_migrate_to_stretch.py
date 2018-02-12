@@ -10,6 +10,7 @@ import platform
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command, service_regen_conf
 from yunohost.utils.filesystem import free_space_in_directory
@@ -74,10 +75,11 @@ class MyMigration(Migration):
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
             raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
 
-        # System up to date ?
-        # (e.g. with apt list --upgradable 2>&1 | grep -c upgradable)
-
-        pass
+        # Check system is up to date
+        os.system("apt-get update")
+        apt_list_upgradable = check_output("apt list --upgradable".split())
+        if "upgradable" in apt_list_upgradable:
+            raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
 
     @property
     def disclaimer(self):
