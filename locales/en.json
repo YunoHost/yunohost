@@ -232,6 +232,7 @@
     "migration_0003_fail2ban_upgrade": "Starting the fail2ban upgrade ...",
     "migration_0003_yunohost_upgrade": "Starting the yunohost package upgrade ... The migration will end, but the actual upgrade will happen right after. After the operation is complete, you might have to re-log on the webadmin.",
     "migration_0003_not_jessie": "The current debian distribution is not Jessie !",
+    "migration_0003_system_not_fully_up_to_date": "Your system is not fully up to date. Please perform a regular upgrade before running the migration to stretch.",
     "migrations_backward": "Migrating backward.",
     "migrations_bad_value_for_target": "Invalid number for target argument, available migrations numbers are 0 or {}",
     "migrations_cant_reach_migration_file": "Can't access migrations files at path %s",
