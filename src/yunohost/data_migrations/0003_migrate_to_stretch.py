@@ -64,11 +64,13 @@ class MyMigration(Migration):
         self.upgrade_yunohost_packages()
         #service_regen_conf(["fail2ban", "postfix", "mysql", "nslcd"], force=True)
 
+    def debian_major_version(self):
+        return int(platform.dist()[1][0])
+
     def check_assertions(self):
 
         # Be on jessie
-        debian_version = platform.dist()[1]
-        if not debian_version.startswith('8'):
+        if not self.debian_major_version() == 8:
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
         # Have > 1 Go free space on /var/ ?
@@ -84,16 +86,35 @@ class MyMigration(Migration):
     @property
     def disclaimer(self):
 
-        # Backup ?
-
-        # Say that it will take time (up to a few hours depending on network
-        # speed and CPU)
+        # Avoid having a super long disclaimer + uncessary check if we ain't
+        # on jessie anymore
+        if not self.debian_major_version() == 8:
+            return None
 
         # Problematic apps ? E.g. not official or community+working ?
+        # (Dummy value for now)
+        problematic_apps = [ "dummy_ynh", "nope_ynh" ]
+        problematic_apps = [ "- "+app for app in problematic_apps ]
+        problematic_apps = "\n    ".join(problematic_apps)
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
+        manually_modified_files = [ "/etc/dummy", "/home/nope" ]
+        manually_modified_files = [ "- "+app for app in manually_modified_files ]
+        manually_modified_files = "\n    ".join(manually_modified_files)
 
-        return "Hurr durr itz dungerus"
+        return """Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
+
+Therefore, we recommend you to :
+    - Perform a backup of any critical data or app ;
+    - Be patient after launching the migration : depending on your internet connection and hardware, it might take up to a few hours for everything to upgrade.
+
+Please note that the following possibly problematic apps were detected :
+    {problematic_apps}
+
+Additionally, the following files were found to be manually modified and might be overwritten at the end of the upgrade :
+    {manually_modified_files}
+""".format(problematic_apps=problematic_apps,
+           manually_modified_files=manually_modified_files)
 
     def patch_apt_sources_list(self):
 
