@@ -190,9 +190,15 @@ ynh_restore_file () {
     # Move the old directory if it already exist
     if [[ -e "${DEST_PATH}" ]]
     then
-        backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
-        mkdir -p "$(dirname "$backup_file")"
-        mv "${DEST_PATH}" "$backup_file"	# Move the current file or directory
+        # Check if the file/dir size is less than 500 Mo
+        if [[ $(du -sb /var/www/horde | cut -d"/" -f1) -le "500000000" ]]
+        then
+            backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
+            mkdir -p "$(dirname "$backup_file")"
+            mv "${DEST_PATH}" "$backup_file"	# Move the current file or directory
+        else
+            ynh_secure_remove ${DEST_PATH}
+        fi
     fi
 
     # Restore ORIGIN_PATH into DEST_PATH
