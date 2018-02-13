@@ -193,7 +193,7 @@ ynh_restore_file () {
         # Check if the file/dir size is less than 500 Mo
         if [[ $(du -sb /var/www/horde | cut -d"/" -f1) -le "500000000" ]]
         then
-            backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
+            local backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir -p "$(dirname "$backup_file")"
             mv "${DEST_PATH}" "$backup_file"	# Move the current file or directory
         else
