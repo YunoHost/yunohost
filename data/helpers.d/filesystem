@@ -191,7 +191,7 @@ ynh_restore_file () {
     if [[ -e "${DEST_PATH}" ]]
     then
         # Check if the file/dir size is less than 500 Mo
-        if [[ $(du -sb /var/www/horde | cut -d"/" -f1) -le "500000000" ]]
+        if [[ $(du -sb ${DEST_PATH} | cut -d"/" -f1) -le "500000000" ]]
         then
             local backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir -p "$(dirname "$backup_file")"
