@@ -36,9 +36,12 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 from yunohost.service import service_status
 
 logger = getActionLogger('yunohost.user')
+
+SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
 
 def user_list(auth, fields=None):
@@ -58,6 +61,7 @@ def user_list(auth, fields=None):
         'mail': 'mail',
         'maildrop': 'mail-forward',
         'loginShell': 'shell',
+        'homeDirectory': 'home_path',
         'mailuserquota': 'mailbox-quota'
     }
 
@@ -511,6 +515,34 @@ def _hash_user_password(password):
 
 
 def _get_user_for_ssh(auth, username, attrs=None):
+    def ssh_root_login_status(auth):
+        # XXX temporary placed here for when the ssh_root commands are integrated
+        # extracted from https://github.com/YunoHost/yunohost/pull/345
+        # XXX should we support all the options?
+        # this is the content of "man sshd_config"
+        # PermitRootLogin
+        #     Specifies whether root can log in using ssh(1).  The argument must be
+        #     “yes”, “without-password”, “forced-commands-only”, or “no”.  The
+        #     default is “yes”.
+        sshd_config_content = read_file(SSHD_CONFIG_PATH)
+
+        if re.search("^ *PermitRootLogin +(no|forced-commands-only) *$",
+                     sshd_config_content, re.MULTILINE):
+            return {"PermitRootLogin": False}
+
+        return {"PermitRootLogin": True}
+
+    if username == "root":
+        root_unix = pwd.getpwnam("root")
+        return {
+            'username': 'root',
+            'fullname': '',
+            'mail': '',
+            'ssh_allowed': ssh_root_login_status(auth)["PermitRootLogin"],
+            'shell': root_unix.pw_shell,
+            'home_path': root_unix.pw_dir,
+        }
+
     if username == "admin":
         admin_unix = pwd.getpwnam("admin")
         return {
