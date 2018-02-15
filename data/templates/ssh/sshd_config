@@ -9,13 +9,20 @@ ListenAddress 0.0.0.0
 Protocol 2
 # HostKeys for protocol version 2
 HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_dsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+#HostKey /etc/ssh/ssh_host_dsa_key
 #Privilege Separation is turned on for security
 UsePrivilegeSeparation yes
 
 # Lifetime and size of ephemeral version 1 server key
 KeyRegenerationInterval 3600
-ServerKeyBits 768
+ServerKeyBits 1024
+
+# Algorimthm limitation
+KexAlgorithms curve25519-sha256@libssh.org,diffie-hellman-group-exchange-sha256
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com
+
 
 # Logging
 SyslogFacility AUTH
