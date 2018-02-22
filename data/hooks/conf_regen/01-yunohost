@@ -53,6 +53,9 @@ do_pre_regen() {
   else
       sudo cp services.yml /etc/yunohost/services.yml
   fi
+
+  mkdir -p "$pending_dir"/etc/etckeeper/
+  cp etckeeper.conf "$pending_dir"/etc/etckeeper/
 }
 
 _update_services() {

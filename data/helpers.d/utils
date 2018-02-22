@@ -37,22 +37,23 @@ ynh_get_plain_key() {
 ynh_restore_upgradebackup () {
 	echo "Upgrade failed." >&2
 	local app_bck=${app//_/-}	# Replace all '_' by '-'
-        NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
 
-        if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
-        then	
+  NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
+
+  if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
+  then	
 		# Check if an existing backup can be found before removing and restoring the application.
 		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
 		then
 			# Remove the application then restore it
 			sudo yunohost app remove $app
 			# Restore the backup
-			sudo yunohost backup restore --ignore-system $app_bck-pre-upgrade$backup_number --apps $app --force
+			sudo yunohost backup restore --ignore-system $app_bck-pre-upgrade$backup_number --apps $app --force --verbose
 			ynh_die "The app was restored to the way it was before the failed upgrade."
 		fi
-        else
-                echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
-        fi
+  else
+      echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
+  fi
 }
 
 # Make a backup in case of failed upgrade
@@ -86,7 +87,7 @@ ynh_backup_before_upgrade () {
 		fi
 
 		# Create backup
-		sudo yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number
+		sudo yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number --verbose
 		if [ "$?" -eq 0 ]
 		then
 			# If the backup succeeded, remove the previous backup

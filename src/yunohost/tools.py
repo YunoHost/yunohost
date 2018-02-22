@@ -33,8 +33,9 @@ import logging
 import subprocess
 import pwd
 import socket
-from collections import OrderedDict
+from xmlrpclib import Fault
 from importlib import import_module
+from collections import OrderedDict
 
 import apt
 import apt.progress
@@ -45,12 +46,13 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
+from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.network import get_public_ip
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -568,7 +570,7 @@ def tools_diagnosis(auth, private=False):
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except MoulinetteError as e:
+    except (MoulinetteError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
@@ -621,16 +623,11 @@ def tools_diagnosis(auth, private=False):
     # Private data
     if private:
         diagnosis['private'] = OrderedDict()
+
         # Public IP
         diagnosis['private']['public_ip'] = {}
-        try:
-            diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
-        except MoulinetteError as e:
-            pass
-        try:
-            diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
-        except MoulinetteError as e:
-            pass
+        diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
+        diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
 
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
