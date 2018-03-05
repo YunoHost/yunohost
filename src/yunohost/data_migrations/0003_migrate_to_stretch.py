@@ -79,7 +79,7 @@ class MyMigration(Migration):
             raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
 
         # Check system is up to date
-        os.system("apt-get update")
+        self.apt_update()
         apt_list_upgradable = check_output("apt list --upgradable".split())
         if "upgradable" in apt_list_upgradable:
             raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
