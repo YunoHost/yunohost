@@ -396,7 +396,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(skip=True)
+    tools_migrations_migrate(skip=True, auto=True)
 
     os.system('touch /etc/yunohost/installed')
 
@@ -829,7 +829,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
     # configure during an upgrade of the package) but we are asked to run
     # migrations is to be ran manually by the user
     manual_migrations = [m for m in migrations if m.mode == "manual"]
-    if auto and manual_migrations:
+    if not skip and auto and manual_migrations:
         for m in manual_migrations:
             logger.warn(m18n.n('migrations_to_be_ran_manually',
                                number=m.number,
@@ -839,7 +839,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
     # If some migrations have disclaimers, require the --accept-disclaimer
     # option
     migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
-    if not accept_disclaimer and migrations_with_disclaimer:
+    if not skip and not accept_disclaimer and migrations_with_disclaimer:
         for m in migrations_with_disclaimer:
             logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
                                number=m.number,
