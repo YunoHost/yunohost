@@ -100,19 +100,13 @@ class MyMigration(Migration):
         modified_files = manually_modified_files()
         modified_files = "".join(["\n    - "+f for f in modified_files ])
 
-        message = """Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
-
-Therefore, we recommend you to :
-    - Perform a backup of any critical data or app ;
-    - Be patient after launching the migration : depending on your internet connection and hardware, it might take up to a few hours for everything to upgrade."""
+        message = m18n.n("migration_0003_general_warning")
 
         if problematic_apps:
-            message += "\n\n"
-            message += "Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from an applist or are not flagged as 'working'. Consequently, we cannot guarantee that they will still work after the upgrade : {problematic_apps}".format(problematic_apps=problematic_apps)
+            message += "\n\n" + m18n.n("migration_0003_problematic_apps_warning", problematic_apps=problematic_apps)
 
         if modified_files:
-            message += "\n\n"
-            message += "Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade : {manually_modified_files}".format(manually_modified_files=modified_files)
+            message += "\n\n" + m18n.n("migration_0003_modified_files", manually_modified_files=modified_files)
 
         return message
 
