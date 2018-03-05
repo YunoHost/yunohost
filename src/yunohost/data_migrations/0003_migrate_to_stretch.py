@@ -12,6 +12,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from yunohost.tools import Migration
+from yunohost.app import unstable_apps
 from yunohost.service import _run_service_command, service_regen_conf
 from yunohost.utils.filesystem import free_space_in_directory
 
@@ -91,10 +92,11 @@ class MyMigration(Migration):
         if not self.debian_major_version() == 8:
             return None
 
-        # Problematic apps ? E.g. not official or community+working ?
-        # (Dummy value for now)
-        problematic_apps = [ "dummy_ynh", "nope_ynh" ]
+        # Get list of problematic apps ? I.e. not official or community+working
+        problematic_apps = unstable_apps()
         problematic_apps = [ "- "+app for app in problematic_apps ]
+        if problematic_apps == []:
+            problematic_apps = "(None)"
         problematic_apps = "\n    ".join(problematic_apps)
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
@@ -102,19 +104,27 @@ class MyMigration(Migration):
         manually_modified_files = [ "- "+app for app in manually_modified_files ]
         manually_modified_files = "\n    ".join(manually_modified_files)
 
-        return """Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
+        message = """
+Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
 
 Therefore, we recommend you to :
     - Perform a backup of any critical data or app ;
     - Be patient after launching the migration : depending on your internet connection and hardware, it might take up to a few hours for everything to upgrade.
+"""
 
-Please note that the following possibly problematic apps were detected :
+        if problematic_apps != "":
+            message += """
+Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from an applist or are not flagged as "working". Consequently, we cannot guarantee that they will still work after the upgrade :
     {problematic_apps}
+""".format(problematic_apps=problematic_apps)
 
-Additionally, the following files were found to be manually modified and might be overwritten at the end of the upgrade :
+        if manually_modified_files != "":
+            message += """
+Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade :
     {manually_modified_files}
-""".format(problematic_apps=problematic_apps,
-           manually_modified_files=manually_modified_files)
+""".format(manually_modified_files=manually_modified_files)
+
+        return message
 
     def patch_apt_sources_list(self):
 
