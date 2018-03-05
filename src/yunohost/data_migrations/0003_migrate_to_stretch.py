@@ -13,7 +13,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
-from yunohost.service import _run_service_command, service_regen_conf
+from yunohost.service import _run_service_command, service_regen_conf, manually_modified_files
 from yunohost.utils.filesystem import free_space_in_directory
 
 logger = getActionLogger('yunohost.migration')
@@ -97,11 +97,10 @@ class MyMigration(Migration):
         problematic_apps = "".join(["\n    - "+app for app in problematic_apps ])
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
-        manually_modified_files = [ "/etc/dummy", "/home/nope" ]
-        manually_modified_files = "".join(["\n    - "+f for f in manually_modified_files ])
+        modified_files = manually_modified_files()
+        modified_files = "".join(["\n    - "+f for f in modified_files ])
 
-        message = """
-Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
+        message = """Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
 
 Therefore, we recommend you to :
     - Perform a backup of any critical data or app ;
@@ -111,9 +110,9 @@ Therefore, we recommend you to :
             message += "\n\n"
             message += "Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from an applist or are not flagged as 'working'. Consequently, we cannot guarantee that they will still work after the upgrade : {problematic_apps}".format(problematic_apps=problematic_apps)
 
-        if manually_modified_files:
+        if modified_files:
             message += "\n\n"
-            message += "Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade : {manually_modified_files}".format(manually_modified_files=manually_modified_files)
+            message += "Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade : {manually_modified_files}".format(manually_modified_files=modified_files)
 
         return message
 
