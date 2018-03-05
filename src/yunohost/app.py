@@ -2164,3 +2164,20 @@ def normalize_url_path(url_path):
         return '/' + url_path.strip("/").strip() + '/'
 
     return "/"
+
+
+def unstable_apps():
+
+    raw_app_installed = app_list(installed=True, raw=True)
+    output = []
+
+    for app, infos in raw_app_installed.items():
+
+        repo = infos.get("repository", None)
+        state = infos.get("state", None)
+
+        if repo is None or state in ["inprogress", "notworking"]:
+            output.append(app)
+
+    return output
+
