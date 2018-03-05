@@ -94,35 +94,26 @@ class MyMigration(Migration):
 
         # Get list of problematic apps ? I.e. not official or community+working
         problematic_apps = unstable_apps()
-        problematic_apps = [ "- "+app for app in problematic_apps ]
-        if problematic_apps == []:
-            problematic_apps = "(None)"
-        problematic_apps = "\n    ".join(problematic_apps)
+        problematic_apps = "".join(["\n    - "+app for app in problematic_apps ])
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
         manually_modified_files = [ "/etc/dummy", "/home/nope" ]
-        manually_modified_files = [ "- "+app for app in manually_modified_files ]
-        manually_modified_files = "\n    ".join(manually_modified_files)
+        manually_modified_files = "".join(["\n    - "+f for f in manually_modified_files ])
 
         message = """
 Please note that this migration is a delicate operation. While the YunoHost team did its best to review and test it, the migration might still break parts of the system or apps.
 
 Therefore, we recommend you to :
     - Perform a backup of any critical data or app ;
-    - Be patient after launching the migration : depending on your internet connection and hardware, it might take up to a few hours for everything to upgrade.
-"""
+    - Be patient after launching the migration : depending on your internet connection and hardware, it might take up to a few hours for everything to upgrade."""
 
-        if problematic_apps != "":
-            message += """
-Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from an applist or are not flagged as "working". Consequently, we cannot guarantee that they will still work after the upgrade :
-    {problematic_apps}
-""".format(problematic_apps=problematic_apps)
+        if problematic_apps:
+            message += "\n\n"
+            message += "Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from an applist or are not flagged as 'working'. Consequently, we cannot guarantee that they will still work after the upgrade : {problematic_apps}".format(problematic_apps=problematic_apps)
 
-        if manually_modified_files != "":
-            message += """
-Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade :
-    {manually_modified_files}
-""".format(manually_modified_files=manually_modified_files)
+        if manually_modified_files:
+            message += "\n\n"
+            message += "Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade : {manually_modified_files}".format(manually_modified_files=manually_modified_files)
 
         return message
 
