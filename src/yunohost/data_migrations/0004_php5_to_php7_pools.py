@@ -64,4 +64,4 @@ class MyMigration(Migration):
             os.remove(f)
 
         # Reload/restart the php pools
-        _run_service_command("restart", "php-fpm")
+        _run_service_command("restart", "php7.0-fpm")
