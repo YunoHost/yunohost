@@ -398,7 +398,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(target=2, skip=True, auto=True)
+    tools_migrations_migrate(skip=True, auto=True)
 
     os.system('touch /etc/yunohost/installed')
 
