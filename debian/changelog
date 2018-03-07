@@ -1,8 +1,14 @@
+yunohost (2.7.10) stable; urgency=low
+
+  * [fix] Fail2ban conf/filter was not matching failed login attempts...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 07 Mar 2018 12:43:35 +0000
+
 yunohost (2.7.9) stable; urgency=low
 
   (Bumping version number for stable release)
 
- -- Alexandre Aubin <alex.aubin.mailoo.org>  Tue, 30 Jan 2018 17:42:00 +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 30 Jan 2018 17:42:00 +0000
 
 yunohost (2.7.8) testing; urgency=low
 
