@@ -464,7 +464,7 @@ def _configure_for_acme_challenge(auth, domain):
     nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
 
     nginx_configuration = '''
-location '/.well-known/acme-challenge'
+location ^~ '/.well-known/acme-challenge'
 {
         default_type "text/plain";
         alias %s;
