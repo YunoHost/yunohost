@@ -101,6 +101,10 @@ ynh_package_install_from_equivs () {
 
     # Build and install the package
     local TMPDIR=$(mktemp -d)
+
+    # Force the compatibility level at 10, levels below are deprecated 
+    echo 10 > /usr/share/equivs/template/debian/compat
+
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
