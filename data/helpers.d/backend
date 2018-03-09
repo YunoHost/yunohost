@@ -2,7 +2,7 @@
 #
 # usage: ynh_use_logrotate [logfile] [--non-append]
 # | arg: logfile - absolute path of logfile
-# | option: --non-append - Replace the config file instead of appending this new config.
+# | arg: --non-append - (Option) Replace the config file instead of appending this new config.
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
@@ -64,9 +64,9 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
-# usage: ynh_add_systemd_config [Service name] [Template name]
-# | arg: Service name (optionnal, $app by default)
-# | arg: Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
+# usage: ynh_add_systemd_config [service] [template]
+# | arg: service - Service name (optionnal, $app by default)
+# | arg: template - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
 #
 # This will use the template ../conf/<templatename>.service
 # to generate a systemd config, by replacing the following keywords
@@ -76,7 +76,6 @@ ynh_remove_logrotate () {
 #   __APP__       by  $app
 #   __FINALPATH__ by  $final_path
 #
-# usage: ynh_add_systemd_config
 ynh_add_systemd_config () {
 	local service_name="${1:-$app}"
 
@@ -101,10 +100,9 @@ ynh_add_systemd_config () {
 
 # Remove the dedicated systemd config
 #
-# usage: ynh_remove_systemd_config [Service name]
-# | arg: Service name (optionnal, $app by default)
+# usage: ynh_remove_systemd_config [service]
+# | arg: service - Service name (optionnal, $app by default)
 #
-# usage: ynh_remove_systemd_config
 ynh_remove_systemd_config () {
 	local service_name="${1:-$app}"
 
@@ -119,6 +117,8 @@ ynh_remove_systemd_config () {
 
 # Create a dedicated nginx config
 #
+# usage: ynh_add_nginx_config
+#
 # This will use a template in ../conf/nginx.conf
 #   __PATH__      by  $path_url
 #   __DOMAIN__    by  $domain
@@ -126,7 +126,6 @@ ynh_remove_systemd_config () {
 #   __NAME__      by  $app
 #   __FINALPATH__ by  $final_path
 #
-# usage: ynh_add_nginx_config
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 	ynh_backup_if_checksum_is_different "$finalnginxconf"
