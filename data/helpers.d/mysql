@@ -35,6 +35,8 @@ ynh_mysql_execute_file_as_root() {
 
 # Create a database and grant optionnaly privilegies to a user
 #
+# [internal]
+#
 # usage: ynh_mysql_create_db db [user [pwd]]
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
@@ -55,6 +57,8 @@ ynh_mysql_create_db() {
 }
 
 # Drop a database
+#
+# [internal]
 #
 # If you intend to drop the database *and* the associated user,
 # consider using ynh_mysql_remove_db instead.
@@ -77,6 +81,8 @@ ynh_mysql_dump_db() {
 }
 
 # Create a user
+#
+# [internal]
 #
 # usage: ynh_mysql_create_user user pwd [host]
 # | arg: user - the user name to create
@@ -102,6 +108,8 @@ ynh_mysql_user_exists()
 }
 
 # Drop a user
+#
+# [internal]
 #
 # usage: ynh_mysql_drop_user user
 # | arg: user - the user name to drop

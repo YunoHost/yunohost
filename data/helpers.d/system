@@ -1,5 +1,7 @@
 # Manage a fail of the script
 #
+# [internal]
+#
 # usage: 
 # ynh_exit_properly is used only by the helper ynh_abort_if_errors.
 # You should not use it directly.
@@ -36,7 +38,8 @@ ynh_exit_properly () {
 #
 # This configure the rest of the script execution such that, if an error occurs
 # or if an empty variable is used, the execution of the script stops
-# immediately and a call to `ynh_exit_properly` is triggered.
+# immediately and a call to `ynh_clean_setup` is triggered if it has been
+# defined by your script.
 #
 ynh_abort_if_errors () {
 	set -eu	# Exit if a command fail, and if a variable is used unset.

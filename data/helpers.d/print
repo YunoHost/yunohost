@@ -6,7 +6,11 @@ ynh_die() {
 }
 
 # Ignore the yunohost-cli log to prevent errors with conditionals commands
+#
+# [internal]
+#
 # usage: ynh_no_log COMMAND
+#
 # Simply duplicate the log, execute the yunohost command and replace the log without the result of this command
 # It's a very badly hack...
 ynh_no_log() {
