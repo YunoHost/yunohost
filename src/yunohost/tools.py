@@ -970,9 +970,10 @@ def _load_migration(migration_file):
 
     migration_id = migration_file[:-len(".py")]
 
+    number, name = migration_id.split("_", 1)
+
     logger.debug(m18n.n('migrations_loading_migration',
-        migration_id=migration_id,
-    ))
+        number=number, name=name))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -985,8 +986,7 @@ def _load_migration(migration_file):
         traceback.print_exc()
 
         raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-            migration_id=migration_id,
-        ))
+            number=number, name=name))
 
 
 class Migration(object):
