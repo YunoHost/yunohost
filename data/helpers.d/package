@@ -80,15 +80,15 @@ ynh_package_autopurge() {
 # usage: ynh_package_install_from_equivs controlfile
 # | arg: controlfile - path of the equivs control file
 ynh_package_install_from_equivs () {
-    controlfile=$1
+    local controlfile=$1
 
     # Check if the equivs package is installed. Or install it.
     ynh_package_is_installed 'equivs' \
         || ynh_package_install equivs
 
     # retrieve package information
-    pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
-    pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number
+    local pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
+    local pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number
     [[ -z "$pkgname" || -z "$pkgversion" ]] \
         && echo "Invalid control file" && exit 1	# Check if this 2 variables aren't empty.
 
@@ -96,7 +96,7 @@ ynh_package_install_from_equivs () {
     ynh_package_update
 
     # Build and install the package
-    TMPDIR=$(mktemp -d)
+    local TMPDIR=$(mktemp -d)
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
@@ -118,18 +118,19 @@ ynh_package_install_from_equivs () {
 # usage: ynh_install_app_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence
 ynh_install_app_dependencies () {
-    dependencies=$@
-    manifest_path="../manifest.json"
+    local dependencies=$@
+    local manifest_path="../manifest.json"
     if [ ! -e "$manifest_path" ]; then
     	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
-    version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
-    dep_app=${app//_/-}	# Replace all '_' by '-'
 
-    if ynh_package_is_installed "${dep_app}-ynh-deps"; then
-		echo "A package named ${dep_app}-ynh-deps is already installed" >&2
-    else
-        cat > /tmp/${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
+    local version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
+    if [ ${#version} -eq 0 ]; then
+        version="1.0"
+    fi
+    local dep_app=${app//_/-}	# Replace all '_' by '-'
+
+    cat > /tmp/${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
 Section: misc
 Priority: optional
 Package: ${dep_app}-ynh-deps
@@ -139,11 +140,10 @@ Architecture: all
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
-        ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
-            || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
-        rm /tmp/${dep_app}-ynh-deps.control
-        ynh_app_setting_set $app apt_dependencies $dependencies
-    fi
+    ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
+        || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+    rm /tmp/${dep_app}-ynh-deps.control
+    ynh_app_setting_set $app apt_dependencies $dependencies
 }
 
 # Remove fake package and its dependencies
@@ -152,6 +152,6 @@ EOF
 #
 # usage: ynh_remove_app_dependencies
 ynh_remove_app_dependencies () {
-    dep_app=${app//_/-}	# Replace all '_' by '-'
+    local dep_app=${app//_/-}	# Replace all '_' by '-'
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }

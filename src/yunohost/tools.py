@@ -33,8 +33,9 @@ import logging
 import subprocess
 import pwd
 import socket
-from collections import OrderedDict
+from xmlrpclib import Fault
 from importlib import import_module
+from collections import OrderedDict
 
 import apt
 import apt.progress
@@ -42,14 +43,16 @@ import apt.progress
 from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
+from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log
+from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.network import get_public_ip
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -398,8 +401,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('touch /etc/yunohost/installed')
 
     # Enable and start YunoHost firewall at boot time
-    os.system('update-rc.d yunohost-firewall enable')
-    os.system('service yunohost-firewall start &')
+    service_enable("yunohost-firewall")
+    service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
@@ -561,17 +564,19 @@ def tools_diagnosis(auth, private=False):
     # Packages version
     diagnosis['packages'] = ynh_packages_version()
 
+    diagnosis["backports"] = check_output("dpkg -l |awk '/^ii/ && $3 ~ /bpo[6-8]/ {print $2}'").split()
+
     # Server basic monitoring
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except MoulinetteError as e:
+    except (MoulinetteError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
         for disk in disks:
-            if isinstance(disk, str):
-                diagnosis['system']['disks'] = disk
+            if isinstance(disks[disk], str):
+                diagnosis['system']['disks'][disk] = disks[disk]
             else:
                 diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
                     disks[disk]['mnt_point'],
@@ -588,6 +593,14 @@ def tools_diagnosis(auth, private=False):
             'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
             'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
         }
+
+    # nginx -t
+    try:
+        diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Unable to check 'nginx -t', exception: %s" % e)
 
     # Services status
     services = service_status()
@@ -610,21 +623,62 @@ def tools_diagnosis(auth, private=False):
     # Private data
     if private:
         diagnosis['private'] = OrderedDict()
+
         # Public IP
         diagnosis['private']['public_ip'] = {}
-        try:
-            diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
-        except MoulinetteError as e:
-            pass
-        try:
-            diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
-        except MoulinetteError as e:
-            pass
+        diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
+        diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
 
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
+        diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
+
+    try:
+        diagnosis['security'] = {
+            "CVE-2017-5754": {
+                "name": "meltdown",
+                "vulnerable": _check_if_vulnerable_to_meltdown(),
+            }
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Unable to check for meltdown vulnerability: %s" % e)
+
     return diagnosis
+
+
+def _check_if_vulnerable_to_meltdown():
+    # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
+
+    # script taken from https://github.com/speed47/spectre-meltdown-checker
+    # script commit id is store directly in the script
+    file_dir = os.path.split(__file__)[0]
+    SCRIPT_PATH = os.path.join(file_dir, "./vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh")
+
+    # '--variant 3' corresponds to Meltdown
+    # example output from the script:
+    # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
+    try:
+        call = subprocess.Popen("bash %s --batch json --variant 3" %
+                                SCRIPT_PATH, shell=True,
+                                  stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+
+        output, _ = call.communicate()
+        assert call.returncode == 0
+
+        CVEs = json.loads(output)
+        assert len(CVEs) == 1
+        assert CVEs[0]["NAME"] == "MELTDOWN"
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
+        raise Exception("Command output for failed meltdown check: '%s'" % output)
+
+    return CVEs[0]["VULNERABLE"]
 
 
 def tools_port_available(port):
@@ -717,30 +771,10 @@ def tools_migrations_migrate(target=None, skip=False):
 
     # loading all migrations
     for migration in tools_migrations_list()["migrations"]:
-        logger.debug(m18n.n('migrations_loading_migration',
-            number=migration["number"],
-            name=migration["name"],
-        ))
-
-        try:
-            # this is python builtin method to import a module using a name, we
-            # use that to import the migration as a python object so we'll be
-            # able to run it in the next loop
-            module = import_module("yunohost.data_migrations.{file_name}".format(**migration))
-        except Exception:
-            import traceback
-            traceback.print_exc()
-
-            raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-                number=migration["number"],
-                name=migration["name"],
-            ))
-            break
-
         migrations.append({
             "number": migration["number"],
             "name": migration["name"],
-            "module": module,
+            "module": _get_migration_module(migration),
         })
 
     migrations = sorted(migrations, key=lambda x: x["number"])
@@ -875,6 +909,47 @@ def _get_migrations_list():
         migrations.append(migration[:-len(".py")])
 
     return sorted(migrations)
+
+
+def _get_migration_by_name(migration_name, with_module=True):
+    """
+    Low-level / "private" function to find a migration by its name
+    """
+
+    migrations = tools_migrations_list()["migrations"]
+
+    matches = [ m for m in migrations if m["name"] == migration_name ]
+
+    assert len(matches) == 1, "Unable to find migration with name %s" % migration_name
+
+    migration = matches[0]
+
+    if with_module:
+        migration["module"] = _get_migration_module(migration)
+
+    return migration
+
+
+def _get_migration_module(migration):
+
+    logger.debug(m18n.n('migrations_loading_migration',
+        number=migration["number"],
+        name=migration["name"],
+    ))
+
+    try:
+        # this is python builtin method to import a module using a name, we
+        # use that to import the migration as a python object so we'll be
+        # able to run it in the next loop
+        return import_module("yunohost.data_migrations.{file_name}".format(**migration))
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
+            number=migration["number"],
+            name=migration["name"],
+        ))
 
 
 class Migration(object):

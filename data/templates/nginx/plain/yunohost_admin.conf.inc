@@ -1,4 +1,7 @@
-location /yunohost/admin {
+# Avoid the nginx path/alias traversal weakness ( #1037 )
+rewrite ^/yunohost/admin$ /yunohost/admin/ permanent;
+
+location /yunohost/admin/ {
     alias /usr/share/yunohost/admin/;
     default_type text/html;
     index index.html;

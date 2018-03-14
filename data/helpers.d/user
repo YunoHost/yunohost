@@ -1,4 +1,4 @@
-# Check if a YunoHost user exists
+# Check if a YunoHost user exists
 #
 # example: ynh_user_exists 'toto' || exit 1
 #
@@ -31,7 +31,7 @@ ynh_user_list() {
       | awk '/^##username$/{getline; print}'
 }
 
-# Check if a user exists on the system
+# Check if a user exists on the system
 #
 # usage: ynh_system_user_exists username
 # | arg: username - the username to check
@@ -48,9 +48,9 @@ ynh_system_user_create () {
 	if ! ynh_system_user_exists "$1"	# Check if the user exists on the system
 	then	# If the user doesn't exist
 		if [ $# -ge 2 ]; then	# If a home dir is mentioned
-			user_home_dir="-d $2"
+			local user_home_dir="-d $2"
 		else
-			user_home_dir="--no-create-home"
+			local user_home_dir="--no-create-home"
 		fi
 		sudo useradd $user_home_dir --system --user-group $1 --shell /usr/sbin/nologin || ynh_die "Unable to create $1 system account"
 	fi
