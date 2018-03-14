@@ -26,6 +26,8 @@ ynh_package_version() {
 
 # APT wrapper for non-interactive operation
 #
+# [internal]
+#
 # usage: ynh_apt update
 ynh_apt() {
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq $@
@@ -72,6 +74,8 @@ ynh_package_autopurge() {
 }
 
 # Build and install a package from an equivs control file
+#
+# [internal]
 #
 # example: generate an empty control file with `equivs-control`, adjust its
 #          content and use helper to build and install the package:

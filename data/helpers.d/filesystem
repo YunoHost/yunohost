@@ -136,6 +136,8 @@ ynh_restore () {
 
 # Return the path in the archive where has been stocked the origin path
 #
+# [internal]
+#
 # usage: _get_archive_path ORIGIN_PATH
 _get_archive_path () {
     # For security reasons we use csv python library to read the CSV
@@ -203,6 +205,9 @@ ynh_restore_file () {
 }
 
 # Deprecated helper since it's a dangerous one!
+#
+# [internal]
+#
 ynh_bind_or_cp() {
     local AS_ROOT=${3:-0}
     local NO_ROOT=0
@@ -212,6 +217,8 @@ ynh_bind_or_cp() {
 }
 
 # Create a directory under /tmp
+#
+# [internal]
 #
 # Deprecated helper
 #
