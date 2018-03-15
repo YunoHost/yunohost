@@ -175,6 +175,9 @@ with open(sys.argv[1], 'r') as backup_file:
 # the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
 # the archive, the destination will be searched into backup.csv
 #
+# If DEST_PATH already exists and is lighter than 500 Mo, a backup will be made in 
+# /home/yunohost.conf/backup/. Otherwise, the existing file is removed.
+#
 # examples:
 # ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
 # # if apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf exists, restore it into
@@ -194,6 +197,20 @@ ynh_restore_file () {
     # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
     if [ ! -d "$ARCHIVE_PATH" ] && [ ! -f "$ARCHIVE_PATH" ] && [ ! -L "$ARCHIVE_PATH" ]; then
         ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
+    fi
+
+    # Move the old directory if it already exists
+    if [[ -e "${DEST_PATH}" ]]
+    then
+        # Check if the file/dir size is less than 500 Mo
+        if [[ $(du -sb ${DEST_PATH} | cut -d"/" -f1) -le "500000000" ]]
+        then
+            local backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
+            mkdir -p "$(dirname "$backup_file")"
+            mv "${DEST_PATH}" "$backup_file"	# Move the current file or directory
+        else
+            ynh_secure_remove ${DEST_PATH}
+        fi
     fi
 
     # Restore ORIGIN_PATH into DEST_PATH
