@@ -168,8 +168,8 @@ class MyMigration(Migration):
 
         wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
 
-        command = "({} && {}) &".format(wait_until_end_of_yunohost_command,
-                                        upgrade_command)
+        command = "({} && {} && echo 'Done!') &".format(wait_until_end_of_yunohost_command,
+                                                        upgrade_command)
 
         logger.debug("Running command :\n{}".format(command))
 
