@@ -51,6 +51,16 @@ class MyMigration(Migration):
         # Reload/restart the php pools
         _run_service_command("restart", "php7.0-fpm")
 
+        # Get list of nginx conf file
+        nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
+        for f in nginx_conf_files:
+            # Replace the socket prefix if it's found
+            c = "sed -i -e 's@{}@{}@g' {}".format(PHP5_SOCKETS_PREFIX, PHP7_SOCKETS_PREFIX, f)
+            os.system(c)
+
+        # Reload nginx
+        _run_service_command("reload", "nginx")
+
     def backward(self):
 
         # Get list of php7 pool files
@@ -65,3 +75,13 @@ class MyMigration(Migration):
 
         # Reload/restart the php pools
         _run_service_command("restart", "php7.0-fpm")
+
+        # Get list of nginx conf file
+        nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
+        for f in nginx_conf_files:
+            # Replace the socket prefix if it's found
+            c = "sed -i -e 's@{}@{}@g' {}".format(PHP7_SOCKETS_PREFIX, PHP5_SOCKETS_PREFIX, f)
+            os.system(c)
+
+        # Reload nginx
+        _run_service_command("reload", "nginx")
