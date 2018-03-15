@@ -164,7 +164,7 @@ with open(sys.argv[1], 'r') as backup_file:
 # | arg: DEST_PATH   - Path where restore the file or the dir, if unspecified,
 # the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
 # the archive, the destination will be searched into backup.csv
-# If the DEST_PATH already exist, DEST_PATH is renamed as DEST_PATH_old_yyyymmddHHMM
+# If the DEST_PATH already exists, DEST_PATH is renamed as DEST_PATH_old_yyyymmdd.HHMMSS
 #
 # examples:
 # ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
@@ -187,7 +187,7 @@ ynh_restore_file () {
         ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
     fi
 
-    # Move the old directory if it already exist
+    # Move the old directory if it already exists
     if [[ -e "${DEST_PATH}" ]]
     then
         # Check if the file/dir size is less than 500 Mo
