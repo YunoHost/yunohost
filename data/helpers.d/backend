@@ -2,7 +2,7 @@
 #
 # usage: ynh_use_logrotate [logfile] [--non-append]
 # | arg: logfile - absolute path of logfile
-# | option: --non-append - Replace the config file instead of appending this new config.
+# | arg: --non-append - (Option) Replace the config file instead of appending this new config.
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
@@ -22,12 +22,12 @@ ynh_use_logrotate () {
 	fi
 	if [ $# -gt 0 ]; then
 		if [ "$(echo ${1##*.})" == "log" ]; then	# Keep only the extension to check if it's a logfile
-			logfile=$1	# In this case, focus logrotate on the logfile
+			local logfile=$1	# In this case, focus logrotate on the logfile
 		else
-			logfile=$1/*.log	# Else, uses the directory and all logfile into it.
+			local logfile=$1/*.log	# Else, uses the directory and all logfile into it.
 		fi
 	else
-		logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
+		local logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
 	fi
 	cat > ./${app}-logrotate << EOF	# Build a config file for logrotate
 $logfile {
@@ -64,19 +64,24 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
-# This will use a template in ../conf/systemd.service
-# and will replace the following keywords with 
-# global variables that should be defined before calling
+# usage: ynh_add_systemd_config [service] [template]
+# | arg: service - Service name (optionnal, $app by default)
+# | arg: template - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
+#
+# This will use the template ../conf/<templatename>.service
+# to generate a systemd config, by replacing the following keywords
+# with global variables that should be defined before calling
 # this helper :
 #
 #   __APP__       by  $app
 #   __FINALPATH__ by  $final_path
 #
-# usage: ynh_add_systemd_config
 ynh_add_systemd_config () {
-	finalsystemdconf="/etc/systemd/system/$app.service"
+	local service_name="${1:-$app}"
+
+	finalsystemdconf="/etc/systemd/system/$service_name.service"
 	ynh_backup_if_checksum_is_different "$finalsystemdconf"
-	sudo cp ../conf/systemd.service "$finalsystemdconf"
+	sudo cp ../conf/${2:-systemd.service} "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
@@ -89,23 +94,30 @@ ynh_add_systemd_config () {
 	ynh_store_file_checksum "$finalsystemdconf"
 
 	sudo chown root: "$finalsystemdconf"
-	sudo systemctl enable $app
+	sudo systemctl enable $service_name
 	sudo systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config
 #
-# usage: ynh_remove_systemd_config
+# usage: ynh_remove_systemd_config [service]
+# | arg: service - Service name (optionnal, $app by default)
+#
 ynh_remove_systemd_config () {
-	finalsystemdconf="/etc/systemd/system/$app.service"
+	local service_name="${1:-$app}"
+
+	local finalsystemdconf="/etc/systemd/system/$service_name.service"
 	if [ -e "$finalsystemdconf" ]; then
-		sudo systemctl stop $app
-		sudo systemctl disable $app
+		sudo systemctl stop $service_name
+		sudo systemctl disable $service_name
 		ynh_secure_remove "$finalsystemdconf"
+		sudo systemctl daemon-reload
 	fi
 }
 
 # Create a dedicated nginx config
+#
+# usage: ynh_add_nginx_config
 #
 # This will use a template in ../conf/nginx.conf
 #   __PATH__      by  $path_url
@@ -114,7 +126,6 @@ ynh_remove_systemd_config () {
 #   __NAME__      by  $app
 #   __FINALPATH__ by  $final_path
 #
-# usage: ynh_add_nginx_config
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 	ynh_backup_if_checksum_is_different "$finalnginxconf"
@@ -124,7 +135,7 @@ ynh_add_nginx_config () {
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${path_url:-}"; then
 		# path_url_slash_less is path_url, or a blank value if path_url is only '/'
-		path_url_slash_less=${path_url%/}
+		local path_url_slash_less=${path_url%/}
 		ynh_replace_string "__PATH__/" "$path_url_slash_less/" "$finalnginxconf"
 		ynh_replace_string "__PATH__" "$path_url" "$finalnginxconf"
 	fi
@@ -157,7 +168,17 @@ ynh_remove_nginx_config () {
 #
 # usage: ynh_add_fpm_config
 ynh_add_fpm_config () {
-	finalphpconf="/etc/php5/fpm/pool.d/$app.conf"
+	# Configure PHP-FPM 7.0 by default
+	local fpm_config_dir="/etc/php/7.0/fpm"
+	local fpm_service="php7.0-fpm"
+	# Configure PHP-FPM 5 on Debian Jessie
+	if [ "$(ynh_get_debian_release)" == "jessie" ]; then
+		fpm_config_dir="/etc/php5/fpm"
+		fpm_service="php5-fpm"
+	fi
+	ynh_app_setting_set $app fpm_config_dir "$fpm_config_dir"
+	ynh_app_setting_set $app fpm_service "$fpm_service"
+	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 	ynh_backup_if_checksum_is_different "$finalphpconf"
 	sudo cp ../conf/php-fpm.conf "$finalphpconf"
 	ynh_replace_string "__NAMETOCHANGE__" "$app" "$finalphpconf"
@@ -168,21 +189,27 @@ ynh_add_fpm_config () {
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
-		finalphpini="/etc/php5/fpm/conf.d/20-$app.ini"
+		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
 		ynh_backup_if_checksum_is_different "$finalphpini"
 		sudo cp ../conf/php-fpm.ini "$finalphpini"
 		sudo chown root: "$finalphpini"
 		ynh_store_file_checksum "$finalphpini"
 	fi
-
-	sudo systemctl reload php5-fpm
+	sudo systemctl reload $fpm_service
 }
 
 # Remove the dedicated php-fpm config
 #
 # usage: ynh_remove_fpm_config
 ynh_remove_fpm_config () {
-	ynh_secure_remove "/etc/php5/fpm/pool.d/$app.conf"
-	ynh_secure_remove "/etc/php5/fpm/conf.d/20-$app.ini" 2>&1
-	sudo systemctl reload php5-fpm
+	local fpm_config_dir=$(ynh_app_setting_get $app fpm_config_dir)
+	local fpm_service=$(ynh_app_setting_get $app fpm_service)
+	# Assume php version 5 if not set
+	if [ -z "$fpm_config_dir" ]; then
+		fpm_config_dir="/etc/php5/fpm"
+		fpm_service="php5-fpm"
+	fi
+	ynh_secure_remove "$fpm_config_dir/pool.d/$app.conf"
+	ynh_secure_remove "$fpm_config_dir/conf.d/20-$app.ini" 2>&1
+	sudo systemctl reload $fpm_service
 }

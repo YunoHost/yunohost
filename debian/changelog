@@ -1,3 +1,66 @@
+yunohost (2.7.10) stable; urgency=low
+
+  * [fix] Fail2ban conf/filter was not matching failed login attempts...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 07 Mar 2018 12:43:35 +0000
+
+yunohost (2.7.9) stable; urgency=low
+
+  (Bumping version number for stable release)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 30 Jan 2018 17:42:00 +0000
+
+yunohost (2.7.8) testing; urgency=low
+
+  * [fix] Use HMAC-SHA512 for DynDNS TSIG
+  * [fix] Fix ynh_restore_upgradebackup
+  * [i18n] Improve french translation
+
+ Thanks to all contributors (Bram, Maniack, jibec, Aleks) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 24 Jan 2018 12:15:12 -0500
+
+yunohost (2.7.7) stable; urgency=low
+
+  (Bumping version number for stable release)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Jan 2018 17:45:21 -0500
+
+yunohost (2.7.6.1) testing; urgency=low
+
+  * [fix] Fix Meltdown diagnosis
+  * [fix] Improve error handling of 'nginx -t' and Metdown diagnosis
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Jan 2018 13:11:02 -0500
+
+yunohost (2.7.6) testing; urgency=low
+
+  Major changes:
+
+  * [enh] Add new api entry point to check for Meltdown vulnerability
+  * [enh] New command 'app change-label'
+
+  Misc fixes/improvements:
+
+  * [helpers] Fix upgrade of fake package
+  * [helpers] Fix ynh_use_logrotate
+  * [helpers] Fix broken ynh_replace_string
+  * [helpers] Use local variables
+  * [enh/fix] Save the conf/ directory of app during installation and upgrade
+  * [enh] Improve UX for app messages
+  * [enh] Keep SSH sessions alive
+  * [enh] --version now display stable/testing/unstable information
+  * [enh] Backup: add ability to symlink the archives dir
+  * [enh] Add regen-conf messages, nginx -t and backports .deb to diagnosis output
+  * [fix] Comment line syntax for DNS zone recommendation (use ';')
+  * [fix] Fix a bug in disk diagnosis
+  * [mod] Use systemctl for all service operations
+  * [i18n] Improved Spanish and French translations
+
+ Thanks to all contributors (Maniack, Josue, Bram, ljf, Aleks, Jocelyn, JimboeJoe, David B, Lapineige, ...) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 16 Jan 2018 17:17:34 -0500
+
 yunohost (2.7.5) stable; urgency=low
 
   (Bumping version number for stable release)

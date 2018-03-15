@@ -66,6 +66,9 @@ PrintLastLog yes
 TCPKeepAlive yes
 #UseLogin no
 
+# keep ssh sessions fresh
+ClientAliveInterval 60
+
 #MaxStartups 10:30:60
 Banner /etc/issue.net
 

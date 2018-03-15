@@ -203,6 +203,30 @@ user:
                     extra:
                         pattern: *pattern_mailbox_quota
 
+        ### ssh_user_enable_ssh()
+        allow-ssh:
+            action_help: Allow the user to uses ssh
+            api: POST /ssh/user/enable-ssh
+            configuration:
+                authenticate: all
+            arguments:
+                username:
+                    help: Username of the user
+                    extra:
+                        pattern: *pattern_username
+
+        ### ssh_user_disable_ssh()
+        disallow-ssh:
+            action_help: Disallow the user to uses ssh
+            api: POST /ssh/user/disable-ssh
+            configuration:
+                authenticate: all
+            arguments:
+                username:
+                    help: Username of the user
+                    extra:
+                        pattern: *pattern_username
+
         ### user_info()
         info:
             action_help: Get user information
@@ -646,6 +670,19 @@ app:
             configuration:
                 authenticate: all
                 authenticator: ldap-anonymous
+
+        ### app_change_label()
+        change-label:
+            action_help: Change app label
+            api: PUT /apps/<app>/label
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+            arguments:
+                app:
+                    help: App ID
+                new_label:
+                    help: New app label
 
         ### app_addaccess() TODO: Write help
         addaccess:
@@ -1310,6 +1347,74 @@ dyndns:
         removecron:
             action_help: Remove IP update cron
             api: DELETE /dyndns/cron
+
+
+#############################
+#            SSH            #
+#############################
+ssh:
+    category_help: Manage ssh keys and access
+    actions: {}
+    subcategories:
+        authorized-keys:
+            subcategory_help: Manage user's authorized ssh keys
+
+            actions:
+                ### ssh_authorized_keys_list()
+                list:
+                    action_help: Show user's authorized ssh keys
+                    api: GET /ssh/authorized-keys
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### ssh_authorized_keys_add()
+                add:
+                    action_help: Add a new authorized ssh key for this user
+                    api: POST /ssh/authorized-keys
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        -u:
+                            full: --public
+                            help: Public key
+                            extra:
+                                required: True
+                        -i:
+                            full: --private
+                            help: Private key
+                            extra:
+                                required: True
+                        -n:
+                            full: --name
+                            help: Key name
+                            extra:
+                                required: True
+
+                ### ssh_authorized_keys_remove()
+                remove:
+                    action_help: Remove an authorized ssh key for this user
+                    api: DELETE /ssh/authorized-keys
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        -k:
+                            full: --key
+                            help: Key as a string
+                            extra:
+                                required: True
 
 
 #############################

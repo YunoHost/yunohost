@@ -8,7 +8,7 @@ MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
 # usage: ynh_mysql_connect_as user pwd [db]
 # | arg: user - the user name to connect as
 # | arg: pwd - the user password
-# | arg: db - the database to connect to
+# | arg: db - the database to connect to
 ynh_mysql_connect_as() {
     mysql -u "$1" --password="$2" -B "${3:-}"
 }
@@ -17,7 +17,7 @@ ynh_mysql_connect_as() {
 #
 # usage: ynh_mysql_execute_as_root sql [db]
 # | arg: sql - the SQL command to execute
-# | arg: db - the database to connect to
+# | arg: db - the database to connect to
 ynh_mysql_execute_as_root() {
     ynh_mysql_connect_as "root" "$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
         "${2:-}" <<< "$1"
@@ -27,7 +27,7 @@ ynh_mysql_execute_as_root() {
 #
 # usage: ynh_mysql_execute_file_as_root file [db]
 # | arg: file - the file containing SQL commands
-# | arg: db - the database to connect to
+# | arg: db - the database to connect to
 ynh_mysql_execute_file_as_root() {
     ynh_mysql_connect_as "root" "$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
         "${2:-}" < "$1"
@@ -35,14 +35,16 @@ ynh_mysql_execute_file_as_root() {
 
 # Create a database and grant optionnaly privilegies to a user
 #
+# [internal]
+#
 # usage: ynh_mysql_create_db db [user [pwd]]
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
 # | arg: pwd - the password to identify user by
 ynh_mysql_create_db() {
-    db=$1
+    local db=$1
 
-    sql="CREATE DATABASE ${db};"
+    local sql="CREATE DATABASE ${db};"
 
     # grant all privilegies to user
     if [[ $# -gt 1 ]]; then
@@ -55,6 +57,8 @@ ynh_mysql_create_db() {
 }
 
 # Drop a database
+#
+# [internal]
 #
 # If you intend to drop the database *and* the associated user,
 # consider using ynh_mysql_remove_db instead.
@@ -78,6 +82,8 @@ ynh_mysql_dump_db() {
 
 # Create a user
 #
+# [internal]
+#
 # usage: ynh_mysql_create_user user pwd [host]
 # | arg: user - the user name to create
 # | arg: pwd - the password to identify user by
@@ -90,7 +96,7 @@ ynh_mysql_create_user() {
 #
 # usage: ynh_mysql_user_exists user
 # | arg: user - the user for which to check existence
-function ynh_mysql_user_exists()
+ynh_mysql_user_exists()
 {
    local user=$1
    if [[ -z $(ynh_mysql_execute_as_root "SELECT User from mysql.user WHERE User = '$user';") ]]
@@ -102,6 +108,8 @@ function ynh_mysql_user_exists()
 }
 
 # Drop a user
+#
+# [internal]
 #
 # usage: ynh_mysql_drop_user user
 # | arg: user - the user name to drop
@@ -153,12 +161,12 @@ ynh_mysql_remove_db () {
 # Sanitize a string intended to be the name of a database
 # (More specifically : replace - and . by _)
 #
-# Exemple: dbname=$(ynh_sanitize_dbid $app)
+# example: dbname=$(ynh_sanitize_dbid $app)
 #
 # usage: ynh_sanitize_dbid name
 # | arg: name - name to correct/sanitize
 # | ret: the corrected name
 ynh_sanitize_dbid () {
-	dbid=${1//[-.]/_}	# We should avoid having - and . in the name of databases. They are replaced by _
+	local dbid=${1//[-.]/_}	# We should avoid having - and . in the name of databases. They are replaced by _
 	echo $dbid
 }

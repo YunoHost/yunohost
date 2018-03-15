@@ -1,20 +1,21 @@
 # Manage a fail of the script
 #
-# Print a warning to inform that the script was failed
-# Execute the ynh_clean_setup function if used in the app script
+# [internal]
 #
-# usage of ynh_clean_setup function
-# This function provide a way to clean some residual of installation that not managed by remove script.
-# To use it, simply add in your script:
+# usage: 
+# ynh_exit_properly is used only by the helper ynh_abort_if_errors.
+# You should not use it directly.
+# Instead, add to your script:
 # ynh_clean_setup () {
 #        instructions...
 # }
-# This function is optionnal.
 #
-# Usage: ynh_exit_properly is used only by the helper ynh_abort_if_errors.
-# You must not use it directly.
+# This function provide a way to clean some residual of installation that not managed by remove script.
+#
+# It prints a warning to inform that the script was failed, and execute the ynh_clean_setup function if used in the app script
+#
 ynh_exit_properly () {
-	exit_code=$?
+	local exit_code=$?
 	if [ "$exit_code" -eq 0 ]; then
 			exit 0	# Exit without error if the script ended correctly
 	fi
@@ -31,13 +32,24 @@ ynh_exit_properly () {
 	ynh_die	# Exit with error status
 }
 
-# Exit if an error occurs during the execution of the script.
+# Exits if an error occurs during the execution of the script.
 #
-# Stop immediatly the execution if an error occured or if a empty variable is used.
-# The execution of the script is derivate to ynh_exit_properly function before exit.
+# usage: ynh_abort_if_errors
 #
-# Usage: ynh_abort_if_errors
+# This configure the rest of the script execution such that, if an error occurs
+# or if an empty variable is used, the execution of the script stops
+# immediately and a call to `ynh_clean_setup` is triggered if it has been
+# defined by your script.
+#
 ynh_abort_if_errors () {
 	set -eu	# Exit if a command fail, and if a variable is used unset.
 	trap ynh_exit_properly EXIT	# Capturing exit signals on shell script
+}
+
+# Fetch the Debian release codename
+#
+# usage: ynh_get_debian_release
+# | ret: The Debian release codename (i.e. jessie, stretch, ...)
+ynh_get_debian_release () {
+	echo $(lsb_release --codename --short)
 }
