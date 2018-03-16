@@ -115,13 +115,16 @@ class MyMigration(Migration):
         sources_list = glob.glob("/etc/apt/sources.list.d/*.list")
         sources_list.append("/etc/apt/sources.list")
 
-        # TODO / FIXME Is this enough ?
-        # (Probably not, sometimes there are some jessie/updates or
-        # jessie-updates ... but we don't want to touch to jessie-backports
-        # maybe ?)
         # TODO/FIXME : to be seen if we really use 'vinaigrette' as final repo name
+        # This :
+        # - replace single 'jessie' occurence by 'stretch'
+        # - comments lines containing "backports"
+        # - replace 'jessie/updates' by 'strech/updates'
+        # - switch yunohost's repo to vinaigrette
         for f in sources_list:
             command = "sed -i -e 's@ jessie @ stretch @g' " \
+                             "-e '/backports/ s@^#*@#@' " \
+                             "-e 's@ jessie/updates @ stretch/updates @g' " \
                              "-e 's@repo.yunohost@vinaigrette.yunohost@g' " \
                              "{}".format(f)
             os.system(command)
