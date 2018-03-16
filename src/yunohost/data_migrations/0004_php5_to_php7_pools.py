@@ -50,6 +50,7 @@ class MyMigration(Migration):
 
         # Reload/restart the php pools
         _run_service_command("restart", "php7.0-fpm")
+        os.system("systemctl stop php5-fpm")
 
         # Get list of nginx conf file
         nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
@@ -74,7 +75,8 @@ class MyMigration(Migration):
             os.remove(f)
 
         # Reload/restart the php pools
-        _run_service_command("restart", "php7.0-fpm")
+        _run_service_command("stop", "php7.0-fpm")
+        os.system("systemctl start php5-fpm")
 
         # Get list of nginx conf file
         nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
