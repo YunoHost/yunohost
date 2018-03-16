@@ -6,6 +6,7 @@ import time
 import json
 import errno
 import platform
+from shutil import copy2
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -39,6 +40,7 @@ class MyMigration(Migration):
         # Preparing the upgrade
         logger.warning(m18n.n("migration_0003_patching_sources_list"))
         self.patch_apt_sources_list()
+        self.backup_files_to_keep()
         self.apt_update()
         self.hold(["yunohost", "yunohost-admin", "moulinette", "ssowat", "fail2ban"])
 
@@ -55,15 +57,15 @@ class MyMigration(Migration):
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "mysql")
 
-        ## Clean the mess
+        # Clean the mess
         os.system("apt autoremove --assume-yes")
         os.system("apt clean --assume-yes")
 
         # Upgrade yunohost packages
         logger.warning(m18n.n("migration_0003_yunohost_upgrade"))
+        self.restore_files_to_keep()
         self.unhold(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
         self.upgrade_yunohost_packages()
-        #service_regen_conf(["fail2ban", "postfix", "mysql", "nslcd"], force=True)
 
     def debian_major_version(self):
         return int(platform.dist()[1][0])
@@ -198,4 +200,33 @@ class MyMigration(Migration):
         command += " 2>&1 | tee -a {}".format(self.logfile)
 
         os.system(command)
+
+
+    # Those are files that should be kept and restored before the final switch
+    # to yunohost 3.x... They end up being modified by the various dist-upgrades
+    # (or need to be taken out momentarily), which then blocks the regen-conf
+    # as they are flagged as "manually modified"...
+    files_to_keep = [
+        "/etc/mysql/my.cnf",
+        "/etc/nslcd.conf",
+        "/etc/postfix/master.cf",
+        "/etc/fail2ban/filter.d/yunohost.conf"
+    ]
+
+    def backup_files_to_keep(self):
+
+        tmp_dir = os.path.join("/tmp/", self.name)
+        os.mkdir(tmp_dir, 0700)
+
+        for f in self.files_to_keep:
+            dest_file = f.strip('/').replace("/", "_")
+            copy2(f, os.path.join(tmp_dir, dest_file))
+
+    def restore_files_to_keep(self):
+
+        tmp_dir = os.path.join("/tmp/", self.name)
+
+        for f in self.files_to_keep:
+            dest_file = f.strip('/').replace("/", "_")
+            copy2(os.path.join(tmp_dir, dest_file), f)
 
