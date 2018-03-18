@@ -255,6 +255,8 @@ SOURCE_SUM=2ba3c9d4dd3c7e38885b37e02337906a1ee91febe6d5c9159d89a9050f2eea8f" > "
 ynh_use_nodejs () {
 	nodejs_version=$(ynh_app_setting_get $app nodejs_version)
 
+	# Add "$n_install_dir/bin" to the PATH variable if it isn't already added.
+	# And define N_PREFIX in the current shell.
 	load_n_path="[[ :$PATH: == *\":$n_install_dir/bin:\"* ]] || PATH=\"$n_install_dir/bin:$PATH\"; N_PREFIX="$n_install_dir""
 
 	nodejs_use_version="$n_install_dir/bin/n -q $nodejs_version"
