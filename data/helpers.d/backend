@@ -363,7 +363,6 @@ ynh_remove_nodejs () {
 	then
 		ynh_secure_remove "$n_install_dir"
 		ynh_secure_remove "/usr/local/n"
-		sed --in-place "/N_PREFIX/d" /root/.bashrc
 	fi
 }
 
