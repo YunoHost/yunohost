@@ -498,7 +498,7 @@ def app_change_url(auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
     journal = Journal(["change_url", app], "app", args=args_list, env=env_dict)
-    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root", journa=journal) != 0:
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root", journal=journal) != 0:
         logger.error("Failed to change '%s' url." % app)
 
         # restore values modified by app_checkurl
@@ -617,7 +617,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
         journal = Journal(["upgrade", app_instance_name], "app", args=args_list, env=env_dict)
-        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root", journa=journal) != 0:
+        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root", journal=journal) != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
             now = int(time.time())
