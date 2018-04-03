@@ -55,14 +55,6 @@ do_init_regen() {
       ln -sf /etc/yunohost/certs/yunohost.org/key.pem \
         /etc/ssl/private/yunohost_key.pem
   fi
-  # Add http2 protocole. It needs a working SSL.
-  cat /etc/nginx/conf.d/{domain}.conf | grep "ssl http2"
-  if [ "$?" -eq 1 ]
-  then
-    sed -i "s/listen 443 ssl;/listen 443 ssl http2;/g" /etc/nginx/conf.d/{domain}.conf
-  else
-    exit 0
-  fi
 }
 
 do_pre_regen() {
