@@ -1603,26 +1603,27 @@ hook:
                     help: The directory from where the script will be executed
 
 #############################
-#          Journals         #
+#            Log            #
 #############################
-journals:
-    category_help: Manage debug journals
+log:
+    category_help: Manage debug logs
     actions:
 
-        ### journals_list()
+        ### log_list()
         list:
-            action_help: List journals
-            api: GET /journals
+            action_help: List logs
+            api: GET /logs
             arguments:
                -l:
                     full: --limit
-                    help: Maximum number of journals per categories
+                    help: Maximum number of logs per categories
                     type: int
 
-        ### journals_display()
+        ### log_display()
         display:
-            action_help: Display a journal content
-            api: GET /journals/<file_name>
+            action_help: Display a log content
+            api: GET /logs/<file_name_list>
             arguments:
-                file_name:
-                    help: Journal file name
+                file_name_list:
+                    help: Log filenames for which to display the content
+                    nargs: "*"

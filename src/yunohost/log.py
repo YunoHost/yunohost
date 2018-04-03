@@ -19,9 +19,9 @@
 
 """
 
-""" yunohost_journals.py
+""" yunohost_log.py
 
-    Manage debug journals
+    Manage debug logs
 """
 
 import os
@@ -34,90 +34,98 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-JOURNALS_PATH = '/var/log/yunohost/journals/'
+OPERATIONS_PATH = '/var/log/yunohost/operation/'
+OPERATION_FILE_EXT = '.yml'
 
-logger = getActionLogger('yunohost.journals')
+logger = getActionLogger('yunohost.log')
 
 
-def journals_list(limit=None):
+def log_list(limit=None):
     """
-    List available journals
+    List available logs
 
     Keyword argument:
-        limit -- Maximum number of journals per categories
+        limit -- Maximum number of logs per categories
     """
 
     result = {"categories": []}
 
-    if not os.path.exists(JOURNALS_PATH):
+    if not os.path.exists(OPERATIONS_PATH):
         return result
 
-    for category in sorted(os.listdir(JOURNALS_PATH)):
-        result["categories"].append({"name": category, "journals": []})
-        for journal in filter(lambda x: x.endswith(".journal"), os.listdir(os.path.join(JOURNALS_PATH, category))):
+    for category in sorted(os.listdir(OPERATIONS_PATH)):
+        result["categories"].append({"name": category, "logs": []})
+        for operation in filter(lambda x: x.endswith(OPERATION_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
 
-            file_name = journal
+            file_name = operation
 
-            journal = journal[:-len(".journal")]
-            journal = journal.split("_")
+            operation = operation[:-len(OPERATION_FILE_EXT)]
+            operation = operation.split("_")
 
-            journal_datetime = datetime.strptime(" ".join(journal[-2:]), "%Y-%m-%d %H-%M-%S")
+            operation_datetime = datetime.strptime(" ".join(operation[-2:]), "%Y-%m-%d %H-%M-%S")
 
-            result["categories"][-1]["journals"].append({
-                "started_at": journal_datetime,
-                "name": " ".join(journal[:-2]),
+            result["categories"][-1]["logs"].append({
+                "started_at": operation_datetime,
+                "name": " ".join(operation[:-2]),
                 "file_name": file_name,
-                "path": os.path.join(JOURNALS_PATH, category, file_name),
+                "path": os.path.join(OPERATIONS_PATH, category, file_name),
             })
 
-        result["categories"][-1]["journals"] = list(reversed(sorted(result["categories"][-1]["journals"], key=lambda x: x["started_at"])))
+        result["categories"][-1]["logs"] = list(reversed(sorted(result["categories"][-1]["logs"], key=lambda x: x["started_at"])))
 
         if limit is not None:
-            result["categories"][-1]["journals"] = result["categories"][-1]["journals"][:limit]
+            result["categories"][-1]["logs"] = result["categories"][-1]["logs"][:limit]
 
     return result
 
 
-def journals_display(file_name):
+def log_display(file_name_list):
     """
-    Display a journal content
+    Display full log or specific logs listed
 
     Argument:
-        file_name
+        file_name_list
     """
 
-    if not os.path.exists(JOURNALS_PATH):
+    if not os.path.exists(OPERATIONS_PATH):
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('journal_does_exists', journal=file_name))
+                              m18n.n('log_does_exists', log=" ".join(file_name_list)))
 
-    for category in os.listdir(JOURNALS_PATH):
-        for journal in filter(lambda x: x.endswith(".journal"), os.listdir(os.path.join(JOURNALS_PATH, category))):
-            if journal != file_name:
+    result = {"logs": []}
+
+    for category in os.listdir(OPERATIONS_PATH):
+        for operation in filter(lambda x: x.endswith(OPERATION_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
+            if operation not in file_name_list and file_name_list:
                 continue
 
-            with open(os.path.join(JOURNALS_PATH, category, file_name), "r") as content:
+            file_name = operation
+
+            with open(os.path.join(OPERATIONS_PATH, category, file_name), "r") as content:
                 content = content.read()
 
-                journal = journal[:-len(".journal")]
-                journal = journal.split("_")
-                journal_datetime = datetime.strptime(" ".join(journal[-2:]), "%Y-%m-%d %H-%M-%S")
+                operation = operation[:-len(OPERATION_FILE_EXT)]
+                operation = operation.split("_")
+                operation_datetime = datetime.strptime(" ".join(operation[-2:]), "%Y-%m-%d %H-%M-%S")
 
                 infos, logs = content.split("\n---\n", 1)
                 infos = yaml.safe_load(infos)
                 logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
 
-                return {
-                    "started_at": journal_datetime,
-                    "name": " ".join(journal[:-2]),
+                result['logs'].append({
+                    "started_at": operation_datetime,
+                    "name": " ".join(operation[:-2]),
                     "file_name": file_name,
-                    "path": os.path.join(JOURNALS_PATH, category, file_name),
+                    "path": os.path.join(OPERATIONS_PATH, category, file_name),
                     "metadata": infos,
                     "logs": logs,
-                }
+                })
 
-    raise MoulinetteError(errno.EINVAL,
-                          m18n.n('journal_does_exists', journal=file_name))
+    logger.debug("====> %s", len(file_name_list), exc_info=1)
+    if len(file_name_list) > 0 and len(result['logs']) < len(file_name_list):
+        logger.error(m18n.n('log_does_exists', log="', '".join(file_name_list)))
 
+    if len(result['logs']) > 0:
+        return result
 
 class Journal(object):
     def __init__(self, name, category, on_stdout=None, on_stderr=None, on_write=None, **kwargs):
@@ -129,7 +137,7 @@ class Journal(object):
         # this help uniformise file name and avoir threads concurrency errors
         self.started_at = datetime.now()
 
-        self.path = os.path.join(JOURNALS_PATH, category)
+        self.path = os.path.join(OPERATIONS_PATH, category)
 
         self.fd = None
 
@@ -157,7 +165,8 @@ class Journal(object):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
-        file_name = "%s_%s.journal" % (self.name if isinstance(self.name, basestring) else "_".join(self.name), self.started_at.strftime("%F_%X").replace(":", "-"))
+        file_name = "%s_%s" % (self.name if isinstance(self.name, basestring) else "_".join(self.name), self.started_at.strftime("%F_%X").replace(":", "-"))
+        file_name += OPERATION_FILE_EXT
 
         serialized_additional_information = yaml.safe_dump(self.additional_information, default_flow_style=False)
 

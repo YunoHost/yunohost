@@ -433,7 +433,7 @@ def app_change_url(auth, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
-    from yunohost.journals import Journal
+    from yunohost.log import Journal
 
     installed = _is_installed(app)
     if not installed:
@@ -542,7 +542,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.journals import Journal
+    from yunohost.log import Journal
 
     # Retrieve interface
     is_api = msettings.get('interface') == 'api'
@@ -673,7 +673,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.journals import Journal
+    from yunohost.log import Journal
 
     # Fetch or extract sources
     try:
@@ -837,7 +837,7 @@ def app_remove(auth, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
-    from yunohost.journals import Journal
+    from yunohost.log import Journal
 
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
