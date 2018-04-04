@@ -59,7 +59,7 @@ def user_ssh_list_keys(auth, username):
     authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
 
     if not os.path.exists(authorized_keys_file):
-        return []
+        return {"keys": []}
 
     keys = []
     last_comment = ""
