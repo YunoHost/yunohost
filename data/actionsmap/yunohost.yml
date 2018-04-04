@@ -266,21 +266,11 @@ user:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
-                        -u:
-                            full: --public
-                            help: Public key
-                            extra:
-                                required: True
-                        -i:
-                            full: --private
-                            help: Private key
-                            extra:
-                                required: True
-                        -n:
-                            full: --name
-                            help: Key name
-                            extra:
-                                required: True
+                        key:
+                            help: The key to be added
+                        -c:
+                            full: --comment
+                            help: Optionnal comment about the key
 
                 ### user_ssh_keys_remove()
                 remove-key:
@@ -293,11 +283,8 @@ user:
                             help: Username of the user
                             extra:
                                 pattern: *pattern_username
-                        -k:
-                            full: --key
-                            help: Key as a string
-                            extra:
-                                required: True
+                        key:
+                            help: The key to be removed
 
 
 #############################
