@@ -4,6 +4,7 @@ import re
 import os
 import errno
 import pwd
+import subprocess
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -26,6 +27,10 @@ def user_ssh_allow(auth, username):
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
 
+    # Somehow this is needed otherwise the PAM thing doesn't forget about the
+    # old loginShell value ?
+    subprocess.call(['nscd', '-i', 'passwd'])
+
 
 def user_ssh_disallow(auth, username):
     """
@@ -40,6 +45,10 @@ def user_ssh_disallow(auth, username):
         raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
+
+    # Somehow this is needed otherwise the PAM thing doesn't forget about the
+    # old loginShell value ?
+    subprocess.call(['nscd', '-i', 'passwd'])
 
 
 def user_ssh_list_keys(auth, username):
