@@ -41,9 +41,6 @@ from yunohost.service import service_status
 
 logger = getActionLogger('yunohost.user')
 
-SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
-
-
 def user_list(auth, fields=None):
     """
     List users
@@ -446,36 +443,30 @@ def user_info(auth, username):
     else:
         raise MoulinetteError(167, m18n.n('user_info_failed'))
 
+#
+# SSH subcategory
+#
+#
+import yunohost.ssh
 
-def user_allow_ssh(auth, username):
-    """
-    Allow YunoHost user connect as ssh.
+def user_ssh_allow(auth, username):
+    return yunohost.ssh.user_ssh_allow(auth, username)
 
-    Keyword argument:
-        username -- User username
-    """
-    # TODO it would be good to support different kind of shells
+def user_ssh_disallow(auth, username):
+    return yunohost.ssh.user_ssh_disallow(auth, username)
 
-    if not _get_user_for_ssh(auth, username):
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+def user_ssh_list_keys(auth, username):
+    return yunohost.ssh.user_ssh_list_keys(auth, username)
 
-    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
+def user_ssh_add_key(auth, username, key, comment):
+    return yunohost.ssh.user_ssh_add_key(auth, username, key, comment)
 
+def user_ssh_remove_key(auth, username, key):
+    return yunohost.ssh.user_ssh_remove_key(auth, username, key)
 
-def user_disallow_ssh(auth, username):
-    """
-    Disallow YunoHost user connect as ssh.
-
-    Keyword argument:
-        username -- User username
-    """
-    # TODO it would be good to support different kind of shells
-
-    if not _get_user_for_ssh(auth, username) :
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
-
-    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
-
+#
+# End SSH subcategory
+#
 
 def _convertSize(num, suffix=''):
     for unit in ['K', 'M', 'G', 'T', 'P', 'E', 'Z']:
@@ -514,54 +505,4 @@ def _hash_user_password(password):
     return '{CRYPT}' + crypt.crypt(str(password), salt)
 
 
-def _get_user_for_ssh(auth, username, attrs=None):
-    def ssh_root_login_status(auth):
-        # XXX temporary placed here for when the ssh_root commands are integrated
-        # extracted from https://github.com/YunoHost/yunohost/pull/345
-        # XXX should we support all the options?
-        # this is the content of "man sshd_config"
-        # PermitRootLogin
-        #     Specifies whether root can log in using ssh(1).  The argument must be
-        #     “yes”, “without-password”, “forced-commands-only”, or “no”.  The
-        #     default is “yes”.
-        sshd_config_content = read_file(SSHD_CONFIG_PATH)
 
-        if re.search("^ *PermitRootLogin +(no|forced-commands-only) *$",
-                     sshd_config_content, re.MULTILINE):
-            return {"PermitRootLogin": False}
-
-        return {"PermitRootLogin": True}
-
-    if username == "root":
-        root_unix = pwd.getpwnam("root")
-        return {
-            'username': 'root',
-            'fullname': '',
-            'mail': '',
-            'ssh_allowed': ssh_root_login_status(auth)["PermitRootLogin"],
-            'shell': root_unix.pw_shell,
-            'home_path': root_unix.pw_dir,
-        }
-
-    if username == "admin":
-        admin_unix = pwd.getpwnam("admin")
-        return {
-            'username': 'admin',
-            'fullname': '',
-            'mail': '',
-            'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
-            'shell': admin_unix.pw_shell,
-            'home_path': admin_unix.pw_dir,
-        }
-
-    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
-    user = auth.search('ou=users,dc=yunohost,dc=org',
-                       '(&(objectclass=person)(uid=%s))' % username,
-                       attrs)
-
-    assert len(user) in (0, 1)
-
-    if not user:
-        return None
-
-    return user[0]

@@ -1,13 +1,48 @@
 # encoding: utf-8
 
+import re
 import os
+import errno
+import pwd
 
+from moulinette import m18n
+from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 
-from yunohost.user import _get_user_for_ssh
+SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
 
-def ssh_authorized_keys_list(auth, username):
+def user_ssh_allow(auth, username):
+    """
+    Allow YunoHost user connect as ssh.
+
+    Keyword argument:
+        username -- User username
+    """
+    # TODO it would be good to support different kind of shells
+
+    if not _get_user_for_ssh(auth, username):
+        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+
+    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
+
+
+def user_ssh_disallow(auth, username):
+    """
+    Disallow YunoHost user connect as ssh.
+
+    Keyword argument:
+        username -- User username
+    """
+    # TODO it would be good to support different kind of shells
+
+    if not _get_user_for_ssh(auth, username):
+        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+
+    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
+
+
+def user_ssh_list_keys(auth, username):
     user = _get_user_for_ssh(auth, username, ["homeDirectory"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
@@ -40,7 +75,7 @@ def ssh_authorized_keys_list(auth, username):
     return {"keys": keys}
 
 
-def ssh_authorized_keys_add(auth, username, key, comment):
+def user_ssh_add_key(auth, username, key, comment):
     user = _get_user_for_ssh(auth, username, ["homeDirectory", "uid"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
@@ -74,8 +109,8 @@ def ssh_authorized_keys_add(auth, username, key, comment):
     write_to_file(authorized_keys_file, authorized_keys_content)
 
 
-def ssh_authorized_keys_remove(auth, username, key):
-    user = _get_user(auth, username, ["homeDirectory", "uid"])
+def user_ssh_remove_key(auth, username, key):
+    user = _get_user_for_ssh(auth, username, ["homeDirectory", "uid"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
@@ -100,3 +135,60 @@ def ssh_authorized_keys_remove(auth, username, key):
     authorized_keys_content = authorized_keys_content.replace(key, "")
 
     write_to_file(authorized_keys_file, authorized_keys_content)
+
+#
+# Helpers
+#
+
+
+def _get_user_for_ssh(auth, username, attrs=None):
+    def ssh_root_login_status(auth):
+        # XXX temporary placed here for when the ssh_root commands are integrated
+        # extracted from https://github.com/YunoHost/yunohost/pull/345
+        # XXX should we support all the options?
+        # this is the content of "man sshd_config"
+        # PermitRootLogin
+        #     Specifies whether root can log in using ssh(1).  The argument must be
+        #     “yes”, “without-password”, “forced-commands-only”, or “no”.  The
+        #     default is “yes”.
+        sshd_config_content = read_file(SSHD_CONFIG_PATH)
+
+        if re.search("^ *PermitRootLogin +(no|forced-commands-only) *$",
+                     sshd_config_content, re.MULTILINE):
+            return {"PermitRootLogin": False}
+
+        return {"PermitRootLogin": True}
+
+    if username == "root":
+        root_unix = pwd.getpwnam("root")
+        return {
+            'username': 'root',
+            'fullname': '',
+            'mail': '',
+            'ssh_allowed': ssh_root_login_status(auth)["PermitRootLogin"],
+            'shell': root_unix.pw_shell,
+            'home_path': root_unix.pw_dir,
+        }
+
+    if username == "admin":
+        admin_unix = pwd.getpwnam("admin")
+        return {
+            'username': 'admin',
+            'fullname': '',
+            'mail': '',
+            'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
+            'shell': admin_unix.pw_shell,
+            'home_path': admin_unix.pw_dir,
+        }
+
+    # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
+    user = auth.search('ou=users,dc=yunohost,dc=org',
+                       '(&(objectclass=person)(uid=%s))' % username,
+                       attrs)
+
+    assert len(user) in (0, 1)
+
+    if not user:
+        return None
+
+    return user[0]
