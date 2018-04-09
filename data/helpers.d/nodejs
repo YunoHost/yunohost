@@ -122,7 +122,7 @@ ynh_install_nodejs () {
 #
 # usage: ynh_remove_nodejs
 ynh_remove_nodejs () {
-	ynh_use_nodejs
+	nodejs_version=$(ynh_app_setting_get $app nodejs_version)
 
 	# Remove the line for this app
 	sed --in-place "/$YNH_APP_ID:$nodejs_version/d" "$n_install_dir/ynh_app_version"
@@ -130,7 +130,7 @@ ynh_remove_nodejs () {
 	# If no other app uses this version of nodejs, remove it.
 	if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"
 	then
-		n rm $nodejs_version
+		$n_install_dir/bin/n rm $nodejs_version
 	fi
 
 	# If no other app uses n, remove n
