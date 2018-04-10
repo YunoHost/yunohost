@@ -124,6 +124,7 @@ def log_display(file_name_list):
         logger.error(m18n.n('log_does_exists', log="', '".join(file_name_list)))
 
     if len(result['logs']) > 0:
+        result['logs'] = sorted(result['logs'], key=lambda operation: operation['started_at'])
         return result
 
 class Journal(object):
