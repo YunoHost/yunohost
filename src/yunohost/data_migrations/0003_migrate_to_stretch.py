@@ -16,6 +16,7 @@ from yunohost.tools import Migration
 from yunohost.app import unstable_apps
 from yunohost.service import _run_service_command, service_regen_conf, manually_modified_files
 from yunohost.utils.filesystem import free_space_in_directory
+from yunohost.utils.packages import get_installed_version
 
 logger = getActionLogger('yunohost.migration')
 
@@ -70,10 +71,17 @@ class MyMigration(Migration):
     def debian_major_version(self):
         return int(platform.dist()[1][0])
 
+    def yunohost_major_version(self):
+        return int(get_installed_version("yunohost").split('.')[0])
+
     def check_assertions(self):
 
-        # Be on jessie
-        if not self.debian_major_version() == 8:
+        # Be on jessie (8.x) and yunohost 2.x
+        # NB : we do both check to cover situations where the upgrade crashed
+        # in the middle and debian version could be >= 9.x but yunohost package
+        # would still be in 2.x...
+        if not self.debian_major_version() == 8 \
+        and not self.yunohost_major_version() == 2:
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
         # Have > 1 Go free space on /var/ ?
@@ -90,8 +98,12 @@ class MyMigration(Migration):
     def disclaimer(self):
 
         # Avoid having a super long disclaimer + uncessary check if we ain't
-        # on jessie anymore
-        if not self.debian_major_version() == 8:
+        # on jessie / yunohost 2.x anymore
+        # NB : we do both check to cover situations where the upgrade crashed
+        # in the middle and debian version could be >= 9.x but yunohost package
+        # would still be in 2.x...
+        if not self.debian_major_version() == 8 \
+        and not self.yunohost_major_version() == 2:
             return None
 
         # Get list of problematic apps ? I.e. not official or community+working
