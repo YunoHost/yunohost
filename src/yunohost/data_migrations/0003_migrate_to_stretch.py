@@ -56,7 +56,7 @@ class MyMigration(Migration):
         self.unhold(["fail2ban"])
         os.system("mv /etc/fail2ban /etc/fail2ban.old")
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
-        _run_service_command("restart", "mysql")
+        _run_service_command("restart", "fail2ban")
 
         # Clean the mess
         os.system("apt autoremove --assume-yes")
