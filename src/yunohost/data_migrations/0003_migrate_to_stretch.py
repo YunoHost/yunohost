@@ -54,7 +54,11 @@ class MyMigration(Migration):
         # Specific upgrade for fail2ban...
         logger.warning(m18n.n("migration_0003_fail2ban_upgrade"))
         self.unhold(["fail2ban"])
-        os.system("mv /etc/fail2ban /etc/fail2ban.old")
+        # Don't move this if folder already exists. If it does, we probably are
+        # running this script a 2nd, 3rd, ... time but /etc/fail2ban will
+        # be re-created only for the first dist-upgrade of fail2ban
+        if not os.path.exists("/etc/fail2ban.old"):
+            os.system("mv /etc/fail2ban /etc/fail2ban.old")
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "fail2ban")
 
