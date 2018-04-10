@@ -62,11 +62,11 @@ def log_list(limit=None):
             operation = operation[:-len(OPERATION_FILE_EXT)]
             operation = operation.split("_")
 
-            operation_datetime = datetime.strptime(" ".join(operation[-2:]), "%Y-%m-%d %H-%M-%S")
+            operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y-%m-%d %H-%M-%S")
 
             result["categories"][-1]["logs"].append({
                 "started_at": operation_datetime,
-                "name": " ".join(operation[:-2]),
+                "name": " ".join(operation[-2:]),
                 "file_name": file_name,
                 "path": os.path.join(OPERATIONS_PATH, category, file_name),
             })
@@ -105,7 +105,7 @@ def log_display(file_name_list):
 
                 operation = operation[:-len(OPERATION_FILE_EXT)]
                 operation = operation.split("_")
-                operation_datetime = datetime.strptime(" ".join(operation[-2:]), "%Y-%m-%d %H-%M-%S")
+                operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y-%m-%d %H-%M-%S")
 
                 infos, logs = content.split("\n---\n", 1)
                 infos = yaml.safe_load(infos)
@@ -113,14 +113,13 @@ def log_display(file_name_list):
 
                 result['logs'].append({
                     "started_at": operation_datetime,
-                    "name": " ".join(operation[:-2]),
+                    "name": " ".join(operation[-2:]),
                     "file_name": file_name,
                     "path": os.path.join(OPERATIONS_PATH, category, file_name),
                     "metadata": infos,
                     "logs": logs,
                 })
 
-    logger.debug("====> %s", len(file_name_list), exc_info=1)
     if len(file_name_list) > 0 and len(result['logs']) < len(file_name_list):
         logger.error(m18n.n('log_does_exists', log="', '".join(file_name_list)))
 
@@ -165,7 +164,7 @@ class Journal(object):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
-        file_name = "%s_%s" % (self.name if isinstance(self.name, basestring) else "_".join(self.name), self.started_at.strftime("%F_%X").replace(":", "-"))
+        file_name = "%s_%s" % (self.started_at.strftime("%F_%X").replace(":", "-"), self.name if isinstance(self.name, basestring) else "_".join(self.name))
         file_name += OPERATION_FILE_EXT
 
         serialized_additional_information = yaml.safe_dump(self.additional_information, default_flow_style=False)
