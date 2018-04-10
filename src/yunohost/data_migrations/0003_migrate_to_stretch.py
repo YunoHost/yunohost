@@ -90,7 +90,7 @@ class MyMigration(Migration):
 
         # Check system is up to date
         self.apt_update()
-        apt_list_upgradable = check_output("apt list --upgradable".split())
+        apt_list_upgradable = check_output("apt list --upgradable -a")
         if "upgradable" in apt_list_upgradable:
             raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
 
