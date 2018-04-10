@@ -227,14 +227,26 @@ class MyMigration(Migration):
 
     def backup_files_to_keep(self):
 
+        logger.debug("Backuping specific files to keep ...")
+
+        # Create tmp directory if it does not exists
         tmp_dir = os.path.join("/tmp/", self.name)
-        os.mkdir(tmp_dir, 0700)
+        if not os.path.exists(tmp_dir):
+            os.mkdir(tmp_dir, 0700)
 
         for f in self.files_to_keep:
             dest_file = f.strip('/').replace("/", "_")
+
+            # If the file is already there, we might be re-running the migration
+            # because it previously crashed. Hence we keep the existing file.
+            if os.path.exists(os.path.join(tmp_dir, dest_file)):
+                continue
+
             copy2(f, os.path.join(tmp_dir, dest_file))
 
     def restore_files_to_keep(self):
+
+        logger.debug("Restoring specific files to keep ...")
 
         tmp_dir = os.path.join("/tmp/", self.name)
 
