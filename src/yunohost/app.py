@@ -542,7 +542,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.log import Journal
 
     # Retrieve interface
     is_api = msettings.get('interface') == 'api'

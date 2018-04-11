@@ -359,6 +359,12 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         logger.info(m18n.n('executing_script', script=path))
 
+    # Define output callbacks and call command
+    callbacks = (
+        lambda l: logger.info(l.rstrip()),
+        lambda l: logger.warning(l.rstrip()),
+    )
+
     returncode = call_async_output(
         command, callbacks, shell=False, cwd=chdir
     )
