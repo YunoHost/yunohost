@@ -658,6 +658,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     if is_api:
         return {"log": service_log('yunohost-api', number="100").values()[0]}
 
+
 def app_install(auth, app, label=None, args=None, no_remove_on_failure=False, **kwargs):
     """
     Install apps

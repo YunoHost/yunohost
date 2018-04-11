@@ -364,7 +364,6 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         lambda l: logger.info(l.rstrip()),
         lambda l: logger.warning(l.rstrip()),
     )
-
     returncode = call_async_output(
         command, callbacks, shell=False, cwd=chdir
     )
