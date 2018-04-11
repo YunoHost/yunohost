@@ -44,6 +44,7 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.app')
 
@@ -838,7 +839,6 @@ def app_remove(auth, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
-    from yunohost.log import Journal
 
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
