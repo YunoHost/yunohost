@@ -54,7 +54,7 @@ def log_list(limit=None):
         return result
 
     for category in sorted(os.listdir(OPERATIONS_PATH)):
-        result["categories"].append({"name": category, "logs": []})
+        result["categories"].append({"name": category, "operations": []})
         for operation in filter(lambda x: x.endswith(OPERATION_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
 
             file_name = operation
@@ -64,17 +64,17 @@ def log_list(limit=None):
 
             operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y-%m-%d %H-%M-%S")
 
-            result["categories"][-1]["logs"].append({
+            result["categories"][-1]["operations"].append({
                 "started_at": operation_datetime,
                 "name": " ".join(operation[-2:]),
                 "file_name": file_name,
                 "path": os.path.join(OPERATIONS_PATH, category, file_name),
             })
 
-        result["categories"][-1]["logs"] = list(reversed(sorted(result["categories"][-1]["logs"], key=lambda x: x["started_at"])))
+        result["categories"][-1]["operations"] = list(reversed(sorted(result["categories"][-1]["operations"], key=lambda x: x["started_at"])))
 
         if limit is not None:
-            result["categories"][-1]["logs"] = result["categories"][-1]["logs"][:limit]
+            result["categories"][-1]["operations"] = result["categories"][-1]["operations"][:limit]
 
     return result
 
@@ -91,7 +91,7 @@ def log_display(file_name_list):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('log_does_exists', log=" ".join(file_name_list)))
 
-    result = {"logs": []}
+    result = {"operations": []}
 
     for category in os.listdir(OPERATIONS_PATH):
         for operation in filter(lambda x: x.endswith(OPERATION_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
@@ -111,7 +111,7 @@ def log_display(file_name_list):
                 infos = yaml.safe_load(infos)
                 logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
 
-                result['logs'].append({
+                result['operations'].append({
                     "started_at": operation_datetime,
                     "name": " ".join(operation[-2:]),
                     "file_name": file_name,
@@ -120,11 +120,11 @@ def log_display(file_name_list):
                     "logs": logs,
                 })
 
-    if len(file_name_list) > 0 and len(result['logs']) < len(file_name_list):
+    if len(file_name_list) > 0 and len(result['operations']) < len(file_name_list):
         logger.error(m18n.n('log_does_exists', log="', '".join(file_name_list)))
 
-    if len(result['logs']) > 0:
-        result['logs'] = sorted(result['logs'], key=lambda operation: operation['started_at'])
+    if len(result['operations']) > 0:
+        result['operations'] = sorted(result['operations'], key=lambda operation: operation['started_at'])
         return result
 
 class Journal(object):
