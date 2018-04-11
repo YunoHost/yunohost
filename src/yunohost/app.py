@@ -786,7 +786,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove, user="root",
                     journal = Journal(
-                        ["remove", app_instance_name, "failed install"],
+                        ["remove", app_instance_name, "failed_install"],
                         "app", args=[app_instance_name], env=env_dict_remove,
                     ),
                 )
