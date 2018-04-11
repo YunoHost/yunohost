@@ -38,6 +38,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
 from yunohost.hook import hook_callback
+from yunohost.log import is_unit_operation
 
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
@@ -141,7 +142,7 @@ def service_stop(names):
                                       m18n.n('service_stop_failed', service=name))
             logger.info(m18n.n('service_already_stopped', service=name))
 
-
+@is_unit_operation()
 def service_enable(names):
     """
     Enable one or more services

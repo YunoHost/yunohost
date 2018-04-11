@@ -422,6 +422,7 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
+@is_unit_operation()
 def app_change_url(auth, app, domain, path):
     """
     Modify the URL at which an application is installed.
@@ -433,7 +434,6 @@ def app_change_url(auth, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
-    from yunohost.log import Journal
 
     installed = _is_installed(app)
     if not installed:
@@ -497,8 +497,7 @@ def app_change_url(auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
-    journal = Journal(["change_url", app], "app", args=args_list, env=env_dict)
-    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root", journal=journal) != 0:
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root") != 0:
         logger.error("Failed to change '%s' url." % app)
 
         # restore values modified by app_checkurl
@@ -531,6 +530,7 @@ def app_change_url(auth, app, domain, path):
     hook_callback('post_app_change_url', args=args_list, env=env_dict)
 
 
+@is_unit_operation()
 def app_upgrade(auth, app=[], url=None, file=None):
     """
     Upgrade app
@@ -616,8 +616,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
-        journal = Journal(["upgrade", app_instance_name], "app", args=args_list, env=env_dict)
-        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root", journal=journal) != 0:
+        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
             logger.error(m18n.n('app_upgrade_failed', app=app_instance_name))
         else:
             now = int(time.time())
@@ -660,8 +659,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     if is_api:
         return {"log": service_log('yunohost-api', number="100").values()[0]}
 
-
-def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
+def app_install(auth, app, label=None, args=None, no_remove_on_failure=False, **kwargs):
     """
     Install apps
 
@@ -673,7 +671,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.log import Journal
+    from yunohost.log import UnitOperationHandler
+
+    uo_install = UnitOperationHandler('app_install', 'app', args=kwargs)
 
     # Fetch or extract sources
     try:
@@ -762,11 +762,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict, user="root",
-            journal = Journal(
-                ["install", app_instance_name],
-                "app", args=args_list, env=env_dict
-            ),
+            args=args_list, env=env_dict, user="root"
         )
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
@@ -774,6 +770,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
+            uo_install.close()
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -782,17 +779,18 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
                 env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
                 # Execute remove script
+                uo_remove = UnitOperationHandler('remove_on_failed_install',
+                                                 'app', args=env_dict_remove)
+
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
-                    args=[app_instance_name], env=env_dict_remove, user="root",
-                    journal = Journal(
-                        ["remove", app_instance_name, "failed_install"],
-                        "app", args=[app_instance_name], env=env_dict_remove,
-                    ),
+                    args=[app_instance_name], env=env_dict_remove, user="root"
                 )
                 if remove_retcode != 0:
                     logger.warning(m18n.n('app_not_properly_removed',
                                           app=app_instance_name))
+
+                uo_remove.close()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
@@ -827,7 +825,10 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     hook_callback('post_app_install', args=args_list, env=env_dict)
 
+    uo_install.close()
 
+
+@is_unit_operation()
 def app_remove(auth, app):
     """
     Remove app
@@ -863,8 +864,7 @@ def app_remove(auth, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-    journal = Journal(["remove", app], "app", args=args_list, env=env_dict)
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root", journal=journal) == 0:
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
 
         hook_callback('post_app_remove', args=args_list, env=env_dict)

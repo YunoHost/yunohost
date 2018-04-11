@@ -27,8 +27,11 @@
 import os
 import yaml
 import errno
+import logging
 
 from datetime import datetime
+from logging import StreamHandler, getLogger, Formatter
+from sys import exc_info
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -38,7 +41,6 @@ OPERATIONS_PATH = '/var/log/yunohost/operation/'
 OPERATION_FILE_EXT = '.yml'
 
 logger = getActionLogger('yunohost.log')
-
 
 def log_list(limit=None):
     """
@@ -127,71 +129,105 @@ def log_display(file_name_list):
         result['operations'] = sorted(result['operations'], key=lambda operation: operation['started_at'])
         return result
 
-class Journal(object):
-    def __init__(self, name, category, on_stdout=None, on_stderr=None, on_write=None, **kwargs):
+def is_unit_operation(categorie=None, description_key=None):
+    def decorate(func):
+        def func_wrapper(*args, **kwargs):
+            cat = categorie
+            desc_key = description_key
+
+            if cat is None:
+                cat = func.__module__.split('.')[1]
+            if desc_key is None:
+                desc_key = func.__name__
+            uo = UnitOperationHandler(desc_key, cat, args=kwargs)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                uo.close(exc_info()[0])
+            return result
+        return func_wrapper
+    return decorate
+
+class UnitOperationHandler(StreamHandler):
+    def __init__(self, name, category, **kwargs):
         # TODO add a way to not save password on app installation
-        self.name = name
+        self._name = name
         self.category = category
         self.first_write = True
+        self.closed = False
 
         # this help uniformise file name and avoir threads concurrency errors
         self.started_at = datetime.now()
 
         self.path = os.path.join(OPERATIONS_PATH, category)
 
-        self.fd = None
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
 
-        self.on_stdout = [] if on_stdout is None else on_stdout
-        self.on_stderr = [] if on_stderr is None else on_stderr
-        self.on_write = [] if on_write is None else on_write
+        self.filename = "%s_%s" % (self.started_at.strftime("%F_%X").replace(":", "-"), self._name if isinstance(self._name, basestring) else "_".join(self._name))
+        self.filename += OPERATION_FILE_EXT
 
         self.additional_information = kwargs
 
-    def __del__(self):
-        if self.fd:
-            self.fd.close()
+        logging.StreamHandler.__init__(self, self._open())
 
-    def write(self, line):
+        self.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
+
+        if self.stream is None:
+            self.stream = self._open()
+
+        # Listen to the root logger
+        self.logger = getLogger('yunohost')
+        self.logger.addHandler(self)
+
+
+    def _open(self):
+        stream = open(os.path.join(self.path, self.filename), "w")
+        return stream
+
+    def close(self, error=None):
+        """
+        Closes the stream.
+        """
+        if self.closed:
+            return
+        self.acquire()
+        #self.ended_at = datetime.now()
+        #self.error = error
+        #self.stream.seek(0)
+        #context = {
+        #    'ended_at': datetime.now()
+        #}
+        #if error is not None:
+        #    context['error'] = error
+        #self.stream.write(yaml.safe_dump(context))
+        self.logger.removeHandler(self)
+        try:
+            if self.stream:
+                try:
+                    self.flush()
+                finally:
+                    stream = self.stream
+                    self.stream = None
+                    if hasattr(stream, "close"):
+                        stream.close()
+        finally:
+            self.release()
+            self.closed = True
+
+    def __del__(self):
+        self.close()
+
+    def emit(self, record):
         if self.first_write:
             self._do_first_write()
             self.first_write = False
 
-        self.fd.write("%s: " % datetime.now().strftime("%F %X"))
-        self.fd.write(line.rstrip())
-        self.fd.write("\n")
-        self.fd.flush()
+        StreamHandler.emit(self, record)
 
     def _do_first_write(self):
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
-        file_name = "%s_%s" % (self.started_at.strftime("%F_%X").replace(":", "-"), self.name if isinstance(self.name, basestring) else "_".join(self.name))
-        file_name += OPERATION_FILE_EXT
 
         serialized_additional_information = yaml.safe_dump(self.additional_information, default_flow_style=False)
 
-        self.fd = open(os.path.join(self.path, file_name), "w")
-
-        self.fd.write(serialized_additional_information)
-        self.fd.write("\n---\n")
-
-    def stdout(self, line):
-        for i in self.on_stdout:
-            i(line)
-
-        self.write(line)
-
-    def stderr(self, line):
-        for i in self.on_stderr:
-            i(line)
-
-        self.write(line)
-
-    def as_callbacks_tuple(self, stdout=None, stderr=None):
-        if stdout:
-            self.on_stdout.append(stdout)
-
-        if stderr:
-            self.on_stderr.append(stderr)
-
-        return (self.stdout, self.stderr)
+        self.stream.write(serialized_additional_information)
+        self.stream.write("\n---\n")
