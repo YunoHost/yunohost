@@ -49,7 +49,7 @@ from yunohost.utils.network import get_public_ip
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command, service_regen_conf
-
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.certmanager')
 

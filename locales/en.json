@@ -206,6 +206,7 @@
     "ip6tables_unavailable": "You cannot play with ip6tables here. You are either in a container or your kernel does not support it",
     "iptables_unavailable": "You cannot play with iptables here. You are either in a container or your kernel does not support it",
     "log_does_exists": "There is not operation log with the name '{log}', use 'yunohost log list to see all available operation logs'",
+    "log_operation_unit_unclosed_properly": "Operation unit has not been closed properly",
     "ldap_init_failed_to_create_admin": "LDAP initialization failed to create admin user",
     "ldap_initialized": "LDAP has been initialized",
     "license_undefined": "undefined",

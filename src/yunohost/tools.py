@@ -52,6 +52,7 @@ from yunohost.service import service_status, service_regen_conf, service_log, se
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -138,7 +139,8 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-def tools_maindomain(auth, new_domain=None):
+@is_unit_operation('domain', lazy=True)
+def tools_maindomain(uo, auth, new_domain=None):
     """
     Check the current main domain, or change it
 
@@ -154,6 +156,10 @@ def tools_maindomain(auth, new_domain=None):
     # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    uo.on = [new_domain]
+    uo.related_to['domain'] = [new_domain]
+    uo.start()
 
     # Apply changes to ssl certs
     ssl_key = "/etc/ssl/private/yunohost_key.pem"
@@ -244,6 +250,7 @@ def _is_inside_container():
     return out.split()[1] != "(1,"
 
 
+@is_unit_operation()
 def tools_postinstall(domain, password, ignore_dyndns=False):
     """
     YunoHost post-install
@@ -464,7 +471,8 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     return {'packages': packages, 'apps': apps}
 
 
-def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
+@is_unit_operation(lazy=True)
+def tools_upgrade(uo, auth, ignore_apps=False, ignore_packages=False):
     """
     Update apps & package cache, then display changelog
 
@@ -505,6 +513,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
         if cache.get_changes():
             logger.info(m18n.n('upgrading_packages'))
 
+            uo.start()
             try:
                 # Apply APT changes
                 # TODO: Logs output for the API
@@ -514,10 +523,13 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                 failure = True
                 logger.warning('unable to upgrade packages: %s' % str(e))
                 logger.error(m18n.n('packages_upgrade_failed'))
+                uo.error(m18n.n('packages_upgrade_failed'))
             else:
                 logger.info(m18n.n('done'))
+                uo.success()
         else:
             logger.info(m18n.n('packages_no_upgrade'))
+
 
     if not ignore_apps:
         try:
@@ -699,7 +711,8 @@ def tools_port_available(port):
         return False
 
 
-def tools_shutdown(force=False):
+@is_unit_operation(lazy=True)
+def tools_shutdown(uo, force=False):
     shutdown = force
     if not shutdown:
         try:
@@ -712,11 +725,13 @@ def tools_shutdown(force=False):
                 shutdown = True
 
     if shutdown:
+        uo.start()
         logger.warn(m18n.n('server_shutdown'))
         subprocess.check_call(['systemctl', 'poweroff'])
 
 
-def tools_reboot(force=False):
+@is_unit_operation(lazy=True)
+def tools_reboot(uo, force=False):
     reboot = force
     if not reboot:
         try:
@@ -728,6 +743,7 @@ def tools_reboot(force=False):
             if i.lower() == 'y' or i.lower() == 'yes':
                 reboot = True
     if reboot:
+        uo.start()
         logger.warn(m18n.n('server_reboot'))
         subprocess.check_call(['systemctl', 'reboot'])
 

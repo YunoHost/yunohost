@@ -38,6 +38,7 @@ import yunohost.certificate
 
 from yunohost.service import service_regen_conf
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.domain')
 
@@ -62,6 +63,7 @@ def domain_list(auth):
     return {'domains': result_list}
 
 
+@is_unit_operation()
 def domain_add(auth, domain, dyndns=False):
     """
     Create a custom domain
@@ -127,6 +129,7 @@ def domain_add(auth, domain, dyndns=False):
     logger.success(m18n.n('domain_created'))
 
 
+@is_unit_operation()
 def domain_remove(auth, domain, force=False):
     """
     Delete domains

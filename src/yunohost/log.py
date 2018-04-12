@@ -27,10 +27,9 @@
 import os
 import yaml
 import errno
-import logging
 
 from datetime import datetime
-from logging import StreamHandler, getLogger, Formatter
+from logging import FileHandler, getLogger, Formatter
 from sys import exc_info
 
 from moulinette import m18n
@@ -38,7 +37,9 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 OPERATIONS_PATH = '/var/log/yunohost/operation/'
-OPERATION_FILE_EXT = '.yml'
+METADATA_FILE_EXT = '.yml'
+LOG_FILE_EXT = '.log'
+RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
@@ -57,11 +58,11 @@ def log_list(limit=None):
 
     for category in sorted(os.listdir(OPERATIONS_PATH)):
         result["categories"].append({"name": category, "operations": []})
-        for operation in filter(lambda x: x.endswith(OPERATION_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
+        for operation in filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
 
             file_name = operation
 
-            operation = operation[:-len(OPERATION_FILE_EXT)]
+            operation = operation[:-len(METADATA_FILE_EXT)]
             operation = operation.split("_")
 
             operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y-%m-%d %H-%M-%S")
@@ -96,31 +97,27 @@ def log_display(file_name_list):
     result = {"operations": []}
 
     for category in os.listdir(OPERATIONS_PATH):
-        for operation in filter(lambda x: x.endswith(OPERATION_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
+        for operation in filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
             if operation not in file_name_list and file_name_list:
                 continue
 
-            file_name = operation
+            file_name = operation[:-len(METADATA_FILE_EXT)]
+            operation = file_name.split("_")
 
-            with open(os.path.join(OPERATIONS_PATH, category, file_name), "r") as content:
-                content = content.read()
+            with open(os.path.join(OPERATIONS_PATH, category, file_name + METADATA_FILE_EXT), "r") as md_file:
+                try:
+                    infos = yaml.safe_load(md_file)
+                except yaml.YAMLError as exc:
+                    print(exc)
 
-                operation = operation[:-len(OPERATION_FILE_EXT)]
-                operation = operation.split("_")
-                operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y-%m-%d %H-%M-%S")
-
-                infos, logs = content.split("\n---\n", 1)
-                infos = yaml.safe_load(infos)
+            with open(os.path.join(OPERATIONS_PATH, category, file_name + LOG_FILE_EXT), "r") as content:
+                logs = content.read()
                 logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
-
-                result['operations'].append({
-                    "started_at": operation_datetime,
-                    "name": " ".join(operation[-2:]),
-                    "file_name": file_name,
-                    "path": os.path.join(OPERATIONS_PATH, category, file_name),
-                    "metadata": infos,
-                    "logs": logs,
-                })
+            infos['logs'] = logs
+            infos['name'] = " ".join(operation[-2:])
+            infos['file_name'] = file_name + METADATA_FILE_EXT
+            infos['path'] = os.path.join(OPERATIONS_PATH, category, file_name)
+            result['operations'].append(infos)
 
     if len(file_name_list) > 0 and len(result['operations']) < len(file_name_list):
         logger.error(m18n.n('log_does_exists', log="', '".join(file_name_list)))
@@ -129,105 +126,133 @@ def log_display(file_name_list):
         result['operations'] = sorted(result['operations'], key=lambda operation: operation['started_at'])
         return result
 
-def is_unit_operation(categorie=None, description_key=None):
+def is_unit_operation(categorie=None, operation_key=None, lazy=False):
     def decorate(func):
         def func_wrapper(*args, **kwargs):
             cat = categorie
-            desc_key = description_key
+            op_key = operation_key
+            on = None
+            related_to = {}
+            inject = lazy
+            to_start = not lazy
 
             if cat is None:
                 cat = func.__module__.split('.')[1]
-            if desc_key is None:
-                desc_key = func.__name__
-            uo = UnitOperationHandler(desc_key, cat, args=kwargs)
+            if op_key is None:
+                op_key = func.__name__
+            if cat in kwargs:
+                on = kwargs[cat]
+            for r_category in RELATED_CATEGORIES:
+                if r_category in kwargs and kwargs[r_category] is not None:
+                    if r_category not in related_to:
+                        related_to[r_category] = []
+                    if isinstance(kwargs[r_category], basestring):
+                        related_to[r_category] += [kwargs[r_category]]
+                    else:
+                        related_to[r_category] += kwargs[r_category]
+            context = kwargs.copy()
+            if 'auth' in context:
+                context.pop('auth', None)
+            uo = UnitOperation(op_key, cat, on, related_to, args=context)
+            if to_start:
+                uo.start()
             try:
+                if inject:
+                    args = (uo,) + args
                 result = func(*args, **kwargs)
             finally:
-                uo.close(exc_info()[0])
+                if uo.started_at is not None:
+                    uo.close(exc_info()[0])
             return result
         return func_wrapper
     return decorate
 
-class UnitOperationHandler(StreamHandler):
-    def __init__(self, name, category, **kwargs):
+class UnitOperation(object):
+    def __init__(self, operation, category, on=None, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
-        self._name = name
+        self.operation = operation
         self.category = category
-        self.first_write = True
-        self.closed = False
+        self.on = on
+        if isinstance(self.on, basestring):
+            self.on = [self.on]
 
-        # this help uniformise file name and avoir threads concurrency errors
-        self.started_at = datetime.now()
+        self.related_to = related_to
+        if related_to is None:
+            if self.category in RELATED_CATEGORIES:
+                self.related_to = {self.category: self.on}
+        self.extra = kwargs
+        self.started_at = None
+        self.ended_at = None
+        self.logger = None
 
         self.path = os.path.join(OPERATIONS_PATH, category)
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
 
-        self.filename = "%s_%s" % (self.started_at.strftime("%F_%X").replace(":", "-"), self._name if isinstance(self._name, basestring) else "_".join(self._name))
-        self.filename += OPERATION_FILE_EXT
+    def start(self):
+        if self.started_at is None:
+            self.started_at = datetime.now()
+            self.flush()
+            self._register_log()
 
-        self.additional_information = kwargs
-
-        logging.StreamHandler.__init__(self, self._open())
-
-        self.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
-
-        if self.stream is None:
-            self.stream = self._open()
+    def _register_log(self):
+        # TODO add a way to not save password on app installation
+        filename = os.path.join(self.path, self.name + LOG_FILE_EXT)
+        self.file_handler = FileHandler(filename)
+        self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
 
         # Listen to the root logger
         self.logger = getLogger('yunohost')
-        self.logger.addHandler(self)
+        self.logger.addHandler(self.file_handler)
 
+    def flush(self):
+        filename = os.path.join(self.path, self.name + METADATA_FILE_EXT)
+        with open(filename, 'w') as outfile:
+            yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
 
-    def _open(self):
-        stream = open(os.path.join(self.path, self.filename), "w")
-        return stream
+    @property
+    def name(self):
+        name = [self.started_at.strftime("%F_%X").replace(":", "-")]
+        name += [self.operation]
+        if self.on is not None:
+            name += self.on
+        return '_'.join(name)
 
-    def close(self, error=None):
-        """
-        Closes the stream.
-        """
-        if self.closed:
-            return
-        self.acquire()
-        #self.ended_at = datetime.now()
-        #self.error = error
-        #self.stream.seek(0)
-        #context = {
-        #    'ended_at': datetime.now()
-        #}
-        #if error is not None:
-        #    context['error'] = error
-        #self.stream.write(yaml.safe_dump(context))
-        self.logger.removeHandler(self)
-        try:
-            if self.stream:
-                try:
-                    self.flush()
-                finally:
-                    stream = self.stream
-                    self.stream = None
-                    if hasattr(stream, "close"):
-                        stream.close()
-        finally:
-            self.release()
-            self.closed = True
+    @property
+    def metadata(self):
+        data = {
+            'started_at': self.started_at,
+            'operation': self.operation,
+            'related_to': self.related_to
+        }
+        if self.on is not None:
+            data['on'] = self.on
+        if self.ended_at is not None:
+            data['ended_at'] = self.ended_at
+            data['success'] = self._success
+            if self.error is not None:
+                data['error'] = self._error
+                # TODO: detect if 'extra' erase some key of 'data'
+        data.update(self.extra)
+        return data
 
-    def __del__(self):
+    def success(self):
         self.close()
 
-    def emit(self, record):
-        if self.first_write:
-            self._do_first_write()
-            self.first_write = False
+    def error(self, error):
+        self.close(error)
 
-        StreamHandler.emit(self, record)
+    def close(self, error=None):
+        if self.ended_at is not None or self.started_at is None:
+            return
+        self.ended_at = datetime.now()
+        self._error = error
+        self._success = error is None
+        if self.logger is not None:
+            self.logger.removeHandler(self.file_handler)
+        self.flush()
 
-    def _do_first_write(self):
+    def __del__(self):
+        self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
-        serialized_additional_information = yaml.safe_dump(self.additional_information, default_flow_style=False)
-
-        self.stream.write(serialized_additional_information)
-        self.stream.write("\n---\n")

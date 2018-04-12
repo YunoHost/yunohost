@@ -41,6 +41,7 @@ from moulinette.utils.network import download_json
 
 from yunohost.domain import _get_maindomain, _build_dns_conf
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.dyndns')
 
@@ -113,7 +114,8 @@ def _dyndns_available(provider, domain):
     return r == u"Domain %s is available" % domain
 
 
-def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
+@is_unit_operation('domain', lazy=True)
+def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
 
@@ -125,6 +127,10 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     """
     if domain is None:
         domain = _get_maindomain()
+
+    uo.on = [domain]
+    uo.related_to['domain'] = [domain]
+    uo.start()
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
@@ -170,7 +176,8 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     dyndns_installcron()
 
 
-def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
+@is_unit_operation('domain',lazy=True)
+def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """
     Update IP on DynDNS platform
@@ -212,6 +219,9 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         return
     else:
         logger.info("Updated needed, going on...")
+        uo.on = [domain]
+        uo.related_to['domain'] = [domain]
+        uo.start()
 
     # If domain is not given, try to guess it from keys available...
     if domain is None:
