@@ -60,18 +60,19 @@ def log_list(limit=None):
         result["categories"].append({"name": category, "operations": []})
         for operation in filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
 
-            file_name = operation
+            base_filename = operation[:-len(METADATA_FILE_EXT)]
+            md_filename = operation
+            md_path = os.path.join(OPERATIONS_PATH, category, md_filename)
 
-            operation = operation[:-len(METADATA_FILE_EXT)]
-            operation = operation.split("-")
+            operation = base_filename.split("-")
 
             operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y%m%d %H%M%S")
 
             result["categories"][-1]["operations"].append({
                 "started_at": operation_datetime,
-                "name": m18n.n("log_" + operation[2], *operation[3:]),
-                "file_name": file_name,
-                "path": os.path.join(OPERATIONS_PATH, category, file_name),
+                "description": m18n.n("log_" + operation[2], *operation[3:]),
+                "name": base_filename,
+                "path": md_path,
             })
 
         result["categories"][-1]["operations"] = list(reversed(sorted(result["categories"][-1]["operations"], key=lambda x: x["started_at"])))
@@ -101,22 +102,26 @@ def log_display(file_name_list):
             if operation not in file_name_list and file_name_list:
                 continue
 
-            file_name = operation[:-len(METADATA_FILE_EXT)]
-            operation = file_name.split("_")
+            base_filename = operation[:-len(METADATA_FILE_EXT)]
+            md_filename = operation
+            md_path = os.path.join(OPERATIONS_PATH, category, md_filename)
+            log_filename = base_filename + LOG_FILE_EXT
+            log_path = os.path.join(OPERATIONS_PATH, category, log_filename)
+            operation = base_filename.split("-")
 
-            with open(os.path.join(OPERATIONS_PATH, category, file_name + METADATA_FILE_EXT), "r") as md_file:
+            with open(md_path, "r") as md_file:
                 try:
                     infos = yaml.safe_load(md_file)
                 except yaml.YAMLError as exc:
                     print(exc)
 
-            with open(os.path.join(OPERATIONS_PATH, category, file_name + LOG_FILE_EXT), "r") as content:
+            with open(log_path, "r") as content:
                 logs = content.read()
                 logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
             infos['logs'] = logs
-            infos['name'] = " ".join(operation[-2:])
-            infos['file_name'] = file_name + METADATA_FILE_EXT
-            infos['path'] = os.path.join(OPERATIONS_PATH, category, file_name)
+            infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
+            infos['name'] = base_filename
+            infos['log_path'] = log_path
             result['operations'].append(infos)
 
     if len(file_name_list) > 0 and len(result['operations']) < len(file_name_list):
