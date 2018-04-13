@@ -63,13 +63,13 @@ def log_list(limit=None):
             file_name = operation
 
             operation = operation[:-len(METADATA_FILE_EXT)]
-            operation = operation.split("_")
+            operation = operation.split("-")
 
-            operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y-%m-%d %H-%M-%S")
+            operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y%m%d %H%M%S")
 
             result["categories"][-1]["operations"].append({
                 "started_at": operation_datetime,
-                "name": " ".join(operation[-2:]),
+                "name": m18n.n("log_" + operation[2], *operation[3:]),
                 "file_name": file_name,
                 "path": os.path.join(OPERATIONS_PATH, category, file_name),
             })
@@ -213,11 +213,11 @@ class UnitOperation(object):
 
     @property
     def name(self):
-        name = [self.started_at.strftime("%F_%X").replace(":", "-")]
+        name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
         if self.on is not None:
             name += self.on
-        return '_'.join(name)
+        return '-'.join(name)
 
     @property
     def metadata(self):
