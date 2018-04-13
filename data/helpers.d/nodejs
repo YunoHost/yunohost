@@ -1,5 +1,5 @@
 n_install_dir="/opt/node_n"
-node_version_path="/opt/node_n/n/versions/node"
+node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
 export N_PREFIX="$n_install_dir"
 
@@ -29,28 +29,21 @@ SOURCE_SUM=2ba3c9d4dd3c7e38885b37e02337906a1ee91febe6d5c9159d89a9050f2eea8f" > "
 #   - $nodejs_path: The absolute path of node for the chosen version.
 #   - $nodejs_version: Just the version number of node for this app. Stored as 'nodejs_version' in settings.yml.
 # And 2 alias stored in variables:
-#   - $nodejs_use_version: An alias to load a node version in the current shell. Especially useful for systemd.
+#   - $nodejs_use_version: An old variable, not used anymore. Keep here to not break old apps
 #     NB: $PATH will contain the path to node, it has to be propagated to any other shell which needs to use it.
-#   - $ynh_node_exec: An alias to execute a command with node.
+#     That's means it has to be added to any systemd script.
 #
 # usage: ynh_use_nodejs
 ynh_use_nodejs () {
 	nodejs_version=$(ynh_app_setting_get $app nodejs_version)
 
-	# Add "$n_install_dir/bin" to the PATH variable if it isn't already added.
-	# And define N_PREFIX in the current shell.
-	load_n_path="[[ :$PATH: == *\":$n_install_dir/bin:\"* ]] || PATH=\"$n_install_dir/bin:$PATH\"; N_PREFIX="$n_install_dir""
-
-	nodejs_use_version="$n_install_dir/bin/n -q $nodejs_version"
-
-	# "Load" a version of node
-	eval $load_n_path; $nodejs_use_version
+	nodejs_use_version="echo \"Deprecated command, should be removed\""
 
 	# Get the absolute path of this version of node
-	nodejs_path="$(n bin $nodejs_version)"
+	nodejs_path="$node_version_path/$nodejs_version/bin"
 
-	# Make an alias for node use
-	ynh_node_exec="eval $load_n_path; n use $nodejs_version"
+	# Load the path of this version of node in $PATH
+	[[ :$PATH: == *":$nodejs_path"* ]] || PATH="$nodejs_path:$PATH"
 }
 
 # Install a specific version of nodejs
@@ -81,7 +74,7 @@ ynh_install_nodejs () {
 	test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
 
 	# If n is not previously setup, install it
-	if ! test $(n --version) > /dev/null 2>&1
+	if ! test $(n --version > /dev/null 2>&1)
 	then
 		ynh_install_n
 	fi
@@ -129,7 +122,7 @@ ynh_install_nodejs () {
 #
 # usage: ynh_remove_nodejs
 ynh_remove_nodejs () {
-	ynh_use_nodejs
+	nodejs_version=$(ynh_app_setting_get $app nodejs_version)
 
 	# Remove the line for this app
 	sed --in-place "/$YNH_APP_ID:$nodejs_version/d" "$n_install_dir/ynh_app_version"
@@ -137,7 +130,7 @@ ynh_remove_nodejs () {
 	# If no other app uses this version of nodejs, remove it.
 	if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"
 	then
-		n rm $nodejs_version
+		$n_install_dir/bin/n rm $nodejs_version
 	fi
 
 	# If no other app uses n, remove n
