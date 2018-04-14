@@ -296,6 +296,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
         except Exception as e:
+            _display_debug_information(domain)
             logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
 
 
@@ -564,6 +565,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                 'certmanager_hit_rate_limit', domain=domain))
         else:
             logger.error(str(e))
+            _display_debug_information(domain)
             raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_cert_signing_failed'))
 
@@ -850,6 +852,30 @@ def _domain_is_accessible_through_HTTP(ip, domain):
         return False
 
     return True
+
+
+def _get_local_dns_ip(domain):
+    try:
+        resolver = dns.resolver.Resolver()
+        answers = resolver.query(domain, "A")
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+        logger.warning("Failed to resolved domain '%s' locally", domain)
+        return None
+
+    return str(answers[0])
+
+
+def _display_debug_information(domain):
+    dns_ip = _get_dns_ip(domain)
+    public_ip = get_public_ip()
+    local_dns_ip = _get_local_dns_ip(domain)
+
+    logger.warning("""\
+Debug information:
+ - domain ip from DNS        %s
+ - domain ip from local DNS  %s
+ - public ip of the server   %s
+""", dns_ip, local_dns_ip, public_ip)
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
