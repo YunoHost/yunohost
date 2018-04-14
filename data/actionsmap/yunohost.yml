@@ -1614,16 +1614,18 @@ log:
             action_help: List logs
             api: GET /logs
             arguments:
-               -l:
+                -l:
                     full: --limit
-                    help: Maximum number of logs per categories
+                    help: Maximum number of logs
                     type: int
+                --full:
+                    help: Show more details
+                    action: store_true
 
         ### log_display()
         display:
             action_help: Display a log content
             api: GET /logs/<file_name_list>
             arguments:
-                file_name_list:
+                file_name:
                     help: Log filenames for which to display the content
-                    nargs: "*"

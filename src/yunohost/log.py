@@ -43,154 +43,140 @@ RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
-def log_list(limit=None):
+def log_list(limit=None, full=False):
     """
     List available logs
 
     Keyword argument:
-        limit -- Maximum number of logs per categories
+        limit -- Maximum number of logs
     """
 
-    result = {"categories": []}
+    result = {"operations": []}
 
     if not os.path.exists(OPERATIONS_PATH):
         return result
 
-    for category in sorted(os.listdir(OPERATIONS_PATH)):
-        result["categories"].append({"name": category, "operations": []})
-        for operation in filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
+    operations = filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(OPERATIONS_PATH))
+    operations = reversed(sorted(operations))
 
-            base_filename = operation[:-len(METADATA_FILE_EXT)]
-            md_filename = operation
-            md_path = os.path.join(OPERATIONS_PATH, category, md_filename)
+    if limit is not None:
+        operations = operations[:limit]
 
-            operation = base_filename.split("-")
+    for operation in operations:
 
-            operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y%m%d %H%M%S")
+        base_filename = operation[:-len(METADATA_FILE_EXT)]
+        md_filename = operation
+        md_path = os.path.join(OPERATIONS_PATH, md_filename)
 
-            result["categories"][-1]["operations"].append({
-                "started_at": operation_datetime,
-                "description": m18n.n("log_" + operation[2], *operation[3:]),
-                "name": base_filename,
-                "path": md_path,
-            })
+        operation = base_filename.split("-")
 
-        result["categories"][-1]["operations"] = list(reversed(sorted(result["categories"][-1]["operations"], key=lambda x: x["started_at"])))
+        operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y%m%d %H%M%S")
 
-        if limit is not None:
-            result["categories"][-1]["operations"] = result["categories"][-1]["operations"][:limit]
+        result["operations"].append({
+            "started_at": operation_datetime,
+            "description": m18n.n("log_" + operation[2], *operation[3:]),
+            "name": base_filename,
+            "path": md_path,
+        })
 
     return result
 
 
-def log_display(file_name_list):
+def log_display(file_name):
     """
     Display full log or specific logs listed
 
     Argument:
-        file_name_list
+        file_name
     """
 
-    if not os.path.exists(OPERATIONS_PATH):
+    if file_name.endswith(METADATA_FILE_EXT):
+        base_filename = file_name[:-len(METADATA_FILE_EXT)]
+    elif file_name.endswith(LOG_FILE_EXT):
+        base_filename = file_name[:-len(LOG_FILE_EXT)]
+    else:
+        base_filename = file_name
+    md_filename = base_filename + METADATA_FILE_EXT
+    md_path = os.path.join(OPERATIONS_PATH, md_filename)
+    log_filename = base_filename + LOG_FILE_EXT
+    log_path = os.path.join(OPERATIONS_PATH, log_filename)
+    operation = base_filename.split("-")
+
+    if not os.path.exists(md_path) and not os.path.exists(log_path):
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('log_does_exists', log=" ".join(file_name_list)))
+                              m18n.n('log_does_exists', log=file_name))
+    infos = {}
+    infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
+    infos['name'] = base_filename
 
-    result = {"operations": []}
+    if os.path.exists(md_path):
+        with open(md_path, "r") as md_file:
+            try:
+                metadata = yaml.safe_load(md_file)
+                infos['metadata_path'] = md_path
+                infos['metadata'] = metadata
+            except yaml.YAMLError as exc:
+                print(exc)
 
-    for category in os.listdir(OPERATIONS_PATH):
-        for operation in filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(os.path.join(OPERATIONS_PATH, category))):
-            if operation not in file_name_list and file_name_list:
-                continue
-
-            base_filename = operation[:-len(METADATA_FILE_EXT)]
-            md_filename = operation
-            md_path = os.path.join(OPERATIONS_PATH, category, md_filename)
-            log_filename = base_filename + LOG_FILE_EXT
-            log_path = os.path.join(OPERATIONS_PATH, category, log_filename)
-            operation = base_filename.split("-")
-
-            with open(md_path, "r") as md_file:
-                try:
-                    infos = yaml.safe_load(md_file)
-                except yaml.YAMLError as exc:
-                    print(exc)
-
-            with open(log_path, "r") as content:
-                logs = content.read()
-                logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
-            infos['logs'] = logs
-            infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
-            infos['name'] = base_filename
+    if os.path.exists(log_path):
+        with open(log_path, "r") as content:
+            logs = content.read()
+            logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
             infos['log_path'] = log_path
-            result['operations'].append(infos)
+            infos['logs'] = logs
 
-    if len(file_name_list) > 0 and len(result['operations']) < len(file_name_list):
-        logger.error(m18n.n('log_does_exists', log="', '".join(file_name_list)))
+    return infos
 
-    if len(result['operations']) > 0:
-        result['operations'] = sorted(result['operations'], key=lambda operation: operation['started_at'])
-        return result
-
-def is_unit_operation(categorie=None, operation_key=None, lazy=False):
+def is_unit_operation(entities='app,domain,service,user', exclude='auth,password', operation_key=None, auto=True):
     def decorate(func):
         def func_wrapper(*args, **kwargs):
-            cat = categorie
+            entities_list = entities.split(',')
+            exclude_list = exclude.split(',')
             op_key = operation_key
-            on = None
-            related_to = {}
-            inject = lazy
-            to_start = not lazy
+            related_to = []
 
-            if cat is None:
-                cat = func.__module__.split('.')[1]
             if op_key is None:
                 op_key = func.__name__
-            if cat in kwargs:
-                on = kwargs[cat]
-            for r_category in RELATED_CATEGORIES:
-                if r_category in kwargs and kwargs[r_category] is not None:
-                    if r_category not in related_to:
-                        related_to[r_category] = []
-                    if isinstance(kwargs[r_category], basestring):
-                        related_to[r_category] += [kwargs[r_category]]
+
+            for entity in entities_list:
+                entity = entity.split(':')
+                entity_type = entity[-1]
+                entity = entity[0]
+                if entity in kwargs and kwargs[entity] is not None:
+                    if isinstance(kwargs[entity], basestring):
+                        related_to.append({entity_type: kwargs[entity]})
                     else:
-                        related_to[r_category] += kwargs[r_category]
+                        for x in kwargs[entity]:
+                            related_to.append({entity_type: kwargs[x]})
+
             context = kwargs.copy()
-            if 'auth' in context:
-                context.pop('auth', None)
-            uo = UnitOperation(op_key, cat, on, related_to, args=context)
-            if to_start:
+            for field in exclude_list:
+                if field in context:
+                    context.pop(field, None)
+            uo = UnitOperation(op_key, related_to, args=context)
+            if auto:
                 uo.start()
             try:
-                if inject:
+                if not auto:
                     args = (uo,) + args
                 result = func(*args, **kwargs)
             finally:
-                if uo.started_at is not None:
-                    uo.close(exc_info()[0])
+                uo.close(exc_info()[0])
             return result
         return func_wrapper
     return decorate
 
 class UnitOperation(object):
-    def __init__(self, operation, category, on=None, related_to=None, **kwargs):
+    def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
         self.operation = operation
-        self.category = category
-        self.on = on
-        if isinstance(self.on, basestring):
-            self.on = [self.on]
-
         self.related_to = related_to
-        if related_to is None:
-            if self.category in RELATED_CATEGORIES:
-                self.related_to = {self.category: self.on}
         self.extra = kwargs
         self.started_at = None
         self.ended_at = None
         self.logger = None
 
-        self.path = os.path.join(OPERATIONS_PATH, category)
+        self.path = OPERATIONS_PATH
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
@@ -220,8 +206,8 @@ class UnitOperation(object):
     def name(self):
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
-        if self.on is not None:
-            name += self.on
+        if self.related_to:
+            name += self.related_to[0].values()
         return '-'.join(name)
 
     @property
@@ -229,10 +215,9 @@ class UnitOperation(object):
         data = {
             'started_at': self.started_at,
             'operation': self.operation,
-            'related_to': self.related_to
         }
-        if self.on is not None:
-            data['on'] = self.on
+        if self.related_to is not None:
+            data['related_to'] = self.related_to
         if self.ended_at is not None:
             data['ended_at'] = self.ended_at
             data['success'] = self._success

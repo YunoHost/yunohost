@@ -114,7 +114,7 @@ def _dyndns_available(provider, domain):
     return r == u"Domain %s is available" % domain
 
 
-@is_unit_operation('domain', lazy=True)
+@is_unit_operation(auto=False)
 def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
@@ -127,9 +127,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
     """
     if domain is None:
         domain = _get_maindomain()
-
-    uo.on = [domain]
-    uo.related_to['domain'] = [domain]
+        uo.related_to.append(('domain', domain))
     uo.start()
 
     # Verify if domain is provided by subscribe_host
@@ -176,7 +174,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
     dyndns_installcron()
 
 
-@is_unit_operation('domain',lazy=True)
+@is_unit_operation(auto=False)
 def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """
@@ -219,21 +217,24 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
         return
     else:
         logger.info("Updated needed, going on...")
-        uo.on = [domain]
-        uo.related_to['domain'] = [domain]
-        uo.start()
+        if domain is not None:
+            uo.related_to.append(('domain', domain))
 
     # If domain is not given, try to guess it from keys available...
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
+        uo.related_to.append(('domain', domain))
+        uo.start()
     # If key is not given, pick the first file we find with the domain given
-    elif key is None:
-        keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
+    else:
+        uo.start()
+        if key is None:
+            keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
 
-        if not keys:
-            raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
+            if not keys:
+                raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
 
-        key = keys[0]
+            key = keys[0]
 
     # This mean that hmac-md5 is used
     # (Re?)Trigger the migration to sha256 and return immediately.

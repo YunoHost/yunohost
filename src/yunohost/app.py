@@ -424,7 +424,7 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def app_change_url(uo, auth, app, domain, path):
     """
     Modify the URL at which an application is installed.
@@ -482,6 +482,8 @@ def app_change_url(uo, auth, app, domain, path):
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
     env_dict["YNH_APP_NEW_PATH"] = path.rstrip("/")
 
+    if domain != old_domain:
+        uo.related_to.append(('domain', old_domain))
     uo.extra.update({'env': env_dict})
     uo.start()
 
@@ -619,7 +621,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
         # Start register change on system
-        uo = UnitOperation('app_upgrade', 'app', app_instance_name, env=env_dict)
+        related_to = [('app', app_instance_name)]
+        uo = UnitOperation('app_upgrade', related_to, env=env_dict)
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -669,7 +672,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
@@ -794,7 +797,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
 
                 # Execute remove script
                 uo_remove = UnitOperation('remove_on_failed_install',
-                                                 'app', app_instance_name,
+                                                 [('app', app_instance_name)],
                                                  env=env_dict_remove)
 
                 remove_retcode = hook_exec(
@@ -843,7 +846,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
     hook_callback('post_app_install', args=args_list, env=env_dict)
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def app_remove(uo, auth, app):
     """
     Remove app
@@ -1051,7 +1054,7 @@ def app_debug(app):
     }
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def app_makedefault(uo, auth, app, domain=None):
     """
     Redirect domain root to an app
@@ -1069,7 +1072,7 @@ def app_makedefault(uo, auth, app, domain=None):
 
     if domain is None:
         domain = app_domain
-        uo.related_to['domain']=[domain]
+        uo.related_to.append(('domain',domain))
     elif domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 

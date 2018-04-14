@@ -139,7 +139,7 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-@is_unit_operation('domain', lazy=True)
+@is_unit_operation(auto=False)
 def tools_maindomain(uo, auth, new_domain=None):
     """
     Check the current main domain, or change it
@@ -157,8 +157,7 @@ def tools_maindomain(uo, auth, new_domain=None):
     if new_domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
-    uo.on = [new_domain]
-    uo.related_to['domain'] = [new_domain]
+    uo.related_to.append(('domain', new_domain))
     uo.start()
 
     # Apply changes to ssl certs
@@ -471,7 +470,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     return {'packages': packages, 'apps': apps}
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def tools_upgrade(uo, auth, ignore_apps=False, ignore_packages=False):
     """
     Update apps & package cache, then display changelog
@@ -711,7 +710,7 @@ def tools_port_available(port):
         return False
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def tools_shutdown(uo, force=False):
     shutdown = force
     if not shutdown:
@@ -730,7 +729,7 @@ def tools_shutdown(uo, force=False):
         subprocess.check_call(['systemctl', 'poweroff'])
 
 
-@is_unit_operation(lazy=True)
+@is_unit_operation(auto=False)
 def tools_reboot(uo, force=False):
     reboot = force
     if not reboot:

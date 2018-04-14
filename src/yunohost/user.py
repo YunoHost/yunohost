@@ -90,7 +90,7 @@ def user_list(auth, fields=None):
     return {'users': users}
 
 
-@is_unit_operation()
+@is_unit_operation('username:user')
 def user_create(auth, username, firstname, lastname, mail, password,
         mailbox_quota="0"):
     """
@@ -212,7 +212,7 @@ def user_create(auth, username, firstname, lastname, mail, password,
     raise MoulinetteError(169, m18n.n('user_creation_failed'))
 
 
-@is_unit_operation()
+@is_unit_operation('username:user')
 def user_delete(auth, username, purge=False):
     """
     Delete user
@@ -248,7 +248,7 @@ def user_delete(auth, username, purge=False):
     logger.success(m18n.n('user_deleted'))
 
 
-@is_unit_operation()
+@is_unit_operation('username:user', exclude='auth,change_password')
 def user_update(auth, username, firstname=None, lastname=None, mail=None,
         change_password=None, add_mailforward=None, remove_mailforward=None,
         add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
