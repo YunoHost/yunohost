@@ -823,7 +823,7 @@ def _check_domain_is_ready_for_ACME(domain):
             'certmanager_domain_http_not_working', domain=domain))
 
 
-def _dns_ip_match_public_ip(public_ip, domain):
+def _get_dns_ip(domain):
     try:
         resolver = dns.resolver.Resolver()
         resolver.nameservers = DNS_RESOLVERS
@@ -832,9 +832,11 @@ def _dns_ip_match_public_ip(public_ip, domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_error_no_A_record', domain=domain))
 
-    dns_ip = str(answers[0])
+    return str(answers[0])
 
-    return dns_ip == public_ip
+
+def _dns_ip_match_public_ip(public_ip, domain):
+    return _get_dns_ip(domain) == public_ip
 
 
 def _domain_is_accessible_through_HTTP(ip, domain):
