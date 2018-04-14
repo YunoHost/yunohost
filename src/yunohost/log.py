@@ -110,7 +110,7 @@ def log_display(file_name, number=50):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('log_does_exists', log=file_name))
     infos = {}
-    if not base_filename.startswith('/'):
+    if not base_path.startswith(OPERATIONS_PATH):
         infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
         infos['name'] = base_filename
 
