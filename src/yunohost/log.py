@@ -82,12 +82,13 @@ def log_list(limit=None, full=False):
     return result
 
 
-def log_display(file_name):
+def log_display(file_name, number=50):
     """
     Display full log or specific logs listed
 
     Argument:
         file_name
+        number
     """
 
     if file_name.endswith(METADATA_FILE_EXT):
@@ -96,6 +97,7 @@ def log_display(file_name):
         base_filename = file_name[:-len(LOG_FILE_EXT)]
     else:
         base_filename = file_name
+
     md_filename = base_filename + METADATA_FILE_EXT
     md_path = os.path.join(OPERATIONS_PATH, md_filename)
     log_filename = base_filename + LOG_FILE_EXT
@@ -121,11 +123,11 @@ def log_display(file_name):
                 print(exc)
 
     if os.path.exists(log_path):
-        with open(log_path, "r") as content:
-            logs = content.read()
-            logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs.split("\n") if x]
-            infos['log_path'] = log_path
-            infos['logs'] = logs
+        from yunohost.service import _tail
+        logs = _tail(log_path, int(number))
+        logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs if x]
+        infos['log_path'] = log_path
+        infos['logs'] = logs
 
     return infos
 
