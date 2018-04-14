@@ -115,6 +115,8 @@ def log_display(file_name):
                 metadata = yaml.safe_load(md_file)
                 infos['metadata_path'] = md_path
                 infos['metadata'] = metadata
+                if 'log_path' in metadata:
+                    log_path = metadata['log_path']
             except yaml.YAMLError as exc:
                 print(exc)
 
