@@ -49,7 +49,7 @@ from yunohost.utils.network import get_public_ip
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command, service_regen_conf
-from yunohost.log import is_unit_operation
+from yunohost.log import is_unit_operation, UnitOperation
 
 logger = getActionLogger('yunohost.certmanager')
 
@@ -162,6 +162,10 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
     for domain in domain_list:
 
+        uo = UnitOperation('selfsigned_cert_install', [{'domain', domain}],
+                           args={'force': force})
+        uo.start()
+
         # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
         new_cert_folder = "%s/%s-history/%s-selfsigned" % (
@@ -240,9 +244,11 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
             logger.success(
                 m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
+            uo.success()
         else:
-            logger.error(
-                "Installation of self-signed certificate installation for %s failed !", domain)
+            msg = "Installation of self-signed certificate installation for %s failed !" % (domain)
+            logger.error(msg)
+            uo.error(msg)
 
 
 def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
@@ -281,6 +287,11 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # Actual install steps
     for domain in domain_list:
 
+        uo = UnitOperation('letsencrypt_cert_install', [{'domain', domain}],
+                           args={'force': force, 'no_checks': no_checks,
+                                 'staging': staging})
+        uo.start()
+
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
@@ -295,9 +306,12 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
-        except Exception as e:
-            logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
+            uo.success()
 
+        except Exception as e:
+            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
+            logger.error(msg)
+            uo.error(msg)
 
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
@@ -373,6 +387,12 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
     # Actual renew steps
     for domain in domain_list:
+
+        uo = UnitOperation('letsencrypt_cert_renew', [{'domain', domain}],
+                           args={'force': force, 'no_checks': no_checks,
+                                 'staging': staging, 'email': email})
+        uo.start()
+
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
 
@@ -385,19 +405,22 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             logger.success(
                 m18n.n("certmanager_cert_renew_success", domain=domain))
 
+            uo.success()
+
         except Exception as e:
             import traceback
             from StringIO import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
-            logger.error("Certificate renewing for %s failed !", domain)
+            msg = "Certificate renewing for %s failed !" % (domain)
+            logger.error(msg)
+            uo.error(msg)
             logger.error(stack.getvalue())
             logger.error(str(e))
 
             if email:
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, e, stack.getvalue())
-
 
 ###############################################################################
 #   Back-end stuff                                                            #
