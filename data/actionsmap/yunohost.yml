@@ -1625,7 +1625,12 @@ log:
         ### log_display()
         display:
             action_help: Display a log content
-            api: GET /logs/<file_name_list>
+            api: GET /logs/<file_name>
             arguments:
                 file_name:
-                    help: Log filenames for which to display the content
+                    help: Log filename which to display the content
+                -n:
+                    full: --number
+                    help: Number of lines to display
+                    default: 50
+                    type: int

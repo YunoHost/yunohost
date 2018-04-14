@@ -98,18 +98,21 @@ def log_display(file_name, number=50):
     else:
         base_filename = file_name
 
-    md_filename = base_filename + METADATA_FILE_EXT
-    md_path = os.path.join(OPERATIONS_PATH, md_filename)
-    log_filename = base_filename + LOG_FILE_EXT
-    log_path = os.path.join(OPERATIONS_PATH, log_filename)
+    base_path = base_filename
+    if not base_filename.startswith('/'):
+        base_path = os.path.join(OPERATIONS_PATH, base_filename)
+
+    md_path = base_path + METADATA_FILE_EXT
+    log_path = base_path + LOG_FILE_EXT
     operation = base_filename.split("-")
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('log_does_exists', log=file_name))
     infos = {}
-    infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
-    infos['name'] = base_filename
+    if not base_filename.startswith('/'):
+        infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
+        infos['name'] = base_filename
 
     if os.path.exists(md_path):
         with open(md_path, "r") as md_file:
@@ -125,7 +128,7 @@ def log_display(file_name, number=50):
     if os.path.exists(log_path):
         from yunohost.service import _tail
         logs = _tail(log_path, int(number))
-        logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs if x]
+        #logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs if x]
         infos['log_path'] = log_path
         infos['logs'] = logs
 
