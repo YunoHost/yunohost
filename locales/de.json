@@ -220,7 +220,7 @@
     "diagnosis_kernel_version_error": "Kann Kernelversion nicht abrufen: {error}",
     "package_unexpected_error": "Ein unerwarteter Fehler trat bei der Verarbeitung des Pakets '{pkgname}' auf",
     "app_incompatible": "Die Anwendung {app} ist nicht mit deiner YunoHost-Version kompatibel",
-    "app_not_correctly_installed": "{app:s} scheint nicht richtig installiert worden zu sein",
+    "app_not_correctly_installed": "{app:s} scheint nicht korrekt installiert zu sein",
     "app_requirements_checking": "Überprüfe notwendige Pakete für {app}...",
     "app_requirements_failed": "Anforderungen für {app} werden nicht erfüllt: {error}",
     "app_requirements_unmeet": "Anforderungen für {app} werden nicht erfüllt, das Paket {pkgname} ({version}) muss {spec} sein",
