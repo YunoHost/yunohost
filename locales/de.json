@@ -300,5 +300,6 @@
     "backup_archive_mount_failed": "Das Einbinden des Backup-Archives ist fehlgeschlagen",
     "backup_archive_writing_error": "Die Dateien konnten nicht in der komprimierte Archiv-Backup hinzugefügt werden",
     "app_change_url_success": "Erfolgreiche Änderung der URL von {app:s} zu {domain:s}{path:s}",
-    "backup_applying_method_borg": "Sende alle Dateien zur Sicherung ins borg-backup repository..."
+    "backup_applying_method_borg": "Sende alle Dateien zur Sicherung ins borg-backup repository...",
+    "invalid_url_format": "ungültiges URL Format"
 }
