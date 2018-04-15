@@ -62,7 +62,7 @@
     "domain_creation_failed": "Konnte Domain nicht erzeugen",
     "domain_deleted": "Die Domain wurde gelöscht",
     "domain_deletion_failed": "Konnte Domain nicht löschen",
-    "domain_dyndns_already_subscribed": "Du hast bereits eine DynDNS-Domain abonniert",
+    "domain_dyndns_already_subscribed": "Du hast dich schon für eine DynDNS-Domain angemeldet",
     "domain_dyndns_invalid": "Domain nicht mittels DynDNS nutzbar",
     "domain_dyndns_root_unknown": "Unbekannte DynDNS Hauptdomain",
     "domain_exists": "Die Domain existiert bereits",
