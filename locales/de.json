@@ -2,7 +2,7 @@
     "action_invalid": "Ungültige Aktion '{action:s}'",
     "admin_password": "Administrator-Passwort",
     "admin_password_change_failed": "Passwort kann nicht geändert werden",
-    "admin_password_changed": "Das Administrator-Passwort wurde erfolgreich geändert",
+    "admin_password_changed": "Das Administrator-Kennwort wurde erfolgreich geändert",
     "app_already_installed": "{app:s} ist schon installiert",
     "app_argument_choice_invalid": "Ungültige Auswahl für Argument '{name:s}'. Es muss einer der folgenden Werte sein {choices:s}",
     "app_argument_invalid": "Das Argument '{name:s}' hat einen falschen Wert: {error:s}",
