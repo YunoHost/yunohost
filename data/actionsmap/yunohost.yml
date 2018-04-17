@@ -1575,6 +1575,13 @@ tools:
               list:
                   action_help: List migrations
                   api: GET /migrations
+                  arguments:
+                    --pending:
+                        help: list only pending migrations
+                        action: store_true
+                    --done:
+                        help: list only migrations already performed
+                        action: store_true
 
               ### tools_migrations_migrate()
               migrate:
@@ -1589,7 +1596,12 @@ tools:
                         help: skip the migration(s), use it only if you know what you are doing
                         full: --skip
                         action: store_true
-
+                    --auto:
+                        help: automatic mode, won't run manual migrations, use it only if you know what you are doing
+                        action: store_true
+                    --accept-disclaimer:
+                        help: accept disclaimers of migration (please read them before using this option)
+                        action: store_true
 
               ### tools_migrations_state()
               state:

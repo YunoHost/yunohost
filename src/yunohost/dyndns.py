@@ -232,10 +232,13 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("migrate_to_tsig_sha256")
         try:
-            migration["module"].MyMigration().migrate(dyn_host, domain, key)
+            migration.migrate(dyn_host, domain, key)
         except Exception as e:
-            logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
-
+            logger.error(m18n.n('migrations_migration_has_failed',
+                                exception=e,
+                                number=migration.number,
+                                name=migration.name),
+                                exc_info=1)
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
@@ -270,6 +273,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
+            record["value"] = record["value"].replace(";","\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")

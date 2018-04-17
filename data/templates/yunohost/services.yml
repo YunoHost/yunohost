@@ -16,12 +16,9 @@ dovecot:
 postfix:
    status: service
    log: [/var/log/mail.log,/var/log/mail.err]
-rmilter:
-   status: systemctl status rmilter.service
-   log: /var/log/mail.log
 rspamd:
    status: systemctl status rspamd.service
-   log: /var/log/mail.log
+   log: /var/log/rspamd/rspamd.log
 redis-server:
    status: service
    log: /var/log/redis/redis-server.log
@@ -39,9 +36,9 @@ metronome:
 slapd:
    status: service
    log: /var/log/syslog
-php5-fpm:
+php7.0-fpm:
    status: service
-   log: /var/log/php5-fpm.log
+   log: /var/log/php7.0-fpm.log
 yunohost-api:
    status: service
    log: /var/log/yunohost/yunohost-api.log
@@ -60,3 +57,5 @@ udisk-glue: null
 amavis: null
 postgrey: null
 spamassassin: null
+rmilter: null
+php5-fpm: null

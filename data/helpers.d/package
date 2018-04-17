@@ -101,6 +101,10 @@ ynh_package_install_from_equivs () {
 
     # Build and install the package
     local TMPDIR=$(mktemp -d)
+
+    # Force the compatibility level at 10, levels below are deprecated 
+    echo 10 > /usr/share/equivs/template/debian/compat
+
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
@@ -109,7 +113,7 @@ ynh_package_install_from_equivs () {
      && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f)
+     && ynh_package_install -f) || ynh_die "Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
@@ -121,9 +125,14 @@ ynh_package_install_from_equivs () {
 #
 # usage: ynh_install_app_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence
+#   You can give a choice between some package with this syntax : "dep1|dep2"
+#   Example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
+#   This mean in the dependence tree : dep1 & dep2 & (dep3 | dep4 | dep5)
 ynh_install_app_dependencies () {
-    local dependencies=$@
-    local manifest_path="../manifest.json"
+    dependencies=$@
+    dependencies=${dependencies// /, }
+    dependencies=${dependencies//|/ | }
+    manifest_path="../manifest.json"
     if [ ! -e "$manifest_path" ]; then
     	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
@@ -139,7 +148,7 @@ Section: misc
 Priority: optional
 Package: ${dep_app}-ynh-deps
 Version: ${version}
-Depends: ${dependencies// /, }
+Depends: ${dependencies}
 Architecture: all
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.

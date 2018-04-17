@@ -26,6 +26,7 @@
 import os
 import time
 import yaml
+import json
 import glob
 import subprocess
 import errno
@@ -321,7 +322,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
+        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
@@ -771,3 +772,24 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                                    exc_info=1)
                     return False
     return True
+
+def manually_modified_files():
+
+    # We do this to have --quiet, i.e. don't throw a whole bunch of logs
+    # just to fetch this...
+    # Might be able to optimize this by looking at what service_regenconf does
+    # and only do the part that checks file hashes...
+    cmd = "yunohost service regen-conf --dry-run --output-as json --quiet"
+    j = json.loads(subprocess.check_output(cmd.split()))
+
+    # j is something like :
+    # {"postfix": {"applied": {}, "pending": {"/etc/postfix/main.cf": {"status": "modified"}}}
+
+    output = []
+    for app, actions in j.items():
+        for action, files in actions.items():
+            for filename, infos in files.items():
+                if infos["status"] == "modified":
+                    output.append(filename)
+
+    return output

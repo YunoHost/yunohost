@@ -613,6 +613,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
+        # Apply dirty patch to make php5 apps compatible with php7
+        _patch_php5(extracted_app_folder)
+
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
@@ -742,6 +745,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # TODO: Move install_time away from app settings
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
+
+    # Apply dirty patch to make php5 apps compatible with php7
+    _patch_php5(extracted_app_folder)
 
     os.system('chown -R admin: ' + extracted_app_folder)
 
@@ -2164,3 +2170,40 @@ def normalize_url_path(url_path):
         return '/' + url_path.strip("/").strip() + '/'
 
     return "/"
+
+
+def unstable_apps():
+
+    raw_app_installed = app_list(installed=True, raw=True)
+    output = []
+
+    for app, infos in raw_app_installed.items():
+
+        repo = infos.get("repository", None)
+        state = infos.get("state", None)
+
+        if repo is None or state in ["inprogress", "notworking"]:
+            output.append(app)
+
+    return output
+
+
+def _patch_php5(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+    files_to_patch.append("%s/manifest.json" % app_folder)
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
+                   "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
+                   "-e 's@php5@php7.0@g' " \
+                   "%s" % filename
+        os.system(c)

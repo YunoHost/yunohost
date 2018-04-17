@@ -1,3 +1,7 @@
+yunohost (3.0.0) testing; urgency=low
+
+  (to be removed) Dummy version to work around version comparison issues
+
 yunohost (2.7.10) stable; urgency=low
 
   * [fix] Fail2ban conf/filter was not matching failed login attempts...
