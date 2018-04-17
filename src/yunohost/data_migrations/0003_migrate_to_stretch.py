@@ -206,8 +206,13 @@ class MyMigration(Migration):
 
         wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
 
-        command = "({} && {} && echo 'Done!') &".format(wait_until_end_of_yunohost_command,
-                                                        upgrade_command)
+        # We need this because for some weird reason, this file might
+        # get deleted during the upgrade ...
+        touch_installed = "touch /etc/yunohost/installed"
+
+        command = "({} && {}; {}; echo 'Done!') &".format(wait_until_end_of_yunohost_command,
+                                                          upgrade_command,
+                                                          touch_installed)
 
         logger.debug("Running command :\n{}".format(command))
 
