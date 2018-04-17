@@ -11,7 +11,8 @@ from shutil import copy2
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.process import check_output
+from moulinette.utils.process import check_output, call_async_output
+
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
 from yunohost.service import _run_service_command, service_regen_conf, manually_modified_files
@@ -227,7 +228,18 @@ class MyMigration(Migration):
 
         command += " 2>&1 | tee -a {}".format(self.logfile)
 
-        os.system(command)
+        is_api = msettings.get('interface') == 'api'
+        if is_api:
+            callbacks = (
+                lambda l: logger.info(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            call_async_output(command, callbacks, shell=True)
+        else:
+            # We do this when running from the cli to have the output of the
+            # command showing in the terminal, since 'info' channel is only
+            # enabled if the user explicitly add --verbose ...
+            os.system(command)
 
 
     # Those are files that should be kept and restored before the final switch
