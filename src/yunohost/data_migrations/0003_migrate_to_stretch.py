@@ -20,6 +20,7 @@ from yunohost.utils.packages import get_installed_version
 
 logger = getActionLogger('yunohost.migration')
 
+YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat" ]
 
 class MyMigration(Migration):
     "Upgrade the system to Debian Stretch and Yunohost 3.0"
@@ -43,7 +44,8 @@ class MyMigration(Migration):
         self.patch_apt_sources_list()
         self.backup_files_to_keep()
         self.apt_update()
-        self.hold(["yunohost", "yunohost-admin", "moulinette", "ssowat", "fail2ban"])
+        apps_packages = self.get_apps_equivs_packages()
+        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
 
         # Main dist-upgrade
         logger.warning(m18n.n("migration_0003_main_upgrade"))
@@ -71,7 +73,7 @@ class MyMigration(Migration):
         # Upgrade yunohost packages
         logger.warning(m18n.n("migration_0003_yunohost_upgrade"))
         self.restore_files_to_keep()
-        self.unhold(["yunohost", "yunohost-admin", "moulinette", "ssowat"])
+        self.unhold(YUNOHOST_PACKAGES + apps_packages)
         self.upgrade_yunohost_packages()
 
     def debian_major_version(self):
@@ -149,6 +151,15 @@ class MyMigration(Migration):
                              "{}".format(f)
             os.system(command)
 
+    def get_apps_equivs_packages(self):
+
+        command = "dpkg --get-selections" \
+                  " | grep -v deinstall" \
+                  " | awk '{print $1}'" \
+                  " | grep 'ynh-deps$'"
+
+        return check_output(command).strip().split('\n')
+
     def hold(self, packages):
         for package in packages:
             os.system("apt-mark hold {}".format(package))
@@ -177,14 +188,13 @@ class MyMigration(Migration):
         #
 
         MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
-        packages = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
         upgrade_command = ""
         upgrade_command += " DEBIAN_FRONTEND=noninteractive"
         upgrade_command += " APT_LISTCHANGES_FRONTEND=none"
         upgrade_command += " apt-get install"
         upgrade_command += " --assume-yes "
-        upgrade_command += " ".join(packages)
+        upgrade_command += " ".join(YUNOHOST_PACKAGES)
         upgrade_command += " 2>&1 | tee -a {}".format(self.logfile)
 
         logger.warning("Activating upgrade of yunohost packages, to be ran right after this command ends.")
