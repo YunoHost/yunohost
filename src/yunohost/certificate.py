@@ -296,6 +296,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
         except Exception as e:
+            _display_debug_information(domain)
             logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
 
 
@@ -564,6 +565,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                 'certmanager_hit_rate_limit', domain=domain))
         else:
             logger.error(str(e))
+            _display_debug_information(domain)
             raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_cert_signing_failed'))
 
@@ -823,7 +825,7 @@ def _check_domain_is_ready_for_ACME(domain):
             'certmanager_domain_http_not_working', domain=domain))
 
 
-def _dns_ip_match_public_ip(public_ip, domain):
+def _get_dns_ip(domain):
     try:
         resolver = dns.resolver.Resolver()
         resolver.nameservers = DNS_RESOLVERS
@@ -832,9 +834,11 @@ def _dns_ip_match_public_ip(public_ip, domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_error_no_A_record', domain=domain))
 
-    dns_ip = str(answers[0])
+    return str(answers[0])
 
-    return dns_ip == public_ip
+
+def _dns_ip_match_public_ip(public_ip, domain):
+    return _get_dns_ip(domain) == public_ip
 
 
 def _domain_is_accessible_through_HTTP(ip, domain):
@@ -848,6 +852,30 @@ def _domain_is_accessible_through_HTTP(ip, domain):
         return False
 
     return True
+
+
+def _get_local_dns_ip(domain):
+    try:
+        resolver = dns.resolver.Resolver()
+        answers = resolver.query(domain, "A")
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+        logger.warning("Failed to resolved domain '%s' locally", domain)
+        return None
+
+    return str(answers[0])
+
+
+def _display_debug_information(domain):
+    dns_ip = _get_dns_ip(domain)
+    public_ip = get_public_ip()
+    local_dns_ip = _get_local_dns_ip(domain)
+
+    logger.warning("""\
+Debug information:
+ - domain ip from DNS        %s
+ - domain ip from local DNS  %s
+ - public ip of the server   %s
+""", dns_ip, local_dns_ip, public_ip)
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
