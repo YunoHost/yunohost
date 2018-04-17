@@ -8,10 +8,11 @@ import errno
 import platform
 from shutil import copy2
 
-from moulinette import m18n
+from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
+from moulinette.utils.filesystem import read_file
 
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
@@ -53,7 +54,7 @@ class MyMigration(Migration):
         _run_service_command("stop", "mysql")
         self.apt_dist_upgrade(conf_flags=["old", "def"])
         _run_service_command("start", "mysql")
-        if  self.debian_major_version() == 8
+        if self.debian_major_version() == 8:
             raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
 
         # Specific upgrade for fail2ban...
@@ -98,10 +99,13 @@ class MyMigration(Migration):
             raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
 
         # Check system is up to date
-        self.apt_update()
-        apt_list_upgradable = check_output("apt list --upgradable -a")
-        if "upgradable" in apt_list_upgradable:
-            raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
+        # (but we don't if 'stretch' is already in the sources.list ...
+        # which means maybe a previous upgrade crashed and we're re-running it)
+        if not " stretch " in read_file("/etc/apt/sources.list"):
+            self.apt_update()
+            apt_list_upgradable = check_output("apt list --upgradable -a")
+            if "upgradable" in apt_list_upgradable:
+                raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
 
     @property
     def disclaimer(self):
