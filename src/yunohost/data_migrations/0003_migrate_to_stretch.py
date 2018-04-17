@@ -200,6 +200,9 @@ class MyMigration(Migration):
         upgrade_command += " apt-get install"
         upgrade_command += " --assume-yes "
         upgrade_command += " ".join(YUNOHOST_PACKAGES)
+        # We also install php-zip to fix an issue with nextcloud and kanboard
+        # that need it when on stretch.
+        upgrade_command += " php-zip"
         upgrade_command += " 2>&1 | tee -a {}".format(self.logfile)
 
         wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
