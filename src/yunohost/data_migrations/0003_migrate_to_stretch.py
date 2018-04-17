@@ -50,6 +50,8 @@ class MyMigration(Migration):
         _run_service_command("stop", "mysql")
         self.apt_dist_upgrade(conf_flags=["old", "def"])
         _run_service_command("start", "mysql")
+        if  self.debian_major_version() == 8
+            raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
 
         # Specific upgrade for fail2ban...
         logger.warning(m18n.n("migration_0003_fail2ban_upgrade"))
