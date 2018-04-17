@@ -14,7 +14,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc
  , glances
- , dnsutils, bind9utils, unzip, git, curl, cron
+ , dnsutils, bind9utils, unzip, git, curl, cron, wget
  , ca-certificates, netcat-openbsd, iproute
  , mariadb-server | mysql-server, php-mysql | php-mysqlnd
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd
@@ -22,6 +22,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
  , dovecot-antispam, fail2ban
  , nginx-extras (>=1.6.2), php-fpm, php-ldap, php-intl
+
  , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , metronome
  , rspamd (>= 1.6.0), redis-server, opendkim-tools
