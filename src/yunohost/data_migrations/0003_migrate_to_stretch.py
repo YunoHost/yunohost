@@ -202,8 +202,6 @@ class MyMigration(Migration):
         upgrade_command += " ".join(YUNOHOST_PACKAGES)
         upgrade_command += " 2>&1 | tee -a {}".format(self.logfile)
 
-        logger.warning("Activating upgrade of yunohost packages, to be ran right after this command ends.")
-
         wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
 
         # We need this because for some weird reason, this file might
