@@ -32,7 +32,6 @@ import re
 import urlparse
 import errno
 import subprocess
-import requests
 import glob
 import pwd
 import grp
@@ -129,6 +128,7 @@ def app_fetchlist(url=None, name=None):
     else:
         appslists_to_be_fetched = appslists.keys()
 
+    import requests # lazy loading this module for performance reasons
     # Fetch all appslists to be fetched
     for name in appslists_to_be_fetched:
 

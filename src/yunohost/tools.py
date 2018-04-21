@@ -26,7 +26,6 @@
 import re
 import os
 import yaml
-import requests
 import json
 import errno
 import logging

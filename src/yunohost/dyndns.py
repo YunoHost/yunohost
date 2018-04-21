@@ -30,7 +30,6 @@ import glob
 import time
 import base64
 import errno
-import requests
 import subprocess
 
 from moulinette import m18n
@@ -151,6 +150,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
+    import requests # lazy loading this module for performance reasons
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)

@@ -28,7 +28,6 @@ import re
 import json
 import yaml
 import errno
-import requests
 
 from urllib import urlopen
 
