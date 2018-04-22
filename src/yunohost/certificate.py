@@ -572,7 +572,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     import requests # lazy loading this module for performance reasons
     try:
         intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
-    except Timeout as e:
+    except requests.exceptions.Timeout as e:
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
 
     # Now save the key and signed certificate
@@ -841,7 +841,7 @@ def _domain_is_accessible_through_HTTP(ip, domain):
     import requests # lazy loading this module for performance reasons
     try:
         requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
-    except Timeout as e:
+    except requests.exceptions.Timeout as e:
         logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
         return False
     except Exception as e:
