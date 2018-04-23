@@ -161,9 +161,11 @@ class MyMigration(Migration):
         command = "dpkg --get-selections" \
                   " | grep -v deinstall" \
                   " | awk '{print $1}'" \
-                  " | grep 'ynh-deps$'"
+                  " | { grep 'ynh-deps$' || true; }"
 
-        return check_output(command).strip().split('\n')
+        output = check_output(command).strip()
+
+        return output.split('\n') if output else []
 
     def hold(self, packages):
         for package in packages:
