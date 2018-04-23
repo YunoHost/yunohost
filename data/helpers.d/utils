@@ -100,7 +100,7 @@ ynh_backup_before_upgrade () {
 			ynh_die "Backup failed, the upgrade process was aborted."
 		fi
         else
-                echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without securi$
+                echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
         fi
 }
 
