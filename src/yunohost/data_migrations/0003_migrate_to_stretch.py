@@ -47,6 +47,7 @@ class MyMigration(Migration):
         self.backup_files_to_keep()
         self.apt_update()
         apps_packages = self.get_apps_equivs_packages()
+        self.unhold(["metronome"])
         self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
 
         # Main dist-upgrade
