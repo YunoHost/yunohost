@@ -225,6 +225,7 @@
     "migration_description_0001_change_cert_group_to_sslcert": "Change certificates group permissions from 'metronome' to 'ssl-cert'",
     "migration_description_0002_migrate_to_tsig_sha256": "Improve security of dyndns TSIG by using SHA512 instead of MD5",
     "migration_description_0003_migrate_to_stretch": "Upgrade the system to Debian Stretch and YunoHost 3.0",
+    "migration_description_0004_php5_to_php7_pools": "Reconfigure the PHP pools to use PHP 7 instead of 5",
     "migration_description_0005_postgresql_9p4_to_9p6": "Migrate databases from postgresql 9.4 to 9.6",
     "migration_0003_backward_impossible": "The stretch migration cannot be reverted.",
     "migration_0003_start": "Starting migration to Stretch. The logs will be available in {logfile}.",
