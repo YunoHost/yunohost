@@ -28,7 +28,6 @@ import re
 import json
 import yaml
 import errno
-import requests
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
