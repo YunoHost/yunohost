@@ -150,13 +150,19 @@ ynh_setup_source () {
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
 
+    # simple cache mechanism
+    # if cache file exists and the checksum isn't good, download it again
+    # if not, just download the file
     if test -e "$local_src"
-    then    # Use the local source file if it is present
-        cp $local_src $src_filename
-    else    # If not, download the source
-        wget -nv -O $src_filename $src_url
+    then
+    	echo "${src_sum} ${local_src}" | ${src_sumprg} -c --status \
+        	|| wget -nv -O $local_src $src_url
+    else
+    	mkdir -p "/var/cache/yunohost/ynh_setup_source/${YNH_APP_ID}"
+    	wget -nv -O $local_src $src_url
     fi
-
+    cp $local_src $src_filename
+    
     # Check the control sum
     echo "${src_sum} ${src_filename}" | ${src_sumprg} -c --status \
         || ynh_die "Corrupt source"
