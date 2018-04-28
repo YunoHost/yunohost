@@ -112,7 +112,7 @@ ynh_backup_before_upgrade () {
 #
 # Details:
 # This helper downloads sources from SOURCE_URL if there is no local source
-# archive in /opt/yunohost-apps-src/APP_ID/SOURCE_FILENAME
+# archive in /var/cache/yunohost/ynh_setup_source/APP_ID/SOURCE_FILENAME
 #
 # Next, it checks the integrity with "SOURCE_SUM_PRG -c --status" command.
 #
@@ -148,7 +148,7 @@ ynh_setup_source () {
     if [ "$src_filename" = "" ] ; then
         src_filename="${src_id}.${src_format}"
     fi
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
+    local local_src="/var/cache/yunohost/ynh_setup_source/${YNH_APP_ID}/${src_filename}"
 
     # simple cache mechanism
     # if cache file exists and the checksum isn't good, download it again
