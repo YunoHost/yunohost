@@ -41,9 +41,10 @@ ynh_system_user_exists() {
 
 # Create a system user
 #
-# usage: ynh_system_user_create user_name [home_dir]
+# usage: ynh_system_user_create user_name [home_dir [use_shell]]
 # | arg: user_name - Name of the system user that will be create
 # | arg: home_dir - Path of the home dir for the user. Usually the final path of the app. If this argument is omitted, the user will be created without home
+# | arg: use_shell - Create a user using the default login shell if present. If this argument is omitted, the user will be created with /usr/sbin/nologin shell
 ynh_system_user_create () {
 	if ! ynh_system_user_exists "$1"	# Check if the user exists on the system
 	then	# If the user doesn't exist
@@ -52,7 +53,12 @@ ynh_system_user_create () {
 		else
 			local user_home_dir="--no-create-home"
 		fi
-		sudo useradd $user_home_dir --system --user-group $1 --shell /usr/sbin/nologin || ynh_die "Unable to create $1 system account"
+		if [ $# -ge 3 ]; then	# If we want a shell for the user
+			local shell="" # Use default shell
+		else
+			local shell="--shell /usr/sbin/nologin"
+		fi
+		useradd $user_home_dir --system --user-group $1 $shell || ynh_die "Unable to create $1 system account"
 	fi
 }
 
