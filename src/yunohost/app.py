@@ -843,6 +843,10 @@ def app_remove(auth, app):
     except:
         pass
 
+    # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
+    # script might date back from jessie install)
+    _patch_php5(app_setting_path)
+
     os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
