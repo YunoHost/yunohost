@@ -608,11 +608,13 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     with open(domain_cert_file, "w") as f:
         f.write(signed_certificate)
         f.write(intermediate_certificate)
-        
-    write_to_file("/etc/yunohost/certs/" + domain + "/chain.pem", download_text(INTERMEDIATE_CERTIFICATE_URL))
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0640)
 
+    chain_pem = "/etc/yunohost/certs/" + domain + "/chain.pem"        
+    write_to_file(chain_pem, download_text(INTERMEDIATE_CERTIFICATE_URL))
+    _set_permissions(chain_pem, "root", "ssl-cert", 0640)
+    
     if staging:
         return
 
