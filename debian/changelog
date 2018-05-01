@@ -33,7 +33,7 @@ yunohost (2.7.11) testing; urgency=low
   * [helpers] Tweak systemd config helpers (optional service name and template name) (#425)
   * [i18n] Improve translations for Arabic, French, German, Occitan, Spanish 
 
-  Thanks for all contributors (ariasuni, ljf, JimboeJoe, Maniack, Josue, Aleks, Bram, jibec) and the several translators (ButterflyOfFire, J-B Lescher, Eric G., Cedric, J. Keerl, beyercenter, P. Gatzka, Quenti, bjarkan) <3 !
+  Thanks to all contributors (ariasuni, ljf, JimboJoe, frju365, Maniack, J-B Lescher, Josue, Aleks, Bram, jibec) and the several translators (ButterflyOfFire, Eric G., Cedric, J. Keerl, beyercenter, P. Gatzka, Quenti, bjarkan) <3 !
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 01 May 2018 22:04:40 +0000
 
