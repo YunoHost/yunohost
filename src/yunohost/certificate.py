@@ -39,6 +39,7 @@ from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import write_to_file
 
 import yunohost.domain
 from yunohost.utils.network import get_public_ip
@@ -607,6 +608,8 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     with open(domain_cert_file, "w") as f:
         f.write(signed_certificate)
         f.write(intermediate_certificate)
+        
+    write_to_file("/etc/yunohost/certs/" + domain + "/chain.pem", download_text(INTERMEDIATE_CERTIFICATE_URL))
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0640)
 
