@@ -1,0 +1,7 @@
+{
+    "admin_password": "Senhal d'administracion",
+    "admin_password_change_failed": "Impossible de cambiar lo senhal",
+    "admin_password_changed": "Lo senhal d'administracion es ben estat cambiat",
+    "app_already_installed": "{app:s} es ja installat",
+    "app_already_up_to_date": "{app:s} es ja a jorn"
+}

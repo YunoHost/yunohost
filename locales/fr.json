@@ -135,7 +135,7 @@
     "mountpoint_unknown": "Point de montage inconnu",
     "mysql_db_creation_failed": "Impossible de créer la base de données MySQL",
     "mysql_db_init_failed": "Impossible d'initialiser la base de données MySQL",
-    "mysql_db_initialized": "La base de donnée MySQL a été initialisée",
+    "mysql_db_initialized": "La base de données MySQL a été initialisée",
     "network_check_mx_ko": "L'enregistrement DNS MX n'est pas précisé",
     "network_check_smtp_ko": "Le trafic courriel sortant (port 25 SMTP) semble bloqué par votre réseau",
     "network_check_smtp_ok": "Le trafic courriel sortant (port 25 SMTP) n'est pas bloqué",
@@ -320,7 +320,7 @@
     "backup_archive_system_part_not_available": "La partie « {part:s} » du système n’est pas disponible dans cette sauvegarde",
     "backup_archive_mount_failed": "Le montage de l’archive de sauvegarde a échoué",
     "backup_archive_writing_error": "Impossible d’ajouter les fichiers à la sauvegarde dans l’archive compressée",
-    "backup_ask_for_copying_if_needed": "Certains fichiers n’ont pas pu être préparés pour être sauvegardée en utilisant la méthode qui évite de temporairement gaspiller de l’espace sur le système. Pour mener la sauvegarde, {size:s} Mio doivent être temporairement utilisés. Acceptez-vous ?",
+    "backup_ask_for_copying_if_needed": "Certains fichiers n’ont pas pu être préparés pour être sauvegardés en utilisant la méthode qui évite temporairement de gaspiller de l’espace sur le système. Pour mener la sauvegarde, {size:s} Mo doivent être temporairement utilisés. Acceptez-vous ?",
     "backup_borg_not_implemented": "La méthode de sauvegarde Bord n’est pas encore implémentée",
     "backup_cant_mount_uncompress_archive": "Impossible de monter en lecture seule le dossier de l’archive décompressée",
     "backup_copying_to_organize_the_archive": "Copie de {size:s} Mio pour organiser l’archive",
@@ -378,5 +378,6 @@
     "migrate_tsig_wait_2": "2 minutes…",
     "migrate_tsig_wait_3": "1 minute…",
     "migrate_tsig_wait_4": "30 secondes…",
-    "migrate_tsig_not_needed": "Il ne semble pas que vous utilisez un domaine dyndns, donc aucune migration n’est nécessaire !"
+    "migrate_tsig_not_needed": "Il ne semble pas que vous utilisez un domaine dyndns, donc aucune migration n’est nécessaire !",
+    "app_checkurl_is_deprecated": "Packagers /!\\  'app checkurl' est obsolète ! Utilisez 'app register-url' en remplacement !"
 }
