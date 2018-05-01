@@ -1,3 +1,42 @@
+yunohost (2.7.11) testing; urgency=low
+
+  Important changes / fixes
+  -------------------------
+
+  * [enh] Add commands to manage user ssh accesses and keys (#403, #445)
+  * [fix] Fix Lets Encrypt install when an app is installed at root (#428)
+  * [enh] Improve performances by lazy-loading some modules (#451)
+  * [enh] Use Mozilla's recommended headers in nginx conf (#399, #456)
+  * [fix] Fix path traversal issues in yunohost admin nginx conf (#420)
+  * [helpers] Add nodejs helpers (#441, #446)
+
+  Other changes
+  -------------
+
+  * [enh] Enable gzip compression for common text mimetypes in nginx (#356)
+  * [enh] Add 'post' hooks on app management operations (#360)
+  * [fix] Fix an issue with custom backup methods and crons (#421)
+  * [mod] Simplify the way we fetch and test global ip (#424)
+  * [enh] Manage etckeeper.conf to make etckeeper quiet (#426)
+  * [fix] Be able to access conf folder in change_url scripts (#427)
+  * [enh] Verbosify backup/restores that are performed during app upgrades (#432)
+  * [enh] Display debug information on cert-install/renew failure (#447)
+  * [fix] Add mailutils and wget as a dependencies
+  * [mod] Misc tweaks to display more info when some commands fail
+  * [helpers] More explicit depreciation warning for 'app checkurl'
+  * [helpers] Fix an issue in ynh_restore_file if destination already exists (#384)
+  * [helpers] Update php-fpm helpers to handle stretch/php7 and a smooth migration (#373)
+  * [helpers] Add helper 'ynh_get_debian_release' (#373)
+  * [helpers] Trigger an error when failing to install dependencies (#381)
+  * [helpers] Allow for 'or' in dependencies (#381)
+  * [helpers] Tweak the usage of BACKUP_CORE_ONLY (#398)
+  * [helpers] Tweak systemd config helpers (optional service name and template name) (#425)
+  * [i18n] Improve translations for Arabic, French, German, Occitan, Spanish 
+
+  Thanks for all contributors (ariasuni, ljf, JimboeJoe, Maniack, Josue, Aleks, Bram, jibec) and the several translators (ButterflyOfFire, J-B Lescher, Eric G., Cedric, J. Keerl, beyercenter, P. Gatzka, Quenti, bjarkan) <3 !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 01 May 2018 22:04:40 +0000
+
 yunohost (2.7.10) stable; urgency=low
 
   * [fix] Fail2ban conf/filter was not matching failed login attempts...
