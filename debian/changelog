@@ -1,3 +1,9 @@
+yunohost (2.7.11.1) testing; urgency=low
+
+  * [fix] Nginx Regression typo (#459)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 02 May 2018 12:12:45 +0000
+
 yunohost (2.7.11) testing; urgency=low
 
   Important changes / fixes
