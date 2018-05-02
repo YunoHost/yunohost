@@ -610,10 +610,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         f.write(intermediate_certificate)
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0640)
-
-    chain_pem = "/etc/yunohost/certs/" + domain + "/chain.pem"        
-    write_to_file(chain_pem, download_text(INTERMEDIATE_CERTIFICATE_URL))
-    _set_permissions(chain_pem, "root", "ssl-cert", 0640)
     
     if staging:
         return
@@ -675,6 +671,21 @@ def _get_status(domain):
     cert_issuer = cert.get_issuer().CN
     valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
     days_remaining = (valid_up_to - datetime.now()).days
+    
+    if cert_issuer.startswith("Let's Encrypt"):
+        chain_pem = "/etc/yunohost/certs/" + domain + "/chain.pem"        
+        write_to_file(chain_pem, download_text(INTERMEDIATE_CERTIFICATE_URL))
+        _set_permissions(chain_pem, "root", "ssl-cert", 0640)
+        nginx_conf_file = "/etc/nginx/conf.d/" + domain + ".conf"
+        chain_pem_file=open(nginx_conf_file,"r")
+        contenu = chain_pem_file.read()
+        index = { '#ssl_stapling' : 'ssl_stapling', '#ssl_trusted' : 'ssl_trusted', '#resolver' : 'resolver' }
+        for cle in index: 
+             contenu=contenu.replace(cle, index[cle])
+        chain_pem_file.close
+        chain_pem_file = open(nginx_conf_file,"w")
+        chain_pem_file.write(contenu)
+        chain_pem_file.close()
 
     if cert_issuer == _name_self_CA():
         CA_type = {
