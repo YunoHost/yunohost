@@ -677,15 +677,24 @@ def _get_status(domain):
         write_to_file(chain_pem, download_text(INTERMEDIATE_CERTIFICATE_URL))
         _set_permissions(chain_pem, "root", "ssl-cert", 0640)
         nginx_conf_file = "/etc/nginx/conf.d/" + domain + ".conf"
+        nginx_admin_conf_file = "/etc/nginx/conf.d/yunohost-admin.conf"
         chain_pem_file=open(nginx_conf_file,"r")
         contenu = chain_pem_file.read()
+        chain_pem_file_bis = open(nginx_admin_conf_file, "r")
+        contenu_bis = nginx_admin_conf_file.read()
         index = { '#ssl_stapling' : 'ssl_stapling', '#ssl_trusted' : 'ssl_trusted', '#resolver' : 'resolver' }
         for cle in index: 
              contenu=contenu.replace(cle, index[cle])
+             contenu_bis=contenu_bis.replace(cle, index[cle])
         chain_pem_file.close
+        chain_pem_file_bis.close
         chain_pem_file = open(nginx_conf_file,"w")
         chain_pem_file.write(contenu)
         chain_pem_file.close()
+        chain_pem_file_bis = open(nginx_admin_conf_file, "r")
+        chain_pem_file_bis.write(contenu_bis)
+        chain_pem_file_bis.close()
+        
 
     if cert_issuer == _name_self_CA():
         CA_type = {
