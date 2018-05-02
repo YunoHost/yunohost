@@ -1,6 +1,8 @@
-yunohost (3.0.0) testing; urgency=low
+yunohost (3.0.0~beta1) testing; urgency=low
 
-  (to be removed) Dummy version to work around version comparison issues
+  Beta release for Stretch
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 03 May 2018 03:04:45 +0000
 
 yunohost (2.7.11.1) testing; urgency=low
 
