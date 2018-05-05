@@ -4,7 +4,6 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.service import _run_service_command
 
 logger = getActionLogger('yunohost.migration')
 
@@ -41,4 +40,3 @@ class MyMigration(Migration):
         p = subprocess.Popen("dpkg --list | grep -q -w {}".format(package_name), shell=True)
         p.communicate()
         return p.returncode == 0
-
