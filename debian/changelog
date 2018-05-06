@@ -1,3 +1,11 @@
+yunohost (2.7.13) testing; urgency=low
+
+  * [enh] Add 'manual migration' mechanism to the migration framework (#429)
+  * [enh] Add Stretch migration (#433)
+  * [enh] Use recommended ECDH curves (#454)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 06 May 2018 23:10:13 +0000
+
 yunohost (2.7.12) stable; urgency=low
 
   * [i18n] Improve translation for Portuguese
