@@ -1,3 +1,9 @@
+yunohost (3.0.0~beta1.1) testing; urgency=low
+
+  Fixes in the postgresql migration
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 06 May 2018 03:06:00 +0000
+
 yunohost (3.0.0~beta1) testing; urgency=low
 
   Beta release for Stretch
