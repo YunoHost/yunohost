@@ -1,3 +1,10 @@
+yunohost (3.0.0~beta1.2) testing; urgency=low
+
+  Removing http2 also from yunohost_admin.conf since there still are some
+  issues with wordpress ?
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 May 2018 05:52:00 +0000
+
 yunohost (3.0.0~beta1.1) testing; urgency=low
 
   Fixes in the postgresql migration
