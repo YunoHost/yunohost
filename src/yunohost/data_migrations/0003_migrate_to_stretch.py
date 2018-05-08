@@ -146,12 +146,13 @@ class MyMigration(Migration):
         # This :
         # - replace single 'jessie' occurence by 'stretch'
         # - comments lines containing "backports"
-        # - replace 'jessie/updates' by 'strech/updates'
+        # - replace 'jessie/updates' by 'strech/updates' (or same with a -)
         # - switch yunohost's repo to forge
         for f in sources_list:
             command = "sed -i -e 's@ jessie @ stretch @g' " \
                              "-e '/backports/ s@^#*@#@' " \
                              "-e 's@ jessie/updates @ stretch/updates @g' " \
+                             "-e 's@ jessie-updates @ stretch-updates @g' " \
                              "-e 's@repo.yunohost@forge.yunohost@g' " \
                              "{}".format(f)
             os.system(command)
