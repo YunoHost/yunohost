@@ -110,7 +110,7 @@ ynh_backup_before_upgrade () {
 # # default: ${src_id}.${src_format}
 # SOURCE_FILENAME=example.tar.gz 
 # # (Optional) If it set as false don't extract the source.
-# # (Usefull to get a debian package of a python wheel.)
+# # (Useful to get a debian package or a python wheel.)
 # # default: true
 # SOURCE_EXTRACT=(true|false)
 #
