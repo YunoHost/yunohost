@@ -5,7 +5,6 @@ import base64
 import time
 import json
 import errno
-import platform
 from shutil import copy2
 
 from moulinette import m18n, msettings
@@ -80,7 +79,11 @@ class MyMigration(Migration):
         self.upgrade_yunohost_packages()
 
     def debian_major_version(self):
-        return int(platform.dist()[1][0])
+        # We rely on lsb_release instead of the python module "platform",
+        # because "platform" relies on uname, which on some weird setups does
+        # not behave correctly (still says running Jessie when lsb_release says
+        # Stretch...)
+        return int(check_output("lsb_release -r").split("\t")[1][0])
 
     def yunohost_major_version(self):
         return int(get_installed_version("yunohost").split('.')[0])
