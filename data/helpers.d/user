@@ -41,10 +41,18 @@ ynh_system_user_exists() {
 
 # Create a system user
 #
+# examples:
+#   - ynh_system_user_create nextcloud -> creates a nextcloud user with
+#    no home directory and /usr/sbin/nologin login shell (hence no login capability)
+#   - ynh_system_user_create discourse /var/www/discourse 1 --> creates a
+#    discourse user using /var/www/discourse as home directory and the default login shell
+#
 # usage: ynh_system_user_create user_name [home_dir [use_shell]]
 # | arg: user_name - Name of the system user that will be create
-# | arg: home_dir - Path of the home dir for the user. Usually the final path of the app. If this argument is omitted, the user will be created without home
-# | arg: use_shell - Create a user using the default login shell if present. If this argument is omitted, the user will be created with /usr/sbin/nologin shell
+# | arg: home_dir - Path of the home dir for the user. Usually the final path
+# of the app. If this argument is omitted, the user will be created without home
+# | arg: use_shell - Create a user using the default login shell if present.
+# If this argument is omitted, the user will be created with /usr/sbin/nologin shell
 ynh_system_user_create () {
 	if ! ynh_system_user_exists "$1"	# Check if the user exists on the system
 	then	# If the user doesn't exist
