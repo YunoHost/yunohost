@@ -1,7 +1,9 @@
 #!/bin/bash
 
+# Fetch ips
 ip=$(hostname --all-ip-address)
 
+# Fetch SSH fingerprints
 i=0
 for key in /etc/ssh/ssh_host_*_key.pub ; do 
     output=$(ssh-keygen -l -f $key)
@@ -9,7 +11,11 @@ for key in /etc/ssh/ssh_host_*_key.pub ; do
     i=$(($i + 1))
 done
 
-cat > /etc/issue.net << EOF
+#
+# Build the logo
+#
+
+LOGO=$(cat << 'EOF'
  '.                        '                                    ''     -d.    
  /M+                       h-   .shh/           //            /NMy-    hMdosso
  'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
@@ -19,7 +25,18 @@ cat > /etc/issue.net << EOF
     'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
      hy      /yy:    :-    -.            -Nh      '                           
       .                                   
- 
+EOF
+)
+
+# ' Put a quote in comment to make vim happy about syntax highlighting :s
+
+#
+# Build the actual message
+#
+
+LOGO_AND_FINGERPRINTS=$(cat << EOF
+"$LOGO"
+
 IP: ${ip}
 SSH fingerprints:
 ${fingerprint[0]}
@@ -28,38 +45,22 @@ ${fingerprint[2]}
 ${fingerprint[3]}
 ${fingerprint[4]}
 EOF
+)
+
+
+echo "$LOGO_AND_FINGERPRINTS" > /etc/issue.net
+
 if [[ ! -f /etc/yunohost/installed ]]
 then
-        if [[ ! -f /etc/yunohost/from_script ]]
-        then
-sleep 5
-chvt 2
-cat << EOF
- '.                        '                                    ''     -d.    
- /M+                       h-   .shh/           //            /NMy-    hMdosso
- 'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
-  sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
-   .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
-     mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
-    'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
-     hy      /yy:    :-    -.            -Nh      '                           
-      .                                   
- 
-IP: ${ip}
-SSH fingerprints*:
-${fingerprint[0]}
-${fingerprint[1]}
-${fingerprint[2]}
-${fingerprint[3]}
-${fingerprint[4]}
-EOF
-
-echo -e "\e[m Post-installation \e[0m"
-cat << EOF
-Congratulations! YunoHost has been successfully installed.
-Two more steps are required to activate the services of your server.
-EOF
-read -p "Proceed to post-installation? (y/n) " -n 1
+    if [[ ! -f /etc/yunohost/from_script ]]
+    then
+        sleep 5
+        chvt 2
+        echo "$LOGO_AND_FINGERPRINTS"
+        echo -e "\e[m Post-installation \e[0m"
+        echo "Congratulations! YunoHost has been successfully installed.
+    Two more steps are required to activate the services of your server."
+        read -p "Proceed to post-installation? (y/n) " -n 1
 		RESULT=1
 		while [ $RESULT -gt 0 ]; do
 			if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -76,27 +77,6 @@ read -p "Proceed to post-installation? (y/n) " -n 1
 		done
     fi
 else # YunoHost is already post-installed
-
-cat > /etc/issue << EOF
- '.                        '                                    ''     -d.    
- /M+                       h-   .shh/           //            /NMy-    hMdosso
- 'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
-  sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
-   .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
-     mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
-    'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
-     hy      /yy:    :-    -.            -Nh      '                           
-      .                                   
- 
-IP: ${ip}
-SSH fingerprints:
-${fingerprint[0]}
-${fingerprint[1]}
-${fingerprint[2]}
-${fingerprint[3]}
-${fingerprint[4]}
-EOF
-
-
+    echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
 fi
 
