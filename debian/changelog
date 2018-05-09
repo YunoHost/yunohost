@@ -1,3 +1,9 @@
+yunohost (2.7.13.1) testing; urgency=low
+
+  * [fix] Misc fixes on stretch migration following feedback
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 09 May 2018 00:44:50 +0000
+
 yunohost (2.7.13) testing; urgency=low
 
   * [enh] Add 'manual migration' mechanism to the migration framework (#429)
