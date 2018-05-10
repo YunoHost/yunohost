@@ -75,6 +75,7 @@ def service_add(name, status=None, log=None, runlevel=None):
     try:
         _save_services(services)
     except:
+        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', service=name))
 
     logger.success(m18n.n('service_added', service=name))
@@ -98,6 +99,7 @@ def service_remove(name):
     try:
         _save_services(services)
     except:
+        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', service=name))
 
     logger.success(m18n.n('service_removed', service=name))
@@ -585,9 +587,12 @@ def _save_services(services):
         services -- A dict of managed services with their parameters
 
     """
-    # TODO: Save to custom services.yml
-    with open('/etc/yunohost/services.yml', 'w') as f:
-        yaml.safe_dump(services, f, default_flow_style=False)
+    try:
+        with open('/etc/yunohost/services.yml', 'w') as f:
+            yaml.safe_dump(services, f, default_flow_style=False)
+    except Exception as e:
+        logger.warning('Error while saving services, exception: %s', e, exc_info=1)
+        raise
 
 
 def _tail(file, n, offset=None):
