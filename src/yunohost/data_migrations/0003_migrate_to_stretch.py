@@ -45,12 +45,16 @@ class MyMigration(Migration):
         self.apt_update()
         apps_packages = self.get_apps_equivs_packages()
         self.unhold(["metronome"])
-        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban", "nginx-common"])
+        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
+        if "/etc/nginx/nginx.conf" in manually_modified_files_compared_to_debian_default() \
+           and os.path.exists("/etc/nginx/nginx.conf"):
+                os.system("mv /etc/nginx/nginx.conf \
+                              /home/yunohost.conf/backup/nginx.conf.bkp_before_stretch")
 
         # Main dist-upgrade
         logger.warning(m18n.n("migration_0003_main_upgrade"))
         _run_service_command("stop", "mysql")
-        self.apt_dist_upgrade(conf_flags=["old", "def"])
+        self.apt_dist_upgrade(conf_flags=["old", "miss", "def"])
         _run_service_command("start", "mysql")
         if self.debian_major_version() == 8:
             raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
@@ -65,11 +69,6 @@ class MyMigration(Migration):
             os.system("mv /etc/fail2ban /etc/fail2ban.old")
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "fail2ban")
-
-        # Specific upgrade for nginx-common...
-        logger.warning(m18n.n("migration_0003_nginx_upgrade"))
-        self.unhold(["nginx-common"])
-        self.apt_dist_upgrade(conf_flags=["new", "def"])
 
         # Clean the mess
         os.system("apt autoremove --assume-yes")
