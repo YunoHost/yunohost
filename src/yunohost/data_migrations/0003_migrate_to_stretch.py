@@ -15,7 +15,10 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
-from yunohost.service import _run_service_command, service_regen_conf, manually_modified_files
+from yunohost.service import (_run_service_command,
+                              service_regen_conf,
+                              manually_modified_files,
+                              manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import get_installed_version
 
@@ -47,7 +50,7 @@ class MyMigration(Migration):
         self.apt_update()
         apps_packages = self.get_apps_equivs_packages()
         self.unhold(["metronome"])
-        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
+        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban", "nginx-common"])
 
         # Main dist-upgrade
         logger.warning(m18n.n("migration_0003_main_upgrade"))
@@ -67,6 +70,11 @@ class MyMigration(Migration):
             os.system("mv /etc/fail2ban /etc/fail2ban.old")
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "fail2ban")
+
+        # Specific upgrade for nginx-common...
+        logger.warning(m18n.n("migration_0003_nginx_upgrade"))
+        self.unhold(["nginx-common"])
+        self.apt_dist_upgrade(conf_flags=["new", "def"])
 
         # Clean the mess
         os.system("apt autoremove --assume-yes")
@@ -129,6 +137,10 @@ class MyMigration(Migration):
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
         modified_files = manually_modified_files()
+        # We also have a specific check for nginx.conf which some people
+        # modified and needs to be upgraded...
+        if "/etc/nginx/nginx.conf" in manually_modified_files_compared_to_debian_default():
+            modified_files.append("/etc/nginx/nginx.conf")
         modified_files = "".join(["\n    - "+f for f in modified_files ])
 
         message = m18n.n("migration_0003_general_warning")

@@ -793,3 +793,14 @@ def manually_modified_files():
                     output.append(filename)
 
     return output
+
+
+def manually_modified_files_compared_to_debian_default():
+
+    # from https://serverfault.com/a/90401
+    r = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
+                                | awk 'OFS=\"  \"{print $2,$1}' \
+                                | md5sum -c 2>/dev/null \
+                                | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
+    return r.strip().split("\n")
+
