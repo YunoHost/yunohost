@@ -574,6 +574,12 @@ def _get_services():
     except:
         return {}
     else:
+        # some services are marked as None to remove them from YunoHost
+        # filter this
+        for key, value in services.items():
+            if value is None:
+                del services[key]
+
         return services
 
 
