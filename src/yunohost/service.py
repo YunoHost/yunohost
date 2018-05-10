@@ -585,6 +585,12 @@ def _get_services():
     except:
         return {}
     else:
+        # some services are marked as None to remove them from YunoHost
+        # filter this
+        for key, value in services.items():
+            if value is None:
+                del services[key]
+
         return services
 
 
@@ -815,3 +821,13 @@ def _get_journalctl_logs(service):
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
+
+      
+def manually_modified_files_compared_to_debian_default():
+
+    # from https://serverfault.com/a/90401
+    r = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
+                                | awk 'OFS=\"  \"{print $2,$1}' \
+                                | md5sum -c 2>/dev/null \
+                                | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
+    return r.strip().split("\n")

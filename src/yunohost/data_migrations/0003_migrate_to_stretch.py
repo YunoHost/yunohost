@@ -1,10 +1,5 @@
 import glob
 import os
-import requests
-import base64
-import time
-import json
-import errno
 from shutil import copy2
 
 from moulinette import m18n, msettings
@@ -15,13 +10,16 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
-from yunohost.service import _run_service_command, service_regen_conf, manually_modified_files
+from yunohost.service import (_run_service_command,
+                              manually_modified_files,
+                              manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import get_installed_version
 
 logger = getActionLogger('yunohost.migration')
 
-YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat" ]
+YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
+
 
 class MyMigration(Migration):
     "Upgrade the system to Debian Stretch and Yunohost 3.0"
@@ -47,7 +45,7 @@ class MyMigration(Migration):
         self.apt_update()
         apps_packages = self.get_apps_equivs_packages()
         self.unhold(["metronome"])
-        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
+        self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban", "nginx-common"])
 
         # Main dist-upgrade
         logger.warning(m18n.n("migration_0003_main_upgrade"))
@@ -67,6 +65,11 @@ class MyMigration(Migration):
             os.system("mv /etc/fail2ban /etc/fail2ban.old")
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "fail2ban")
+
+        # Specific upgrade for nginx-common...
+        logger.warning(m18n.n("migration_0003_nginx_upgrade"))
+        self.unhold(["nginx-common"])
+        self.apt_dist_upgrade(conf_flags=["new", "def"])
 
         # Clean the mess
         os.system("apt autoremove --assume-yes")
@@ -95,7 +98,7 @@ class MyMigration(Migration):
         # in the middle and debian version could be >= 9.x but yunohost package
         # would still be in 2.x...
         if not self.debian_major_version() == 8 \
-        and not self.yunohost_major_version() == 2:
+           and not self.yunohost_major_version() == 2:
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
         # Have > 1 Go free space on /var/ ?
@@ -105,7 +108,7 @@ class MyMigration(Migration):
         # Check system is up to date
         # (but we don't if 'stretch' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
-        if not " stretch " in read_file("/etc/apt/sources.list"):
+        if " stretch " not in read_file("/etc/apt/sources.list"):
             self.apt_update()
             apt_list_upgradable = check_output("apt list --upgradable -a")
             if "upgradable" in apt_list_upgradable:
@@ -120,16 +123,20 @@ class MyMigration(Migration):
         # in the middle and debian version could be >= 9.x but yunohost package
         # would still be in 2.x...
         if not self.debian_major_version() == 8 \
-        and not self.yunohost_major_version() == 2:
+           and not self.yunohost_major_version() == 2:
             return None
 
         # Get list of problematic apps ? I.e. not official or community+working
         problematic_apps = unstable_apps()
-        problematic_apps = "".join(["\n    - "+app for app in problematic_apps ])
+        problematic_apps = "".join(["\n    - " + app for app in problematic_apps])
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
         modified_files = manually_modified_files()
-        modified_files = "".join(["\n    - "+f for f in modified_files ])
+        # We also have a specific check for nginx.conf which some people
+        # modified and needs to be upgraded...
+        if "/etc/nginx/nginx.conf" in manually_modified_files_compared_to_debian_default():
+            modified_files.append("/etc/nginx/nginx.conf")
+        modified_files = "".join(["\n    - " + f for f in modified_files])
 
         message = m18n.n("migration_0003_general_warning")
 
@@ -220,7 +227,6 @@ class MyMigration(Migration):
 
         os.system(command)
 
-
     def apt_dist_upgrade(self, conf_flags):
 
         # Make apt-get happy
@@ -251,7 +257,6 @@ class MyMigration(Migration):
             # command showing in the terminal, since 'info' channel is only
             # enabled if the user explicitly add --verbose ...
             os.system(command)
-
 
     # Those are files that should be kept and restored before the final switch
     # to yunohost 3.x... They end up being modified by the various dist-upgrades
@@ -292,4 +297,3 @@ class MyMigration(Migration):
         for f in self.files_to_keep:
             dest_file = f.strip('/').replace("/", "_")
             copy2(os.path.join(tmp_dir, dest_file), f)
-
