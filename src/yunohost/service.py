@@ -115,13 +115,16 @@ def service_start(names):
     """
     if isinstance(names, str):
         names = [names]
+
     for name in names:
         if _run_service_command('start', name):
             logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed', service=name))
+                                      m18n.n('service_start_failed',
+                                             service=name,
+                                             logs=_get_journalctl_logs(name)))
             logger.info(m18n.n('service_already_started', service=name))
 
 
@@ -141,7 +144,9 @@ def service_stop(names):
         else:
             if service_status(name)['status'] != 'inactive':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed', service=name))
+                                      m18n.n('service_stop_failed',
+                                             service=name,
+                                             logs=_get_journalctl_logs(name)))
             logger.info(m18n.n('service_already_stopped', service=name))
 
 
@@ -160,7 +165,9 @@ def service_enable(names):
             logger.success(m18n.n('service_enabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed', service=name))
+                                  m18n.n('service_enable_failed',
+                                         service=name,
+                                         logs=_get_journalctl_logs(name)))
 
 
 def service_disable(names):
@@ -178,7 +185,9 @@ def service_disable(names):
             logger.success(m18n.n('service_disabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed', service=name))
+                                  m18n.n('service_disable_failed',
+                                         service=name,
+                                         logs=_get_journalctl_logs(name)))
 
 
 def service_status(names=[]):
@@ -798,3 +807,11 @@ def manually_modified_files():
                     output.append(filename)
 
     return output
+
+
+def _get_journalctl_logs(service):
+    try:
+        return subprocess.check_output("journalctl -xn -u %s" % service, shell=True)
+    except:
+        import traceback
+        return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
