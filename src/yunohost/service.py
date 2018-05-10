@@ -229,8 +229,8 @@ def service_status(names=[]):
 
         # Retrieve service status
         try:
-            ret = subprocess.check_output(status, stderr=subprocess.STDOUT,
-                                          shell=True)
+            subprocess.check_output(status, stderr=subprocess.STDOUT,
+                                            shell=True)
         except subprocess.CalledProcessError as e:
             if 'usage:' in e.output.lower():
                 logger.warning(m18n.n('service_status_failed', service=name))
