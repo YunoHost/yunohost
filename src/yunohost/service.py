@@ -218,6 +218,7 @@ def service_status(names=[]):
         result[name] = {
             'status': str(status.get("SubState", "unknown")),
             'loaded': str(status.get("LoadState", "unknown")),
+            'description': str(status.get("Description", "")),
         }
 
     if len(names) == 1:
