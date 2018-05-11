@@ -1,40 +1,40 @@
 nginx:
-   log: /var/log/nginx
+  log: /var/log/nginx
 avahi-daemon:
-   log: /var/log/daemon.log
+  log: /var/log/daemon.log
 dnsmasq:
-   log: /var/log/daemon.log
+  log: /var/log/daemon.log
 fail2ban:
-    log: /var/log/fail2ban.log
+  log: /var/log/fail2ban.log
 dovecot:
-   log: [/var/log/mail.log,/var/log/mail.err]
+  log: [/var/log/mail.log,/var/log/mail.err]
 postfix:
-   log: [/var/log/mail.log,/var/log/mail.err]
+  log: [/var/log/mail.log,/var/log/mail.err]
 rmilter:
-   log: /var/log/mail.log
+  log: /var/log/mail.log
 rspamd:
-   log: /var/log/mail.log
+  log: /var/log/mail.log
 redis-server:
-   log: /var/log/redis/redis-server.log
+  log: /var/log/redis/redis-server.log
 mysql:
-   log: [/var/log/mysql.log,/var/log/mysql.err]
+  log: [/var/log/mysql.log,/var/log/mysql.err]
 glances: {}
 ssh:
-   log: /var/log/auth.log
+  log: /var/log/auth.log
 ssl:
    status: null
 metronome:
-   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
+  log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
 slapd:
-   log: /var/log/syslog
+  log: /var/log/syslog
 php5-fpm:
-   log: /var/log/php5-fpm.log
+  log: /var/log/php5-fpm.log
 yunohost-api:
-   log: /var/log/yunohost/yunohost-api.log
+  log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
    need_lock: true
 nslcd:
-   log: /var/log/syslog
+  log: /var/log/syslog
 nsswitch:
   status: null
 bind9: null
