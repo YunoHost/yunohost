@@ -31,7 +31,9 @@ import subprocess
 import errno
 import shutil
 import hashlib
+
 from difflib import unified_diff
+from datetime import datetime
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -218,6 +220,10 @@ def service_status(names=[]):
             'status': str(status.get("SubState", "unknown")),
             'loaded': str(status.get("LoadState", "unknown")),
             'active': str(status.get("ActiveState", "unknown")),
+            'active_at': {
+                "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
+                "human": datetime.fromtimestamp(status.get("ActiveEnterTimestamp") / 1000000).strftime("%F %X"),
+            },
             'description': str(status.get("Description", "")),
         }
 
