@@ -1,3 +1,10 @@
+yunohost (2.7.13.2) testing; urgency=low
+
+  * [fix] Fix an error with services marked as None (#466)
+  * [fix] Issue with nginx not upgrading correctly /etc/nginx/nginx.conf if it was manually modified
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 11 May 2018 02:06:42 +0000
+
 yunohost (2.7.13.1) testing; urgency=low
 
   * [fix] Misc fixes on stretch migration following feedback
