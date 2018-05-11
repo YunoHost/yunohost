@@ -39,6 +39,8 @@ class MyMigration(Migration):
         logger.warning(m18n.n("migration_0003_start", logfile=self.logfile))
 
         # Preparing the upgrade
+        self.restore_original_nginx_conf_if_needed()
+
         logger.warning(m18n.n("migration_0003_patching_sources_list"))
         self.patch_apt_sources_list()
         self.backup_files_to_keep()
@@ -46,10 +48,6 @@ class MyMigration(Migration):
         apps_packages = self.get_apps_equivs_packages()
         self.unhold(["metronome"])
         self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
-        if "/etc/nginx/nginx.conf" in manually_modified_files_compared_to_debian_default() \
-           and os.path.exists("/etc/nginx/nginx.conf"):
-                os.system("mv /etc/nginx/nginx.conf \
-                              /home/yunohost.conf/backup/nginx.conf.bkp_before_stretch")
 
         # Main dist-upgrade
         logger.warning(m18n.n("migration_0003_main_upgrade"))
@@ -296,3 +294,59 @@ class MyMigration(Migration):
         for f in self.files_to_keep:
             dest_file = f.strip('/').replace("/", "_")
             copy2(os.path.join(tmp_dir, dest_file), f)
+
+    # On some setups, /etc/nginx/nginx.conf got edited. But this file needs
+    # to be upgraded because of the way the new module system works for nginx.
+    # (in particular, having the line that include the modules at the top)
+    #
+    # So here, if it got edited, we force the restore of the original conf
+    # *before* starting the actual upgrade...
+    #
+    # An alternative strategy that was attempted was to hold the nginx-common
+    # package and have a specific upgrade for it like for fail2ban, but that
+    # leads to apt complaining about not being able to upgrade for shitty
+    # reasons >.>
+    def restore_original_nginx_conf_if_needed(self):
+        if "/etc/nginx/nginx.conf" not in manually_modified_files_compared_to_debian_default():
+            return
+
+        if not os.path.exists("/etc/nginx/nginx.conf"):
+            return
+
+        # If stretch is in the sources.list, we already started migrating on
+        # stretch so we don't re-do this
+        if " stretch " in read_file("/etc/apt/sources.list"):
+            return
+
+        backup_dest = "/home/yunohost.conf/backup/nginx.conf.bkp_before_stretch"
+
+        logger.warning(m18n.n("migration_0003_restoring_origin_nginx_conf",
+                              backup_dest=backup_dest))
+
+        os.system("mv /etc/nginx/nginx.conf %s" % backup_dest)
+
+        command = ""
+        command += " DEBIAN_FRONTEND=noninteractive"
+        command += " APT_LISTCHANGES_FRONTEND=none"
+        command += " apt-get"
+        command += " --fix-broken --show-upgraded --assume-yes"
+        command += ' -o Dpkg::Options::="--force-confmiss"'
+        command += " install --reinstall"
+        command += " nginx-common"
+
+        logger.debug("Running apt command :\n{}".format(command))
+
+        command += " 2>&1 | tee -a {}".format(self.logfile)
+
+        is_api = msettings.get('interface') == 'api'
+        if is_api:
+            callbacks = (
+                lambda l: logger.info(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            call_async_output(command, callbacks, shell=True)
+        else:
+            # We do this when running from the cli to have the output of the
+            # command showing in the terminal, since 'info' channel is only
+            # enabled if the user explicitly add --verbose ...
+            os.system(command)
