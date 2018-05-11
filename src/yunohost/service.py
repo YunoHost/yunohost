@@ -613,7 +613,7 @@ def _save_services(services):
         yaml.safe_dump(services, f, default_flow_style=False)
 
 
-def _tail(file, n, offset=None):
+def _tail(file, n):
     """
     Reads a n lines from f with an offset of offset lines.  The return
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
@@ -621,7 +621,7 @@ def _tail(file, n, offset=None):
 
     """
     avg_line_length = 74
-    to_read = n + (offset or 0)
+    to_read = n
 
     try:
         with open(file, 'r') as f:
@@ -635,7 +635,7 @@ def _tail(file, n, offset=None):
                 pos = f.tell()
                 lines = f.read().splitlines()
                 if len(lines) >= to_read or pos == 0:
-                    return lines[-to_read:offset and -offset or None]
+                    return lines[-to_read]
                 avg_line_length *= 1.3
 
     except IOError:
