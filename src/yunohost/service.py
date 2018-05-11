@@ -573,6 +573,7 @@ def _give_lock(action, service, p):
     return son_PID
 
 def _remove_lock(PID_to_remove):
+    # FIXME ironically not concurrency safe because it's not atomic...
 
     PIDs = filesystem.read_file(MOULINETTE_LOCK).split("\n")
     PIDs_to_keep = [ PID for PID in PIDs if int(PID) != PID_to_remove ]
