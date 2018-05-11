@@ -530,14 +530,17 @@ def _run_service_command(action, service):
             PID = _give_lock(action, service, p)
         # Wait for the command to complete
         p.communicate()
-        # Remove the lock if one was given
-        if need_lock and PID != 0:
-            _remove_lock(PID)
 
     except subprocess.CalledProcessError as e:
         # TODO: Log output?
         logger.warning(m18n.n('service_cmd_exec_failed', command=' '.join(e.cmd)))
         return False
+
+    finally:
+        # Remove the lock if one was given
+        if need_lock and PID != 0:
+            _remove_lock(PID)
+
     return True
 
 
