@@ -202,44 +202,45 @@ def service_status(names=[]):
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('service_unknown', service=name))
 
-        status = None
-        if services[name].get('status') == 'service':
-            status = 'service %s status' % name
-        elif "status" in services[name]:
-            status = str(services[name]['status'])
-        else:
+        # this "service" isn't a service actually so we skip it
+        #
+        # the historical reason is because regenconf has been hacked into the
+        # service part of YunoHost will in some situation we need to regenconf
+        # for things that aren't services
+        # the hack was to add fake services...
+        # we need to extract regenconf from service at some point, also because
+        # some app would really like to use it
+        if "status" in services[name] and services[name]["status"] is None:
             continue
 
-        runlevel = 5
-        if 'runlevel' in services[name].keys():
-            runlevel = int(services[name]['runlevel'])
+        status = _get_service_information_from_systemd(name)
 
-        result[name] = {'status': 'unknown', 'loaded': 'unknown'}
-
-        # Retrieve service status
-        try:
-            ret = subprocess.check_output(status, stderr=subprocess.STDOUT,
-                                          shell=True)
-        except subprocess.CalledProcessError as e:
-            if 'usage:' in e.output.lower():
-                logger.warning(m18n.n('service_status_failed', service=name))
-            else:
-                result[name]['status'] = 'inactive'
-        else:
-            result[name]['status'] = 'running'
-
-        # Retrieve service loading
-        rc_path = glob.glob("/etc/rc%d.d/S[0-9][0-9]%s" % (runlevel, name))
-        if len(rc_path) == 1 and os.path.islink(rc_path[0]):
-            result[name]['loaded'] = 'enabled'
-        elif os.path.isfile("/etc/init.d/%s" % name):
-            result[name]['loaded'] = 'disabled'
-        else:
-            result[name]['loaded'] = 'not-found'
+        result[name] = {
+            'status': str(status.get("SubState", "unknown")),
+            'loaded': str(status.get("LoadState", "unknown")),
+        }
 
     if len(names) == 1:
         return result[names[0]]
     return result
+
+
+def _get_service_information_from_systemd(service):
+    "this is the equivalent of 'systemctl status $service'"
+    import dbus
+
+    d = dbus.SystemBus()
+
+    systemd = d.get_object('org.freedesktop.systemd1','/org/freedesktop/systemd1')
+    manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
+
+    service_path = manager.GetUnit(service + ".service")
+    service_proxy = d.get_object('org.freedesktop.systemd1', service_path)
+
+    # unit_proxy = dbus.Interface(service_proxy, 'org.freedesktop.systemd1.Unit',)
+    properties_interface = dbus.Interface(service_proxy, 'org.freedesktop.DBus.Properties')
+
+    return properties_interface.GetAll('org.freedesktop.systemd1.Unit')
 
 
 def service_log(name, number=50):
