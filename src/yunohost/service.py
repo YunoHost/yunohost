@@ -292,14 +292,19 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     # Return the list of pending conf
     if list_pending:
         pending_conf = _get_pending_conf(names)
-        if with_diff:
-            for service, conf_files in pending_conf.items():
-                for system_path, pending_path in conf_files.items():
-                    pending_conf[service][system_path] = {
-                        'pending_conf': pending_path,
-                        'diff': _get_files_diff(
-                            system_path, pending_path, True),
-                    }
+
+        if not with_diff:
+            return pending_conf
+
+        for service, conf_files in pending_conf.items():
+            for system_path, pending_path in conf_files.items():
+
+                pending_conf[service][system_path] = {
+                    'pending_conf': pending_path,
+                    'diff': _get_files_diff(
+                        system_path, pending_path, True),
+                }
+
         return pending_conf
 
     # Clean pending conf directory
