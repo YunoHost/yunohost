@@ -323,12 +323,15 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
         filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
+
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
+
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Update the services name
     names = pre_result['succeed'].keys()
+
     if not names:
         raise MoulinetteError(errno.EIO,
                               m18n.n('service_regenconf_failed',
@@ -386,6 +389,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                         'service_conf_file_manually_removed',
                         conf=system_path))
                     conf_status = 'removed'
+
             # -> system conf is not managed yet
             elif not saved_hash:
                 logger.debug("> system conf is not managed yet")
@@ -409,6 +413,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     logger.warning(m18n.n('service_conf_file_kept_back',
                                           conf=system_path, service=service))
                     conf_status = 'unmanaged'
+
             # -> system conf has not been manually modified
             elif system_hash == saved_hash:
                 if to_remove:
@@ -421,6 +426,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     logger.debug("> system conf is already up-to-date")
                     os.remove(pending_path)
                     continue
+
             else:
                 logger.debug("> system conf has been manually modified")
                 if system_hash == new_hash:
@@ -457,6 +463,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                 'service_conf_updated' if not dry_run else
                 'service_conf_would_be_updated',
                 service=service))
+
         if succeed_regen and not dry_run:
             _update_conf_hashes(service, conf_hashes)
 
@@ -480,6 +487,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         else:
             regen_conf_files = ''
         return post_args + [regen_conf_files, ]
+
     hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     return result
@@ -678,25 +686,33 @@ def _get_pending_conf(services=[]):
 
     """
     result = {}
+
     if not os.path.isdir(PENDING_CONF_DIR):
         return result
+
     if not services:
         services = os.listdir(PENDING_CONF_DIR)
+
     for name in services:
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
+
         if not os.path.isdir(service_pending_path):
             continue
+
         path_index = len(service_pending_path)
         service_conf = {}
+
         for root, dirs, files in os.walk(service_pending_path):
             for filename in files:
                 pending_path = os.path.join(root, filename)
                 service_conf[pending_path[path_index:]] = pending_path
+
         if service_conf:
             result[name] = service_conf
         else:
             # remove empty directory
             shutil.rmtree(service_pending_path, ignore_errors=True)
+
     return result
 
 
@@ -708,9 +724,11 @@ def _get_conf_hashes(service):
     if service not in services:
         logger.debug("Service %s is not in services.yml yet.", service)
         return {}
+
     elif services[service] is None or 'conffiles' not in services[service]:
         logger.debug("No configuration files for service %s.", service)
         return {}
+
     else:
         return services[service]['conffiles']
 
@@ -743,11 +761,14 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
         backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
             system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
         backup_dir = os.path.dirname(backup_path)
+
         if not os.path.isdir(backup_dir):
             filesystem.mkdir(backup_dir, 0755, True)
+
         shutil.copy2(system_conf, backup_path)
         logger.info(m18n.n('service_conf_file_backed_up',
                            conf=system_conf, backup=backup_path))
+
     try:
         if not new_conf:
             os.remove(system_conf)
@@ -755,8 +776,10 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
+
             if not os.path.isdir(system_dir):
                 filesystem.mkdir(system_dir, 0755, True)
+
             shutil.copyfile(new_conf, system_conf)
             logger.info(m18n.n('service_conf_file_updated',
                                conf=system_conf))
@@ -766,6 +789,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                                   conf=system_conf),
                            exc_info=1)
             return False
+
         elif new_conf:
             try:
                 copy_succeed = os.path.samefile(system_conf, new_conf)
@@ -777,7 +801,9 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                                           conf=system_conf, new=new_conf),
                                    exc_info=1)
                     return False
+
     return True
+
 
 def manually_modified_files():
 
