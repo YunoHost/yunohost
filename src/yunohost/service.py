@@ -256,20 +256,32 @@ def service_log(name, number=50):
     if name not in services.keys():
         raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
 
-    if 'log' in services[name]:
-        log_list = services[name]['log']
-        result = {}
-        if not isinstance(log_list, list):
-            log_list = [log_list]
-
-        for log_path in log_list:
-            if os.path.isdir(log_path):
-                for log in [f for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f)) and f[-4:] == '.log']:
-                    result[os.path.join(log_path, log)] = _tail(os.path.join(log_path, log), int(number))
-            else:
-                result[log_path] = _tail(log_path, int(number))
-    else:
+    if 'log' not in services[name]:
         raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', service=name))
+
+    log_list = services[name]['log']
+
+    if not isinstance(log_list, list):
+        log_list = [log_list]
+
+    result = {}
+
+    for log_path in log_list:
+        # log is a file, read it
+        if not os.path.isdir(log_path):
+            result[log_path] = _tail(log_path, int(number))
+            continue
+
+        for log_file in os.listdir(log_path):
+            log_file_path = os.path.join(log_path, log_file)
+            # not a file : skip
+            if not os.path.isfile(log_file_path):
+                continue
+
+            if not log_file.endswith(".log"):
+                continue
+
+            result[log_file_path] = _tail(log_file_path, int(number))
 
     return result
 
