@@ -27,7 +27,6 @@ import os
 import time
 import yaml
 import json
-import glob
 import subprocess
 import errno
 import shutil
