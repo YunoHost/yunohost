@@ -511,11 +511,11 @@ def _run_service_command(action, service):
     if service not in services.keys():
         raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
 
-    cmd = None
-    if action in ['start', 'stop', 'restart', 'reload', 'enable', 'disable']:
-        cmd = 'systemctl %s %s' % (action, service)
-    else:
-        raise ValueError("Unknown action '%s'" % action)
+    possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+    if action not in possible_actions:
+        raise ValueError("Unknown action '%s', available actions are: %s" % (action, ", ".join(possible_actions)))
+
+    cmd = 'systemctl %s %s' % (action, service)
 
     need_lock = services[service].get('need_lock', False) \
                 and action in ['start', 'stop', 'restart', 'reload']
