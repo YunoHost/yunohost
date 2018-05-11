@@ -225,6 +225,7 @@ def service_status(names=[]):
                 "human": datetime.fromtimestamp(status.get("ActiveEnterTimestamp") / 1000000).strftime("%F %X"),
             },
             'description': str(status.get("Description", "")),
+            'service_file_path': str(status.get("FragmentPath", "unknown")),
         }
 
     if len(names) == 1:
