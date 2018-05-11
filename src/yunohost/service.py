@@ -217,6 +217,7 @@ def service_status(names=[]):
         result[name] = {
             'status': str(status.get("SubState", "unknown")),
             'loaded': str(status.get("LoadState", "unknown")),
+            'active': str(status.get("ActiveState", "unknown")),
             'description': str(status.get("Description", "")),
         }
 
