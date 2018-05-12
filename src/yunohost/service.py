@@ -632,10 +632,13 @@ def _tail(file, n):
                     # woops.  apparently file is smaller than what we want
                     # to step back, go to the beginning instead
                     f.seek(0)
+
                 pos = f.tell()
                 lines = f.read().splitlines()
+
                 if len(lines) >= to_read or pos == 0:
                     return lines[-to_read]
+
                 avg_line_length *= 1.3
 
     except IOError:
