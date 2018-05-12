@@ -1,3 +1,10 @@
+yunohost (3.0.0~beta1.3) testing; urgency=low
+
+  * Use mariadb 10.1 now
+  * Convert old php comment starting with # for php5->7 migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 12 May 2018 19:26:00 +0000
+
 yunohost (3.0.0~beta1.2) testing; urgency=low
 
   Removing http2 also from yunohost_admin.conf since there still are some
