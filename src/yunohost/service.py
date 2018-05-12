@@ -641,7 +641,8 @@ def _tail(file, n):
 
                 avg_line_length *= 1.3
 
-    except IOError:
+    except IOError as e:
+        logger.warning("Error while tailing file '%s': %s", file, e, exc_info=1)
         return []
 
 
