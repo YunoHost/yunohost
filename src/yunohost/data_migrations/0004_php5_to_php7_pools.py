@@ -48,6 +48,11 @@ class MyMigration(Migration):
             c = "sed -i '1i {}' {}".format(MIGRATION_COMMENT, dest)
             os.system(c)
 
+            # Some old comments starting with '#' instead of ';' are not
+            # compatible in php7
+            c = "sed -i 's/^#/;#/g' {}".format(dest)
+            os.system(c)
+
         # Reload/restart the php pools
         _run_service_command("restart", "php7.0-fpm")
         os.system("systemctl stop php5-fpm")
