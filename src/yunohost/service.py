@@ -654,25 +654,25 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     header can also be removed if skip_header is True.
 
     """
-    contents = [[], []]
-    for i, path in enumerate((orig_file, new_file)):
-        try:
-            with open(path, 'r') as f:
-                contents[i] = f.readlines()
-        except IOError:
-            pass
+    with open(orig_file, 'r') as orig_file:
+        orig_file = orig_file.readlines()
+
+    with open(new_file, 'r') as new_file:
+        new_file.readlines()
 
     # Compare files and format output
-    diff = unified_diff(contents[0], contents[1])
+    diff = unified_diff(orig_file, new_file)
+
     if skip_header:
-        for i in range(2):
-            try:
-                next(diff)
-            except:
-                break
+        try:
+            next(diff)
+            next(diff)
+        except:
+            pass
+
     if as_string:
-        result = ''.join(line for line in diff)
-        return result.rstrip()
+        return ''.join(diff).rstrip()
+
     return diff
 
 
