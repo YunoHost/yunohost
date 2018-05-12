@@ -75,6 +75,7 @@ def service_add(name, status=None, log=None, runlevel=None):
     try:
         _save_services(services)
     except:
+        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', service=name))
 
     logger.success(m18n.n('service_added', service=name))
@@ -98,6 +99,7 @@ def service_remove(name):
     try:
         _save_services(services)
     except:
+        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', service=name))
 
     logger.success(m18n.n('service_removed', service=name))
@@ -113,13 +115,16 @@ def service_start(names):
     """
     if isinstance(names, str):
         names = [names]
+
     for name in names:
         if _run_service_command('start', name):
             logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed', service=name))
+                                      m18n.n('service_start_failed',
+                                             service=name,
+                                             logs=_get_journalctl_logs(name)))
             logger.info(m18n.n('service_already_started', service=name))
 
 
@@ -139,7 +144,9 @@ def service_stop(names):
         else:
             if service_status(name)['status'] != 'inactive':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed', service=name))
+                                      m18n.n('service_stop_failed',
+                                             service=name,
+                                             logs=_get_journalctl_logs(name)))
             logger.info(m18n.n('service_already_stopped', service=name))
 
 
@@ -158,7 +165,9 @@ def service_enable(names):
             logger.success(m18n.n('service_enabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed', service=name))
+                                  m18n.n('service_enable_failed',
+                                         service=name,
+                                         logs=_get_journalctl_logs(name)))
 
 
 def service_disable(names):
@@ -176,7 +185,9 @@ def service_disable(names):
             logger.success(m18n.n('service_disabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed', service=name))
+                                  m18n.n('service_disable_failed',
+                                         service=name,
+                                         logs=_get_journalctl_logs(name)))
 
 
 def service_status(names=[]):
@@ -218,8 +229,8 @@ def service_status(names=[]):
 
         # Retrieve service status
         try:
-            ret = subprocess.check_output(status, stderr=subprocess.STDOUT,
-                                          shell=True)
+            subprocess.check_output(status, stderr=subprocess.STDOUT,
+                                            shell=True)
         except subprocess.CalledProcessError as e:
             if 'usage:' in e.output.lower():
                 logger.warning(m18n.n('service_status_failed', service=name))
@@ -603,9 +614,12 @@ def _save_services(services):
         services -- A dict of managed services with their parameters
 
     """
-    # TODO: Save to custom services.yml
-    with open('/etc/yunohost/services.yml', 'w') as f:
-        yaml.safe_dump(services, f, default_flow_style=False)
+    try:
+        with open('/etc/yunohost/services.yml', 'w') as f:
+            yaml.safe_dump(services, f, default_flow_style=False)
+    except Exception as e:
+        logger.warning('Error while saving services, exception: %s', e, exc_info=1)
+        raise
 
 
 def _tail(file, n, offset=None):
@@ -813,6 +827,14 @@ def manually_modified_files():
     return output
 
 
+def _get_journalctl_logs(service):
+    try:
+        return subprocess.check_output("journalctl -xn -u %s" % service, shell=True)
+    except:
+        import traceback
+        return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
+
+      
 def manually_modified_files_compared_to_debian_default():
 
     # from https://serverfault.com/a/90401
@@ -821,4 +843,3 @@ def manually_modified_files_compared_to_debian_default():
                                 | md5sum -c 2>/dev/null \
                                 | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
     return r.strip().split("\n")
-
