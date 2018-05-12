@@ -666,7 +666,7 @@ def _check_if_vulnerable_to_meltdown():
                                 stderr=subprocess.STDOUT)
 
         output, _ = call.communicate()
-        assert call.returncode == 0
+        assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
         CVEs = json.loads(output)
         assert len(CVEs) == 1
