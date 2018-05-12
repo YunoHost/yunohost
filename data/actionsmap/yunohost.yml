@@ -203,30 +203,6 @@ user:
                     extra:
                         pattern: *pattern_mailbox_quota
 
-        ### ssh_user_enable_ssh()
-        allow-ssh:
-            action_help: Allow the user to uses ssh
-            api: POST /ssh/user/enable-ssh
-            configuration:
-                authenticate: all
-            arguments:
-                username:
-                    help: Username of the user
-                    extra:
-                        pattern: *pattern_username
-
-        ### ssh_user_disable_ssh()
-        disallow-ssh:
-            action_help: Disallow the user to uses ssh
-            api: POST /ssh/user/disable-ssh
-            configuration:
-                authenticate: all
-            arguments:
-                username:
-                    help: Username of the user
-                    extra:
-                        pattern: *pattern_username
-
         ### user_info()
         info:
             action_help: Get user information
@@ -237,6 +213,78 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+
+    subcategories:
+
+        ssh:
+            subcategory_help: Manage ssh access
+            actions:
+                ### user_ssh_enable()
+                allow:
+                    action_help: Allow the user to uses ssh
+                    api: POST /users/ssh/enable
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_disable()
+                disallow:
+                    action_help: Disallow the user to uses ssh
+                    api: POST /users/ssh/disable
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_keys_list()
+                list-keys:
+                    action_help: Show user's authorized ssh keys
+                    api: GET /users/ssh/keys
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_keys_add()
+                add-key:
+                    action_help: Add a new authorized ssh key for this user
+                    api: POST /users/ssh/key
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        key:
+                            help: The key to be added
+                        -c:
+                            full: --comment
+                            help: Optionnal comment about the key
+
+                ### user_ssh_keys_remove()
+                remove-key:
+                    action_help: Remove an authorized ssh key for this user
+                    api: DELETE /users/ssh/key
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        key:
+                            help: The key to be removed
 
 
 #############################
@@ -1350,74 +1398,6 @@ dyndns:
 
 
 #############################
-#            SSH            #
-#############################
-ssh:
-    category_help: Manage ssh keys and access
-    actions: {}
-    subcategories:
-        authorized-keys:
-            subcategory_help: Manage user's authorized ssh keys
-
-            actions:
-                ### ssh_authorized_keys_list()
-                list:
-                    action_help: Show user's authorized ssh keys
-                    api: GET /ssh/authorized-keys
-                    configuration:
-                        authenticate: all
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
-
-                ### ssh_authorized_keys_add()
-                add:
-                    action_help: Add a new authorized ssh key for this user
-                    api: POST /ssh/authorized-keys
-                    configuration:
-                        authenticate: all
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
-                        -u:
-                            full: --public
-                            help: Public key
-                            extra:
-                                required: True
-                        -i:
-                            full: --private
-                            help: Private key
-                            extra:
-                                required: True
-                        -n:
-                            full: --name
-                            help: Key name
-                            extra:
-                                required: True
-
-                ### ssh_authorized_keys_remove()
-                remove:
-                    action_help: Remove an authorized ssh key for this user
-                    api: DELETE /ssh/authorized-keys
-                    configuration:
-                        authenticate: all
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
-                        -k:
-                            full: --key
-                            help: Key as a string
-                            extra:
-                                required: True
-
-
-#############################
 #           Tools           #
 #############################
 tools:
@@ -1575,6 +1555,13 @@ tools:
               list:
                   action_help: List migrations
                   api: GET /migrations
+                  arguments:
+                    --pending:
+                        help: list only pending migrations
+                        action: store_true
+                    --done:
+                        help: list only migrations already performed
+                        action: store_true
 
               ### tools_migrations_migrate()
               migrate:
@@ -1589,7 +1576,12 @@ tools:
                         help: skip the migration(s), use it only if you know what you are doing
                         full: --skip
                         action: store_true
-
+                    --auto:
+                        help: automatic mode, won't run manual migrations, use it only if you know what you are doing
+                        action: store_true
+                    --accept-disclaimer:
+                        help: accept disclaimers of migration (please read them before using this option)
+                        action: store_true
 
               ### tools_migrations_state()
               state:

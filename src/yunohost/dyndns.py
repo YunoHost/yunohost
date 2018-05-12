@@ -30,7 +30,6 @@ import glob
 import time
 import base64
 import errno
-import requests
 import subprocess
 
 from moulinette import m18n
@@ -152,6 +151,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
+    import requests # lazy loading this module for performance reasons
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
@@ -161,7 +161,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
         try:
             error = json.loads(r.text)['error']
         except:
-            error = "Server error"
+            error = "Server error, code: %s. (Message: \"%s\")" % (r.status_code, r.text)
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_registration_failed', error=error))
 
@@ -232,10 +232,13 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("migrate_to_tsig_sha256")
         try:
-            migration["module"].MyMigration().migrate(dyn_host, domain, key)
+            migration.migrate(dyn_host, domain, key)
         except Exception as e:
-            logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
-
+            logger.error(m18n.n('migrations_migration_has_failed',
+                                exception=e,
+                                number=migration.number,
+                                name=migration.name),
+                                exc_info=1)
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'

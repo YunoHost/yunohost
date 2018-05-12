@@ -32,7 +32,6 @@ import re
 import urlparse
 import errno
 import subprocess
-import requests
 import glob
 import pwd
 import grp
@@ -129,6 +128,7 @@ def app_fetchlist(url=None, name=None):
     else:
         appslists_to_be_fetched = appslists.keys()
 
+    import requests # lazy loading this module for performance reasons
     # Fetch all appslists to be fetched
     for name in appslists_to_be_fetched:
 
@@ -2164,3 +2164,20 @@ def normalize_url_path(url_path):
         return '/' + url_path.strip("/").strip() + '/'
 
     return "/"
+
+
+def unstable_apps():
+
+    raw_app_installed = app_list(installed=True, raw=True)
+    output = []
+
+    for app, infos in raw_app_installed.items():
+
+        repo = infos.get("repository", None)
+        state = infos.get("state", None)
+
+        if repo is None or state in ["inprogress", "notworking"]:
+            output.append(app)
+
+    return output
+
