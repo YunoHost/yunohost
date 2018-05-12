@@ -809,6 +809,9 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
         elif new_conf:
             try:
+                # From documentation:
+                # Raise an exception if an os.stat() call on either pathname fails.
+                # (os.stats returns a series of information from a file like type, size...)
                 copy_succeed = os.path.samefile(system_conf, new_conf)
             except:
                 copy_succeed = False
