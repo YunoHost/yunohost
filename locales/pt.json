@@ -167,5 +167,6 @@
     "app_already_up_to_date": "{app:s} já está atualizado",
     "app_argument_choice_invalid": "Escolha inválida para o argumento '{name:s}', deve ser um dos {choices:s}",
     "app_argument_invalid": "Valor inválido de argumento '{name:s}': {error:s}",
-    "app_argument_required": "O argumento '{name:s}' é obrigatório"
+    "app_argument_required": "O argumento '{name:s}' é obrigatório",
+    "app_change_url_failed_nginx_reload": "Falha ao reiniciar o nginx. Aqui está o retorno de 'nginx -t':\n{nginx_errors:s}"
 }
