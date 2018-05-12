@@ -799,7 +799,8 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             shutil.copyfile(new_conf, system_conf)
             logger.info(m18n.n('service_conf_file_updated',
                                conf=system_conf))
-    except:
+    except Exception as e:
+        logger.warning("Exception while trying to regenerate conf '%s': %s", system_conf, e, exc_info=1)
         if not new_conf and os.path.exists(system_conf):
             logger.warning(m18n.n('service_conf_file_remove_failed',
                                   conf=system_conf),
