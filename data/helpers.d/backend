@@ -134,7 +134,7 @@ ynh_remove_systemd_config () {
 #   __PORT_2__    by $port_2
 #
 ynh_add_nginx_config () {
-	local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
+	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 	local others_var=${1:-}
 	ynh_backup_if_checksum_is_different "$finalnginxconf"
 	sudo cp ../conf/nginx.conf "$finalnginxconf"
@@ -161,14 +161,18 @@ ynh_add_nginx_config () {
 	fi
 
 	# Replace all other variable given as arguments
-	for v in $others_var
+	for var_to_replace in $others_var
 	do
-        ynh_replace_string "__${v^^}__" "${!v}" "$finalnginxconf"
+		# ${var_to_replace^^} make the content of the variable on upper-cases
+		# ${!var_to_replace} get the content of the variable named $var_to_replace 
+		ynh_replace_string "__${var_to_replace^^}__" "${!var_to_replace}" "$finalnginxconf"
 	done
 	
 	if [ "${path_url:-}" != "/" ]
 	then
 		ynh_replace_string "^#sub_path_only" "" "$finalnginxconf"
+	else
+		ynh_replace_string "^#root_path_only" "" "$finalnginxconf"
 	fi
 
 	ynh_store_file_checksum "$finalnginxconf"
