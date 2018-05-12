@@ -679,11 +679,14 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 def _calculate_hash(path):
     """Calculate the MD5 hash of a file"""
     hasher = hashlib.md5()
+
     try:
         with open(path, 'rb') as f:
             hasher.update(f.read())
         return hasher.hexdigest()
-    except IOError:
+
+    except IOError as e:
+        logger.warning("Error while calculating file '%s' hash: %s", path, e, exc_info=1)
         return None
 
 
