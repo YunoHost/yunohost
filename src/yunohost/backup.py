@@ -2042,7 +2042,7 @@ def backup_create(name=None, description=None, methods=[],
     # Apply backup methods on prepared files
     backup_manager.backup()
 
-    logger.success(m18n.n('backup_created'))
+    logger.success(m18n.n('backup_created', backup_manager.name))
 
     return {
         'name': backup_manager.name,

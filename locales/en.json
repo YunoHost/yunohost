@@ -80,7 +80,7 @@
     "backup_cleaning_failed": "Unable to clean-up the temporary backup directory",
     "backup_copying_to_organize_the_archive": "Copying {size:s}MB to organize the archive",
     "backup_couldnt_bind": "Couldn't bind {src:s} to {dest:s}.",
-    "backup_created": "Backup created",
+    "backup_created": "Backup created and stored in /home/yunohost.backup/archives under the name {}",
     "backup_creating_archive": "Creating the backup archive...",
     "backup_creation_failed": "Backup creation failed",
     "backup_csv_addition_failed": "Unable to add files to backup into the CSV file",
