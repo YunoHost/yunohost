@@ -1,6 +1,12 @@
 backup_dir="$1/conf/cron"
 
-sudo cp -a $backup_dir/. /etc/cron.d
+# Old backup format
+if [ ! -d $backup_dir/etc ]; then
+    sudo cp -a $backup_dir/. /etc/cron.d
+# New backup format (2017-07-19 commit:902f331)
+else
+    sudo cp -a $backup_dir/etc/cron.* /etc/
+fi
 
 # Restart just in case
 sudo service cron restart
