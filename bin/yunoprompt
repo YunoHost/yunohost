@@ -47,9 +47,6 @@ ${fingerprint[4]}
 EOF
 )
 
-
-echo "$LOGO_AND_FINGERPRINTS" > /etc/issue.net
-
 if [[ ! -f /etc/yunohost/installed ]]
 then
     if [[ ! -f /etc/yunohost/from_script ]]
