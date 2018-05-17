@@ -229,7 +229,7 @@ def service_status(names=[]):
 
         result[name] = {
             'status': str(status.get("SubState", "unknown")),
-            'loaded': str(status.get("LoadState", "unknown")),
+            'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
             'active': str(status.get("ActiveState", "unknown")),
             'active_at': {
                 "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
