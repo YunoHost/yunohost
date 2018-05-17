@@ -20,8 +20,44 @@ do_pre_regen() {
   cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
   cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
 
-  # add resolver file
-  cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
+  #
+  # DNS resolver config, with rotating nameservers
+  #
+
+  cp plain/resolv.dnsmasq.conf ${pending_dir}/etc/resolv.dnsmasq.conf
+
+  # Choose 3 random DNS
+  max_dns=$(grep -c '^nameserver' /etc/resolv.dnsmasq.conf)
+  random_dns() {
+      echo $[($RANDOM % ($[$max_dns - 1] + 1)) + 1]
+  }
+  dns1=$(random_dns)
+  dns2=$dns1
+  while [ $dns2 -eq $dns1 ]
+  do
+      dns2=$(random_dns)
+  done
+  dns3=$dns2
+  while [ $dns3 -eq $dns1 ] || [ $dns3 -eq $dns2 ]
+  do
+      dns3=$(random_dns)
+  done
+
+  # Comment all DNS then uncomment the 3 selected DNS
+  sed -i 's/^nameserver/#  nameserver/g' ${pending_dir}/etc/resolv.dnsmasq.conf
+  for i in `seq 1 3`
+  do
+      # Find the line for this dns
+      dns_line=$(grep -m$(eval echo \$dns${i}) "#  nameserver" ${pending_dir}/etc/resolv.dnsmasq.conf | tail -n1)
+      # Remove the comment at the beginning
+      dns_line=${dns_line#\#  }
+      # Remove the comment for this dns
+      sed -i "s/^#  $dns_line/$dns_line/" ${pending_dir}/etc/resolv.dnsmasq.conf
+  done
+
+  #
+  # Domain DNS confs
+  #
 
   # retrieve variables
   ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
