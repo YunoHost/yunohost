@@ -1,0 +1,24 @@
+# Google Mail bounces email sent via IPv6, while this works ok with IPv4.
+#
+# Convert Google Mail IPv6 complaint permanent error into a temporary error.
+# Turn 550 error containing gsmtp in the message into 450 error.
+# This way Postfix will attempt to deliver this e-mail using another MX
+# (via IPv4).
+#
+/^5(\d\d )5(.*information. \S+ - gsmtp.*)/ 4${1}4$2
+
+# Remove the first line of the Received: header. Note that we cannot fully remove the Received: header
+# because OpenDKIM requires that a header be present when signing outbound mail. The first line is
+# where the user's home IP address would be.
+/^\s*Received:[^\n]*(.*)/         REPLACE Received: from authenticated-user ({{ main_domain }} [{{ main_ip }}])$1
+
+# Remove other typically private information.
+/^\s*User-Agent:/        IGNORE
+/^\s*X-Enigmail:/        IGNORE
+/^\s*X-Mailer:/          IGNORE
+/^\s*X-Originating-IP:/  IGNORE
+/^\s*X-Pgp-Agent:/       IGNORE
+
+# The Mime-Version header can leak the user agent too, e.g. in Mime-Version: 1.0 (Mac OS X Mail 8.1 \(2010.6\)).
+/^\s*(Mime-Version:\s*[0-9\.]+)\s.+/  REPLACE $1
+
