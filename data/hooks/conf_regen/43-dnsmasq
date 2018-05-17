@@ -55,6 +55,10 @@ do_pre_regen() {
       sed -i "s/^#  $dns_line/$dns_line/" ${pending_dir}/etc/resolv.dnsmasq.conf
   done
 
+  mkdir -p ${pending_dir}/etc/cron.hourly
+  echo "#!/bin/bash" > ${pending_dir}/etc/cron.hourly/yunohost-rotate-dns-resolvers
+  echo "yunohost service regen-conf dnsmasq --quiet >/dev/null" >> ${pending_dir}/etc/cron.hourly/yunohost-rotate-dns-resolvers
+
   #
   # Domain DNS confs
   #
@@ -90,6 +94,11 @@ do_post_regen() {
 
   [[ -z "$regen_conf_files" ]] \
     || sudo service dnsmasq restart
+
+  if [ -f /etc/cron.hourly/yunohost-rotate-dns-resolvers ]
+  then
+     chmod +x /etc/cron.hourly/yunohost-rotate-dns-resolvers
+  fi
 }
 
 FORCE=${2:-0}
