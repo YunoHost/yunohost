@@ -16,15 +16,13 @@ done
 #
 
 LOGO=$(cat << 'EOF'
- '.                        '                                    ''     -d.    
- /M+                       h-   .shh/           //            /NMy-    hMdosso
- 'MN'   /' '.    -'  :+    N:  .Nmyym     yo   .MN'  omNds:   :mN' .sydMMMNds+
-  sMh:/dN: :M'   m:  oMh' .M:  dy   h'    MM:  'Mo  oMh:-sMh    /ddNdyyNM'    
-   .sMMy'  /M'  /M-  sMMd/sM- -Ms  +M+    MM:  +M/  mM'  -Md     'NM.  hM.    
-     mM    .M- :NN   yMMMMMM: .dMNNMd' -/oMMmhmMMh  /msosNM/   ::oMM.  +M:    
-    'MN     sMNMM+   mN:.+mM+   -+o/   :hMMm+- 'oN-   :oyo-    'yho.    -     
-     hy      /yy:    :-    -.            -Nh      '                           
-      .                                   
+ .--------------.
+ | \\ /    _  _  |
+ |  | |_|| |(_) |
+ |              |
+ |  |_| _  __|_ |
+ |  | |(_)_\\ |  |
+ '______________'
 EOF
 )
 
@@ -35,15 +33,17 @@ EOF
 #
 
 LOGO_AND_FINGERPRINTS=$(cat << EOF
-"$LOGO"
 
-IP: ${ip}
-SSH fingerprints:
-${fingerprint[0]}
-${fingerprint[1]}
-${fingerprint[2]}
-${fingerprint[3]}
-${fingerprint[4]}
+$LOGO
+
+ IP: ${ip}
+ SSH fingerprints:
+ ${fingerprint[0]}
+ ${fingerprint[1]}
+ ${fingerprint[2]}
+ ${fingerprint[3]}
+ ${fingerprint[4]}
+
 EOF
 )
 
@@ -55,25 +55,23 @@ then
         chvt 2
         echo "$LOGO_AND_FINGERPRINTS"
         echo -e "\e[m Post-installation \e[0m"
-        echo "Congratulations! YunoHost has been successfully installed.
-    Two more steps are required to activate the services of your server."
+        echo "Congratulations! YunoHost has been successfully installed.\nTwo more steps are required to activate the services of your server."
         read -p "Proceed to post-installation? (y/n) " -n 1
-		RESULT=1
-		while [ $RESULT -gt 0 ]; do
-			if [[ $REPLY =~ ^[Nn]$ ]]; then
+        RESULT=1
+        while [ $RESULT -gt 0 ]; do
+            if [[ $REPLY =~ ^[Nn]$ ]]; then
                 chvt 1
-				exit 0
-			fi
-                        echo -e "\n"
-			/usr/bin/yunohost tools postinstall
-			let RESULT=$?
-			if [ $RESULT -gt 0 ]; then
-				echo -e "\n"
-				read -p "Retry? (y/n) " -n 1
-			fi
-		done
+                exit 0
+            fi
+            echo -e "\n"
+            /usr/bin/yunohost tools postinstall
+            let RESULT=$?
+            if [ $RESULT -gt 0 ]; then
+                echo -e "\n"
+                read -p "Retry? (y/n) " -n 1
+            fi
+        done
     fi
 else # YunoHost is already post-installed
     echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
 fi
-
