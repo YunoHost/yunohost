@@ -12,7 +12,7 @@ Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 2.7.1), ssowat (>= 2.7.1)
  , python-psutil, python-requests, python-dnspython, python-openssl
- , python-apt, python-miniupnpc
+ , python-apt, python-miniupnpc, python-dbus
  , glances
  , dnsutils, bind9utils, unzip, git, curl, cron, wget
  , ca-certificates, netcat-openbsd, iproute
