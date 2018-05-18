@@ -232,7 +232,7 @@ def service_status(names=[]):
 
         # that mean that we don't have a translation for this string
         # that's the only way to test for that for now
-        # if we don't have it, uses the one provide by systemd
+        # if we don't have it, uses the one provided by systemd
         if description == translation_key:
             description = str(status.get("Description", ""))
 
