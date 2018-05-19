@@ -39,6 +39,7 @@ from yunohost.hook import hook_callback
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, 'pending')
+REGEN_CONF_FILE = '/etc/yunohost/regenconf.yml'
 
 logger = log.getActionLogger('yunohost.regenconf')
 
@@ -49,7 +50,7 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     Regenerate configuration file(s)
 
     Keyword argument:
-        names -- Services name to regenerate configuration of
+        names -- Categories to regenerate configuration of
         with_diff -- Show differences in case of configuration changes
         force -- Override all manual modifications in configuration files
         dry_run -- Show what would have been regenerated
@@ -65,10 +66,10 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         if not with_diff:
             return pending_conf
 
-        for service, conf_files in pending_conf.items():
+        for category, conf_files in pending_conf.items():
             for system_path, pending_path in conf_files.items():
 
-                pending_conf[service][system_path] = {
+                pending_conf[category][system_path] = {
                     'pending_conf': pending_path,
                     'diff': _get_files_diff(
                         system_path, pending_path, True),
@@ -96,32 +97,32 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
+        filesystem.mkdir(category_pending_path, 0755, True, uid='root')
 
         # return the arguments to pass to the script
-        return pre_args + [service_pending_path, ]
+        return pre_args + [category_pending_path, ]
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
-    # Update the services name
+    # Update the category name
     names = pre_result['succeed'].keys()
 
     if not names:
         raise MoulinetteError(errno.EIO,
-                              m18n.n('service_regenconf_failed',
-                                     services=', '.join(pre_result['failed'])))
+                              m18n.n('regenconf_failed',
+                                     categories=', '.join(pre_result['failed'])))
 
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
-    # Iterate over services and process pending conf
-    for service, conf_files in _get_pending_conf(names).items():
+    # Iterate over categories and process pending conf
+    for category, conf_files in _get_pending_conf(names).items():
         logger.info(m18n.n(
-            'service_regenconf_pending_applying' if not dry_run else
-            'service_regenconf_dry_pending_applying',
-            service=service))
+            'regenconf_pending_applying' if not dry_run else
+            'regenconf_dry_pending_applying',
+            category=category))
 
-        conf_hashes = _get_conf_hashes(service)
+        conf_hashes = _get_conf_hashes(category)
         succeed_regen = {}
         failed_regen = {}
 
@@ -160,7 +161,7 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                         system_path, pending_path, save=False)
                 else:
                     logger.warning(m18n.n(
-                        'service_conf_file_manually_removed',
+                        'regenconf_file_manually_removed',
                         conf=system_path))
                     conf_status = 'removed'
 
@@ -176,16 +177,16 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     # we assume that it is safe to regen it, since the file is backuped
                     # anyway (by default in _regen), as long as we warn the user
                     # appropriately.
-                    logger.warning(m18n.n('service_conf_new_managed_file',
-                                          conf=system_path, service=service))
+                    logger.warning(m18n.n('regenconf_new_managed_file',
+                                          conf=system_path, category=category))
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'new'
                 elif force:
                     regenerated = _regen(system_path)
                     conf_status = 'force-removed'
                 else:
-                    logger.warning(m18n.n('service_conf_file_kept_back',
-                                          conf=system_path, service=service))
+                    logger.warning(m18n.n('regenconf_file_kept_back',
+                                          conf=system_path, category=category))
                     conf_status = 'unmanaged'
 
             # -> system conf has not been manually modified
@@ -212,7 +213,7 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     conf_status = 'force-updated'
                 else:
                     logger.warning(m18n.n(
-                        'service_conf_file_manually_modified',
+                        'regenconf_file_manually_modified',
                         conf=system_path))
                     conf_status = 'modified'
 
@@ -228,21 +229,21 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
             else:
                 failed_regen[system_path] = conf_result
 
-        # Check for service conf changes
+        # Check for category conf changes
         if not succeed_regen and not failed_regen:
-            logger.info(m18n.n('service_conf_up_to_date', service=service))
+            logger.info(m18n.n('regenconf_up_to_date', category=category))
             continue
         elif not failed_regen:
             logger.success(m18n.n(
-                'service_conf_updated' if not dry_run else
-                'service_conf_would_be_updated',
-                service=service))
+                'regenconf_updated' if not dry_run else
+                'regenconf_would_be_updated',
+                category=category))
 
         if succeed_regen and not dry_run:
-            _update_conf_hashes(service, conf_hashes)
+            _update_conf_hashes(category, conf_hashes)
 
-        # Append the service results
-        result[service] = {
+        # Append the category results
+        result[category] = {
             'applied': succeed_regen,
             'pending': failed_regen
         }
@@ -255,7 +256,7 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     post_args = ['post', ] + common_args
 
     def _pre_call(name, priority, path, args):
-        # append coma-separated applied changes for the service
+        # append coma-separated applied changes for the category
         if name in result and result[name]['applied']:
             regen_conf_files = ','.join(result[name]['applied'].keys())
         else:
@@ -284,13 +285,13 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             filesystem.mkdir(backup_dir, 0755, True)
 
         shutil.copy2(system_conf, backup_path)
-        logger.info(m18n.n('service_conf_file_backed_up',
+        logger.info(m18n.n('regenconf_file_backed_up',
                            conf=system_conf, backup=backup_path))
 
     try:
         if not new_conf:
             os.remove(system_conf)
-            logger.info(m18n.n('service_conf_file_removed',
+            logger.info(m18n.n('regenconf_file_removed',
                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
@@ -299,12 +300,12 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                 filesystem.mkdir(system_dir, 0755, True)
 
             shutil.copyfile(new_conf, system_conf)
-            logger.info(m18n.n('service_conf_file_updated',
+            logger.info(m18n.n('regenconf_file_updated',
                                conf=system_conf))
     except Exception as e:
         logger.warning("Exception while trying to regenerate conf '%s': %s", system_conf, e, exc_info=1)
         if not new_conf and os.path.exists(system_conf):
-            logger.warning(m18n.n('service_conf_file_remove_failed',
+            logger.warning(m18n.n('regenconf_file_remove_failed',
                                   conf=system_conf),
                            exc_info=1)
             return False
@@ -319,7 +320,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                 copy_succeed = False
             finally:
                 if not copy_succeed:
-                    logger.warning(m18n.n('service_conf_file_copy_failed',
+                    logger.warning(m18n.n('regenconf_file_copy_failed',
                                           conf=system_conf, new=new_conf),
                                    exc_info=1)
                     return False
@@ -327,39 +328,29 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
     return True
 
 
-def _get_services():
+def _get_regenconf_infos():
     """
-    Get a dict of managed services with their parameters
-
+    Get a dict of regen conf informations
     """
     try:
-        with open('/etc/yunohost/services.yml', 'r') as f:
-            services = yaml.load(f)
+        with open(REGEN_CONF_FILE, 'r') as f:
+            return yaml.load(f)
     except:
         return {}
-    else:
-        # some services are marked as None to remove them from YunoHost
-        # filter this
-        for key, value in services.items():
-            if value is None:
-                del services[key]
-
-        return services
 
 
-def _save_services(services):
+def _save_regenconf_infos(infos):
     """
-    Save managed services to files
+    Save the regen conf informations
 
     Keyword argument:
-        services -- A dict of managed services with their parameters
-
+        categories -- A dict containing the regenconf infos
     """
     try:
-        with open('/etc/yunohost/services.yml', 'w') as f:
-            yaml.safe_dump(services, f, default_flow_style=False)
+        with open(REGEN_CONF_FILE, 'w') as f:
+            yaml.safe_dump(infos, f, default_flow_style=False)
     except Exception as e:
-        logger.warning('Error while saving services, exception: %s', e, exc_info=1)
+        logger.warning('Error while saving regenconf infos, exception: %s', e, exc_info=1)
         raise
 
 
@@ -407,14 +398,14 @@ def _calculate_hash(path):
         return None
 
 
-def _get_pending_conf(services=[]):
-    """Get pending configuration for service(s)
+def _get_pending_conf(categories=[]):
+    """Get pending configuration for categories
 
-    Iterate over the pending configuration directory for given service(s) - or
+    Iterate over the pending configuration directory for given categories - or
     all if empty - and look for files inside. Each file is considered as a
     pending configuration file and therefore must be in the same directory
     tree than the system file that it replaces.
-    The result is returned as a dict of services with pending configuration as
+    The result is returned as a dict of categories with pending configuration as
     key and a dict of `system_conf_path` => `pending_conf_path` as value.
 
     """
@@ -423,63 +414,64 @@ def _get_pending_conf(services=[]):
     if not os.path.isdir(PENDING_CONF_DIR):
         return result
 
-    if not services:
-        services = os.listdir(PENDING_CONF_DIR)
+    if not categories:
+        categories = os.listdir(PENDING_CONF_DIR)
 
-    for name in services:
-        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
+    for name in categories:
+        category_pending_path = os.path.join(PENDING_CONF_DIR, name)
 
-        if not os.path.isdir(service_pending_path):
+        if not os.path.isdir(category_pending_path):
             continue
 
-        path_index = len(service_pending_path)
-        service_conf = {}
+        path_index = len(category_pending_path)
+        category_conf = {}
 
-        for root, dirs, files in os.walk(service_pending_path):
+        for root, dirs, files in os.walk(category_pending_path):
             for filename in files:
                 pending_path = os.path.join(root, filename)
-                service_conf[pending_path[path_index:]] = pending_path
+                category_conf[pending_path[path_index:]] = pending_path
 
-        if service_conf:
-            result[name] = service_conf
+        if category_conf:
+            result[name] = category_conf
         else:
             # remove empty directory
-            shutil.rmtree(service_pending_path, ignore_errors=True)
+            shutil.rmtree(category_pending_path, ignore_errors=True)
 
     return result
 
 
-def _get_conf_hashes(service):
-    """Get the registered conf hashes for a service"""
+def _get_conf_hashes(category):
+    """Get the registered conf hashes for a category"""
 
-    services = _get_services()
+    infos = _get_regenconf_infos()
 
-    if service not in services:
-        logger.debug("Service %s is not in services.yml yet.", service)
+    if category not in infos:
+        logger.debug("Category %s is not in regen conf yet.", category)
         return {}
 
-    elif services[service] is None or 'conffiles' not in services[service]:
-        logger.debug("No configuration files for service %s.", service)
+    elif infos[category] is None or 'conffiles' not in infos[category]:
+        logger.debug("No configuration files for category %s.", category)
         return {}
 
     else:
-        return services[service]['conffiles']
+        return infos[category]['conffiles']
 
 
-def _update_conf_hashes(service, hashes):
-    """Update the registered conf hashes for a service"""
+def _update_conf_hashes(category, hashes):
+    """Update the registered conf hashes for a category"""
     logger.debug("updating conf hashes for '%s' with: %s",
-                 service, hashes)
-    services = _get_services()
-    service_conf = services.get(service, {})
+                 category, hashes)
+
+    categories = _get_regenconf_infos()
+    category_conf = categories.get(category, {})
 
     # Handle the case where services[service] is set to null in the yaml
-    if service_conf is None:
-        service_conf = {}
+    if category_conf is None:
+        category_conf = {}
 
-    service_conf['conffiles'] = hashes
-    services[service] = service_conf
-    _save_services(services)
+    category_conf['conffiles'] = hashes
+    categories[category] = category_conf
+    _save_regenconf_infos(categories)
 
 
 def manually_modified_files():
