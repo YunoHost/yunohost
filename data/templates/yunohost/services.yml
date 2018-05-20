@@ -37,6 +37,8 @@ nslcd:
   log: /var/log/syslog
 nsswitch:
   status: null
+yunohost:
+  status: null
 bind9: null
 tahoe-lafs: null
 memcached: null
