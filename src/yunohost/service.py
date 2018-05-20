@@ -713,6 +713,10 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 
 def _calculate_hash(path):
     """Calculate the MD5 hash of a file"""
+
+    if not os.path.exists(path):
+        return None
+
     hasher = hashlib.md5()
 
     try:
@@ -889,7 +893,7 @@ def _get_journalctl_logs(service):
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
 
-      
+
 def manually_modified_files_compared_to_debian_default():
 
     # from https://serverfault.com/a/90401
