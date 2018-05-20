@@ -96,7 +96,7 @@ def regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
-        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
+        category_pending_path = os.path.join(PENDING_CONF_DIR, name)
         filesystem.mkdir(category_pending_path, 0755, True, uid='root')
 
         # return the arguments to pass to the script
