@@ -45,6 +45,11 @@ smtp_tls_exclude_ciphers = $smtpd_tls_exclude_ciphers
 smtp_tls_mandatory_ciphers= $smtpd_tls_mandatory_ciphers
 smtp_tls_loglevel=1
 
+# Configure Root CA certificates
+# (for example, avoids getting "Untrusted TLS connection established to" messages in logs)
+smtpd_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
 # information on enabling SSL in the smtp client.
 

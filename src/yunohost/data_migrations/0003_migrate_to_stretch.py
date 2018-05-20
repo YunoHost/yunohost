@@ -1,10 +1,5 @@
 import glob
 import os
-import requests
-import base64
-import time
-import json
-import errno
 from shutil import copy2
 
 from moulinette import m18n, msettings
@@ -15,13 +10,16 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
-from yunohost.service import _run_service_command, service_regen_conf, manually_modified_files
+from yunohost.service import (_run_service_command,
+                              manually_modified_files,
+                              manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import get_installed_version
 
 logger = getActionLogger('yunohost.migration')
 
-YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat" ]
+YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
+
 
 class MyMigration(Migration):
     "Upgrade the system to Debian Stretch and Yunohost 3.0"
@@ -41,6 +39,8 @@ class MyMigration(Migration):
         logger.warning(m18n.n("migration_0003_start", logfile=self.logfile))
 
         # Preparing the upgrade
+        self.restore_original_nginx_conf_if_needed()
+
         logger.warning(m18n.n("migration_0003_patching_sources_list"))
         self.patch_apt_sources_list()
         self.backup_files_to_keep()
@@ -52,7 +52,7 @@ class MyMigration(Migration):
         # Main dist-upgrade
         logger.warning(m18n.n("migration_0003_main_upgrade"))
         _run_service_command("stop", "mysql")
-        self.apt_dist_upgrade(conf_flags=["old", "def"])
+        self.apt_dist_upgrade(conf_flags=["old", "miss", "def"])
         _run_service_command("start", "mysql")
         if self.debian_major_version() == 8:
             raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
@@ -95,7 +95,7 @@ class MyMigration(Migration):
         # in the middle and debian version could be >= 9.x but yunohost package
         # would still be in 2.x...
         if not self.debian_major_version() == 8 \
-        and not self.yunohost_major_version() == 2:
+           and not self.yunohost_major_version() == 2:
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
         # Have > 1 Go free space on /var/ ?
@@ -105,7 +105,7 @@ class MyMigration(Migration):
         # Check system is up to date
         # (but we don't if 'stretch' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
-        if not " stretch " in read_file("/etc/apt/sources.list"):
+        if " stretch " not in read_file("/etc/apt/sources.list"):
             self.apt_update()
             apt_list_upgradable = check_output("apt list --upgradable -a")
             if "upgradable" in apt_list_upgradable:
@@ -120,16 +120,20 @@ class MyMigration(Migration):
         # in the middle and debian version could be >= 9.x but yunohost package
         # would still be in 2.x...
         if not self.debian_major_version() == 8 \
-        and not self.yunohost_major_version() == 2:
+           and not self.yunohost_major_version() == 2:
             return None
 
         # Get list of problematic apps ? I.e. not official or community+working
         problematic_apps = unstable_apps()
-        problematic_apps = "".join(["\n    - "+app for app in problematic_apps ])
+        problematic_apps = "".join(["\n    - " + app for app in problematic_apps])
 
         # Manually modified files ? (c.f. yunohost service regen-conf)
         modified_files = manually_modified_files()
-        modified_files = "".join(["\n    - "+f for f in modified_files ])
+        # We also have a specific check for nginx.conf which some people
+        # modified and needs to be upgraded...
+        if "/etc/nginx/nginx.conf" in manually_modified_files_compared_to_debian_default():
+            modified_files.append("/etc/nginx/nginx.conf")
+        modified_files = "".join(["\n    - " + f for f in modified_files])
 
         message = m18n.n("migration_0003_general_warning")
 
@@ -220,7 +224,6 @@ class MyMigration(Migration):
 
         os.system(command)
 
-
     def apt_dist_upgrade(self, conf_flags):
 
         # Make apt-get happy
@@ -251,7 +254,6 @@ class MyMigration(Migration):
             # command showing in the terminal, since 'info' channel is only
             # enabled if the user explicitly add --verbose ...
             os.system(command)
-
 
     # Those are files that should be kept and restored before the final switch
     # to yunohost 3.x... They end up being modified by the various dist-upgrades
@@ -293,3 +295,58 @@ class MyMigration(Migration):
             dest_file = f.strip('/').replace("/", "_")
             copy2(os.path.join(tmp_dir, dest_file), f)
 
+    # On some setups, /etc/nginx/nginx.conf got edited. But this file needs
+    # to be upgraded because of the way the new module system works for nginx.
+    # (in particular, having the line that include the modules at the top)
+    #
+    # So here, if it got edited, we force the restore of the original conf
+    # *before* starting the actual upgrade...
+    #
+    # An alternative strategy that was attempted was to hold the nginx-common
+    # package and have a specific upgrade for it like for fail2ban, but that
+    # leads to apt complaining about not being able to upgrade for shitty
+    # reasons >.>
+    def restore_original_nginx_conf_if_needed(self):
+        if "/etc/nginx/nginx.conf" not in manually_modified_files_compared_to_debian_default():
+            return
+
+        if not os.path.exists("/etc/nginx/nginx.conf"):
+            return
+
+        # If stretch is in the sources.list, we already started migrating on
+        # stretch so we don't re-do this
+        if " stretch " in read_file("/etc/apt/sources.list"):
+            return
+
+        backup_dest = "/home/yunohost.conf/backup/nginx.conf.bkp_before_stretch"
+
+        logger.warning(m18n.n("migration_0003_restoring_origin_nginx_conf",
+                              backup_dest=backup_dest))
+
+        os.system("mv /etc/nginx/nginx.conf %s" % backup_dest)
+
+        command = ""
+        command += " DEBIAN_FRONTEND=noninteractive"
+        command += " APT_LISTCHANGES_FRONTEND=none"
+        command += " apt-get"
+        command += " --fix-broken --show-upgraded --assume-yes"
+        command += ' -o Dpkg::Options::="--force-confmiss"'
+        command += " install --reinstall"
+        command += " nginx-common"
+
+        logger.debug("Running apt command :\n{}".format(command))
+
+        command += " 2>&1 | tee -a {}".format(self.logfile)
+
+        is_api = msettings.get('interface') == 'api'
+        if is_api:
+            callbacks = (
+                lambda l: logger.info(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            call_async_output(command, callbacks, shell=True)
+        else:
+            # We do this when running from the cli to have the output of the
+            # command showing in the terminal, since 'info' channel is only
+            # enabled if the user explicitly add --verbose ...
+            os.system(command)

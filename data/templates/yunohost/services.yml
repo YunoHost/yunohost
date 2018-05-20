@@ -1,57 +1,44 @@
 nginx:
-   status: service
-   log: /var/log/nginx
+  log: /var/log/nginx
 avahi-daemon:
-   status: service
-   log: /var/log/daemon.log
+  log: /var/log/daemon.log
 dnsmasq:
-   status: service
-   log: /var/log/daemon.log
+  log: /var/log/daemon.log
 fail2ban:
-    status: service
-    log: /var/log/fail2ban.log
+  log: /var/log/fail2ban.log
 dovecot:
-   status: service
-   log: [/var/log/mail.log,/var/log/mail.err]
+  log: [/var/log/mail.log,/var/log/mail.err]
 postfix:
-   status: service
-   log: [/var/log/mail.log,/var/log/mail.err]
+  log: [/var/log/mail.log,/var/log/mail.err]
 rmilter:
-   status: systemctl status rmilter.service
-   log: /var/log/mail.log
+  log: /var/log/mail.log
 rspamd:
-   status: systemctl status rspamd.service
-   log: /var/log/mail.log
+  log: /var/log/mail.log
 redis-server:
-   status: service
-   log: /var/log/redis/redis-server.log
+  log: /var/log/redis/redis-server.log
 mysql:
-   status: service
-   log: [/var/log/mysql.log,/var/log/mysql.err]
-glances:
-   status: service
+  log: [/var/log/mysql.log,/var/log/mysql.err]
+glances: {}
 ssh:
-   status: service
-   log: /var/log/auth.log
+  log: /var/log/auth.log
+ssl:
+   status: null
 metronome:
-   status: metronomectl status
-   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
+  log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
 slapd:
-   status: service
-   log: /var/log/syslog
+  log: /var/log/syslog
 php5-fpm:
-   status: service
-   log: /var/log/php5-fpm.log
+  log: /var/log/php5-fpm.log
 yunohost-api:
-   status: service
-   log: /var/log/yunohost/yunohost-api.log
+  log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
-   status: service
    need_lock: true
 nslcd:
-   status: service
-   log: /var/log/syslog
-nsswitch: {}
+  log: /var/log/syslog
+nsswitch:
+  status: null
+yunohost:
+  status: null
 bind9: null
 tahoe-lafs: null
 memcached: null

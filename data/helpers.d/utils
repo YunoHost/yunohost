@@ -37,16 +37,23 @@ ynh_get_plain_key() {
 ynh_restore_upgradebackup () {
 	echo "Upgrade failed." >&2
 	local app_bck=${app//_/-}	# Replace all '_' by '-'
-	
-        # Check if an existing backup can be found before removing and restoring the application.
-	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
-    	then
-		# Remove the application then restore it
-		sudo yunohost app remove $app
-		# Restore the backup
-		sudo yunohost backup restore --ignore-system $app_bck-pre-upgrade$backup_number --apps $app --force --verbose
-		ynh_die "The app was restored to the way it was before the failed upgrade."
-	fi
+
+  	NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
+
+	if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
+	then	
+		# Check if an existing backup can be found before removing and restoring the application.
+		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
+		then
+			# Remove the application then restore it
+			sudo yunohost app remove $app
+			# Restore the backup
+			sudo yunohost backup restore --ignore-system $app_bck-pre-upgrade$backup_number --apps $app --force --verbose
+			ynh_die "The app was restored to the way it was before the failed upgrade."
+		fi
+	else
+      		echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
+  	fi
 }
 
 # Make a backup in case of failed upgrade
@@ -67,28 +74,34 @@ ynh_backup_before_upgrade () {
 	backup_number=1
 	local old_backup_number=2
 	local app_bck=${app//_/-}	# Replace all '_' by '-'
+	NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
 
-	# Check if a backup already exists with the prefix 1
-	if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
-	then
-		# Prefix becomes 2 to preserve the previous backup
-		backup_number=2
-		old_backup_number=1
-	fi
-
-	# Create backup
-	sudo BACKUP_CORE_ONLY=1 yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number --verbose
-	if [ "$?" -eq 0 ]
-	then
-		# If the backup succeeded, remove the previous backup
-		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$old_backup_number
+        if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
+        then
+		# Check if a backup already exists with the prefix 1
+		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
 		then
-			# Remove the previous backup only if it exists
-			sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
+			# Prefix becomes 2 to preserve the previous backup
+			backup_number=2
+			old_backup_number=1
 		fi
-	else
-		ynh_die "Backup failed, the upgrade process was aborted."
-	fi
+
+		# Create backup
+		sudo BACKUP_CORE_ONLY=1 yunohost backup create --ignore-system --apps $app --name $app_bck-pre-upgrade$backup_number --verbose
+		if [ "$?" -eq 0 ]
+		then
+			# If the backup succeeded, remove the previous backup
+			if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$old_backup_number
+			then
+				# Remove the previous backup only if it exists
+				sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
+			fi
+		else
+			ynh_die "Backup failed, the upgrade process was aborted."
+		fi
+        else
+                echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
+        fi
 }
 
 # Download, check integrity, uncompress and patch the source from app.src
@@ -109,6 +122,10 @@ ynh_backup_before_upgrade () {
 # # (Optionnal) Name of the local archive (offline setup support)
 # # default: ${src_id}.${src_format}
 # SOURCE_FILENAME=example.tar.gz 
+# # (Optional) If it set as false don't extract the source.
+# # (Useful to get a debian package or a python wheel.)
+# # default: true
+# SOURCE_EXTRACT=(true|false)
 #
 # Details:
 # This helper downloads sources from SOURCE_URL if there is no local source
@@ -137,6 +154,7 @@ ynh_setup_source () {
     local src_sum=$(grep 'SOURCE_SUM=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_extract=$(grep 'SOURCE_EXTRACT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
     local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
 
@@ -145,6 +163,7 @@ ynh_setup_source () {
     src_in_subdir=${src_in_subdir:-true}
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
+    src_extract=${src_extract:-true}
     if [ "$src_filename" = "" ] ; then
         src_filename="${src_id}.${src_format}"
     fi
@@ -163,7 +182,11 @@ ynh_setup_source () {
 
     # Extract source into the app dir
     mkdir -p "$dest_dir"
-    if [ "$src_format" = "zip" ]
+    
+    if ! "$src_extract"
+    then
+        mv $src_filename $dest_dir
+    elif [ "$src_format" = "zip" ]
     then 
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
