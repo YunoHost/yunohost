@@ -311,10 +311,23 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
     """
 
-    # FIXME / TODO
-    # check names are in service list ...
-    # then call the new regen conf
-    pass
+    services = _get_services()
+    check_names = True
+
+    if isinstance(names, str):
+        names = [names]
+    elif len(names) == 0:
+        names = services.keys()
+        check_names = False
+
+    if check_names:
+        for name in names:
+            if name not in services.keys():
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('service_unknown', service=name))
+
+    from regenconf import regen_conf
+    return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
 def _run_service_command(action, service):
