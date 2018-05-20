@@ -928,6 +928,23 @@ def tools_shell(auth, command=None):
         shell.interact()
 
 
+def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+                       list_pending=False):
+    """
+    Regenerate the configuration file(s) for a service
+
+    Keyword argument:
+        names -- Services name to regenerate configuration of
+        with_diff -- Show differences in case of configuration changes
+        force -- Override all manual modifications in configuration files
+        dry_run -- Show what would have been regenerated
+        list_pending -- List pending configuration files and exit
+
+    """
+    from regenconf import regen_conf
+    return regen_conf(names, with_diff, force, dry_run, list_pending)
+
+
 def _get_migrations_list():
     migrations = []
 
