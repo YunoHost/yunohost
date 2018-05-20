@@ -24,6 +24,34 @@ yunohost (3.0.0~beta1) testing; urgency=low
  
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 03 May 2018 03:04:45 +0000
 
+yunohost (2.7.13.2) testing; urgency=low
+
+  * [fix] Fix an error with services marked as None (#466)
+  * [fix] Issue with nginx not upgrading correctly /etc/nginx/nginx.conf if it was manually modified
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 11 May 2018 02:06:42 +0000
+
+yunohost (2.7.13.1) testing; urgency=low
+
+  * [fix] Misc fixes on stretch migration following feedback
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 09 May 2018 00:44:50 +0000
+
+yunohost (2.7.13) testing; urgency=low
+
+  * [enh] Add 'manual migration' mechanism to the migration framework (#429)
+  * [enh] Add Stretch migration (#433)
+  * [enh] Use recommended ECDH curves (#454)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 06 May 2018 23:10:13 +0000
+
+yunohost (2.7.12) stable; urgency=low
+
+  * [i18n] Improve translation for Portuguese
+  * Bump version number for stable release
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 06 May 2018 16:40:11 +0000
+
 yunohost (2.7.11.1) testing; urgency=low
 
   * [fix] Nginx Regression typo (#459)

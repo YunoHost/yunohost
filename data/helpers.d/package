@@ -30,7 +30,7 @@ ynh_package_version() {
 #
 # usage: ynh_apt update
 ynh_apt() {
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y -qq $@
+    DEBIAN_FRONTEND=noninteractive sudo apt-get -y $@
 }
 
 # Update package index files

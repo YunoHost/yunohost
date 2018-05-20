@@ -162,5 +162,11 @@
     "backup_extracting_archive": "Extraindo arquivo de backup...",
     "backup_hook_unknown": "Gancho de backup '{hook:s}' desconhecido",
     "backup_nothings_done": "Não há nada para guardar",
-    "backup_output_directory_forbidden": "Diretório de saída proibido. Os backups não podem ser criados em /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives subpastas"
+    "backup_output_directory_forbidden": "Diretório de saída proibido. Os backups não podem ser criados em /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives subpastas",
+    "app_already_installed_cant_change_url": "Este aplicativo já está instalado. A URL não pode ser alterada apenas por esta função. Olhe para o `app changeurl` se estiver disponível.",
+    "app_already_up_to_date": "{app:s} já está atualizado",
+    "app_argument_choice_invalid": "Escolha inválida para o argumento '{name:s}', deve ser um dos {choices:s}",
+    "app_argument_invalid": "Valor inválido de argumento '{name:s}': {error:s}",
+    "app_argument_required": "O argumento '{name:s}' é obrigatório",
+    "app_change_url_failed_nginx_reload": "Falha ao reiniciar o nginx. Aqui está o retorno de 'nginx -t':\n{nginx_errors:s}"
 }
