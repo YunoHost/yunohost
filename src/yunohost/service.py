@@ -300,16 +300,15 @@ def service_log(name, number=50):
 def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
-    Regenerate the configuration file(s) for a service
+    Regenerate the configuration file(s) for some services
 
-    Keyword argument:
-        names -- Services name to regenerate configuration of
-        with_diff -- Show differences in case of configuration changes
-        force -- Override all manual modifications in configuration files
-        dry_run -- Show what would have been regenerated
-        list_pending -- List pending configuration files and exit
+    This command is provided for backward-compatibility of the API, but
+    `yunohost tools regen-conf` (or tools_regen_conf()) should be used instead.
 
+    This command can only be used with services listed in services.yml
     """
+
+    logger.warning(m18n.n("service_regenconf_deprecated"))
 
     services = _get_services()
     check_names = True
