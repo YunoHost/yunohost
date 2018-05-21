@@ -33,6 +33,7 @@ from difflib import unified_diff
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
+from moulinette.utils.filesystem import read_file
 
 from yunohost.hook import hook_callback
 
