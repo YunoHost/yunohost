@@ -227,6 +227,15 @@ def service_status(names=[]):
 
         status = _get_service_information_from_systemd(name)
 
+        translation_key = "service_description_%s" % name
+        description = m18n.n(translation_key)
+
+        # that mean that we don't have a translation for this string
+        # that's the only way to test for that for now
+        # if we don't have it, uses the one provided by systemd
+        if description == translation_key:
+            description = str(status.get("Description", ""))
+
         result[name] = {
             'status': str(status.get("SubState", "unknown")),
             'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
@@ -235,7 +244,7 @@ def service_status(names=[]):
                 "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
                 "human": datetime.fromtimestamp(status.get("ActiveEnterTimestamp") / 1000000).strftime("%F %X"),
             },
-            'description': str(status.get("Description", "")),
+            'description': description,
             'service_file_path': str(status.get("FragmentPath", "unknown")),
         }
 
