@@ -48,7 +48,7 @@ from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, a
 from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
+from yunohost.service import service_status, service_log, service_start, service_enable
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
@@ -183,7 +183,7 @@ def tools_maindomain(auth, new_domain=None):
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
-            service_regen_conf()
+            tools_regen_conf()
     except IOError:
         pass
 
@@ -295,7 +295,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     logger.info(m18n.n('yunohost_installing'))
 
-    service_regen_conf(['nslcd', 'nsswitch'], force=True)
+    tools_regen_conf(['nslcd', 'nsswitch'], force=True)
 
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
@@ -348,7 +348,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
-    service_regen_conf(['ssl'], force=True)
+    tools_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     commands = [
         'echo "01" > %s/serial' % ssl_dir,
@@ -377,7 +377,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     logger.success(m18n.n('yunohost_ca_creation_success'))
 
     # New domain config
-    service_regen_conf(['nsswitch'], force=True)
+    tools_regen_conf(['nsswitch'], force=True)
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
 
@@ -405,7 +405,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    service_regen_conf(force=True)
+    tools_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
 
 
@@ -633,7 +633,7 @@ def tools_diagnosis(auth, private=False):
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
-        diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
+        diagnosis['private']['regen_conf'] = tools_regen_conf(with_diff=True, dry_run=True)
 
     try:
         diagnosis['security'] = {
