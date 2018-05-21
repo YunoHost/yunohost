@@ -242,6 +242,7 @@
     "migration_0003_modified_files": "Please note that the following files were found to be manually modified and might be overwritten at the end of the upgrade : {manually_modified_files}",
     "migration_0005_postgresql_94_not_installed": "Postgresql was not installed on your system. Nothing to do!",
     "migration_0005_postgresql_96_not_installed": "Postgresql 9.4 has been found to be installed, but not postgresql 9.6 !? Something weird might have happened on your system :( ...",
+    "migration_0006_not_needed": "This migration appears to already have been done ?",
     "migrations_backward": "Migrating backward.",
     "migrations_bad_value_for_target": "Invalid number for target argument, available migrations numbers are 0 or {}",
     "migrations_cant_reach_migration_file": "Can't access migrations files at path %s",
