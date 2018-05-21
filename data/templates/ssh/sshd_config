@@ -9,8 +9,8 @@ ListenAddress 0.0.0.0
 Protocol 2
 # HostKeys for protocol version 2
 HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
-#HostKey /etc/ssh/ssh_host_dsa_key
+HostKey /etc/ssh/ssh_host_ed25519_ke
+HostKey /etc/ssh/ssh_host_dsa_key
 #Privilege Separation is turned on for security
 UsePrivilegeSeparation yes
 
@@ -35,7 +35,7 @@ StrictModes yes
 
 RSAAuthentication yes
 PubkeyAuthentication yes
-#AuthorizedKeysFile     %h/.ssh/authorized_keys
+AuthorizedKeysFile     %h/.ssh/authorized_keys
 
 # Don't read the user's ~/.rhosts and ~/.shosts files
 IgnoreRhosts yes
