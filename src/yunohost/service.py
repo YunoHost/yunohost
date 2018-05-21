@@ -303,7 +303,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     Regenerate the configuration file(s) for some services
 
     This command is provided for backward-compatibility of the API, but
-    `yunohost tools regen-conf` (or tools_regen_conf()) should be used instead.
+    `yunohost tools regen-conf` (or regen_conf()) should be used instead.
 
     This command can only be used with services listed in services.yml
     """

@@ -52,6 +52,7 @@ from yunohost.service import service_status, service_log, service_start, service
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
+from yunohost.regenconf import regen_conf
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -183,7 +184,7 @@ def tools_maindomain(auth, new_domain=None):
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r') as f:
-            tools_regen_conf()
+            regen_conf()
     except IOError:
         pass
 
@@ -295,7 +296,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     logger.info(m18n.n('yunohost_installing'))
 
-    tools_regen_conf(['nslcd', 'nsswitch'], force=True)
+    regen_conf(['nslcd', 'nsswitch'], force=True)
 
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
@@ -348,7 +349,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
-    tools_regen_conf(['ssl'], force=True)
+    regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     commands = [
         'echo "01" > %s/serial' % ssl_dir,
@@ -377,7 +378,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     logger.success(m18n.n('yunohost_ca_creation_success'))
 
     # New domain config
-    tools_regen_conf(['nsswitch'], force=True)
+    regen_conf(['nsswitch'], force=True)
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
 
@@ -405,7 +406,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    tools_regen_conf(force=True)
+    regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
 
 
@@ -633,7 +634,7 @@ def tools_diagnosis(auth, private=False):
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
-        diagnosis['private']['regen_conf'] = tools_regen_conf(with_diff=True, dry_run=True)
+        diagnosis['private']['regen_conf'] = regen_conf(with_diff=True, dry_run=True)
 
     try:
         diagnosis['security'] = {
@@ -941,7 +942,6 @@ def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         list_pending -- List pending configuration files and exit
 
     """
-    from regenconf import regen_conf
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 

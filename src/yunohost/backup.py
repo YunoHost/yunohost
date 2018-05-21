@@ -49,7 +49,8 @@ from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
 )
 from yunohost.monitor import binary_to_human
-from yunohost.tools import tools_postinstall, tools_regen_conf
+from yunohost.tools import tools_postinstall
+from yunohost.regenconf import regen_conf
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -1140,7 +1141,7 @@ class RestoreManager():
             logger.error(m18n.n('restore_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
 
-        tools_regen_conf()
+        regen_conf()
 
     def _restore_apps(self):
         """Restore all apps targeted"""

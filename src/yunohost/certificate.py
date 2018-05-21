@@ -46,7 +46,7 @@ from yunohost.utils.network import get_public_ip
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command
-from yunohost.tools import tools_regen_conf
+from yunohost.regenconf import regen_conf
 
 
 logger = getActionLogger('yunohost.certmanager')
@@ -915,7 +915,7 @@ def _regen_dnsmasq_if_needed():
             break
 
     if do_regen:
-        tools_regen_conf(["dnsmasq"])
+        regen_conf(["dnsmasq"])
 
 
 def _name_self_CA():
