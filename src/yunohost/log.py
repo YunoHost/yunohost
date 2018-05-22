@@ -111,7 +111,8 @@ def log_display(file_name, number=50):
                               m18n.n('log_does_exists', log=file_name))
     infos = {}
     if not base_path.startswith(OPERATIONS_PATH):
-        infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
+        if len(operation) > 2:
+            infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
         infos['name'] = base_filename
 
     if os.path.exists(md_path):
