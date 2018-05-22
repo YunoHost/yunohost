@@ -91,28 +91,28 @@ def log_display(file_name, number=50):
         number
     """
 
-    if file_name.endswith(METADATA_FILE_EXT):
-        base_filename = file_name[:-len(METADATA_FILE_EXT)]
-    elif file_name.endswith(LOG_FILE_EXT):
-        base_filename = file_name[:-len(LOG_FILE_EXT)]
-    else:
-        base_filename = file_name
+    abs_path = file_name
+    log_path = None
+    if not file_name.startswith('/'):
+        abs_path = os.path.join(OPERATIONS_PATH, file_name)
 
-    base_path = base_filename
-    if not base_filename.startswith('/'):
-        base_path = os.path.join(OPERATIONS_PATH, base_filename)
+    if os.path.exists(abs_path) and not file_name.endswith(METADATA_FILE_EXT) :
+        log_path = abs_path
 
+    base_path = os.path.splitext(abs_path)[0]
+    base_filename = os.path.basename(base_path)
     md_path = base_path + METADATA_FILE_EXT
-    log_path = base_path + LOG_FILE_EXT
-    operation = base_filename.split("-")
+    if log_path is None:
+        log_path = base_path + LOG_FILE_EXT
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('log_does_exists', log=file_name))
+
     infos = {}
-    if not base_path.startswith(OPERATIONS_PATH):
-        if len(operation) > 2:
-            infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
+    if base_path.startswith(OPERATIONS_PATH):
+        operation = base_filename.split("-")
+        infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
         infos['name'] = base_filename
 
     if os.path.exists(md_path):
