@@ -123,8 +123,12 @@ def log_display(file_name, number=50):
                 infos['metadata'] = metadata
                 if 'log_path' in metadata:
                     log_path = metadata['log_path']
-            except yaml.YAMLError as exc:
-                print(exc)
+            except yaml.YAMLError:
+                error = m18n.n('log_corrupted_md_file', file=md_path)
+                if os.path.exists(log_path):
+                    logger.warning(error)
+                else:
+                    raise MoulinetteError(errno.EINVAL, error)
 
     if os.path.exists(log_path):
         from yunohost.service import _tail
