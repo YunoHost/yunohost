@@ -84,13 +84,17 @@ def log_list(limit=None, full=False):
 
 def log_display(file_name, number=50):
     """
-    Display full log or specific logs listed
+    Display a log file enriched with metadata if any.
+
+    If the file_name is not an absolute path, it will try to search the file in
+    the unit operations log path (see OPERATIONS_PATH).
 
     Argument:
         file_name
         number
     """
 
+    # Normalize log/metadata paths and filenames
     abs_path = file_name
     log_path = None
     if not file_name.startswith('/'):
@@ -110,11 +114,14 @@ def log_display(file_name, number=50):
                               m18n.n('log_does_exists', log=file_name))
 
     infos = {}
+
+    # If it's a unit operation, display the name and the description
     if base_path.startswith(OPERATIONS_PATH):
         operation = base_filename.split("-")
         infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
         infos['name'] = base_filename
 
+    # Display metadata if exist
     if os.path.exists(md_path):
         with open(md_path, "r") as md_file:
             try:
@@ -130,6 +137,7 @@ def log_display(file_name, number=50):
                 else:
                     raise MoulinetteError(errno.EINVAL, error)
 
+    # Display logs if exist
     if os.path.exists(log_path):
         from yunohost.service import _tail
         logs = _tail(log_path, int(number))
@@ -140,8 +148,34 @@ def log_display(file_name, number=50):
     return infos
 
 def is_unit_operation(entities='app,domain,service,user', exclude='auth,password', operation_key=None, auto=True):
+    """
+    Configure quickly a unit operation
+
+    This decorator help you to configure quickly the record of a unit operations.
+
+    Argument:
+    entities    A list seperated by coma of entity types related to the unit
+    operation. The entity type is searched inside argument's names of the
+    decorated function. If something match, the argument value is added as
+    related entity.
+
+    exclude     Remove some arguments from the context. By default, arguments
+    called 'password' and 'auth' are removed. If an argument is an object, you
+    need to exclude it or create manually the unit operation without this
+    decorator.
+
+    operation_key   Key describing the unit operation. If you want to display a
+    well formed description you should add a translation key like this
+    "log_" + operation_key in locales files.
+
+    auto        If true, start the recording. If False, the unit operation object
+    created is given to the decorated function as the first argument and you can
+    start recording at the good time.
+    """
     def decorate(func):
         def func_wrapper(*args, **kwargs):
+            # For a strange reason we can't use directly the arguments from
+            # is_unit_operation function. We need to store them in a var before.
             entities_list = entities.split(',')
             exclude_list = exclude.split(',')
             op_key = operation_key
@@ -150,6 +184,7 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
             if op_key is None:
                 op_key = func.__name__
 
+            # Search related entity in arguments of the decorated function
             for entity in entities_list:
                 entity = entity.split(':')
                 entity_type = entity[-1]
@@ -162,10 +197,15 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                             related_to.append({entity_type: kwargs[x]})
 
             context = kwargs.copy()
+
+            # Exclude unappropriate data from the context
             for field in exclude_list:
                 if field in context:
                     context.pop(field, None)
             uo = UnitOperation(op_key, related_to, args=context)
+
+            # Start to record or give the unit operation in argument to let the
+            # developper start the record itself
             if auto:
                 uo.start()
             try:
@@ -173,12 +213,22 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                     args = (uo,) + args
                 result = func(*args, **kwargs)
             finally:
+                # Close the unit operation if it hasn't been closed before
                 uo.close(exc_info()[0])
             return result
         return func_wrapper
     return decorate
 
 class UnitOperation(object):
+    """
+    Instances of this class represents unit operation the yunohost admin as done.
+
+    Each time an action of the yunohost cli/api change the system, one or several
+    unit operations should be registered.
+
+    This class record logs and some metadata like context or start time/end time.
+    """
+
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
         self.operation = operation
@@ -194,12 +244,21 @@ class UnitOperation(object):
             os.makedirs(self.path)
 
     def start(self):
+        """
+        Start to record logs that change the system
+        Until this start method is run, no unit operation will be registered.
+        """
+
         if self.started_at is None:
             self.started_at = datetime.now()
             self.flush()
             self._register_log()
 
     def _register_log(self):
+        """
+        Register log with a handler connected on log system
+        """
+
         # TODO add a way to not save password on app installation
         filename = os.path.join(self.path, self.name + LOG_FILE_EXT)
         self.file_handler = FileHandler(filename)
@@ -210,12 +269,20 @@ class UnitOperation(object):
         self.logger.addHandler(self.file_handler)
 
     def flush(self):
+        """
+        Write or rewrite the metadata file with all metadata known
+        """
+
         filename = os.path.join(self.path, self.name + METADATA_FILE_EXT)
         with open(filename, 'w') as outfile:
             yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
 
     @property
     def name(self):
+        """
+        Name of the operation
+        This name is used as filename, so don't use space
+        """
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
         if self.related_to:
@@ -224,6 +291,10 @@ class UnitOperation(object):
 
     @property
     def metadata(self):
+        """
+        Dictionnary of all metadata collected
+        """
+
         data = {
             'started_at': self.started_at,
             'operation': self.operation,
@@ -240,12 +311,21 @@ class UnitOperation(object):
         return data
 
     def success(self):
+        """
+        Declare the success end of the unit operation
+        """
         self.close()
 
     def error(self, error):
+        """
+        Declare the failure of the unit operation
+        """
         self.close(error)
 
     def close(self, error=None):
+        """
+        Close properly the unit operation
+        """
         if self.ended_at is not None or self.started_at is None:
             return
         self.ended_at = datetime.now()
@@ -256,5 +336,10 @@ class UnitOperation(object):
         self.flush()
 
     def __del__(self):
+        """
+        Try to close the unit operation, if it's missing.
+        The missing of the message below could help to see an electrical
+        shortage.
+        """
         self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
