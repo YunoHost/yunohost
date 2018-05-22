@@ -596,13 +596,21 @@ def _tail(file, n, offset=None):
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
     an indicator that is `True` if there are more lines in the file.
 
+    This function works even with splitted logs (gz compression, log rotate...)
     """
     avg_line_length = 74
     to_read = n + (offset or 0)
 
     try:
-        with open(file, 'r') as f:
-            while 1:
+        if file.endswith(".gz"):
+            import gzip
+            f = gzip.open(file)
+            lines = f.read().splitlines()
+        else:
+            f = open(file)
+            pos = 1
+            lines = []
+            while len(lines) < to_read and pos > 0:
                 try:
                     f.seek(-(avg_line_length * to_read), 2)
                 except IOError:
@@ -611,13 +619,43 @@ def _tail(file, n, offset=None):
                     f.seek(0)
                 pos = f.tell()
                 lines = f.read().splitlines()
-                if len(lines) >= to_read or pos == 0:
-                    return lines[-to_read:offset and -offset or None]
                 avg_line_length *= 1.3
+        f.close()
 
     except IOError:
         return []
 
+    if len(lines) < to_read:
+        previous_log_file = _find_previous_log_file(file)
+        if previous_log_file is not None:
+            lines = _tail(previous_log_file, to_read - len(lines)) + lines
+    return lines[-to_read:offset and -offset or None]
+
+
+def _find_previous_log_file(file):
+    """
+    Find the previous log file
+    """
+    import re
+
+    splitext = os.path.splitext(file)
+    if splitext[1] == '.gz':
+        file = splitext[0]
+    splitext = os.path.splitext(file)
+    ext = splitext[1]
+    i = re.findall(r'\.(\d+)', ext)
+    i = int(i[0]) + 1 if len(i) > 0 else 1
+
+    previous_file = file if i == 1 else splitext[0]
+    previous_file = previous_file + '.%d' % (i)
+    if os.path.exists(previous_file):
+        return previous_file
+
+    previous_file = previous_file + ".gz"
+    if os.path.exists(previous_file):
+        return previous_file
+
+    return None
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     """Compare two files and return the differences
