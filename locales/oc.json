@@ -84,5 +84,12 @@
     "backup_output_directory_required": "Vos cal especificar un dorsièr de sortida per la salvagarda",
     "backup_running_app_script": "Lançament de l’escript de salvagarda de l’aplicacion « {app:s} »...",
     "backup_running_hooks": "Execucion dels scripts de salvagarda...",
-    "backup_system_part_failed": "Impossible de salvagardar la part « {part:s} » del sistèma"
+    "backup_system_part_failed": "Impossible de salvagardar la part « {part:s} » del sistèma",
+    "app_requirements_failed": "Impossible de complir las condicions requesidas per {app} : {error}",
+    "app_requirements_unmeet": "Las condicions requesidas per {app} son pas complidas, lo paquet {pkgname} ({version}) deu èsser {spec}",
+    "appslist_could_not_migrate": "Migracion de la lista impossibla {appslist:s} ! Impossible d’analizar l’URL… L’anciana tasca cron es estada servada dins {bkp_file:s}.",
+    "backup_abstract_method": "Aqueste metòde de salvagarda es pas encara implementat",
+    "backup_applying_method_custom": "Crida lo metòde de salvagarda personalizat  « {method:s} »…",
+    "backup_borg_not_implemented": "Lo metòde de salvagarda Bord es pas encara implementat",
+    "backup_couldnt_bind": "Impossible de ligar {src:s} amb {dest:s}"
 }
