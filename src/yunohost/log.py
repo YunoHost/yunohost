@@ -82,7 +82,7 @@ def log_list(limit=None, full=False):
     return result
 
 
-def log_display(file_name, number=50):
+def log_display(path, number=50):
     """
     Display a log file enriched with metadata if any.
 
@@ -95,12 +95,12 @@ def log_display(file_name, number=50):
     """
 
     # Normalize log/metadata paths and filenames
-    abs_path = file_name
+    abs_path = path
     log_path = None
-    if not file_name.startswith('/'):
-        abs_path = os.path.join(OPERATIONS_PATH, file_name)
+    if not path.startswith('/'):
+        abs_path = os.path.join(OPERATIONS_PATH, path)
 
-    if os.path.exists(abs_path) and not file_name.endswith(METADATA_FILE_EXT) :
+    if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT) :
         log_path = abs_path
 
     base_path = os.path.splitext(abs_path)[0]
@@ -111,7 +111,7 @@ def log_display(file_name, number=50):
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('log_does_exists', log=file_name))
+                              m18n.n('log_does_exists', log=path))
 
     infos = {}
 
