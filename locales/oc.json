@@ -112,5 +112,13 @@
     "upnp_port_open_failed": "Impossible de dobrir los pòrts amb UPnP",
     "yunohost_already_installed": "YunoHost es ja installat",
     "yunohost_configured": "YunoHost es estat configurat",
-    "yunohost_installing": "Installacion de YunoHost..."
+    "yunohost_installing": "Installacion de YunoHost...",
+    "backup_applying_method_borg": "Mandadís de totes los fichièrs a la salvagarda dins lo repertòri borg-backup…",
+    "backup_csv_creation_failed": "Creacion impossibla del fichièr CSV necessari a las operacions futuras de restauracion",
+    "backup_extracting_archive": "Extraccion de l’archiu de salvagarda…",
+    "backup_output_symlink_dir_broken": "Avètz un ligam simbolic copat allòc de vòstre repertòri d’archiu  « {path:s} ». Poiriatz aver una configuracion personalizada per salvagardar vòstras donadas sus un autre sistèma de fichièrs, en aquel cas, saique oblidèretz de montar o de connectar lo disc o la clau USB.",
+    "backup_with_no_backup_script_for_app": "L’aplicacion {app:s} a pas cap de script de salvagarda. I fasèm pas cas.",
+    "backup_with_no_restore_script_for_app": "L’aplicacion {app:s} a pas cap de script de restauracion, poiretz pas restaurar automaticament la salvagarda d’aquesta aplicacion.",
+    "certmanager_acme_not_configured_for_domain": "Lo certificat del domeni {domain:s} sembla pas corrèctament installat. Mercés de lançar d’en primièr cert-install per aqueste domeni.",
+    "certmanager_attempt_to_renew_nonLE_cert": "Lo certificat pel domeni {domain:s} es pas provesit per Let's Encrypt. Impossible de lo renovar automaticament !"
 }
