@@ -229,5 +229,10 @@
     "restore_already_installed_app": "Una aplicacion es ja installada amb l’id « {app:s} »",
     "restore_app_failed": "Impossible de restaurar l’aplicacion « {app:s} »",
     "backup_ask_for_copying_if_needed": "D’unes fichièrs an pas pogut èsser preparatz per la salvagarda en utilizar lo metòde qu’evita de gastar d’espaci sul sistèma de manièra temporària. Per lançar la salvagarda, cal utilizar temporàriament {size:s} Mo. Acceptatz ?",
-    "yunohost_not_installed": "YunoHost es pas installat o corrèctament installat. Mercés d’executar « yunohost tools postinstall »"
+    "yunohost_not_installed": "YunoHost es pas installat o corrèctament installat. Mercés d’executar « yunohost tools postinstall »",
+    "backup_output_directory_forbidden": "Repertòri de destinacion defendut. Las salvagardas pòdon pas se realizar dins los repertòris bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives",
+    "certmanager_attempt_to_replace_valid_cert": "Sètz a remplaçar un certificat corrècte e valid pel domeni {domain:s} ! (Utilizatz --force per cortcircuitar)",
+    "certmanager_cert_renew_success": "Renovèlament capitat d’un certificat Let's Encrypt pel domeni {domain:s} !",
+    "certmanager_certificate_fetching_or_enabling_failed": "Sembla d’aver fracassat l’activacion d’un nòu certificat per {domain:s}…",
+    "certmanager_conflicting_nginx_file": "Impossible de preparar lo domeni pel desfís ACME : lo fichièr de configuracion  nginx  {filepath:s} es en conflicte e deu èsser levat d’en primièr"
 }
