@@ -228,6 +228,6 @@
     "port_unavailable": "Lo pòrt {port:d} es pas disponible",
     "restore_already_installed_app": "Una aplicacion es ja installada amb l’id « {app:s} »",
     "restore_app_failed": "Impossible de restaurar l’aplicacion « {app:s} »",
-    "backup_ask_for_copying_if_needed": "D’unes fichièrs an pas pogut èsser preparatz per la salvagarda en utilizar lo metòde qu’evita de gastar d’espaci sul sistèma de manièra temporala. Per lançar la salvagarda, cal utilizar temporàriament {size:s} Mo. Acceptatz ?",
+    "backup_ask_for_copying_if_needed": "D’unes fichièrs an pas pogut èsser preparatz per la salvagarda en utilizar lo metòde qu’evita de gastar d’espaci sul sistèma de manièra temporària. Per lançar la salvagarda, cal utilizar temporàriament {size:s} Mo. Acceptatz ?",
     "yunohost_not_installed": "YunoHost es pas installat o corrèctament installat. Mercés d’executar « yunohost tools postinstall »"
 }
