@@ -1,3 +1,24 @@
+yunohost (2.7.13.3) testing; urgency=low
+
+  * [enh] Add postgresql helpers (#238)
+  * [enh] Bring back the bootprompt (#363)
+  * [enh] Allow to disable the backup during the upgrade (#431)
+  * [fix] Remove warning from equivs (#439)
+  * [enh] Add SOURCE_EXTRACT (true/false) in ynh_setup_source (#460)
+  * [enh] More debug output in services.py (#468)
+  * [enh] Be able to use more variables in template for nginx conf (#462)
+  * [enh] Upgrade Meltdown / Spectre diagnosis (#464)
+  * [enh] Check services status via dbus (#469, #478, #479)
+  * [mod] Cleaning in services.py code (#470, #472)
+  * [enh] Improvate and translate service descriptions (#476)
+  * [fix] Fix "untrusted TLS connection" in mail logs (#471)
+  * [fix] Make apt-get helper not quiet so we can debug (#475)
+  * [i18n] Improve Occitan, Portuguese, Arabic, French translations
+
+  Contributors : ljf, Maniack, Josue, Aleks, Bram, Quent-in, itxtoledo, ButterflyOfFire, Jibec, ariasuni, Haelwenn
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 28 May 2018 02:23:00 +0000
+
 yunohost (2.7.13.2) testing; urgency=low
 
   * [fix] Fix an error with services marked as None (#466)
