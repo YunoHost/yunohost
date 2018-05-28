@@ -1,3 +1,9 @@
+yunohost (3.0.0~beta1.4) testing; urgency=low
+
+  * Merge with jessie's branches
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 28 May 2018 02:30:00 +0000
+
 yunohost (3.0.0~beta1.3) testing; urgency=low
 
   * Use mariadb 10.1 now
