@@ -314,6 +314,11 @@
     "service_description_avahi-daemon": "permet d’aténher vòstre servidr via yunohost.local sus vòstre ret local",
     "service_description_dnsmasq": "gerís la resolucion dels noms de domeni (DNS)",
     "updating_apt_cache": "Actualizacion de la lista dels paquets disponibles...",
-    "service_conf_file_backed_up": "Lo fichièr de configuracion « {new} » es salvagardat dins « {backup} »",
-    "service_conf_file_copy_failed": "Còpia impossibla del nòu fichièr de configuracion « {new} » cap a « {conf} »"
+    "service_conf_file_backed_up": "Lo fichièr de configuracion « {conf} » es salvagardat dins « {backup} »",
+    "service_conf_file_copy_failed": "Còpia impossibla del nòu fichièr de configuracion « {new} » cap a « {conf} »",
+    "server_reboot_confirm": "Lo servidor es per reaviar sul pic, o volètz vertadièrament ?",
+    "service_add_failed": "Apondon impossible del servici « {service:s} »",
+    "service_added": "Lo servici « {service:s} » es ajustat",
+    "service_already_started": "Lo servici « {service:s} » es ja aviat",
+    "service_already_stopped": "Lo servici « {service:s} » es ja arrestat"
 }
