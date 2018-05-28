@@ -301,5 +301,17 @@
     "user_update_failed": "Modificacion impossibla de l’utilizaire",
     "user_updated": "L’utilizaire es estat modificat",
     "yunohost_ca_creation_failed": "Creacion impossibla de l’autoritat de certificacion",
-    "yunohost_ca_creation_success": "L’autoritat de certificacion locala es creada."
+    "yunohost_ca_creation_success": "L’autoritat de certificacion locala es creada.",
+    "service_conf_file_kept_back": "Lo fichièr de configuracion « {conf} » deuriá èsser suprimit pel servici {service} mas es estat servat",
+    "service_conf_file_manually_modified": "Lo fichièr de configuracion « {conf} » es estat modificat manualament e serà pas actualizat",
+    "service_conf_file_manually_removed": "Lo fichièr de configuracion « {conf} » es suprimit manualament e serà pas creat",
+    "service_conf_file_remove_failed": "Supression impossibla del fichièr de configuracion « {conf} »",
+    "service_conf_file_removed": "Lo fichièr de configuracion « {conf} » es suprimit",
+    "service_conf_file_updated": "Lo fichièr de configuracion « {conf} » es actualizat",
+    "service_conf_new_managed_file": "Lo servici {service} gerís ara lo fichièr de configuracion « {conf} ».",
+    "service_conf_up_to_date": "La configuracion del servici « {service} » es ja actualizada",
+    "service_conf_would_be_updated": "La configuracion del servici « {service} » seriá estada actualizada",
+    "service_description_avahi-daemon": "permet d’aténher vòstre servidr via yunohost.local sus vòstre ret local",
+    "service_description_dnsmasq": "gerís la resolucion dels noms de domeni (DNS)",
+    "updating_apt_cache": "Actualizacion de la lista dels paquets disponibles..."
 }
