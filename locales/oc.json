@@ -385,7 +385,7 @@
     "mysql_db_initialized": "La basa de donadas MySQL es estada inicializada",
     "no_restore_script": "Lo script de salvagarda es pas estat trobat per l’aplicacion « {app:s} »",
     "pattern_backup_archive_name": "Deu èsser un nom de fichièr valid compausat de 30 caractèrs alfanumerics al maximum e  « -_. »",
-    "pattern_listname": "Deu èsser compausat solament de caractèrs alfanumerics e de tiret bas",
+    "pattern_listname": "Deu èsser compausat solament de caractèrs alfanumerics e de tirets basses",
     "service_description_dovecot": "permet als clients de messatjariá d’accedir/recuperar los corrièls (via IMAP e POP3)",
     "service_description_fail2ban": "protegís contra los atacs brute-force e d’autres atacs venents d’Internet",
     "service_description_glances": "susvelha las informacions sistèma de vòstre servidor",
@@ -398,5 +398,9 @@
     "migrations_forward": "Migracion en avant",
     "network_check_smtp_ko": "Lo trafic de corrièl sortent (pòrt 25 SMTP) sembla blocat per vòstra ret",
     "network_check_smtp_ok": "Lo trafic de corrièl sortent (pòrt 25 SMTP) es pas blocat",
-    "pattern_mailbox_quota": "Deu èsser una talha amb lo sufixe b/k/M/G/T o0 per desactivar la quòta"
+    "pattern_mailbox_quota": "Deu èsser una talha amb lo sufixe b/k/M/G/T o0 per desactivar la quòta",
+    "backup_archive_writing_error": "Impossible d’ajustar los fichièrs a la salvagarda dins l’archiu comprimit",
+    "backup_cant_mount_uncompress_archive": "Impossible de montar en lectura sola lo repertòri de l’archiu descomprimit",
+    "backup_no_uncompress_archive_dir": "Lo repertòri de l’archiu descomprimit existís pas",
+    "pattern_username": "Deu èsser compausat solament de caractèrs alfanumerics en letras minusculas e de tirets basses"
 }
