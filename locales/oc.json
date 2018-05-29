@@ -393,5 +393,10 @@
     "service_description_nginx": "fornís o permet l’accès a totes los sites web albergats sus vòstre servidor",
     "service_description_nslcd": "gerís la connexion en linha de comanda dels utilizaires YunoHost",
     "service_description_redis-server": "una basa de donadas especializada per un accès rapid a las donadas, las filas d’espèra e la comunicacion entre programas",
-    "service_description_rspamd": "filtra lo corrièl pas desirat e mai foncionalitats ligadas al corrièl"
+    "service_description_rspamd": "filtra lo corrièl pas desirat e mai foncionalitats ligadas al corrièl",
+    "migrations_backward": "Migracion endarrièr.",
+    "migrations_forward": "Migracion en avant",
+    "network_check_smtp_ko": "Lo trafic de corrièl sortent (pòrt 25 SMTP) sembla blocat per vòstra ret",
+    "network_check_smtp_ok": "Lo trafic de corrièl sortent (pòrt 25 SMTP) es pas blocat",
+    "pattern_mailbox_quota": "Deu èsser una talha amb lo sufixe b/k/M/G/T o0 per desactivar la quòta"
 }
