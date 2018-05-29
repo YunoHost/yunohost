@@ -788,7 +788,7 @@ backup:
                     help: Name of the backup archive
                     extra:
                         pattern: &pattern_backup_archive_name
-                            - !!str ^[\w\-\._]{1,30}(?<!\.)$
+                            - !!str ^[\w\-\._]{1,50}(?<!\.)$
                             - "pattern_backup_archive_name"
                 -d:
                     full: --description
