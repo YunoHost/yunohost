@@ -227,26 +227,47 @@ def service_status(names=[]):
 
         status = _get_service_information_from_systemd(name)
 
-        translation_key = "service_description_%s" % name
-        description = m18n.n(translation_key)
+        # try to get status using alternative version if they exists
+        # this is for mariadb/mysql but is generic in case of
+        alternates = services[name].get("alternates", [])
+        while status is None and alternates:
+            status = _get_service_information_from_systemd(alternates.pop())
 
-        # that mean that we don't have a translation for this string
-        # that's the only way to test for that for now
-        # if we don't have it, uses the one provided by systemd
-        if description == translation_key:
-            description = str(status.get("Description", ""))
+        if status is None:
+            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % name)
+            result[name] = {
+                'status': "unknown",
+                'loaded': "unknown",
+                'active': "unknown",
+                'active_at': {
+                    "timestamp": "unknown",
+                    "human": "unknown",
+                },
+                'description': "Error: failed to get information for this service, it doesn't exists for systemd",
+                'service_file_path': "unknown",
+            }
 
-        result[name] = {
-            'status': str(status.get("SubState", "unknown")),
-            'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
-            'active': str(status.get("ActiveState", "unknown")),
-            'active_at': {
-                "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
-                "human": datetime.fromtimestamp(status.get("ActiveEnterTimestamp") / 1000000).strftime("%F %X"),
-            },
-            'description': description,
-            'service_file_path': str(status.get("FragmentPath", "unknown")),
-        }
+        else:
+            translation_key = "service_description_%s" % name
+            description = m18n.n(translation_key)
+
+            # that mean that we don't have a translation for this string
+            # that's the only way to test for that for now
+            # if we don't have it, uses the one provided by systemd
+            if description == translation_key:
+                description = str(status.get("Description", ""))
+
+            result[name] = {
+                'status': str(status.get("SubState", "unknown")),
+                'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
+                'active': str(status.get("ActiveState", "unknown")),
+                'active_at': {
+                    "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
+                    "human": datetime.fromtimestamp(status.get("ActiveEnterTimestamp") / 1000000).strftime("%F %X"),
+                },
+                'description': description,
+                'service_file_path': str(status.get("FragmentPath", "unknown")),
+            }
 
     if len(names) == 1:
         return result[names[0]]
@@ -256,13 +277,20 @@ def service_status(names=[]):
 def _get_service_information_from_systemd(service):
     "this is the equivalent of 'systemctl status $service'"
     import dbus
+    from dbus.exceptions import DBusException
 
     d = dbus.SystemBus()
 
     systemd = d.get_object('org.freedesktop.systemd1','/org/freedesktop/systemd1')
     manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
 
-    service_path = manager.GetUnit(service + ".service")
+    try:
+        service_path = manager.GetUnit(service + ".service")
+    except DBusException as exception:
+        if exception.get_dbus_name() == 'org.freedesktop.systemd1.NoSuchUnit':
+            return None
+        raise
+
     service_proxy = d.get_object('org.freedesktop.systemd1', service_path)
 
     # unit_proxy = dbus.Interface(service_proxy, 'org.freedesktop.systemd1.Unit',)
