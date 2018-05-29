@@ -263,7 +263,7 @@ def service_status(names=[]):
                 'active': str(status.get("ActiveState", "unknown")),
                 'active_at': {
                     "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
-                    "human": datetime.fromtimestamp(status.get("ActiveEnterTimestamp") / 1000000).strftime("%F %X"),
+                    "human": datetime.fromtimestamp(status["ActiveEnterTimestamp"] / 1000000).strftime("%F %X") if "ActiveEnterTimestamp" in status else "unknown",
                 },
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
