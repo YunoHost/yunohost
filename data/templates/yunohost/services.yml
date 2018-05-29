@@ -18,6 +18,7 @@ redis-server:
   log: /var/log/redis/redis-server.log
 mysql:
   log: [/var/log/mysql.log,/var/log/mysql.err]
+  alternates: ['mariadb']
 glances: {}
 ssh:
   log: /var/log/auth.log
