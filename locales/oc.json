@@ -398,7 +398,7 @@
     "migrations_forward": "Migracion en avant",
     "network_check_smtp_ko": "Lo trafic de corrièl sortent (pòrt 25 SMTP) sembla blocat per vòstra ret",
     "network_check_smtp_ok": "Lo trafic de corrièl sortent (pòrt 25 SMTP) es pas blocat",
-    "pattern_mailbox_quota": "Deu èsser una talha amb lo sufixe b/k/M/G/T o0 per desactivar la quòta",
+    "pattern_mailbox_quota": "Deu èsser una talha amb lo sufixe b/k/M/G/T o 0 per desactivar la quòta",
     "backup_archive_writing_error": "Impossible d’ajustar los fichièrs a la salvagarda dins l’archiu comprimit",
     "backup_cant_mount_uncompress_archive": "Impossible de montar en lectura sola lo repertòri de l’archiu descomprimit",
     "backup_no_uncompress_archive_dir": "Lo repertòri de l’archiu descomprimit existís pas",
