@@ -698,11 +698,18 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     header can also be removed if skip_header is True.
 
     """
-    with open(orig_file, 'r') as orig_file:
-        orig_file = orig_file.readlines()
 
-    with open(new_file, 'r') as new_file:
-        new_file.readlines()
+    if os.path.exists(orig_file):
+        with open(orig_file, 'r') as orig_file:
+            orig_file = orig_file.readlines()
+    else:
+        orig_file = []
+
+    if not os.path.exists(new_file):
+        with open(new_file, 'r') as new_file:
+            new_file.readlines()
+    else:
+        new_file = []
 
     # Compare files and format output
     diff = unified_diff(orig_file, new_file)
