@@ -26,9 +26,9 @@
     "ask_email": "Endereço de Email",
     "ask_firstname": "Primeiro nome",
     "ask_lastname": "Último nome",
-    "ask_list_to_remove": "Lista à remover",
+    "ask_list_to_remove": "Lista para remover",
     "ask_main_domain": "Domínio principal",
-    "ask_new_admin_password": "Senha de administração nova",
+    "ask_new_admin_password": "Nova senha de administração",
     "ask_password": "Senha",
     "backup_created": "Backup completo",
     "backup_creating_archive": "A criar ficheiro de backup...",
@@ -179,5 +179,9 @@
     "appslist_migrating": "Migando lista de aplicações {appslist:s}…",
     "appslist_name_already_tracked": "Já existe uma lista de aplicações registrada com o nome {name:s}.",
     "appslist_retrieve_bad_format": "O arquivo recuperado para a lista de aplicações {appslist:s} é invalido",
-    "appslist_url_already_tracked": "Já existe uma lista de aplicações registrada com a url {url:s}."
+    "appslist_url_already_tracked": "Já existe uma lista de aplicações registrada com a url {url:s}.",
+    "ask_path": "Caminho",
+    "backup_abstract_method": "Este metodo de backup ainda não foi implementado",
+    "backup_action_required": "Deve-se especificar algo a salvar",
+    "backup_app_failed": "Não foi possível de fazer o backup dos aplicativos '{app:s}'"
 }
