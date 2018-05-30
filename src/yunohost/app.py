@@ -1367,6 +1367,31 @@ def app_change_label(auth, app, new_label):
     app_ssowatconf(auth)
 
 
+# ACTIONS todo list
+# * save actions.json
+# commands:
+# yunohost app action list $app
+# yunohost app action run $app $action -d parameters
+# docstring
+
+def app_action_list(app_id):
+    installed = _is_installed(app_id)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app_id))
+
+    actions = os.path.join( APPS_SETTING_PATH, app_id, 'actions.json')
+
+    if not os.path.exists(actions):
+        return {
+            "actions": [],
+        }
+
+    return {
+        "actions": read_json(actions),
+    }
+
+
 # Config panel todo list:
 # * docstrings
 # * merge translations on the json once the workflow is in place
