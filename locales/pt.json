@@ -155,7 +155,7 @@
     "backup_archive_hook_not_exec": "O gancho '{hook:s}' não foi executado neste backup",
     "backup_archive_name_exists": "O nome do arquivo de backup já existe",
     "backup_archive_open_failed": "Não é possível abrir o arquivo de backup",
-    "backup_cleaning_failed": "Não é possível limpar a pasta de backup temporário",
+    "backup_cleaning_failed": "Não é possível limpar a pasta temporária de backups",
     "backup_creation_failed": "A criação do backup falhou",
     "backup_delete_error": "Impossível apagar '{path:s}'",
     "backup_deleted": "O backup foi suprimido",
@@ -191,5 +191,6 @@
     "backup_archive_system_part_not_available": "A seção do sistema '{part:s}' está indisponivel neste backup",
     "backup_ask_for_copying_if_needed": "Alguns arquivos não consiguiram ser preparados para backup utilizando o metodo que não gasta espaço de disco temporariamente. Para realizar o backup {size:s}MB precisam ser usados temporariamente. Você concorda?",
     "backup_borg_not_implemented": "O método de backup Borg ainda não foi implementado.",
-    "backup_cant_mount_uncompress_archive": "Não foi possível montar em modo leitura o diretorio de arquivos não comprimido"
+    "backup_cant_mount_uncompress_archive": "Não foi possível montar em modo leitura o diretorio de arquivos não comprimido",
+    "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo"
 }
