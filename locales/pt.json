@@ -14,9 +14,9 @@
     "app_not_installed": "{app:s} não está instalada",
     "app_recent_version_required": "{:s} requer uma versão mais recente da moulinette",
     "app_removed": "{app:s} removida com êxito",
-    "app_sources_fetch_failed": "Impossível obter os ficheiros fonte",
+    "app_sources_fetch_failed": "Incapaz obter os ficheiros fonte",
     "app_unknown": "Aplicação desconhecida",
-    "app_upgrade_failed": "Impossível atualizar {app:s}",
+    "app_upgrade_failed": "Impossibilitado de atualizar {app:s}",
     "app_upgraded": "{app:s} atualizada com sucesso",
     "appslist_fetched": "Lista de aplicações processada com sucesso",
     "appslist_removed": "Lista de aplicações removida com sucesso",
@@ -149,7 +149,7 @@
     "app_not_correctly_installed": "{app:s} parece não estar corretamente instalada",
     "app_not_properly_removed": "{app:s} não foi corretamente removido",
     "app_requirements_checking": "Verificando os pacotes necessários para {app}...",
-    "app_unsupported_remote_type": "Remoto tipo utilizado para a aplicação não suportado",
+    "app_unsupported_remote_type": "A aplicação não possui suporte ao tipo remoto utilizado",
     "backup_archive_app_not_found": "A aplicação '{app:s}' não foi encontrada no arquivo de backup",
     "backup_archive_broken_link": "Impossível acessar o arquivo de backup (link quebrado para {path:s} )",
     "backup_archive_hook_not_exec": "O gancho '{hook:s}' não foi executado neste backup",
@@ -172,5 +172,7 @@
     "app_change_no_change_url_script": "A aplicação {app_name:s} ainda não permite mudança da URL, talvez seja necessário atualiza-la.",
     "app_location_unavailable": "Esta url não está disponível ou está em conflito com outra aplicação já instalada",
     "app_package_need_update": "O pacote da aplicação {app} precisa ser atualizado para aderir as mudanças do YunoHost",
-    "app_requirements_failed": "Não foi possível atender às requisições da aplicação {app}: {error}"
+    "app_requirements_failed": "Não foi possível atender aos requisitos da aplicação {app}: {error}",
+    "app_upgrade_app_name": "Atualizando aplicação {app}…",
+    "app_upgrade_some_app_failed": "Não foi possível atualizar algumas aplicações"
 }
