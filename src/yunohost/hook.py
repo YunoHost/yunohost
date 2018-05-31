@@ -365,6 +365,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()),
         stderr_callback if stderr_callback else lambda l: logger.warning(l.rstrip()),
     )
+    logger.debug("About to run the command '%s'" % command)
     returncode = call_async_output(
         command, callbacks, shell=False, cwd=chdir
     )

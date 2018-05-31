@@ -785,6 +785,20 @@ app:
                     app_id:
                         help: app id
 
+              ### app_action_run()
+              run:
+                  action_help: Run app action
+                  api: PUT /<app>/actions/<action>
+                  arguments:
+                    app_id:
+                        help: app id
+                    action:
+                        help: action id
+                    -a:
+                        full: --args
+                        help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+
+
       config:
           subcategory_help: Applications configuration panel
           actions:
