@@ -641,6 +641,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
             os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
+            if os.path.exists(os.path.join(extracted_app_folder, "actions.json")):
+                os.system('cp -R %s/actions.json %s' % (extracted_app_folder, app_setting_path))
+
             if os.path.exists(os.path.join(extracted_app_folder, "config_panel.json")):
                 os.system('cp -R %s/config_panel.json %s' % (extracted_app_folder, app_setting_path))
 
@@ -760,6 +763,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
+
+    if os.path.exists(os.path.join(extracted_app_folder, "actions.json")):
+        os.system('cp -R %s/actions.json %s' % (extracted_app_folder, app_setting_path))
 
     if os.path.exists(os.path.join(extracted_app_folder, "config_panel.json")):
         os.system('cp -R %s/config_panel.json %s' % (extracted_app_folder, app_setting_path))
