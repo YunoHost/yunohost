@@ -224,7 +224,7 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.warning(out)
             raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
         else:
-            logger.info(out)
+            logger.debug(out)
 
 
 def _is_inside_container():
@@ -424,7 +424,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        logger.info(m18n.n('updating_apt_cache'))
+        logger.debug(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
 
@@ -438,7 +438,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                 'fullname': pkg.fullname,
                 'changelog': pkg.get_changelog()
             })
-        logger.info(m18n.n('done'))
+        logger.debug(m18n.n('done'))
 
     # "apps" will list upgradable packages
     apps = []

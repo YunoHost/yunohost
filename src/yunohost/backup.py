@@ -577,7 +577,7 @@ class BackupManager():
         if system_targets == []:
             return
 
-        logger.info(m18n.n('backup_running_hooks'))
+        logger.debug(m18n.n('backup_running_hooks'))
 
         # Prepare environnement
         env_dict = self._get_env_var()
@@ -665,7 +665,7 @@ class BackupManager():
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
         settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
-        logger.info(m18n.n('backup_running_app_script', app=app))
+        logger.debug(m18n.n('backup_running_app_script', app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
@@ -722,9 +722,9 @@ class BackupManager():
         """Apply backup methods"""
 
         for method in self.methods:
-            logger.info(m18n.n('backup_applying_method_' + method.method_name))
+            logger.debug(m18n.n('backup_applying_method_' + method.method_name))
             method.mount_and_backup(self)
-            logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
+            logger.debug(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def _compute_backup_size(self):
         """
@@ -1125,7 +1125,7 @@ class RestoreManager():
         if system_targets == []:
             return
 
-        logger.info(m18n.n('restore_running_hooks'))
+        logger.debug(m18n.n('restore_running_hooks'))
 
         env_dict = self._get_env_var()
         ret = hook_callback('restore',
@@ -1210,7 +1210,7 @@ class RestoreManager():
             self.targets.set_result("apps", app_instance_name, "Warning")
             return
 
-        logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
+        logger.debug(m18n.n('restore_running_app_script', app=app_instance_name))
         try:
             # Restore app settings
             app_settings_new_path = os.path.join('/etc/yunohost/apps/',
@@ -1582,7 +1582,7 @@ class BackupMethod(object):
                                      m18n.n('backup_unable_to_organize_files'))
 
         # Copy unbinded path
-        logger.info(m18n.n('backup_copying_to_organize_the_archive',
+        logger.debug(m18n.n('backup_copying_to_organize_the_archive',
             size=str(size)))
         for path in paths_needed_to_be_copied:
             dest = os.path.join(self.work_dir, path['dest'])
@@ -1786,7 +1786,7 @@ class TarBackupMethod(BackupMethod):
         if ret != 0:
             logger.warning(m18n.n('backup_archive_mount_failed'))
 
-            logger.info(m18n.n("restore_extracting"))
+            logger.debug(m18n.n("restore_extracting"))
             tar = tarfile.open(self._archive_file, "r:gz")
             tar.extract('info.json', path=self.work_dir)
 

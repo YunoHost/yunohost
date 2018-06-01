@@ -566,7 +566,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in apps:
-        logger.warning(m18n.n('app_upgrade_app_name', app=app_instance_name))
+        logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
@@ -1098,7 +1098,7 @@ def app_setting(app, key, value=None, delete=False):
         try:
             return app_settings[key]
         except:
-            logger.info("cannot get app setting '%s' for '%s'", key, app)
+            logger.debug("cannot get app setting '%s' for '%s'", key, app)
             return None
     else:
         if delete and key in app_settings:
@@ -1449,7 +1449,7 @@ def _extract_app_from_file(path, remove=False):
         Dict manifest
 
     """
-    logger.info(m18n.n('extracting'))
+    logger.debug(m18n.n('extracting'))
 
     if os.path.exists(APP_TMP_FOLDER):
         shutil.rmtree(APP_TMP_FOLDER)
@@ -1490,7 +1490,7 @@ def _extract_app_from_file(path, remove=False):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_manifest_invalid', error=e.strerror))
 
-    logger.info(m18n.n('done'))
+    logger.debug(m18n.n('done'))
 
     manifest['remote'] = {'type': 'file', 'path': path}
     return manifest, extracted_app_folder
@@ -1535,7 +1535,7 @@ def _fetch_app_from_git(app):
     if os.path.exists(app_tmp_archive):
         os.remove(app_tmp_archive)
 
-    logger.info(m18n.n('downloading'))
+    logger.debug(m18n.n('downloading'))
 
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
@@ -1586,7 +1586,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid', error=e.strerror))
             else:
-                logger.info(m18n.n('done'))
+                logger.debug(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
@@ -1643,7 +1643,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid', error=e.strerror))
             else:
-                logger.info(m18n.n('done'))
+                logger.debug(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {
@@ -1766,7 +1766,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     elif not requirements:
         return
 
-    logger.info(m18n.n('app_requirements_checking', app=app_instance_name))
+    logger.debug(m18n.n('app_requirements_checking', app=app_instance_name))
 
     # Retrieve versions of each required package
     try:
@@ -1996,7 +1996,7 @@ def _migrate_appslist_system():
 
     for cron_path in legacy_crons:
         appslist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
-        logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
+        logger.debug(m18n.n('appslist_migrating', appslist=appslist_name))
 
         # Parse appslist url in cron
         cron_file_content = open(cron_path).read().strip()

@@ -36,12 +36,12 @@ class MyMigration(Migration):
 
         self.check_assertions()
 
-        logger.warning(m18n.n("migration_0003_start", logfile=self.logfile))
+        logger.info(m18n.n("migration_0003_start", logfile=self.logfile))
 
         # Preparing the upgrade
         self.restore_original_nginx_conf_if_needed()
 
-        logger.warning(m18n.n("migration_0003_patching_sources_list"))
+        logger.info(m18n.n("migration_0003_patching_sources_list"))
         self.patch_apt_sources_list()
         self.backup_files_to_keep()
         self.apt_update()
@@ -50,7 +50,7 @@ class MyMigration(Migration):
         self.hold(YUNOHOST_PACKAGES + apps_packages + ["fail2ban"])
 
         # Main dist-upgrade
-        logger.warning(m18n.n("migration_0003_main_upgrade"))
+        logger.info(m18n.n("migration_0003_main_upgrade"))
         _run_service_command("stop", "mysql")
         self.apt_dist_upgrade(conf_flags=["old", "miss", "def"])
         _run_service_command("start", "mysql")
@@ -58,7 +58,7 @@ class MyMigration(Migration):
             raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
 
         # Specific upgrade for fail2ban...
-        logger.warning(m18n.n("migration_0003_fail2ban_upgrade"))
+        logger.info(m18n.n("migration_0003_fail2ban_upgrade"))
         self.unhold(["fail2ban"])
         # Don't move this if folder already exists. If it does, we probably are
         # running this script a 2nd, 3rd, ... time but /etc/fail2ban will
@@ -73,7 +73,7 @@ class MyMigration(Migration):
         os.system("apt clean --assume-yes")
 
         # Upgrade yunohost packages
-        logger.warning(m18n.n("migration_0003_yunohost_upgrade"))
+        logger.info(m18n.n("migration_0003_yunohost_upgrade"))
         self.restore_files_to_keep()
         self.unhold(YUNOHOST_PACKAGES + apps_packages)
         self.upgrade_yunohost_packages()

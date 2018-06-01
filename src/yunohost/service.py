@@ -126,7 +126,7 @@ def service_start(names):
                                       m18n.n('service_start_failed',
                                              service=name,
                                              logs=_get_journalctl_logs(name)))
-            logger.info(m18n.n('service_already_started', service=name))
+            logger.debug(m18n.n('service_already_started', service=name))
 
 
 def service_stop(names):
@@ -148,7 +148,7 @@ def service_stop(names):
                                       m18n.n('service_stop_failed',
                                              service=name,
                                              logs=_get_journalctl_logs(name)))
-            logger.info(m18n.n('service_already_stopped', service=name))
+            logger.debug(m18n.n('service_already_stopped', service=name))
 
 
 def service_enable(names):
@@ -416,7 +416,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
-        logger.info(m18n.n(
+        logger.debug(m18n.n(
             'service_regenconf_pending_applying' if not dry_run else
             'service_regenconf_dry_pending_applying',
             service=service))
@@ -459,7 +459,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     regenerated = _regen(
                         system_path, pending_path, save=False)
                 else:
-                    logger.warning(m18n.n(
+                    logger.info(m18n.n(
                         'service_conf_file_manually_removed',
                         conf=system_path))
                     conf_status = 'removed'
@@ -476,16 +476,16 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     # we assume that it is safe to regen it, since the file is backuped
                     # anyway (by default in _regen), as long as we warn the user
                     # appropriately.
-                    logger.warning(m18n.n('service_conf_new_managed_file',
-                                          conf=system_path, service=service))
+                    logger.info(m18n.n('service_conf_new_managed_file',
+                                       conf=system_path, service=service))
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'new'
                 elif force:
                     regenerated = _regen(system_path)
                     conf_status = 'force-removed'
                 else:
-                    logger.warning(m18n.n('service_conf_file_kept_back',
-                                          conf=system_path, service=service))
+                    logger.info(m18n.n('service_conf_file_kept_back',
+                                       conf=system_path, service=service))
                     conf_status = 'unmanaged'
 
             # -> system conf has not been manually modified
@@ -530,7 +530,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
         # Check for service conf changes
         if not succeed_regen and not failed_regen:
-            logger.info(m18n.n('service_conf_up_to_date', service=service))
+            logger.debug(m18n.n('service_conf_up_to_date', service=service))
             continue
         elif not failed_regen:
             logger.success(m18n.n(
@@ -865,13 +865,13 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             filesystem.mkdir(backup_dir, 0755, True)
 
         shutil.copy2(system_conf, backup_path)
-        logger.info(m18n.n('service_conf_file_backed_up',
+        logger.debug(m18n.n('service_conf_file_backed_up',
                            conf=system_conf, backup=backup_path))
 
     try:
         if not new_conf:
             os.remove(system_conf)
-            logger.info(m18n.n('service_conf_file_removed',
+            logger.debug(m18n.n('service_conf_file_removed',
                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
@@ -880,8 +880,8 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                 filesystem.mkdir(system_dir, 0755, True)
 
             shutil.copyfile(new_conf, system_conf)
-            logger.info(m18n.n('service_conf_file_updated',
-                               conf=system_conf))
+            logger.debug(m18n.n('service_conf_file_updated',
+                                conf=system_conf))
     except Exception as e:
         logger.warning("Exception while trying to regenerate conf '%s': %s", system_conf, e, exc_info=1)
         if not new_conf and os.path.exists(system_conf):
