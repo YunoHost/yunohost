@@ -1,3 +1,13 @@
+yunohost (3.0.0~beta1.5) testing; urgency=low
+
+  * Fix a bug for services with alternate names (mysql<->mariadb)
+  * Fix a bug in regen conf when computing diff with files that don't exists
+  * Increase backup filename length
+
+  (Fixes by Bram <3)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 02 Jun 2018 00:14:00 +0000
+
 yunohost (3.0.0~beta1.4) testing; urgency=low
 
   * Merge with jessie's branches
