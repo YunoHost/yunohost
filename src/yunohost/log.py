@@ -27,23 +27,26 @@
 import os
 import yaml
 import errno
+import collections
 
 from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
 from sys import exc_info
 
-from moulinette import m18n
+from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-OPERATIONS_PATH = '/var/log/yunohost/operation/'
+CATEGORIES_PATH = '/var/log/yunohost/categories/'
+CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', \
+              'app']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
 RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
-def log_list(limit=None, full=False):
+def log_list(categories=[], limit=None):
     """
     List available logs
 
@@ -51,33 +54,45 @@ def log_list(limit=None, full=False):
         limit -- Maximum number of logs
     """
 
-    result = {"operations": []}
+    if not categories:
+        is_api = msettings.get('interface') == 'api'
+        categories = ["operation"] if not is_api else CATEGORIES
 
-    if not os.path.exists(OPERATIONS_PATH):
-        return result
+    result = collections.OrderedDict()
+    for category in categories:
+        result[category] = []
 
-    operations = filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(OPERATIONS_PATH))
-    operations = reversed(sorted(operations))
+        category_path = os.path.join(CATEGORIES_PATH, category)
+        if not os.path.exists(category_path):
+            continue
 
-    if limit is not None:
-        operations = operations[:limit]
+        logs = filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(category_path))
+        logs = reversed(sorted(logs))
 
-    for operation in operations:
+        if limit is not None:
+            logs = logs[:limit]
 
-        base_filename = operation[:-len(METADATA_FILE_EXT)]
-        md_filename = operation
-        md_path = os.path.join(OPERATIONS_PATH, md_filename)
+        for log in logs:
 
-        operation = base_filename.split("-")
+            base_filename = log[:-len(METADATA_FILE_EXT)]
+            md_filename = log
+            md_path = os.path.join(category_path, md_filename)
 
-        operation_datetime = datetime.strptime(" ".join(operation[:2]), "%Y%m%d %H%M%S")
+            log = base_filename.split("-")
 
-        result["operations"].append({
-            "started_at": operation_datetime,
-            "description": m18n.n("log_" + operation[2], *operation[3:]),
-            "name": base_filename,
-            "path": md_path,
-        })
+            entry = {
+                "name": base_filename,
+                "path": md_path,
+            }
+            try:
+                log_datetime = datetime.strptime(" ".join(log[:2]), "%Y%m%d %H%M%S")
+            except ValueError:
+                entry["description"] = m18n.n("log_" + log[0], *log[1:]),
+            else:
+                entry["description"] = m18n.n("log_" + log[2], *log[3:]),
+                entry["started_at"] = log_datetime
+
+            result[category].append(entry)
 
     return result
 
@@ -98,7 +113,10 @@ def log_display(path, number=50):
     abs_path = path
     log_path = None
     if not path.startswith('/'):
-        abs_path = os.path.join(OPERATIONS_PATH, path)
+        for category in CATEGORIES:
+            abs_path = os.path.join(CATEGORIES_PATH, category, path)
+            if os.path.exists(abs_path) or os.path.exists(abs_path + METADATA_FILE_EXT):
+                break
 
     if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT) :
         log_path = abs_path
@@ -116,9 +134,14 @@ def log_display(path, number=50):
     infos = {}
 
     # If it's a unit operation, display the name and the description
-    if base_path.startswith(OPERATIONS_PATH):
-        operation = base_filename.split("-")
-        infos['description'] = m18n.n("log_" + operation[2], *operation[3:]),
+    if base_path.startswith(CATEGORIES_PATH):
+        log = base_filename.split("-")
+        try:
+            datetime.strptime(" ".join(log[:2]), "%Y%m%d %H%M%S")
+        except ValueError:
+            infos["description"] = m18n.n("log_" + log[0], *log[1:]),
+        else:
+            infos["description"] = m18n.n("log_" + log[2], *log[3:]),
         infos['name'] = base_filename
 
     # Display metadata if exist
