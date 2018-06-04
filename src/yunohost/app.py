@@ -788,7 +788,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
-            uo.error(m18n.n('unexpected_error'))
+            error_msg = uo.error(m18n.n('unexpected_error'))
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -821,9 +821,10 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
             app_ssowatconf(auth)
 
             if install_retcode == -1:
-                raise MoulinetteError(errno.EINTR,
-                                      m18n.g('operation_interrupted'))
-            raise MoulinetteError(errno.EIO, m18n.n('installation_failed'))
+                msg = m18n.n('operation_interrupted') + " " + error_msg
+                raise MoulinetteError(errno.EINTR, msg)
+            msg = m18n.n('installation_failed') + " " + error_msg
+            raise MoulinetteError(errno.EIO, msg)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)

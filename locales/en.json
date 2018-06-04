@@ -226,6 +226,7 @@
     "log_backup_restore_system": "Restore system from a backup archive",
     "log_backup_restore_app": "Restore '{}' from a backup archive",
     "log_remove_on_failed_restore": "Remove '{}' after a failed restore from a backup archive",
+    "log_remove_on_failed_install": "Remove '{}' after a failed installation",
     "log_domain_add": "Add '{}' domain into system configuration",
     "log_domain_remove": "Remove '{}' domain from system configuration",
     "log_dyndns_subscribe": "Subscribe to a YunoHost subdomain '{}'",

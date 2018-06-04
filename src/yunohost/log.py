@@ -349,7 +349,7 @@ class UnitOperation(object):
         """
         Declare the failure of the unit operation
         """
-        self.close(error)
+        return self.close(error)
 
     def close(self, error=None):
         """
@@ -367,18 +367,19 @@ class UnitOperation(object):
         desc = _get_description_from_name(self.name)
         if error is None:
             if is_api:
-                logger.info(m18n.n('log_link_to_log', name=self.name, desc=desc))
+                msg = m18n.n('log_link_to_log', name=self.name, desc=desc)
             else:
-                logger.info(m18n.n('log_help_to_get_log', name=self.name, desc=desc))
+                msg = m18n.n('log_help_to_get_log', name=self.name, desc=desc)
+            logger.info(msg)
         else:
             if is_api:
-                logger.warning("<strong>" + m18n.n('log_link_to_failed_log',
-                                                   name=self.name, desc=desc) +
-                               "</strong>")
+                msg = "<strong>" + m18n.n('log_link_to_failed_log',
+                                        name=self.name, desc=desc) + "</strong>"
             else:
-                logger.warning(m18n.n('log_help_to_get_failed_log', name=self.name, desc=desc))
-
+                msg = m18n.n('log_help_to_get_failed_log', name=self.name, desc=desc)
+            logger.warning(msg)
         self.flush()
+        return msg
 
     def __del__(self):
         """
