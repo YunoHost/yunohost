@@ -823,7 +823,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
                 raise MoulinetteError(errno.EINTR, msg)
-            msg = m18n.n('installation_failed') + " " + error_msg
+            msg = error_msg
             raise MoulinetteError(errno.EIO, msg)
 
     # Clean hooks and add new ones
