@@ -800,6 +800,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
                 uo_remove = UnitOperation('remove_on_failed_install',
                                                  [('app', app_instance_name)],
                                                  env=env_dict_remove)
+                uo_remove.start()
 
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
@@ -950,6 +951,7 @@ def app_addaccess(auth, apps, users=[]):
                     allowed_users.add(allowed_user)
                     uo.related_to.add(('user', allowed_user))
 
+            uo.flush()
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_addaccess', args=[app, new_users])
@@ -1010,6 +1012,7 @@ def app_removeaccess(auth, apps, users=[]):
                         allowed_users.add(allowed_user)
 
             uo.related_to += [ ('user', x) for x in allowed_users ]
+            uo.flush()
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_removeaccess', args=[app, new_users])

@@ -1133,6 +1133,7 @@ class RestoreManager():
 
         env_dict = self._get_env_var()
         uo.extra.env = env_dict
+        uo.flush()
         ret = hook_callback('restore',
                             system_targets,
                             args=[self.work_dir],
@@ -1247,6 +1248,7 @@ class RestoreManager():
             env_dict = self._get_env_var(app_instance_name)
 
             uo.extra.env = env_dict
+            uo.flush()
 
             # Execute app restore script
             hook_exec(restore_script,
