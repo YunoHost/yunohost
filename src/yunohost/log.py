@@ -38,6 +38,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
+OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
 CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', \
               'app']
 METADATA_FILE_EXT = '.yml'
@@ -219,10 +220,10 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                 entity = entity[0]
                 if entity in kwargs and kwargs[entity] is not None:
                     if isinstance(kwargs[entity], basestring):
-                        related_to.append({entity_type: kwargs[entity]})
+                        related_to.append((entity_type, kwargs[entity]))
                     else:
                         for x in kwargs[entity]:
-                            related_to.append({entity_type: kwargs[x]})
+                            related_to.append((entity_type, kwargs[x]))
 
             context = kwargs.copy()
 
@@ -314,7 +315,7 @@ class UnitOperation(object):
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
         if self.related_to:
-            name += self.related_to[0].values()
+            name += [self.related_to[0][1]]
         return '-'.join(name)
 
     @property
@@ -361,6 +362,20 @@ class UnitOperation(object):
         self._success = error is None
         if self.logger is not None:
             self.logger.removeHandler(self.file_handler)
+
+        is_api = msettings.get('interface') == 'api'
+        desc = _get_description_from_name(self.name)
+        if error is None:
+            if is_api:
+                logger.info(m18n.n('log_link_to_log', name=self.name, desc=desc))
+            else:
+                logger.info(m18n.n('log_help_to_get_log', name=self.name, desc=desc))
+        else:
+            if is_api:
+                logger.warning(m18n.n('log_link_to_failed_log', name=self.name, desc=desc))
+            else:
+                logger.warning(m18n.n('log_help_to_get_failed_log', name=self.name, desc=desc))
+
         self.flush()
 
     def __del__(self):
@@ -370,4 +385,13 @@ class UnitOperation(object):
         shortage.
         """
         self.error(m18n.n('log_operation_unit_unclosed_properly'))
+
+def _get_description_from_name(name):
+    parts = name.split("-")
+    try:
+        datetime.strptime(" ".join(parts[:2]), "%Y%m%d %H%M%S")
+    except ValueError:
+        return m18n.n("log_" + parts[0], *parts[1:])
+    else:
+        return m18n.n("log_" + parts[2], *parts[3:])
 
