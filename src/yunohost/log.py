@@ -213,11 +213,21 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
             if op_key is None:
                 op_key = func.__name__
 
+            # In case the function is called directly from an other part of the
+            # code
+            if len(args) > 0:
+                from inspect import getargspec
+                keys = getargspec(func).args
+                for k, arg in enumerate(args):
+                    kwargs[keys[k]] = arg
+                args = ()
+
             # Search related entity in arguments of the decorated function
             for entity in entities_list:
                 entity = entity.split(':')
                 entity_type = entity[-1]
                 entity = entity[0]
+
                 if entity in kwargs and kwargs[entity] is not None:
                     if isinstance(kwargs[entity], basestring):
                         related_to.append((entity_type, kwargs[entity]))
@@ -357,6 +367,8 @@ class UnitOperation(object):
         """
         if self.ended_at is not None or self.started_at is None:
             return
+        if error is not None and not isinstance(error, basestring):
+            error = str(error)
         self.ended_at = datetime.now()
         self._error = error
         self._success = error is None
