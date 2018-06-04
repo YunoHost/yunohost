@@ -251,9 +251,8 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
             except Exception as e:
                 uo.error(e)
                 raise e
-            finally:
-                # Close the unit operation if it hasn't been closed before
-                uo.close(exc_info()[0])
+            else:
+                uo.success()
             return result
         return func_wrapper
     return decorate
