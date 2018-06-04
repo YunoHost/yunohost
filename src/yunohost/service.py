@@ -274,7 +274,8 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+@is_unit_operation('names:service', auto=False)
+def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
     Regenerate the configuration file(s) for a service
@@ -289,6 +290,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     """
     result = {}
 
+    if not dry_run:
+        uo.start()
     # Return the list of pending conf
     if list_pending:
         pending_conf = _get_pending_conf(names)
@@ -481,6 +484,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
             regen_conf_files = ''
         return post_args + [regen_conf_files, ]
     hook_callback('conf_regen', names, pre_callback=_pre_call)
+
+    uo.success()
 
     return result
 

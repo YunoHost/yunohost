@@ -834,20 +834,31 @@ def tools_migrations_migrate(target=None, skip=False):
 
     # effectively run selected migrations
     for migration in migrations:
+
+        # Start register change on system
+        uo= UnitOperation('tools_migrations_migrate_' + mode)
+        uo.start()
+
         if not skip:
             logger.warn(m18n.n('migrations_show_currently_running_migration', **migration))
 
             try:
                 if mode == "forward":
-                    migration["module"].MyMigration().migrate()
+                    m = migration["module"].MyMigration()
+                    m.uo = uo
+                    m.migrate()
                 elif mode == "backward":
-                    migration["module"].MyMigration().backward()
+                    m = migration["module"].MyMigration()
+                    m.uo = uo
+                    m.backward()
                 else:  # can't happen
                     raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
+                msg = m18n.n('migrations_migration_has_failed', exception=e, **migration)
+                logger.error(msg, exc_info=1)
+                uo.error(msg)
                 break
 
         else:  # if skip
@@ -858,6 +869,8 @@ def tools_migrations_migrate(target=None, skip=False):
             "number": migration["number"],
             "name": migration["name"],
         }
+
+        uo.success()
 
     # special case where we want to go back from the start
     if target == 0:

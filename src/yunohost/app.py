@@ -623,6 +623,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Start register change on system
         related_to = [('app', app_instance_name)]
         uo = UnitOperation('app_upgrade', related_to, env=env_dict)
+        uo.start()
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -918,6 +919,8 @@ def app_addaccess(auth, apps, users=[]):
         apps = [apps, ]
 
     for app in apps:
+
+
         app_settings = _get_app_settings(app)
         if not app_settings:
             continue
@@ -927,6 +930,12 @@ def app_addaccess(auth, apps, users=[]):
             app_settings['mode'] = 'private'
 
         if app_settings['mode'] == 'private':
+
+            # Start register change on system
+            related_to = [('app', app)]
+            uo= UnitOperation('app_addaccess', related_to)
+            uo.start()
+
             allowed_users = set()
             if 'allowed_users' in app_settings:
                 allowed_users = set(app_settings['allowed_users'].split(','))
@@ -939,10 +948,13 @@ def app_addaccess(auth, apps, users=[]):
                         logger.warning(m18n.n('user_unknown', user=allowed_user))
                         continue
                     allowed_users.add(allowed_user)
+                    uo.related_to.add(('user', allowed_user))
 
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_addaccess', args=[app, new_users])
+
+            uo.success()
 
             result[app] = allowed_users
 
@@ -980,6 +992,12 @@ def app_removeaccess(auth, apps, users=[]):
         allowed_users = set()
 
         if app_settings.get('skipped_uris', '') != '/':
+
+            # Start register change on system
+            related_to = [('app', app)]
+            uo= UnitOperation('app_removeaccess', related_to)
+            uo.start()
+
             if remove_all:
                 pass
             elif 'allowed_users' in app_settings:
@@ -991,11 +1009,14 @@ def app_removeaccess(auth, apps, users=[]):
                     if allowed_user not in users:
                         allowed_users.add(allowed_user)
 
+            uo.related_to += [ ('user', x) for x in allowed_users ]
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_removeaccess', args=[app, new_users])
 
             result[app] = allowed_users
+
+            uo.success()
 
     app_ssowatconf(auth)
 
@@ -1020,6 +1041,11 @@ def app_clearaccess(auth, apps):
         if not app_settings:
             continue
 
+        # Start register change on system
+        related_to = [('app', app)]
+        uo= UnitOperation('app_clearaccess', related_to)
+        uo.start()
+
         if 'mode' in app_settings:
             app_setting(app, 'mode', delete=True)
 
@@ -1027,6 +1053,8 @@ def app_clearaccess(auth, apps):
             app_setting(app, 'allowed_users', delete=True)
 
         hook_callback('post_app_clearaccess', args=[app])
+
+        uo.success()
 
     app_ssowatconf(auth)
 
