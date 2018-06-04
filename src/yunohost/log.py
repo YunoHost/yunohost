@@ -127,7 +127,10 @@ def log_display(path, number=50):
     if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT) :
         log_path = abs_path
 
-    base_path = os.path.splitext(abs_path)[0]
+    if abs_path.endswith(METADATA_FILE_EXT) or abs_path.endswith(LOG_FILE_EXT):
+        base_path = ''.join(os.path.splitext(abs_path)[:-1])
+    else:
+        base_path = abs_path
     base_filename = os.path.basename(base_path)
     md_path = base_path + METADATA_FILE_EXT
     if log_path is None:
