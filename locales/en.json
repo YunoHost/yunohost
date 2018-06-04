@@ -206,6 +206,7 @@
     "ip6tables_unavailable": "You cannot play with ip6tables here. You are either in a container or your kernel does not support it",
     "iptables_unavailable": "You cannot play with iptables here. You are either in a container or your kernel does not support it",
     "log_corrupted_md_file": "The yaml metadata file associated with logs is corrupted : '{md_file}'",
+    "log_category_404": "The log category '{category}' does not exist",
     "log_does_exists": "There is not operation log with the name '{log}', use 'yunohost log list to see all available operation logs'",
     "log_operation_unit_unclosed_properly": "Operation unit has not been closed properly",
     "log_app_removelist": "Remove an application list",

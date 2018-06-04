@@ -46,7 +46,7 @@ RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
-def log_list(categories=[], limit=None):
+def log_list(category=[], limit=None):
     """
     List available logs
 
@@ -54,6 +54,9 @@ def log_list(categories=[], limit=None):
         limit -- Maximum number of logs
     """
 
+    categories = category
+
+    # In cli we just display `operation` logs by default
     if not categories:
         is_api = msettings.get('interface') == 'api'
         categories = ["operation"] if not is_api else CATEGORIES
@@ -64,6 +67,8 @@ def log_list(categories=[], limit=None):
 
         category_path = os.path.join(CATEGORIES_PATH, category)
         if not os.path.exists(category_path):
+            logger.warning(m18n.n('log_category_404', category=category))
+
             continue
 
         logs = filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(category_path))
