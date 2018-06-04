@@ -90,12 +90,12 @@ def log_list(category=[], limit=None):
                 "name": base_filename,
                 "path": md_path,
             }
+            entry["description"] = _get_description_from_name(base_filename)
             try:
                 log_datetime = datetime.strptime(" ".join(log[:2]), "%Y%m%d %H%M%S")
             except ValueError:
-                entry["description"] = m18n.n("log_" + log[0], *log[1:]),
+                pass
             else:
-                entry["description"] = m18n.n("log_" + log[2], *log[3:]),
                 entry["started_at"] = log_datetime
 
             result[category].append(entry)
@@ -144,13 +144,7 @@ def log_display(path, number=50):
 
     # If it's a unit operation, display the name and the description
     if base_path.startswith(CATEGORIES_PATH):
-        log = base_filename.split("-")
-        try:
-            datetime.strptime(" ".join(log[:2]), "%Y%m%d %H%M%S")
-        except ValueError:
-            infos["description"] = m18n.n("log_" + log[0], *log[1:]),
-        else:
-            infos["description"] = m18n.n("log_" + log[2], *log[3:]),
+        infos["description"] = _get_description_from_name(base_filename)
         infos['name'] = base_filename
 
     # Display metadata if exist
@@ -407,9 +401,11 @@ class UnitOperation(object):
 def _get_description_from_name(name):
     parts = name.split("-")
     try:
-        datetime.strptime(" ".join(parts[:2]), "%Y%m%d %H%M%S")
-    except ValueError:
-        return m18n.n("log_" + parts[0], *parts[1:])
-    else:
-        return m18n.n("log_" + parts[2], *parts[3:])
-
+        try:
+            datetime.strptime(" ".join(parts[:2]), "%Y%m%d %H%M%S")
+        except ValueError:
+            return m18n.n("log_" + parts[0], *parts[1:])
+        else:
+            return m18n.n("log_" + parts[2], *parts[3:])
+    except IndexError:
+        return name
