@@ -207,7 +207,7 @@
     "iptables_unavailable": "You cannot play with iptables here. You are either in a container or your kernel does not support it",
     "log_corrupted_md_file": "The yaml metadata file associated with logs is corrupted : '{md_file}'",
     "log_category_404": "The log category '{category}' does not exist",
-    "log_link_to_log": "Complete log of this operation: '<a href=\"#/tools/logs/{name}\">{desc}</a>'",
+    "log_link_to_log": "Complete log of this operation: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_help_to_get_log": "To view complete log of the operation '{desc}', run: 'yunohost log display {name}'",
     "log_link_to_failed_log": "The operation '{desc}' has failed ! To get help please <a href=\"#/tools/logs/{name}\">give the complete log</a>",
     "log_help_to_get_failed_log": "The operation '{desc}' has failed ! To get help please give the complete log of the operation, you can get it by running: 'yunohost log display {name}'",

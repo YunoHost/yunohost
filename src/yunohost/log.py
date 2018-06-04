@@ -372,7 +372,9 @@ class UnitOperation(object):
                 logger.info(m18n.n('log_help_to_get_log', name=self.name, desc=desc))
         else:
             if is_api:
-                logger.warning(m18n.n('log_link_to_failed_log', name=self.name, desc=desc))
+                logger.warning("<strong>" + m18n.n('log_link_to_failed_log',
+                                                   name=self.name, desc=desc) +
+                               "</strong>")
             else:
                 logger.warning(m18n.n('log_help_to_get_failed_log', name=self.name, desc=desc))
 
