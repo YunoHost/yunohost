@@ -116,13 +116,16 @@ def domain_add(auth, domain, dyndns=False):
             service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'rmilter'])
             app_ssowatconf(auth)
 
-    except:
+    except Exception, e:
+        from sys import exc_info;
+        t, v, tb = exc_info()
+
         # Force domain removal silently
         try:
             domain_remove(auth, domain, True)
         except:
             pass
-        raise
+        raise t, v, tb
 
     hook_callback('post_domain_add', args=[domain])
 
