@@ -68,7 +68,7 @@ def log_list(category=[], limit=None):
 
         category_path = os.path.join(CATEGORIES_PATH, category)
         if not os.path.exists(category_path):
-            logger.warning(m18n.n('log_category_404', category=category))
+            logger.debug(m18n.n('log_category_404', category=category))
 
             continue
 
@@ -327,7 +327,10 @@ class UnitOperation(object):
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
         if self.related_to:
-            name += [self.related_to[0][1]]
+            if isinstance(self.related_to[0], tuple):
+                name += [self.related_to[0][1]]
+            else:
+                name += self.related_to[0].values()
         return '-'.join(name)
 
     @property

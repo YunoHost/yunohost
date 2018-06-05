@@ -52,7 +52,7 @@ from yunohost.service import service_status, service_regen_conf, service_log, se
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
-from yunohost.log import is_unit_operation
+from yunohost.log import is_unit_operation, UnitOperation
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'

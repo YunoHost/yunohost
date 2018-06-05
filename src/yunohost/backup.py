@@ -51,6 +51,7 @@ from yunohost.hook import (
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 from yunohost.service import service_regen_conf
+from yunohost.log import UnitOperation, is_unit_operation
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -1132,7 +1133,7 @@ class RestoreManager():
         logger.info(m18n.n('restore_running_hooks'))
 
         env_dict = self._get_env_var()
-        uo.extra.env = env_dict
+        uo.extra['env'] = env_dict
         uo.flush()
         ret = hook_callback('restore',
                             system_targets,
@@ -1247,7 +1248,7 @@ class RestoreManager():
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
 
-            uo.extra.env = env_dict
+            uo.extra['env'] = env_dict
             uo.flush()
 
             # Execute app restore script

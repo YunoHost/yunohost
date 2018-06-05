@@ -44,7 +44,7 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
-from yunohost.log import is_unit_operation
+from yunohost.log import is_unit_operation, UnitOperation
 
 logger = getActionLogger('yunohost.app')
 
@@ -110,10 +110,13 @@ def app_fetchlist(url=None, name=None):
     # the fetch only this list
     if url is not None:
         if name:
+            uo = UnitOperation('app_fetchlist')
+            uo.start()
             _register_new_appslist(url, name)
             # Refresh the appslists dict
             appslists = _read_appslist_list()
             appslists_to_be_fetched = [name]
+            uo.success()
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
@@ -622,7 +625,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
-        uo = UnitOperation('app_upgrade', related_to, env=env_dict)
+        uo = unitoperation('app_upgrade', related_to, env=env_dict)
         uo.start()
 
         # Execute App upgrade script
@@ -950,7 +953,7 @@ def app_addaccess(auth, apps, users=[]):
                         logger.warning(m18n.n('user_unknown', user=allowed_user))
                         continue
                     allowed_users.add(allowed_user)
-                    uo.related_to.add(('user', allowed_user))
+                    uo.related_to.append(('user', allowed_user))
 
             uo.flush()
             new_users = ','.join(allowed_users)
@@ -1010,7 +1013,7 @@ def app_removeaccess(auth, apps, users=[]):
             else:
                 for allowed_user in user_list(auth)['users'].keys():
                     if allowed_user not in users:
-                        allowed_users.add(allowed_user)
+                        allowed_users.append(allowed_user)
 
             uo.related_to += [ ('user', x) for x in allowed_users ]
             uo.flush()
