@@ -215,7 +215,8 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
             if len(args) > 0:
                 from inspect import getargspec
                 keys = getargspec(func).args
-                keys.remove('uo')
+                if 'uo' in keys:
+                    keys.remove('uo')
                 for k, arg in enumerate(args):
                     kwargs[keys[k]] = arg
                 args = ()
@@ -231,7 +232,7 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                         related_to.append((entity_type, kwargs[entity]))
                     else:
                         for x in kwargs[entity]:
-                            related_to.append((entity_type, kwargs[x]))
+                            related_to.append((entity_type, x))
 
             context = kwargs.copy()
 
