@@ -1,3 +1,13 @@
+yunohost (2.7.13.4) testing; urgency=low
+
+  * Fix a bug for services with alternate names (mysql<->mariadb)
+  * Fix a bug in regen conf when computing diff with files that don't exists
+  * Increase backup filename length
+
+  (Fixes by Bram <3)
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 05 Jun 2018 18:22:00 +0000
+
 yunohost (2.7.13.3) testing; urgency=low
 
   * [enh] Add postgresql helpers (#238)
