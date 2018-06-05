@@ -290,8 +290,6 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
     """
     result = {}
 
-    if not dry_run:
-        uo.start()
     # Return the list of pending conf
     if list_pending:
         pending_conf = _get_pending_conf(names)
@@ -304,6 +302,12 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
                             system_path, pending_path, True),
                     }
         return pending_conf
+
+    if not dry_run:
+        uo.related_to = [('service', x) for x in names]
+        if not names:
+            uo.related_to = [('service', 'all')]
+        uo.start()
 
     # Clean pending conf directory
     if os.path.isdir(PENDING_CONF_DIR):
@@ -340,8 +344,13 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
+    uo.related_to = []
+
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
+        if not dry_run:
+            uo.related_to.append(('service', service))
+
         logger.info(m18n.n(
             'service_regenconf_pending_applying' if not dry_run else
             'service_regenconf_dry_pending_applying',

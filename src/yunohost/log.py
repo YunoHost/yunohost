@@ -278,6 +278,7 @@ class UnitOperation(object):
         self.started_at = None
         self.ended_at = None
         self.logger = None
+        self._name = None
 
         self.path = OPERATIONS_PATH
 
@@ -324,6 +325,9 @@ class UnitOperation(object):
         Name of the operation
         This name is used as filename, so don't use space
         """
+        if self._name is not None:
+            return self._name
+
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
         if self.related_to:
@@ -331,7 +335,8 @@ class UnitOperation(object):
                 name += [self.related_to[0][1]]
             else:
                 name += self.related_to[0].values()
-        return '-'.join(name)
+        self._name = '-'.join(name)
+        return self._name
 
     @property
     def metadata(self):
