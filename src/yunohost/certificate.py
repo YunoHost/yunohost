@@ -162,7 +162,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
     for domain in domain_list:
 
-        uo = UnitOperation('selfsigned_cert_install', [{'domain', domain}],
+        uo = UnitOperation('selfsigned_cert_install', [('domain', domain)],
                            args={'force': force})
         uo.start()
 
