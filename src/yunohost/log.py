@@ -215,6 +215,7 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
             if len(args) > 0:
                 from inspect import getargspec
                 keys = getargspec(func).args
+                keys.remove('uo')
                 for k, arg in enumerate(args):
                     kwargs[keys[k]] = arg
                 args = ()
@@ -250,6 +251,7 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                 result = func(*args, **kwargs)
             except Exception as e:
                 uo.error(e)
+                import pdb;pdb.set_trace()
                 raise e
             else:
                 uo.success()
