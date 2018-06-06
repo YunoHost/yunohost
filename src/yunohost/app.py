@@ -625,7 +625,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
-        uo = unitoperation('app_upgrade', related_to, env=env_dict)
+        uo = UnitOperation('app_upgrade', related_to, env=env_dict)
         uo.start()
 
         # Execute App upgrade script
