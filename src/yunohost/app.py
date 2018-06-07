@@ -1746,7 +1746,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     # Validate multi-instance app
     if is_true(manifest.get('multi_instance', False)):
         # Handle backward-incompatible change introduced in yunohost >= 2.3.6
-        # See https://dev.yunohost.org/issues/156
+        # See https://github.com/YunoHost/issues/issues/156
         yunohost_req = requirements.get('yunohost', None)
         if (not yunohost_req or
                 not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
