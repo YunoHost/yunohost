@@ -40,6 +40,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_json
 
 from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
@@ -1358,6 +1359,85 @@ def app_change_label(auth, app, new_label):
     app_setting(app, "label", value=new_label)
 
     app_ssowatconf(auth)
+
+
+def app_config_show_panel(app_id):
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app_id)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app_id))
+
+    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+
+    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+        return {
+            "config_panel": [],
+        }
+
+    config_panel = read_json(config_panel)
+
+    env = {"YNH_APP_ID": app_id}
+    parsed_values = {}
+
+    # I need to parse stdout to communicate between scripts because I can't
+    # read the child environment :( (that would simplify things so much)
+    # after hours of research this is apparently quite a standard way, another
+    # option would be to add an explicite pipe or a named pipe for that
+    # a third option would be to write in a temporary file but I don't like
+    # that because that could expose sensitive data
+    def parse_stdout(line):
+        line = line.rstrip()
+        logger.info(line)
+
+        if line.strip().startswith("YNH_CONFIG_") and "=" in line:
+            # XXX error handling?
+            # XXX this might not work for multilines stuff :( (but echo without
+            # formatting should do it no?)
+            key, value = line.strip().split("=", 1)
+            logger.debug("config script declared: %s -> %s", key, value)
+            parsed_values[key] = value
+            print "in parse_stdout", parsed_values
+            print [line]
+
+    hook_exec(config_script,
+              args=[],
+              env=env,
+              user="root",
+              stdout_callback=parse_stdout,
+    )
+
+    # logger.debug("Env after running config script %s", env)
+
+    logger.debug("Generating global variables:")
+    for tab in config_panel.get("panel", []):
+        tab_id = tab["id"]  # this makes things easier to debug on crash
+        for section in tab.get("sections", []):
+            section_id = section["id"]
+            for option in section.get("options", []):
+                option_id = option["id"]
+                variable_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), variable_name)
+
+                if variable_name in parsed_values:
+                    # XXX we should probably uses the one of install here but it's at a POC state right now
+                    option_type = option["type"]
+                    if option_type == "bool":
+                        assert parsed_values[variable_name].lower() in ("true", "false")
+                        option["value"] = True if parsed_values[variable_name].lower() == "true" else False
+                    elif option_type == "integer":
+                        option["value"] = int(parsed_values[variable_name])
+                    elif option_type == "text":
+                        option["value"] = parsed_values[variable_name]
+                else:
+                    logger.debug("Variable '%s' is not declared by config script, using default", variable_name)
+                    option["value"] = option["default"]
+
+    return {
+        "config_panel": config_panel,
+    }
 
 
 def _get_app_settings(app_id):

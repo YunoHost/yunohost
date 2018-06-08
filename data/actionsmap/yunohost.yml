@@ -771,6 +771,20 @@ app:
                 apps:
                     nargs: "+"
 
+    subcategories:
+
+      config:
+          subcategory_help: Applications configuration panel
+          actions:
+
+              ### app_config_show_panel()
+              show-panel:
+                  action_help: show config panel for the application
+                  api: GET /<app_id>/config/panel
+                  arguments:
+                      app_id:
+                          help: App ID
+
 #############################
 #          Backup           #
 #############################
