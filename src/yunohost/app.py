@@ -1442,6 +1442,57 @@ def app_config_show_panel(app_id):
     }
 
 
+def app_config_apply(app_id, args):
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app_id)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app_id))
+
+    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+
+    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+        # XXX real exception
+        raise Exception("Not config-panel.json nor scripts/config")
+
+    config_panel = read_json(config_panel)
+
+    env = {}
+    args = dict(urlparse.parse_qsl(args, keep_blank_values=True))
+
+    for tab in config_panel.get("panel", []):
+        tab_id = tab["id"]  # this makes things easier to debug on crash
+        for section in tab.get("sections", []):
+            section_id = section["id"]
+            for option in section.get("options", []):
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+
+                if generated_id in args:
+                    logger.debug("include into env %s=%s", generated_id, args[generated_id])
+                    env[generated_id] = args[generated_id]
+                else:
+                    logger.debug("no value for key id %s", generated_id)
+
+    # for debug purpose
+    for key in args:
+        if key not in env:
+            logger.warning("Ignore key '%s' from arguments because it is not in the config", key)
+
+    return_code = hook_exec(config_script,
+              args=["apply"],
+              env=env,
+              user="root",
+    )
+
+    if return_code != 0:
+        raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
+
+    logger.success("Config updated as expected")
+
+
 def _get_app_settings(app_id):
     """
     Get settings of an installed app

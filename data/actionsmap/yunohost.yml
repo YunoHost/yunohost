@@ -785,6 +785,17 @@ app:
                       app_id:
                           help: App ID
 
+              ### app_config_apply()
+              apply:
+                  action_help: apply the new configuration
+                  api: POST /<app_id>/config
+                  arguments:
+                      app_id:
+                          help: App ID
+                      -a:
+                          full: --args
+                          help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+
 #############################
 #          Backup           #
 #############################
