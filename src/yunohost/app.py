@@ -1419,21 +1419,22 @@ def app_config_show_panel(app_id):
             section_id = section["id"]
             for option in section.get("options", []):
                 option_id = option["id"]
-                variable_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
-                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), variable_name)
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                option["id"] = generated_id
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_id)
 
-                if variable_name in parsed_values:
+                if generated_id in parsed_values:
                     # XXX we should probably uses the one of install here but it's at a POC state right now
                     option_type = option["type"]
                     if option_type == "bool":
-                        assert parsed_values[variable_name].lower() in ("true", "false")
-                        option["value"] = True if parsed_values[variable_name].lower() == "true" else False
+                        assert parsed_values[generated_id].lower() in ("true", "false")
+                        option["value"] = True if parsed_values[generated_id].lower() == "true" else False
                     elif option_type == "integer":
-                        option["value"] = int(parsed_values[variable_name])
+                        option["value"] = int(parsed_values[generated_id])
                     elif option_type == "text":
-                        option["value"] = parsed_values[variable_name]
+                        option["value"] = parsed_values[generated_id]
                 else:
-                    logger.debug("Variable '%s' is not declared by config script, using default", variable_name)
+                    logger.debug("Variable '%s' is not declared by config script, using default", generated_id)
                     option["value"] = option["default"]
 
     return {
