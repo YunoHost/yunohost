@@ -1399,8 +1399,6 @@ def app_config_show_panel(app_id):
             key, value = line.strip().split("=", 1)
             logger.debug("config script declared: %s -> %s", key, value)
             parsed_values[key] = value
-            print "in parse_stdout", parsed_values
-            print [line]
 
     return_code = hook_exec(config_script,
               args=["show"],
