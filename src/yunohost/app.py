@@ -1402,14 +1402,15 @@ def app_config_show_panel(app_id):
             print "in parse_stdout", parsed_values
             print [line]
 
-    hook_exec(config_script,
+    return_code = hook_exec(config_script,
               args=["show"],
               env=env,
               user="root",
               stdout_callback=parse_stdout,
     )
 
-    # logger.debug("Env after running config script %s", env)
+    if return_code != 0:
+        raise Exception("script/config show return value code: %s (considered as an error)", return_code)
 
     logger.debug("Generating global variables:")
     for tab in config_panel.get("panel", []):
