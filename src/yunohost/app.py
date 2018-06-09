@@ -1403,7 +1403,7 @@ def app_config_show_panel(app_id):
             print [line]
 
     hook_exec(config_script,
-              args=[],
+              args=["show"],
               env=env,
               user="root",
               stdout_callback=parse_stdout,
