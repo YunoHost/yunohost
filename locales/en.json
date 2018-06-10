@@ -348,7 +348,7 @@
     "service_description_mysql": "stores applications data (SQL database)",
     "service_description_nginx": "serves or provides access to all the websites hosted on your server",
     "service_description_nslcd": "handles YunoHost user shell connection",
-    "service_description_php5-fpm": "runs applications written in PHP with nginx",
+    "service_description_php7.0-fpm": "runs applications written in PHP with nginx",
     "service_description_postfix": "used to send and receive emails",
     "service_description_redis-server": "a specialized database used for rapid data access, task queue and communication between programs",
     "service_description_rmilter": "checks various parameters in emails",
