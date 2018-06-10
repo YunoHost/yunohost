@@ -29,7 +29,7 @@
     "app_not_properly_removed": "لم يتم حذف تطبيق {app:s} بشكلٍ جيّد",
     "app_package_need_update": "The app {app} package needs to be updated to follow YunoHost changes",
     "app_removed": "تمت إزالة تطبيق {app:s}",
-    "app_requirements_checking": "Checking required packages for {app}...",
+    "app_requirements_checking": "جار فحص الحزم اللازمة لـ {app} ...",
     "app_requirements_failed": "Unable to meet requirements for {app}: {error}",
     "app_requirements_unmeet": "Requirements are not met for {app}, the package {pkgname} ({version}) must be {spec}",
     "app_sources_fetch_failed": "تعذرت عملية جلب مصادر الملفات",
