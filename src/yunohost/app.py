@@ -1457,7 +1457,7 @@ def app_config_apply(app_id, args):
 
     config_panel = read_json(config_panel)
 
-    env = {}
+    env = {"YNH_APP_ID": app_id}
     args = dict(urlparse.parse_qsl(args, keep_blank_values=True))
 
     for tab in config_panel.get("panel", []):
