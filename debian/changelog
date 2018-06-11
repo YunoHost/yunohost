@@ -1,10 +1,16 @@
+yunohost (3.0.0~beta1.6) testing; urgency=low
+
+  * [fix] Service description for php7.0-fpm
+  * [fix] Remove old logrotate for php5-fpm during migration
+  * [fix] Explicitly enable php7.0-fpm and disable php5-fpm during migration
+  * [fix] Don't open the old SMTP port anymore (465)
+  * [enh] Check space available before running the postgresql migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 12 Jun 2018 01:00:00 +0000
+
 yunohost (3.0.0~beta1.5) testing; urgency=low
 
-  * Fix a bug for services with alternate names (mysql<->mariadb)
-  * Fix a bug in regen conf when computing diff with files that don't exists
-  * Increase backup filename length
-
-  (Fixes by Bram <3)
+  * (c.f. 2.7.13.4)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 02 Jun 2018 00:14:00 +0000
 
