@@ -298,7 +298,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="admin", enable_stdinfo=False):
+              chdir=None, env=None, user="admin"):
     """
     Execute hook from a file with arguments
 
@@ -337,11 +337,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         env = {}
     env['YNH_CWD'] = chdir
 
-    if enable_stdinfo:
-        stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
-        env['YNH_STDINFO'] = stdinfo
-    else:
-        stdinfo = None
+    stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
+    env['YNH_STDINFO'] = stdinfo
 
     # Construct command to execute
     if user == "root":
