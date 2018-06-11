@@ -228,6 +228,8 @@ class MyMigration(Migration):
 
         # Make apt-get happy
         os.system("echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections")
+        # Don't send an email to root about the postgresql migration. It should be handled automatically after.
+        os.system("echo 'postgresql-common postgresql-common/obsolete-major seen true' | debconf-set-selections")
 
         command = ""
         command += " DEBIAN_FRONTEND=noninteractive"
