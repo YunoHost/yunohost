@@ -56,6 +56,7 @@ class MyMigration(Migration):
         # Reload/restart the php pools
         _run_service_command("restart", "php7.0-fpm")
         os.system("systemctl stop php5-fpm")
+        os.system("rm /etc/logrotate.d/php5-fpm") # We remove this otherwise the logrotate cron will be unhappy
 
         # Get list of nginx conf file
         nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
