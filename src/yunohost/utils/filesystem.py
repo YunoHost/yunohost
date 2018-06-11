@@ -23,3 +23,7 @@ import os
 def free_space_in_directory(dirpath):
     stat = os.statvfs(dirpath)
     return stat.f_frsize * stat.f_bavail
+
+def space_used_by_directory(dirpath):
+    stat = os.statvfs(dirpath)
+    return stat.f_frsize * stat.f_blocks
