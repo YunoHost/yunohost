@@ -55,7 +55,7 @@ class MyMigration(Migration):
         _run_service_command("stop", "mysql")
         self.apt_dist_upgrade(conf_flags=["old", "miss", "def"])
         _run_service_command("start", "mysql")
-        if self.debian_major_version() == "jessie":
+        if self.debian_major_version() == 8:
             raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
 
         # Specific upgrade for fail2ban...
@@ -89,10 +89,7 @@ class MyMigration(Migration):
         # because "platform" relies on uname, which on some weird setups does
         # not behave correctly (still says running Jessie when lsb_release says
         # Stretch...)
-        # Also lsb_release is fucking stupid and sometimes return "Release: 8"
-        # and "Codename: stretch". So apparently the codename is more reliable
-        # than the release number :|
-        return check_output("lsb_release -c").split("\t")[1].strip()
+        return int(check_output("lsb_release -r").split("\t")[1][0])
 
     def yunohost_major_version(self):
         return int(get_installed_version("yunohost").split('.')[0])
@@ -103,7 +100,7 @@ class MyMigration(Migration):
         # NB : we do both check to cover situations where the upgrade crashed
         # in the middle and debian version could be >= 9.x but yunohost package
         # would still be in 2.x...
-        if not self.debian_major_version() == "jessie" \
+        if not self.debian_major_version() == 8 \
            and not self.yunohost_major_version() == 2:
             raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
 
@@ -128,7 +125,7 @@ class MyMigration(Migration):
         # NB : we do both check to cover situations where the upgrade crashed
         # in the middle and debian version could be >= 9.x but yunohost package
         # would still be in 2.x...
-        if not self.debian_major_version() == "jessie" \
+        if not self.debian_major_version() == 8 \
            and not self.yunohost_major_version() == 2:
             return None
 
