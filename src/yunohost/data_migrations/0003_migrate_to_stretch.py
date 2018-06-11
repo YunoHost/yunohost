@@ -15,6 +15,7 @@ from yunohost.service import (_run_service_command,
                               manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import get_installed_version
+from yunohost.firewall import firewall_allow, firewall_disallow
 
 logger = getActionLogger('yunohost.migration')
 
@@ -71,6 +72,11 @@ class MyMigration(Migration):
         # Clean the mess
         os.system("apt autoremove --assume-yes")
         os.system("apt clean --assume-yes")
+
+        # We moved to port 587 for SMTP
+        # https://busylog.net/smtp-tls-ssl-25-465-587/
+        firewall_allow("Both", 587)
+        firewall_disallow("Both", 465)
 
         # Upgrade yunohost packages
         logger.warning(m18n.n("migration_0003_yunohost_upgrade"))
