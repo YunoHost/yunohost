@@ -326,7 +326,7 @@ def service_log(name, number=50):
     for log_path in log_list:
         # log is a file, read it
         if not os.path.isdir(log_path):
-            result[log_path] = _tail(log_path, int(number))
+            result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
             continue
 
         for log_file in os.listdir(log_path):
@@ -338,7 +338,7 @@ def service_log(name, number=50):
             if not log_file.endswith(".log"):
                 continue
 
-            result[log_file_path] = _tail(log_file_path, int(number))
+            result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
 
     return result
 
@@ -733,9 +733,9 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     else:
         orig_file = []
 
-    if not os.path.exists(new_file):
+    if os.path.exists(new_file):
         with open(new_file, 'r') as new_file:
-            new_file.readlines()
+            new_file = new_file.readlines()
     else:
         new_file = []
 
