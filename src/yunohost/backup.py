@@ -1161,7 +1161,6 @@ class RestoreManager():
                     writer.writerow(row)
         except (IOError, OSError, csv.Error) as e:
             logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
-                                  file=backup_csv,
                                   error=str(e)))
 
     def _restore_system(self):
