@@ -809,17 +809,11 @@ backup:
                 --apps:
                     help: List of application names to backup (all by default)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
                 --ignore-system:
                     help: Do not backup system
                     action: store_true
                 --ignore-apps:
                     help: Do not backup apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
                     action: store_true
 
 
@@ -839,17 +833,11 @@ backup:
                 --apps:
                     help: List of application names to restore (all by default)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
                 --ignore-system:
                     help: Do not restore system parts
                     action: store_true
                 --ignore-apps:
                     help: Do not restore apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
                     action: store_true
                 --force:
                     help: Force restauration on an already installed system

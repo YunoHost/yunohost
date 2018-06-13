@@ -1924,8 +1924,7 @@ class CustomBackupMethod(BackupMethod):
 def backup_create(name=None, description=None, methods=[],
                   output_directory=None, no_compress=False,
                   ignore_system=False, system=[],
-                  ignore_apps=False, apps=[],
-                  ignore_hooks=False, hooks=[]):
+                  ignore_apps=False, apps=[]):
     """
     Create a backup local archive
 
@@ -1939,9 +1938,6 @@ def backup_create(name=None, description=None, methods=[],
         ignore_system -- Ignore system elements
         apps -- List of application names to backup
         ignore_apps -- Do not backup apps
-
-        hooks -- (Deprecated) Renamed to "system"
-        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     # TODO: Add a 'clean' argument to clean output directory
@@ -1949,17 +1945,6 @@ def backup_create(name=None, description=None, methods=[],
     ###########################################################################
     #   Validate / parse arguments                                            #
     ###########################################################################
-
-    # Historical, deprecated options
-    if ignore_hooks is not False:
-        logger.warning("--ignore-hooks is deprecated and will be removed in the"
-                       "future. Please use --ignore-system instead.")
-        ignore_system = ignore_hooks
-
-    if hooks != [] and hooks is not None:
-        logger.warning("--hooks is deprecated and will be removed in the"
-                       "future. Please use --system instead.")
-        system = hooks
 
     # Validate that there's something to backup
     if ignore_system and ignore_apps:
@@ -2057,7 +2042,6 @@ def backup_create(name=None, description=None, methods=[],
 def backup_restore(auth, name,
                    system=[], ignore_system=False,
                    apps=[], ignore_apps=False,
-                   hooks=[], ignore_hooks=False,
                    force=False):
     """
     Restore from a local backup archive
@@ -2069,24 +2053,11 @@ def backup_restore(auth, name,
         ignore_system -- Do not restore any system parts
         apps -- List of application names to restore
         ignore_apps -- Do not restore apps
-
-        hooks -- (Deprecated) Renamed to "system"
-        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     ###########################################################################
     #   Validate / parse arguments                                            #
     ###########################################################################
-
-    # Historical, deprecated options
-    if ignore_hooks is not False:
-        logger.warning("--ignore-hooks is deprecated and will be removed in the"
-                       "future. Please use --ignore-system instead.")
-        ignore_system = ignore_hooks
-    if hooks != [] and hooks is not None:
-        logger.warning("--hooks is deprecated and will be removed in the"
-                       "future. Please use --system instead.")
-        system = hooks
 
     # Validate what to restore
     if ignore_system and ignore_apps:
