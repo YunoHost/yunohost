@@ -1131,20 +1131,38 @@ class RestoreManager():
         if not os.path.isfile(backup_csv):
             return
 
-        lines = filesystem.read_file(backup_csv).split('\n')
+        try:
+            contains_php5 = False
+            with open(backup_csv) as csvfile:
+                reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
+                newlines = []
+                for row in reader:
+                    if 'php5' in row['source']:
+                        contains_php5 = True
+                        row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
+                            .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
+                            .replace('php5','php7')
 
-        newlines = []
-        for line in lines:
-            if 'php5' in line:
-                line = line.replace('backup/etc/php5', 'backup/etc/php6') \
-                .replace('"/etc/php5', '"/etc/php/7.0') \
-                .replace('backup/var/run/php5-fpm', 'backup/var/run/php/php6-fpm') \
-                .replace('"/var/run/php5-fpm', '"/var/run/php/php7.0-fpm') \
-                .replace('php5','php7', 1) \
-                .replace('php6', 'php5')
-            newlines.append(line)
+                    newlines.append(row)
+        except (IOError, OSError, csv.Error) as e:
+            raise MoulinetteError(errno.EIO,m18n.n('error_reading_file',
+                                                   file=backup_csv,
+                                                   error=str(e)))
 
-        filesystem.write_to_file(backup_csv, newlines)
+        if not contains_php5:
+            return
+
+        try:
+            with open(backup_csv, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile,
+                                        fieldnames=['source', 'dest'],
+                                        quoting=csv.QUOTE_ALL)
+                for row in newlines:
+                    writer.writerow(row)
+        except (IOError, OSError, csv.Error) as e:
+            logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
+                                  file=backup_csv,
+                                  error=str(e)))
 
     def _restore_system(self):
         """ Restore user and system parts """
