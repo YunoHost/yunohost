@@ -27,6 +27,7 @@ import re
 import os
 import yaml
 import json
+import gzip
 import errno
 import logging
 import subprocess
@@ -43,7 +44,7 @@ from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
-from moulinette.utils.filesystem import read_json, write_to_json
+from moulinette.utils.filesystem import read_json, write_to_json, read_file
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
@@ -924,6 +925,42 @@ def tools_shell(auth, command=None):
         vars.update(locals())
         shell = code.InteractiveConsole(vars)
         shell.interact()
+
+
+def tools_yunohost_logs_list():
+    """
+    List available YunoHost logs.
+    """
+
+    return {"logs": list(sorted(os.listdir("/var/log/yunohost")))}
+
+
+def tools_yunohost_logs_display(log):
+    """
+    List available YunoHost logs.
+    """
+
+    PATH_TO_LOGS = "/var/log/yunohost/"
+
+    logs = tools_yunohost_logs_list()["logs"]
+
+    if log in logs:
+        pass
+    elif log + ".log" in logs:
+        log += ".log"
+    elif log + ".gz" in logs:
+        log += ".gz"
+    else:
+        raise MoulinetteError(errno.EINVAL, m18n.n('yunohost_log_file_doesnt_exist', log=log, available_logs=", ".join(logs)))
+
+    log = os.path.join(PATH_TO_LOGS, log)
+
+    if log.endswith(".gz"):
+        content = gzip.open(log).read()
+    else:
+        content = read_file(log)
+
+    return content
 
 
 def _get_migrations_list():
