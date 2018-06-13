@@ -355,13 +355,13 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
-        logger.info(m18n.n('executing_command', command=' '.join(command)))
+        logger.debug(m18n.n('executing_command', command=' '.join(command)))
     else:
-        logger.info(m18n.n('executing_script', script=path))
+        logger.debug(m18n.n('executing_script', script=path))
 
     # Define output callbacks and call command
     callbacks = (
-        lambda l: logger.info(l.rstrip()),
+        lambda l: logger.debug(l.rstrip()),
         lambda l: logger.warning(l.rstrip()),
     )
     returncode = call_async_output(

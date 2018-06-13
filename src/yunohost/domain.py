@@ -202,7 +202,7 @@ def domain_dns_conf(domain, ttl=None):
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
-        logger.warning(m18n.n("domain_dns_conf_is_just_a_recommendation"))
+        logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
 

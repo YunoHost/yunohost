@@ -9,8 +9,8 @@ import argparse
 IN_DEVEL = False
 
 # Level for which loggers will log
-LOGGERS_LEVEL = 'INFO'
-TTY_LOG_LEVEL = 'SUCCESS'
+LOGGERS_LEVEL = 'DEBUG'
+TTY_LOG_LEVEL = 'INFO'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
@@ -58,10 +58,6 @@ def _parse_cli_args():
         action='store_true', default=False,
         help="Log and print debug messages",
     )
-    parser.add_argument('--verbose',
-        action='store_true', default=False,
-        help="Be more verbose in the output",
-    )
     parser.add_argument('--quiet',
         action='store_true', default=False,
         help="Don't produce any output",
@@ -92,13 +88,13 @@ def _parse_cli_args():
 
     return (parser, opts, args)
 
-def _init_moulinette(debug=False, verbose=False, quiet=False):
+def _init_moulinette(debug=False, quiet=False):
     """Configure logging and initialize the moulinette"""
     # Define loggers handlers
     handlers = set(LOGGERS_HANDLERS)
     if quiet and 'tty' in handlers:
         handlers.remove('tty')
-    elif verbose and 'tty' not in handlers:
+    elif 'tty' not in handlers:
         handlers.append('tty')
 
     root_handlers = set(handlers)
@@ -108,10 +104,8 @@ def _init_moulinette(debug=False, verbose=False, quiet=False):
     # Define loggers level
     level = LOGGERS_LEVEL
     tty_level = TTY_LOG_LEVEL
-    if verbose:
-        tty_level = 'INFO'
     if debug:
-        tty_level = level = 'DEBUG'
+        tty_level = 'DEBUG'
 
     # Custom logging configuration
     logging = {
@@ -196,7 +190,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
-    _init_moulinette(opts.debug, opts.verbose, opts.quiet)
+    _init_moulinette(opts.debug, opts.quiet)
 
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \

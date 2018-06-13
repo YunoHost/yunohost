@@ -141,7 +141,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
             if not os.path.exists('/etc/yunohost/dyndns'):
                 os.makedirs('/etc/yunohost/dyndns')
 
-            logger.info(m18n.n('dyndns_key_generating'))
+            logger.debug(m18n.n('dyndns_key_generating'))
 
             os.system('cd /etc/yunohost/dyndns && '
                       'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
@@ -288,7 +288,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     # to nsupdate as argument
     write_to_file(DYNDNS_ZONE, '\n'.join(lines))
 
-    logger.info("Now pushing new conf to DynDNS host...")
+    logger.debug("Now pushing new conf to DynDNS host...")
 
     try:
         command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]

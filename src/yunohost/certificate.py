@@ -210,7 +210,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
                 raise MoulinetteError(
                     errno.EIO, m18n.n('domain_cert_gen_failed'))
             else:
-                logger.info(out)
+                logger.debug(out)
 
         # Link the CA cert (not sure it's actually needed in practice though,
         # since we append it at the end of crt.pem. For instance for Let's
@@ -485,11 +485,11 @@ location ^~ '/.well-known/acme-challenge'
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
-        logger.info(
+        logger.debug(
             "Nginx configuration file for ACME challenge already exists for domain, skipping.")
         return
 
-    logger.info(
+    logger.debug(
         "Adding Nginx configuration file for Acme challenge for domain %s.", domain)
 
     with open(nginx_conf_file, "w") as f:
@@ -531,7 +531,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _regen_dnsmasq_if_needed()
 
     # Prepare certificate signing request
-    logger.info(
+    logger.debug(
         "Prepare key and certificate signing request (CSR) for %s...", domain)
 
     domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
@@ -541,7 +541,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _prepare_certificate_signing_request(domain, domain_key_file, TMP_FOLDER)
 
     # Sign the certificate
-    logger.info("Now using ACME Tiny to sign the certificate...")
+    logger.debug("Now using ACME Tiny to sign the certificate...")
 
     domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
@@ -579,7 +579,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
 
     # Now save the key and signed certificate
-    logger.info("Saving the key and signed certificate...")
+    logger.debug("Saving the key and signed certificate...")
 
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -642,7 +642,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
     # Save the request in tmp folder
     csr_file = output_folder + domain + ".csr"
-    logger.info("Saving to %s.", csr_file)
+    logger.debug("Saving to %s.", csr_file)
 
     with open(csr_file, "w") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
@@ -753,7 +753,7 @@ def _get_status(domain):
 
 
 def _generate_account_key():
-    logger.info("Generating account key ...")
+    logger.debug("Generating account key ...")
     _generate_key(ACCOUNT_KEY_FILE)
     _set_permissions(ACCOUNT_KEY_FILE, "root", "root", 0400)
 
@@ -776,7 +776,7 @@ def _set_permissions(path, user, group, permissions):
 
 
 def _enable_certificate(domain, new_cert_folder):
-    logger.info("Enabling the certificate for domain %s ...", domain)
+    logger.debug("Enabling the certificate for domain %s ...", domain)
 
     live_link = os.path.join(CERT_FOLDER, domain)
 
@@ -793,7 +793,7 @@ def _enable_certificate(domain, new_cert_folder):
 
     os.symlink(new_cert_folder, live_link)
 
-    logger.info("Restarting services...")
+    logger.debug("Restarting services...")
 
     for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
@@ -802,7 +802,7 @@ def _enable_certificate(domain, new_cert_folder):
 
 
 def _backup_current_cert(domain):
-    logger.info("Backuping existing certificate for domain %s", domain)
+    logger.debug("Backuping existing certificate for domain %s", domain)
 
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
