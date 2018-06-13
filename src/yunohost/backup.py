@@ -1113,20 +1113,37 @@ class RestoreManager():
             self._postinstall_if_needed()
 
             # Apply dirty patch to redirect php5 file on php7
-            backup_csv = os.path.join(self.work_dir, 'backup.csv')
-            if os.path.isfile(backup_csv):
-                c = "sed -i -e 's@backup/etc/php5@backup/etc/php6@g' " \
-                    "-e 's@\"/etc/php5@\"/etc/php/7.0@g' " \
-                    "-e 's@backup/var/run/php5-fpm@backup/var/run/php/php6-fpm@g' " \
-                    "-e 's@\"/var/run/php5-fpm@\"/var/run/php/php7.0-fpm@g' " \
-                    "-e 's@php5@php7.0@1' " \
-                    "-e 's@php6@php5@g' %s" % backup_csv
-                os.system(c)
+            self._patch_backup_csv_file()
+
 
             self._restore_system()
             self._restore_apps()
         finally:
             self.clean()
+
+    def _patch_backup_csv_file(self):
+        """
+        Apply dirty patch to redirect php5 file on php7
+        """
+
+        backup_csv = os.path.join(self.work_dir, 'backup.csv')
+
+        if os.path.isfile(backup_csv):
+            with open(backup_csv) as f:
+                lines = f.readlines()
+
+                newlines = []
+                for line in lines:
+                    newline = line.replace('backup/etc/php5', 'backup/etc/php6') \
+                    .replace('"/etc/php5', '"/etc/php/7.0') \
+                    .replace('backup/var/run/php5-fpm', 'backup/var/run/php/php6-fpm') \
+                    .replace('"/var/run/php5-fpm', '"/var/run/php/php7.0-fpm') \
+                    .replace('php5','php7', 1) \
+                    .replace('php6', 'php5')
+                    newlines.append(newline)
+
+            with open(backup_csv, 'w') as f:
+                f.writelines(newlines)
 
     def _restore_system(self):
         """ Restore user and system parts """
