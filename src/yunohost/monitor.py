@@ -164,6 +164,7 @@ def monitor_network(units=None, human_readable=False):
         units = ['check', 'usage', 'infos']
 
     # Get network devices and their addresses
+    # TODO / FIXME : use functions in utils/network.py to manage this
     devices = {}
     output = subprocess.check_output('ip addr show'.split())
     for d in re.split('^(?:[0-9]+: )', output, flags=re.MULTILINE):
@@ -213,6 +214,7 @@ def monitor_network(units=None, human_readable=False):
         elif u == 'infos':
             p_ipv4 = get_public_ip() or 'unknown'
 
+            # TODO / FIXME : use functions in utils/network.py to manage this
             l_ip = 'unknown'
             for name, addrs in devices.items():
                 if name == 'lo':
