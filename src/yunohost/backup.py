@@ -1111,6 +1111,18 @@ class RestoreManager():
 
         try:
             self._postinstall_if_needed()
+
+            # Apply dirty patch to redirect php5 file on php7
+            backup_csv = os.path.join(self.work_dir, 'backup.csv')
+            if os.path.isfile(backup_csv):
+                c = "sed -i -e 's@backup/etc/php5@backup/etc/php6@g' " \
+                    "-e 's@\"/etc/php5@\"/etc/php/7.0@g' " \
+                    "-e 's@backup/var/run/php5-fpm@backup/var/run/php/php6-fpm@g' " \
+                    "-e 's@\"/var/run/php5-fpm@\"/var/run/php/php7.0-fpm@g' " \
+                    "-e 's@php5@php7.0@1' " \
+                    "-e 's@php6@php5@g' %s" % backup_csv
+                os.system(c)
+
             self._restore_system()
             self._restore_apps()
         finally:
@@ -1201,6 +1213,11 @@ class RestoreManager():
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(app_settings_in_archive)
+
+        # Delete _common.sh file in backup
+        common_file = os.path.join(app_backup_in_archive, '_common.sh')
+        if os.path.isfile(common_file):
+            os.remove(common_file)
 
         # Check if the app has a restore script
         app_restore_script_in_archive = os.path.join(app_scripts_in_archive,
