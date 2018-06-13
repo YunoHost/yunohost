@@ -1128,22 +1128,23 @@ class RestoreManager():
 
         backup_csv = os.path.join(self.work_dir, 'backup.csv')
 
-        if os.path.isfile(backup_csv):
-            with open(backup_csv) as f:
-                lines = f.readlines()
+        if not os.path.isfile(backup_csv):
+            return
 
-                newlines = []
-                for line in lines:
-                    newline = line.replace('backup/etc/php5', 'backup/etc/php6') \
-                    .replace('"/etc/php5', '"/etc/php/7.0') \
-                    .replace('backup/var/run/php5-fpm', 'backup/var/run/php/php6-fpm') \
-                    .replace('"/var/run/php5-fpm', '"/var/run/php/php7.0-fpm') \
-                    .replace('php5','php7', 1) \
-                    .replace('php6', 'php5')
-                    newlines.append(newline)
+        lines = filesystem.read_file(backup_csv).split('\n')
 
-            with open(backup_csv, 'w') as f:
-                f.writelines(newlines)
+        newlines = []
+        for line in lines:
+            if 'php5' in line:
+                line = line.replace('backup/etc/php5', 'backup/etc/php6') \
+                .replace('"/etc/php5', '"/etc/php/7.0') \
+                .replace('backup/var/run/php5-fpm', 'backup/var/run/php/php6-fpm') \
+                .replace('"/var/run/php5-fpm', '"/var/run/php/php7.0-fpm') \
+                .replace('php5','php7', 1) \
+                .replace('php6', 'php5')
+            newlines.append(line)
+
+        filesystem.write_to_file(backup_csv, newlines)
 
     def _restore_system(self):
         """ Restore user and system parts """
@@ -1233,8 +1234,7 @@ class RestoreManager():
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, '_common.sh')
-        if os.path.isfile(common_file):
-            os.remove(common_file)
+        filesystem.rm(common_file, force=True)
 
         # Check if the app has a restore script
         app_restore_script_in_archive = os.path.join(app_scripts_in_archive,
