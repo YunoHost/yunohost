@@ -56,7 +56,7 @@ def get_network_interfaces():
     # Parse relevant informations for each of them
     devices = {name: _extract_inet(addrs) for name, addrs in devices_raw.items() if name != "lo"}
 
-    return devices or "unknown"
+    return devices
 
 
 def get_gateway():
@@ -64,10 +64,10 @@ def get_gateway():
     output = subprocess.check_output('ip route show'.split())
     m = re.search('default via (.*) dev ([a-z]+[0-9]?)', output)
     if not m:
-        return "unknown"
+        return None
 
     addr = _extract_inet(m.group(1), True)
-    return addr.popitem()[1] if len(addr) == 1 else "unknown"
+    return addr.popitem()[1] if len(addr) == 1 else None
 
 
 ###############################################################################
