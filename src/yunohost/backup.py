@@ -1316,9 +1316,7 @@ class BackupMethod(object):
     TarBackupMethod
     ---------------
     This method compresses all files to backup in a .tar.gz archive. When
-    restoring, it tries to mount the archive using archivemount/fuse instead
-    of untaring the archive. Some systems don't support fuse (for these,
-    it automatically falls back to untaring the required parts).
+    restoring, it untars the required parts.
 
     CustomBackupMethod
     ------------------
@@ -1687,8 +1685,7 @@ class CopyBackupMethod(BackupMethod):
 
 class TarBackupMethod(BackupMethod):
     """
-    This class compress all files to backup in archive. To restore it try to
-    mount the archive with archivemount (fuse). Some system don't support fuse.
+    This class compress all files to backup in archive.
     """
 
     def __init__(self, repo=None):
@@ -1760,8 +1757,6 @@ class TarBackupMethod(BackupMethod):
 
         Exceptions:
         backup_archive_open_failed -- Raised if the archive can't be open
-        backup_archive_mount_failed -- Raised if the system don't support
-        archivemount
         """
         super(TarBackupMethod, self).mount(restore_manager)
 
@@ -1776,60 +1771,50 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
         # Mount the tarball
+        logger.debug(m18n.n("restore_extracting"))
+        tar = tarfile.open(self._archive_file, "r:gz")
+        tar.extract('info.json', path=self.work_dir)
+
         try:
-            ret = subprocess.call(['archivemount', '-o', 'readonly',
-                                   self._archive_file, self.work_dir])
-        except:
-            ret = -1
+            tar.extract('backup.csv', path=self.work_dir)
+        except KeyError:
+            # Old backup archive have no backup.csv file
+            pass
 
-        # If archivemount failed, extract the archive
-        if ret != 0:
-            logger.warning(m18n.n('backup_archive_mount_failed'))
+        # Extract system parts backup
+        conf_extracted = False
 
-            logger.debug(m18n.n("restore_extracting"))
-            tar = tarfile.open(self._archive_file, "r:gz")
-            tar.extract('info.json', path=self.work_dir)
+        system_targets = self.manager.targets.list("system", exclude=["Skipped"])
+        apps_targets = self.manager.targets.list("apps", exclude=["Skipped"])
 
-            try:
-                tar.extract('backup.csv', path=self.work_dir)
-            except KeyError:
-                # Old backup archive have no backup.csv file
-                pass
-
-            # Extract system parts backup
-            conf_extracted = False
-
-            system_targets = self.manager.targets.list("system", exclude=["Skipped"])
-            apps_targets = self.manager.targets.list("apps", exclude=["Skipped"])
-
-            for system_part in system_targets:
-                # Caution: conf_ynh_currenthost helpers put its files in
-                # conf/ynh
-                if system_part.startswith("conf_"):
-                    if conf_extracted:
-                        continue
-                    system_part = "conf/"
-                    conf_extracted = True
-                else:
-                    system_part = system_part.replace("_", "/") + "/"
-                subdir_and_files = [
-                    tarinfo for tarinfo in tar.getmembers()
-                    if tarinfo.name.startswith(system_part)
-                ]
-                tar.extractall(members=subdir_and_files, path=self.work_dir)
+        for system_part in system_targets:
+            # Caution: conf_ynh_currenthost helpers put its files in
+            # conf/ynh
+            if system_part.startswith("conf_"):
+                if conf_extracted:
+                    continue
+                system_part = "conf/"
+                conf_extracted = True
+            else:
+                system_part = system_part.replace("_", "/") + "/"
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith("hooks/restore/")
+                if tarinfo.name.startswith(system_part)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
+        subdir_and_files = [
+            tarinfo for tarinfo in tar.getmembers()
+            if tarinfo.name.startswith("hooks/restore/")
+        ]
+        tar.extractall(members=subdir_and_files, path=self.work_dir)
 
-            # Extract apps backup
-            for app in apps_targets:
-                subdir_and_files = [
-                    tarinfo for tarinfo in tar.getmembers()
-                    if tarinfo.name.startswith("apps/" + app)
-                ]
-                tar.extractall(members=subdir_and_files, path=self.work_dir)
+        # Extract apps backup
+        for app in apps_targets:
+            subdir_and_files = [
+                tarinfo for tarinfo in tar.getmembers()
+                if tarinfo.name.startswith("apps/" + app)
+            ]
+            tar.extractall(members=subdir_and_files, path=self.work_dir)
 
 
 class BorgBackupMethod(BackupMethod):
