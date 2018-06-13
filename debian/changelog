@@ -1,3 +1,15 @@
+yunohost (2.7.13.5) testing; urgency=low
+
+  * [fix] a bug when log to be fetched is empty
+  * [fix] a bug when computing diff in regen_conf
+  * [stretch-migration] Tell postgresql-common to not send an email about 9.4->9.6 migration
+  * [stretch-migration] Close port 465 / open port 587 during migration according to SMTP port change in postfix
+  * [stretch-migration] Rely on /etc/os-release to get debian release number
+
+  Fixes by Bram and Aleks
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 12 Jun 2018 01:00:00 +0000
+
 yunohost (2.7.13.4) testing; urgency=low
 
   * Fix a bug for services with alternate names (mysql<->mariadb)
