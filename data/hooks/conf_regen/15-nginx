@@ -38,6 +38,13 @@ do_pre_regen() {
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
     mkdir -p "$domain_conf_dir"
+    domain_ca_type=$(yunohost domain cert-status ${domain} | grep CA_type)
+    if [domain_ca_type == "CA_type: Let's Encrypt"]; then
+      wget -O /etc/yunohost/certs/${domain}/chain.pem "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
+      sed "s/#ssl_stapling/ssl_stapling/g" "${nginx_conf_dir}/${domain}.conf"
+      sed "s/#ssl_trusted_certificate/ssl_trusted_certificate/g" "${nginx_conf_dir}/${domain}.conf"
+      sed "s/#resolver/resolver/g" "${nginx_conf_dir}/${domain}.conf"
+    fi
 
     # NGINX server configuration
     cat server.tpl.conf \
