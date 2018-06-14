@@ -52,7 +52,6 @@ do_pre_regen() {
       if [ -f "/etc/yunohost/certs/${domain}/chain.pem" ]; then
         hash1=$(openssl x509 -pubkey -in ${pending_dir}/etc/yunohost/certs/${domain}/chain.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64)
         hash2=$(openssl x509 -pubkey -in ${pending_dir}/etc/yunohost/certs/${domain}/crt.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64)
-        popd
         sed "s/HASH1/$hash1/g" "${nginx_conf_dir}/${domain}.conf"
         sed "s/HASH2/$hash2/g" "${nginx_conf_dir}/${domain}.conf"
         sed "s/#add_header Public-Key-Pins/add_header Public-Key-Pins/g" "${nginx_conf_dir}/${domain}.conf"
