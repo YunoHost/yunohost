@@ -38,8 +38,8 @@ do_pre_regen() {
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
     mkdir -p "$domain_conf_dir"
-    domain_ca_type=$(yunohost domain cert-status ${domain} | grep CA_type)
-    if [[ "$domain_ca_type" = "    CA_type: Let's Encrypt" ]]; then
+    domain_ca_type=$(yunohost domain cert-status ${domain} | grep CA_type | tr -d " ")
+    if [[ "$domain_ca_type" = "CA_type:Let'sEncrypt" ]]; then
       ### OCSP Stapling
       if [ ! -f "/etc/yunohost/certs/${domain}/chain.pem" ]; then
         wget -O ${pending_dir}/etc/yunohost/certs/${domain}/chain.pem "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
