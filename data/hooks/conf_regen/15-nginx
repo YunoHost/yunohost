@@ -38,6 +38,25 @@ do_pre_regen() {
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
     mkdir -p "$domain_conf_dir"
+    domain_ca_type=$(yunohost domain cert-status ${domain} | grep CA_type | tr -d " ")
+    if [[ "$domain_ca_type" = "CA_type:Let'sEncrypt" ]]; then
+      ### OCSP Stapling
+      if [ ! -f "/etc/yunohost/certs/${domain}/chain.pem" ]; then
+        wget -O ${pending_dir}/etc/yunohost/certs/${domain}/chain.pem "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
+      fi
+      sed "s/#ssl_stapling/ssl_stapling/g" "${nginx_conf_dir}/${domain}.conf"
+      sed "s/#ssl_trusted_certificate/ssl_trusted_certificate/g" "${nginx_conf_dir}/${domain}.conf"
+      sed "s/#resolver/resolver/g" "${nginx_conf_dir}/${domain}.conf"
+      
+      ### HPKP
+      if [ -f "/etc/yunohost/certs/${domain}/chain.pem" ]; then
+        hash1=$(openssl x509 -pubkey -in ${pending_dir}/etc/yunohost/certs/${domain}/chain.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64)
+        hash2=$(openssl x509 -pubkey -in ${pending_dir}/etc/yunohost/certs/${domain}/crt.pem | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64)
+        sed "s/HASH1/$hash1/g" "${nginx_conf_dir}/${domain}.conf"
+        sed "s/HASH2/$hash2/g" "${nginx_conf_dir}/${domain}.conf"
+        sed "s/#add_header Public-Key-Pins/add_header Public-Key-Pins/g" "${nginx_conf_dir}/${domain}.conf"
+      fi
+    fi
 
     # NGINX server configuration
     cat server.tpl.conf \
