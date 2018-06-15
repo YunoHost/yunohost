@@ -22,7 +22,7 @@ class MyMigration(Migration):
         if not self.package_is_installed("postgresql-9.6"):
             raise MoulinetteError(m18n.n("migration_0005_postgresql_96_not_installed"))
 
-        if not space_used_by_directory("/var/lib/postgresql/9.4") < free_space_in_directory("/var/lib/postgresql"):
+        if not space_used_by_directory("/var/lib/postgresql/9.4") > free_space_in_directory("/var/lib/postgresql"):
             raise MoulinetteError(m18n.n("migration_0005_not_enough_space", path="/var/lib/postgresql/"))
 
         subprocess.check_call("service postgresql stop", shell=True)
