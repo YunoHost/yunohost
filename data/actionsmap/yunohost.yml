@@ -780,7 +780,7 @@ backup:
 
         ### backup_create()
         create:
-            action_help: Create a backup local archive
+            action_help: Create a backup local archive. If neither --apps or --system are given, this will backup all apps and all system parts. If only --apps if given, this will only backup apps and no system parts. Similarly, if only --system is given, this will only backup system parts and no apps.
             api: POST /backup
             arguments:
                 -n:
@@ -804,28 +804,15 @@ backup:
                     help: List of backup methods to apply (copy or tar by default)
                     nargs: "*"
                 --system:
-                    help: List of system parts to backup (all by default)
+                    help: List of system parts to backup (or all if none given).
                     nargs: "*"
                 --apps:
-                    help: List of application names to backup (all by default)
+                    help: List of application names to backup (or all if none given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not backup system
-                    action: store_true
-                --ignore-apps:
-                    help: Do not backup apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
-
 
         ### backup_restore()
         restore:
-            action_help: Restore from a local backup archive
+            action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: POST /backup/restore/<name>
             configuration:
                 authenticate: all
@@ -834,23 +821,11 @@ backup:
                 name:
                     help: Name of the local backup archive
                 --system:
-                    help: List of system parts to restore (all by default)
+                    help: List of system parts to restore (or all if none is given)
                     nargs: "*"
                 --apps:
-                    help: List of application names to restore (all by default)
+                    help: List of application names to restore (or all if none is given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not restore system parts
-                    action: store_true
-                --ignore-apps:
-                    help: Do not restore apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true

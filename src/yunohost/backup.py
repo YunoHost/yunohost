@@ -1959,9 +1959,7 @@ class CustomBackupMethod(BackupMethod):
 
 def backup_create(name=None, description=None, methods=[],
                   output_directory=None, no_compress=False,
-                  ignore_system=False, system=[],
-                  ignore_apps=False, apps=[],
-                  ignore_hooks=False, hooks=[]):
+                  system=[], apps=[]):
     """
     Create a backup local archive
 
@@ -1972,12 +1970,7 @@ def backup_create(name=None, description=None, methods=[],
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
         system -- List of system elements to backup
-        ignore_system -- Ignore system elements
         apps -- List of application names to backup
-        ignore_apps -- Do not backup apps
-
-        hooks -- (Deprecated) Renamed to "system"
-        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     # TODO: Add a 'clean' argument to clean output directory
@@ -1985,22 +1978,6 @@ def backup_create(name=None, description=None, methods=[],
     ###########################################################################
     #   Validate / parse arguments                                            #
     ###########################################################################
-
-    # Historical, deprecated options
-    if ignore_hooks is not False:
-        logger.warning("--ignore-hooks is deprecated and will be removed in the"
-                       "future. Please use --ignore-system instead.")
-        ignore_system = ignore_hooks
-
-    if hooks != [] and hooks is not None:
-        logger.warning("--hooks is deprecated and will be removed in the"
-                       "future. Please use --system instead.")
-        system = hooks
-
-    # Validate that there's something to backup
-    if ignore_system and ignore_apps:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_action_required'))
 
     # Validate there is no archive with the same name
     if name and name in backup_list()['archives']:
@@ -2034,14 +2011,9 @@ def backup_create(name=None, description=None, methods=[],
         else:
             methods = ['tar']  # In future, borg will be the default actions
 
-    if ignore_system:
-        system = None
-    elif system is None:
+    # If no --system or --apps given, backup everything
+    if system is None and apps is None:
         system = []
-
-    if ignore_apps:
-        apps = None
-    elif apps is None:
         apps = []
 
     ###########################################################################
@@ -2090,11 +2062,7 @@ def backup_create(name=None, description=None, methods=[],
     }
 
 
-def backup_restore(auth, name,
-                   system=[], ignore_system=False,
-                   apps=[], ignore_apps=False,
-                   hooks=[], ignore_hooks=False,
-                   force=False):
+def backup_restore(auth, name, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -2102,48 +2070,23 @@ def backup_restore(auth, name,
         name -- Name of the local backup archive
         force -- Force restauration on an already installed system
         system -- List of system parts to restore
-        ignore_system -- Do not restore any system parts
         apps -- List of application names to restore
-        ignore_apps -- Do not restore apps
-
-        hooks -- (Deprecated) Renamed to "system"
-        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     ###########################################################################
     #   Validate / parse arguments                                            #
     ###########################################################################
 
-    # Historical, deprecated options
-    if ignore_hooks is not False:
-        logger.warning("--ignore-hooks is deprecated and will be removed in the"
-                       "future. Please use --ignore-system instead.")
-        ignore_system = ignore_hooks
-    if hooks != [] and hooks is not None:
-        logger.warning("--hooks is deprecated and will be removed in the"
-                       "future. Please use --system instead.")
-        system = hooks
-
-    # Validate what to restore
-    if ignore_system and ignore_apps:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('restore_action_required'))
-
-    if ignore_system:
-        system = None
-    elif system is None:
+    # If no --system or --apps given, restore everything
+    if system is None and apps is None:
         system = []
-
-    if ignore_apps:
-        apps = None
-    elif apps is None:
         apps = []
 
     # TODO don't ask this question when restoring apps only and certain system
     # parts
 
     # Check if YunoHost is installed
-    if os.path.isfile('/etc/yunohost/installed') and not ignore_system:
+    if system is not None and os.path.isfile('/etc/yunohost/installed'):
         logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
