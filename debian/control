@@ -33,7 +33,7 @@ Recommends: yunohost-admin
  , python-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
-Suggests: htop, vim, rsync, acpi-support-base, udisks2, archivemount
+Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
  , moulinette-yunohost, yunohost-config
  , yunohost-config-others, yunohost-config-postfix

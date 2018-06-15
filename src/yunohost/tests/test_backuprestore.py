@@ -101,9 +101,6 @@ def app_is_installed(app):
 
 def backup_test_dependencies_are_met():
 
-    # We need archivemount installed for the backup features to work
-    assert os.system("which archivemount >/dev/null") == 0
-
     # Dummy test apps (or backup archives)
     assert os.path.exists("./tests/apps/backup_wordpress_from_2p4")
     assert os.path.exists("./tests/apps/backup_legacy_app_ynh")
@@ -250,42 +247,6 @@ def test_backup_and_restore_all_sys():
     assert os.path.exists("/etc/ssowat/conf.json")
 
 
-def test_backup_and_restore_archivemount_failure(monkeypatch, mocker):
-
-    # Create the backup
-    backup_create(ignore_system=False, ignore_apps=True)
-
-    archives = backup_list()["archives"]
-    assert len(archives) == 1
-
-    archives_info = backup_info(archives[0], with_details=True)
-    assert archives_info["apps"] == {}
-    assert (len(archives_info["system"].keys()) ==
-            len(os.listdir("/usr/share/yunohost/hooks/backup/")))
-
-    # Remove ssowat conf
-    assert os.path.exists("/etc/ssowat/conf.json")
-    os.system("rm -rf /etc/ssowat/")
-    assert not os.path.exists("/etc/ssowat/conf.json")
-
-    def custom_subprocess_call(*args, **kwargs):
-        import subprocess as subprocess2
-        if args[0] and args[0][0]=="archivemount":
-            monkeypatch.undo()
-            return 1
-        return subprocess.call(*args, **kwargs)
-
-    monkeypatch.setattr("subprocess.call", custom_subprocess_call)
-    mocker.spy(m18n, "n")
-
-    # Restore the backup
-    backup_restore(auth, name=archives[0], force=True,
-                   ignore_system=False, ignore_apps=True)
-
-    # Check ssowat conf is back
-    assert os.path.exists("/etc/ssowat/conf.json")
-
-
 ###############################################################################
 #  System restore from 2.4                                                    #
 ###############################################################################
@@ -310,38 +271,6 @@ def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
                              ignore_system=False,
                              ignore_apps=True,
                              force=True)
-
-
-@pytest.mark.with_system_archive_from_2p4
-def test_restore_system_from_Ynh2p4_archivemount_failure(monkeypatch, mocker):
-
-    # Backup current system
-    backup_create(ignore_system=False, ignore_apps=True)
-    archives = backup_list()["archives"]
-    assert len(archives) == 2
-
-    def custom_subprocess_call(*args, **kwargs):
-        import subprocess as subprocess2
-        if args[0] and args[0][0]=="archivemount":
-            monkeypatch.undo()
-            return 1
-        return subprocess.call(*args, **kwargs)
-
-    monkeypatch.setattr("subprocess.call", custom_subprocess_call)
-
-    try:
-        # Restore system from 2.4
-        backup_restore(auth, name=backup_list()["archives"][1],
-                             ignore_system=False,
-                             ignore_apps=True,
-                             force=True)
-    finally:
-        # Restore system as it was
-        backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_system=False,
-                             ignore_apps=True,
-                             force=True)
-
 
 ###############################################################################
 #  App backup                                                                 #
@@ -546,29 +475,6 @@ def test_restore_app_not_in_backup(mocker):
 
 
 @pytest.mark.with_wordpress_archive_from_2p4
-def test_restore_app_archivemount_failure(monkeypatch, mocker):
-
-    def custom_subprocess_call(*args, **kwargs):
-        import subprocess as subprocess2
-        if args[0] and args[0][0]=="archivemount":
-            monkeypatch.undo()
-            return 1
-        return subprocess.call(*args, **kwargs)
-
-    monkeypatch.setattr("subprocess.call", custom_subprocess_call)
-    mocker.spy(m18n, "n")
-
-    assert not _is_installed("wordpress")
-
-    backup_restore(auth, name=backup_list()["archives"][0],
-                         ignore_system=True,
-                         ignore_apps=False,
-                         apps=["wordpress"])
-
-    assert _is_installed("wordpress")
-
-
-@pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_app_already_installed(mocker):
 
     assert not _is_installed("wordpress")
@@ -643,7 +549,7 @@ def test_restore_archive_with_no_json(mocker):
     # Create a backup with no info.json associated
     os.system("touch /tmp/afile")
     os.system("tar -czvf /home/yunohost.backup/archives/badbackup.tar.gz /tmp/afile")
-    
+
     assert "badbackup" in backup_list()["archives"]
 
     mocker.spy(m18n, "n")
