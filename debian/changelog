@@ -1,3 +1,13 @@
+
+yunohost (2.7.13.6) testing; urgency=low
+
+  * Misc fixes
+  * [stretch-migration] Disable predictable network interface names
+
+  Fixes by Bram and Aleks
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 15 Jun 2018 16:20:00 +0000
+
 yunohost (2.7.13.5) testing; urgency=low
 
   * [fix] a bug when log to be fetched is empty
