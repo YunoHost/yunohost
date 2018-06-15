@@ -1111,10 +1111,57 @@ class RestoreManager():
 
         try:
             self._postinstall_if_needed()
+
+            # Apply dirty patch to redirect php5 file on php7
+            self._patch_backup_csv_file()
+
+
             self._restore_system()
             self._restore_apps()
         finally:
             self.clean()
+
+    def _patch_backup_csv_file(self):
+        """
+        Apply dirty patch to redirect php5 file on php7
+        """
+
+        backup_csv = os.path.join(self.work_dir, 'backup.csv')
+
+        if not os.path.isfile(backup_csv):
+            return
+
+        try:
+            contains_php5 = False
+            with open(backup_csv) as csvfile:
+                reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
+                newlines = []
+                for row in reader:
+                    if 'php5' in row['source']:
+                        contains_php5 = True
+                        row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
+                            .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
+                            .replace('php5','php7')
+
+                    newlines.append(row)
+        except (IOError, OSError, csv.Error) as e:
+            raise MoulinetteError(errno.EIO,m18n.n('error_reading_file',
+                                                   file=backup_csv,
+                                                   error=str(e)))
+
+        if not contains_php5:
+            return
+
+        try:
+            with open(backup_csv, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile,
+                                        fieldnames=['source', 'dest'],
+                                        quoting=csv.QUOTE_ALL)
+                for row in newlines:
+                    writer.writerow(row)
+        except (IOError, OSError, csv.Error) as e:
+            logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
+                                  error=str(e)))
 
     def _restore_system(self):
         """ Restore user and system parts """
@@ -1201,6 +1248,10 @@ class RestoreManager():
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(app_settings_in_archive)
+
+        # Delete _common.sh file in backup
+        common_file = os.path.join(app_backup_in_archive, '_common.sh')
+        filesystem.rm(common_file, force=True)
 
         # Check if the app has a restore script
         app_restore_script_in_archive = os.path.join(app_scripts_in_archive,
