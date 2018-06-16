@@ -1,3 +1,13 @@
+yunohost (3.0.0~beta1.7) testing; urgency=low
+
+  * Merge with jessie's branches
+  * Set verbose by default
+  * Remove archivemount stuff
+  * Correctly patch php5/php7 stuff when doing a backup restore
+  * Fix counter-intuitive backup API
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 16 Jun 2018 16:20:00 +0000
+
 yunohost (3.0.0~beta1.6) testing; urgency=low
 
   * [fix] Service description for php7.0-fpm
