@@ -15,6 +15,7 @@ from yunohost.service import (_run_service_command,
                               manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import get_installed_version
+from yunohost.utils.network import get_network_interfaces
 from yunohost.firewall import firewall_allow, firewall_disallow
 
 logger = getActionLogger('yunohost.migration')
@@ -68,6 +69,8 @@ class MyMigration(Migration):
             os.system("mv /etc/fail2ban /etc/fail2ban.old")
         self.apt_dist_upgrade(conf_flags=["new", "miss", "def"])
         _run_service_command("restart", "fail2ban")
+
+        self.disable_predicable_interface_names()
 
         # Clean the mess
         os.system("apt autoremove --assume-yes")
@@ -360,3 +363,20 @@ class MyMigration(Migration):
             # command showing in the terminal, since 'info' channel is only
             # enabled if the user explicitly add --verbose ...
             os.system(command)
+
+    def disable_predicable_interface_names(self):
+
+        # Try to see if currently used interface names are predictable ones or not...
+        # If we ain't using "eth0" or "wlan0", assume we are using predictable interface
+        # names and therefore they shouldnt be disabled
+        network_interfaces = get_network_interfaces().keys()
+        if "eth0" not in network_interfaces and "wlan0" not in network_interfaces:
+            return
+
+        interfaces_config = read_file("/etc/network/interfaces")
+        if "eth0" not in interfaces_config and "wlan0" not in interfaces_config:
+            return
+
+        # Disable predictive interface names
+        # c.f. https://unix.stackexchange.com/a/338730
+        os.system("ln -s /dev/null /etc/systemd/network/99-default.link")

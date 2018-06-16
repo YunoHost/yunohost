@@ -709,7 +709,7 @@ def _tail(file, n):
                 lines = f.read().splitlines()
 
                 if len(lines) >= to_read or pos == 0:
-                    return lines[-to_read]
+                    return lines[-to_read:]
 
                 avg_line_length *= 1.3
 
