@@ -7,16 +7,15 @@ ynh_psql_test_if_first_run() {
 	then
 		echo "PostgreSQL is already installed, no need to create master password"
 	else
-		pgsql=$(ynh_string_random)
-		pg_hba=""
-		echo "$pgsql" >> /etc/yunohost/psql
+		local pgsql="$(ynh_string_random)"
+		echo "$pgsql" > /etc/yunohost/psql
 
 		if [ -e /etc/postgresql/9.4/ ]
 		then
-			pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
+			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
 		elif [ -e /etc/postgresql/9.6/ ]
 		then
-			pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
+			local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
 		else
 			ynh_die "postgresql shoud be 9.4 or 9.6"
 		fi
@@ -29,7 +28,7 @@ ynh_psql_test_if_first_run() {
 		# Note: we can't use peer since YunoHost create users with nologin
 		#  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
 		sed -i '/local\s*all\s*all\s*peer/i \
-		local all all password' "$pg_hba"
+			local all all password' "$pg_hba"
 		systemctl enable postgresql
 		systemctl reload postgresql
 	fi
@@ -45,9 +44,9 @@ ynh_psql_test_if_first_run() {
 # | arg: pwd - the user password
 # | arg: db - the database to connect to
 ynh_psql_connect_as() {
-	user="$1"
-	pwd="$2"
-	db="$3"
+	local user="$1"
+	local pwd="$2"
+	local db="$3"
 	sudo --login --user=postgres PGUSER="$user" PGPASSWORD="$pwd" psql "$db"
 }
 
@@ -55,9 +54,8 @@ ynh_psql_connect_as() {
 #
 # usage: ynh_psql_execute_as_root sql [db]
 # | arg: sql - the SQL command to execute
-# | arg: db - the database to connect to
 ynh_psql_execute_as_root () {
-	sql="$1"
+	local sql="$1"
 	sudo --login --user=postgres psql <<< "$sql"
 }
 
@@ -67,8 +65,8 @@ ynh_psql_execute_as_root () {
 # | arg: file - the file containing SQL commands
 # | arg: db - the database to connect to
 ynh_psql_execute_file_as_root() {
-	file="$1"
-	db="$2"
+	local file="$1"
+	local db="$2"
 	sudo --login --user=postgres psql "$db" < "$file"
 }
 
@@ -82,11 +80,11 @@ ynh_psql_execute_file_as_root() {
 # | arg: name - Name of the database
 # | arg: pwd - Password of the database. If not given, a password will be generated
 ynh_psql_setup_db () {
-	db_user="$1"
-	db_name="$2"
-	new_db_pwd=$(ynh_string_random)	# Generate a random password
+	local db_user="$1"
+	local db_name="$2"
+	local new_db_pwd=$(ynh_string_random)	# Generate a random password
 	# If $3 is not given, use new_db_pwd instead for db_pwd.
-	db_pwd="${3:-$new_db_pwd}"
+	local db_pwd="${3:-$new_db_pwd}"
 	ynh_psql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
 	ynh_app_setting_set "$app" psqlpwd "$db_pwd"	# Store the password in the app's config
 }
@@ -98,9 +96,9 @@ ynh_psql_setup_db () {
 # | arg: user - the user to grant privilegies
 # | arg: pwd  - the user password
 ynh_psql_create_db() {
-	db="$1"
-	user="$2"
-	pwd="$3"
+	local db="$1"
+	local user="$2"
+	local pwd="$3"
 	ynh_psql_create_user "$user" "$pwd"
 	sudo --login --user=postgres createdb --owner="$user" "$db"
 }
@@ -111,8 +109,8 @@ ynh_psql_create_db() {
 # | arg: db - the database name to drop
 # | arg: user - the user to drop
 ynh_psql_remove_db() {
-	db="$1"
-	user="$2"
+	local db="$1"
+	local user="$2"
 	sudo --login --user=postgres dropdb "$db"
 	ynh_psql_drop_user "$user"
 }
@@ -125,7 +123,7 @@ ynh_psql_remove_db() {
 # | arg: db - the database name to dump
 # | ret: the psqldump output
 ynh_psql_dump_db() {
-	db="$1"
+	local db="$1"
 	sudo --login --user=postgres pg_dump "$db"
 }
 
@@ -135,9 +133,9 @@ ynh_psql_dump_db() {
 # usage: ynh_psql_create_user user pwd [host]
 # | arg: user - the user name to create
 ynh_psql_create_user() {
-	user="$1"
-	pwd="$2"
-        sudo --login --user=postgres psql -c"CREATE USER $user WITH PASSWORD '$pwd'" postgres
+	local user="$1"
+	local pwd="$2"
+	sudo --login --user=postgres psql -c"CREATE USER $user WITH PASSWORD '$pwd'" postgres
 }
 
 # Drop a user
@@ -145,6 +143,6 @@ ynh_psql_create_user() {
 # usage: ynh_psql_drop_user user
 # | arg: user - the user name to drop
 ynh_psql_drop_user() {
-	user="$1"
+	local user="$1"
 	sudo --login --user=postgres dropuser "$user"
 }
