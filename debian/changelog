@@ -1,3 +1,10 @@
+yunohost (3.0.0) stable; urgency=low
+
+  * Merge with jessie's branches
+  * Release as stable
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 17 Jun 2018 03:25:00 +0000
+
 yunohost (3.0.0~beta1.7) testing; urgency=low
 
   * Merge with jessie's branches
