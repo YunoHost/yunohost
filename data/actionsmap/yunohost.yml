@@ -780,7 +780,7 @@ app:
               ### app_config_show_panel()
               show-panel:
                   action_help: show config panel for the application
-                  api: GET /<app_id>/config/panel
+                  api: GET /apps/<app_id>/config-panel
                   arguments:
                       app_id:
                           help: App ID
@@ -788,7 +788,7 @@ app:
               ### app_config_apply()
               apply:
                   action_help: apply the new configuration
-                  api: POST /<app_id>/config
+                  api: POST /apps/<app_id>/config
                   arguments:
                       app_id:
                           help: App ID
