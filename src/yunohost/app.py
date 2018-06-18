@@ -1370,10 +1370,8 @@ def app_change_label(auth, app, new_label):
 def app_config_show_panel(app_id):
     from yunohost.hook import hook_exec
 
-    installed = _is_installed(app_id)
-    if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app_id))
+    # this will take care of checking if the app is installed
+    app_info_dict = app_info(app_id)
 
     config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
     config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
@@ -1442,6 +1440,8 @@ def app_config_show_panel(app_id):
                     option["value"] = option["default"]
 
     return {
+        "app_id": app_id,
+        "app_name": app_info_dict["name"],
         "config_panel": config_panel,
     }
 
