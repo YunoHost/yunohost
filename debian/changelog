@@ -1,3 +1,10 @@
+yunohost (3.0.0.1) stable; urgency=low
+
+  * Fix remaining use of --verbose and --ignore-system during backup/restore
+    of app upgrades
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Jun 2018 18:31:00 +0000
+
 yunohost (3.0.0) stable; urgency=low
 
   * Merge with jessie's branches
