@@ -32,7 +32,6 @@ import re
 import urlparse
 import errno
 import subprocess
-import requests
 import glob
 import pwd
 import grp
@@ -133,6 +132,7 @@ def app_fetchlist(url=None, name=None):
     else:
         appslists_to_be_fetched = appslists.keys()
 
+    import requests # lazy loading this module for performance reasons
     # Fetch all appslists to be fetched
     for name in appslists_to_be_fetched:
 
@@ -576,7 +576,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in apps:
-        logger.warning(m18n.n('app_upgrade_app_name', app=app_instance_name))
+        logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
@@ -627,6 +627,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         related_to = [('app', app_instance_name)]
         uo = UnitOperation('app_upgrade', related_to, env=env_dict)
         uo.start()
+
+        # Apply dirty patch to make php5 apps compatible with php7
+        _patch_php5(extracted_app_folder)
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -767,6 +770,9 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
 
+    # Apply dirty patch to make php5 apps compatible with php7
+    _patch_php5(extracted_app_folder)
+
     os.system('chown -R admin: ' + extracted_app_folder)
 
     # Execute App install script
@@ -875,6 +881,10 @@ def app_remove(uo, auth, app):
         shutil.rmtree('/tmp/yunohost_remove')
     except:
         pass
+
+    # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
+    # script might date back from jessie install)
+    _patch_php5(app_setting_path)
 
     os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
     os.system('chown -R admin: /tmp/yunohost_remove')
@@ -1161,7 +1171,7 @@ def app_setting(app, key, value=None, delete=False):
         try:
             return app_settings[key]
         except:
-            logger.info("cannot get app setting '%s' for '%s'", key, app)
+            logger.debug("cannot get app setting '%s' for '%s'", key, app)
             return None
     else:
         if delete and key in app_settings:
@@ -1512,7 +1522,7 @@ def _extract_app_from_file(path, remove=False):
         Dict manifest
 
     """
-    logger.info(m18n.n('extracting'))
+    logger.debug(m18n.n('extracting'))
 
     if os.path.exists(APP_TMP_FOLDER):
         shutil.rmtree(APP_TMP_FOLDER)
@@ -1553,7 +1563,7 @@ def _extract_app_from_file(path, remove=False):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_manifest_invalid', error=e.strerror))
 
-    logger.info(m18n.n('done'))
+    logger.debug(m18n.n('done'))
 
     manifest['remote'] = {'type': 'file', 'path': path}
     return manifest, extracted_app_folder
@@ -1598,7 +1608,7 @@ def _fetch_app_from_git(app):
     if os.path.exists(app_tmp_archive):
         os.remove(app_tmp_archive)
 
-    logger.info(m18n.n('downloading'))
+    logger.debug(m18n.n('downloading'))
 
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
@@ -1649,7 +1659,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid', error=e.strerror))
             else:
-                logger.info(m18n.n('done'))
+                logger.debug(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
@@ -1706,7 +1716,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid', error=e.strerror))
             else:
-                logger.info(m18n.n('done'))
+                logger.debug(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {
@@ -1819,7 +1829,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     # Validate multi-instance app
     if is_true(manifest.get('multi_instance', False)):
         # Handle backward-incompatible change introduced in yunohost >= 2.3.6
-        # See https://dev.yunohost.org/issues/156
+        # See https://github.com/YunoHost/issues/issues/156
         yunohost_req = requirements.get('yunohost', None)
         if (not yunohost_req or
                 not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
@@ -1829,7 +1839,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     elif not requirements:
         return
 
-    logger.info(m18n.n('app_requirements_checking', app=app_instance_name))
+    logger.debug(m18n.n('app_requirements_checking', app=app_instance_name))
 
     # Retrieve versions of each required package
     try:
@@ -2059,7 +2069,7 @@ def _migrate_appslist_system():
 
     for cron_path in legacy_crons:
         appslist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
-        logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
+        logger.debug(m18n.n('appslist_migrating', appslist=appslist_name))
 
         # Parse appslist url in cron
         cron_file_content = open(cron_path).read().strip()
@@ -2237,3 +2247,40 @@ def normalize_url_path(url_path):
         return '/' + url_path.strip("/").strip() + '/'
 
     return "/"
+
+
+def unstable_apps():
+
+    raw_app_installed = app_list(installed=True, raw=True)
+    output = []
+
+    for app, infos in raw_app_installed.items():
+
+        repo = infos.get("repository", None)
+        state = infos.get("state", None)
+
+        if repo is None or state in ["inprogress", "notworking"]:
+            output.append(app)
+
+    return output
+
+
+def _patch_php5(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+    files_to_patch.append("%s/manifest.json" % app_folder)
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
+                   "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
+                   "-e 's@php5@php7.0@g' " \
+                   "%s" % filename
+        os.system(c)

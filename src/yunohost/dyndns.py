@@ -30,7 +30,6 @@ import glob
 import time
 import base64
 import errno
-import requests
 import subprocess
 
 from moulinette import m18n
@@ -146,7 +145,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
             if not os.path.exists('/etc/yunohost/dyndns'):
                 os.makedirs('/etc/yunohost/dyndns')
 
-            logger.info(m18n.n('dyndns_key_generating'))
+            logger.debug(m18n.n('dyndns_key_generating'))
 
             os.system('cd /etc/yunohost/dyndns && '
                       'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
@@ -156,6 +155,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
+    import requests # lazy loading this module for performance reasons
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
@@ -165,7 +165,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
         try:
             error = json.loads(r.text)['error']
         except:
-            error = "Server error"
+            error = "Server error, code: %s. (Message: \"%s\")" % (r.status_code, r.text)
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_registration_failed', error=error))
 
@@ -243,10 +243,13 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("migrate_to_tsig_sha256")
         try:
-            migration["module"].MyMigration().migrate(dyn_host, domain, key)
+            migration.migrate(dyn_host, domain, key)
         except Exception as e:
-            logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
-
+            logger.error(m18n.n('migrations_migration_has_failed',
+                                exception=e,
+                                number=migration.number,
+                                name=migration.name),
+                                exc_info=1)
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
@@ -281,6 +284,7 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
+            record["value"] = record["value"].replace(";","\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")
@@ -295,7 +299,7 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
     # to nsupdate as argument
     write_to_file(DYNDNS_ZONE, '\n'.join(lines))
 
-    logger.info("Now pushing new conf to DynDNS host...")
+    logger.debug("Now pushing new conf to DynDNS host...")
 
     try:
         command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]

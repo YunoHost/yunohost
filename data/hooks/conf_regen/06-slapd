@@ -46,7 +46,7 @@ do_pre_regen() {
   sudo rm -f "$tmp_backup_dir_file"
 
   # retrieve current and new backends
-  curr_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
+  curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
   new_backend=$(grep '^database' slapd.conf | awk '{print $2}')
 
   # save current database before any conf changes

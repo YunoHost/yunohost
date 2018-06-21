@@ -1,10 +1,19 @@
 #!/bin/bash
 
+# See https://manpages.debian.org/testing/dpkg-dev/deb-postrm.5.en.html
+# to understand when / how this script is called...
+
 set -e
 
 if [ "$1" = "purge" ]; then
    update-rc.d yunohost-firewall remove >/dev/null
+   rm -f /etc/yunohost/installed
 fi
+
+if [ "$1" = "remove" ]; then
+   rm -f /etc/yunohost/installed
+fi
+
 
 #DEBHELPER#
 

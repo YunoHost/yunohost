@@ -2,7 +2,7 @@
 #
 # usage: ynh_use_logrotate [logfile] [--non-append]
 # | arg: logfile - absolute path of logfile
-# | option: --non-append - Replace the config file instead of appending this new config.
+# | arg: --non-append - (Option) Replace the config file instead of appending this new config.
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
@@ -64,19 +64,24 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
-# This will use a template in ../conf/systemd.service
-# and will replace the following keywords with 
-# global variables that should be defined before calling
+# usage: ynh_add_systemd_config [service] [template]
+# | arg: service - Service name (optionnal, $app by default)
+# | arg: template - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
+#
+# This will use the template ../conf/<templatename>.service
+# to generate a systemd config, by replacing the following keywords
+# with global variables that should be defined before calling
 # this helper :
 #
 #   __APP__       by  $app
 #   __FINALPATH__ by  $final_path
 #
-# usage: ynh_add_systemd_config
 ynh_add_systemd_config () {
-	finalsystemdconf="/etc/systemd/system/$app.service"
+	local service_name="${1:-$app}"
+
+	finalsystemdconf="/etc/systemd/system/$service_name.service"
 	ynh_backup_if_checksum_is_different "$finalsystemdconf"
-	sudo cp ../conf/systemd.service "$finalsystemdconf"
+	sudo cp ../conf/${2:-systemd.service} "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
@@ -89,23 +94,33 @@ ynh_add_systemd_config () {
 	ynh_store_file_checksum "$finalsystemdconf"
 
 	sudo chown root: "$finalsystemdconf"
-	sudo systemctl enable $app
+	sudo systemctl enable $service_name
 	sudo systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config
 #
-# usage: ynh_remove_systemd_config
+# usage: ynh_remove_systemd_config [service]
+# | arg: service - Service name (optionnal, $app by default)
+#
 ynh_remove_systemd_config () {
-	local finalsystemdconf="/etc/systemd/system/$app.service"
+	local service_name="${1:-$app}"
+
+	local finalsystemdconf="/etc/systemd/system/$service_name.service"
 	if [ -e "$finalsystemdconf" ]; then
-		sudo systemctl stop $app
-		sudo systemctl disable $app
+		sudo systemctl stop $service_name
+		sudo systemctl disable $service_name
 		ynh_secure_remove "$finalsystemdconf"
+		sudo systemctl daemon-reload
 	fi
 }
 
 # Create a dedicated nginx config
+#
+# usage: ynh_add_nginx_config "list of others variables to replace"
+#
+# | arg: list of others variables to replace separeted by a space
+# |      for example : 'path_2 port_2 ...'
 #
 # This will use a template in ../conf/nginx.conf
 #   __PATH__      by  $path_url
@@ -114,9 +129,13 @@ ynh_remove_systemd_config () {
 #   __NAME__      by  $app
 #   __FINALPATH__ by  $final_path
 #
-# usage: ynh_add_nginx_config
+#  And dynamic variables (from the last example) :
+#   __PATH_2__    by $path_2
+#   __PORT_2__    by $port_2
+#
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
+	local others_var=${1:-}
 	ynh_backup_if_checksum_is_different "$finalnginxconf"
 	sudo cp ../conf/nginx.conf "$finalnginxconf"
 
@@ -140,6 +159,22 @@ ynh_add_nginx_config () {
 	if test -n "${final_path:-}"; then
 		ynh_replace_string "__FINALPATH__" "$final_path" "$finalnginxconf"
 	fi
+
+	# Replace all other variable given as arguments
+	for var_to_replace in $others_var
+	do
+		# ${var_to_replace^^} make the content of the variable on upper-cases
+		# ${!var_to_replace} get the content of the variable named $var_to_replace 
+		ynh_replace_string "__${var_to_replace^^}__" "${!var_to_replace}" "$finalnginxconf"
+	done
+	
+	if [ "${path_url:-}" != "/" ]
+	then
+		ynh_replace_string "^#sub_path_only" "" "$finalnginxconf"
+	else
+		ynh_replace_string "^#root_path_only" "" "$finalnginxconf"
+	fi
+
 	ynh_store_file_checksum "$finalnginxconf"
 
 	sudo systemctl reload nginx

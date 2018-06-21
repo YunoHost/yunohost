@@ -214,6 +214,78 @@ user:
                 username:
                     help: Username or email to get information
 
+    subcategories:
+
+        ssh:
+            subcategory_help: Manage ssh access
+            actions:
+                ### user_ssh_enable()
+                allow:
+                    action_help: Allow the user to uses ssh
+                    api: POST /users/ssh/enable
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_disable()
+                disallow:
+                    action_help: Disallow the user to uses ssh
+                    api: POST /users/ssh/disable
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_keys_list()
+                list-keys:
+                    action_help: Show user's authorized ssh keys
+                    api: GET /users/ssh/keys
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_keys_add()
+                add-key:
+                    action_help: Add a new authorized ssh key for this user
+                    api: POST /users/ssh/key
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        key:
+                            help: The key to be added
+                        -c:
+                            full: --comment
+                            help: Optionnal comment about the key
+
+                ### user_ssh_keys_remove()
+                remove-key:
+                    action_help: Remove an authorized ssh key for this user
+                    api: DELETE /users/ssh/key
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        key:
+                            help: The key to be removed
+
 
 #############################
 #          Domain           #
@@ -708,7 +780,7 @@ backup:
 
         ### backup_create()
         create:
-            action_help: Create a backup local archive
+            action_help: Create a backup local archive. If neither --apps or --system are given, this will backup all apps and all system parts. If only --apps if given, this will only backup apps and no system parts. Similarly, if only --system is given, this will only backup system parts and no apps.
             api: POST /backup
             arguments:
                 -n:
@@ -716,7 +788,7 @@ backup:
                     help: Name of the backup archive
                     extra:
                         pattern: &pattern_backup_archive_name
-                            - !!str ^[\w\-\._]{1,30}(?<!\.)$
+                            - !!str ^[\w\-\._]{1,50}(?<!\.)$
                             - "pattern_backup_archive_name"
                 -d:
                     full: --description
@@ -732,28 +804,15 @@ backup:
                     help: List of backup methods to apply (copy or tar by default)
                     nargs: "*"
                 --system:
-                    help: List of system parts to backup (all by default)
+                    help: List of system parts to backup (or all if none given).
                     nargs: "*"
                 --apps:
-                    help: List of application names to backup (all by default)
+                    help: List of application names to backup (or all if none given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not backup system
-                    action: store_true
-                --ignore-apps:
-                    help: Do not backup apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
-
 
         ### backup_restore()
         restore:
-            action_help: Restore from a local backup archive
+            action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: POST /backup/restore/<name>
             configuration:
                 authenticate: all
@@ -762,23 +821,11 @@ backup:
                 name:
                     help: Name of the local backup archive
                 --system:
-                    help: List of system parts to restore (all by default)
+                    help: List of system parts to restore (or all if none is given)
                     nargs: "*"
                 --apps:
-                    help: List of application names to restore (all by default)
+                    help: List of application names to restore (or all if none is given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not restore system parts
-                    action: store_true
-                --ignore-apps:
-                    help: Do not restore apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true
@@ -1483,6 +1530,13 @@ tools:
               list:
                   action_help: List migrations
                   api: GET /migrations
+                  arguments:
+                    --pending:
+                        help: list only pending migrations
+                        action: store_true
+                    --done:
+                        help: list only migrations already performed
+                        action: store_true
 
               ### tools_migrations_migrate()
               migrate:
@@ -1497,7 +1551,12 @@ tools:
                         help: skip the migration(s), use it only if you know what you are doing
                         full: --skip
                         action: store_true
-
+                    --auto:
+                        help: automatic mode, won't run manual migrations, use it only if you know what you are doing
+                        action: store_true
+                    --accept-disclaimer:
+                        help: accept disclaimers of migration (please read them before using this option)
+                        action: store_true
 
               ### tools_migrations_state()
               state:

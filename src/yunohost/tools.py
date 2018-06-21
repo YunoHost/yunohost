@@ -26,15 +26,15 @@
 import re
 import os
 import yaml
-import requests
 import json
 import errno
 import logging
 import subprocess
 import pwd
 import socket
-from collections import OrderedDict
+from xmlrpclib import Fault
 from importlib import import_module
+from collections import OrderedDict
 
 import apt
 import apt.progress
@@ -229,7 +229,7 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.warning(out)
             raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
         else:
-            logger.info(out)
+            logger.debug(out)
 
 
 def _is_inside_container():
@@ -301,6 +301,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     logger.info(m18n.n('yunohost_installing'))
 
+    service_regen_conf(['nslcd', 'nsswitch'], force=True)
+
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
     auth = tools_ldapinit()
@@ -324,7 +326,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 755 /home/yunohost.app')
 
     # Set hostname to avoid amavis bug
-    if os.system('hostname -d') != 0:
+    if os.system('hostname -d >/dev/null') != 0:
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
@@ -401,7 +403,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(skip=True)
+    tools_migrations_migrate(skip=True, auto=True)
 
     os.system('touch /etc/yunohost/installed')
 
@@ -428,7 +430,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        logger.info(m18n.n('updating_apt_cache'))
+        logger.debug(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
 
@@ -442,7 +444,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                 'fullname': pkg.fullname,
                 'changelog': pkg.get_changelog()
             })
-        logger.info(m18n.n('done'))
+        logger.debug(m18n.n('done'))
 
     # "apps" will list upgradable packages
     apps = []
@@ -580,7 +582,7 @@ def tools_diagnosis(auth, private=False):
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except MoulinetteError as e:
+    except (MoulinetteError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
@@ -677,7 +679,7 @@ def _check_if_vulnerable_to_meltdown():
                                 stderr=subprocess.STDOUT)
 
         output, _ = call.communicate()
-        assert call.returncode == 0
+        assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
         CVEs = json.loads(output)
         assert len(CVEs) == 1
@@ -747,24 +749,39 @@ def tools_reboot(uo, force=False):
         subprocess.check_call(['systemctl', 'reboot'])
 
 
-def tools_migrations_list():
+def tools_migrations_list(pending=False, done=False):
     """
     List existing migrations
     """
 
-    migrations = {"migrations": []}
+    # Check for option conflict
+    if pending and done:
+        raise MoulinetteError(errno.EINVAL, m18n.n("migrations_list_conflict_pending_done"))
 
-    for migration in _get_migrations_list():
-        migrations["migrations"].append({
-            "number": int(migration.split("_", 1)[0]),
-            "name": migration.split("_", 1)[1],
-            "file_name": migration,
-        })
+    # Get all migrations
+    migrations = _get_migrations_list()
 
-    return migrations
+    # If asked, filter pending or done migrations
+    if pending or done:
+        last_migration = tools_migrations_state()["last_run_migration"]
+        last_migration = last_migration["number"] if last_migration else -1
+        if done:
+            migrations = [m for m in migrations if m.number <= last_migration]
+        if pending:
+            migrations = [m for m in migrations if m.number > last_migration]
+
+    # Reduce to dictionnaries
+    migrations = [{ "id": migration.id,
+                    "number": migration.number,
+                    "name": migration.name,
+                    "mode": migration.mode,
+                    "description": migration.description,
+                    "disclaimer": migration.disclaimer } for migration in migrations ]
+
+    return {"migrations": migrations}
 
 
-def tools_migrations_migrate(target=None, skip=False):
+def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclaimer=False):
     """
     Perform migrations
     """
@@ -781,26 +798,18 @@ def tools_migrations_migrate(target=None, skip=False):
 
     last_run_migration_number = state["last_run_migration"]["number"] if state["last_run_migration"] else 0
 
-    migrations = []
-
-    # loading all migrations
-    for migration in tools_migrations_list()["migrations"]:
-        migrations.append({
-            "number": migration["number"],
-            "name": migration["name"],
-            "module": _get_migration_module(migration),
-        })
-
-    migrations = sorted(migrations, key=lambda x: x["number"])
+    # load all migrations
+    migrations = _get_migrations_list()
+    migrations = sorted(migrations, key=lambda x: x.number)
 
     if not migrations:
         logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
-    all_migration_numbers = [x["number"] for x in migrations]
+    all_migration_numbers = [x.number for x in migrations]
 
     if target is None:
-        target = migrations[-1]["number"]
+        target = migrations[-1].number
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
@@ -819,18 +828,40 @@ def tools_migrations_migrate(target=None, skip=False):
     if last_run_migration_number < target:
         logger.debug(m18n.n('migrations_forward'))
         # drop all already run migrations
-        migrations = filter(lambda x: target >= x["number"] > last_run_migration_number, migrations)
+        migrations = filter(lambda x: target >= x.number > last_run_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already run migrations
     elif last_run_migration_number > target:
         logger.debug(m18n.n('migrations_backward'))
         # drop all not already run migrations
-        migrations = filter(lambda x: target < x["number"] <= last_run_migration_number, migrations)
+        migrations = filter(lambda x: target < x.number <= last_run_migration_number, migrations)
         mode = "backward"
 
     else:  # can't happen, this case is handle before
         raise Exception()
+
+    # If we are migrating in "automatic mode" (i.e. from debian
+    # configure during an upgrade of the package) but we are asked to run
+    # migrations is to be ran manually by the user
+    manual_migrations = [m for m in migrations if m.mode == "manual"]
+    if not skip and auto and manual_migrations:
+        for m in manual_migrations:
+            logger.warn(m18n.n('migrations_to_be_ran_manually',
+                               number=m.number,
+                               name=m.name))
+        return
+
+    # If some migrations have disclaimers, require the --accept-disclaimer
+    # option
+    migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
+    if not skip and not accept_disclaimer and migrations_with_disclaimer:
+        for m in migrations_with_disclaimer:
+            logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                               number=m.number,
+                               name=m.name,
+                               disclaimer=m.disclaimer))
+        return
 
     # effectively run selected migrations
     for migration in migrations:
@@ -840,7 +871,9 @@ def tools_migrations_migrate(target=None, skip=False):
         uo.start()
 
         if not skip:
-            logger.warn(m18n.n('migrations_show_currently_running_migration', **migration))
+
+            logger.warn(m18n.n('migrations_show_currently_running_migration',
+                               number=migration.number, name=migration.name))
 
             try:
                 if mode == "forward":
@@ -856,18 +889,23 @@ def tools_migrations_migrate(target=None, skip=False):
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                msg = m18n.n('migrations_migration_has_failed', exception=e, **migration)
+                msg = m18n.n('migrations_migration_has_failed',
+                                    exception=e,
+                                    number=migration.number,
+                                    name=migration.name)
                 logger.error(msg, exc_info=1)
                 uo.error(msg)
                 break
 
         else:  # if skip
-            logger.warn(m18n.n('migrations_skip_migration', **migration))
+            logger.warn(m18n.n('migrations_skip_migration',
+                               number=migration.number,
+                               name=migration.name))
 
         # update the state to include the latest run migration
         state["last_run_migration"] = {
-            "number": migration["number"],
-            "name": migration["name"],
+            "number": migration.number,
+            "name": migration.name
         }
 
         uo.success()
@@ -932,60 +970,79 @@ def _get_migrations_list():
         logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
         return migrations
 
-    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
-        migrations.append(migration[:-len(".py")])
+    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+        migrations.append(_load_migration(migration_file))
 
-    return sorted(migrations)
+    return sorted(migrations, key=lambda m: m.id)
 
 
-def _get_migration_by_name(migration_name, with_module=True):
+def _get_migration_by_name(migration_name):
     """
     Low-level / "private" function to find a migration by its name
     """
 
-    migrations = tools_migrations_list()["migrations"]
+    try:
+        import data_migrations
+    except ImportError:
+        raise AssertionError("Unable to find migration with name %s" % migration_name)
 
-    matches = [ m for m in migrations if m["name"] == migration_name ]
+    migrations_path = data_migrations.__path__[0]
+    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
 
-    assert len(matches) == 1, "Unable to find migration with name %s" % migration_name
+    assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
 
-    migration = matches[0]
-
-    if with_module:
-        migration["module"] = _get_migration_module(migration)
-
-    return migration
+    return _load_migration(migrations_found[0])
 
 
-def _get_migration_module(migration):
+def _load_migration(migration_file):
+
+    migration_id = migration_file[:-len(".py")]
+
+    number, name = migration_id.split("_", 1)
 
     logger.debug(m18n.n('migrations_loading_migration',
-        number=migration["number"],
-        name=migration["name"],
-    ))
+        number=number, name=name))
 
     try:
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        return import_module("yunohost.data_migrations.{file_name}".format(**migration))
+        module = import_module("yunohost.data_migrations.{}".format(migration_id))
+        return module.MyMigration(migration_id)
     except Exception:
         import traceback
         traceback.print_exc()
 
         raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-            number=migration["number"],
-            name=migration["name"],
-        ))
+            number=number, name=name))
 
 
 class Migration(object):
 
-    def migrate(self):
-        self.forward()
+    # Those are to be implemented by daughter classes
+
+    mode = "auto"
 
     def forward(self):
         raise NotImplementedError()
 
     def backward(self):
         pass
+
+    @property
+    def disclaimer(self):
+        return None
+
+    # The followings shouldn't be overriden
+
+    def migrate(self):
+        self.forward()
+
+    def __init__(self, id_):
+        self.id = id_
+        self.number = int(self.id.split("_", 1)[0])
+        self.name = self.id.split("_", 1)[1]
+
+    @property
+    def description(self):
+        return m18n.n("migration_description_%s" % self.id)

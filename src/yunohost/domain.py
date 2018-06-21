@@ -28,7 +28,6 @@ import re
 import json
 import yaml
 import errno
-import requests
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
@@ -209,7 +208,7 @@ def domain_dns_conf(domain, ttl=None):
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
-        logger.warning(m18n.n("domain_dns_conf_is_just_a_recommendation"))
+        logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
 
@@ -391,17 +390,54 @@ def _get_DKIM(domain):
     with open(DKIM_file) as f:
         dkim_content = f.read()
 
-    dkim = re.match((
-        r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
-        '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
-        '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
-        '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
-    )
+    # Gotta manage two formats :
+    #
+    # Legacy
+    # -----
+    #
+    # mail._domainkey IN      TXT     ( "v=DKIM1; k=rsa; "
+    #           "p=<theDKIMpublicKey>" )
+    #
+    # New
+    # ------
+    #
+    # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
+    #           "p=<theDKIMpublicKey>" )
+
+    is_legacy_format = " h=sha256; " not in dkim_content
+
+    # Legacy DKIM format
+    if is_legacy_format:
+        dkim = re.match((
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
+             '[^"]*"v=(?P<v>[^";]+);'
+             '[\s"]*k=(?P<k>[^";]+);'
+             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        )
+    else:
+        dkim = re.match((
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
+             '[^"]*"v=(?P<v>[^";]+);'
+             '[\s"]*h=(?P<h>[^";]+);'
+             '[\s"]*k=(?P<k>[^";]+);'
+             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        )
 
     if not dkim:
         return (None, None)
 
-    return (
-        dkim.group('host'),
-        '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p'))
-    )
+    if is_legacy_format:
+        return (
+            dkim.group('host'),
+            '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'),
+                                           k=dkim.group('k'),
+                                           p=dkim.group('p'))
+        )
+    else:
+        return (
+            dkim.group('host'),
+            '"v={v}; h={h}; k={k}; p={p}"'.format(v=dkim.group('v'),
+                                                  h=dkim.group('h'),
+                                                  k=dkim.group('k'),
+                                                  p=dkim.group('p'))
+        )

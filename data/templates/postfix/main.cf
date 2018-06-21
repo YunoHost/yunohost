@@ -45,6 +45,11 @@ smtp_tls_exclude_ciphers = $smtpd_tls_exclude_ciphers
 smtp_tls_mandatory_ciphers= $smtpd_tls_mandatory_ciphers
 smtp_tls_loglevel=1
 
+# Configure Root CA certificates
+# (for example, avoids getting "Untrusted TLS connection established to" messages in logs)
+smtpd_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
 # information on enabling SSL in the smtp client.
 
@@ -143,7 +148,7 @@ smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
 # Rmilter
 milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
 milter_protocol = 6
-smtpd_milters = unix:/run/rmilter/rmilter.sock
+smtpd_milters = inet:localhost:11332
 
 # Skip email without checking if milter has died
 milter_default_action = accept

@@ -30,10 +30,10 @@ class MyMigration(Migration):
                 (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
                 assert "+157" in private_key_path
             except (MoulinetteError, AssertionError):
-                logger.warning(m18n.n("migrate_tsig_not_needed"))
+                logger.info(m18n.n("migrate_tsig_not_needed"))
                 return
 
-        logger.warning(m18n.n('migrate_tsig_start', domain=domain))
+        logger.info(m18n.n('migrate_tsig_start', domain=domain))
         public_key_path = private_key_path.rsplit(".private", 1)[0] + ".key"
         public_key_md5 = open(public_key_path).read().strip().split(' ')[-1]
 
@@ -77,15 +77,15 @@ class MyMigration(Migration):
         os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
 
         # sleep to wait for dyndns cache invalidation
-        logger.warning(m18n.n('migrate_tsig_wait'))
+        logger.info(m18n.n('migrate_tsig_wait'))
         time.sleep(60)
-        logger.warning(m18n.n('migrate_tsig_wait_2'))
+        logger.info(m18n.n('migrate_tsig_wait_2'))
         time.sleep(60)
-        logger.warning(m18n.n('migrate_tsig_wait_3'))
+        logger.info(m18n.n('migrate_tsig_wait_3'))
         time.sleep(30)
-        logger.warning(m18n.n('migrate_tsig_wait_4'))
+        logger.info(m18n.n('migrate_tsig_wait_4'))
         time.sleep(30)
 
-        logger.warning(m18n.n('migrate_tsig_end'))
+        logger.info(m18n.n('migrate_tsig_end'))
         return
 
