@@ -773,6 +773,32 @@ app:
 
     subcategories:
 
+      action:
+          subcategory_help: Handle apps actions
+          actions:
+
+              ### app_action_list()
+              list:
+                  action_help: List app actions
+                  api: GET /<app>/actions
+                  arguments:
+                    app_id:
+                        help: app id
+
+              ### app_action_run()
+              run:
+                  action_help: Run app action
+                  api: PUT /<app>/actions/<action>
+                  arguments:
+                    app_id:
+                        help: app id
+                    action:
+                        help: action id
+                    -a:
+                        full: --args
+                        help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+
+
       config:
           subcategory_help: Applications configuration panel
           actions:
