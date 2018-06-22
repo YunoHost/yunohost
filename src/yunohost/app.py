@@ -1396,8 +1396,7 @@ def app_action_run(app_id, action, args=None):
     action_declaration = actions[action]
 
     # Retrieve arguments list for install script
-    args_dict = {} if not args else \
-        dict(urlparse.parse_qsl(args, keep_blank_values=True))
+    args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
     args_list = args_odict.values()
 
