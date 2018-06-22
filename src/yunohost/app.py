@@ -40,6 +40,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_json
 
 from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
@@ -640,6 +641,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
             os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
+            if os.path.exists(os.path.join(extracted_app_folder, "config_panel.json")):
+                os.system('cp -R %s/config_panel.json %s' % (extracted_app_folder, app_setting_path))
+
             if os.path.exists(os.path.join(extracted_app_folder, "conf")):
                 os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
 
@@ -756,6 +760,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
+
+    if os.path.exists(os.path.join(extracted_app_folder, "config_panel.json")):
+        os.system('cp -R %s/config_panel.json %s' % (extracted_app_folder, app_setting_path))
 
     if os.path.exists(os.path.join(extracted_app_folder, "conf")):
         os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
@@ -1358,6 +1365,143 @@ def app_change_label(auth, app, new_label):
     app_setting(app, "label", value=new_label)
 
     app_ssowatconf(auth)
+
+
+# Config panel todo list:
+# * docstrings
+# * merge translations on the json once the workflow is in place
+def app_config_show_panel(app_id):
+    logger.warning(m18n.n('experimental_feature'))
+
+    from yunohost.hook import hook_exec
+
+    # this will take care of checking if the app is installed
+    app_info_dict = app_info(app_id)
+
+    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+
+    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+        return {
+            "config_panel": [],
+        }
+
+    config_panel = read_json(config_panel)
+
+    env = {"YNH_APP_ID": app_id}
+    parsed_values = {}
+
+    # I need to parse stdout to communicate between scripts because I can't
+    # read the child environment :( (that would simplify things so much)
+    # after hours of research this is apparently quite a standard way, another
+    # option would be to add an explicite pipe or a named pipe for that
+    # a third option would be to write in a temporary file but I don't like
+    # that because that could expose sensitive data
+    def parse_stdout(line):
+        line = line.rstrip()
+        logger.info(line)
+
+        if line.strip().startswith("YNH_CONFIG_") and "=" in line:
+            # XXX error handling?
+            # XXX this might not work for multilines stuff :( (but echo without
+            # formatting should do it no?)
+            key, value = line.strip().split("=", 1)
+            logger.debug("config script declared: %s -> %s", key, value)
+            parsed_values[key] = value
+
+    return_code = hook_exec(config_script,
+              args=["show"],
+              env=env,
+              user="root",
+              stdout_callback=parse_stdout,
+    )
+
+    if return_code != 0:
+        raise Exception("script/config show return value code: %s (considered as an error)", return_code)
+
+    logger.debug("Generating global variables:")
+    for tab in config_panel.get("panel", []):
+        tab_id = tab["id"]  # this makes things easier to debug on crash
+        for section in tab.get("sections", []):
+            section_id = section["id"]
+            for option in section.get("options", []):
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                option["id"] = generated_id
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_id)
+
+                if generated_id in parsed_values:
+                    # XXX we should probably uses the one of install here but it's at a POC state right now
+                    option_type = option["type"]
+                    if option_type == "bool":
+                        assert parsed_values[generated_id].lower() in ("true", "false")
+                        option["value"] = True if parsed_values[generated_id].lower() == "true" else False
+                    elif option_type == "integer":
+                        option["value"] = int(parsed_values[generated_id])
+                    elif option_type == "text":
+                        option["value"] = parsed_values[generated_id]
+                else:
+                    logger.debug("Variable '%s' is not declared by config script, using default", generated_id)
+                    option["value"] = option["default"]
+
+    return {
+        "app_id": app_id,
+        "app_name": app_info_dict["name"],
+        "config_panel": config_panel,
+    }
+
+
+def app_config_apply(app_id, args):
+    logger.warning(m18n.n('experimental_feature'))
+
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app_id)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app_id))
+
+    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+
+    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+        # XXX real exception
+        raise Exception("Not config-panel.json nor scripts/config")
+
+    config_panel = read_json(config_panel)
+
+    env = {"YNH_APP_ID": app_id}
+    args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+
+    for tab in config_panel.get("panel", []):
+        tab_id = tab["id"]  # this makes things easier to debug on crash
+        for section in tab.get("sections", []):
+            section_id = section["id"]
+            for option in section.get("options", []):
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+
+                if generated_id in args:
+                    logger.debug("include into env %s=%s", generated_id, args[generated_id])
+                    env[generated_id] = args[generated_id]
+                else:
+                    logger.debug("no value for key id %s", generated_id)
+
+    # for debug purpose
+    for key in args:
+        if key not in env:
+            logger.warning("Ignore key '%s' from arguments because it is not in the config", key)
+
+    return_code = hook_exec(config_script,
+              args=["apply"],
+              env=env,
+              user="root",
+    )
+
+    if return_code != 0:
+        raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
+
+    logger.success("Config updated as expected")
 
 
 def _get_app_settings(app_id):
