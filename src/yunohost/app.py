@@ -2068,11 +2068,15 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
 
                 # Append extra strings
                 if arg_type == 'boolean':
-                    ask_string += ' [0 | 1]'
+                    ask_string += ' [yes | no]'
                 elif arg_choices:
                     ask_string += ' [{0}]'.format(' | '.join(arg_choices))
+
                 if arg_default is not None:
-                    ask_string += ' (default: {0})'.format(arg_default)
+                    if arg_type == 'boolean':
+                        ask_string += ' (default: {0})'.format("yes" if arg_type == 1 else "no")
+                    else:
+                        ask_string += ' (default: {0})'.format(arg_default)
 
                 # Check for a password argument
                 is_password = True if arg_type == 'password' else False
@@ -2133,14 +2137,14 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
             if isinstance(arg_value, bool):
                 arg_value = 1 if arg_value else 0
             else:
-                try:
-                    arg_value = int(arg_value)
-                    if arg_value not in [0, 1]:
-                        raise ValueError()
-                except (TypeError, ValueError):
+                if str(arg_value).lower() in ["1", "yes", "y"]:
+                    arg_value = 1
+                elif str(arg_value).lower() in ["0", "no", "n"]:
+                    arg_value = 0
+                else:
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('app_argument_choice_invalid',
-                            name=arg_name, choices='0, 1'))
+                            name=arg_name, choices='yes, no, y, n, 1, 0'))
         args_dict[arg_name] = arg_value
 
     # END loop over action_args...
