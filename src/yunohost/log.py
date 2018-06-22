@@ -252,8 +252,7 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                 result = func(*args, **kwargs)
             except Exception as e:
                 uo.error(e)
-                t, v, tb = exc_info()
-                raise t, v, tb
+                raise
             else:
                 uo.success()
             return result
