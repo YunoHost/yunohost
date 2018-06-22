@@ -1367,7 +1367,12 @@ def app_change_label(auth, app, new_label):
     app_ssowatconf(auth)
 
 
+# Config panel todo list:
+# * docstrings
+# * merge translations on the json once the workflow is in place
 def app_config_show_panel(app_id):
+    logger.warning(m18n.n('experimental_feature'))
+
     from yunohost.hook import hook_exec
 
     # this will take care of checking if the app is installed
@@ -1447,6 +1452,8 @@ def app_config_show_panel(app_id):
 
 
 def app_config_apply(app_id, args):
+    logger.warning(m18n.n('experimental_feature'))
+
     from yunohost.hook import hook_exec
 
     installed = _is_installed(app_id)
