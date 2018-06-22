@@ -1363,14 +1363,12 @@ def app_change_label(auth, app, new_label):
     app_ssowatconf(auth)
 
 
-# ACTIONS todo list
-# * save actions.json
-# commands:
-# yunohost app action list $app
-# yunohost app action run $app $action -d parameters
-# docstring
+# actions todo list:
+# * docstring
 
 def app_action_list(app_id):
+    logger.warning(m18n.n('experimental_feature'))
+
     installed = _is_installed(app_id)
     if not installed:
         raise MoulinetteError(errno.ENOPKG,
@@ -1389,6 +1387,8 @@ def app_action_list(app_id):
 
 
 def app_action_run(app_id, action, args=None):
+    logger.warning(m18n.n('experimental_feature'))
+
     from yunohost.hook import hook_exec
     import tempfile
 
