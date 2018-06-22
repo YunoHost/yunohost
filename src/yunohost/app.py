@@ -2074,7 +2074,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
 
                 if arg_default is not None:
                     if arg_type == 'boolean':
-                        ask_string += ' (default: {0})'.format("yes" if arg_type == 1 else "no")
+                        ask_string += ' (default: {0})'.format("yes" if arg_default == 1 else "no")
                     else:
                         ask_string += ' (default: {0})'.format(arg_default)
 
