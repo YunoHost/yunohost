@@ -641,14 +641,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
             os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            if os.path.exists(os.path.join(extracted_app_folder, "actions.json")):
-                os.system('cp -R %s/actions.json %s' % (extracted_app_folder, app_setting_path))
-
-            if os.path.exists(os.path.join(extracted_app_folder, "config_panel.json")):
-                os.system('cp -R %s/config_panel.json %s' % (extracted_app_folder, app_setting_path))
-
-            if os.path.exists(os.path.join(extracted_app_folder, "conf")):
-                os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
+            for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+                if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+                    os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
             # So much win
             upgraded_apps.append(app_instance_name)
@@ -764,14 +759,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
-    if os.path.exists(os.path.join(extracted_app_folder, "actions.json")):
-        os.system('cp -R %s/actions.json %s' % (extracted_app_folder, app_setting_path))
-
-    if os.path.exists(os.path.join(extracted_app_folder, "config_panel.json")):
-        os.system('cp -R %s/config_panel.json %s' % (extracted_app_folder, app_setting_path))
-
-    if os.path.exists(os.path.join(extracted_app_folder, "conf")):
-        os.system('cp -R %s/conf %s' % (extracted_app_folder, app_setting_path))
+    for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+        if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+            os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
     # Execute the app install script
     install_retcode = 1
