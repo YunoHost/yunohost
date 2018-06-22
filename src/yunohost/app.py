@@ -1389,6 +1389,7 @@ def app_action_run(app_id, action, args=None):
 
     # will raise if action doesn't exist
     actions = app_action_list(app_id)["actions"]
+    actions = {x["id"]: x for x in actions}
 
     if action not in actions:
         raise MoulinetteError(errno.EINVAL, "action '%s' not available for app '%s', available actions are: %s" % (action, app_id, ", ".join(actions.keys())))
