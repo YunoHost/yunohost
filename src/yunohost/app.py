@@ -1374,15 +1374,10 @@ def app_action_list(app_id):
         raise MoulinetteError(errno.ENOPKG,
                               m18n.n('app_not_installed', app=app_id))
 
-    actions = os.path.join( APPS_SETTING_PATH, app_id, 'actions.json')
-
-    if not os.path.exists(actions):
-        return {
-            "actions": [],
-        }
+    actions = os.path.join(APPS_SETTING_PATH, app_id, 'actions.json')
 
     return {
-        "actions": read_json(actions),
+        "actions": read_json(actions) if os.path.exists(actions) else [],
     }
 
 
