@@ -1471,7 +1471,7 @@ def app_config_apply(app_id, args):
     config_panel = read_json(config_panel)
 
     env = {"YNH_APP_ID": app_id}
-    args = dict(urlparse.parse_qsl(args, keep_blank_values=True))
+    args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
     for tab in config_panel.get("panel", []):
         tab_id = tab["id"]  # this makes things easier to debug on crash
