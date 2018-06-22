@@ -40,7 +40,6 @@ from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.domain
 from yunohost.utils.network import get_public_ip
 
 from moulinette import m18n
@@ -95,6 +94,8 @@ def certificate_status(auth, domain_list, full=False):
         domain_list -- Domains to be checked
         full        -- Display more info about the certificates
     """
+
+    import yunohost.domain
 
     # Check if old letsencrypt_ynh is installed
     # TODO / FIXME - Remove this in the future once the letsencrypt app is
@@ -243,6 +244,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
+    import yunohost.domain
+
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
@@ -308,6 +311,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                       before attempting the renewing
         email      -- Emails root if some renewing failed
     """
+
+    import yunohost.domain
 
     # Check if old letsencrypt_ynh is installed
     # TODO / FIXME - Remove this in the future once the letsencrypt app is
@@ -402,6 +407,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 ###############################################################################
 
 def _check_old_letsencrypt_app():
+    import yunohost.domain
+
     installedAppIds = [app["id"] for app in yunohost.app.app_list(installed=True)["apps"]]
 
     if "letsencrypt" not in installedAppIds:
