@@ -1,3 +1,9 @@
+yunohost (2.7.14.1) stable; urgency=low
+
+  * [fix] Indicate YunoHost conflict with dns-root-data debian package
+
+ -- ljf <ljf+yunohost@grimaud.me>  Mon, 25 Jun 2018 23:53:00 +0000
+
 yunohost (2.7.14) stable; urgency=low
 
   * Last minute fix : install php7.0-acpu to hopefully make stretch still work after the upgrade
