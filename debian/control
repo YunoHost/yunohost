@@ -40,7 +40,6 @@ Conflicts: iptables-persistent
  , yunohost-config-dovecot, yunohost-config-slapd
  , yunohost-config-nginx, yunohost-config-amavis
  , yunohost-config-mysql, yunohost-predepends
- , dns-root-data (>= 2017072601~deb8u2)
 Replaces: moulinette-yunohost, yunohost-config
  , yunohost-config-others, yunohost-config-postfix
  , yunohost-config-dovecot, yunohost-config-slapd
