@@ -15,7 +15,23 @@ do_configure() {
       yunohost service regen-conf --output-as none
 
       echo "Patch Dnsmasq service"
-      patch -N /etc/init.d/dnsmasq dnsmasq.patch | true
+      DNSMASQ_PATCH=$(cat << 'EOF'
+index 46abdc4..49556ad 100644 (file)
+--- a/debian/init
++++ b/debian/init
+@@ -111,7 +111,7 @@ DNSMASQ_OPTS="$DNSMASQ_OPTS --local-service"
+ ROOT_DS="/usr/share/dns/root.ds"
+ 
+ if [ -f $ROOT_DS ]; then
+-   DNSMASQ_OPTS="$DNSMASQ_OPTS `sed -e s/". IN DS "/--trust-anchor=.,/ -e s/" "/,/g $ROOT_DS | tr '\n' ' '`" 
++   DNSMASQ_OPTS="$DNSMASQ_OPTS `sed -e s/"^.*DS[\t ]"/--trust-anchor=.,/ -e s/" "/,/g $ROOT_DS | tr '\n' ' '`" 
+ fi
+ 
+ start()
+EOF
+)
+
+      patch -N /etc/init.d/dnsmasq <<< "$DNSMASQ_PATCH" | true
 
       echo "Launching migrations.."
       yunohost tools migrations migrate --auto
