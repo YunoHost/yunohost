@@ -15,7 +15,7 @@ do_configure() {
       yunohost service regen-conf --output-as none
 
       echo "Patch Dnsmasq service"
-      patch /etc/init.d/dnsmasq dnsmasq.patch
+      patch -N /etc/init.d/dnsmasq dnsmasq.patch | true
 
       echo "Launching migrations.."
       yunohost tools migrations migrate --auto
