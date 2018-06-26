@@ -1,3 +1,9 @@
+yunohost (2.7.14.4) stable; urgency=low
+
+  * [fix] A typo error between pipe and or operator
+
+ -- ljf <ljf+yunohost@grimaud.me>  Tue, 26 Jun 2018 11:47:00 +0000
+
 yunohost (2.7.14.3) stable; urgency=low
 
   * [fix] Patch dnsmasq to read correctly dns-root-data

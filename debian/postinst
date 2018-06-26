@@ -31,7 +31,7 @@ index 46abdc4..49556ad 100644 (file)
 EOF
 )
 
-      patch -N /etc/init.d/dnsmasq <<< "$DNSMASQ_PATCH" | true
+      patch -N /etc/init.d/dnsmasq <<< "$DNSMASQ_PATCH" || true
 
       echo "Launching migrations.."
       yunohost tools migrations migrate --auto
