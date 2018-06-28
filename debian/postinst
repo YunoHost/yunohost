@@ -11,10 +11,7 @@ do_configure() {
       bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
       bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
   else
-      echo "Regenerating configuration, this might take a while..."
-      yunohost service regen-conf --output-as none
-
-      echo "Patch Dnsmasq service"
+      echo "Patching dnsmasq service"
       DNSMASQ_PATCH=$(cat << 'EOF'
 index 46abdc4..49556ad 100644 (file)
 --- a/debian/init
@@ -30,8 +27,10 @@ index 46abdc4..49556ad 100644 (file)
  start()
 EOF
 )
-
       patch -N /etc/init.d/dnsmasq <<< "$DNSMASQ_PATCH" || true
+
+      echo "Regenerating configuration, this might take a while..."
+      yunohost service regen-conf --output-as none
 
       echo "Launching migrations.."
       yunohost tools migrations migrate --auto
