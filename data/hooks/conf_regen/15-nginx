@@ -77,7 +77,7 @@ do_post_regen() {
   done
 
   # Reload nginx configuration
-  sudo service nginx reload
+  pgrep nginx && sudo service nginx reload
 }
 
 FORCE=${2:-0}
