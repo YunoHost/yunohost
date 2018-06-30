@@ -21,7 +21,7 @@
 import logging
 import re
 import subprocess
-from urllib import urlopen
+from moulinette.utils.network import download_text
 
 logger = logging.getLogger('yunohost.utils.network')
 
@@ -36,10 +36,7 @@ def get_public_ip(protocol=4):
     else:
         raise ValueError("invalid protocol version")
 
-    try:
-        return urlopen(url).read().strip()
-    except IOError:
-        return None
+    return download_text(url, timeout=30).strip()
 
 
 def get_network_interfaces():
