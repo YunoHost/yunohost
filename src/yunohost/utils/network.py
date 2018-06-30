@@ -21,7 +21,9 @@
 import logging
 import re
 import subprocess
-from urllib import urlopen
+import requests
+
+from requests import ConnectionError
 
 logger = logging.getLogger('yunohost.utils.network')
 
@@ -37,8 +39,8 @@ def get_public_ip(protocol=4):
         raise ValueError("invalid protocol version")
 
     try:
-        return urlopen(url).read().strip()
-    except IOError:
+        return requests.get(url, timeout=30).content.strip()
+    except ConnectionError:
         return None
 
 
