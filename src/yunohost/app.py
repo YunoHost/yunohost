@@ -1369,14 +1369,14 @@ def app_change_label(auth, app, new_label):
 def app_action_list(app_id):
     logger.warning(m18n.n('experimental_feature'))
 
-    installed = _is_installed(app_id)
-    if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app_id))
+    # this will take care of checking if the app is installed
+    app_info_dict = app_info(app_id)
 
     actions = os.path.join(APPS_SETTING_PATH, app_id, 'actions.json')
 
     return {
+        "app_id": app_id,
+        "app_name": app_info_dict["name"],
         "actions": read_json(actions) if os.path.exists(actions) else [],
     }
 
