@@ -329,7 +329,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+                              m18n.n('ssowat_persistent_conf_read_error', error=str(e)))
     except IOError:
         ssowat_conf = {}
 
@@ -343,7 +343,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
         raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+                              m18n.n('ssowat_persistent_conf_write_error', error=str(e)))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
