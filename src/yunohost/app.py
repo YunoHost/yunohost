@@ -2043,7 +2043,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
     """
     from yunohost.domain import (domain_list, _get_maindomain,
                                  domain_url_available, _normalize_domain_path)
-    from yunohost.user import user_info
+    from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
 
@@ -2084,6 +2084,11 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     msignals.display(m18n.n('domains_available'))
                     for domain in domain_list(auth)['domains']:
                         msignals.display("- {}".format(domain))
+
+                if arg_type == 'user':
+                    msignals.display(m18n.n('users_available'))
+                    for user in user_list(auth)['users'].keys():
+                        msignals.display("- {}".format(user))
 
                 try:
                     input_string = msignals.prompt(ask_string, is_password)

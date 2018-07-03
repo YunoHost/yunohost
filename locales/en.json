@@ -404,6 +404,7 @@
     "user_unknown": "Unknown user: {user:s}",
     "user_update_failed": "Unable to update user",
     "user_updated": "The user has been updated",
+    "users_available": "Available users:",
     "yunohost_already_installed": "YunoHost is already installed",
     "yunohost_ca_creation_failed": "Unable to create certificate authority",
     "yunohost_ca_creation_success": "The local certification authority has been created.",
