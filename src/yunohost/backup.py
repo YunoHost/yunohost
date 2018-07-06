@@ -2155,7 +2155,7 @@ def backup_list(with_info=False, human_readable=False):
             except ValueError:
                 continue
             result.append(name)
-        result.sort()
+        result.sort(key=lambda x: os.path.getctime(x))
 
     if result and with_info:
         d = OrderedDict()
