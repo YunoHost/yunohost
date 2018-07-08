@@ -1685,3 +1685,162 @@ hook:
                 -d:
                     full: --chdir
                     help: The directory from where the script will be executed
+                    
+#######################
+#       Disk Part     #
+#######################
+part:
+    category_help: Manage partitions
+    actions:
+
+        ### part_list()
+        list:
+            action_help: List partitions on a device 
+            api: GET /part/list/<devpath>
+            arguments:
+                devpath:
+                    help: Path of the device
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### part_list_all()
+        list_all:
+            action_help: List available devices 
+            api: GET /part/list-all
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### part_raid_create()
+        raid_create:
+            action_help: List available devices 
+            api: POST /part/raid-create/tata
+            arguments:
+                device:
+                    help: Name of the newly created device
+                level:
+                    help: Level of the raid system
+                devices:
+                    help: List of devices
+                    nargs: "*"
+                --force:
+                    help: Confirm raid creation
+                    action: store_true
+
+                    # extra:
+                    #     pattern: &pattern_index
+                    #         - !!str ^(\d+)$
+                    #         - "pattern_index"
+
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### part_toggle_boot()
+        toggle_boot:
+            action_help: Set Boot flag on a partition 
+            api: POST /part/toggle-boot/<devpath>/<index>
+            arguments:
+                devpath:
+                    help: Path of the device
+                index:
+                    help: Index of the partition to toggle Boot flag
+                    extra:
+                        pattern: &pattern_index
+                            - !!str ^(\d+)$
+                            - "pattern_index"
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### part_toggle_raid()
+        toggle_raid:
+            action_help: Set Raid flag on a partition 
+            api: POST /part/toggle-raid/<devpath>/<index>
+            arguments:
+                devpath:
+                    help: Path of the device
+#                index:
+#                    help: Index of the partition to toggle Raid flag
+#                    extra:
+#                        pattern: *pattern_index
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+        ### part_create()
+        create:
+            action_help: Create a new partition 
+            api: POST /part/create/<devpath>
+            arguments:
+                devpath:
+                    help: Path of the device
+                start:
+                    help: Starting address
+                    extra:
+                        pattern: *pattern_index
+                index:
+                    help: Index of the partition to delete
+                    extra:
+                        pattern: *pattern_index
+                type:
+                    help: Partition type
+                    # extra:
+                        # pattern: *pattern_index
+#                size:
+#                    help: Size of the new partition
+#                    # extra:
+#                        # pattern: *pattern_index
+
+        ### part_type()
+        type:
+            action_help: Change partition type 
+            api: POST /part/type/<devpath>/<index>/<type>
+            arguments:
+                devpath:
+                    help: Path of the device
+                start:
+                    help: Starting address
+                    extra:
+                        pattern: *pattern_index
+                index:
+                    help: Index of the partition to delete
+                    extra:
+                        pattern: *pattern_index
+                type:
+                    help: Hexa type of the partition
+                    # extra:
+                        # pattern: *pattern_index
+
+        ### part_fresh_disk()
+        fresh_disk:
+            action_help: Create a new empty partition table 
+            api: POST /part/reset/<devpath>
+            arguments:
+                devpath:
+                    help: Path of the device
+
+        ### part_delete()
+        delete:
+            action_help: Delete a partition 
+            api: DEL /part/delete/<devpath>/<index>
+            arguments:
+                devpath:
+                    help: Path of the device
+                index:
+                    help: Index of the partition to delete
+                    extra:
+                        pattern: *pattern_index
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+
+
+            configuration:
+                authenticate: all
+                authenticator: ldap-anonymous
+
+            
+
