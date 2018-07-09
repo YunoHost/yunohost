@@ -399,6 +399,8 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'domain' not in app_settings:
             continue
+        if 'no_sso' in app_settings:  # I don't think we need to check for the value here
+            continue
         if user is not None:
             if ('mode' not in app_settings
                 or ('mode' in app_settings
@@ -1291,6 +1293,10 @@ def app_ssowatconf(auth):
     for app in apps_list:
         with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
             app_settings = yaml.load(f)
+
+            if 'no_sso' in app_settings:
+                continue
+
             for item in _get_setting(app_settings, 'skipped_uris'):
                 if item[-1:] == '/':
                     item = item[:-1]
