@@ -1270,10 +1270,6 @@ def app_ssowatconf(auth):
     main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
 
-    users = {}
-    for username in user_list(auth)['users'].keys():
-        users[username] = app_map(user=username)
-
     skipped_urls = []
     skipped_regex = []
     unprotected_urls = []
@@ -1342,7 +1338,8 @@ def app_ssowatconf(auth):
         'protected_regex': protected_regex,
         'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
-        'users': users,
+        'users': {username: app_map(user=username)
+                  for username in user_list(auth)['users'].keys()},
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
