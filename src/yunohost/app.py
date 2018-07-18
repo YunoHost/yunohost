@@ -1416,7 +1416,7 @@ def app_action_run(app_id, action, args=None):
         path,
         args=args_list,
         env=env_dict,
-        chdir=action_declaration.get("cwd"),
+        chdir=action_declaration.get("cwd", "/etc/yunohost/apps/" + app_id),
         user=action_declaration.get("user", "root"),
     )
 
