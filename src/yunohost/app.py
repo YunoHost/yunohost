@@ -1412,11 +1412,16 @@ def app_action_run(app_id, action, args=None):
 
     os.chmod(path, 700)
 
+    if action_declaration.get("cwd"):
+        cwd = action_declaration["cwd"].replace("$app_id", app_id)
+    else:
+        cwd = "/etc/yunohost/apps/" + app_id
+
     retcode = hook_exec(
         path,
         args=args_list,
         env=env_dict,
-        chdir=action_declaration.get("cwd", "/etc/yunohost/apps/" + app_id),
+        chdir=cwd,
         user=action_declaration.get("user", "root"),
     )
 
