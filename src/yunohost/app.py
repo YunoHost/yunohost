@@ -753,6 +753,8 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
 
     # Start register change on system
     uo.extra.update({'env':env_dict})
+    uo.related_to = [s for s in uo.related_to if s[0] != "app"]
+    uo.related_to.append(("app", app_id))
     uo.start()
 
     # Create app directory
