@@ -399,6 +399,8 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'domain' not in app_settings:
             continue
+        if 'no_sso' in app_settings:  # I don't think we need to check for the value here
+            continue
         if user is not None:
             if ('mode' not in app_settings
                 or ('mode' in app_settings
@@ -1270,10 +1272,6 @@ def app_ssowatconf(auth):
     main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
 
-    users = {}
-    for username in user_list(auth)['users'].keys():
-        users[username] = app_map(user=username)
-
     skipped_urls = []
     skipped_regex = []
     unprotected_urls = []
@@ -1284,7 +1282,7 @@ def app_ssowatconf(auth):
     redirected_urls = {}
 
     try:
-        apps_list = app_list()['apps']
+        apps_list = app_list(installed=True)['apps']
     except:
         apps_list = []
 
@@ -1293,31 +1291,34 @@ def app_ssowatconf(auth):
         return s.split(',') if s else []
 
     for app in apps_list:
-        if _is_installed(app['id']):
-            with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
-                app_settings = yaml.load(f)
-                for item in _get_setting(app_settings, 'skipped_uris'):
-                    if item[-1:] == '/':
-                        item = item[:-1]
-                    skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-                for item in _get_setting(app_settings, 'skipped_regex'):
-                    skipped_regex.append(item)
-                for item in _get_setting(app_settings, 'unprotected_uris'):
-                    if item[-1:] == '/':
-                        item = item[:-1]
-                    unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-                for item in _get_setting(app_settings, 'unprotected_regex'):
-                    unprotected_regex.append(item)
-                for item in _get_setting(app_settings, 'protected_uris'):
-                    if item[-1:] == '/':
-                        item = item[:-1]
-                    protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-                for item in _get_setting(app_settings, 'protected_regex'):
-                    protected_regex.append(item)
-                if 'redirected_urls' in app_settings:
-                    redirected_urls.update(app_settings['redirected_urls'])
-                if 'redirected_regex' in app_settings:
-                    redirected_regex.update(app_settings['redirected_regex'])
+        with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
+            app_settings = yaml.load(f)
+
+            if 'no_sso' in app_settings:
+                continue
+
+            for item in _get_setting(app_settings, 'skipped_uris'):
+                if item[-1:] == '/':
+                    item = item[:-1]
+                skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
+            for item in _get_setting(app_settings, 'skipped_regex'):
+                skipped_regex.append(item)
+            for item in _get_setting(app_settings, 'unprotected_uris'):
+                if item[-1:] == '/':
+                    item = item[:-1]
+                unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
+            for item in _get_setting(app_settings, 'unprotected_regex'):
+                unprotected_regex.append(item)
+            for item in _get_setting(app_settings, 'protected_uris'):
+                if item[-1:] == '/':
+                    item = item[:-1]
+                protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
+            for item in _get_setting(app_settings, 'protected_regex'):
+                protected_regex.append(item)
+            if 'redirected_urls' in app_settings:
+                redirected_urls.update(app_settings['redirected_urls'])
+            if 'redirected_regex' in app_settings:
+                redirected_regex.update(app_settings['redirected_regex'])
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
@@ -1343,7 +1344,8 @@ def app_ssowatconf(auth):
         'protected_regex': protected_regex,
         'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
-        'users': users,
+        'users': {username: app_map(user=username)
+                  for username in user_list(auth)['users'].keys()},
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
