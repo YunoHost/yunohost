@@ -1693,3 +1693,6 @@ log:
                     help: Number of lines to display
                     default: 50
                     type: int
+                --share:
+                    help: Share the full log using yunopaste
+                    action: store_true

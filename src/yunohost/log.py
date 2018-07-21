@@ -36,6 +36,7 @@ from sys import exc_info
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
@@ -103,7 +104,7 @@ def log_list(category=[], limit=None):
     return result
 
 
-def log_display(path, number=50):
+def log_display(path, number=50, share=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -113,6 +114,7 @@ def log_display(path, number=50):
     Argument:
         file_name
         number
+        share
     """
 
     # Normalize log/metadata paths and filenames
@@ -146,6 +148,17 @@ def log_display(path, number=50):
     if base_path.startswith(CATEGORIES_PATH):
         infos["description"] = _get_description_from_name(base_filename)
         infos['name'] = base_filename
+
+    if share:
+        from yunohost.utils.yunopaste import yunopaste
+        content = ""
+        if os.path.exists(md_path):
+            content += read_file(md_path)
+            content += "\n============\n\n"
+        if os.path.exists(log_path):
+            content += read_file(log_path)
+
+        return yunopaste(content)
 
     # Display metadata if exist
     if os.path.exists(md_path):
