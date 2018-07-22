@@ -304,6 +304,7 @@
     "port_already_opened": "Port {port:d} is already opened for {ip_version:s} connections",
     "port_available": "Port {port:d} is available",
     "port_unavailable": "Port {port:d} is not available",
+    "recommend_to_add_first_user": "The post-install is finished but YunoHost needs at least one user to work correctly, you should add one using 'yunohost user create' or the admin interface.",
     "restore_action_required": "You must specify something to restore",
     "restore_already_installed_app": "An app is already installed with the id '{app:s}'",
     "restore_app_failed": "Unable to restore the app '{app:s}'",

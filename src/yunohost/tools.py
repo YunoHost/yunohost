@@ -408,6 +408,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
 
+    logger.warning(m18n.n('recommend_to_add_first_user'))
+
 
 def tools_update(ignore_apps=False, ignore_packages=False):
     """
