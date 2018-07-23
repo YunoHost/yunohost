@@ -1325,6 +1325,7 @@ def app_ssowatconf(auth):
 
     # Authorize ACME challenge url
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
+    skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
     conf_dict = {
         'portal_domain': main_domain,
