@@ -234,14 +234,14 @@ def _is_inside_container():
     Returns True or False
     """
 
-    # See https://stackoverflow.com/a/37016302
-    p = subprocess.Popen("sudo cat /proc/1/sched".split(),
+    # See https://www.2daygeek.com/check-linux-system-physical-virtual-machine-virtualization-technology/
+    p = subprocess.Popen("sudo systemd-detect-virt".split(),
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
-
-    return out.split()[1] != "(1,"
+    container = ['lxc','lxd','docker']
+    return out.split()[0] in container
 
 
 def tools_postinstall(domain, password, ignore_dyndns=False):
