@@ -745,7 +745,8 @@ def _tail(file, n):
         previous_log_file = _find_previous_log_file(file)
         if previous_log_file is not None:
             lines = _tail(previous_log_file, to_read - len(lines)) + lines
-    return lines[-to_read:offset and -offset or None]
+
+    return lines
 
 
 def _find_previous_log_file(file):
