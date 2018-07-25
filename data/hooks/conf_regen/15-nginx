@@ -66,7 +66,7 @@ do_pre_regen() {
   done
 
   # remove old mail-autoconfig files
-  autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml)
+  autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2>/dev/null || true)
   for file in $autoconfig_files; do
     domain=$(basename $(readlink -f $(dirname $file)/../..))
     [[ $domain_list =~ $domain ]] \
