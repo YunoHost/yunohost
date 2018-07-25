@@ -57,10 +57,10 @@ def log_list(category=[], limit=None):
     """
 
     categories = category
+    is_api = msettings.get('interface') == 'api'
 
     # In cli we just display `operation` logs by default
     if not categories:
-        is_api = msettings.get('interface') == 'api'
         categories = ["operation"] if not is_api else CATEGORIES
 
     result = collections.OrderedDict()
@@ -100,6 +100,11 @@ def log_list(category=[], limit=None):
                 entry["started_at"] = log_datetime
 
             result[category].append(entry)
+
+    # Reverse the order of log when in cli, more comfortable to read (avoid unecessary scrolling)
+    if not is_api:
+        for category in result:
+            result[category] = list(reversed(result[category]))
 
     return result
 
