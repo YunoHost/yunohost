@@ -36,7 +36,11 @@ def get_public_ip(protocol=4):
     else:
         raise ValueError("invalid protocol version")
 
-    return download_text(url, timeout=30).strip()
+    try:
+        return download_text(url, timeout=30).strip()
+    except Exception as e:
+        logger.debug("Could not get public IPv%s : %s" % (str(protocol), str(e)))
+        return None
 
 
 def get_network_interfaces():
