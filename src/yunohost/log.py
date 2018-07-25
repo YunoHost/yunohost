@@ -158,7 +158,13 @@ def log_display(path, number=50, share=False):
         if os.path.exists(log_path):
             content += read_file(log_path)
 
-        return yunopaste(content)
+        url = yunopaste(content)
+
+        logger.info(m18n.n("log_available_on_yunopaste", url=url))
+        if msettings.get('interface') == 'api':
+            return { "url" : url }
+        else:
+            return
 
     # Display metadata if exist
     if os.path.exists(md_path):

@@ -225,6 +225,7 @@
     "log_app_remove": "Remove '{}' application",
     "log_app_upgrade": "Upgrade '{}' application",
     "log_app_makedefault": "Make '{}' as default application",
+    "log_available_on_yunopaste": "This log is now available via {url}",
     "log_backup_restore_system": "Restore system from a backup archive",
     "log_backup_restore_app": "Restore '{}' from a backup archive",
     "log_remove_on_failed_restore": "Remove '{}' after a failed restore from a backup archive",
