@@ -2014,13 +2014,12 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
-    try:
-        action_args = manifest['arguments'][action]
-    except KeyError:
+    if action not in manifest['arguments']:
         logger.debug("no arguments found for '%s' in manifest", action)
         return OrderedDict()
-    else:
-        return _parse_action_args_in_yunohost_format(args, action_args, auth)
+
+    action_args = manifest['arguments'][action]
+    return _parse_action_args_in_yunohost_format(args, action_args, auth)
 
 
 def _parse_args_for_action(action, args={}, auth=None):
