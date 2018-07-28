@@ -2018,6 +2018,7 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         action_args = manifest['arguments'][action]
     except KeyError:
         logger.debug("no arguments found for '%s' in manifest", action)
+        return OrderedDict()
     else:
         return _parse_action_args_in_yunohost_format(args, action_args, auth)
 
