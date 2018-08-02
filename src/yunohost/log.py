@@ -412,7 +412,7 @@ class UnitOperation(object):
                 msg = m18n.n('log_link_to_log', name=self.name, desc=desc)
             else:
                 msg = m18n.n('log_help_to_get_log', name=self.name, desc=desc)
-            logger.info(msg)
+            logger.debug(msg)
         else:
             if is_api:
                 msg = "<strong>" + m18n.n('log_link_to_failed_log',
