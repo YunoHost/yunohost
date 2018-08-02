@@ -419,7 +419,7 @@ class UnitOperation(object):
                                         name=self.name, desc=desc) + "</strong>"
             else:
                 msg = m18n.n('log_help_to_get_failed_log', name=self.name, desc=desc)
-            logger.warning(msg)
+            logger.info(msg)
         self.flush()
         return msg
 
