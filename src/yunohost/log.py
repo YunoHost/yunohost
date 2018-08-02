@@ -354,10 +354,7 @@ class UnitOperation(object):
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
         if self.related_to:
-            if isinstance(self.related_to[0], tuple):
-                name += [self.related_to[0][1]]
-            else:
-                name += self.related_to[0].values()
+            name += [self.related_to[0][1]]
         self._name = '-'.join(name)
         return self._name
 

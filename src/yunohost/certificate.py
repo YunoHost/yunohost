@@ -284,7 +284,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # Actual install steps
     for domain in domain_list:
 
-        uo = UnitOperation('letsencrypt_cert_install', [{'domain': domain}],
+        uo = UnitOperation('letsencrypt_cert_install', [('domain': domain)],
                            args={'force': force, 'no_checks': no_checks,
                                  'staging': staging})
         uo.start()
@@ -385,7 +385,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     # Actual renew steps
     for domain in domain_list:
 
-        uo = UnitOperation('letsencrypt_cert_renew', [{'domain': domain}],
+        uo = UnitOperation('letsencrypt_cert_renew', [('domain': domain)],
                            args={'force': force, 'no_checks': no_checks,
                                  'staging': staging, 'email': email})
         uo.start()
