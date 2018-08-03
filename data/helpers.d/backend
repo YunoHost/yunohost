@@ -34,7 +34,7 @@ ynh_use_logrotate () {
 	local su_directive=""
 	if [[ -n $user_group ]]; then
 		su_directive="	# Run logorotate as specific user - group
-	su ${user_group#*/} ${user_group%/*}"
+	su ${user_group%/*} ${user_group#*/}"
 	fi
 
 	cat > ./${app}-logrotate << EOF	# Build a config file for logrotate
