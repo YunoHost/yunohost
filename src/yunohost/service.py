@@ -381,7 +381,9 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
     if not dry_run:
         uo.related_to = [('service', x) for x in names]
         if not names:
-            uo.related_to = [('service', 'all')]
+            uo.name_parameter_override = 'all'
+        elif len(names) != 1:
+            uo.name_parameter_override = str(len(uo.related_to))+'_services'
         uo.start()
 
     # Clean pending conf directory

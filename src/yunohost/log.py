@@ -353,8 +353,16 @@ class UnitOperation(object):
 
         name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
         name += [self.operation]
-        if self.related_to:
-            name += [self.related_to[0][1]]
+
+        if hasattr(self, "name_parameter_override"):
+            # This is for special cases where the operation is not really unitary
+            # For instance, the regen conf cannot be logged "per service" because of
+            # the way it's built
+            name.append(self.name_parameter_override)
+        elif self.related_to:
+            # We use the name of the first related thing
+            name.append(self.related_to[0][1])
+
         self._name = '-'.join(name)
         return self._name
 
@@ -432,13 +440,16 @@ class UnitOperation(object):
         self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
 def _get_description_from_name(name):
-    parts = name.split("-")
+    parts = name.split("-", 3)
     try:
         try:
             datetime.strptime(" ".join(parts[:2]), "%Y%m%d %H%M%S")
         except ValueError:
-            return m18n.n("log_" + parts[0], *parts[1:])
+            key = "log_" + parts[0]
+            args = parts[1:]
         else:
-            return m18n.n("log_" + parts[2], *parts[3:])
+            key = "log_" + parts[2]
+            args = parts[3:]
+        return m18n.n(key, *args)
     except IndexError:
         return name
