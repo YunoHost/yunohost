@@ -22,7 +22,7 @@
     "app_location_already_used": "The app '{app}' is already installed on that location ({path})",
     "app_make_default_location_already_used": "Can't make the app '{app}' the default on the domain {domain} is already used by the other app '{other_app}'",
     "app_location_install_failed": "Unable to install the app in this location because it conflit with the app '{other_app}' already installed on '{other_path}'",
-    "app_location_unavailable": "This url is not available or conflicts with the already installed app '{app_label:s}' ({app_id:s}) on '{domain:s}{path:s}'",
+    "app_location_unavailable": "This url is not available or conflicts with the already installed app(s):\n{apps:s}",
     "app_manifest_invalid": "Invalid app manifest: {error}",
     "app_no_upgrade": "No app to upgrade",
     "app_not_correctly_installed": "{app:s} seems to be incorrectly installed",
