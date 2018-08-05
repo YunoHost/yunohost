@@ -265,7 +265,7 @@ def domain_url_available(auth, domain, path):
         path -- The path to check (e.g. /coffee)
     """
 
-    return bool(_get_conflicting_apps(auth, domain, path))
+    return len(_get_conflicting_apps(auth, domain, path)) == 0
 
 
 def _get_maindomain():
