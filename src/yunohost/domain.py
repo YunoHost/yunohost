@@ -242,20 +242,17 @@ def domain_url_available(auth, domain, path):
     apps_map = app_map(raw=True)
 
     # Loop through all apps to check if path is taken by one of them
-    available = True
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
             if path == p:
-                available = False
-                break
+                return False
             # We also don't want conflicts with other apps starting with
             # same name
             elif path.startswith(p) or p.startswith(path):
-                available = False
-                break
+                return False
 
-    return available
+    return True
 
 
 def _get_maindomain():
