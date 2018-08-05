@@ -1147,7 +1147,7 @@ def app_register_url(auth, app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from domain import domain_url_available, _normalize_domain_path
+    from domain import _get_conflicting_app, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1163,9 +1163,11 @@ def app_register_url(auth, app, domain, path):
                                   m18n.n('app_already_installed_cant_change_url'))
 
     # Check the url is available
-    if not domain_url_available(auth, domain, path):
+    path_and_app = _get_conflicting_app(auth, domain, path)
+    if not path_and_app:
+        path, app_id, app_label = path_and_app
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_location_unavailable'))
+                              m18n.n('app_location_unavailable', app_id=app_id, app_label=app_label, path=path, domain=domain))
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -2050,7 +2052,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
     """Parse arguments store in either manifest.json or actions.json
     """
     from yunohost.domain import (domain_list, _get_maindomain,
-                                 domain_url_available, _normalize_domain_path)
+                                 _get_conflicting_app, _normalize_domain_path)
     from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
@@ -2178,9 +2180,11 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
         domain, path = _normalize_domain_path(domain, path)
 
         # Check the url is available
-        if not domain_url_available(auth, domain, path):
+        path_and_app = _get_conflicting_app(auth, domain, path)
+        if not path_and_app:
+            path, app_id, app_label = path_and_app
             raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_location_unavailable'))
+                                  m18n.n('app_location_unavailable', app_id=app_id, app_label=app_label, path=path, domain=domain))
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
