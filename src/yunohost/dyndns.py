@@ -127,7 +127,6 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
     if domain is None:
         domain = _get_maindomain()
         uo.related_to.append(('domain', domain))
-    uo.start()
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
@@ -139,6 +138,8 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
     if not _dyndns_available(subscribe_host, domain):
         raise MoulinetteError(errno.ENOENT,
                               m18n.n('dyndns_unavailable', domain=domain))
+
+    uo.start()
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
@@ -217,17 +218,12 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
         return
     else:
         logger.info("Updated needed, going on...")
-        if domain is not None:
-            uo.related_to.append(('domain', domain))
 
     # If domain is not given, try to guess it from keys available...
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
-        uo.related_to.append(('domain', domain))
-        uo.start()
     # If key is not given, pick the first file we find with the domain given
     else:
-        uo.start()
         if key is None:
             keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
 
@@ -235,6 +231,9 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                 raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
 
             key = keys[0]
+
+    uo.related_to.append(('domain', domain))
+    uo.start()
 
     # This mean that hmac-md5 is used
     # (Re?)Trigger the migration to sha256 and return immediately.

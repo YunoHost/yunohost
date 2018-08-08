@@ -249,8 +249,8 @@ def _is_inside_container():
     return out.split()[1] != "(1,"
 
 
-@is_unit_operation()
-def tools_postinstall(domain, password, ignore_dyndns=False):
+@is_unit_operation(auto=False)
+def tools_postinstall(uo, domain, password, ignore_dyndns=False):
     """
     YunoHost post-install
 
@@ -299,6 +299,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     else:
         dyndns = False
 
+    uo.start()
     logger.info(m18n.n('yunohost_installing'))
 
     service_regen_conf(['nslcd', 'nsswitch'], force=True)

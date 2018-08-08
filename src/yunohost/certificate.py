@@ -162,7 +162,6 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         uo = UnitOperation('selfsigned_cert_install', [('domain', domain)],
                            args={'force': force})
-        uo.start()
 
         # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -185,6 +184,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
             if status["summary"]["code"] in ('good', 'great'):
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_replace_valid_cert', domain=domain))
+
+        uo.start()
 
         # Create output folder for new certificate stuff
         os.makedirs(new_cert_folder)
@@ -288,14 +289,14 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
         uo = UnitOperation('letsencrypt_cert_install', [('domain', domain)],
                            args={'force': force, 'no_checks': no_checks,
                                  'staging': staging})
-        uo.start()
-
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
         try:
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
+
+            uo.start()
 
             _configure_for_acme_challenge(auth, domain)
             _fetch_and_enable_new_certificate(domain, staging)
@@ -389,7 +390,6 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         uo = UnitOperation('letsencrypt_cert_renew', [('domain', domain)],
                            args={'force': force, 'no_checks': no_checks,
                                  'staging': staging, 'email': email})
-        uo.start()
 
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
@@ -397,6 +397,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         try:
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
+
+            uo.start()
 
             _fetch_and_enable_new_certificate(domain, staging)
 

@@ -99,8 +99,8 @@ def user_list(auth, fields=None):
     return {'users': users}
 
 
-@is_unit_operation('username:user')
-def user_create(auth, username, firstname, lastname, mail, password,
+@is_unit_operation('username:user', auto=False)
+def user_create(uo, auth, username, firstname, lastname, mail, password,
         mailbox_quota="0"):
     """
     Create user
@@ -135,6 +135,8 @@ def user_create(auth, username, firstname, lastname, mail, password,
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
                                      domain=mail.split("@")[1]))
+
+    uo.start()
 
     # Get random UID/GID
     all_uid = {x.pw_uid for x in pwd.getpwall()}
@@ -257,8 +259,8 @@ def user_delete(auth, username, purge=False):
     logger.success(m18n.n('user_deleted'))
 
 
-@is_unit_operation('username:user', exclude='auth,change_password')
-def user_update(auth, username, firstname=None, lastname=None, mail=None,
+@is_unit_operation('username:user', exclude='auth,change_password', auto=False)
+def user_update(uo, auth, username, firstname=None, lastname=None, mail=None,
         change_password=None, add_mailforward=None, remove_mailforward=None,
         add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
     """
@@ -358,6 +360,8 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
 
     if mailbox_quota is not None:
         new_attr_dict['mailuserquota'] = mailbox_quota
+
+    uo.start()
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
         logger.success(m18n.n('user_updated'))

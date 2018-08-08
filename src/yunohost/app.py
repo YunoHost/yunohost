@@ -191,8 +191,8 @@ def app_fetchlist(url=None, name=None):
     _write_appslist_list(appslists)
 
 
-@is_unit_operation()
-def app_removelist(name):
+@is_unit_operation(auto=False)
+def app_removelist(uo, name):
     """
     Remove list from the repositories
 
@@ -205,6 +205,8 @@ def app_removelist(name):
     # Make sure we know this appslist
     if name not in appslists.keys():
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
+
+    uo.start()
 
     # Remove json
     json_path = '%s/%s.json' % (REPO_PATH, name)

@@ -62,8 +62,8 @@ def domain_list(auth):
     return {'domains': result_list}
 
 
-@is_unit_operation()
-def domain_add(auth, domain, dyndns=False):
+@is_unit_operation(auto=False)
+def domain_add(uo, auth, domain, dyndns=False):
     """
     Create a custom domain
 
@@ -79,6 +79,8 @@ def domain_add(auth, domain, dyndns=False):
         auth.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
         raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
+
+    uo.start()
 
     # DynDNS domain
     if dyndns:
@@ -131,8 +133,8 @@ def domain_add(auth, domain, dyndns=False):
     logger.success(m18n.n('domain_created'))
 
 
-@is_unit_operation()
-def domain_remove(auth, domain, force=False):
+@is_unit_operation(auto=False)
+def domain_remove(uo, auth, domain, force=False):
     """
     Delete domains
 
@@ -163,6 +165,7 @@ def domain_remove(auth, domain, force=False):
                     raise MoulinetteError(errno.EPERM,
                                           m18n.n('domain_uninstall_app_first'))
 
+    uo.start()
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
