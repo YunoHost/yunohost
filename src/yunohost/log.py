@@ -197,7 +197,7 @@ def log_display(path, number=50, share=False):
 
     return infos
 
-def is_unit_operation(entities='app,domain,service,user', exclude='auth,password', operation_key=None, auto=True):
+def is_unit_operation(entities='app,domain,service,user', exclude='auth,password', operation_key=None):
     """
     Configure quickly a unit operation
 
@@ -218,9 +218,6 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
     well formed description you should add a translation key like this
     "log_" + operation_key in locales files.
 
-    auto        If true, start the recording. If False, the unit operation object
-    created is given to the decorated function as the first argument and you can
-    start recording at the good time.
     """
     def decorate(func):
         def func_wrapper(*args, **kwargs):
@@ -266,13 +263,10 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                     context.pop(field, None)
             uo = UnitOperation(op_key, related_to, args=context)
 
-            # Start to record or give the unit operation in argument to let the
-            # developper start the record itself
-            if auto:
-                uo.start()
             try:
-                if not auto:
-                    args = (uo,) + args
+                # Start the actual function, and give the unit operation 
+                # in argument to let the developper start the record itself
+                args = (uo,) + args
                 result = func(*args, **kwargs)
             except Exception as e:
                 uo.error(e)

@@ -113,7 +113,7 @@ def _dyndns_available(provider, domain):
     return r == u"Domain %s is available" % domain
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
@@ -175,7 +175,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
     dyndns_installcron()
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """

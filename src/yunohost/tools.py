@@ -139,7 +139,7 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def tools_maindomain(uo, auth, new_domain=None):
     """
     Check the current main domain, or change it
@@ -249,7 +249,7 @@ def _is_inside_container():
     return out.split()[1] != "(1,"
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def tools_postinstall(uo, domain, password, ignore_dyndns=False):
     """
     YunoHost post-install
@@ -473,7 +473,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     return {'packages': packages, 'apps': apps}
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def tools_upgrade(uo, auth, ignore_apps=False, ignore_packages=False):
     """
     Update apps & package cache, then display changelog
@@ -713,7 +713,7 @@ def tools_port_available(port):
         return False
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def tools_shutdown(uo, force=False):
     shutdown = force
     if not shutdown:
@@ -732,7 +732,7 @@ def tools_shutdown(uo, force=False):
         subprocess.check_call(['systemctl', 'poweroff'])
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def tools_reboot(uo, force=False):
     reboot = force
     if not reboot:

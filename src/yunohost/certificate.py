@@ -47,7 +47,7 @@ from yunohost.utils.errors import YunoHostError
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command, service_regen_conf
-from yunohost.log import is_unit_operation, UnitOperation
+from yunohost.log import UnitOperation
 
 logger = getActionLogger('yunohost.certmanager')
 

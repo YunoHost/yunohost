@@ -191,7 +191,7 @@ def app_fetchlist(url=None, name=None):
     _write_appslist_list(appslists)
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def app_removelist(uo, name):
     """
     Remove list from the repositories
@@ -429,7 +429,7 @@ def app_map(app=None, raw=False, user=None):
     return result
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def app_change_url(uo, auth, app, domain, path):
     """
     Modify the URL at which an application is installed.
@@ -681,7 +681,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
@@ -862,7 +862,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
     hook_callback('post_app_install', args=args_list, env=env_dict)
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def app_remove(uo, auth, app):
     """
     Remove app
@@ -1103,7 +1103,7 @@ def app_debug(app):
     }
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def app_makedefault(uo, auth, app, domain=None):
     """
     Redirect domain root to an app

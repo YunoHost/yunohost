@@ -62,7 +62,7 @@ def domain_list(auth):
     return {'domains': result_list}
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def domain_add(uo, auth, domain, dyndns=False):
     """
     Create a custom domain
@@ -133,7 +133,7 @@ def domain_add(uo, auth, domain, dyndns=False):
     logger.success(m18n.n('domain_created'))
 
 
-@is_unit_operation(auto=False)
+@is_unit_operation()
 def domain_remove(uo, auth, domain, force=False):
     """
     Delete domains

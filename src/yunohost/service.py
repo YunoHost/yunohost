@@ -152,7 +152,7 @@ def service_stop(names):
             logger.debug(m18n.n('service_already_stopped', service=name))
 
 @is_unit_operation()
-def service_enable(names):
+def service_enable(uo, names):
     """
     Enable one or more services
 
@@ -160,6 +160,7 @@ def service_enable(names):
         names -- Services name to enable
 
     """
+    uo.start()
     if isinstance(names, str):
         names = [names]
     for name in names:
@@ -344,7 +345,7 @@ def service_log(name, number=50):
     return result
 
 
-@is_unit_operation('names:service', auto=False)
+@is_unit_operation('names:service')
 def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """

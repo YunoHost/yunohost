@@ -51,7 +51,7 @@ from yunohost.hook import (
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 from yunohost.service import service_regen_conf
-from yunohost.log import UnitOperation, is_unit_operation
+from yunohost.log import UnitOperation
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
