@@ -42,7 +42,6 @@ from moulinette.utils.log import getActionLogger
 
 import yunohost.domain
 from yunohost.utils.network import get_public_ip
-from yunohost.utils.errors import YunoHostError
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
@@ -842,15 +841,13 @@ def _check_domain_is_ready_for_ACME(domain):
 
     # Check if IP from DNS matches public IP
     if not _dns_ip_match_public_ip(public_ip, domain):
-        raise YunoHostError(m18n.n(
-            'certmanager_domain_dns_ip_differs_from_public_ip', domain=domain),
-            log_advertisement=False)
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'certmanager_domain_dns_ip_differs_from_public_ip', domain=domain))
 
     # Check if domain seems to be accessible through HTTP?
     if not _domain_is_accessible_through_HTTP(public_ip, domain):
-        raise YunoHostError(m18n.n(
-            'certmanager_domain_http_not_working', domain=domain),
-            log_advertisement=False)
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'certmanager_domain_http_not_working', domain=domain))
 
 
 def _get_dns_ip(domain):
@@ -859,9 +856,8 @@ def _get_dns_ip(domain):
         resolver.nameservers = DNS_RESOLVERS
         answers = resolver.query(domain, "A")
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-        raise YunoHostError(m18n.n(
-            'certmanager_error_no_A_record', domain=domain),
-            log_advertisement=False)
+        raise MoulinetteError(errno.EINVAL, m18n.n(
+            'certmanager_error_no_A_record', domain=domain))
 
     return str(answers[0])
 
