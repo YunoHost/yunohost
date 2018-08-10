@@ -40,13 +40,14 @@ from moulinette.utils.filesystem import read_file
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
-CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', \
+CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service',
               'app']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
 RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
+
 
 def log_list(category=[], limit=None):
     """
@@ -73,7 +74,8 @@ def log_list(category=[], limit=None):
 
             continue
 
-        logs = filter(lambda x: x.endswith(METADATA_FILE_EXT), os.listdir(category_path))
+        logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
+                      os.listdir(category_path))
         logs = reversed(sorted(logs))
 
         if limit is not None:
@@ -93,7 +95,8 @@ def log_list(category=[], limit=None):
             }
             entry["description"] = _get_description_from_name(base_filename)
             try:
-                log_datetime = datetime.strptime(" ".join(log[:2]), "%Y%m%d %H%M%S")
+                log_datetime = datetime.strptime(" ".join(log[:2]),
+                                                 "%Y%m%d %H%M%S")
             except ValueError:
                 pass
             else:
@@ -101,7 +104,8 @@ def log_list(category=[], limit=None):
 
             result[category].append(entry)
 
-    # Reverse the order of log when in cli, more comfortable to read (avoid unecessary scrolling)
+    # Reverse the order of log when in cli, more comfortable to read (avoid
+    # unecessary scrolling)
     if not is_api:
         for category in result:
             result[category] = list(reversed(result[category]))
@@ -131,7 +135,7 @@ def log_display(path, number=50, share=False):
             if os.path.exists(abs_path) or os.path.exists(abs_path + METADATA_FILE_EXT):
                 break
 
-    if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT) :
+    if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT):
         log_path = abs_path
 
     if abs_path.endswith(METADATA_FILE_EXT) or abs_path.endswith(LOG_FILE_EXT):
@@ -167,7 +171,7 @@ def log_display(path, number=50, share=False):
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
         if msettings.get('interface') == 'api':
-            return { "url" : url }
+            return {"url": url}
         else:
             return
 
@@ -191,27 +195,27 @@ def log_display(path, number=50, share=False):
     if os.path.exists(log_path):
         from yunohost.service import _tail
         logs = _tail(log_path, int(number))
-        #logs = [{"datetime": x.split(": ", 1)[0].replace("_", " "), "line": x.split(": ", 1)[1]}  for x in logs if x]
         infos['log_path'] = log_path
         infos['logs'] = logs
 
     return infos
+
 
 def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
                       exclude=['auth', 'password'], operation_key=None):
     """
     Configure quickly a unit operation
 
-    This decorator help you to configure quickly the record of a unit operations.
+    This decorator help you to configure the record of a unit operations.
 
     Argument:
-    entities    A list of entity types related to the unit operation. The entity
+    entities   A list of entity types related to the unit operation. The entity
     type is searched inside argument's names of the decorated function. If
     something match, the argument value is added as related entity. If the
     argument name is different you can specify it with a tuple
     (argname, entity_type) instead of just put the entity type.
 
-    exclude     Remove some arguments from the context. By default, arguments
+    exclude    Remove some arguments from the context. By default, arguments
     called 'password' and 'auth' are removed. If an argument is an object, you
     need to exclude it or create manually the unit operation without this
     decorator.
@@ -279,14 +283,15 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
         return func_wrapper
     return decorate
 
+
 class UnitOperation(object):
     """
-    Instances of this class represents unit operation the yunohost admin as done.
+    Instances of this class represents unit operation done on the ynh instance.
 
-    Each time an action of the yunohost cli/api change the system, one or several
-    unit operations should be registered.
+    Each time an action of the yunohost cli/api change the system, one or
+    several unit operations should be registered.
 
-    This class record logs and some metadata like context or start time/end time.
+    This class record logs and metadata like context or start time/end time.
     """
 
     def __init__(self, operation, related_to=None, **kwargs):
@@ -351,9 +356,9 @@ class UnitOperation(object):
         name += [self.operation]
 
         if hasattr(self, "name_parameter_override"):
-            # This is for special cases where the operation is not really unitary
-            # For instance, the regen conf cannot be logged "per service" because of
-            # the way it's built
+            # This is for special cases where the operation is not really
+            # unitary. For instance, the regen conf cannot be logged "per
+            # service" because of the way it's built
             name.append(self.name_parameter_override)
         elif self.related_to:
             # We use the name of the first related thing
@@ -379,7 +384,7 @@ class UnitOperation(object):
             data['success'] = self._success
             if self.error is not None:
                 data['error'] = self._error
-                # TODO: detect if 'extra' erase some key of 'data'
+        # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
         return data
 
@@ -420,9 +425,10 @@ class UnitOperation(object):
         else:
             if is_api:
                 msg = "<strong>" + m18n.n('log_link_to_failed_log',
-                                        name=self.name, desc=desc) + "</strong>"
+                                    name=self.name, desc=desc) + "</strong>"
             else:
-                msg = m18n.n('log_help_to_get_failed_log', name=self.name, desc=desc)
+                msg = m18n.n('log_help_to_get_failed_log', name=self.name,
+                             desc=desc)
             logger.info(msg)
         self.flush()
         return msg
@@ -435,7 +441,12 @@ class UnitOperation(object):
         """
         self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
+
 def _get_description_from_name(name):
+    """
+    Return the translated description from the filename
+    """
+
     parts = name.split("-", 3)
     try:
         try:
