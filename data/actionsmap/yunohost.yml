@@ -771,6 +771,56 @@ app:
                 apps:
                     nargs: "+"
 
+    subcategories:
+
+      action:
+          subcategory_help: Handle apps actions
+          actions:
+
+              ### app_action_list()
+              list:
+                  action_help: List app actions
+                  api: GET /apps/<app_id>/actions
+                  arguments:
+                    app_id:
+                        help: app id
+
+              ### app_action_run()
+              run:
+                  action_help: Run app action
+                  api: PUT /apps/<app_id>/actions/<action>
+                  arguments:
+                    app_id:
+                        help: app id
+                    action:
+                        help: action id
+                    -a:
+                        full: --args
+                        help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+
+      config:
+          subcategory_help: Applications configuration panel
+          actions:
+
+              ### app_config_show_panel()
+              show-panel:
+                  action_help: show config panel for the application
+                  api: GET /apps/<app_id>/config-panel
+                  arguments:
+                      app_id:
+                          help: App ID
+
+              ### app_config_apply()
+              apply:
+                  action_help: apply the new configuration
+                  api: POST /apps/<app_id>/config
+                  arguments:
+                      app_id:
+                          help: App ID
+                      -a:
+                          full: --args
+                          help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+
 #############################
 #          Backup           #
 #############################

@@ -239,14 +239,14 @@ def _is_inside_container():
     Returns True or False
     """
 
-    # See https://stackoverflow.com/a/37016302
-    p = subprocess.Popen("sudo cat /proc/1/sched".split(),
+    # See https://www.2daygeek.com/check-linux-system-physical-virtual-machine-virtualization-technology/
+    p = subprocess.Popen("sudo systemd-detect-virt".split(),
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
-
-    return out.split()[1] != "(1,"
+    container = ['lxc','lxd','docker']
+    return out.split()[0] in container
 
 
 @is_unit_operation()
@@ -336,7 +336,7 @@ def tools_postinstall(uo, domain, password, ignore_dyndns=False):
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+                              m18n.n('ssowat_persistent_conf_read_error', error=str(e)))
     except IOError:
         ssowat_conf = {}
 
@@ -350,7 +350,7 @@ def tools_postinstall(uo, domain, password, ignore_dyndns=False):
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
         raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+                              m18n.n('ssowat_persistent_conf_write_error', error=str(e)))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -414,6 +414,8 @@ def tools_postinstall(uo, domain, password, ignore_dyndns=False):
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
+
+    logger.warning(m18n.n('recommend_to_add_first_user'))
 
 
 def tools_update(ignore_apps=False, ignore_packages=False):

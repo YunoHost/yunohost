@@ -36,7 +36,6 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
 
@@ -114,7 +113,6 @@ def user_create(uo, auth, username, firstname, lastname, mail, password,
         mailbox_quota -- Mailbox size quota
 
     """
-    import pwd
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
