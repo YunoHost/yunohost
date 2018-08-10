@@ -197,42 +197,41 @@ def log_display(path, number=50, share=False):
 
     return infos
 
-def is_unit_operation(entities='app,domain,service,user', exclude='auth,password', operation_key=None):
+def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
+                      exclude=['auth', 'password'], operation_key=None):
     """
     Configure quickly a unit operation
 
     This decorator help you to configure quickly the record of a unit operations.
 
     Argument:
-    entities    A list seperated by coma of entity types related to the unit
-    operation. The entity type is searched inside argument's names of the
-    decorated function. If something match, the argument value is added as
-    related entity.
+    entities    A list of entity types related to the unit operation. The entity
+    type is searched inside argument's names of the decorated function. If
+    something match, the argument value is added as related entity. If the
+    argument name is different you can specify it with a tuple
+    (argname, entity_type) instead of just put the entity type.
 
     exclude     Remove some arguments from the context. By default, arguments
     called 'password' and 'auth' are removed. If an argument is an object, you
     need to exclude it or create manually the unit operation without this
     decorator.
 
-    operation_key   Key describing the unit operation. If you want to display a
-    well formed description you should add a translation key like this
-    "log_" + operation_key in locales files.
+    operation_key   A key to describe the unit operation log used to create the
+    filename and search a translation. Please ensure that this key prefixed by
+    'log_' is present in locales/en.json otherwise it won't be translatable.
 
     """
     def decorate(func):
         def func_wrapper(*args, **kwargs):
-            # For a strange reason we can't use directly the arguments from
-            # is_unit_operation function. We need to store them in a var before.
-            entities_list = entities.split(',')
-            exclude_list = exclude.split(',')
             op_key = operation_key
-            related_to = []
-
             if op_key is None:
                 op_key = func.__name__
 
-            # In case the function is called directly from an other part of the
-            # code
+            # If the function is called directly from an other part of the code
+            # and not by the moulinette framework, we need to complete kwargs
+            # dictionnary with the args list.
+            # Indeed, we use convention naming in this decorator and we need to
+            # know name of each args (so we need to use kwargs instead of args)
             if len(args) > 0:
                 from inspect import getargspec
                 keys = getargspec(func).args
@@ -243,10 +242,13 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
                 args = ()
 
             # Search related entity in arguments of the decorated function
-            for entity in entities_list:
-                entity = entity.split(':')
-                entity_type = entity[-1]
-                entity = entity[0]
+            related_to = []
+            for entity in entities:
+                if isinstance(entity, tuple):
+                    entity_type = entity[1]
+                    entity = entity[0]
+                else:
+                    entity_type = entity
 
                 if entity in kwargs and kwargs[entity] is not None:
                     if isinstance(kwargs[entity], basestring):
@@ -258,13 +260,13 @@ def is_unit_operation(entities='app,domain,service,user', exclude='auth,password
             context = kwargs.copy()
 
             # Exclude unappropriate data from the context
-            for field in exclude_list:
+            for field in exclude:
                 if field in context:
                     context.pop(field, None)
             uo = UnitOperation(op_key, related_to, args=context)
 
             try:
-                # Start the actual function, and give the unit operation 
+                # Start the actual function, and give the unit operation
                 # in argument to let the developper start the record itself
                 args = (uo,) + args
                 result = func(*args, **kwargs)

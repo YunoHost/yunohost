@@ -345,7 +345,7 @@ def service_log(name, number=50):
     return result
 
 
-@is_unit_operation('names:service')
+@is_unit_operation([('names', 'service')])
 def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
