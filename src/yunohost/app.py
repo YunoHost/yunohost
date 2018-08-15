@@ -1147,7 +1147,7 @@ def app_register_url(auth, app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from domain import domain_url_available, _normalize_domain_path
+    from domain import _get_conflicting_apps, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1163,9 +1163,18 @@ def app_register_url(auth, app, domain, path):
                                   m18n.n('app_already_installed_cant_change_url'))
 
     # Check the url is available
-    if not domain_url_available(auth, domain, path):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_location_unavailable'))
+    conflicts = _get_conflicting_apps(auth, domain, path)
+    if conflicts:
+        apps = []
+        for path, app_id, app_label in conflicts:
+            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                domain=domain,
+                path=path,
+                app_id=app_id,
+                app_label=app_label,
+            ))
+
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -2053,7 +2062,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
     """Parse arguments store in either manifest.json or actions.json
     """
     from yunohost.domain import (domain_list, _get_maindomain,
-                                 domain_url_available, _normalize_domain_path)
+                                 _get_conflicting_apps, _normalize_domain_path)
     from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
@@ -2181,9 +2190,18 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
         domain, path = _normalize_domain_path(domain, path)
 
         # Check the url is available
-        if not domain_url_available(auth, domain, path):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_location_unavailable'))
+        conflicts = _get_conflicting_apps(auth, domain, path)
+        if conflicts:
+            apps = []
+            for path, app_id, app_label in conflicts:
+                apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                    domain=domain,
+                    path=path,
+                    app_id=app_id,
+                    app_label=app_label,
+                ))
+
+            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', "\n".join(apps=apps)))
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)

@@ -219,9 +219,9 @@ def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
-def domain_url_available(auth, domain, path):
+def _get_conflicting_apps(auth, domain, path):
     """
-    Check availability of a web path
+    Return a list of all conflicting apps with a domain/path (it can be empty)
 
     Keyword argument:
         domain -- The domain for the web path (e.g. your.domain.tld)
@@ -242,20 +242,30 @@ def domain_url_available(auth, domain, path):
     apps_map = app_map(raw=True)
 
     # Loop through all apps to check if path is taken by one of them
-    available = True
+    conflicts = []
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
             if path == p:
-                available = False
-                break
+                conflicts.append((p, a["id"], a["label"]))
             # We also don't want conflicts with other apps starting with
             # same name
             elif path.startswith(p) or p.startswith(path):
-                available = False
-                break
+                conflicts.append((p, a["id"], a["label"]))
 
-    return available
+    return conflicts
+
+
+def domain_url_available(auth, domain, path):
+    """
+    Check availability of a web path
+
+    Keyword argument:
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
+    """
+
+    return len(_get_conflicting_apps(auth, domain, path)) == 0
 
 
 def _get_maindomain():
