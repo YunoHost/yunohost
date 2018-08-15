@@ -1181,7 +1181,7 @@ def app_checkurl(auth, url, app=None):
 
     """
 
-    logger.warning(m18n.n("app_checkurl_is_deprecated"))
+    logger.error("Packagers /!\\ : 'app checkurl' is deprecated ! Please use the helper 'ynh_webpath_register' instead !")
 
     from yunohost.domain import domain_list
 
@@ -1238,6 +1238,9 @@ def app_initdb(user, password=None, db=None, sql=None):
         sql -- Initial SQL file
 
     """
+
+    logger.error("Packagers /!\\ : 'app initdb' is deprecated ! Please use the helper 'ynh_mysql_setup_db' instead !")
+
     if db is None:
         db = user
 
