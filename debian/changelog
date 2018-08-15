@@ -1,3 +1,31 @@
+yunohost (3.1.0) stable; urgency=low
+
+  Highlights
+  ==========
+
+  * Add MUA autoconfiguration (e.g. for Thunderbird) (#495)
+  * Experimental : Configuration panel for applications (#488)
+  * Experimental : Allow applications to ship custom actions (#486, #505)
+
+  Other fixes / improvements
+  ==========================
+
+  * Fix an issue with mail permission after restoring them (#496)
+  * Optimize imports in certificate.py (#497)
+  * Add timeout to get_public_ip so that 'dyndns update' don't get stuck (#502)
+  * Use human-friendly choices for booleans during apps installations (#498)
+  * Fix the way we detect we're inside a container (#508)
+  * List existing users during app install if the app ask for a user (#506)
+  * Allow apps to tell they don't want to be displayed in the SSO (#507)
+  * After postinstall, advice the admin to create a first user (#510)
+  * Disable checks in acme_tiny lib is --no-checks is used (#509)
+  * Better UX in case of url conflicts when installing app (#512)
+  * Misc fixes / improvements
+
+ Thanks to all contributors : pitchum, ljf, Bram, Josue, Aleks !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 15 Aug 2018 21:34:00 +0000
+
 yunohost (3.0.0.1) stable; urgency=low
 
   * Fix remaining use of --verbose and --ignore-system during backup/restore
