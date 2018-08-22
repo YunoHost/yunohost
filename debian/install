@@ -3,6 +3,7 @@ sbin/* /usr/sbin/
 data/bash-completion.d/yunohost /etc/bash_completion.d/
 data/actionsmap/* /usr/share/moulinette/actionsmap/
 data/hooks/* /usr/share/yunohost/hooks/
+data/other/yunoprompt.service /etc/systemd/system/
 data/other/* /usr/share/yunohost/yunohost-config/moulinette/
 data/templates/* /usr/share/yunohost/templates/
 data/helpers /usr/share/yunohost/

@@ -46,7 +46,15 @@ ynh_backup() {
     local SRC_PATH="$1"
     local DEST_PATH="${2:-}"
     local IS_BIG="${3:-0}"
+    BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
 
+    # If backing up core only (used by ynh_backup_before_upgrade),
+    # don't backup big data items
+    if [ "$IS_BIG" == "1" ] && [ "$BACKUP_CORE_ONLY" == "1" ] ; then
+      echo "$SRC_PATH will not be saved, because backup_core_only is set." >&2
+      return 0
+    fi
+    
     # ==============================================================================
     # Format correctly source and destination paths
     # ==============================================================================
@@ -136,6 +144,8 @@ ynh_restore () {
 
 # Return the path in the archive where has been stocked the origin path
 #
+# [internal]
+#
 # usage: _get_archive_path ORIGIN_PATH
 _get_archive_path () {
     # For security reasons we use csv python library to read the CSV
@@ -165,6 +175,9 @@ with open(sys.argv[1], 'r') as backup_file:
 # the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
 # the archive, the destination will be searched into backup.csv
 #
+# If DEST_PATH already exists and is lighter than 500 Mo, a backup will be made in 
+# /home/yunohost.conf/backup/. Otherwise, the existing file is removed.
+#
 # examples:
 # ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
 # # if apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf exists, restore it into
@@ -180,12 +193,26 @@ ynh_restore_file () {
     local ARCHIVE_PATH="$YNH_CWD${ORIGIN_PATH}"
     # Default value for DEST_PATH = /$ORIGIN_PATH
     local DEST_PATH="${2:-$ORIGIN_PATH}"
-    
+
     # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
     if [ ! -d "$ARCHIVE_PATH" ] && [ ! -f "$ARCHIVE_PATH" ] && [ ! -L "$ARCHIVE_PATH" ]; then
         ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
     fi
-    
+
+    # Move the old directory if it already exists
+    if [[ -e "${DEST_PATH}" ]]
+    then
+        # Check if the file/dir size is less than 500 Mo
+        if [[ $(du -sb ${DEST_PATH} | cut -d"/" -f1) -le "500000000" ]]
+        then
+            local backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
+            mkdir -p "$(dirname "$backup_file")"
+            mv "${DEST_PATH}" "$backup_file"	# Move the current file or directory
+        else
+            ynh_secure_remove ${DEST_PATH}
+        fi
+    fi
+
     # Restore ORIGIN_PATH into DEST_PATH
     mkdir -p $(dirname "$DEST_PATH")
 
@@ -203,6 +230,9 @@ ynh_restore_file () {
 }
 
 # Deprecated helper since it's a dangerous one!
+#
+# [internal]
+#
 ynh_bind_or_cp() {
     local AS_ROOT=${3:-0}
     local NO_ROOT=0
@@ -212,6 +242,8 @@ ynh_bind_or_cp() {
 }
 
 # Create a directory under /tmp
+#
+# [internal]
 #
 # Deprecated helper
 #
@@ -258,7 +290,7 @@ ynh_backup_if_checksum_is_different () {
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
 		then	# If the checksum is now different
-			backup_file="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+			local backup_file="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
 			sudo mkdir -p "$(dirname "$backup_file")"
 			sudo cp -a "$file" "$backup_file"	# Backup the current file
 			echo "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file" >&2
@@ -272,8 +304,8 @@ ynh_backup_if_checksum_is_different () {
 # usage: ynh_secure_remove path_to_remove
 # | arg: path_to_remove - File or directory to remove
 ynh_secure_remove () {
-	path_to_remove=$1
-	forbidden_path=" \
+	local path_to_remove=$1
+	local forbidden_path=" \
 	/var/www \
 	/home/yunohost.app"
 

@@ -27,9 +27,9 @@ import os
 import re
 import json
 import glob
+import time
 import base64
 import errno
-import requests
 import subprocess
 
 from moulinette import m18n
@@ -38,13 +38,22 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
 
-from yunohost.domain import get_public_ips, _get_maindomain, _build_dns_conf
+from yunohost.domain import _get_maindomain, _build_dns_conf
+from yunohost.utils.network import get_public_ip
 
 logger = getActionLogger('yunohost.dyndns')
 
 OLD_IPV4_FILE = '/etc/yunohost/dyndns/old_ip'
 OLD_IPV6_FILE = '/etc/yunohost/dyndns/old_ipv6'
 DYNDNS_ZONE = '/etc/yunohost/dyndns/zone'
+
+RE_DYNDNS_PRIVATE_KEY_MD5 = re.compile(
+    r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
+)
+
+RE_DYNDNS_PRIVATE_KEY_SHA512 = re.compile(
+    r'.*/K(?P<domain>[^\s\+]+)\.\+165.+\.private$'
+)
 
 
 def _dyndns_provides(provider, domain):
@@ -129,28 +138,30 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
-            os.makedirs('/etc/yunohost/dyndns')
+            if not os.path.exists('/etc/yunohost/dyndns'):
+                os.makedirs('/etc/yunohost/dyndns')
 
-            logger.info(m18n.n('dyndns_key_generating'))
+            logger.debug(m18n.n('dyndns_key_generating'))
 
             os.system('cd /etc/yunohost/dyndns && '
-                      'dnssec-keygen -a hmac-md5 -b 128 -r /dev/urandom -n USER %s' % domain)
+                      'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
         key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]
         with open(key_file) as f:
-            key = f.readline().strip().split(' ')[-1]
+            key = f.readline().strip().split(' ', 6)[-1]
 
+    import requests # lazy loading this module for performance reasons
     # Send subscription
     try:
-        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain})
+        r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:
         try:
             error = json.loads(r.text)['error']
         except:
-            error = "Server error"
+            error = "Server error, code: %s. (Message: \"%s\")" % (r.status_code, r.text)
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_registration_failed', error=error))
 
@@ -183,7 +194,8 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         old_ipv6 = read_file(OLD_IPV6_FILE).rstrip()
 
     # Get current IPv4 and IPv6
-    (ipv4_, ipv6_) = get_public_ips()
+    ipv4_ = get_public_ip()
+    ipv6_ = get_public_ip(6)
 
     if ipv4 is None:
         ipv4 = ipv4_
@@ -212,6 +224,22 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
             raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
 
         key = keys[0]
+
+    # This mean that hmac-md5 is used
+    # (Re?)Trigger the migration to sha256 and return immediately.
+    # The actual update will be done in next run.
+    if "+157" in key:
+        from yunohost.tools import _get_migration_by_name
+        migration = _get_migration_by_name("migrate_to_tsig_sha256")
+        try:
+            migration.migrate(dyn_host, domain, key)
+        except Exception as e:
+            logger.error(m18n.n('migrations_migration_has_failed',
+                                exception=e,
+                                number=migration.number,
+                                name=migration.name),
+                                exc_info=1)
+        return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
     host = domain.split('.')[1:]
@@ -245,6 +273,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
+            record["value"] = record["value"].replace(";","\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")
@@ -259,7 +288,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     # to nsupdate as argument
     write_to_file(DYNDNS_ZONE, '\n'.join(lines))
 
-    logger.info("Now pushing new conf to DynDNS host...")
+    logger.debug("Now pushing new conf to DynDNS host...")
 
     try:
         command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
@@ -313,15 +342,13 @@ def _guess_current_dyndns_domain(dyn_host):
     dynette...)
     """
 
-    re_dyndns_private_key = re.compile(
-        r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
-    )
-
     # Retrieve the first registered domain
     for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
-        match = re_dyndns_private_key.match(path)
+        match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
         if not match:
-            continue
+            match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
+            if not match:
+                continue
         _domain = match.group('domain')
 
         # Verify if domain is registered (i.e., if it's available, skip

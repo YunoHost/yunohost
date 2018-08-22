@@ -43,7 +43,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name
+    app_info, _is_installed, _parse_app_instance_name, _patch_php5
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -577,7 +577,7 @@ class BackupManager():
         if system_targets == []:
             return
 
-        logger.info(m18n.n('backup_running_hooks'))
+        logger.debug(m18n.n('backup_running_hooks'))
 
         # Prepare environnement
         env_dict = self._get_env_var()
@@ -665,7 +665,7 @@ class BackupManager():
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
         settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
-        logger.info(m18n.n('backup_running_app_script', app=app))
+        logger.debug(m18n.n('backup_running_app_script', app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0750, True, uid='admin')
@@ -722,9 +722,9 @@ class BackupManager():
         """Apply backup methods"""
 
         for method in self.methods:
-            logger.info(m18n.n('backup_applying_method_' + method.method_name))
+            logger.debug(m18n.n('backup_applying_method_' + method.method_name))
             method.mount_and_backup(self)
-            logger.info(m18n.n('backup_method_' + method.method_name + '_finished'))
+            logger.debug(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def _compute_backup_size(self):
         """
@@ -1111,10 +1111,57 @@ class RestoreManager():
 
         try:
             self._postinstall_if_needed()
+
+            # Apply dirty patch to redirect php5 file on php7
+            self._patch_backup_csv_file()
+
+
             self._restore_system()
             self._restore_apps()
         finally:
             self.clean()
+
+    def _patch_backup_csv_file(self):
+        """
+        Apply dirty patch to redirect php5 file on php7
+        """
+
+        backup_csv = os.path.join(self.work_dir, 'backup.csv')
+
+        if not os.path.isfile(backup_csv):
+            return
+
+        try:
+            contains_php5 = False
+            with open(backup_csv) as csvfile:
+                reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
+                newlines = []
+                for row in reader:
+                    if 'php5' in row['source']:
+                        contains_php5 = True
+                        row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
+                            .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
+                            .replace('php5','php7')
+
+                    newlines.append(row)
+        except (IOError, OSError, csv.Error) as e:
+            raise MoulinetteError(errno.EIO,m18n.n('error_reading_file',
+                                                   file=backup_csv,
+                                                   error=str(e)))
+
+        if not contains_php5:
+            return
+
+        try:
+            with open(backup_csv, 'w') as csvfile:
+                writer = csv.DictWriter(csvfile,
+                                        fieldnames=['source', 'dest'],
+                                        quoting=csv.QUOTE_ALL)
+                for row in newlines:
+                    writer.writerow(row)
+        except (IOError, OSError, csv.Error) as e:
+            logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
+                                  error=str(e)))
 
     def _restore_system(self):
         """ Restore user and system parts """
@@ -1125,7 +1172,7 @@ class RestoreManager():
         if system_targets == []:
             return
 
-        logger.info(m18n.n('restore_running_hooks'))
+        logger.debug(m18n.n('restore_running_hooks'))
 
         env_dict = self._get_env_var()
         ret = hook_callback('restore',
@@ -1199,6 +1246,13 @@ class RestoreManager():
         app_settings_in_archive = os.path.join(app_dir_in_archive, 'settings')
         app_scripts_in_archive = os.path.join(app_settings_in_archive, 'scripts')
 
+        # Apply dirty patch to make php5 apps compatible with php7
+        _patch_php5(app_settings_in_archive)
+
+        # Delete _common.sh file in backup
+        common_file = os.path.join(app_backup_in_archive, '_common.sh')
+        filesystem.rm(common_file, force=True)
+
         # Check if the app has a restore script
         app_restore_script_in_archive = os.path.join(app_scripts_in_archive,
                                                     'restore')
@@ -1207,7 +1261,7 @@ class RestoreManager():
             self.targets.set_result("apps", app_instance_name, "Warning")
             return
 
-        logger.info(m18n.n('restore_running_app_script', app=app_instance_name))
+        logger.debug(m18n.n('restore_running_app_script', app=app_instance_name))
         try:
             # Restore app settings
             app_settings_new_path = os.path.join('/etc/yunohost/apps/',
@@ -1313,9 +1367,7 @@ class BackupMethod(object):
     TarBackupMethod
     ---------------
     This method compresses all files to backup in a .tar.gz archive. When
-    restoring, it tries to mount the archive using archivemount/fuse instead
-    of untaring the archive. Some systems don't support fuse (for these,
-    it automatically falls back to untaring the required parts).
+    restoring, it untars the required parts.
 
     CustomBackupMethod
     ------------------
@@ -1543,9 +1595,13 @@ class BackupMethod(object):
                 # Can create a hard link only if files are on the same fs
                 # (i.e. we can't if it's on a different fs)
                 if os.stat(src).st_dev == os.stat(dest_dir).st_dev:
-                    os.link(src, dest)
-                    # Success, go to next file to organize
-                    continue
+                    # Don't hardlink /etc/cron.d files to avoid cron bug
+                    # 'NUMBER OF HARD LINKS > 1' see #1043
+                    cron_path = os.path.abspath('/etc/cron') + '.'
+                    if not os.path.abspath(src).startswith(cron_path):
+                        os.link(src, dest)
+                        # Success, go to next file to organize
+                        continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
@@ -1575,7 +1631,7 @@ class BackupMethod(object):
                                      m18n.n('backup_unable_to_organize_files'))
 
         # Copy unbinded path
-        logger.info(m18n.n('backup_copying_to_organize_the_archive',
+        logger.debug(m18n.n('backup_copying_to_organize_the_archive',
             size=str(size)))
         for path in paths_needed_to_be_copied:
             dest = os.path.join(self.work_dir, path['dest'])
@@ -1680,8 +1736,7 @@ class CopyBackupMethod(BackupMethod):
 
 class TarBackupMethod(BackupMethod):
     """
-    This class compress all files to backup in archive. To restore it try to
-    mount the archive with archivemount (fuse). Some system don't support fuse.
+    This class compress all files to backup in archive.
     """
 
     def __init__(self, repo=None):
@@ -1753,8 +1808,6 @@ class TarBackupMethod(BackupMethod):
 
         Exceptions:
         backup_archive_open_failed -- Raised if the archive can't be open
-        backup_archive_mount_failed -- Raised if the system don't support
-        archivemount
         """
         super(TarBackupMethod, self).mount(restore_manager)
 
@@ -1769,60 +1822,50 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
         # Mount the tarball
+        logger.debug(m18n.n("restore_extracting"))
+        tar = tarfile.open(self._archive_file, "r:gz")
+        tar.extract('info.json', path=self.work_dir)
+
         try:
-            ret = subprocess.call(['archivemount', '-o', 'readonly',
-                                   self._archive_file, self.work_dir])
-        except:
-            ret = -1
+            tar.extract('backup.csv', path=self.work_dir)
+        except KeyError:
+            # Old backup archive have no backup.csv file
+            pass
 
-        # If archivemount failed, extract the archive
-        if ret != 0:
-            logger.warning(m18n.n('backup_archive_mount_failed'))
+        # Extract system parts backup
+        conf_extracted = False
 
-            logger.info(m18n.n("restore_extracting"))
-            tar = tarfile.open(self._archive_file, "r:gz")
-            tar.extract('info.json', path=self.work_dir)
+        system_targets = self.manager.targets.list("system", exclude=["Skipped"])
+        apps_targets = self.manager.targets.list("apps", exclude=["Skipped"])
 
-            try:
-                tar.extract('backup.csv', path=self.work_dir)
-            except KeyError:
-                # Old backup archive have no backup.csv file
-                pass
-
-            # Extract system parts backup
-            conf_extracted = False
-
-            system_targets = self.manager.targets.list("system", exclude=["Skipped"])
-            apps_targets = self.manager.targets.list("apps", exclude=["Skipped"])
-
-            for system_part in system_targets:
-                # Caution: conf_ynh_currenthost helpers put its files in
-                # conf/ynh
-                if system_part.startswith("conf_"):
-                    if conf_extracted:
-                        continue
-                    system_part = "conf/"
-                    conf_extracted = True
-                else:
-                    system_part = system_part.replace("_", "/") + "/"
-                subdir_and_files = [
-                    tarinfo for tarinfo in tar.getmembers()
-                    if tarinfo.name.startswith(system_part)
-                ]
-                tar.extractall(members=subdir_and_files, path=self.work_dir)
+        for system_part in system_targets:
+            # Caution: conf_ynh_currenthost helpers put its files in
+            # conf/ynh
+            if system_part.startswith("conf_"):
+                if conf_extracted:
+                    continue
+                system_part = "conf/"
+                conf_extracted = True
+            else:
+                system_part = system_part.replace("_", "/") + "/"
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith("hooks/restore/")
+                if tarinfo.name.startswith(system_part)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
+        subdir_and_files = [
+            tarinfo for tarinfo in tar.getmembers()
+            if tarinfo.name.startswith("hooks/restore/")
+        ]
+        tar.extractall(members=subdir_and_files, path=self.work_dir)
 
-            # Extract apps backup
-            for app in apps_targets:
-                subdir_and_files = [
-                    tarinfo for tarinfo in tar.getmembers()
-                    if tarinfo.name.startswith("apps/" + app)
-                ]
-                tar.extractall(members=subdir_and_files, path=self.work_dir)
+        # Extract apps backup
+        for app in apps_targets:
+            subdir_and_files = [
+                tarinfo for tarinfo in tar.getmembers()
+                if tarinfo.name.startswith("apps/" + app)
+            ]
+            tar.extractall(members=subdir_and_files, path=self.work_dir)
 
 
 class BorgBackupMethod(BackupMethod):
@@ -1916,9 +1959,7 @@ class CustomBackupMethod(BackupMethod):
 
 def backup_create(name=None, description=None, methods=[],
                   output_directory=None, no_compress=False,
-                  ignore_system=False, system=[],
-                  ignore_apps=False, apps=[],
-                  ignore_hooks=False, hooks=[]):
+                  system=[], apps=[]):
     """
     Create a backup local archive
 
@@ -1929,12 +1970,7 @@ def backup_create(name=None, description=None, methods=[],
         output_directory -- Output directory for the backup
         no_compress -- Do not create an archive file
         system -- List of system elements to backup
-        ignore_system -- Ignore system elements
         apps -- List of application names to backup
-        ignore_apps -- Do not backup apps
-
-        hooks -- (Deprecated) Renamed to "system"
-        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     # TODO: Add a 'clean' argument to clean output directory
@@ -1942,22 +1978,6 @@ def backup_create(name=None, description=None, methods=[],
     ###########################################################################
     #   Validate / parse arguments                                            #
     ###########################################################################
-
-    # Historical, deprecated options
-    if ignore_hooks is not False:
-        logger.warning("--ignore-hooks is deprecated and will be removed in the"
-                       "future. Please use --ignore-system instead.")
-        ignore_system = ignore_hooks
-
-    if hooks != [] and hooks is not None:
-        logger.warning("--hooks is deprecated and will be removed in the"
-                       "future. Please use --system instead.")
-        system = hooks
-
-    # Validate that there's something to backup
-    if ignore_system and ignore_apps:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_action_required'))
 
     # Validate there is no archive with the same name
     if name and name in backup_list()['archives']:
@@ -1991,14 +2011,9 @@ def backup_create(name=None, description=None, methods=[],
         else:
             methods = ['tar']  # In future, borg will be the default actions
 
-    if ignore_system:
-        system = None
-    elif system is None:
+    # If no --system or --apps given, backup everything
+    if system is None and apps is None:
         system = []
-
-    if ignore_apps:
-        apps = None
-    elif apps is None:
         apps = []
 
     ###########################################################################
@@ -2047,11 +2062,7 @@ def backup_create(name=None, description=None, methods=[],
     }
 
 
-def backup_restore(auth, name,
-                   system=[], ignore_system=False,
-                   apps=[], ignore_apps=False,
-                   hooks=[], ignore_hooks=False,
-                   force=False):
+def backup_restore(auth, name, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -2059,48 +2070,23 @@ def backup_restore(auth, name,
         name -- Name of the local backup archive
         force -- Force restauration on an already installed system
         system -- List of system parts to restore
-        ignore_system -- Do not restore any system parts
         apps -- List of application names to restore
-        ignore_apps -- Do not restore apps
-
-        hooks -- (Deprecated) Renamed to "system"
-        ignore_hooks -- (Deprecated) Renamed to "ignore_system"
     """
 
     ###########################################################################
     #   Validate / parse arguments                                            #
     ###########################################################################
 
-    # Historical, deprecated options
-    if ignore_hooks is not False:
-        logger.warning("--ignore-hooks is deprecated and will be removed in the"
-                       "future. Please use --ignore-system instead.")
-        ignore_system = ignore_hooks
-    if hooks != [] and hooks is not None:
-        logger.warning("--hooks is deprecated and will be removed in the"
-                       "future. Please use --system instead.")
-        system = hooks
-
-    # Validate what to restore
-    if ignore_system and ignore_apps:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('restore_action_required'))
-
-    if ignore_system:
-        system = None
-    elif system is None:
+    # If no --system or --apps given, restore everything
+    if system is None and apps is None:
         system = []
-
-    if ignore_apps:
-        apps = None
-    elif apps is None:
         apps = []
 
     # TODO don't ask this question when restoring apps only and certain system
     # parts
 
     # Check if YunoHost is installed
-    if os.path.isfile('/etc/yunohost/installed') and not ignore_system:
+    if system is not None and os.path.isfile('/etc/yunohost/installed'):
         logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
@@ -2301,6 +2287,11 @@ def backup_delete(name):
 def _create_archive_dir():
     """ Create the YunoHost archives directory if doesn't exist """
     if not os.path.isdir(ARCHIVES_PATH):
+        if os.path.lexists(ARCHIVES_PATH):
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('backup_output_symlink_dir_broken',
+                                         path=ARCHIVES_PATH))
+
         os.mkdir(ARCHIVES_PATH, 0750)
 
 

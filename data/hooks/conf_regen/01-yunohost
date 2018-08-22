@@ -53,16 +53,25 @@ do_pre_regen() {
   else
       sudo cp services.yml /etc/yunohost/services.yml
   fi
+
+  mkdir -p "$pending_dir"/etc/etckeeper/
+  cp etckeeper.conf "$pending_dir"/etc/etckeeper/
 }
 
 _update_services() {
   sudo python2 - << EOF
 import yaml
+
+
 with open('services.yml') as f:
     new_services = yaml.load(f)
+
 with open('/etc/yunohost/services.yml') as f:
     services = yaml.load(f)
+
 updated = False
+
+
 for service, conf in new_services.items():
     # remove service with empty conf
     if conf is None:
@@ -70,20 +79,32 @@ for service, conf in new_services.items():
             print("removing '{0}' from services".format(service))
             del services[service]
             updated = True
+
     # add new service
     elif not services.get(service, None):
         print("adding '{0}' to services".format(service))
         services[service] = conf
         updated = True
+
     # update service conf
     else:
         conffiles = services[service].pop('conffiles', {})
+
+        # status need to be removed
+        if "status" not in conf and "status" in services[service]:
+            print("update '{0}' service status access".format(service))
+            del services[service]["status"]
+            updated = True
+
         if services[service] != conf:
             print("update '{0}' service".format(service))
             services[service].update(conf)
             updated = True
+
         if conffiles:
             services[service]['conffiles'] = conffiles
+
+
 if updated:
     with open('/etc/yunohost/services.yml-new', 'w') as f:
         yaml.safe_dump(services, f, default_flow_style=False)

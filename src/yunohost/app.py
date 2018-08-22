@@ -32,7 +32,6 @@ import re
 import urlparse
 import errno
 import subprocess
-import requests
 import glob
 import pwd
 import grp
@@ -41,6 +40,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_json
 
 from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
@@ -129,6 +129,7 @@ def app_fetchlist(url=None, name=None):
     else:
         appslists_to_be_fetched = appslists.keys()
 
+    import requests # lazy loading this module for performance reasons
     # Fetch all appslists to be fetched
     for name in appslists_to_be_fetched:
 
@@ -330,6 +331,9 @@ def app_info(app, show_status=False, raw=False):
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
+
+    app_setting_path = APPS_SETTING_PATH + app
+
     if raw:
         ret = app_list(filter=app, raw=True)[app]
         ret['settings'] = _get_app_settings(app)
@@ -345,10 +349,9 @@ def app_info(app, show_status=False, raw=False):
             upgradable = "no"
 
         ret['upgradable'] = upgradable
+        ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
 
         return ret
-
-    app_setting_path = APPS_SETTING_PATH + app
 
     # Retrieve manifest and status
     with open(app_setting_path + '/manifest.json') as f:
@@ -396,6 +399,8 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'domain' not in app_settings:
             continue
+        if 'no_sso' in app_settings:  # I don't think we need to check for the value here
+            continue
         if user is not None:
             if ('mode' not in app_settings
                 or ('mode' in app_settings
@@ -430,7 +435,7 @@ def app_change_url(auth, app, domain, path):
         path -- New path at which the application will be move
 
     """
-    from yunohost.hook import hook_exec
+    from yunohost.hook import hook_exec, hook_callback
 
     installed = _is_installed(app)
     if not installed:
@@ -483,6 +488,12 @@ def app_change_url(auth, app, domain, path):
     shutil.copytree(os.path.join(APPS_SETTING_PATH, app, "scripts"),
                     os.path.join(APP_TMP_FOLDER, "scripts"))
 
+    if os.path.exists(os.path.join(APP_TMP_FOLDER, "conf")):
+        shutil.rmtree(os.path.join(APP_TMP_FOLDER, "conf"))
+
+    shutil.copytree(os.path.join(APPS_SETTING_PATH, app, "conf"),
+                    os.path.join(APP_TMP_FOLDER, "conf"))
+
     # Execute App change_url script
     os.system('chown -R admin: %s' % INSTALL_TMP)
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
@@ -520,6 +531,8 @@ def app_change_url(auth, app, domain, path):
     logger.success(m18n.n("app_change_url_success",
                          app=app, domain=domain, path=path))
 
+    hook_callback('post_app_change_url', args=args_list, env=env_dict)
+
 
 def app_upgrade(auth, app=[], url=None, file=None):
     """
@@ -531,7 +544,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
-    from yunohost.hook import hook_add, hook_remove, hook_exec
+    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+
 
     # Retrieve interface
     is_api = msettings.get('interface') == 'api'
@@ -556,6 +570,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     logger.info("Upgrading apps %s", ", ".join(app))
 
     for app_instance_name in apps:
+        logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise MoulinetteError(errno.ENOPKG,
@@ -581,7 +596,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             continue
 
         # Check requirements
-        _check_manifest_requirements(manifest)
+        _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
@@ -601,6 +616,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
+        # Apply dirty patch to make php5 apps compatible with php7
+        _patch_php5(extracted_app_folder)
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -623,13 +641,20 @@ def app_upgrade(auth, app=[], url=None, file=None):
             with open(app_setting_path + '/status.json', 'w+') as f:
                 json.dump(status, f)
 
-            # Replace scripts and manifest
-            os.system('rm -rf "%s/scripts" "%s/manifest.json"' % (app_setting_path, app_setting_path))
+            # Replace scripts and manifest and conf (if exists)
+            os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+
+            for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+                if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+                    os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
             # So much win
             upgraded_apps.append(app_instance_name)
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
+
+            hook_callback('post_app_upgrade', args=args_list, env=env_dict)
+
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
@@ -654,7 +679,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
 
     """
-    from yunohost.hook import hook_add, hook_remove, hook_exec
+    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
 
     # Fetch or extract sources
     try:
@@ -685,7 +710,7 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     app_id = manifest['id']
 
     # Check requirements
-    _check_manifest_requirements(manifest)
+    _check_manifest_requirements(manifest, app_id)
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -727,6 +752,9 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
 
+    # Apply dirty patch to make php5 apps compatible with php7
+    _patch_php5(extracted_app_folder)
+
     os.system('chown -R admin: ' + extracted_app_folder)
 
     # Execute App install script
@@ -734,6 +762,10 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
     # Move scripts and manifest to the right place
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
+
+    for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+        if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+            os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
     # Execute the app install script
     install_retcode = 1
@@ -793,6 +825,8 @@ def app_install(auth, app, label=None, args=None, no_remove_on_failure=False):
 
     logger.success(m18n.n('installation_complete'))
 
+    hook_callback('post_app_install', args=args_list, env=env_dict)
+
 
 def app_remove(auth, app):
     """
@@ -802,7 +836,7 @@ def app_remove(auth, app):
         app -- App(s) to delete
 
     """
-    from yunohost.hook import hook_exec, hook_remove
+    from yunohost.hook import hook_exec, hook_remove, hook_callback
 
     if not _is_installed(app):
         raise MoulinetteError(errno.EINVAL,
@@ -815,6 +849,10 @@ def app_remove(auth, app):
         shutil.rmtree('/tmp/yunohost_remove')
     except:
         pass
+
+    # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
+    # script might date back from jessie install)
+    _patch_php5(app_setting_path)
 
     os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
     os.system('chown -R admin: /tmp/yunohost_remove')
@@ -831,6 +869,8 @@ def app_remove(auth, app):
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
                  env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
+
+        hook_callback('post_app_remove', args=args_list, env=env_dict)
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
@@ -1019,7 +1059,9 @@ def app_makedefault(auth, app, domain=None):
 
     if '/' in app_map(raw=True)[domain]:
         raise MoulinetteError(errno.EEXIST,
-                              m18n.n('app_location_already_used'))
+                              m18n.n('app_make_default_location_already_used',
+                                     app=app, domain=app_domain,
+                                     other_app=app_map(raw=True)[domain]["/"]["id"]))
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
@@ -1064,7 +1106,7 @@ def app_setting(app, key, value=None, delete=False):
         try:
             return app_settings[key]
         except:
-            logger.info("cannot get app setting '%s' for '%s'", key, app)
+            logger.debug("cannot get app setting '%s' for '%s'", key, app)
             return None
     else:
         if delete and key in app_settings:
@@ -1108,7 +1150,7 @@ def app_register_url(auth, app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from domain import domain_url_available, _normalize_domain_path
+    from domain import _get_conflicting_apps, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1124,9 +1166,18 @@ def app_register_url(auth, app, domain, path):
                                   m18n.n('app_already_installed_cant_change_url'))
 
     # Check the url is available
-    if not domain_url_available(auth, domain, path):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_location_unavailable'))
+    conflicts = _get_conflicting_apps(auth, domain, path)
+    if conflicts:
+        apps = []
+        for path, app_id, app_label in conflicts:
+            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                domain=domain,
+                path=path,
+                app_id=app_id,
+                app_label=app_label,
+            ))
+
+        raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -1141,6 +1192,9 @@ def app_checkurl(auth, url, app=None):
         app -- Write domain & path to app settings for further checks
 
     """
+
+    logger.error("Packagers /!\\ : 'app checkurl' is deprecated ! Please use the helper 'ynh_webpath_register' instead !")
+
     from yunohost.domain import domain_list
 
     if "https://" == url[:8]:
@@ -1172,10 +1226,13 @@ def app_checkurl(auth, url, app=None):
                 continue
             if path == p:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('app_location_already_used'))
+                                      m18n.n('app_location_already_used',
+                                             app=a["id"], path=path))
+            # can't install "/a/b/" if "/a/" exists
             elif path.startswith(p) or p.startswith(path):
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('app_location_install_failed'))
+                                      m18n.n('app_location_install_failed',
+                                             other_path=p, other_app=a['id']))
 
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
@@ -1193,6 +1250,9 @@ def app_initdb(user, password=None, db=None, sql=None):
         sql -- Initial SQL file
 
     """
+
+    logger.error("Packagers /!\\ : 'app initdb' is deprecated ! Please use the helper 'ynh_mysql_setup_db' instead !")
+
     if db is None:
         db = user
 
@@ -1227,10 +1287,6 @@ def app_ssowatconf(auth):
     main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
 
-    users = {}
-    for username in user_list(auth)['users'].keys():
-        users[username] = app_map(user=username)
-
     skipped_urls = []
     skipped_regex = []
     unprotected_urls = []
@@ -1241,7 +1297,7 @@ def app_ssowatconf(auth):
     redirected_urls = {}
 
     try:
-        apps_list = app_list()['apps']
+        apps_list = app_list(installed=True)['apps']
     except:
         apps_list = []
 
@@ -1250,37 +1306,41 @@ def app_ssowatconf(auth):
         return s.split(',') if s else []
 
     for app in apps_list:
-        if _is_installed(app['id']):
-            with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
-                app_settings = yaml.load(f)
-                for item in _get_setting(app_settings, 'skipped_uris'):
-                    if item[-1:] == '/':
-                        item = item[:-1]
-                    skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-                for item in _get_setting(app_settings, 'skipped_regex'):
-                    skipped_regex.append(item)
-                for item in _get_setting(app_settings, 'unprotected_uris'):
-                    if item[-1:] == '/':
-                        item = item[:-1]
-                    unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-                for item in _get_setting(app_settings, 'unprotected_regex'):
-                    unprotected_regex.append(item)
-                for item in _get_setting(app_settings, 'protected_uris'):
-                    if item[-1:] == '/':
-                        item = item[:-1]
-                    protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-                for item in _get_setting(app_settings, 'protected_regex'):
-                    protected_regex.append(item)
-                if 'redirected_urls' in app_settings:
-                    redirected_urls.update(app_settings['redirected_urls'])
-                if 'redirected_regex' in app_settings:
-                    redirected_regex.update(app_settings['redirected_regex'])
+        with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
+            app_settings = yaml.load(f)
+
+            if 'no_sso' in app_settings:
+                continue
+
+            for item in _get_setting(app_settings, 'skipped_uris'):
+                if item[-1:] == '/':
+                    item = item[:-1]
+                skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
+            for item in _get_setting(app_settings, 'skipped_regex'):
+                skipped_regex.append(item)
+            for item in _get_setting(app_settings, 'unprotected_uris'):
+                if item[-1:] == '/':
+                    item = item[:-1]
+                unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
+            for item in _get_setting(app_settings, 'unprotected_regex'):
+                unprotected_regex.append(item)
+            for item in _get_setting(app_settings, 'protected_uris'):
+                if item[-1:] == '/':
+                    item = item[:-1]
+                protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
+            for item in _get_setting(app_settings, 'protected_regex'):
+                protected_regex.append(item)
+            if 'redirected_urls' in app_settings:
+                redirected_urls.update(app_settings['redirected_urls'])
+            if 'redirected_regex' in app_settings:
+                redirected_regex.update(app_settings['redirected_regex'])
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
 
     # Authorize ACME challenge url
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
+    skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -1300,13 +1360,232 @@ def app_ssowatconf(auth):
         'protected_regex': protected_regex,
         'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
-        'users': users,
+        'users': {username: app_map(user=username)
+                  for username in user_list(auth)['users'].keys()},
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
     logger.success(m18n.n('ssowat_conf_generated'))
+
+
+def app_change_label(auth, app, new_label):
+    installed = _is_installed(app)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app))
+
+    app_setting(app, "label", value=new_label)
+
+    app_ssowatconf(auth)
+
+
+# actions todo list:
+# * docstring
+
+def app_action_list(app_id):
+    logger.warning(m18n.n('experimental_feature'))
+
+    # this will take care of checking if the app is installed
+    app_info_dict = app_info(app_id)
+
+    actions = os.path.join(APPS_SETTING_PATH, app_id, 'actions.json')
+
+    return {
+        "app_id": app_id,
+        "app_name": app_info_dict["name"],
+        "actions": read_json(actions) if os.path.exists(actions) else [],
+    }
+
+
+def app_action_run(app_id, action, args=None):
+    logger.warning(m18n.n('experimental_feature'))
+
+    from yunohost.hook import hook_exec
+    import tempfile
+
+    # will raise if action doesn't exist
+    actions = app_action_list(app_id)["actions"]
+    actions = {x["id"]: x for x in actions}
+
+    if action not in actions:
+        raise MoulinetteError(errno.EINVAL, "action '%s' not available for app '%s', available actions are: %s" % (action, app_id, ", ".join(actions.keys())))
+
+    action_declaration = actions[action]
+
+    # Retrieve arguments list for install script
+    args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    args_odict = _parse_args_for_action(actions[action], args=args_dict)
+    args_list = args_odict.values()
+
+    env_dict = _make_environment_dict(args_odict, prefix="ACTION_")
+    env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_ACTION"] = action
+
+    _, path = tempfile.mkstemp()
+
+    with open(path, "w") as script:
+        script.write(action_declaration["command"])
+
+    os.chmod(path, 700)
+
+    if action_declaration.get("cwd"):
+        cwd = action_declaration["cwd"].replace("$app_id", app_id)
+    else:
+        cwd = "/etc/yunohost/apps/" + app_id
+
+    retcode = hook_exec(
+        path,
+        args=args_list,
+        env=env_dict,
+        chdir=cwd,
+        user=action_declaration.get("user", "root"),
+    )
+
+    if retcode not in action_declaration.get("accepted_return_codes", [0]):
+        raise MoulinetteError(retcode, "Error while executing action '%s' of app '%s': return code %s" % (action, app_id, retcode))
+
+    os.remove(path)
+
+    return logger.success("Action successed!")
+
+
+# Config panel todo list:
+# * docstrings
+# * merge translations on the json once the workflow is in place
+def app_config_show_panel(app_id):
+    logger.warning(m18n.n('experimental_feature'))
+
+    from yunohost.hook import hook_exec
+
+    # this will take care of checking if the app is installed
+    app_info_dict = app_info(app_id)
+
+    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+
+    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+        return {
+            "config_panel": [],
+        }
+
+    config_panel = read_json(config_panel)
+
+    env = {"YNH_APP_ID": app_id}
+    parsed_values = {}
+
+    # I need to parse stdout to communicate between scripts because I can't
+    # read the child environment :( (that would simplify things so much)
+    # after hours of research this is apparently quite a standard way, another
+    # option would be to add an explicite pipe or a named pipe for that
+    # a third option would be to write in a temporary file but I don't like
+    # that because that could expose sensitive data
+    def parse_stdout(line):
+        line = line.rstrip()
+        logger.info(line)
+
+        if line.strip().startswith("YNH_CONFIG_") and "=" in line:
+            # XXX error handling?
+            # XXX this might not work for multilines stuff :( (but echo without
+            # formatting should do it no?)
+            key, value = line.strip().split("=", 1)
+            logger.debug("config script declared: %s -> %s", key, value)
+            parsed_values[key] = value
+
+    return_code = hook_exec(config_script,
+              args=["show"],
+              env=env,
+              user="root",
+              stdout_callback=parse_stdout,
+    )
+
+    if return_code != 0:
+        raise Exception("script/config show return value code: %s (considered as an error)", return_code)
+
+    logger.debug("Generating global variables:")
+    for tab in config_panel.get("panel", []):
+        tab_id = tab["id"]  # this makes things easier to debug on crash
+        for section in tab.get("sections", []):
+            section_id = section["id"]
+            for option in section.get("options", []):
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                option["id"] = generated_id
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_id)
+
+                if generated_id in parsed_values:
+                    # XXX we should probably uses the one of install here but it's at a POC state right now
+                    option_type = option["type"]
+                    if option_type == "bool":
+                        assert parsed_values[generated_id].lower() in ("true", "false")
+                        option["value"] = True if parsed_values[generated_id].lower() == "true" else False
+                    elif option_type == "integer":
+                        option["value"] = int(parsed_values[generated_id])
+                    elif option_type == "text":
+                        option["value"] = parsed_values[generated_id]
+                else:
+                    logger.debug("Variable '%s' is not declared by config script, using default", generated_id)
+                    option["value"] = option["default"]
+
+    return {
+        "app_id": app_id,
+        "app_name": app_info_dict["name"],
+        "config_panel": config_panel,
+    }
+
+
+def app_config_apply(app_id, args):
+    logger.warning(m18n.n('experimental_feature'))
+
+    from yunohost.hook import hook_exec
+
+    installed = _is_installed(app_id)
+    if not installed:
+        raise MoulinetteError(errno.ENOPKG,
+                              m18n.n('app_not_installed', app=app_id))
+
+    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+
+    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+        # XXX real exception
+        raise Exception("Not config-panel.json nor scripts/config")
+
+    config_panel = read_json(config_panel)
+
+    env = {"YNH_APP_ID": app_id}
+    args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+
+    for tab in config_panel.get("panel", []):
+        tab_id = tab["id"]  # this makes things easier to debug on crash
+        for section in tab.get("sections", []):
+            section_id = section["id"]
+            for option in section.get("options", []):
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+
+                if generated_id in args:
+                    logger.debug("include into env %s=%s", generated_id, args[generated_id])
+                    env[generated_id] = args[generated_id]
+                else:
+                    logger.debug("no value for key id %s", generated_id)
+
+    # for debug purpose
+    for key in args:
+        if key not in env:
+            logger.warning("Ignore key '%s' from arguments because it is not in the config", key)
+
+    return_code = hook_exec(config_script,
+              args=["apply"],
+              env=env,
+              user="root",
+    )
+
+    if return_code != 0:
+        raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
+
+    logger.success("Config updated as expected")
 
 
 def _get_app_settings(app_id):
@@ -1398,7 +1677,7 @@ def _extract_app_from_file(path, remove=False):
         Dict manifest
 
     """
-    logger.info(m18n.n('extracting'))
+    logger.debug(m18n.n('extracting'))
 
     if os.path.exists(APP_TMP_FOLDER):
         shutil.rmtree(APP_TMP_FOLDER)
@@ -1439,7 +1718,7 @@ def _extract_app_from_file(path, remove=False):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_manifest_invalid', error=e.strerror))
 
-    logger.info(m18n.n('done'))
+    logger.debug(m18n.n('done'))
 
     manifest['remote'] = {'type': 'file', 'path': path}
     return manifest, extracted_app_folder
@@ -1484,7 +1763,7 @@ def _fetch_app_from_git(app):
     if os.path.exists(app_tmp_archive):
         os.remove(app_tmp_archive)
 
-    logger.info(m18n.n('downloading'))
+    logger.debug(m18n.n('downloading'))
 
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
@@ -1535,7 +1814,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid', error=e.strerror))
             else:
-                logger.info(m18n.n('done'))
+                logger.debug(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
@@ -1592,7 +1871,7 @@ def _fetch_app_from_git(app):
                 raise MoulinetteError(errno.EIO,
                                       m18n.n('app_manifest_invalid', error=e.strerror))
             else:
-                logger.info(m18n.n('done'))
+                logger.debug(m18n.n('done'))
 
         # Store remote repository info into the returned manifest
         manifest['remote'] = {
@@ -1692,7 +1971,7 @@ def _encode_string(value):
     return value
 
 
-def _check_manifest_requirements(manifest):
+def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
     requirements = manifest.get('requirements', dict())
 
@@ -1705,17 +1984,17 @@ def _check_manifest_requirements(manifest):
     # Validate multi-instance app
     if is_true(manifest.get('multi_instance', False)):
         # Handle backward-incompatible change introduced in yunohost >= 2.3.6
-        # See https://dev.yunohost.org/issues/156
+        # See https://github.com/YunoHost/issues/issues/156
         yunohost_req = requirements.get('yunohost', None)
         if (not yunohost_req or
                 not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
             raise MoulinetteError(errno.EINVAL, '{0}{1}'.format(
-                m18n.g('colon', m18n.n('app_incompatible')),
-                m18n.n('app_package_need_update')))
+                m18n.g('colon', m18n.n('app_incompatible'), app=app_instance_name),
+                m18n.n('app_package_need_update', app=app_instance_name)))
     elif not requirements:
         return
 
-    logger.info(m18n.n('app_requirements_checking'))
+    logger.debug(m18n.n('app_requirements_checking', app=app_instance_name))
 
     # Retrieve versions of each required package
     try:
@@ -1724,7 +2003,7 @@ def _check_manifest_requirements(manifest):
     except packages.PackageException as e:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_requirements_failed',
-                                     error=str(e)))
+                                     error=str(e), app=app_instance_name))
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():
@@ -1733,7 +2012,7 @@ def _check_manifest_requirements(manifest):
             raise MoulinetteError(
                 errno.EINVAL, m18n.n('app_requirements_unmeet',
                                      pkgname=pkgname, version=version,
-                                     spec=spec))
+                                     spec=spec, app=app_instance_name))
 
 
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
@@ -1750,142 +2029,191 @@ def _parse_args_from_manifest(manifest, action, args={}, auth=None):
         args -- A dictionnary of arguments to parse
 
     """
+    if action not in manifest['arguments']:
+        logger.debug("no arguments found for '%s' in manifest", action)
+        return OrderedDict()
+
+    action_args = manifest['arguments'][action]
+    return _parse_action_args_in_yunohost_format(args, action_args, auth)
+
+
+def _parse_args_for_action(action, args={}, auth=None):
+    """Parse arguments needed for an action from the actions list
+
+    Retrieve specified arguments for the action from the manifest, and parse
+    given args according to that. If some required arguments are not provided,
+    its values will be asked if interaction is possible.
+    Parsed arguments will be returned as an OrderedDict
+
+    Keyword arguments:
+        action -- The action
+        args -- A dictionnary of arguments to parse
+
+    """
+    args_dict = OrderedDict()
+
+    if 'arguments' not in action:
+        logger.debug("no arguments found for '%s' in manifest", action)
+        return args_dict
+
+    action_args = action['arguments']
+
+    return _parse_action_args_in_yunohost_format(args, action_args, auth)
+
+
+def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
+    """Parse arguments store in either manifest.json or actions.json
+    """
     from yunohost.domain import (domain_list, _get_maindomain,
-                                 domain_url_available, _normalize_domain_path)
-    from yunohost.user import user_info
+                                 _get_conflicting_apps, _normalize_domain_path)
+    from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
-    try:
-        action_args = manifest['arguments'][action]
-    except KeyError:
-        logger.debug("no arguments found for '%s' in manifest", action)
-    else:
-        for arg in action_args:
-            arg_name = arg['name']
-            arg_type = arg.get('type', 'string')
-            arg_default = arg.get('default', None)
-            arg_choices = arg.get('choices', [])
-            arg_value = None
 
-            # Transpose default value for boolean type and set it to
-            # false if not defined.
-            if arg_type == 'boolean':
-                arg_default = 1 if arg_default else 0
+    for arg in action_args:
+        arg_name = arg['name']
+        arg_type = arg.get('type', 'string')
+        arg_default = arg.get('default', None)
+        arg_choices = arg.get('choices', [])
+        arg_value = None
 
-            # Attempt to retrieve argument value
-            if arg_name in args:
-                arg_value = args[arg_name]
-            else:
-                if 'ask' in arg:
-                    # Retrieve proper ask string
-                    ask_string = _value_for_locale(arg['ask'])
+        # Transpose default value for boolean type and set it to
+        # false if not defined.
+        if arg_type == 'boolean':
+            arg_default = 1 if arg_default else 0
 
-                    # Append extra strings
+        # Attempt to retrieve argument value
+        if arg_name in args:
+            arg_value = args[arg_name]
+        else:
+            if 'ask' in arg:
+                # Retrieve proper ask string
+                ask_string = _value_for_locale(arg['ask'])
+
+                # Append extra strings
+                if arg_type == 'boolean':
+                    ask_string += ' [yes | no]'
+                elif arg_choices:
+                    ask_string += ' [{0}]'.format(' | '.join(arg_choices))
+
+                if arg_default is not None:
                     if arg_type == 'boolean':
-                        ask_string += ' [0 | 1]'
-                    elif arg_choices:
-                        ask_string += ' [{0}]'.format(' | '.join(arg_choices))
-                    if arg_default is not None:
-                        ask_string += ' (default: {0})'.format(arg_default)
-
-                    # Check for a password argument
-                    is_password = True if arg_type == 'password' else False
-
-                    if arg_type == 'domain':
-                        arg_default = _get_maindomain()
-                        ask_string += ' (default: {0})'.format(arg_default)
-                        msignals.display(m18n.n('domains_available'))
-                        for domain in domain_list(auth)['domains']:
-                            msignals.display("- {}".format(domain))
-
-                    try:
-                        input_string = msignals.prompt(ask_string, is_password)
-                    except NotImplementedError:
-                        input_string = None
-                    if (input_string == '' or input_string is None) \
-                            and arg_default is not None:
-                        arg_value = arg_default
+                        ask_string += ' (default: {0})'.format("yes" if arg_default == 1 else "no")
                     else:
-                        arg_value = input_string
-                elif arg_default is not None:
-                    arg_value = arg_default
+                        ask_string += ' (default: {0})'.format(arg_default)
 
-            # Validate argument value
-            if (arg_value is None or arg_value == '') \
-                    and not arg.get('optional', False):
-                raise MoulinetteError(errno.EINVAL,
-                    m18n.n('app_argument_required', name=arg_name))
-            elif arg_value is None:
-                args_dict[arg_name] = ''
-                continue
+                # Check for a password argument
+                is_password = True if arg_type == 'password' else False
 
-            # Validate argument choice
-            if arg_choices and arg_value not in arg_choices:
-                raise MoulinetteError(errno.EINVAL,
-                    m18n.n('app_argument_choice_invalid',
-                        name=arg_name, choices=', '.join(arg_choices)))
+                if arg_type == 'domain':
+                    arg_default = _get_maindomain()
+                    ask_string += ' (default: {0})'.format(arg_default)
+                    msignals.display(m18n.n('domains_available'))
+                    for domain in domain_list(auth)['domains']:
+                        msignals.display("- {}".format(domain))
 
-            # Validate argument type
-            if arg_type == 'domain':
-                if arg_value not in domain_list(auth)['domains']:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('app_argument_invalid',
-                            name=arg_name, error=m18n.n('domain_unknown')))
-            elif arg_type == 'user':
+                if arg_type == 'user':
+                    msignals.display(m18n.n('users_available'))
+                    for user in user_list(auth)['users'].keys():
+                        msignals.display("- {}".format(user))
+
                 try:
-                    user_info(auth, arg_value)
-                except MoulinetteError as e:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('app_argument_invalid',
-                            name=arg_name, error=e.strerror))
-            elif arg_type == 'app':
-                if not _is_installed(arg_value):
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('app_argument_invalid',
-                            name=arg_name, error=m18n.n('app_unknown')))
-            elif arg_type == 'boolean':
-                if isinstance(arg_value, bool):
-                    arg_value = 1 if arg_value else 0
+                    input_string = msignals.prompt(ask_string, is_password)
+                except NotImplementedError:
+                    input_string = None
+                if (input_string == '' or input_string is None) \
+                        and arg_default is not None:
+                    arg_value = arg_default
                 else:
-                    try:
-                        arg_value = int(arg_value)
-                        if arg_value not in [0, 1]:
-                            raise ValueError()
-                    except (TypeError, ValueError):
-                        raise MoulinetteError(errno.EINVAL,
-                            m18n.n('app_argument_choice_invalid',
-                                name=arg_name, choices='0, 1'))
-            args_dict[arg_name] = arg_value
+                    arg_value = input_string
+            elif arg_default is not None:
+                arg_value = arg_default
 
-        # END loop over action_args...
+        # Validate argument value
+        if (arg_value is None or arg_value == '') \
+                and not arg.get('optional', False):
+            raise MoulinetteError(errno.EINVAL,
+                m18n.n('app_argument_required', name=arg_name))
+        elif arg_value is None:
+            args_dict[arg_name] = ''
+            continue
 
-        # If there's only one "domain" and "path", validate that domain/path
-        # is an available url and normalize the path.
+        # Validate argument choice
+        if arg_choices and arg_value not in arg_choices:
+            raise MoulinetteError(errno.EINVAL,
+                m18n.n('app_argument_choice_invalid',
+                    name=arg_name, choices=', '.join(arg_choices)))
 
-        domain_args = [arg["name"] for arg in action_args
-                       if arg.get("type", "string") == "domain"]
-        path_args = [arg["name"] for arg in action_args
-                     if arg.get("type", "string") == "path"]
-
-        if len(domain_args) == 1 and len(path_args) == 1:
-
-            domain = args_dict[domain_args[0]]
-            path = args_dict[path_args[0]]
-            domain, path = _normalize_domain_path(domain, path)
-
-            # Check the url is available
-            if not domain_url_available(auth, domain, path):
+        # Validate argument type
+        if arg_type == 'domain':
+            if arg_value not in domain_list(auth)['domains']:
                 raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('app_location_unavailable'))
+                    m18n.n('app_argument_invalid',
+                        name=arg_name, error=m18n.n('domain_unknown')))
+        elif arg_type == 'user':
+            try:
+                user_info(auth, arg_value)
+            except MoulinetteError as e:
+                raise MoulinetteError(errno.EINVAL,
+                    m18n.n('app_argument_invalid',
+                        name=arg_name, error=e.strerror))
+        elif arg_type == 'app':
+            if not _is_installed(arg_value):
+                raise MoulinetteError(errno.EINVAL,
+                    m18n.n('app_argument_invalid',
+                        name=arg_name, error=m18n.n('app_unknown')))
+        elif arg_type == 'boolean':
+            if isinstance(arg_value, bool):
+                arg_value = 1 if arg_value else 0
+            else:
+                if str(arg_value).lower() in ["1", "yes", "y"]:
+                    arg_value = 1
+                elif str(arg_value).lower() in ["0", "no", "n"]:
+                    arg_value = 0
+                else:
+                    raise MoulinetteError(errno.EINVAL,
+                        m18n.n('app_argument_choice_invalid',
+                            name=arg_name, choices='yes, no, y, n, 1, 0'))
+        args_dict[arg_name] = arg_value
 
-            # (We save this normalized path so that the install script have a
-            # standard path format to deal with no matter what the user inputted)
-            args_dict[path_args[0]] = path
+    # END loop over action_args...
+
+    # If there's only one "domain" and "path", validate that domain/path
+    # is an available url and normalize the path.
+
+    domain_args = [arg["name"] for arg in action_args
+                   if arg.get("type", "string") == "domain"]
+    path_args = [arg["name"] for arg in action_args
+                 if arg.get("type", "string") == "path"]
+
+    if len(domain_args) == 1 and len(path_args) == 1:
+
+        domain = args_dict[domain_args[0]]
+        path = args_dict[path_args[0]]
+        domain, path = _normalize_domain_path(domain, path)
+
+        # Check the url is available
+        conflicts = _get_conflicting_apps(auth, domain, path)
+        if conflicts:
+            apps = []
+            for path, app_id, app_label in conflicts:
+                apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                    domain=domain,
+                    path=path,
+                    app_id=app_id,
+                    app_label=app_label,
+                ))
+
+            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', "\n".join(apps=apps)))
+
+        # (We save this normalized path so that the install script have a
+        # standard path format to deal with no matter what the user inputted)
+        args_dict[path_args[0]] = path
 
     return args_dict
 
 
-def _make_environment_dict(args_dict):
+def _make_environment_dict(args_dict, prefix="APP_ARG_"):
     """
     Convert a dictionnary containing manifest arguments
     to a dictionnary of env. var. to be passed to scripts
@@ -1896,7 +2224,7 @@ def _make_environment_dict(args_dict):
     """
     env_dict = {}
     for arg_name, arg_value in args_dict.items():
-        env_dict["YNH_APP_ARG_%s" % arg_name.upper()] = arg_value
+        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value
     return env_dict
 
 
@@ -1945,7 +2273,7 @@ def _migrate_appslist_system():
 
     for cron_path in legacy_crons:
         appslist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
-        logger.info(m18n.n('appslist_migrating', appslist=appslist_name))
+        logger.debug(m18n.n('appslist_migrating', appslist=appslist_name))
 
         # Parse appslist url in cron
         cron_file_content = open(cron_path).read().strip()
@@ -2123,3 +2451,40 @@ def normalize_url_path(url_path):
         return '/' + url_path.strip("/").strip() + '/'
 
     return "/"
+
+
+def unstable_apps():
+
+    raw_app_installed = app_list(installed=True, raw=True)
+    output = []
+
+    for app, infos in raw_app_installed.items():
+
+        repo = infos.get("repository", None)
+        state = infos.get("state", None)
+
+        if repo is None or state in ["inprogress", "notworking"]:
+            output.append(app)
+
+    return output
+
+
+def _patch_php5(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+    files_to_patch.append("%s/manifest.json" % app_folder)
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
+                   "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
+                   "-e 's@php5@php7.0@g' " \
+                   "%s" % filename
+        os.system(c)

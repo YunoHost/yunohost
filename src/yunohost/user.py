@@ -25,6 +25,7 @@
 """
 import os
 import re
+import pwd
 import json
 import errno
 import crypt
@@ -38,7 +39,6 @@ from moulinette.utils.log import getActionLogger
 from yunohost.service import service_status
 
 logger = getActionLogger('yunohost.user')
-
 
 def user_list(auth, fields=None):
     """
@@ -56,6 +56,8 @@ def user_list(auth, fields=None):
         'cn': 'fullname',
         'mail': 'mail',
         'maildrop': 'mail-forward',
+        'loginShell': 'shell',
+        'homeDirectory': 'home_path',
         'mailuserquota': 'mailbox-quota'
     }
 
@@ -71,7 +73,7 @@ def user_list(auth, fields=None):
                 raise MoulinetteError(errno.EINVAL,
                                       m18n.n('field_invalid', attr))
     else:
-        attrs = ['uid', 'cn', 'mail', 'mailuserquota']
+        attrs = ['uid', 'cn', 'mail', 'mailuserquota', 'loginShell']
 
     result = auth.search('ou=users,dc=yunohost,dc=org',
                          '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
@@ -81,6 +83,12 @@ def user_list(auth, fields=None):
         entry = {}
         for attr, values in user.items():
             if values:
+                if attr == "loginShell":
+                    if values[0].strip() == "/bin/false":
+                        entry["ssh_allowed"] = False
+                    else:
+                        entry["ssh_allowed"] = True
+
                 entry[user_attrs[attr]] = values[0]
 
         uid = entry[user_attrs['uid']]
@@ -103,7 +111,6 @@ def user_create(auth, username, firstname, lastname, mail, password,
         mailbox_quota -- Mailbox size quota
 
     """
-    import pwd
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
@@ -434,6 +441,30 @@ def user_info(auth, username):
     else:
         raise MoulinetteError(167, m18n.n('user_info_failed'))
 
+#
+# SSH subcategory
+#
+#
+import yunohost.ssh
+
+def user_ssh_allow(auth, username):
+    return yunohost.ssh.user_ssh_allow(auth, username)
+
+def user_ssh_disallow(auth, username):
+    return yunohost.ssh.user_ssh_disallow(auth, username)
+
+def user_ssh_list_keys(auth, username):
+    return yunohost.ssh.user_ssh_list_keys(auth, username)
+
+def user_ssh_add_key(auth, username, key, comment):
+    return yunohost.ssh.user_ssh_add_key(auth, username, key, comment)
+
+def user_ssh_remove_key(auth, username, key):
+    return yunohost.ssh.user_ssh_remove_key(auth, username, key)
+
+#
+# End SSH subcategory
+#
 
 def _convertSize(num, suffix=''):
     for unit in ['K', 'M', 'G', 'T', 'P', 'E', 'Z']:
@@ -470,3 +501,6 @@ def _hash_user_password(password):
 
     salt = '$6$' + salt + '$'
     return '{CRYPT}' + crypt.crypt(str(password), salt)
+
+
+

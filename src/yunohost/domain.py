@@ -28,9 +28,6 @@ import re
 import json
 import yaml
 import errno
-import requests
-
-from urllib import urlopen
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
@@ -39,6 +36,7 @@ from moulinette.utils.log import getActionLogger
 import yunohost.certificate
 
 from yunohost.service import service_regen_conf
+from yunohost.utils.network import get_public_ip
 
 logger = getActionLogger('yunohost.domain')
 
@@ -112,7 +110,7 @@ def domain_add(auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'rmilter'])
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
             app_ssowatconf(auth)
 
     except:
@@ -188,23 +186,23 @@ def domain_dns_conf(domain, ttl=None):
 
     result = ""
 
-    result += "# Basic ipv4/ipv6 records"
+    result += "; Basic ipv4/ipv6 records"
     for record in dns_conf["basic"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     result += "\n\n"
-    result += "# XMPP"
+    result += "; XMPP"
     for record in dns_conf["xmpp"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     result += "\n\n"
-    result += "# Mail"
+    result += "; Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
-        logger.warning(m18n.n("domain_dns_conf_is_just_a_recommendation"))
+        logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
 
@@ -221,9 +219,9 @@ def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
-def domain_url_available(auth, domain, path):
+def _get_conflicting_apps(auth, domain, path):
     """
-    Check availability of a web path
+    Return a list of all conflicting apps with a domain/path (it can be empty)
 
     Keyword argument:
         domain -- The domain for the web path (e.g. your.domain.tld)
@@ -244,56 +242,30 @@ def domain_url_available(auth, domain, path):
     apps_map = app_map(raw=True)
 
     # Loop through all apps to check if path is taken by one of them
-    available = True
+    conflicts = []
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
             if path == p:
-                available = False
-                break
+                conflicts.append((p, a["id"], a["label"]))
             # We also don't want conflicts with other apps starting with
             # same name
             elif path.startswith(p) or p.startswith(path):
-                available = False
-                break
+                conflicts.append((p, a["id"], a["label"]))
 
-    return available
+    return conflicts
 
 
-def get_public_ip(protocol=4):
-    """Retrieve the public IP address from ip.yunohost.org"""
-    if protocol == 4:
-        url = 'https://ip.yunohost.org'
-    elif protocol == 6:
-        url = 'https://ip6.yunohost.org'
-    else:
-        raise ValueError("invalid protocol version")
-
-    try:
-        return urlopen(url).read().strip()
-    except IOError:
-        logger.debug('cannot retrieve public IPv%d' % protocol, exc_info=1)
-        raise MoulinetteError(errno.ENETUNREACH,
-                              m18n.n('no_internet_connection'))
-
-def get_public_ips():
+def domain_url_available(auth, domain, path):
     """
-    Retrieve the public IPv4 and v6 from ip. and ip6.yunohost.org
+    Check availability of a web path
 
-    Returns a 2-tuple (ipv4, ipv6). ipv4 or ipv6 can be None if they were not
-    found.
+    Keyword argument:
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
     """
 
-    try:
-        ipv4 = get_public_ip()
-    except:
-        ipv4 = None
-    try:
-        ipv6 = get_public_ip(6)
-    except:
-        ipv6 = None
-
-    return (ipv4, ipv6)
+    return len(_get_conflicting_apps(auth, domain, path)) == 0
 
 
 def _get_maindomain():
@@ -356,15 +328,8 @@ def _build_dns_conf(domain, ttl=3600):
     }
     """
 
-    try:
-        ipv4 = get_public_ip()
-    except:
-        ipv4 = None
-
-    try:
-        ipv6 = get_public_ip(6)
-    except:
-        ipv6 = None
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
 
     basic = []
 
@@ -429,17 +394,54 @@ def _get_DKIM(domain):
     with open(DKIM_file) as f:
         dkim_content = f.read()
 
-    dkim = re.match((
-        r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
-        '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
-        '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
-        '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
-    )
+    # Gotta manage two formats :
+    #
+    # Legacy
+    # -----
+    #
+    # mail._domainkey IN      TXT     ( "v=DKIM1; k=rsa; "
+    #           "p=<theDKIMpublicKey>" )
+    #
+    # New
+    # ------
+    #
+    # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
+    #           "p=<theDKIMpublicKey>" )
+
+    is_legacy_format = " h=sha256; " not in dkim_content
+
+    # Legacy DKIM format
+    if is_legacy_format:
+        dkim = re.match((
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
+             '[^"]*"v=(?P<v>[^";]+);'
+             '[\s"]*k=(?P<k>[^";]+);'
+             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        )
+    else:
+        dkim = re.match((
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
+             '[^"]*"v=(?P<v>[^";]+);'
+             '[\s"]*h=(?P<h>[^";]+);'
+             '[\s"]*k=(?P<k>[^";]+);'
+             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        )
 
     if not dkim:
         return (None, None)
 
-    return (
-        dkim.group('host'),
-        '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p'))
-    )
+    if is_legacy_format:
+        return (
+            dkim.group('host'),
+            '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'),
+                                           k=dkim.group('k'),
+                                           p=dkim.group('p'))
+        )
+    else:
+        return (
+            dkim.group('host'),
+            '"v={v}; h={h}; k={k}; p={p}"'.format(v=dkim.group('v'),
+                                                  h=dkim.group('h'),
+                                                  k=dkim.group('k'),
+                                                  p=dkim.group('p'))
+        )

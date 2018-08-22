@@ -29,21 +29,18 @@ import shutil
 import pwd
 import grp
 import smtplib
-import requests
 import subprocess
 import dns.resolver
 import glob
 
-from OpenSSL import crypto
 from datetime import datetime
-from requests.exceptions import Timeout
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.domain
+from yunohost.utils.network import get_public_ip
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
@@ -97,6 +94,8 @@ def certificate_status(auth, domain_list, full=False):
         domain_list -- Domains to be checked
         full        -- Display more info about the certificates
     """
+
+    import yunohost.domain
 
     # Check if old letsencrypt_ynh is installed
     # TODO / FIXME - Remove this in the future once the letsencrypt app is
@@ -212,7 +211,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
                 raise MoulinetteError(
                     errno.EIO, m18n.n('domain_cert_gen_failed'))
             else:
-                logger.info(out)
+                logger.debug(out)
 
         # Link the CA cert (not sure it's actually needed in practice though,
         # since we append it at the end of crt.pem. For instance for Let's
@@ -245,6 +244,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
+    import yunohost.domain
+
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
@@ -288,13 +289,14 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
                 _check_domain_is_ready_for_ACME(domain)
 
             _configure_for_acme_challenge(auth, domain)
-            _fetch_and_enable_new_certificate(domain, staging)
+            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
             _install_cron()
 
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
         except Exception as e:
+            _display_debug_information(domain)
             logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
 
 
@@ -309,6 +311,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                       before attempting the renewing
         email      -- Emails root if some renewing failed
     """
+
+    import yunohost.domain
 
     # Check if old letsencrypt_ynh is installed
     # TODO / FIXME - Remove this in the future once the letsencrypt app is
@@ -379,7 +383,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
 
-            _fetch_and_enable_new_certificate(domain, staging)
+            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_renew_success", domain=domain))
@@ -403,6 +407,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 ###############################################################################
 
 def _check_old_letsencrypt_app():
+    import yunohost.domain
+
     installedAppIds = [app["id"] for app in yunohost.app.app_list(installed=True)["apps"]]
 
     if "letsencrypt" not in installedAppIds:
@@ -463,7 +469,7 @@ def _configure_for_acme_challenge(auth, domain):
     nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
 
     nginx_configuration = '''
-location '/.well-known/acme-challenge'
+location ^~ '/.well-known/acme-challenge'
 {
         default_type "text/plain";
         alias %s;
@@ -486,11 +492,11 @@ location '/.well-known/acme-challenge'
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
-        logger.info(
+        logger.debug(
             "Nginx configuration file for ACME challenge already exists for domain, skipping.")
         return
 
-    logger.info(
+    logger.debug(
         "Adding Nginx configuration file for Acme challenge for domain %s.", domain)
 
     with open(nginx_conf_file, "w") as f:
@@ -515,7 +521,7 @@ def _check_acme_challenge_configuration(domain):
         return True
 
 
-def _fetch_and_enable_new_certificate(domain, staging=False):
+def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
@@ -532,7 +538,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _regen_dnsmasq_if_needed()
 
     # Prepare certificate signing request
-    logger.info(
+    logger.debug(
         "Prepare key and certificate signing request (CSR) for %s...", domain)
 
     domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
@@ -542,7 +548,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _prepare_certificate_signing_request(domain, domain_key_file, TMP_FOLDER)
 
     # Sign the certificate
-    logger.info("Now using ACME Tiny to sign the certificate...")
+    logger.debug("Now using ACME Tiny to sign the certificate...")
 
     domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
@@ -556,6 +562,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                                               domain_csr_file,
                                               WEBROOT_FOLDER,
                                               log=logger,
+                                              no_checks=no_checks,
                                               CA=certification_authority)
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
@@ -563,6 +570,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                 'certmanager_hit_rate_limit', domain=domain))
         else:
             logger.error(str(e))
+            _display_debug_information(domain)
             raise MoulinetteError(errno.EINVAL, m18n.n(
                 'certmanager_cert_signing_failed'))
 
@@ -572,13 +580,14 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_cert_signing_failed'))
 
+    import requests # lazy loading this module for performance reasons
     try:
         intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
-    except Timeout as e:
+    except requests.exceptions.Timeout as e:
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
 
     # Now save the key and signed certificate
-    logger.info("Saving the key and signed certificate...")
+    logger.debug("Saving the key and signed certificate...")
 
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -623,6 +632,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
+    from OpenSSL import crypto # lazy loading this module for performance reasons
     # Init a request
     csr = crypto.X509Req()
 
@@ -640,7 +650,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
     # Save the request in tmp folder
     csr_file = output_folder + domain + ".csr"
-    logger.info("Saving to %s.", csr_file)
+    logger.debug("Saving to %s.", csr_file)
 
     with open(csr_file, "w") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
@@ -654,6 +664,7 @@ def _get_status(domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_no_cert_file', domain=domain, file=cert_file))
 
+    from OpenSSL import crypto # lazy loading this module for performance reasons
     try:
         cert = crypto.load_certificate(
             crypto.FILETYPE_PEM, open(cert_file).read())
@@ -750,12 +761,13 @@ def _get_status(domain):
 
 
 def _generate_account_key():
-    logger.info("Generating account key ...")
+    logger.debug("Generating account key ...")
     _generate_key(ACCOUNT_KEY_FILE)
     _set_permissions(ACCOUNT_KEY_FILE, "root", "root", 0400)
 
 
 def _generate_key(destination_path):
+    from OpenSSL import crypto # lazy loading this module for performance reasons
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
 
@@ -772,7 +784,7 @@ def _set_permissions(path, user, group, permissions):
 
 
 def _enable_certificate(domain, new_cert_folder):
-    logger.info("Enabling the certificate for domain %s ...", domain)
+    logger.debug("Enabling the certificate for domain %s ...", domain)
 
     live_link = os.path.join(CERT_FOLDER, domain)
 
@@ -789,7 +801,7 @@ def _enable_certificate(domain, new_cert_folder):
 
     os.symlink(new_cert_folder, live_link)
 
-    logger.info("Restarting services...")
+    logger.debug("Restarting services...")
 
     for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
@@ -798,7 +810,7 @@ def _enable_certificate(domain, new_cert_folder):
 
 
 def _backup_current_cert(domain):
-    logger.info("Backuping existing certificate for domain %s", domain)
+    logger.debug("Backuping existing certificate for domain %s", domain)
 
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
@@ -809,7 +821,7 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-    public_ip = yunohost.domain.get_public_ip()
+    public_ip = get_public_ip()
 
     # Check if IP from DNS matches public IP
     if not _dns_ip_match_public_ip(public_ip, domain):
@@ -822,7 +834,7 @@ def _check_domain_is_ready_for_ACME(domain):
             'certmanager_domain_http_not_working', domain=domain))
 
 
-def _dns_ip_match_public_ip(public_ip, domain):
+def _get_dns_ip(domain):
     try:
         resolver = dns.resolver.Resolver()
         resolver.nameservers = DNS_RESOLVERS
@@ -831,15 +843,18 @@ def _dns_ip_match_public_ip(public_ip, domain):
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'certmanager_error_no_A_record', domain=domain))
 
-    dns_ip = str(answers[0])
+    return str(answers[0])
 
-    return dns_ip == public_ip
+
+def _dns_ip_match_public_ip(public_ip, domain):
+    return _get_dns_ip(domain) == public_ip
 
 
 def _domain_is_accessible_through_HTTP(ip, domain):
+    import requests # lazy loading this module for performance reasons
     try:
         requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
-    except Timeout as e:
+    except requests.exceptions.Timeout as e:
         logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
         return False
     except Exception as e:
@@ -849,6 +864,30 @@ def _domain_is_accessible_through_HTTP(ip, domain):
     return True
 
 
+def _get_local_dns_ip(domain):
+    try:
+        resolver = dns.resolver.Resolver()
+        answers = resolver.query(domain, "A")
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+        logger.warning("Failed to resolved domain '%s' locally", domain)
+        return None
+
+    return str(answers[0])
+
+
+def _display_debug_information(domain):
+    dns_ip = _get_dns_ip(domain)
+    public_ip = get_public_ip()
+    local_dns_ip = _get_local_dns_ip(domain)
+
+    logger.warning("""\
+Debug information:
+ - domain ip from DNS        %s
+ - domain ip from local DNS  %s
+ - public ip of the server   %s
+""", dns_ip, local_dns_ip, public_ip)
+
+
 # FIXME / TODO : ideally this should not be needed. There should be a proper
 # mechanism to regularly check the value of the public IP and trigger
 # corresponding hooks (e.g. dyndns update and dnsmasq regen-conf)
@@ -856,14 +895,9 @@ def _regen_dnsmasq_if_needed():
     """
     Update the dnsmasq conf if some IPs are not up to date...
     """
-    try:
-        ipv4 = yunohost.domain.get_public_ip()
-    except:
-        ipv4 = None
-    try:
-        ipv6 = yunohost.domain.get_public_ip(6)
-    except:
-        ipv6 = None
+
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
 
     do_regen = False
 

@@ -38,11 +38,18 @@ do_pre_regen() {
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
     mkdir -p "$domain_conf_dir"
+    mail_autoconfig_dir="${pending_dir}/var/www/.well-known/${domain}/autoconfig/mail/"
+    mkdir -p "$mail_autoconfig_dir"
 
     # NGINX server configuration
     cat server.tpl.conf \
       | sed "s/{{ domain }}/${domain}/g" \
       > "${nginx_conf_dir}/${domain}.conf"
+
+    cat autoconfig.tpl.xml \
+      | sed "s/{{ domain }}/${domain}/g" \
+      > "${mail_autoconfig_dir}/config-v1.1.xml"
+
 
     [[ $main_domain != $domain ]] \
       && touch "${domain_conf_dir}/yunohost_local.conf" \
@@ -56,6 +63,14 @@ do_pre_regen() {
     domain=${file%.conf}
     [[ $domain_list =~ $domain ]] \
       || touch "${nginx_conf_dir}/${file}"
+  done
+
+  # remove old mail-autoconfig files
+  autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2>/dev/null || true)
+  for file in $autoconfig_files; do
+    domain=$(basename $(readlink -f $(dirname $file)/../..))
+    [[ $domain_list =~ $domain ]] \
+      || (mkdir -p "$(dirname ${pending_dir}/${file})" && touch "${pending_dir}/${file}")
   done
 
   # disable default site
@@ -77,7 +92,7 @@ do_post_regen() {
   done
 
   # Reload nginx configuration
-  sudo service nginx reload
+  pgrep nginx && sudo service nginx reload
 }
 
 FORCE=${2:-0}

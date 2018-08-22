@@ -298,7 +298,8 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="admin"):
+              chdir=None, env=None, user="admin", stdout_callback=None,
+              stderr_callback=None):
     """
     Execute hook from a file with arguments
 
@@ -359,19 +360,21 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
-        logger.info(m18n.n('executing_command', command=' '.join(command)))
+        logger.debug(m18n.n('executing_command', command=' '.join(command)))
     else:
-        logger.info(m18n.n('executing_script', script=path))
+        logger.debug(m18n.n('executing_script', script=path))
 
     # Define output callbacks and call command
     callbacks = (
-        lambda l: logger.debug(l.rstrip()),        # Stdout
-        lambda l: logger.warning(l.rstrip()),      # Stderr
+        stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()),
+        stderr_callback if stderr_callback else lambda l: logger.warning(l.rstrip()),
     )
 
     if stdinfo:
         callbacks = ( callbacks[0], callbacks[1],
                        lambda l: logger.info(l.rstrip()))
+
+    logger.debug("About to run the command '%s'" % command)
 
     returncode = call_async_output(
         command, callbacks, shell=False, cwd=chdir,

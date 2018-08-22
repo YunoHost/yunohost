@@ -26,15 +26,15 @@
 import re
 import os
 import yaml
-import requests
 import json
 import errno
 import logging
 import subprocess
 import pwd
 import socket
-from collections import OrderedDict
+from xmlrpclib import Fault
 from importlib import import_module
+from collections import OrderedDict
 
 import apt
 import apt.progress
@@ -42,14 +42,16 @@ import apt.progress
 from moulinette import msettings, msignals, m18n
 from moulinette.core import MoulinetteError, init_authenticator
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, get_public_ip, _get_maindomain, _set_maindomain
+from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log
+from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.network import get_public_ip
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -222,7 +224,7 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.warning(out)
             raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
         else:
-            logger.info(out)
+            logger.debug(out)
 
 
 def _is_inside_container():
@@ -232,14 +234,14 @@ def _is_inside_container():
     Returns True or False
     """
 
-    # See https://stackoverflow.com/a/37016302
-    p = subprocess.Popen("sudo cat /proc/1/sched".split(),
+    # See https://www.2daygeek.com/check-linux-system-physical-virtual-machine-virtualization-technology/
+    p = subprocess.Popen("sudo systemd-detect-virt".split(),
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
-
-    return out.split()[1] != "(1,"
+    container = ['lxc','lxd','docker']
+    return out.split()[0] in container
 
 
 def tools_postinstall(domain, password, ignore_dyndns=False):
@@ -293,6 +295,8 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
 
     logger.info(m18n.n('yunohost_installing'))
 
+    service_regen_conf(['nslcd', 'nsswitch'], force=True)
+
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
     auth = tools_ldapinit()
@@ -316,7 +320,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     os.system('chmod 755 /home/yunohost.app')
 
     # Set hostname to avoid amavis bug
-    if os.system('hostname -d') != 0:
+    if os.system('hostname -d >/dev/null') != 0:
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
@@ -325,7 +329,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
         raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+                              m18n.n('ssowat_persistent_conf_read_error', error=str(e)))
     except IOError:
         ssowat_conf = {}
 
@@ -339,7 +343,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
         raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+                              m18n.n('ssowat_persistent_conf_write_error', error=str(e)))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -393,16 +397,18 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(skip=True)
+    tools_migrations_migrate(skip=True, auto=True)
 
     os.system('touch /etc/yunohost/installed')
 
     # Enable and start YunoHost firewall at boot time
-    os.system('update-rc.d yunohost-firewall enable')
-    os.system('service yunohost-firewall start &')
+    service_enable("yunohost-firewall")
+    service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
     logger.success(m18n.n('yunohost_configured'))
+
+    logger.warning(m18n.n('recommend_to_add_first_user'))
 
 
 def tools_update(ignore_apps=False, ignore_packages=False):
@@ -420,7 +426,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        logger.info(m18n.n('updating_apt_cache'))
+        logger.debug(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
 
@@ -434,7 +440,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
                 'fullname': pkg.fullname,
                 'changelog': pkg.get_changelog()
             })
-        logger.info(m18n.n('done'))
+        logger.debug(m18n.n('done'))
 
     # "apps" will list upgradable packages
     apps = []
@@ -561,17 +567,19 @@ def tools_diagnosis(auth, private=False):
     # Packages version
     diagnosis['packages'] = ynh_packages_version()
 
+    diagnosis["backports"] = check_output("dpkg -l |awk '/^ii/ && $3 ~ /bpo[6-8]/ {print $2}'").split()
+
     # Server basic monitoring
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except MoulinetteError as e:
+    except (MoulinetteError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
         for disk in disks:
-            if isinstance(disk, str):
-                diagnosis['system']['disks'] = disk
+            if isinstance(disks[disk], str):
+                diagnosis['system']['disks'][disk] = disks[disk]
             else:
                 diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
                     disks[disk]['mnt_point'],
@@ -588,6 +596,14 @@ def tools_diagnosis(auth, private=False):
             'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
             'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
         }
+
+    # nginx -t
+    try:
+        diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Unable to check 'nginx -t', exception: %s" % e)
 
     # Services status
     services = service_status()
@@ -610,21 +626,62 @@ def tools_diagnosis(auth, private=False):
     # Private data
     if private:
         diagnosis['private'] = OrderedDict()
+
         # Public IP
         diagnosis['private']['public_ip'] = {}
-        try:
-            diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
-        except MoulinetteError as e:
-            pass
-        try:
-            diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
-        except MoulinetteError as e:
-            pass
+        diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
+        diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
 
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
+        diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
+
+    try:
+        diagnosis['security'] = {
+            "CVE-2017-5754": {
+                "name": "meltdown",
+                "vulnerable": _check_if_vulnerable_to_meltdown(),
+            }
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Unable to check for meltdown vulnerability: %s" % e)
+
     return diagnosis
+
+
+def _check_if_vulnerable_to_meltdown():
+    # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
+
+    # script taken from https://github.com/speed47/spectre-meltdown-checker
+    # script commit id is store directly in the script
+    file_dir = os.path.split(__file__)[0]
+    SCRIPT_PATH = os.path.join(file_dir, "./vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh")
+
+    # '--variant 3' corresponds to Meltdown
+    # example output from the script:
+    # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
+    try:
+        call = subprocess.Popen("bash %s --batch json --variant 3" %
+                                SCRIPT_PATH, shell=True,
+                                  stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+
+        output, _ = call.communicate()
+        assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
+
+        CVEs = json.loads(output)
+        assert len(CVEs) == 1
+        assert CVEs[0]["NAME"] == "MELTDOWN"
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
+        raise Exception("Command output for failed meltdown check: '%s'" % output)
+
+    return CVEs[0]["VULNERABLE"]
 
 
 def tools_port_available(port):
@@ -679,24 +736,39 @@ def tools_reboot(force=False):
         subprocess.check_call(['systemctl', 'reboot'])
 
 
-def tools_migrations_list():
+def tools_migrations_list(pending=False, done=False):
     """
     List existing migrations
     """
 
-    migrations = {"migrations": []}
+    # Check for option conflict
+    if pending and done:
+        raise MoulinetteError(errno.EINVAL, m18n.n("migrations_list_conflict_pending_done"))
 
-    for migration in _get_migrations_list():
-        migrations["migrations"].append({
-            "number": int(migration.split("_", 1)[0]),
-            "name": migration.split("_", 1)[1],
-            "file_name": migration,
-        })
+    # Get all migrations
+    migrations = _get_migrations_list()
 
-    return migrations
+    # If asked, filter pending or done migrations
+    if pending or done:
+        last_migration = tools_migrations_state()["last_run_migration"]
+        last_migration = last_migration["number"] if last_migration else -1
+        if done:
+            migrations = [m for m in migrations if m.number <= last_migration]
+        if pending:
+            migrations = [m for m in migrations if m.number > last_migration]
+
+    # Reduce to dictionnaries
+    migrations = [{ "id": migration.id,
+                    "number": migration.number,
+                    "name": migration.name,
+                    "mode": migration.mode,
+                    "description": migration.description,
+                    "disclaimer": migration.disclaimer } for migration in migrations ]
+
+    return {"migrations": migrations}
 
 
-def tools_migrations_migrate(target=None, skip=False):
+def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclaimer=False):
     """
     Perform migrations
     """
@@ -713,46 +785,18 @@ def tools_migrations_migrate(target=None, skip=False):
 
     last_run_migration_number = state["last_run_migration"]["number"] if state["last_run_migration"] else 0
 
-    migrations = []
-
-    # loading all migrations
-    for migration in tools_migrations_list()["migrations"]:
-        logger.debug(m18n.n('migrations_loading_migration',
-            number=migration["number"],
-            name=migration["name"],
-        ))
-
-        try:
-            # this is python builtin method to import a module using a name, we
-            # use that to import the migration as a python object so we'll be
-            # able to run it in the next loop
-            module = import_module("yunohost.data_migrations.{file_name}".format(**migration))
-        except Exception:
-            import traceback
-            traceback.print_exc()
-
-            raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-                number=migration["number"],
-                name=migration["name"],
-            ))
-            break
-
-        migrations.append({
-            "number": migration["number"],
-            "name": migration["name"],
-            "module": module,
-        })
-
-    migrations = sorted(migrations, key=lambda x: x["number"])
+    # load all migrations
+    migrations = _get_migrations_list()
+    migrations = sorted(migrations, key=lambda x: x.number)
 
     if not migrations:
         logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
-    all_migration_numbers = [x["number"] for x in migrations]
+    all_migration_numbers = [x.number for x in migrations]
 
     if target is None:
-        target = migrations[-1]["number"]
+        target = migrations[-1].number
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
@@ -771,44 +815,74 @@ def tools_migrations_migrate(target=None, skip=False):
     if last_run_migration_number < target:
         logger.debug(m18n.n('migrations_forward'))
         # drop all already run migrations
-        migrations = filter(lambda x: target >= x["number"] > last_run_migration_number, migrations)
+        migrations = filter(lambda x: target >= x.number > last_run_migration_number, migrations)
         mode = "forward"
 
     # we need to go backward on already run migrations
     elif last_run_migration_number > target:
         logger.debug(m18n.n('migrations_backward'))
         # drop all not already run migrations
-        migrations = filter(lambda x: target < x["number"] <= last_run_migration_number, migrations)
+        migrations = filter(lambda x: target < x.number <= last_run_migration_number, migrations)
         mode = "backward"
 
     else:  # can't happen, this case is handle before
         raise Exception()
 
+    # If we are migrating in "automatic mode" (i.e. from debian
+    # configure during an upgrade of the package) but we are asked to run
+    # migrations is to be ran manually by the user
+    manual_migrations = [m for m in migrations if m.mode == "manual"]
+    if not skip and auto and manual_migrations:
+        for m in manual_migrations:
+            logger.warn(m18n.n('migrations_to_be_ran_manually',
+                               number=m.number,
+                               name=m.name))
+        return
+
+    # If some migrations have disclaimers, require the --accept-disclaimer
+    # option
+    migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
+    if not skip and not accept_disclaimer and migrations_with_disclaimer:
+        for m in migrations_with_disclaimer:
+            logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                               number=m.number,
+                               name=m.name,
+                               disclaimer=m.disclaimer))
+        return
+
     # effectively run selected migrations
     for migration in migrations:
         if not skip:
-            logger.warn(m18n.n('migrations_show_currently_running_migration', **migration))
+
+            logger.warn(m18n.n('migrations_show_currently_running_migration',
+                               number=migration.number, name=migration.name))
 
             try:
                 if mode == "forward":
-                    migration["module"].MyMigration().migrate()
+                    migration.migrate()
                 elif mode == "backward":
-                    migration["module"].MyMigration().backward()
+                    migration.backward()
                 else:  # can't happen
                     raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                logger.error(m18n.n('migrations_migration_has_failed', exception=e, **migration), exc_info=1)
+                logger.error(m18n.n('migrations_migration_has_failed',
+                                    exception=e,
+                                    number=migration.number,
+                                    name=migration.name),
+                                    exc_info=1)
                 break
 
         else:  # if skip
-            logger.warn(m18n.n('migrations_skip_migration', **migration))
+            logger.warn(m18n.n('migrations_skip_migration',
+                               number=migration.number,
+                               name=migration.name))
 
         # update the state to include the latest run migration
         state["last_run_migration"] = {
-            "number": migration["number"],
-            "name": migration["name"],
+            "number": migration.number,
+            "name": migration.name
         }
 
     # special case where we want to go back from the start
@@ -871,19 +945,79 @@ def _get_migrations_list():
         logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
         return migrations
 
-    for migration in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
-        migrations.append(migration[:-len(".py")])
+    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+        migrations.append(_load_migration(migration_file))
 
-    return sorted(migrations)
+    return sorted(migrations, key=lambda m: m.id)
+
+
+def _get_migration_by_name(migration_name):
+    """
+    Low-level / "private" function to find a migration by its name
+    """
+
+    try:
+        import data_migrations
+    except ImportError:
+        raise AssertionError("Unable to find migration with name %s" % migration_name)
+
+    migrations_path = data_migrations.__path__[0]
+    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
+
+    assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
+
+    return _load_migration(migrations_found[0])
+
+
+def _load_migration(migration_file):
+
+    migration_id = migration_file[:-len(".py")]
+
+    number, name = migration_id.split("_", 1)
+
+    logger.debug(m18n.n('migrations_loading_migration',
+        number=number, name=name))
+
+    try:
+        # this is python builtin method to import a module using a name, we
+        # use that to import the migration as a python object so we'll be
+        # able to run it in the next loop
+        module = import_module("yunohost.data_migrations.{}".format(migration_id))
+        return module.MyMigration(migration_id)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
+            number=number, name=name))
 
 
 class Migration(object):
 
-    def migrate(self):
-        self.forward()
+    # Those are to be implemented by daughter classes
+
+    mode = "auto"
 
     def forward(self):
         raise NotImplementedError()
 
     def backward(self):
         pass
+
+    @property
+    def disclaimer(self):
+        return None
+
+    # The followings shouldn't be overriden
+
+    def migrate(self):
+        self.forward()
+
+    def __init__(self, id_):
+        self.id = id_
+        self.number = int(self.id.split("_", 1)[0])
+        self.name = self.id.split("_", 1)[1]
+
+    @property
+    def description(self):
+        return m18n.n("migration_description_%s" % self.id)

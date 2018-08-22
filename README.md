@@ -9,7 +9,7 @@ This repository is the core of YunoHost code.
 </a>
 
 ## Issues
-- [Please report issues on YunoHost bugtracker](https://dev.yunohost.org/projects/yunohost/issues) (no registration needed).
+- [Please report issues on YunoHost bugtracker](https://github.com/YunoHost/issues).
 
 ## Contribute
 - You can develop on this repository using [ynh-dev tool](https://github.com/YunoHost/ynh-dev) with `use-git`  sub-command.
