@@ -2201,7 +2201,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     app_label=app_label,
                 ))
 
-            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', "\n".join(apps=apps)))
+            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
