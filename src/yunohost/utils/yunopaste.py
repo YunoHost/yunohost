@@ -11,7 +11,7 @@ def yunopaste(data):
     paste_server = "https://paste.yunohost.org"
 
     try:
-        r = requests.post("%s/documents" % paste_server, data=data)
+        r = requests.post("%s/documents" % paste_server, data=data, timeout=30)
     except Exception as e:
         raise MoulinetteError(errno.EIO,
                               "Something wrong happened while trying to paste data on paste.yunohost.org : %s" % str(e))
