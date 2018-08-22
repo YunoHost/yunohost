@@ -18,7 +18,7 @@ def yunopaste(data):
 
     if r.status_code != 200:
         raise MoulinetteError(errno.EIO,
-                              "Something wrong happened while trying to paste data on paste.yunohost.org : %s" % r.text)
+                              "Something wrong happened while trying to paste data on paste.yunohost.org : %s, %s" % (r.status_code, r.text))
 
     try:
         url = json.loads(r.text)["key"]
