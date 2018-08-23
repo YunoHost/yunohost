@@ -44,7 +44,7 @@ from moulinette.utils.filesystem import read_json
 
 from yunohost.service import service_log, _run_service_command
 from yunohost.utils import packages
-from yunohost.log import is_unit_operation, UnitOperation
+from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger('yunohost.app')
 
@@ -110,13 +110,13 @@ def app_fetchlist(url=None, name=None):
     # the fetch only this list
     if url is not None:
         if name:
-            uo = UnitOperation('app_fetchlist')
-            uo.start()
+            operation_logger = OperationLogger('app_fetchlist')
+            operation_logger.start()
             _register_new_appslist(url, name)
             # Refresh the appslists dict
             appslists = _read_appslist_list()
             appslists_to_be_fetched = [name]
-            uo.success()
+            operation_logger.success()
         else:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('custom_appslist_name_required'))
@@ -193,7 +193,7 @@ def app_fetchlist(url=None, name=None):
 
 
 @is_unit_operation()
-def app_removelist(uo, name):
+def app_removelist(operation_logger, name):
     """
     Remove list from the repositories
 
@@ -207,7 +207,7 @@ def app_removelist(uo, name):
     if name not in appslists.keys():
         raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
 
-    uo.start()
+    operation_logger.start()
 
     # Remove json
     json_path = '%s/%s.json' % (REPO_PATH, name)
@@ -433,7 +433,7 @@ def app_map(app=None, raw=False, user=None):
 
 
 @is_unit_operation()
-def app_change_url(uo, auth, app, domain, path):
+def app_change_url(operation_logger, auth, app, domain, path):
     """
     Modify the URL at which an application is installed.
 
@@ -491,9 +491,9 @@ def app_change_url(uo, auth, app, domain, path):
     env_dict["YNH_APP_NEW_PATH"] = path.rstrip("/")
 
     if domain != old_domain:
-        uo.related_to.append(('domain', old_domain))
-    uo.extra.update({'env': env_dict})
-    uo.start()
+        operation_logger.related_to.append(('domain', old_domain))
+    operation_logger.extra.update({'env': env_dict})
+    operation_logger.start()
 
     if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
         shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
@@ -515,7 +515,7 @@ def app_change_url(uo, auth, app, domain, path):
     if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root") != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
-        uo.error(msg)
+        operation_logger.error(msg)
 
         # restore values modified by app_checkurl
         # see begining of the function
@@ -630,8 +630,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
-        uo = UnitOperation('app_upgrade', related_to, env=env_dict)
-        uo.start()
+        operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
+        operation_logger.start()
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(extracted_app_folder)
@@ -641,7 +641,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
             logger.error(msg)
-            uo.error(msg)
+            operation_logger.error(msg)
         else:
             now = int(time.time())
             # TODO: Move install_time away from app_setting
@@ -671,7 +671,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
-            uo.success()
+            operation_logger.success()
 
     if not upgraded_apps:
         raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
@@ -686,7 +686,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
 
 @is_unit_operation()
-def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False):
+def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on_failure=False):
     """
     Install apps
 
@@ -698,7 +698,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.log import UnitOperation
+    from yunohost.log import OperationLogger
 
 
     # Fetch or extract sources
@@ -758,10 +758,10 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
     # Start register change on system
-    uo.extra.update({'env':env_dict})
-    uo.related_to = [s for s in uo.related_to if s[0] != "app"]
-    uo.related_to.append(("app", app_id))
-    uo.start()
+    operation_logger.extra.update({'env':env_dict})
+    operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
+    operation_logger.related_to.append(("app", app_id))
+    operation_logger.start()
 
     # Create app directory
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
@@ -806,7 +806,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
         logger.exception(m18n.n('unexpected_error'))
     finally:
         if install_retcode != 0:
-            error_msg = uo.error(m18n.n('unexpected_error'))
+            error_msg = operation_logger.error(m18n.n('unexpected_error'))
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -815,10 +815,10 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
                 env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
                 # Execute remove script
-                uo_remove = UnitOperation('remove_on_failed_install',
+                operation_logger_remove = OperationLogger('remove_on_failed_install',
                                                  [('app', app_instance_name)],
                                                  env=env_dict_remove)
-                uo_remove.start()
+                operation_logger_remove.start()
 
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
@@ -828,9 +828,9 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
                     msg = m18n.n('app_not_properly_removed',
                                  app=app_instance_name)
                     logger.warning(msg)
-                    uo_remove.error(msg)
+                    operation_logger_remove.error(msg)
                 else:
-                    uo_remove.success()
+                    operation_logger_remove.success()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
@@ -868,7 +868,7 @@ def app_install(uo, auth, app, label=None, args=None, no_remove_on_failure=False
 
 
 @is_unit_operation()
-def app_remove(uo, auth, app):
+def app_remove(operation_logger, auth, app):
     """
     Remove app
 
@@ -881,7 +881,7 @@ def app_remove(uo, auth, app):
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_not_installed', app=app))
 
-    uo.start()
+    operation_logger.start()
 
     app_setting_path = APPS_SETTING_PATH + app
 
@@ -906,8 +906,8 @@ def app_remove(uo, auth, app):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-    uo.extra.update({'env': env_dict})
-    uo.flush()
+    operation_logger.extra.update({'env': env_dict})
+    operation_logger.flush()
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
@@ -957,8 +957,8 @@ def app_addaccess(auth, apps, users=[]):
 
             # Start register change on system
             related_to = [('app', app)]
-            uo= UnitOperation('app_addaccess', related_to)
-            uo.start()
+            operation_logger= OperationLogger('app_addaccess', related_to)
+            operation_logger.start()
 
             allowed_users = set()
             if 'allowed_users' in app_settings:
@@ -972,14 +972,14 @@ def app_addaccess(auth, apps, users=[]):
                         logger.warning(m18n.n('user_unknown', user=allowed_user))
                         continue
                     allowed_users.add(allowed_user)
-                    uo.related_to.append(('user', allowed_user))
+                    operation_logger.related_to.append(('user', allowed_user))
 
-            uo.flush()
+            operation_logger.flush()
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_addaccess', args=[app, new_users])
 
-            uo.success()
+            operation_logger.success()
 
             result[app] = allowed_users
 
@@ -1020,8 +1020,8 @@ def app_removeaccess(auth, apps, users=[]):
 
             # Start register change on system
             related_to = [('app', app)]
-            uo= UnitOperation('app_removeaccess', related_to)
-            uo.start()
+            operation_logger= OperationLogger('app_removeaccess', related_to)
+            operation_logger.start()
 
             if remove_all:
                 pass
@@ -1034,15 +1034,15 @@ def app_removeaccess(auth, apps, users=[]):
                     if allowed_user not in users:
                         allowed_users.append(allowed_user)
 
-            uo.related_to += [ ('user', x) for x in allowed_users ]
-            uo.flush()
+            operation_logger.related_to += [ ('user', x) for x in allowed_users ]
+            operation_logger.flush()
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
             hook_callback('post_app_removeaccess', args=[app, new_users])
 
             result[app] = allowed_users
 
-            uo.success()
+            operation_logger.success()
 
     app_ssowatconf(auth)
 
@@ -1069,8 +1069,8 @@ def app_clearaccess(auth, apps):
 
         # Start register change on system
         related_to = [('app', app)]
-        uo= UnitOperation('app_clearaccess', related_to)
-        uo.start()
+        operation_logger= OperationLogger('app_clearaccess', related_to)
+        operation_logger.start()
 
         if 'mode' in app_settings:
             app_setting(app, 'mode', delete=True)
@@ -1080,7 +1080,7 @@ def app_clearaccess(auth, apps):
 
         hook_callback('post_app_clearaccess', args=[app])
 
-        uo.success()
+        operation_logger.success()
 
     app_ssowatconf(auth)
 
@@ -1109,7 +1109,7 @@ def app_debug(app):
 
 
 @is_unit_operation()
-def app_makedefault(uo, auth, app, domain=None):
+def app_makedefault(operation_logger, auth, app, domain=None):
     """
     Redirect domain root to an app
 
@@ -1126,11 +1126,11 @@ def app_makedefault(uo, auth, app, domain=None):
 
     if domain is None:
         domain = app_domain
-        uo.related_to.append(('domain',domain))
+        operation_logger.related_to.append(('domain',domain))
     elif domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
 
-    uo.start()
+    operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
         raise MoulinetteError(errno.EEXIST,
                               m18n.n('app_make_default_location_already_used',

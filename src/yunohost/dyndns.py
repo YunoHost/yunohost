@@ -114,7 +114,7 @@ def _dyndns_available(provider, domain):
 
 
 @is_unit_operation()
-def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
+def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
 
@@ -126,7 +126,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
     """
     if domain is None:
         domain = _get_maindomain()
-        uo.related_to.append(('domain', domain))
+        operation_logger.related_to.append(('domain', domain))
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
@@ -139,7 +139,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
         raise MoulinetteError(errno.ENOENT,
                               m18n.n('dyndns_unavailable', domain=domain))
 
-    uo.start()
+    operation_logger.start()
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
@@ -176,7 +176,7 @@ def dyndns_subscribe(uo, subscribe_host="dyndns.yunohost.org", domain=None, key=
 
 
 @is_unit_operation()
-def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
+def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """
     Update IP on DynDNS platform
@@ -232,8 +232,8 @@ def dyndns_update(uo, dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
             key = keys[0]
 
-    uo.related_to.append(('domain', domain))
-    uo.start()
+    operation_logger.related_to.append(('domain', domain))
+    operation_logger.start()
 
     # This mean that hmac-md5 is used
     # (Re?)Trigger the migration to sha256 and return immediately.

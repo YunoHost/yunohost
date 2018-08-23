@@ -99,7 +99,7 @@ def user_list(auth, fields=None):
 
 
 @is_unit_operation([('username', 'user')])
-def user_create(uo, auth, username, firstname, lastname, mail, password,
+def user_create(operation_logger, auth, username, firstname, lastname, mail, password,
         mailbox_quota="0"):
     """
     Create user
@@ -134,7 +134,7 @@ def user_create(uo, auth, username, firstname, lastname, mail, password,
                               m18n.n('mail_domain_unknown',
                                      domain=mail.split("@")[1]))
 
-    uo.start()
+    operation_logger.start()
 
     # Get random UID/GID
     all_uid = {x.pw_uid for x in pwd.getpwall()}
@@ -222,7 +222,7 @@ def user_create(uo, auth, username, firstname, lastname, mail, password,
 
 
 @is_unit_operation([('username', 'user')])
-def user_delete(uo, auth, username, purge=False):
+def user_delete(operation_logger, auth, username, purge=False):
     """
     Delete user
 
@@ -234,7 +234,7 @@ def user_delete(uo, auth, username, purge=False):
     from yunohost.app import app_ssowatconf
     from yunohost.hook import hook_callback
 
-    uo.start()
+    operation_logger.start()
     if auth.remove('uid=%s,ou=users' % username):
         # Invalidate passwd to take user deletion into account
         subprocess.call(['nscd', '-i', 'passwd'])
@@ -259,7 +259,7 @@ def user_delete(uo, auth, username, purge=False):
 
 
 @is_unit_operation([('username', 'user')], exclude=['auth', 'change_password'])
-def user_update(uo, auth, username, firstname=None, lastname=None, mail=None,
+def user_update(operation_logger, auth, username, firstname=None, lastname=None, mail=None,
         change_password=None, add_mailforward=None, remove_mailforward=None,
         add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
     """
@@ -360,7 +360,7 @@ def user_update(uo, auth, username, firstname=None, lastname=None, mail=None,
     if mailbox_quota is not None:
         new_attr_dict['mailuserquota'] = mailbox_quota
 
-    uo.start()
+    operation_logger.start()
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
         logger.success(m18n.n('user_updated'))

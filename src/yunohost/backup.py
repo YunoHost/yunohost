@@ -51,7 +51,7 @@ from yunohost.hook import (
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 from yunohost.service import service_regen_conf
-from yunohost.log import UnitOperation
+from yunohost.log import OperationLogger
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -1174,14 +1174,14 @@ class RestoreManager():
             return
 
         # Start register change on system
-        uo = UnitOperation('backup_restore_system')
-        uo.start()
+        operation_logger = OperationLogger('backup_restore_system')
+        operation_logger.start()
 
         logger.debug(m18n.n('restore_running_hooks'))
 
         env_dict = self._get_env_var()
-        uo.extra['env'] = env_dict
-        uo.flush()
+        operation_logger.extra['env'] = env_dict
+        operation_logger.flush()
         ret = hook_callback('restore',
                             system_targets,
                             args=[self.work_dir],
@@ -1198,9 +1198,9 @@ class RestoreManager():
             error_part.append(part)
 
         if ret['failed']:
-            uo.error(m18n.n('restore_system_part_failed', part=', '.join(error_part)))
+            operation_logger.error(m18n.n('restore_system_part_failed', part=', '.join(error_part)))
         else:
-            uo.success()
+            operation_logger.success()
 
         service_regen_conf()
 
@@ -1250,8 +1250,8 @@ class RestoreManager():
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
-        uo = UnitOperation('backup_restore_app', related_to)
-        uo.start()
+        operation_logger = OperationLogger('backup_restore_app', related_to)
+        operation_logger.start()
 
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
@@ -1302,8 +1302,8 @@ class RestoreManager():
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
 
-            uo.extra['env'] = env_dict
-            uo.flush()
+            operation_logger.extra['env'] = env_dict
+            operation_logger.flush()
 
             # Execute app restore script
             hook_exec(restore_script,
@@ -1315,7 +1315,7 @@ class RestoreManager():
         except:
             msg = m18n.n('restore_app_failed',app=app_instance_name)
             logger.exception(msg)
-            uo.error(msg)
+            operation_logger.error(msg)
 
             self.targets.set_result("apps", app_instance_name, "Error")
 
@@ -1328,10 +1328,10 @@ class RestoreManager():
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-            uo = UnitOperation('remove_on_failed_restore',
+            operation_logger = OperationLogger('remove_on_failed_restore',
                                [('app', app_instance_name)],
                                env=env_dict_remove)
-            uo.start()
+            operation_logger.start()
 
             # Execute remove script
             # TODO: call app_remove instead
@@ -1339,9 +1339,9 @@ class RestoreManager():
                          env=env_dict_remove, user="root") != 0:
                 msg = m18n.n('app_not_properly_removed', app=app_instance_name)
                 logger.warning(msg)
-                uo.error(msg)
+                operation_logger.error(msg)
             else:
-                uo.success()
+                operation_logger.success()
 
             # Cleaning app directory
             shutil.rmtree(app_settings_new_path, ignore_errors=True)
@@ -1349,7 +1349,7 @@ class RestoreManager():
             # TODO Cleaning app hooks
         else:
             self.targets.set_result("apps", app_instance_name, "Success")
-            uo.success()
+            operation_logger.success()
         finally:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)

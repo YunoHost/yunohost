@@ -45,7 +45,7 @@ from yunohost.utils.network import get_public_ip
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command, service_regen_conf
-from yunohost.log import UnitOperation
+from yunohost.log import OperationLogger
 
 logger = getActionLogger('yunohost.certmanager')
 
@@ -160,7 +160,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
     for domain in domain_list:
 
-        uo = UnitOperation('selfsigned_cert_install', [('domain', domain)],
+        operation_logger = OperationLogger('selfsigned_cert_install', [('domain', domain)],
                            args={'force': force})
 
         # Paths of files and folder we'll need
@@ -185,7 +185,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_replace_valid_cert', domain=domain))
 
-        uo.start()
+        operation_logger.start()
 
         # Create output folder for new certificate stuff
         os.makedirs(new_cert_folder)
@@ -243,11 +243,11 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
             logger.success(
                 m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
-            uo.success()
+            operation_logger.success()
         else:
             msg = "Installation of self-signed certificate installation for %s failed !" % (domain)
             logger.error(msg)
-            uo.error(msg)
+            operation_logger.error(msg)
 
 
 def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
@@ -288,7 +288,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # Actual install steps
     for domain in domain_list:
 
-        uo = UnitOperation('letsencrypt_cert_install', [('domain', domain)],
+        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
                            args={'force': force, 'no_checks': no_checks,
                                  'staging': staging})
         logger.info(
@@ -298,7 +298,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
 
-            uo.start()
+            operation_logger.start()
 
             _configure_for_acme_challenge(auth, domain)
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
@@ -307,12 +307,12 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
-            uo.success()
+            operation_logger.success()
         except Exception as e:
             _display_debug_information(domain)
             msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
             logger.error(msg)
-            uo.error(msg)
+            operation_logger.error(msg)
 
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
@@ -391,7 +391,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     # Actual renew steps
     for domain in domain_list:
 
-        uo = UnitOperation('letsencrypt_cert_renew', [('domain', domain)],
+        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
                            args={'force': force, 'no_checks': no_checks,
                                  'staging': staging, 'email': email})
 
@@ -402,14 +402,14 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
 
-            uo.start()
+            operation_logger.start()
 
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_renew_success", domain=domain))
 
-            uo.success()
+            operation_logger.success()
 
         except Exception as e:
             import traceback
@@ -418,7 +418,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             traceback.print_exc(file=stack)
             msg = "Certificate renewing for %s failed !" % (domain)
             logger.error(msg)
-            uo.error(msg)
+            operation_logger.error(msg)
             logger.error(stack.getvalue())
             logger.error(str(e))
 

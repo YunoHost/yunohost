@@ -239,8 +239,8 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
             if len(args) > 0:
                 from inspect import getargspec
                 keys = getargspec(func).args
-                if 'uo' in keys:
-                    keys.remove('uo')
+                if 'operation_logger' in keys:
+                    keys.remove('operation_logger')
                 for k, arg in enumerate(args):
                     kwargs[keys[k]] = arg
                 args = ()
@@ -267,24 +267,24 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
             for field in exclude:
                 if field in context:
                     context.pop(field, None)
-            uo = UnitOperation(op_key, related_to, args=context)
+            operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
                 # Start the actual function, and give the unit operation
                 # in argument to let the developper start the record itself
-                args = (uo,) + args
+                args = (operation_logger,) + args
                 result = func(*args, **kwargs)
             except Exception as e:
-                uo.error(e)
+                operation_logger.error(e)
                 raise
             else:
-                uo.success()
+                operation_logger.success()
             return result
         return func_wrapper
     return decorate
 
 
-class UnitOperation(object):
+class OperationLogger(object):
     """
     Instances of this class represents unit operation done on the ynh instance.
 

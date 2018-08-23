@@ -152,7 +152,7 @@ def service_stop(names):
             logger.debug(m18n.n('service_already_stopped', service=name))
 
 @is_unit_operation()
-def service_enable(uo, names):
+def service_enable(operation_logger, names):
     """
     Enable one or more services
 
@@ -160,7 +160,7 @@ def service_enable(uo, names):
         names -- Services name to enable
 
     """
-    uo.start()
+    operation_logger.start()
     if isinstance(names, str):
         names = [names]
     for name in names:
@@ -346,7 +346,7 @@ def service_log(name, number=50):
 
 
 @is_unit_operation([('names', 'service')])
-def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False,
+def service_regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
     Regenerate the configuration file(s) for a service
@@ -380,12 +380,12 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
         return pending_conf
 
     if not dry_run:
-        uo.related_to = [('service', x) for x in names]
+        operation_logger.related_to = [('service', x) for x in names]
         if not names:
-            uo.name_parameter_override = 'all'
+            operation_logger.name_parameter_override = 'all'
         elif len(names) != 1:
-            uo.name_parameter_override = str(len(uo.related_to))+'_services'
-        uo.start()
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to))+'_services'
+        operation_logger.start()
 
     # Clean pending conf directory
     if os.path.isdir(PENDING_CONF_DIR):
@@ -425,12 +425,12 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
-    uo.related_to = []
+    operation_logger.related_to = []
 
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
         if not dry_run:
-            uo.related_to.append(('service', service))
+            operation_logger.related_to.append(('service', service))
 
         logger.debug(m18n.n(
             'service_regenconf_pending_applying' if not dry_run else
@@ -580,7 +580,7 @@ def service_regen_conf(uo, names=[], with_diff=False, force=False, dry_run=False
 
     hook_callback('conf_regen', names, pre_callback=_pre_call)
 
-    uo.success()
+    operation_logger.success()
 
     return result
 
