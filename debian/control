@@ -18,7 +18,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , ca-certificates, netcat-openbsd, iproute
  , mariadb-server, php-mysql | php-mysqlnd
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd
- , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils
+ , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
  , dovecot-antispam, fail2ban
  , nginx-extras (>=1.6.2), php-fpm, php-ldap, php-intl

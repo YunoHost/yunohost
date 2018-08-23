@@ -114,7 +114,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
             app_ssowatconf(auth)
 
     except Exception, e:
@@ -171,7 +171,7 @@ def domain_remove(operation_logger, auth, domain, force=False):
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
-    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
+    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])
