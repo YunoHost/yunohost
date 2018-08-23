@@ -879,14 +879,11 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                                number=migration.number, name=migration.name))
 
             try:
+                migration.operation_logger = operation_logger
                 if mode == "forward":
-                    m = migration["module"].MyMigration()
-                    m.operation_logger = operation_logger
-                    m.migrate()
+                    migration.migrate()
                 elif mode == "backward":
-                    m = migration["module"].MyMigration()
-                    m.operation_logger = operation_logger
-                    m.backward()
+                    migration.backward()
                 else:  # can't happen
                     raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
             except Exception as e:
