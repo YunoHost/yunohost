@@ -52,6 +52,7 @@ from yunohost.service import service_status, service_regen_conf, service_log, se
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation, OperationLogger
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -138,7 +139,8 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-def tools_maindomain(auth, new_domain=None):
+@is_unit_operation()
+def tools_maindomain(operation_logger, auth, new_domain=None):
     """
     Check the current main domain, or change it
 
@@ -154,6 +156,9 @@ def tools_maindomain(auth, new_domain=None):
     # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
         raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+
+    operation_logger.related_to.append(('domain', new_domain))
+    operation_logger.start()
 
     # Apply changes to ssl certs
     ssl_key = "/etc/ssl/private/yunohost_key.pem"
@@ -244,7 +249,8 @@ def _is_inside_container():
     return out.split()[0] in container
 
 
-def tools_postinstall(domain, password, ignore_dyndns=False):
+@is_unit_operation()
+def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
     """
     YunoHost post-install
 
@@ -293,6 +299,7 @@ def tools_postinstall(domain, password, ignore_dyndns=False):
     else:
         dyndns = False
 
+    operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
     service_regen_conf(['nslcd', 'nsswitch'], force=True)
@@ -468,7 +475,8 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     return {'packages': packages, 'apps': apps}
 
 
-def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
+@is_unit_operation()
+def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=False):
     """
     Update apps & package cache, then display changelog
 
@@ -509,6 +517,7 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
         if cache.get_changes():
             logger.info(m18n.n('upgrading_packages'))
 
+            operation_logger.start()
             try:
                 # Apply APT changes
                 # TODO: Logs output for the API
@@ -518,10 +527,13 @@ def tools_upgrade(auth, ignore_apps=False, ignore_packages=False):
                 failure = True
                 logger.warning('unable to upgrade packages: %s' % str(e))
                 logger.error(m18n.n('packages_upgrade_failed'))
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
             else:
                 logger.info(m18n.n('done'))
+                operation_logger.success()
         else:
             logger.info(m18n.n('packages_no_upgrade'))
+
 
     if not ignore_apps:
         try:
@@ -703,7 +715,8 @@ def tools_port_available(port):
         return False
 
 
-def tools_shutdown(force=False):
+@is_unit_operation()
+def tools_shutdown(operation_logger, force=False):
     shutdown = force
     if not shutdown:
         try:
@@ -716,11 +729,13 @@ def tools_shutdown(force=False):
                 shutdown = True
 
     if shutdown:
+        operation_logger.start()
         logger.warn(m18n.n('server_shutdown'))
         subprocess.check_call(['systemctl', 'poweroff'])
 
 
-def tools_reboot(force=False):
+@is_unit_operation()
+def tools_reboot(operation_logger, force=False):
     reboot = force
     if not reboot:
         try:
@@ -732,6 +747,7 @@ def tools_reboot(force=False):
             if i.lower() == 'y' or i.lower() == 'yes':
                 reboot = True
     if reboot:
+        operation_logger.start()
         logger.warn(m18n.n('server_reboot'))
         subprocess.check_call(['systemctl', 'reboot'])
 
@@ -852,12 +868,18 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     # effectively run selected migrations
     for migration in migrations:
+
+        # Start register change on system
+        operation_logger= OperationLogger('tools_migrations_migrate_' + mode)
+        operation_logger.start()
+
         if not skip:
 
             logger.warn(m18n.n('migrations_show_currently_running_migration',
                                number=migration.number, name=migration.name))
 
             try:
+                migration.operation_logger = operation_logger
                 if mode == "forward":
                     migration.migrate()
                 elif mode == "backward":
@@ -867,11 +889,12 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                logger.error(m18n.n('migrations_migration_has_failed',
+                msg = m18n.n('migrations_migration_has_failed',
                                     exception=e,
                                     number=migration.number,
-                                    name=migration.name),
-                                    exc_info=1)
+                                    name=migration.name)
+                logger.error(msg, exc_info=1)
+                operation_logger.error(msg)
                 break
 
         else:  # if skip
@@ -884,6 +907,8 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
             "number": migration.number,
             "name": migration.name
         }
+
+        operation_logger.success()
 
     # special case where we want to go back from the start
     if target == 0:

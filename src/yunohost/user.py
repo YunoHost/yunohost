@@ -37,6 +37,7 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from yunohost.service import service_status
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
 
@@ -97,7 +98,8 @@ def user_list(auth, fields=None):
     return {'users': users}
 
 
-def user_create(auth, username, firstname, lastname, mail, password,
+@is_unit_operation([('username', 'user')])
+def user_create(operation_logger, auth, username, firstname, lastname, mail, password,
         mailbox_quota="0"):
     """
     Create user
@@ -131,6 +133,8 @@ def user_create(auth, username, firstname, lastname, mail, password,
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('mail_domain_unknown',
                                      domain=mail.split("@")[1]))
+
+    operation_logger.start()
 
     # Get random UID/GID
     all_uid = {x.pw_uid for x in pwd.getpwall()}
@@ -217,7 +221,8 @@ def user_create(auth, username, firstname, lastname, mail, password,
     raise MoulinetteError(169, m18n.n('user_creation_failed'))
 
 
-def user_delete(auth, username, purge=False):
+@is_unit_operation([('username', 'user')])
+def user_delete(operation_logger, auth, username, purge=False):
     """
     Delete user
 
@@ -229,6 +234,7 @@ def user_delete(auth, username, purge=False):
     from yunohost.app import app_ssowatconf
     from yunohost.hook import hook_callback
 
+    operation_logger.start()
     if auth.remove('uid=%s,ou=users' % username):
         # Invalidate passwd to take user deletion into account
         subprocess.call(['nscd', '-i', 'passwd'])
@@ -252,7 +258,8 @@ def user_delete(auth, username, purge=False):
     logger.success(m18n.n('user_deleted'))
 
 
-def user_update(auth, username, firstname=None, lastname=None, mail=None,
+@is_unit_operation([('username', 'user')], exclude=['auth', 'change_password'])
+def user_update(operation_logger, auth, username, firstname=None, lastname=None, mail=None,
         change_password=None, add_mailforward=None, remove_mailforward=None,
         add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
     """
@@ -352,6 +359,8 @@ def user_update(auth, username, firstname=None, lastname=None, mail=None,
 
     if mailbox_quota is not None:
         new_attr_dict['mailuserquota'] = mailbox_quota
+
+    operation_logger.start()
 
     if auth.update('uid=%s,ou=users' % username, new_attr_dict):
         logger.success(m18n.n('user_updated'))
