@@ -512,7 +512,8 @@ def app_change_url(operation_logger, auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
-    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'), args=args_list, env=env_dict, user="root") != 0:
+    if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'),
+                 args=args_list, env=env_dict, user="root") != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
         operation_logger.error(msg)
@@ -638,7 +639,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
-        if hook_exec(extracted_app_folder + '/scripts/upgrade', args=args_list, env=env_dict, user="root") != 0:
+        if hook_exec(extracted_app_folder + '/scripts/upgrade',
+                     args=args_list, env=env_dict, user="root") != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
             logger.error(msg)
             operation_logger.error(msg)
@@ -909,7 +911,8 @@ def app_remove(operation_logger, auth, app):
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list, env=env_dict, user="root") == 0:
+    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
+                 env=env_dict, user="root") == 0:
         logger.success(m18n.n('app_removed', app=app))
 
         hook_callback('post_app_remove', args=args_list, env=env_dict)

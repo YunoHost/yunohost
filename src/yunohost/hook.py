@@ -26,6 +26,7 @@
 import os
 import re
 import errno
+import tempfile
 from glob import iglob
 
 from moulinette import m18n
@@ -337,6 +338,9 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         env = {}
     env['YNH_CWD'] = chdir
 
+    stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
+    env['YNH_STDINFO'] = stdinfo
+
     # Construct command to execute
     if user == "root":
         command = ['sh', '-c']
@@ -365,9 +369,16 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()),
         stderr_callback if stderr_callback else lambda l: logger.warning(l.rstrip()),
     )
+
+    if stdinfo:
+        callbacks = ( callbacks[0], callbacks[1],
+                       lambda l: logger.info(l.rstrip()))
+
     logger.debug("About to run the command '%s'" % command)
+
     returncode = call_async_output(
-        command, callbacks, shell=False, cwd=chdir
+        command, callbacks, shell=False, cwd=chdir,
+        stdinfo=stdinfo
     )
 
     # Check and return process' return code
