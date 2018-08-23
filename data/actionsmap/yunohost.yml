@@ -1710,3 +1710,39 @@ hook:
                 -d:
                     full: --chdir
                     help: The directory from where the script will be executed
+
+#############################
+#            Log            #
+#############################
+log:
+    category_help: Manage debug logs
+    actions:
+
+        ### log_list()
+        list:
+            action_help: List logs
+            api: GET /logs
+            arguments:
+                category:
+                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app 
+                    nargs: "*"
+                -l:
+                    full: --limit
+                    help: Maximum number of logs
+                    type: int
+
+        ### log_display()
+        display:
+            action_help: Display a log content
+            api: GET /logs/display
+            arguments:
+                path:
+                    help: Log file which to display the content
+                -n:
+                    full: --number
+                    help: Number of lines to display
+                    default: 50
+                    type: int
+                --share:
+                    help: Share the full log using yunopaste
+                    action: store_true

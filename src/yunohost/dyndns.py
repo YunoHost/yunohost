@@ -40,6 +40,7 @@ from moulinette.utils.network import download_json
 
 from yunohost.domain import _get_maindomain, _build_dns_conf
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.dyndns')
 
@@ -112,7 +113,8 @@ def _dyndns_available(provider, domain):
     return r == u"Domain %s is available" % domain
 
 
-def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
+@is_unit_operation()
+def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
 
@@ -124,6 +126,7 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     """
     if domain is None:
         domain = _get_maindomain()
+        operation_logger.related_to.append(('domain', domain))
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
@@ -135,6 +138,8 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     if not _dyndns_available(subscribe_host, domain):
         raise MoulinetteError(errno.ENOENT,
                               m18n.n('dyndns_unavailable', domain=domain))
+
+    operation_logger.start()
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
@@ -170,7 +175,8 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     dyndns_installcron()
 
 
-def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
+@is_unit_operation()
+def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """
     Update IP on DynDNS platform
@@ -217,13 +223,17 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
     # If key is not given, pick the first file we find with the domain given
-    elif key is None:
-        keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
+    else:
+        if key is None:
+            keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
 
-        if not keys:
-            raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
+            if not keys:
+                raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
 
-        key = keys[0]
+            key = keys[0]
+
+    operation_logger.related_to.append(('domain', domain))
+    operation_logger.start()
 
     # This mean that hmac-md5 is used
     # (Re?)Trigger the migration to sha256 and return immediately.
