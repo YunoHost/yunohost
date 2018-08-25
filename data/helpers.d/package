@@ -86,10 +86,6 @@ ynh_package_autopurge() {
 ynh_package_install_from_equivs () {
     local controlfile=$1
 
-    # Check if the equivs package is installed. Or install it.
-    ynh_package_is_installed 'equivs' \
-        || ynh_package_install equivs
-
     # retrieve package information
     local pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
     local pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number

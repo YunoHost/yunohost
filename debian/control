@@ -26,6 +26,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , metronome
  , rspamd (>= 1.6.0), redis-server, opendkim-tools
  , haveged
+ , equivs
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog, etckeeper
