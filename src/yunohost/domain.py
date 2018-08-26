@@ -188,6 +188,7 @@ def domain_dns_conf(domain, ttl=None):
         ttl -- Time to live
 
     """
+    from yunohost.hook import hook_callback
 
     ttl = 3600 if ttl is None else ttl
 
@@ -208,6 +209,11 @@ def domain_dns_conf(domain, ttl=None):
     result += "; Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
+
+    result += "\n\n"
+    result += "; Custom\n"
+
+    result += ''.join(hook_callback('custom_dns_rules', args=[])['stdreturn'])
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
