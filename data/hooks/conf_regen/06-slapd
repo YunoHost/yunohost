@@ -46,7 +46,7 @@ do_pre_regen() {
   sudo rm -f "$tmp_backup_dir_file"
 
   # retrieve current and new backends
-  curr_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
+  curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
   new_backend=$(grep '^database' slapd.conf | awk '{print $2}')
 
   # save current database before any conf changes
@@ -102,6 +102,23 @@ do_post_regen() {
   fi
 
   sudo service slapd force-reload
+
+  # on slow hardware/vm this regen conf would exit before the admin user that
+  # is stored in ldap is available because ldap seems to slow to restart
+  # so we'll wait either until we are able to log as admin or until a timeout
+  # is reached
+  # we need to do this because the next hooks executed after this one during
+  # postinstall requires to run as admin thus breaking postinstall on slow
+  # hardware which mean yunohost can't be correctly installed on those hardware
+  # and this sucks
+  # wait a maximum time of 5 minutes
+  # yes, force-reload behave like a restart
+  number_of_wait=0
+  while ! sudo su admin -c '' && ((number_of_wait < 60))
+  do
+      sleep 5
+      ((number_of_wait += 1))
+  done
 }
 
 FORCE=${2:-0}

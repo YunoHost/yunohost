@@ -1,5 +1,4 @@
-02periodic  50unattended-upgrades
-root@65ba01d0c078:/usr/share/yunohost/yunohost-config/unattended# cat 02periodic 
+# https://wiki.debian.org/UnattendedUpgrades#automatic_call_via_.2Fetc.2Fapt.2Fapt.conf.d.2F02periodic
 APT::Periodic::Enable "1";
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";

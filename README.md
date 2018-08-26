@@ -4,8 +4,12 @@
 
 This repository is the core of YunoHost code.
 
+<a href="https://translate.yunohost.org/engage/yunohost/?utm_source=widget">
+<img src="https://translate.yunohost.org/widgets/yunohost/-/287x66-white.png" alt="Translation status" />
+</a>
+
 ## Issues
-- [Please report issues on YunoHost bugtracker](https://dev.yunohost.org/projects/yunohost/issues) (no registration needed).
+- [Please report issues on YunoHost bugtracker](https://github.com/YunoHost/issues).
 
 ## Contribute
 - You can develop on this repository using [ynh-dev tool](https://github.com/YunoHost/ynh-dev) with `use-git`  sub-command.

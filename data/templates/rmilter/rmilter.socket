@@ -1,5 +1,0 @@
-.include /lib/systemd/system/rmilter.socket
-
-[Socket]
-ListenStream=
-ListenStream=127.0.0.1:11000

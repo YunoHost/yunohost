@@ -26,22 +26,26 @@
 import os
 import time
 import yaml
-import glob
+import json
 import subprocess
 import errno
 import shutil
 import hashlib
-from difflib import unified_diff
 
+from difflib import unified_diff
+from datetime import datetime
+
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
-from yunohost.hook import hook_list, hook_callback
+from yunohost.hook import hook_callback
+from yunohost.log import is_unit_operation
 
-
-base_conf_path = '/home/yunohost.conf'
-backup_conf_dir = os.path.join(base_conf_path, 'backup')
-pending_conf_dir = os.path.join(base_conf_path, 'pending')
+BASE_CONF_PATH = '/home/yunohost.conf'
+BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
+PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, 'pending')
+MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
 logger = log.getActionLogger('yunohost.service')
 
@@ -60,9 +64,9 @@ def service_add(name, status=None, log=None, runlevel=None):
     services = _get_services()
 
     if not status:
-        services[name] = { 'status': 'service' }
+        services[name] = {'status': 'service'}
     else:
-        services[name] = { 'status': status }
+        services[name] = {'status': status}
 
     if log is not None:
         services[name]['log'] = log
@@ -73,6 +77,7 @@ def service_add(name, status=None, log=None, runlevel=None):
     try:
         _save_services(services)
     except:
+        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', service=name))
 
     logger.success(m18n.n('service_added', service=name))
@@ -96,6 +101,7 @@ def service_remove(name):
     try:
         _save_services(services)
     except:
+        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', service=name))
 
     logger.success(m18n.n('service_removed', service=name))
@@ -111,14 +117,17 @@ def service_start(names):
     """
     if isinstance(names, str):
         names = [names]
+
     for name in names:
         if _run_service_command('start', name):
             logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed', service=name))
-            logger.info(m18n.n('service_already_started', service=name))
+                                      m18n.n('service_start_failed',
+                                             service=name,
+                                             logs=_get_journalctl_logs(name)))
+            logger.debug(m18n.n('service_already_started', service=name))
 
 
 def service_stop(names):
@@ -137,11 +146,13 @@ def service_stop(names):
         else:
             if service_status(name)['status'] != 'inactive':
                 raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed', service=name))
-            logger.info(m18n.n('service_already_stopped', service=name))
+                                      m18n.n('service_stop_failed',
+                                             service=name,
+                                             logs=_get_journalctl_logs(name)))
+            logger.debug(m18n.n('service_already_stopped', service=name))
 
-
-def service_enable(names):
+@is_unit_operation()
+def service_enable(operation_logger, names):
     """
     Enable one or more services
 
@@ -149,6 +160,7 @@ def service_enable(names):
         names -- Services name to enable
 
     """
+    operation_logger.start()
     if isinstance(names, str):
         names = [names]
     for name in names:
@@ -156,7 +168,9 @@ def service_enable(names):
             logger.success(m18n.n('service_enabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed', service=name))
+                                  m18n.n('service_enable_failed',
+                                         service=name,
+                                         logs=_get_journalctl_logs(name)))
 
 
 def service_disable(names):
@@ -174,7 +188,9 @@ def service_disable(names):
             logger.success(m18n.n('service_disabled', service=name))
         else:
             raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed', service=name))
+                                  m18n.n('service_disable_failed',
+                                         service=name,
+                                         logs=_get_journalctl_logs(name)))
 
 
 def service_status(names=[]):
@@ -200,43 +216,89 @@ def service_status(names=[]):
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('service_unknown', service=name))
 
-        status = None
-        if 'status' not in services[name] or \
-          services[name]['status'] == 'service':
-            status = 'service %s status' % name
+        # this "service" isn't a service actually so we skip it
+        #
+        # the historical reason is because regenconf has been hacked into the
+        # service part of YunoHost will in some situation we need to regenconf
+        # for things that aren't services
+        # the hack was to add fake services...
+        # we need to extract regenconf from service at some point, also because
+        # some app would really like to use it
+        if "status" in services[name] and services[name]["status"] is None:
+            continue
+
+        status = _get_service_information_from_systemd(name)
+
+        # try to get status using alternative version if they exists
+        # this is for mariadb/mysql but is generic in case of
+        alternates = services[name].get("alternates", [])
+        while status is None and alternates:
+            status = _get_service_information_from_systemd(alternates.pop())
+
+        if status is None:
+            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % name)
+            result[name] = {
+                'status': "unknown",
+                'loaded': "unknown",
+                'active': "unknown",
+                'active_at': {
+                    "timestamp": "unknown",
+                    "human": "unknown",
+                },
+                'description': "Error: failed to get information for this service, it doesn't exists for systemd",
+                'service_file_path': "unknown",
+            }
+
         else:
-            status = str(services[name]['status'])
+            translation_key = "service_description_%s" % name
+            description = m18n.n(translation_key)
 
-        runlevel = 5
-        if 'runlevel' in services[name].keys():
-            runlevel = int(services[name]['runlevel'])
+            # that mean that we don't have a translation for this string
+            # that's the only way to test for that for now
+            # if we don't have it, uses the one provided by systemd
+            if description == translation_key:
+                description = str(status.get("Description", ""))
 
-        result[name] = { 'status': 'unknown', 'loaded': 'unknown' }
-
-        # Retrieve service status
-        try:
-            ret = subprocess.check_output(status, stderr=subprocess.STDOUT,
-                                          shell=True)
-        except subprocess.CalledProcessError as e:
-            if 'usage:' in e.output.lower():
-                logger.warning(m18n.n('service_status_failed', service=name))
-            else:
-                result[name]['status'] = 'inactive'
-        else:
-            result[name]['status'] = 'running'
-
-        # Retrieve service loading
-        rc_path = glob.glob("/etc/rc%d.d/S[0-9][0-9]%s" % (runlevel, name))
-        if len(rc_path) == 1 and os.path.islink(rc_path[0]):
-            result[name]['loaded'] = 'enabled'
-        elif os.path.isfile("/etc/init.d/%s" % name):
-            result[name]['loaded'] = 'disabled'
-        else:
-            result[name]['loaded'] = 'not-found'
+            result[name] = {
+                'status': str(status.get("SubState", "unknown")),
+                'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
+                'active': str(status.get("ActiveState", "unknown")),
+                'active_at': {
+                    "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
+                    "human": datetime.fromtimestamp(status["ActiveEnterTimestamp"] / 1000000).strftime("%F %X") if "ActiveEnterTimestamp" in status else "unknown",
+                },
+                'description': description,
+                'service_file_path': str(status.get("FragmentPath", "unknown")),
+            }
 
     if len(names) == 1:
         return result[names[0]]
     return result
+
+
+def _get_service_information_from_systemd(service):
+    "this is the equivalent of 'systemctl status $service'"
+    import dbus
+    from dbus.exceptions import DBusException
+
+    d = dbus.SystemBus()
+
+    systemd = d.get_object('org.freedesktop.systemd1','/org/freedesktop/systemd1')
+    manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
+
+    try:
+        service_path = manager.GetUnit(service + ".service")
+    except DBusException as exception:
+        if exception.get_dbus_name() == 'org.freedesktop.systemd1.NoSuchUnit':
+            return None
+        raise
+
+    service_proxy = d.get_object('org.freedesktop.systemd1', service_path)
+
+    # unit_proxy = dbus.Interface(service_proxy, 'org.freedesktop.systemd1.Unit',)
+    properties_interface = dbus.Interface(service_proxy, 'org.freedesktop.DBus.Properties')
+
+    return properties_interface.GetAll('org.freedesktop.systemd1.Unit')
 
 
 def service_log(name, number=50):
@@ -253,25 +315,38 @@ def service_log(name, number=50):
     if name not in services.keys():
         raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
 
-    if 'log' in services[name]:
-        log_list = services[name]['log']
-        result = {}
-        if not isinstance(log_list, list):
-            log_list = [log_list]
-
-        for log_path in log_list:
-            if os.path.isdir(log_path):
-                for log in [ f for f in os.listdir(log_path) if os.path.isfile(os.path.join(log_path, f)) and f[-4:] == '.log' ]:
-                    result[os.path.join(log_path, log)] = _tail(os.path.join(log_path, log), int(number))
-            else:
-                result[log_path] = _tail(log_path, int(number))
-    else:
+    if 'log' not in services[name]:
         raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', service=name))
+
+    log_list = services[name]['log']
+
+    if not isinstance(log_list, list):
+        log_list = [log_list]
+
+    result = {}
+
+    for log_path in log_list:
+        # log is a file, read it
+        if not os.path.isdir(log_path):
+            result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
+            continue
+
+        for log_file in os.listdir(log_path):
+            log_file_path = os.path.join(log_path, log_file)
+            # not a file : skip
+            if not os.path.isfile(log_file_path):
+                continue
+
+            if not log_file.endswith(".log"):
+                continue
+
+            result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
 
     return result
 
 
-def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+@is_unit_operation([('names', 'service')])
+def service_regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
     Regenerate the configuration file(s) for a service
@@ -289,42 +364,59 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     # Return the list of pending conf
     if list_pending:
         pending_conf = _get_pending_conf(names)
-        if with_diff:
-            for service, conf_files in pending_conf.items():
-                for system_path, pending_path in conf_files.items():
-                    pending_conf[service][system_path] = {
-                        'pending_conf': pending_path,
-                        'diff': _get_files_diff(
-                            system_path, pending_path, True),
-                    }
+
+        if not with_diff:
+            return pending_conf
+
+        for service, conf_files in pending_conf.items():
+            for system_path, pending_path in conf_files.items():
+
+                pending_conf[service][system_path] = {
+                    'pending_conf': pending_path,
+                    'diff': _get_files_diff(
+                        system_path, pending_path, True),
+                }
+
         return pending_conf
 
-    # Clean pending conf directory
-    if os.path.isdir(pending_conf_dir):
+    if not dry_run:
+        operation_logger.related_to = [('service', x) for x in names]
         if not names:
-            shutil.rmtree(pending_conf_dir, ignore_errors=True)
+            operation_logger.name_parameter_override = 'all'
+        elif len(names) != 1:
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to))+'_services'
+        operation_logger.start()
+
+    # Clean pending conf directory
+    if os.path.isdir(PENDING_CONF_DIR):
+        if not names:
+            shutil.rmtree(PENDING_CONF_DIR, ignore_errors=True)
         else:
             for name in names:
-                shutil.rmtree(os.path.join(pending_conf_dir, name),
+                shutil.rmtree(os.path.join(PENDING_CONF_DIR, name),
                               ignore_errors=True)
     else:
-        filesystem.mkdir(pending_conf_dir, 0755, True)
+        filesystem.mkdir(PENDING_CONF_DIR, 0755, True)
 
     # Format common hooks arguments
     common_args = [1 if force else 0, 1 if dry_run else 0]
 
     # Execute hooks for pre-regen
-    pre_args = ['pre',] + common_args
+    pre_args = ['pre', ] + common_args
+
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
-        service_pending_path = os.path.join(pending_conf_dir, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
+        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
+        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
+
         # return the arguments to pass to the script
-        return pre_args + [service_pending_path,]
+        return pre_args + [service_pending_path, ]
+
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Update the services name
     names = pre_result['succeed'].keys()
+
     if not names:
         raise MoulinetteError(errno.EIO,
                               m18n.n('service_regenconf_failed',
@@ -333,11 +425,16 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
+    operation_logger.related_to = []
+
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
-        logger.info(m18n.n(
-            'service_regenconf_pending_applying' if not dry_run else \
-                'service_regenconf_dry_pending_applying',
+        if not dry_run:
+            operation_logger.related_to.append(('service', service))
+
+        logger.debug(m18n.n(
+            'service_regenconf_pending_applying' if not dry_run else
+            'service_regenconf_dry_pending_applying',
             service=service))
 
         conf_hashes = _get_conf_hashes(service)
@@ -378,10 +475,11 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     regenerated = _regen(
                         system_path, pending_path, save=False)
                 else:
-                    logger.warning(m18n.n(
+                    logger.info(m18n.n(
                         'service_conf_file_manually_removed',
                         conf=system_path))
                     conf_status = 'removed'
+
             # -> system conf is not managed yet
             elif not saved_hash:
                 logger.debug("> system conf is not managed yet")
@@ -389,16 +487,23 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     logger.debug("> no changes to system conf has been made")
                     conf_status = 'managed'
                     regenerated = True
-                elif force and to_remove:
+                elif not to_remove:
+                    # If the conf exist but is not managed yet, and is not to be removed,
+                    # we assume that it is safe to regen it, since the file is backuped
+                    # anyway (by default in _regen), as long as we warn the user
+                    # appropriately.
+                    logger.info(m18n.n('service_conf_new_managed_file',
+                                       conf=system_path, service=service))
+                    regenerated = _regen(system_path, pending_path)
+                    conf_status = 'new'
+                elif force:
                     regenerated = _regen(system_path)
                     conf_status = 'force-removed'
-                elif force:
-                    regenerated = _regen(system_path, pending_path)
-                    conf_status = 'force-updated'
                 else:
-                    logger.warning(m18n.n('service_conf_file_not_managed',
-                                          conf=system_path))
+                    logger.info(m18n.n('service_conf_file_kept_back',
+                                       conf=system_path, service=service))
                     conf_status = 'unmanaged'
+
             # -> system conf has not been manually modified
             elif system_hash == saved_hash:
                 if to_remove:
@@ -411,6 +516,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     logger.debug("> system conf is already up-to-date")
                     os.remove(pending_path)
                     continue
+
             else:
                 logger.debug("> system conf has been manually modified")
                 if system_hash == new_hash:
@@ -440,13 +546,14 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
         # Check for service conf changes
         if not succeed_regen and not failed_regen:
-            logger.info(m18n.n('service_conf_up_to_date', service=service))
+            logger.debug(m18n.n('service_conf_up_to_date', service=service))
             continue
         elif not failed_regen:
             logger.success(m18n.n(
-                'service_conf_updated' if not dry_run else \
-                    'service_conf_would_be_updated',
+                'service_conf_updated' if not dry_run else
+                'service_conf_would_be_updated',
                 service=service))
+
         if succeed_regen and not dry_run:
             _update_conf_hashes(service, conf_hashes)
 
@@ -461,15 +568,19 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         return result
 
     # Execute hooks for post-regen
-    post_args = ['post',] + common_args
+    post_args = ['post', ] + common_args
+
     def _pre_call(name, priority, path, args):
         # append coma-separated applied changes for the service
         if name in result and result[name]['applied']:
             regen_conf_files = ','.join(result[name]['applied'].keys())
         else:
             regen_conf_files = ''
-        return post_args + [regen_conf_files,]
+        return post_args + [regen_conf_files, ]
+
     hook_callback('conf_regen', names, pre_callback=_pre_call)
+
+    operation_logger.success()
 
     return result
 
@@ -483,25 +594,77 @@ def _run_service_command(action, service):
         service -- Service name
 
     """
-    if service not in _get_services().keys():
+    services = _get_services()
+    if service not in services.keys():
         raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
 
-    cmd = None
-    if action in ['start', 'stop', 'restart', 'reload']:
-        cmd = 'service %s %s' % (service, action)
-    elif action in ['enable', 'disable']:
-        arg = 'defaults' if action == 'enable' else 'remove'
-        cmd = 'update-rc.d %s %s' % (service, arg)
-    else:
-        raise ValueError("Unknown action '%s'" % action)
+    possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+    if action not in possible_actions:
+        raise ValueError("Unknown action '%s', available actions are: %s" % (action, ", ".join(possible_actions)))
+
+    cmd = 'systemctl %s %s' % (action, service)
+
+    need_lock = services[service].get('need_lock', False) \
+                and action in ['start', 'stop', 'restart', 'reload']
 
     try:
-        ret = subprocess.check_output(cmd.split(), stderr=subprocess.STDOUT)
+        # Launch the command
+        logger.debug("Running '%s'" % cmd)
+        p = subprocess.Popen(cmd.split(), stderr=subprocess.STDOUT)
+        # If this command needs a lock (because the service uses yunohost
+        # commands inside), find the PID and add a lock for it
+        if need_lock:
+            PID = _give_lock(action, service, p)
+        # Wait for the command to complete
+        p.communicate()
+
     except subprocess.CalledProcessError as e:
         # TODO: Log output?
         logger.warning(m18n.n('service_cmd_exec_failed', command=' '.join(e.cmd)))
         return False
+
+    finally:
+        # Remove the lock if one was given
+        if need_lock and PID != 0:
+            _remove_lock(PID)
+
     return True
+
+
+def _give_lock(action, service, p):
+
+    # Depending of the action, systemctl calls the PID differently :/
+    if action == "start" or action == "restart":
+        systemctl_PID_name = "MainPID"
+    else:
+        systemctl_PID_name = "ControlPID"
+
+    cmd_get_son_PID ="systemctl show %s -p %s" % (service, systemctl_PID_name)
+    son_PID = 0
+    # As long as we did not found the PID and that the command is still running
+    while son_PID == 0 and p.poll() == None:
+        # Call systemctl to get the PID
+        # Output of the command is e.g. ControlPID=1234
+        son_PID = subprocess.check_output(cmd_get_son_PID.split()) \
+                            .strip().split("=")[1]
+        son_PID = int(son_PID)
+        time.sleep(1)
+
+    # If we found a PID
+    if son_PID != 0:
+        # Append the PID to the lock file
+        logger.debug("Giving a lock to PID %s for service %s !"
+                     % (str(son_PID), service))
+        filesystem.append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
+
+    return son_PID
+
+def _remove_lock(PID_to_remove):
+    # FIXME ironically not concurrency safe because it's not atomic...
+
+    PIDs = filesystem.read_file(MOULINETTE_LOCK).split("\n")
+    PIDs_to_keep = [ PID for PID in PIDs if int(PID) != PID_to_remove ]
+    filesystem.write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
 
 
 def _get_services():
@@ -515,6 +678,12 @@ def _get_services():
     except:
         return {}
     else:
+        # some services are marked as None to remove them from YunoHost
+        # filter this
+        for key, value in services.items():
+            if value is None:
+                del services[key]
+
         return services
 
 
@@ -526,38 +695,87 @@ def _save_services(services):
         services -- A dict of managed services with their parameters
 
     """
-    # TODO: Save to custom services.yml
-    with open('/etc/yunohost/services.yml', 'w') as f:
-        yaml.safe_dump(services, f, default_flow_style=False)
+    try:
+        with open('/etc/yunohost/services.yml', 'w') as f:
+            yaml.safe_dump(services, f, default_flow_style=False)
+    except Exception as e:
+        logger.warning('Error while saving services, exception: %s', e, exc_info=1)
+        raise
 
 
-def _tail(file, n, offset=None):
+def _tail(file, n):
     """
     Reads a n lines from f with an offset of offset lines.  The return
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
     an indicator that is `True` if there are more lines in the file.
 
+    This function works even with splitted logs (gz compression, log rotate...)
     """
     avg_line_length = 74
-    to_read = n + (offset or 0)
+    to_read = n
 
     try:
-        with open(file, 'r') as f:
-            while 1:
+        if file.endswith(".gz"):
+            import gzip
+            f = gzip.open(file)
+            lines = f.read().splitlines()
+        else:
+            f = open(file)
+            pos = 1
+            lines = []
+            while len(lines) < to_read and pos > 0:
                 try:
                     f.seek(-(avg_line_length * to_read), 2)
                 except IOError:
                     # woops.  apparently file is smaller than what we want
                     # to step back, go to the beginning instead
                     f.seek(0)
+
                 pos = f.tell()
                 lines = f.read().splitlines()
-                if len(lines) >= to_read or pos == 0:
-                    return lines[-to_read:offset and -offset or None]
+
+                if len(lines) >= to_read:
+                    return lines[-to_read:]
+
                 avg_line_length *= 1.3
+        f.close()
 
-    except IOError: return []
+    except IOError as e:
+        logger.warning("Error while tailing file '%s': %s", file, e, exc_info=1)
+        return []
 
+    if len(lines) < to_read:
+        previous_log_file = _find_previous_log_file(file)
+        if previous_log_file is not None:
+            lines = _tail(previous_log_file, to_read - len(lines)) + lines
+
+    return lines
+
+
+def _find_previous_log_file(file):
+    """
+    Find the previous log file
+    """
+    import re
+
+    splitext = os.path.splitext(file)
+    if splitext[1] == '.gz':
+        file = splitext[0]
+    splitext = os.path.splitext(file)
+    ext = splitext[1]
+    i = re.findall(r'\.(\d+)', ext)
+    i = int(i[0]) + 1 if len(i) > 0 else 1
+
+    previous_file = file if i == 1 else splitext[0]
+    previous_file = previous_file + '.%d' % (i)
+    if os.path.exists(previous_file):
+        return previous_file
+
+    previous_file = previous_file + ".gz"
+    if os.path.exists(previous_file):
+        return previous_file
+
+    return None
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     """Compare two files and return the differences
@@ -567,36 +785,50 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     header can also be removed if skip_header is True.
 
     """
-    contents = [[], []]
-    for i, path in enumerate((orig_file, new_file)):
-        try:
-            with open(path, 'r') as f:
-                contents[i] = f.readlines()
-        except IOError:
-            pass
+
+    if os.path.exists(orig_file):
+        with open(orig_file, 'r') as orig_file:
+            orig_file = orig_file.readlines()
+    else:
+        orig_file = []
+
+    if os.path.exists(new_file):
+        with open(new_file, 'r') as new_file:
+            new_file = new_file.readlines()
+    else:
+        new_file = []
 
     # Compare files and format output
-    diff = unified_diff(contents[0], contents[1])
+    diff = unified_diff(orig_file, new_file)
+
     if skip_header:
-        for i in range(2):
-            try:
-                next(diff)
-            except:
-                break
+        try:
+            next(diff)
+            next(diff)
+        except:
+            pass
+
     if as_string:
-        result = ''.join(line for line in diff)
-        return result.rstrip()
+        return ''.join(diff).rstrip()
+
     return diff
 
 
 def _calculate_hash(path):
     """Calculate the MD5 hash of a file"""
+
+    if not os.path.exists(path):
+        return None
+
     hasher = hashlib.md5()
+
     try:
         with open(path, 'rb') as f:
             hasher.update(f.read())
         return hasher.hexdigest()
-    except IOError:
+
+    except IOError as e:
+        logger.warning("Error while calculating file '%s' hash: %s", path, e, exc_info=1)
         return None
 
 
@@ -612,36 +844,51 @@ def _get_pending_conf(services=[]):
 
     """
     result = {}
-    if not os.path.isdir(pending_conf_dir):
+
+    if not os.path.isdir(PENDING_CONF_DIR):
         return result
+
     if not services:
-        services = os.listdir(pending_conf_dir)
+        services = os.listdir(PENDING_CONF_DIR)
+
     for name in services:
-        service_pending_path = os.path.join(pending_conf_dir, name)
+        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
+
         if not os.path.isdir(service_pending_path):
             continue
+
         path_index = len(service_pending_path)
         service_conf = {}
+
         for root, dirs, files in os.walk(service_pending_path):
             for filename in files:
                 pending_path = os.path.join(root, filename)
                 service_conf[pending_path[path_index:]] = pending_path
+
         if service_conf:
             result[name] = service_conf
         else:
             # remove empty directory
             shutil.rmtree(service_pending_path, ignore_errors=True)
+
     return result
 
 
 def _get_conf_hashes(service):
     """Get the registered conf hashes for a service"""
-    try:
-        return _get_services()[service]['conffiles']
-    except:
-        logger.debug("unable to retrieve conf hashes for %s",
-                     service, exc_info=1)
+
+    services = _get_services()
+
+    if service not in services:
+        logger.debug("Service %s is not in services.yml yet.", service)
         return {}
+
+    elif services[service] is None or 'conffiles' not in services[service]:
+        logger.debug("No configuration files for service %s.", service)
+        return {}
+
+    else:
+        return services[service]['conffiles']
 
 
 def _update_conf_hashes(service, hashes):
@@ -650,6 +897,11 @@ def _update_conf_hashes(service, hashes):
                  service, hashes)
     services = _get_services()
     service_conf = services.get(service, {})
+
+    # Handle the case where services[service] is set to null in the yaml
+    if service_conf is None:
+        service_conf = {}
+
     service_conf['conffiles'] = hashes
     services[service] = service_conf
     _save_services(services)
@@ -664,34 +916,44 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
     """
     if save:
-        backup_path = os.path.join(backup_conf_dir, '{0}-{1}'.format(
+        backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
             system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
         backup_dir = os.path.dirname(backup_path)
+
         if not os.path.isdir(backup_dir):
             filesystem.mkdir(backup_dir, 0755, True)
+
         shutil.copy2(system_conf, backup_path)
-        logger.info(m18n.n('service_conf_file_backed_up',
+        logger.debug(m18n.n('service_conf_file_backed_up',
                            conf=system_conf, backup=backup_path))
+
     try:
         if not new_conf:
             os.remove(system_conf)
-            logger.info(m18n.n('service_conf_file_removed',
+            logger.debug(m18n.n('service_conf_file_removed',
                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
+
             if not os.path.isdir(system_dir):
                 filesystem.mkdir(system_dir, 0755, True)
+
             shutil.copyfile(new_conf, system_conf)
-            logger.info(m18n.n('service_conf_file_updated',
-                               conf=system_conf))
-    except:
+            logger.debug(m18n.n('service_conf_file_updated',
+                                conf=system_conf))
+    except Exception as e:
+        logger.warning("Exception while trying to regenerate conf '%s': %s", system_conf, e, exc_info=1)
         if not new_conf and os.path.exists(system_conf):
             logger.warning(m18n.n('service_conf_file_remove_failed',
                                   conf=system_conf),
                            exc_info=1)
             return False
+
         elif new_conf:
             try:
+                # From documentation:
+                # Raise an exception if an os.stat() call on either pathname fails.
+                # (os.stats returns a series of information from a file like type, size...)
                 copy_succeed = os.path.samefile(system_conf, new_conf)
             except:
                 copy_succeed = False
@@ -701,4 +963,45 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                                           conf=system_conf, new=new_conf),
                                    exc_info=1)
                     return False
+
     return True
+
+
+def manually_modified_files():
+
+    # We do this to have --quiet, i.e. don't throw a whole bunch of logs
+    # just to fetch this...
+    # Might be able to optimize this by looking at what service_regenconf does
+    # and only do the part that checks file hashes...
+    cmd = "yunohost service regen-conf --dry-run --output-as json --quiet"
+    j = json.loads(subprocess.check_output(cmd.split()))
+
+    # j is something like :
+    # {"postfix": {"applied": {}, "pending": {"/etc/postfix/main.cf": {"status": "modified"}}}
+
+    output = []
+    for app, actions in j.items():
+        for action, files in actions.items():
+            for filename, infos in files.items():
+                if infos["status"] == "modified":
+                    output.append(filename)
+
+    return output
+
+
+def _get_journalctl_logs(service):
+    try:
+        return subprocess.check_output("journalctl -xn -u %s" % service, shell=True)
+    except:
+        import traceback
+        return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
+
+
+def manually_modified_files_compared_to_debian_default():
+
+    # from https://serverfault.com/a/90401
+    r = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
+                                | awk 'OFS=\"  \"{print $2,$1}' \
+                                | md5sum -c 2>/dev/null \
+                                | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
+    return r.strip().split("\n")

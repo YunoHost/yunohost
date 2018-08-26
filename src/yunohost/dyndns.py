@@ -27,47 +27,94 @@ import os
 import re
 import json
 import glob
+import time
 import base64
 import errno
-import requests
 import subprocess
 
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file, write_to_file, rm
+from moulinette.utils.network import download_json
 
-from yunohost.domain import get_public_ip
+from yunohost.domain import _get_maindomain, _build_dns_conf
+from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.dyndns')
 
+OLD_IPV4_FILE = '/etc/yunohost/dyndns/old_ip'
+OLD_IPV6_FILE = '/etc/yunohost/dyndns/old_ipv6'
+DYNDNS_ZONE = '/etc/yunohost/dyndns/zone'
 
-class IPRouteLine(object):
-    """ Utility class to parse an ip route output line
-
-    The output of ip ro is variable and hard to parse completly, it would
-    require a real parser, not just a regexp, so do minimal parsing here...
-
-    >>> a = IPRouteLine('2001:: from :: via fe80::c23f:fe:1e:cafe dev eth0  src 2000:de:beef:ca:0:fe:1e:cafe  metric 0')
-    >>> a.src_addr
-    "2000:de:beef:ca:0:fe:1e:cafe"
-    """
-    regexp = re.compile(
-        r'(?P<unreachable>unreachable)?.*src\s+(?P<src_addr>[0-9a-f:]+).*')
-
-    def __init__(self, line):
-        self.m = self.regexp.match(line)
-        if not self.m:
-            raise ValueError("Not a valid ip route get line")
-
-        # make regexp group available as object attributes
-        for k, v in self.m.groupdict().items():
-            setattr(self, k, v)
-
-re_dyndns_private_key = re.compile(
+RE_DYNDNS_PRIVATE_KEY_MD5 = re.compile(
     r'.*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$'
 )
 
+RE_DYNDNS_PRIVATE_KEY_SHA512 = re.compile(
+    r'.*/K(?P<domain>[^\s\+]+)\.\+165.+\.private$'
+)
 
-def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None):
+
+def _dyndns_provides(provider, domain):
+    """
+    Checks if a provider provide/manage a given domain.
+
+    Keyword arguments:
+        provider -- The url of the provider, e.g. "dyndns.yunohost.org"
+        domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
+
+    Returns:
+        True if the provider provide/manages the domain. False otherwise.
+    """
+
+    logger.debug("Checking if %s is managed by %s ..." % (domain, provider))
+
+    try:
+        # Dyndomains will be a list of domains supported by the provider
+        # e.g. [ "nohost.me", "noho.st" ]
+        dyndomains = download_json('https://%s/domains' % provider, timeout=30)
+    except MoulinetteError as e:
+        logger.error(str(e))
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('dyndns_could_not_check_provide',
+                                     domain=domain, provider=provider))
+
+    # Extract 'dyndomain' from 'domain', e.g. 'nohost.me' from 'foo.nohost.me'
+    dyndomain = '.'.join(domain.split('.')[1:])
+
+    return dyndomain in dyndomains
+
+
+def _dyndns_available(provider, domain):
+    """
+    Checks if a domain is available from a given provider.
+
+    Keyword arguments:
+        provider -- The url of the provider, e.g. "dyndns.yunohost.org"
+        domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
+
+    Returns:
+        True if the domain is avaible, False otherwise.
+    """
+    logger.debug("Checking if domain %s is available on %s ..."
+                 % (domain, provider))
+
+    try:
+        r = download_json('https://%s/test/%s' % (provider, domain),
+                          expected_status_code=None)
+    except MoulinetteError as e:
+        logger.error(str(e))
+        raise MoulinetteError(errno.EIO,
+                              m18n.n('dyndns_could_not_check_available',
+                                     domain=domain, provider=provider))
+
+    return r == u"Domain %s is available" % domain
+
+
+@is_unit_operation()
+def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", domain=None, key=None):
     """
     Subscribe to a DynDNS service
 
@@ -78,38 +125,48 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
 
     """
     if domain is None:
-        with open('/etc/yunohost/current_host', 'r') as f:
-            domain = f.readline().rstrip()
+        domain = _get_maindomain()
+        operation_logger.related_to.append(('domain', domain))
+
+    # Verify if domain is provided by subscribe_host
+    if not _dyndns_provides(subscribe_host, domain):
+        raise MoulinetteError(errno.ENOENT,
+                              m18n.n('dyndns_domain_not_provided',
+                                     domain=domain, provider=subscribe_host))
 
     # Verify if domain is available
-    try:
-        if requests.get('https://%s/test/%s' % (subscribe_host, domain)).status_code != 200:
-            raise MoulinetteError(errno.EEXIST, m18n.n('dyndns_unavailable'))
-    except requests.ConnectionError:
-        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+    if not _dyndns_available(subscribe_host, domain):
+        raise MoulinetteError(errno.ENOENT,
+                              m18n.n('dyndns_unavailable', domain=domain))
+
+    operation_logger.start()
 
     if key is None:
         if len(glob.glob('/etc/yunohost/dyndns/*.key')) == 0:
-            os.makedirs('/etc/yunohost/dyndns')
+            if not os.path.exists('/etc/yunohost/dyndns'):
+                os.makedirs('/etc/yunohost/dyndns')
 
-            logger.info(m18n.n('dyndns_key_generating'))
+            logger.debug(m18n.n('dyndns_key_generating'))
 
-            os.system('cd /etc/yunohost/dyndns && ' \
-                      'dnssec-keygen -a hmac-md5 -b 128 -n USER %s' % domain)
+            os.system('cd /etc/yunohost/dyndns && '
+                      'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
         key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]
         with open(key_file) as f:
-            key = f.readline().strip().split(' ')[-1]
+            key = f.readline().strip().split(' ', 6)[-1]
 
+    import requests # lazy loading this module for performance reasons
     # Send subscription
     try:
-        r = requests.post('https://%s/key/%s' % (subscribe_host, base64.b64encode(key)), data={ 'subdomain': domain })
+        r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
     except requests.ConnectionError:
         raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
     if r.status_code != 201:
-        try:    error = json.loads(r.text)['error']
-        except: error = "Server error"
+        try:
+            error = json.loads(r.text)['error']
+        except:
+            error = "Server error, code: %s. (Message: \"%s\")" % (r.status_code, r.text)
         raise MoulinetteError(errno.EPERM,
                               m18n.n('dyndns_registration_failed', error=error))
 
@@ -118,7 +175,8 @@ def dyndns_subscribe(subscribe_host="dyndns.yunohost.org", domain=None, key=None
     dyndns_installcron()
 
 
-def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
+@is_unit_operation()
+def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None, key=None,
                   ipv4=None, ipv6=None):
     """
     Update IP on DynDNS platform
@@ -131,127 +189,132 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         ipv6 -- IPv6 address to send
 
     """
-    # IPv4
+    # Get old ipv4/v6
+
+    old_ipv4, old_ipv6 = (None, None)  # (default values)
+
+    if os.path.isfile(OLD_IPV4_FILE):
+        old_ipv4 = read_file(OLD_IPV4_FILE).rstrip()
+
+    if os.path.isfile(OLD_IPV6_FILE):
+        old_ipv6 = read_file(OLD_IPV6_FILE).rstrip()
+
+    # Get current IPv4 and IPv6
+    ipv4_ = get_public_ip()
+    ipv6_ = get_public_ip(6)
+
     if ipv4 is None:
-        ipv4 = get_public_ip()
+        ipv4 = ipv4_
 
-    try:
-        with open('/etc/yunohost/dyndns/old_ip', 'r') as f:
-            old_ip = f.readline().rstrip()
-    except IOError:
-        old_ip = '0.0.0.0'
-
-    # IPv6
     if ipv6 is None:
+        ipv6 = ipv6_
+
+    logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
+    logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+
+    # no need to update
+    if old_ipv4 == ipv4 and old_ipv6 == ipv6:
+        logger.info("No updated needed.")
+        return
+    else:
+        logger.info("Updated needed, going on...")
+
+    # If domain is not given, try to guess it from keys available...
+    if domain is None:
+        (domain, key) = _guess_current_dyndns_domain(dyn_host)
+    # If key is not given, pick the first file we find with the domain given
+    else:
+        if key is None:
+            keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
+
+            if not keys:
+                raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
+
+            key = keys[0]
+
+    operation_logger.related_to.append(('domain', domain))
+    operation_logger.start()
+
+    # This mean that hmac-md5 is used
+    # (Re?)Trigger the migration to sha256 and return immediately.
+    # The actual update will be done in next run.
+    if "+157" in key:
+        from yunohost.tools import _get_migration_by_name
+        migration = _get_migration_by_name("migrate_to_tsig_sha256")
         try:
-            ip_route_out = subprocess.check_output(
-                ['ip', 'route', 'get', '2000::']).split('\n')
+            migration.migrate(dyn_host, domain, key)
+        except Exception as e:
+            logger.error(m18n.n('migrations_migration_has_failed',
+                                exception=e,
+                                number=migration.number,
+                                name=migration.name),
+                                exc_info=1)
+        return
 
-            if len(ip_route_out) > 0:
-                route = IPRouteLine(ip_route_out[0])
-                if not route.unreachable:
-                    ipv6 = route.src_addr
+    # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
+    host = domain.split('.')[1:]
+    host = '.'.join(host)
 
-        except (OSError, ValueError) as e:
-            # Unlikely case "ip route" does not return status 0
-            # or produces unexpected output
-            raise MoulinetteError(errno.EBADMSG,
-                                  "ip route cmd error : {}".format(e))
+    logger.debug("Building zone update file ...")
 
-        if ipv6 is None:
-            logger.info(m18n.n('no_ipv6_connectivity'))
+    lines = [
+        'server %s' % dyn_host,
+        'zone %s' % host,
+    ]
+
+    dns_conf = _build_dns_conf(domain)
+
+    # Delete the old records for all domain/subdomains
+
+    # every dns_conf.values() is a list of :
+    # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
+    for records in dns_conf.values():
+        for record in records:
+            action = "update delete {name}.{domain}.".format(domain=domain, **record)
+            action = action.replace(" @.", " ")
+            lines.append(action)
+
+    # Add the new records for all domain/subdomains
+
+    for records in dns_conf.values():
+        for record in records:
+            # (For some reason) here we want the format with everytime the
+            # entire, full domain shown explicitly, not just "muc" or "@", it
+            # should be muc.the.domain.tld. or the.domain.tld
+            if record["value"] == "@":
+                record["value"] = domain
+            record["value"] = record["value"].replace(";","\;")
+
+            action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
+            action = action.replace(" @.", " ")
+            lines.append(action)
+
+    lines += [
+        'show',
+        'send'
+    ]
+
+    # Write the actions to do to update to a file, to be able to pass it
+    # to nsupdate as argument
+    write_to_file(DYNDNS_ZONE, '\n'.join(lines))
+
+    logger.debug("Now pushing new conf to DynDNS host...")
 
     try:
-        with open('/etc/yunohost/dyndns/old_ipv6', 'r') as f:
-            old_ipv6 = f.readline().rstrip()
-    except IOError:
-        old_ipv6 = '0000:0000:0000:0000:0000:0000:0000:0000'
+        command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError:
+        rm(OLD_IPV4_FILE, force=True)  # Remove file (ignore if non-existent)
+        rm(OLD_IPV6_FILE, force=True)  # Remove file (ignore if non-existent)
+        raise MoulinetteError(errno.EPERM,
+                              m18n.n('dyndns_ip_update_failed'))
 
-    if old_ip != ipv4 or old_ipv6 != ipv6:
-        if domain is None:
-            # Retrieve the first registered domain
-            for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
-                match = re_dyndns_private_key.match(path)
-                if not match:
-                    continue
-                _domain = match.group('domain')
-                try:
-                    # Check if domain is registered
-                    if requests.get('https://{0}/test/{1}'.format(
-                            dyn_host, _domain)).status_code == 200:
-                        continue
-                except requests.ConnectionError:
-                    raise MoulinetteError(errno.ENETUNREACH,
-                                          m18n.n('no_internet_connection'))
-                domain = _domain
-                key = path
-                break
-            if not domain:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('dyndns_no_domain_registered'))
+    logger.success(m18n.n('dyndns_ip_updated'))
 
-        if key is None:
-            keys = glob.glob(
-                '/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
-            if len(keys) > 0:
-                key = keys[0]
-        if not key:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('dyndns_key_not_found'))
-
-        host = domain.split('.')[1:]
-        host = '.'.join(host)
-        lines = [
-            'server %s' % dyn_host,
-            'zone %s' % host,
-            'update delete %s. A'        % domain,
-            'update delete %s. AAAA'     % domain,
-            'update delete %s. MX'       % domain,
-            'update delete %s. TXT'      % domain,
-            'update delete pubsub.%s. A' % domain,
-            'update delete pubsub.%s. AAAA' % domain,
-            'update delete muc.%s. A'    % domain,
-            'update delete muc.%s. AAAA' % domain,
-            'update delete vjud.%s. A'   % domain,
-            'update delete vjud.%s. AAAA' % domain,
-            'update delete _xmpp-client._tcp.%s. SRV' % domain,
-            'update delete _xmpp-server._tcp.%s. SRV' % domain,
-            'update add %s. 1800 A %s'      % (domain, ipv4),
-            'update add %s. 14400 MX 5 %s.' % (domain, domain),
-            'update add %s. 14400 TXT "v=spf1 a mx -all"' % domain,
-            'update add pubsub.%s. 1800 A %s'    % (domain, ipv4),
-            'update add muc.%s. 1800 A %s'       % (domain, ipv4),
-            'update add vjud.%s. 1800 A %s'      % (domain, ipv4),
-            'update add _xmpp-client._tcp.%s. 14400 SRV 0 5 5222 %s.' % (domain, domain),
-            'update add _xmpp-server._tcp.%s. 14400 SRV 0 5 5269 %s.' % (domain, domain)
-        ]
-        if ipv6 is not None:
-            lines += [
-                'update add %s. 1800 AAAA %s'   % (domain, ipv6),
-                'update add pubsub.%s. 1800 AAAA %s' % (domain, ipv6),
-                'update add muc.%s. 1800 AAAA %s'    % (domain, ipv6),
-                'update add vjud.%s. 1800 AAAA %s'   % (domain, ipv6),
-            ]
-        lines += [
-            'show',
-            'send'
-        ]
-        with open('/etc/yunohost/dyndns/zone', 'w') as zone:
-            for line in lines:
-                zone.write(line + '\n')
-
-        if os.system('/usr/bin/nsupdate -k %s /etc/yunohost/dyndns/zone' % key) == 0:
-            logger.success(m18n.n('dyndns_ip_updated'))
-            with open('/etc/yunohost/dyndns/old_ip', 'w') as f:
-                f.write(ipv4)
-            if ipv6 is not None:
-                with open('/etc/yunohost/dyndns/old_ipv6', 'w') as f:
-                    f.write(ipv6)
-        else:
-            os.system('rm -f /etc/yunohost/dyndns/old_ip')
-            os.system('rm -f /etc/yunohost/dyndns/old_ipv6')
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('dyndns_ip_update_failed'))
+    if ipv4 is not None:
+        write_to_file(OLD_IPV4_FILE, ipv4)
+    if ipv6 is not None:
+        write_to_file(OLD_IPV6_FILE, ipv6)
 
 
 def dyndns_installcron():
@@ -278,3 +341,32 @@ def dyndns_removecron():
         raise MoulinetteError(errno.EIO, m18n.n('dyndns_cron_remove_failed'))
 
     logger.success(m18n.n('dyndns_cron_removed'))
+
+
+def _guess_current_dyndns_domain(dyn_host):
+    """
+    This function tries to guess which domain should be updated by
+    "dyndns_update()" because there's not proper management of the current
+    dyndns domain :/ (and at the moment the code doesn't support having several
+    dyndns domain, which is sort of a feature so that people don't abuse the
+    dynette...)
+    """
+
+    # Retrieve the first registered domain
+    for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+        match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
+        if not match:
+            match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
+            if not match:
+                continue
+        _domain = match.group('domain')
+
+        # Verify if domain is registered (i.e., if it's available, skip
+        # current domain beause that's not the one we want to update..)
+        if _dyndns_available(dyn_host, _domain):
+            continue
+        else:
+            return (_domain, path)
+
+    raise MoulinetteError(errno.EINVAL,
+                          m18n.n('dyndns_no_domain_registered'))

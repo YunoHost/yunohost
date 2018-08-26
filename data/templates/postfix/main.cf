@@ -45,6 +45,11 @@ smtp_tls_exclude_ciphers = $smtpd_tls_exclude_ciphers
 smtp_tls_mandatory_ciphers= $smtpd_tls_mandatory_ciphers
 smtp_tls_loglevel=1
 
+# Configure Root CA certificates
+# (for example, avoids getting "Untrusted TLS connection established to" messages in logs)
+smtpd_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
 # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
 # information on enabling SSL in the smtp client.
 
@@ -60,8 +65,8 @@ mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 
-#### Fit to the maximum message size allowed by GMail or Yahoo ####
-message_size_limit = 26214400
+#### Fit to the maximum message size to 30mb, more than allowed by GMail or Yahoo ####
+message_size_limit = 31457280
 
 # Virtual Domains Control 
 virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf 
@@ -72,6 +77,7 @@ virtual_alias_domains =
 virtual_minimum_uid = 100 
 virtual_uid_maps = static:vmail 
 virtual_gid_maps = static:mail
+smtpd_sender_login_maps= ldap:/etc/postfix/ldap-accounts.cf
 
 # Dovecot LDA 
 virtual_transport = dovecot 
@@ -113,7 +119,8 @@ smtpd_helo_restrictions =
     permit 
  
 # Requirements for the sender address 
-smtpd_sender_restrictions = 
+smtpd_sender_restrictions =
+    reject_sender_login_mismatch, 
     permit_mynetworks, 
     permit_sasl_authenticated, 
     reject_non_fqdn_sender, 
@@ -130,8 +137,10 @@ smtpd_recipient_restrictions =
     permit
 
 # SRS
-sender_canonical_maps = regexp:/etc/postfix/sender_canonical
+sender_canonical_maps = tcp:localhost:10001
 sender_canonical_classes = envelope_sender
+recipient_canonical_maps = tcp:localhost:10002
+recipient_canonical_classes= envelope_recipient,header_recipient
 
 # Ignore some headers
 smtp_header_checks = regexp:/etc/postfix/header_checks
@@ -141,7 +150,7 @@ smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
 # Rmilter
 milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
 milter_protocol = 6
-smtpd_milters = inet:localhost:11000
+smtpd_milters = inet:localhost:11332
 
 # Skip email without checking if milter has died
 milter_default_action = accept

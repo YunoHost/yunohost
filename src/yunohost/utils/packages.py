@@ -25,6 +25,8 @@ from collections import OrderedDict
 import apt
 from apt_pkg import version_compare
 
+from moulinette import m18n
+
 logger = logging.getLogger('yunohost.utils.packages')
 
 
@@ -404,6 +406,7 @@ def get_installed_version(*pkgnames, **kwargs):
     # Retrieve options
     as_dict = kwargs.get('as_dict', False)
     strict = kwargs.get('strict', False)
+    with_repo = kwargs.get('with_repo', False)
 
     for pkgname in pkgnames:
         try:
@@ -412,17 +415,37 @@ def get_installed_version(*pkgnames, **kwargs):
             if strict:
                 raise UnknownPackage(pkgname)
             logger.warning(m18n.n('package_unknown', pkgname=pkgname))
+            continue
+
         try:
             version = pkg.installed.version
         except AttributeError:
             if strict:
                 raise UninstalledPackage(pkgname)
             version = None
-        versions[pkgname] = version
+
+        try:
+            # stable, testing, unstable
+            repo = pkg.installed.origins[0].component
+        except AttributeError:
+            if strict:
+                raise UninstalledPackage(pkgname)
+            repo = ""
+
+        if with_repo:
+            versions[pkgname] = {
+                "version": version,
+                # when we don't have component it's because it's from a local
+                # install or from an image (like in vagrant)
+                "repo": repo if repo else "local",
+            }
+        else:
+            versions[pkgname] = version
 
     if len(pkgnames) == 1 and not as_dict:
         return versions[pkgnames[0]]
     return versions
+
 
 def meets_version_specifier(pkgname, specifier):
     """Check if a package installed version meets specifier"""
@@ -433,7 +456,11 @@ def meets_version_specifier(pkgname, specifier):
 # YunoHost related methods ---------------------------------------------------
 
 def ynh_packages_version(*args, **kwargs):
+    # from cli the received arguments are:
+    # (Namespace(_callbacks=deque([]), _tid='_global', _to_return={}), []) {}
+    # they don't seem to serve any purpose
     """Return the version of each YunoHost package"""
     return get_installed_version(
         'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
+        with_repo=True
     )

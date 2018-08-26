@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+MYSQL_PKG="mariadb-server-10.1"
 
 do_pre_regen() {
   pending_dir=$1
@@ -31,19 +32,14 @@ do_post_regen() {
               "applications, and is going to reset the MySQL root password." \
               "You can find this new password in /etc/yunohost/mysql." >&2
 
-            # retrieve MySQL package provider
-            ynh_package_is_installed "mariadb-server-10.0" \
-              && mysql_pkg="mariadb-server-10.0" \
-              || mysql_pkg="mysql-server-5.5"
-
             # set new password with debconf
             sudo debconf-set-selections << EOF
-$mysql_pkg mysql-server/root_password password $mysql_password
-$mysql_pkg mysql-server/root_password_again password $mysql_password
+$MYSQL_PKG mysql-server/root_password password $mysql_password
+$MYSQL_PKG mysql-server/root_password_again password $mysql_password
 EOF
 
             # reconfigure Debian package
-            sudo dpkg-reconfigure -freadline -u "$mysql_pkg" 2>&1
+            sudo dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
         else
             echo "It seems that you have already configured MySQL." \
               "YunoHost needs to have a root access to MySQL to runs its" \

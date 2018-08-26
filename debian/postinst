@@ -14,12 +14,18 @@ do_configure() {
       echo "Regenerating configuration, this might take a while..."
       yunohost service regen-conf --output-as none
 
+      echo "Launching migrations.."
+      yunohost tools migrations migrate --auto
+
       # restart yunohost-firewall if it's running
       service yunohost-firewall status >/dev/null \
         && restart_yunohost_firewall \
         || echo "yunohost-firewall service is not running, you should " \
             "consider to start it by doing 'service yunohost-firewall start'."
   fi
+
+  # Yunoprompt
+  systemctl enable yunoprompt.service
 
   # remove old PAM config and update it
   [[ ! -f /usr/share/pam-configs/my_mkhomedir ]] \

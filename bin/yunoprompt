@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Fetch ips
+ip=$(hostname --all-ip-address)
+
+# Fetch SSH fingerprints
+i=0
+for key in /etc/ssh/ssh_host_*_key.pub ; do 
+    output=$(ssh-keygen -l -f $key)
+    fingerprint[$i]=" - $(echo $output | cut -d' ' -f2) $(echo $output| cut -d' ' -f4)"
+    i=$(($i + 1))
+done
+
+#
+# Build the logo
+#
+
+LOGO=$(cat << 'EOF'
+  __   __  __   __  __    _  _______  __   __  _______  _______  _______
+ |  | |  ||  | |  ||  |  | ||       ||  | |  ||       ||       ||       |
+ |  |_|  ||  | |  ||   |_| ||   _   ||  |_|  ||   _   ||  _____||_     _|
+ |       ||  |_|  ||       ||  | |  ||       ||  | |  || |_____   |   |
+ |_     _||       ||  _    ||  |_|  ||   _   ||  |_|  ||_____  |  |   |
+   |   |  |       || | |   ||       ||  | |  ||       | _____| |  |   |
+   |___|  |_______||_|  |__||_______||__| |__||_______||_______|  |___|
+EOF
+)
+
+# ' Put a quote in comment to make vim happy about syntax highlighting :s
+
+#
+# Build the actual message
+#
+
+LOGO_AND_FINGERPRINTS=$(cat << EOF
+
+$LOGO
+
+ IP: ${ip}
+ SSH fingerprints:
+ ${fingerprint[0]}
+ ${fingerprint[1]}
+ ${fingerprint[2]}
+ ${fingerprint[3]}
+ ${fingerprint[4]}
+
+EOF
+)
+
+if [[ -f /etc/yunohost/installed ]]
+then
+    echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
+else
+    sleep 5
+    chvt 2
+    echo "$LOGO_AND_FINGERPRINTS"
+    echo -e "\e[m Post-installation \e[0m"
+    echo "Congratulations! YunoHost has been successfully installed.\nTwo more steps are required to activate the services of your server."
+    read -p "Proceed to post-installation? (y/n) " -n 1
+    RESULT=1
+    while [ $RESULT -gt 0 ]; do
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            chvt 1
+            exit 0
+        fi
+        echo -e "\n"
+        /usr/bin/yunohost tools postinstall
+        let RESULT=$?
+        if [ $RESULT -gt 0 ]; then
+            echo -e "\n"
+            read -p "Retry? (y/n) " -n 1
+        fi
+    done
+fi

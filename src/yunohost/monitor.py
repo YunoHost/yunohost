@@ -35,18 +35,20 @@ import errno
 import os
 import dns.resolver
 import cPickle as pickle
-from datetime import datetime, timedelta
+from datetime import datetime
 
+from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.domain import get_public_ip
+from yunohost.utils.network import get_public_ip
+from yunohost.domain import _get_maindomain
 
 logger = getActionLogger('yunohost.monitor')
 
-glances_uri  = 'http://127.0.0.1:61209'
-stats_path   = '/var/lib/yunohost/stats'
-crontab_path = '/etc/cron.d/yunohost-monitor'
+GLANCES_URI = 'http://127.0.0.1:61209'
+STATS_PATH = '/var/lib/yunohost/stats'
+CRONTAB_PATH = '/etc/cron.d/yunohost-monitor'
 
 
 def monitor_disk(units=None, mountpoint=None, human_readable=False):
@@ -87,13 +89,13 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
     # Retrieve monitoring for unit(s)
     for u in units:
         if u == 'io':
-            ## Define setter
+            # Define setter
             if len(units) > 1:
                 def _set(dn, dvalue):
                     try:
                         result[dn][u] = dvalue
                     except KeyError:
-                        result[dn] = { u: dvalue }
+                        result[dn] = {u: dvalue}
             else:
                 def _set(dn, dvalue):
                     result[dn] = dvalue
@@ -111,13 +113,13 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
             for dname in devices_names:
                 _set(dname, 'not-available')
         elif u == 'filesystem':
-            ## Define setter
+            # Define setter
             if len(units) > 1:
                 def _set(dn, dvalue):
                     try:
                         result[dn][u] = dvalue
                     except KeyError:
-                        result[dn] = { u: dvalue }
+                        result[dn] = {u: dvalue}
             else:
                 def _set(dn, dvalue):
                     result[dn] = dvalue
@@ -162,6 +164,7 @@ def monitor_network(units=None, human_readable=False):
         units = ['check', 'usage', 'infos']
 
     # Get network devices and their addresses
+    # TODO / FIXME : use functions in utils/network.py to manage this
     devices = {}
     output = subprocess.check_output('ip addr show'.split())
     for d in re.split('^(?:[0-9]+: )', output, flags=re.MULTILINE):
@@ -174,8 +177,7 @@ def monitor_network(units=None, human_readable=False):
     for u in units:
         if u == 'check':
             result[u] = {}
-            with open('/etc/yunohost/current_host', 'r') as f:
-                domain = f.readline().rstrip()
+            domain = _get_maindomain()
             cmd_check_smtp = os.system('/bin/nc -z -w1 yunohost.org 25')
             if cmd_check_smtp == 0:
                 smtp_check = m18n.n('network_check_smtp_ok')
@@ -183,11 +185,11 @@ def monitor_network(units=None, human_readable=False):
                 smtp_check = m18n.n('network_check_smtp_ko')
 
             try:
-                answers = dns.resolver.query(domain,'MX')
+                answers = dns.resolver.query(domain, 'MX')
                 mx_check = {}
                 i = 0
                 for server in answers:
-                    mx_id = 'mx%s' %i
+                    mx_id = 'mx%s' % i
                     mx_check[mx_id] = server
                     i = i + 1
             except:
@@ -210,11 +212,9 @@ def monitor_network(units=None, human_readable=False):
                 else:
                     logger.debug('interface name %s was not found', iname)
         elif u == 'infos':
-            try:
-                p_ipv4 = get_public_ip()
-            except:
-                p_ipv4 = 'unknown'
+            p_ipv4 = get_public_ip() or 'unknown'
 
+            # TODO / FIXME : use functions in utils/network.py to manage this
             l_ip = 'unknown'
             for name, addrs in devices.items():
                 if name == 'lo':
@@ -307,7 +307,7 @@ def monitor_update_stats(period):
 
     stats = _retrieve_stats(period)
     if not stats:
-        stats = { 'disk': {}, 'network': {}, 'system': {}, 'timestamp': [] }
+        stats = {'disk': {}, 'network': {}, 'system': {}, 'timestamp': []}
 
     monitor = None
     # Get monitoring stats
@@ -357,7 +357,7 @@ def monitor_update_stats(period):
         if 'usage' in stats['network'] and iname in stats['network']['usage']:
             curr = stats['network']['usage'][iname]
         net_usage[iname] = _append_to_stats(curr, values, 'time_since_update')
-    stats['network'] = { 'usage': net_usage, 'infos': monitor['network']['infos'] }
+    stats['network'] = {'usage': net_usage, 'infos': monitor['network']['infos']}
 
     # Append system stats
     for unit, values in monitor['system'].items():
@@ -421,8 +421,8 @@ def monitor_enable(with_stats=False):
         rules = ('*/5 * * * * root {cmd} day >> /dev/null\n'
                  '3 * * * * root {cmd} week >> /dev/null\n'
                  '6 */4 * * * root {cmd} month >> /dev/null').format(
-                    cmd='/usr/bin/yunohost --quiet monitor update-stats')
-        with open(crontab_path, 'w') as f:
+            cmd='/usr/bin/yunohost --quiet monitor update-stats')
+        with open(CRONTAB_PATH, 'w') as f:
             f.write(rules)
 
     logger.success(m18n.n('monitor_enabled'))
@@ -447,7 +447,7 @@ def monitor_disable():
 
     # Remove crontab
     try:
-        os.remove(crontab_path)
+        os.remove(CRONTAB_PATH)
     except:
         pass
 
@@ -460,7 +460,7 @@ def _get_glances_api():
 
     """
     try:
-        p = xmlrpclib.ServerProxy(glances_uri)
+        p = xmlrpclib.ServerProxy(GLANCES_URI)
         p.system.methodHelp('getAll')
     except (xmlrpclib.ProtocolError, IOError):
         pass
@@ -530,7 +530,7 @@ def binary_to_human(n, customary=False):
         symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     prefix = {}
     for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i+1)*10
+        prefix[s] = 1 << (i + 1) * 10
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
@@ -552,9 +552,9 @@ def _retrieve_stats(period, date=None):
     # Retrieve pickle file
     if date is not None:
         timestamp = calendar.timegm(date)
-        pkl_file = '%s/%d_%s.pkl' % (stats_path, timestamp, period)
+        pkl_file = '%s/%d_%s.pkl' % (STATS_PATH, timestamp, period)
     else:
-        pkl_file = '%s/%s.pkl' % (stats_path, period)
+        pkl_file = '%s/%s.pkl' % (STATS_PATH, period)
     if not os.path.isfile(pkl_file):
         return False
 
@@ -581,16 +581,16 @@ def _save_stats(stats, period, date=None):
     # Set pickle file name
     if date is not None:
         timestamp = calendar.timegm(date)
-        pkl_file = '%s/%d_%s.pkl' % (stats_path, timestamp, period)
+        pkl_file = '%s/%d_%s.pkl' % (STATS_PATH, timestamp, period)
     else:
-        pkl_file = '%s/%s.pkl' % (stats_path, period)
-    if not os.path.isdir(stats_path):
-        os.makedirs(stats_path)
+        pkl_file = '%s/%s.pkl' % (STATS_PATH, period)
+    if not os.path.isdir(STATS_PATH):
+        os.makedirs(STATS_PATH)
 
     # Limit stats
     if date is None:
         t = stats['timestamp']
-        limit = { 'day': 86400, 'week': 604800, 'month': 2419200 }
+        limit = {'day': 86400, 'week': 604800, 'month': 2419200}
         if (t[len(t) - 1] - t[0]) > limit[period]:
             begin = t[len(t) - 1] - limit[period]
             stats = _filter_stats(stats, begin)
@@ -612,7 +612,7 @@ def _monitor_all(period=None, since=None):
         since -- Timestamp of the stats beginning
 
     """
-    result = { 'disk': {}, 'network': {}, 'system': {} }
+    result = {'disk': {}, 'network': {}, 'system': {}}
 
     # Real-time stats
     if period == 'day' and since is None:
@@ -697,7 +697,7 @@ def _calculate_stats_mean(stats):
                 s[k] = _mean(v, t, ts)
             elif isinstance(v, list):
                 try:
-                    nums = [ float(x * t[i]) for i, x in enumerate(v) ]
+                    nums = [float(x * t[i]) for i, x in enumerate(v)]
                 except:
                     pass
                 else:
