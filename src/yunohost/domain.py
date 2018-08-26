@@ -38,6 +38,7 @@ import yunohost.certificate
 from yunohost.service import service_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
+from yunohost.hook import hook_callback
 
 logger = getActionLogger('yunohost.domain')
 
@@ -188,7 +189,6 @@ def domain_dns_conf(domain, ttl=None):
         ttl -- Time to live
 
     """
-    from yunohost.hook import hook_callback
 
     ttl = 3600 if ttl is None else ttl
 
@@ -212,8 +212,8 @@ def domain_dns_conf(domain, ttl=None):
 
     result += "\n\n"
     result += "; Custom\n"
-
-    result += ''.join(hook_callback('custom_dns_rules', args=[])['stdreturn'])
+    for record in dns_conf["custom"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
@@ -393,11 +393,21 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
-    return {
+    # Custom
+    hookres = hook_callback('custom_dns_rules', args=[domain])
+    print(hookres)
+    custom = []
+    for h in hookres.values() :
+        custom.extend(h['stdreturn'])
+
+    res = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
+        "custom": custom,
     }
+
+    return res
 
 
 def _get_DKIM(domain):
