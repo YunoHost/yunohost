@@ -39,7 +39,7 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
-from yunohost.hook import hook_callback
+from yunohost.hook import hook_callback, hook_list
 
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
@@ -400,6 +400,12 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
+
+    # Don't regen SSH if not specifically specified
+    if not names:
+        names = hook_list('conf_regen', list_by='name',
+                          show_info=False)['hooks']
+        names.remove('ssh')
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
