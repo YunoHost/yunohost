@@ -440,6 +440,12 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
+
+    # Restore specific ssh conf
+    bkp_sshd_conf = '/etc/ssh/sshd_config.to_restore'
+    if os.path.exists(bkp_sshd_conf):
+        os.rename(bkp_sshd_conf, '/etc/ssh/sshd_config')
+
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))
