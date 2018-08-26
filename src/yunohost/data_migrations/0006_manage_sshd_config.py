@@ -11,6 +11,7 @@ from moulinette.utils.filesystem import mkdir, rm
 from yunohost.tools import Migration
 from yunohost.service import service_regen_conf, _get_conf_hashes, \
                              _calculate_hash, _run_service_command
+from yunohost.settings import settings_set
 
 logger = getActionLogger('yunohost.migration')
 
@@ -24,6 +25,16 @@ class MyMigration(Migration):
     """
 
     def migrate(self):
+
+        # Check if deprecated DSA Host Key is in config
+        dsa_rgx = r'^[ \t]*HostKey[ \t]+/etc/ssh/ssh_host_dsa_key[ \t]*(?:#.*)?$'
+        dsa = False
+        for line in open(SSHD_CONF):
+            if re.match(dsa_rgx, line) is not None:
+                dsa = True
+                break
+        if dsa:
+            settings_set("service.ssh._deprecated_dsa_hostkey", True)
 
         # Create sshd_config.d dir
         if not os.path.exists(SSHD_CONF + '.d'):

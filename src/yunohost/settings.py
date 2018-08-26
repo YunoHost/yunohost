@@ -35,6 +35,7 @@ DEFAULTS = OrderedDict([
     ("example.int", {"type": "int", "default": 42}),
     ("example.string", {"type": "string", "default": "yolo swag"}),
     ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
+    ("service.ssh._deprecated_dsa_hostkey", {"type": "bool", "default": False}),
 ])
 
 
