@@ -7,6 +7,7 @@ from moulinette.utils.log import getActionLogger
 from yunohost.tools import Migration
 from yunohost.service import service_regen_conf, _get_conf_hashes, \
                              _calculate_hash
+from yunohost.settings import settings_set, settings_get
 
 logger = getActionLogger('yunohost.migration')
 
@@ -15,6 +16,7 @@ class MyMigration(Migration):
     "Reset SSH conf to the YunoHost one"
 
     def migrate(self):
+        settings_set("service.ssh._deprecated_dsa_hostkey", False)
         service_regen_conf(names=['ssh'], force=True)
 
     def backward(self):
@@ -29,7 +31,8 @@ class MyMigration(Migration):
         if '/etc/ssh/sshd_config' in ynh_hash:
             ynh_hash = ynh_hash['/etc/ssh/sshd_config']
         current_hash = _calculate_hash('/etc/ssh/sshd_config')
-        if ynh_hash == current_hash:
+        dsa = settings_get("service.ssh._deprecated_dsa_hostkey")
+        if ynh_hash == current_hash and not dsa:
             return "auto"
 
         return "manual"
@@ -53,7 +56,7 @@ class MyMigration(Migration):
 
             root_login = root_login + re.findall(root_rgx, line)
 
-            if not dsa and re.match(dsa_rgx, line):
+            if not dsa and re.match(dsa_rgx, line) is not None:
                 dsa = True
 
         if len(ports) == 0:
