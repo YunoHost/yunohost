@@ -1,15 +1,12 @@
-import subprocess
-import os
 import re
-
-from shutil import copyfile
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.service import service_regen_conf, _get_conf_hashes, _calculate_hash
+from yunohost.service import service_regen_conf, _get_conf_hashes, \
+                             _calculate_hash
 
 logger = getActionLogger('yunohost.migration')
 
@@ -36,7 +33,6 @@ class MyMigration(Migration):
             return "auto"
 
         return "manual"
-
 
     @property
     def disclaimer(self):
