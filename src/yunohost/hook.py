@@ -280,8 +280,8 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             try:
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
-                hook_exec(path, args=hook_args, chdir=chdir, env=env,
-                          no_trace=no_trace, raise_on_error=True, user="root")
+                hook_return = hook_exec(path, args=hook_args, chdir=chdir, env=env,
+                          no_trace=no_trace, raise_on_error=True, user="root")[1]
             except MoulinetteError as e:
                 state = 'failed'
                 logger.error(e.strerror, exc_info=1)
@@ -294,6 +294,10 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 result[state][name].append(path)
             except KeyError:
                 result[state][name] = [path]
+            try:
+                result['stdreturn'].append(hook_return)
+            except KeyError:
+                result['stdreturn'] = [hook_return]
     return result
 
 
@@ -340,6 +344,11 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
     env['YNH_STDINFO'] = stdinfo
+
+    stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
+    with open(stdreturn, 'w') as f:
+        f.write('')
+    env['YNH_STDRETURN'] = stdreturn
 
     # Construct command to execute
     if user == "root":
@@ -388,11 +397,18 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
                 errno.EIO, m18n.n('hook_exec_not_terminated', path=path))
         else:
             logger.error(m18n.n('hook_exec_not_terminated', path=path))
-            return 1
+            return 1, ''
     elif raise_on_error and returncode != 0:
         raise MoulinetteError(
             errno.EIO, m18n.n('hook_exec_failed', path=path))
-    return returncode
+
+    with open(stdreturn, 'r') as f:
+        returnstring = f.read()
+    stdreturndir = os.path.split(stdreturn)[0]
+    os.remove(stdreturn)
+    os.rmdir(stdreturndir)
+
+    return returncode, returnstring
 
 
 def _extract_filename_parts(filename):
