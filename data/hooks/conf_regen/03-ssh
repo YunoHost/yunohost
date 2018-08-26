@@ -7,7 +7,7 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/ssh
 
-  # only overwrite SSH configuration on an ISO installation
+  # Don't overwrite configuration if from_script
   if [[ ! -f /etc/yunohost/from_script ]]; then
       # do not listen to IPv6 if unavailable
       [[ -f /proc/net/if_inet6 ]] \
