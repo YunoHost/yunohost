@@ -294,6 +294,8 @@
     "migration_0005_not_enough_space": "Not enough space is available in {path} to run the migration right now :(.",
     "migration_0006_disclaimer": "Yunohost now expects admin and root passwords to be synchronized. By running this migration, your root password is going to be replaced by the admin password.",
     "migration_0006_done": "Your root password have been replaced by your admin password.",
+    "migration_0006_cancelled": "YunoHost has failed to improve the way your ssh conf is managed.",
+    "migration_0006_cannot_restart": "SSH can't be restarted after we tried to cancel the migration 6.",
     "migration_0007_general_warning": "To ensure a global security of your server, YunoHost recommends to let it manage the SSH configuration of your server. Your current SSH configuration differs from common default configuration. If you let YunoHost reconfigure it, the way to access with SSH to your server could change after this migration:",
     "migration_0007_port": "- you will have to connect using port 22 instead of your custom SSH port. Feel free to reconfigure it",
     "migration_0007_root": "- you will not be able to connect with root user, instead you will have to use admin user.",
