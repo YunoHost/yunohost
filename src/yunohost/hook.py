@@ -32,6 +32,7 @@ from glob import iglob
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
+from moulinette.utils.filesystem import read_json
 
 HOOK_FOLDER = '/usr/share/yunohost/hooks/'
 CUSTOM_HOOK_FOLDER = '/etc/yunohost/hooks.d/'
@@ -229,7 +230,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             (name, priority, path, succeed) as arguments
 
     """
-    result = {'succeed': {}, 'failed': {}}
+    result = {'succeed': {}, 'failed': {}, 'stdreturn' : []}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -294,10 +295,13 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 result[state][name].append(path)
             except KeyError:
                 result[state][name] = [path]
-            try:
-                result['stdreturn'].append(hook_return)
-            except KeyError:
-                result['stdreturn'] = [hook_return]
+
+            #print(hook_return)
+            #for r in hook_return.:
+            result['stdreturn'].extend(hook_return) #for r in hook_return
+                #print(r)
+
+    #print(result['stdreturn'])
     return result
 
 
@@ -402,13 +406,17 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         raise MoulinetteError(
             errno.EIO, m18n.n('hook_exec_failed', path=path))
 
-    with open(stdreturn, 'r') as f:
-        returnstring = f.read()
+    try:
+        returnjson = read_json(stdreturn)
+    except Exception as e:
+        returnjson = {}
+        errno.EIO, m18n.n('hook_json_return_error', path=path, msg=str(e))
+
     stdreturndir = os.path.split(stdreturn)[0]
     os.remove(stdreturn)
     os.rmdir(stdreturndir)
 
-    return returncode, returnstring
+    return returncode, returnjson
 
 
 def _extract_filename_parts(filename):

@@ -199,6 +199,7 @@
     "global_settings_unknown_type": "Unexpected situation, the setting {setting:s} appears to have the type {unknown_type:s} but it's not a type supported by the system.",
     "hook_exec_failed": "Script execution failed: {path:s}",
     "hook_exec_not_terminated": "Script execution hasn\u2019t terminated: {path:s}",
+    "hook_json_return_error": "Faild to read return from hook {path:s}. Error: {msg:s}",
     "hook_list_by_invalid": "Invalid property to list hook by",
     "hook_name_unknown": "Unknown hook name '{name:s}'",
     "installation_complete": "Installation complete",
