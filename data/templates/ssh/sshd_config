@@ -94,3 +94,5 @@ Match User sftpusers
         AllowTcpForwarding no
         GatewayPorts no
         X11Forwarding no
+
+Include sshd_config.d/*
