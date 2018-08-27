@@ -126,7 +126,7 @@ ynh_app_package_version () {
 # To force an upgrade, even if the package is up to date,
 # you have to set the variable YNH_FORCE_UPGRADE before.
 # example: sudo YNH_FORCE_UPGRADE=1 yunohost app upgrade MyApp
-
+#
 # usage: ynh_check_app_version_changed
 ynh_check_app_version_changed () {
   local force_upgrade=${YNH_FORCE_UPGRADE:-0}
