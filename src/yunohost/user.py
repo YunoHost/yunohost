@@ -39,14 +39,9 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
+from yunohost.tools import _check_password
 
 logger = getActionLogger('yunohost.user')
-
-def _check_password(password):
-    try:
-        cracklib.VeryFascistCheck(password)
-    except ValueError as e:
-        raise MoulinetteError(errno.EINVAL, m18n.n('password_too_weak') + " : " + str(e) )
 
 def user_list(auth, fields=None):
     """

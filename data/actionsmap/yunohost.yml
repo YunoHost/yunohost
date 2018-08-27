@@ -1489,6 +1489,9 @@ tools:
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
                     action: store_true
+                --force-password:
+                    help: Use this if you really want to set a weak password
+                    action: store_true
 
         ### tools_update()
         update:

@@ -35,6 +35,12 @@ DEFAULTS = OrderedDict([
     ("example.int", {"type": "int", "default": 42}),
     ("example.string", {"type": "string", "default": "yolo swag"}),
     ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
+    # Control the way password are checked
+    # -1 No control
+    # 0 Just display weak password info in debug
+    # 1 Warn user about weak password
+    # 2 Raise an error when the user put a weak password
+    ("security.password.check_mode", {"type": "int", "default": 2}),
 ])
 
 
@@ -90,9 +96,12 @@ def settings_set(key, value):
                 received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "int":
         if not isinstance(value, int) or isinstance(value, bool):
-            raise MoulinetteError(errno.EINVAL, m18n.n(
-                'global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type))
+            if isinstance(value, str):
+                value=int(value)
+            else:
+                raise MoulinetteError(errno.EINVAL, m18n.n(
+                    'global_settings_bad_type_for_setting', setting=key,
+                    received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "string":
         if not isinstance(value, basestring):
             raise MoulinetteError(errno.EINVAL, m18n.n(

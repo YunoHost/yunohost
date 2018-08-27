@@ -32,6 +32,7 @@ import logging
 import subprocess
 import pwd
 import socket
+import cracklib
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
@@ -53,6 +54,7 @@ from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation, OperationLogger
+from yunohost.settings import settings_get
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -127,6 +129,8 @@ def tools_adminpw(auth, new_password):
 
     """
     from yunohost.user import _hash_user_password
+
+    _check_password(new_password)
     try:
         auth.update("cn=admin", {
             "userPassword": _hash_user_password(new_password),
@@ -250,7 +254,8 @@ def _is_inside_container():
 
 
 @is_unit_operation()
-def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
+def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
+                      force_password=False):
     """
     YunoHost post-install
 
@@ -267,6 +272,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
     if os.path.isfile('/etc/yunohost/installed'):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('yunohost_already_installed'))
+
+    # Check password
+    if not force_password:
+        _check_password(password)
 
     if not ignore_dyndns:
         # Check if yunohost dyndns can handle the given domain
@@ -298,6 +307,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
             dyndns = False
     else:
         dyndns = False
+
 
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
@@ -1046,3 +1056,24 @@ class Migration(object):
     @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
+
+def _check_password(password):
+    security_level = settings_get('security.password.check_mode')
+    if security_level == -1:
+        return
+    try:
+        if password in ["yunohost", "olinuxino", "olinux"]:
+            raise MoulinetteError(errno.EINVAL, m18n.n('password_too_weak') +
+                ' : it is based on a (reversed) dictionary word' )
+
+        try:
+            cracklib.VeryFascistCheck(password)
+        except ValueError as e:
+            raise MoulinetteError(errno.EINVAL, m18n.n('password_too_weak') + " : " + str(e) )
+    except MoulinetteError as e:
+        if security_level >= 2:
+            raise
+        elif security_level == 1:
+            logger.warn(e.strerror)
+        else:
+            logger.debug(e.strerror)
