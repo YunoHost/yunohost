@@ -37,14 +37,14 @@ from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
+from moulinette.utils.process import check_output
+
 
 from yunohost.domain import _get_maindomain, _build_dns_conf
 from yunohost.utils.network import get_public_ip
 
 logger = getActionLogger('yunohost.dyndns')
 
-OLD_IPV4_FILE = '/etc/yunohost/dyndns/old_ip'
-OLD_IPV6_FILE = '/etc/yunohost/dyndns/old_ipv6'
 DYNDNS_ZONE = '/etc/yunohost/dyndns/zone'
 
 RE_DYNDNS_PRIVATE_KEY_MD5 = re.compile(
@@ -95,7 +95,7 @@ def _dyndns_available(provider, domain):
         domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
 
     Returns:
-        True if the domain is avaible, False otherwise.
+        True if the domain is available, False otherwise.
     """
     logger.debug("Checking if domain %s is available on %s ..."
                  % (domain, provider))
@@ -187,32 +187,6 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
 
     old_ipv4, old_ipv6 = (None, None)  # (default values)
 
-    if os.path.isfile(OLD_IPV4_FILE):
-        old_ipv4 = read_file(OLD_IPV4_FILE).rstrip()
-
-    if os.path.isfile(OLD_IPV6_FILE):
-        old_ipv6 = read_file(OLD_IPV6_FILE).rstrip()
-
-    # Get current IPv4 and IPv6
-    ipv4_ = get_public_ip()
-    ipv6_ = get_public_ip(6)
-
-    if ipv4 is None:
-        ipv4 = ipv4_
-
-    if ipv6 is None:
-        ipv6 = ipv6_
-
-    logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
-    logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
-
-    # no need to update
-    if old_ipv4 == ipv4 and old_ipv6 == ipv6:
-        logger.info("No updated needed.")
-        return
-    else:
-        logger.info("Updated needed, going on...")
-
     # If domain is not given, try to guess it from keys available...
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
@@ -251,6 +225,30 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
         'server %s' % dyn_host,
         'zone %s' % host,
     ]
+
+
+    old_ipv4 = check_output("dig @91.224.148.92 +short %s" % domain).strip()
+    old_ipv6 = check_output("dig @91.224.148.92 +short aaaa %s" % domain).strip()
+
+    # Get current IPv4 and IPv6
+    ipv4_ = get_public_ip()
+    ipv6_ = get_public_ip(6)
+
+    if ipv4 is None:
+        ipv4 = ipv4_
+
+    if ipv6 is None:
+        ipv6 = ipv6_
+
+    logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
+    logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+
+    # no need to update
+    if old_ipv4 == ipv4 and old_ipv6 == ipv6:
+        logger.info("No updated needed.")
+        return
+    else:
+        logger.info("Updated needed, going on...")
 
     dns_conf = _build_dns_conf(domain)
 
@@ -300,11 +298,6 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
                               m18n.n('dyndns_ip_update_failed'))
 
     logger.success(m18n.n('dyndns_ip_updated'))
-
-    if ipv4 is not None:
-        write_to_file(OLD_IPV4_FILE, ipv4)
-    if ipv6 is not None:
-        write_to_file(OLD_IPV6_FILE, ipv6)
 
 
 def dyndns_installcron():
