@@ -191,9 +191,6 @@ if __name__ == '__main__':
     else:
         pwd = sys.argv[1]
     status, msg = ProfilePasswordValidator('user').validate(pwd)
-    if status == "error":
-        sys.exit(msg)
-    elif status == "warning":
         print(msg)
         sys.exit(0)
 
