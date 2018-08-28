@@ -53,14 +53,18 @@ class PasswordValidator(object):
         Validate a password and raise error or display a warning
         """
         if self.validation_strength <= 0:
-            return
+            return ("success", "")
 
         self.strength = self.compute(password, ACTIVATE_ONLINE_PWNED_LIST)
         if self.strength < self.validation_strength:
             if self.listed:
-                return "password_listed_" + str(self.validation_strength)
+                return ("error", "password_listed_" + str(self.validation_strength))
             else:
-                return "password_too_simple_" + str(self.validation_strength)
+                return ("error", "password_too_simple_" + str(self.validation_strength))
+
+        if self.strength < 3:
+            return ("warning", 'password_advice')
+        return ("success", "")
 
     def compute(self, password, online=False):
         # Indicators
@@ -173,19 +177,21 @@ class LoggerPasswordValidator(ProfilePasswordValidator):
 
         logger = logging.getLogger('yunohost.utils.password')
 
-        error = super(LoggerPasswordValidator, self).validate(password)
-        if error is not None:
-            raise MoulinetteError(1, m18n.n(error))
-
-        if self.strength < 3:
-            logger.info(m18n.n('password_advice'))
+        status, msg = super(LoggerPasswordValidator, self).validate(password)
+        if status == "error":
+            raise MoulinetteError(1, m18n.n(msg))
+        elif status == "warning":
+            logger.info(m18n.n(msg))
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("usage: password.py PASSWORD")
 
-    result = ProfilePasswordValidator('user').validate(sys.argv[1])
-    if result is not None:
-        sys.exit(result)
+    status, msg = ProfilePasswordValidator('user').validate(sys.argv[1])
+    if status == "error":
+        sys.exit(msg)
+    elif status == "warning":
+        print(msg)
+        sys.exit(0)
 
 
