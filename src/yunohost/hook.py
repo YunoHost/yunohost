@@ -281,7 +281,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
                 hook_exec(path, args=hook_args, chdir=chdir, env=env,
-                          no_trace=no_trace, raise_on_error=True, user="root")
+                          no_trace=no_trace, raise_on_error=True)
             except MoulinetteError as e:
                 state = 'failed'
                 logger.error(e.strerror, exc_info=1)
@@ -298,7 +298,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="admin", stdout_callback=None,
+              chdir=None, env=None, user="root", stdout_callback=None,
               stderr_callback=None):
     """
     Execute hook from a file with arguments
