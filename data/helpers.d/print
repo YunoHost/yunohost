@@ -12,7 +12,7 @@ ynh_print_info() {
     echo "$1" >> "$YNH_STDINFO"
 }
 
-# Ignore the yunohost-cli log to prevent errors with conditionals commands
+# Ignore the yunohost-cli log to prevent errors with conditional commands
 #
 # [internal]
 #
@@ -29,7 +29,7 @@ ynh_no_log() {
   return $?
 }
 
-# Main printer, just in case in the futur we have to change anything about that.
+# Main printer, just in case in the future we have to change anything about that.
 #
 # [internal]
 #
@@ -45,7 +45,7 @@ ynh_print_warn () {
   ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${1}" >&2
 }
 
-# Print a error on stderr
+# Print an error on stderr
 #
 # usage: ynh_print_err "Text to print"
 # | arg: text - The text to print
@@ -57,7 +57,7 @@ ynh_print_err () {
 #
 # usage: ynh_exec_err command to execute
 # usage: ynh_exec_err "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be send to the next pipe.
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
 ynh_exec_err () {
@@ -68,7 +68,7 @@ ynh_exec_err () {
 #
 # usage: ynh_exec_warn command to execute
 # usage: ynh_exec_warn "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be send to the next pipe.
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
 ynh_exec_warn () {
@@ -79,7 +79,7 @@ ynh_exec_warn () {
 #
 # usage: ynh_exec_warn_less command to execute
 # usage: ynh_exec_warn_less "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be send to the next pipe.
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
 ynh_exec_warn_less () {
@@ -90,7 +90,7 @@ ynh_exec_warn_less () {
 #
 # usage: ynh_exec_quiet command to execute
 # usage: ynh_exec_quiet "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be send to the next pipe.
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
 ynh_exec_quiet () {
@@ -101,7 +101,7 @@ ynh_exec_quiet () {
 #
 # usage: ynh_exec_fully_quiet command to execute
 # usage: ynh_exec_fully_quiet "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be send to the next pipe.
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
 ynh_exec_fully_quiet () {
@@ -111,7 +111,7 @@ ynh_exec_fully_quiet () {
 # Remove any logs for all the following commands.
 #
 # usage: ynh_print_OFF
-# WARNING: You should be careful with this helper, and never forgot to use ynh_print_ON as soon as possible to restore the logging.
+# WARNING: You should be careful with this helper, and never forget to use ynh_print_ON as soon as possible to restore the logging.
 ynh_print_OFF () {
 	set +x
 }
