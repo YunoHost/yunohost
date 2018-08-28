@@ -1,21 +1,9 @@
 #!/usr/bin/env python
-import argparse
-import subprocess
-import json
-import os
-import sys
-import base64
-import binascii
-import time
-import hashlib
-import re
-import copy
-import textwrap
-import logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
-    from urllib.request import urlopen  # Python 3
+    from urllib.request import urlopen # Python 3
 except ImportError:
-    from urllib2 import urlopen  # Python 2
+    from urllib2 import urlopen # Python 2
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -24,8 +12,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA, no_checks=False):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -124,16 +111,17 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         with open(wellknown_path, "w") as wellknown_file:
             wellknown_file.write(keyauthorization)
 
-        # check that the file is in place
-        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-        try:
-            resp = urlopen(wellknown_url)
-            resp_data = resp.read().decode('utf8').strip()
-            assert resp_data == keyauthorization
-        except (IOError, AssertionError):
-            os.remove(wellknown_path)
-            raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
-                wellknown_path, wellknown_url))
+        if not no_checks:  # sometime the local g
+            # check that the file is in place
+            wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
+            try:
+                resp = urlopen(wellknown_url)
+                resp_data = resp.read().decode('utf8').strip()
+                assert resp_data == keyauthorization
+            except (IOError, AssertionError):
+                os.remove(wellknown_path)
+                raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
+                    wellknown_path, wellknown_url))
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
@@ -178,7 +166,6 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
-
 def main(argv):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -208,5 +195,5 @@ def main(argv):
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__": # pragma: no cover
     main(sys.argv[1:])

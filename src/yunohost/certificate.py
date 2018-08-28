@@ -40,13 +40,12 @@ from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.domain
 from yunohost.utils.network import get_public_ip
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command, service_regen_conf
-
+from yunohost.log import OperationLogger
 
 logger = getActionLogger('yunohost.certmanager')
 
@@ -95,6 +94,8 @@ def certificate_status(auth, domain_list, full=False):
         domain_list -- Domains to be checked
         full        -- Display more info about the certificates
     """
+
+    import yunohost.domain
 
     # Check if old letsencrypt_ynh is installed
     # TODO / FIXME - Remove this in the future once the letsencrypt app is
@@ -159,6 +160,9 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
     for domain in domain_list:
 
+        operation_logger = OperationLogger('selfsigned_cert_install', [('domain', domain)],
+                           args={'force': force})
+
         # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
         new_cert_folder = "%s/%s-history/%s-selfsigned" % (
@@ -180,6 +184,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
             if status["summary"]["code"] in ('good', 'great'):
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_replace_valid_cert', domain=domain))
+
+        operation_logger.start()
 
         # Create output folder for new certificate stuff
         os.makedirs(new_cert_folder)
@@ -210,7 +216,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
                 raise MoulinetteError(
                     errno.EIO, m18n.n('domain_cert_gen_failed'))
             else:
-                logger.info(out)
+                logger.debug(out)
 
         # Link the CA cert (not sure it's actually needed in practice though,
         # since we append it at the end of crt.pem. For instance for Let's
@@ -237,12 +243,16 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
             logger.success(
                 m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
+            operation_logger.success()
         else:
-            logger.error(
-                "Installation of self-signed certificate installation for %s failed !", domain)
+            msg = "Installation of self-signed certificate installation for %s failed !" % (domain)
+            logger.error(msg)
+            operation_logger.error(msg)
 
 
 def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
+    import yunohost.domain
+
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
@@ -278,6 +288,9 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # Actual install steps
     for domain in domain_list:
 
+        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
+                           args={'force': force, 'no_checks': no_checks,
+                                 'staging': staging})
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
@@ -285,17 +298,21 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
 
+            operation_logger.start()
+
             _configure_for_acme_challenge(auth, domain)
-            _fetch_and_enable_new_certificate(domain, staging)
+            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
             _install_cron()
 
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
+            operation_logger.success()
         except Exception as e:
             _display_debug_information(domain)
-            logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
-
+            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
+            logger.error(msg)
+            operation_logger.error(msg)
 
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
@@ -308,6 +325,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                       before attempting the renewing
         email      -- Emails root if some renewing failed
     """
+
+    import yunohost.domain
 
     # Check if old letsencrypt_ynh is installed
     # TODO / FIXME - Remove this in the future once the letsencrypt app is
@@ -371,6 +390,11 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
     # Actual renew steps
     for domain in domain_list:
+
+        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
+                           args={'force': force, 'no_checks': no_checks,
+                                 'staging': staging, 'email': email})
+
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
 
@@ -378,17 +402,23 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
 
-            _fetch_and_enable_new_certificate(domain, staging)
+            operation_logger.start()
+
+            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_renew_success", domain=domain))
+
+            operation_logger.success()
 
         except Exception as e:
             import traceback
             from StringIO import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
-            logger.error("Certificate renewing for %s failed !", domain)
+            msg = "Certificate renewing for %s failed !" % (domain)
+            logger.error(msg)
+            operation_logger.error(msg)
             logger.error(stack.getvalue())
             logger.error(str(e))
 
@@ -396,12 +426,13 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, e, stack.getvalue())
 
-
 ###############################################################################
 #   Back-end stuff                                                            #
 ###############################################################################
 
 def _check_old_letsencrypt_app():
+    import yunohost.domain
+
     installedAppIds = [app["id"] for app in yunohost.app.app_list(installed=True)["apps"]]
 
     if "letsencrypt" not in installedAppIds:
@@ -485,11 +516,11 @@ location ^~ '/.well-known/acme-challenge'
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
-        logger.info(
+        logger.debug(
             "Nginx configuration file for ACME challenge already exists for domain, skipping.")
         return
 
-    logger.info(
+    logger.debug(
         "Adding Nginx configuration file for Acme challenge for domain %s.", domain)
 
     with open(nginx_conf_file, "w") as f:
@@ -514,7 +545,7 @@ def _check_acme_challenge_configuration(domain):
         return True
 
 
-def _fetch_and_enable_new_certificate(domain, staging=False):
+def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
@@ -531,7 +562,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _regen_dnsmasq_if_needed()
 
     # Prepare certificate signing request
-    logger.info(
+    logger.debug(
         "Prepare key and certificate signing request (CSR) for %s...", domain)
 
     domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
@@ -541,7 +572,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
     _prepare_certificate_signing_request(domain, domain_key_file, TMP_FOLDER)
 
     # Sign the certificate
-    logger.info("Now using ACME Tiny to sign the certificate...")
+    logger.debug("Now using ACME Tiny to sign the certificate...")
 
     domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
 
@@ -555,6 +586,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
                                               domain_csr_file,
                                               WEBROOT_FOLDER,
                                               log=logger,
+                                              no_checks=no_checks,
                                               CA=certification_authority)
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
@@ -579,7 +611,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False):
         raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
 
     # Now save the key and signed certificate
-    logger.info("Saving the key and signed certificate...")
+    logger.debug("Saving the key and signed certificate...")
 
     # Create corresponding directory
     date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -642,7 +674,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
     # Save the request in tmp folder
     csr_file = output_folder + domain + ".csr"
-    logger.info("Saving to %s.", csr_file)
+    logger.debug("Saving to %s.", csr_file)
 
     with open(csr_file, "w") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
@@ -753,7 +785,7 @@ def _get_status(domain):
 
 
 def _generate_account_key():
-    logger.info("Generating account key ...")
+    logger.debug("Generating account key ...")
     _generate_key(ACCOUNT_KEY_FILE)
     _set_permissions(ACCOUNT_KEY_FILE, "root", "root", 0400)
 
@@ -776,7 +808,7 @@ def _set_permissions(path, user, group, permissions):
 
 
 def _enable_certificate(domain, new_cert_folder):
-    logger.info("Enabling the certificate for domain %s ...", domain)
+    logger.debug("Enabling the certificate for domain %s ...", domain)
 
     live_link = os.path.join(CERT_FOLDER, domain)
 
@@ -793,7 +825,7 @@ def _enable_certificate(domain, new_cert_folder):
 
     os.symlink(new_cert_folder, live_link)
 
-    logger.info("Restarting services...")
+    logger.debug("Restarting services...")
 
     for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
@@ -802,7 +834,7 @@ def _enable_certificate(domain, new_cert_folder):
 
 
 def _backup_current_cert(domain):
-    logger.info("Backuping existing certificate for domain %s", domain)
+    logger.debug("Backuping existing certificate for domain %s", domain)
 
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 

@@ -40,6 +40,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
 from yunohost.hook import hook_callback
+from yunohost.log import is_unit_operation
 
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
@@ -126,7 +127,7 @@ def service_start(names):
                                       m18n.n('service_start_failed',
                                              service=name,
                                              logs=_get_journalctl_logs(name)))
-            logger.info(m18n.n('service_already_started', service=name))
+            logger.debug(m18n.n('service_already_started', service=name))
 
 
 def service_stop(names):
@@ -148,10 +149,10 @@ def service_stop(names):
                                       m18n.n('service_stop_failed',
                                              service=name,
                                              logs=_get_journalctl_logs(name)))
-            logger.info(m18n.n('service_already_stopped', service=name))
+            logger.debug(m18n.n('service_already_stopped', service=name))
 
-
-def service_enable(names):
+@is_unit_operation()
+def service_enable(operation_logger, names):
     """
     Enable one or more services
 
@@ -159,6 +160,7 @@ def service_enable(names):
         names -- Services name to enable
 
     """
+    operation_logger.start()
     if isinstance(names, str):
         names = [names]
     for name in names:
@@ -343,7 +345,8 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+@is_unit_operation([('names', 'service')])
+def service_regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
     Regenerate the configuration file(s) for a service
@@ -376,6 +379,14 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
         return pending_conf
 
+    if not dry_run:
+        operation_logger.related_to = [('service', x) for x in names]
+        if not names:
+            operation_logger.name_parameter_override = 'all'
+        elif len(names) != 1:
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to))+'_services'
+        operation_logger.start()
+
     # Clean pending conf directory
     if os.path.isdir(PENDING_CONF_DIR):
         if not names:
@@ -396,7 +407,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='admin')
+        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
 
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
@@ -414,9 +425,14 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
+    operation_logger.related_to = []
+
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
-        logger.info(m18n.n(
+        if not dry_run:
+            operation_logger.related_to.append(('service', service))
+
+        logger.debug(m18n.n(
             'service_regenconf_pending_applying' if not dry_run else
             'service_regenconf_dry_pending_applying',
             service=service))
@@ -459,7 +475,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     regenerated = _regen(
                         system_path, pending_path, save=False)
                 else:
-                    logger.warning(m18n.n(
+                    logger.info(m18n.n(
                         'service_conf_file_manually_removed',
                         conf=system_path))
                     conf_status = 'removed'
@@ -476,16 +492,16 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                     # we assume that it is safe to regen it, since the file is backuped
                     # anyway (by default in _regen), as long as we warn the user
                     # appropriately.
-                    logger.warning(m18n.n('service_conf_new_managed_file',
-                                          conf=system_path, service=service))
+                    logger.info(m18n.n('service_conf_new_managed_file',
+                                       conf=system_path, service=service))
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'new'
                 elif force:
                     regenerated = _regen(system_path)
                     conf_status = 'force-removed'
                 else:
-                    logger.warning(m18n.n('service_conf_file_kept_back',
-                                          conf=system_path, service=service))
+                    logger.info(m18n.n('service_conf_file_kept_back',
+                                       conf=system_path, service=service))
                     conf_status = 'unmanaged'
 
             # -> system conf has not been manually modified
@@ -530,7 +546,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
         # Check for service conf changes
         if not succeed_regen and not failed_regen:
-            logger.info(m18n.n('service_conf_up_to_date', service=service))
+            logger.debug(m18n.n('service_conf_up_to_date', service=service))
             continue
         elif not failed_regen:
             logger.success(m18n.n(
@@ -563,6 +579,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
         return post_args + [regen_conf_files, ]
 
     hook_callback('conf_regen', names, pre_callback=_pre_call)
+
+    operation_logger.success()
 
     return result
 
@@ -691,13 +709,21 @@ def _tail(file, n):
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
     an indicator that is `True` if there are more lines in the file.
 
+    This function works even with splitted logs (gz compression, log rotate...)
     """
     avg_line_length = 74
     to_read = n
 
     try:
-        with open(file, 'r') as f:
-            while 1:
+        if file.endswith(".gz"):
+            import gzip
+            f = gzip.open(file)
+            lines = f.read().splitlines()
+        else:
+            f = open(file)
+            pos = 1
+            lines = []
+            while len(lines) < to_read and pos > 0:
                 try:
                     f.seek(-(avg_line_length * to_read), 2)
                 except IOError:
@@ -708,15 +734,48 @@ def _tail(file, n):
                 pos = f.tell()
                 lines = f.read().splitlines()
 
-                if len(lines) >= to_read or pos == 0:
+                if len(lines) >= to_read:
                     return lines[-to_read:]
 
                 avg_line_length *= 1.3
+        f.close()
 
     except IOError as e:
         logger.warning("Error while tailing file '%s': %s", file, e, exc_info=1)
         return []
 
+    if len(lines) < to_read:
+        previous_log_file = _find_previous_log_file(file)
+        if previous_log_file is not None:
+            lines = _tail(previous_log_file, to_read - len(lines)) + lines
+
+    return lines
+
+
+def _find_previous_log_file(file):
+    """
+    Find the previous log file
+    """
+    import re
+
+    splitext = os.path.splitext(file)
+    if splitext[1] == '.gz':
+        file = splitext[0]
+    splitext = os.path.splitext(file)
+    ext = splitext[1]
+    i = re.findall(r'\.(\d+)', ext)
+    i = int(i[0]) + 1 if len(i) > 0 else 1
+
+    previous_file = file if i == 1 else splitext[0]
+    previous_file = previous_file + '.%d' % (i)
+    if os.path.exists(previous_file):
+        return previous_file
+
+    previous_file = previous_file + ".gz"
+    if os.path.exists(previous_file):
+        return previous_file
+
+    return None
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     """Compare two files and return the differences
@@ -865,13 +924,13 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             filesystem.mkdir(backup_dir, 0755, True)
 
         shutil.copy2(system_conf, backup_path)
-        logger.info(m18n.n('service_conf_file_backed_up',
+        logger.debug(m18n.n('service_conf_file_backed_up',
                            conf=system_conf, backup=backup_path))
 
     try:
         if not new_conf:
             os.remove(system_conf)
-            logger.info(m18n.n('service_conf_file_removed',
+            logger.debug(m18n.n('service_conf_file_removed',
                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
@@ -880,8 +939,8 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                 filesystem.mkdir(system_dir, 0755, True)
 
             shutil.copyfile(new_conf, system_conf)
-            logger.info(m18n.n('service_conf_file_updated',
-                               conf=system_conf))
+            logger.debug(m18n.n('service_conf_file_updated',
+                                conf=system_conf))
     except Exception as e:
         logger.warning("Exception while trying to regenerate conf '%s': %s", system_conf, e, exc_info=1)
         if not new_conf and os.path.exists(system_conf):

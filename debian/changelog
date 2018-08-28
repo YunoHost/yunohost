@@ -1,3 +1,131 @@
+yunohost (3.2.0~testing1) testing; urgency=low
+
+  * Add logging system of every unit operation (#165)
+  * Add a helper `ynh_info` for apps, so that they can comment on what is going on during scripts execution (#383)
+  * Fix the Sender Rewriting Scheme (#331)
+  * Add `ynh_render_template` to be able to render Jinja 2 templates (#463)
+
+ Thanks to all contributors : Bram, ljf, Aleks !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 23 Aug 2018 21:45:00 +0000
+
+yunohost (3.1.0) stable; urgency=low
+
+  Highlights
+  ==========
+
+  * Add MUA autoconfiguration (e.g. for Thunderbird) (#495)
+  * Experimental : Configuration panel for applications (#488)
+  * Experimental : Allow applications to ship custom actions (#486, #505)
+
+  Other fixes / improvements
+  ==========================
+
+  * Fix an issue with mail permission after restoring them (#496)
+  * Optimize imports in certificate.py (#497)
+  * Add timeout to get_public_ip so that 'dyndns update' don't get stuck (#502)
+  * Use human-friendly choices for booleans during apps installations (#498)
+  * Fix the way we detect we're inside a container (#508)
+  * List existing users during app install if the app ask for a user (#506)
+  * Allow apps to tell they don't want to be displayed in the SSO (#507)
+  * After postinstall, advice the admin to create a first user (#510)
+  * Disable checks in acme_tiny lib is --no-checks is used (#509)
+  * Better UX in case of url conflicts when installing app (#512)
+  * Misc fixes / improvements
+
+ Thanks to all contributors : pitchum, ljf, Bram, Josue, Aleks !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 15 Aug 2018 21:34:00 +0000
+
+yunohost (3.0.0.1) stable; urgency=low
+
+  * Fix remaining use of --verbose and --ignore-system during backup/restore
+    of app upgrades
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Jun 2018 18:31:00 +0000
+
+yunohost (3.0.0) stable; urgency=low
+
+  * Merge with jessie's branches
+  * Release as stable
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 17 Jun 2018 03:25:00 +0000
+
+yunohost (3.0.0~beta1.7) testing; urgency=low
+
+  * Merge with jessie's branches
+  * Set verbose by default
+  * Remove archivemount stuff
+  * Correctly patch php5/php7 stuff when doing a backup restore
+  * Fix counter-intuitive backup API
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 16 Jun 2018 16:20:00 +0000
+
+yunohost (3.0.0~beta1.6) testing; urgency=low
+
+  * [fix] Service description for php7.0-fpm
+  * [fix] Remove old logrotate for php5-fpm during migration
+  * [fix] Explicitly enable php7.0-fpm and disable php5-fpm during migration
+  * [fix] Don't open the old SMTP port anymore (465)
+  * [enh] Check space available before running the postgresql migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 12 Jun 2018 01:00:00 +0000
+
+yunohost (3.0.0~beta1.5) testing; urgency=low
+
+  * (c.f. 2.7.13.4)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 02 Jun 2018 00:14:00 +0000
+
+yunohost (3.0.0~beta1.4) testing; urgency=low
+
+  * Merge with jessie's branches
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 28 May 2018 02:30:00 +0000
+
+yunohost (3.0.0~beta1.3) testing; urgency=low
+
+  * Use mariadb 10.1 now
+  * Convert old php comment starting with # for php5->7 migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 12 May 2018 19:26:00 +0000
+
+yunohost (3.0.0~beta1.2) testing; urgency=low
+
+  Removing http2 also from yunohost_admin.conf since there still are some
+  issues with wordpress ?
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 May 2018 05:52:00 +0000
+
+yunohost (3.0.0~beta1.1) testing; urgency=low
+
+  Fixes in the postgresql migration
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 06 May 2018 03:06:00 +0000
+
+yunohost (3.0.0~beta1) testing; urgency=low
+
+  Beta release for Stretch
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 03 May 2018 03:04:45 +0000
+
+yunohost (2.7.14) stable; urgency=low
+
+  * Last minute fix : install php7.0-acpu to hopefully make stretch still work after the upgrade
+  * Improve Occitan, French, Portuguese, Arabic translations
+  * [fix] local variables and various fix on psql helpers
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 17 Jun 2018 01:16:13 +0000
+
+yunohost (2.7.13.6) testing; urgency=low
+
+  * Misc fixes
+  * [stretch-migration] Disable predictable network interface names
+
+  Fixes by Bram and Aleks
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 15 Jun 2018 16:20:00 +0000
+
 yunohost (2.7.13.5) testing; urgency=low
 
   * [fix] a bug when log to be fetched is empty

@@ -305,7 +305,7 @@ def firewall_upnp(action='status', no_refresh=False):
 
     # Compatibility with previous version
     if action == 'reload':
-        logger.info("'reload' action is deprecated and will be removed")
+        logger.debug("'reload' action is deprecated and will be removed")
         try:
             # Remove old cron job
             os.remove('/etc/cron.d/yunohost-firewall')
@@ -357,7 +357,7 @@ def firewall_upnp(action='status', no_refresh=False):
                 # Select UPnP device
                 upnpc.selectigd()
             except:
-                logger.info('unable to select UPnP device', exc_info=1)
+                logger.debug('unable to select UPnP device', exc_info=1)
                 enabled = False
             else:
                 # Iterate over ports
@@ -376,7 +376,7 @@ def firewall_upnp(action='status', no_refresh=False):
                             upnpc.addportmapping(port, protocol, upnpc.lanaddr,
                                 port, 'yunohost firewall: port %d' % port, '')
                         except:
-                            logger.info('unable to add port %d using UPnP',
+                            logger.debug('unable to add port %d using UPnP',
                                         port, exc_info=1)
                             enabled = False
 
@@ -459,6 +459,6 @@ def _update_firewall_file(rules):
 def _on_rule_command_error(returncode, cmd, output):
     """Callback for rules commands error"""
     # Log error and continue commands execution
-    logger.info('"%s" returned non-zero exit status %d:\n%s',
-                cmd, returncode, prependlines(output.rstrip(), '> '))
+    logger.debug('"%s" returned non-zero exit status %d:\n%s',
+                 cmd, returncode, prependlines(output.rstrip(), '> '))
     return True

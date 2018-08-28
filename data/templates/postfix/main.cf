@@ -137,8 +137,10 @@ smtpd_recipient_restrictions =
     permit
 
 # SRS
-sender_canonical_maps = regexp:/etc/postfix/sender_canonical
+sender_canonical_maps = tcp:localhost:10001
 sender_canonical_classes = envelope_sender
+recipient_canonical_maps = tcp:localhost:10002
+recipient_canonical_classes= envelope_recipient,header_recipient
 
 # Ignore some headers
 smtp_header_checks = regexp:/etc/postfix/header_checks
@@ -148,7 +150,7 @@ smtp_reply_filter = pcre:/etc/postfix/smtp_reply_filter
 # Rmilter
 milter_mail_macros =  i {mail_addr} {client_addr} {client_name} {auth_authen}
 milter_protocol = 6
-smtpd_milters = unix:/run/rmilter/rmilter.sock
+smtpd_milters = inet:localhost:11332
 
 # Skip email without checking if milter has died
 milter_default_action = accept

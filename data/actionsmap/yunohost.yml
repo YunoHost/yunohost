@@ -771,6 +771,56 @@ app:
                 apps:
                     nargs: "+"
 
+    subcategories:
+
+      action:
+          subcategory_help: Handle apps actions
+          actions:
+
+              ### app_action_list()
+              list:
+                  action_help: List app actions
+                  api: GET /apps/<app_id>/actions
+                  arguments:
+                    app_id:
+                        help: app id
+
+              ### app_action_run()
+              run:
+                  action_help: Run app action
+                  api: PUT /apps/<app_id>/actions/<action>
+                  arguments:
+                    app_id:
+                        help: app id
+                    action:
+                        help: action id
+                    -a:
+                        full: --args
+                        help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+
+      config:
+          subcategory_help: Applications configuration panel
+          actions:
+
+              ### app_config_show_panel()
+              show-panel:
+                  action_help: show config panel for the application
+                  api: GET /apps/<app_id>/config-panel
+                  arguments:
+                      app_id:
+                          help: App ID
+
+              ### app_config_apply()
+              apply:
+                  action_help: apply the new configuration
+                  api: POST /apps/<app_id>/config
+                  arguments:
+                      app_id:
+                          help: App ID
+                      -a:
+                          full: --args
+                          help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+
 #############################
 #          Backup           #
 #############################
@@ -780,7 +830,7 @@ backup:
 
         ### backup_create()
         create:
-            action_help: Create a backup local archive
+            action_help: Create a backup local archive. If neither --apps or --system are given, this will backup all apps and all system parts. If only --apps if given, this will only backup apps and no system parts. Similarly, if only --system is given, this will only backup system parts and no apps.
             api: POST /backup
             arguments:
                 -n:
@@ -804,28 +854,15 @@ backup:
                     help: List of backup methods to apply (copy or tar by default)
                     nargs: "*"
                 --system:
-                    help: List of system parts to backup (all by default)
+                    help: List of system parts to backup (or all if none given).
                     nargs: "*"
                 --apps:
-                    help: List of application names to backup (all by default)
+                    help: List of application names to backup (or all if none given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not backup system
-                    action: store_true
-                --ignore-apps:
-                    help: Do not backup apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
-
 
         ### backup_restore()
         restore:
-            action_help: Restore from a local backup archive
+            action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: POST /backup/restore/<name>
             configuration:
                 authenticate: all
@@ -834,23 +871,11 @@ backup:
                 name:
                     help: Name of the local backup archive
                 --system:
-                    help: List of system parts to restore (all by default)
+                    help: List of system parts to restore (or all if none is given)
                     nargs: "*"
                 --apps:
-                    help: List of application names to restore (all by default)
+                    help: List of application names to restore (or all if none is given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not restore system parts
-                    action: store_true
-                --ignore-apps:
-                    help: Do not restore apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true
@@ -1685,3 +1710,39 @@ hook:
                 -d:
                     full: --chdir
                     help: The directory from where the script will be executed
+
+#############################
+#            Log            #
+#############################
+log:
+    category_help: Manage debug logs
+    actions:
+
+        ### log_list()
+        list:
+            action_help: List logs
+            api: GET /logs
+            arguments:
+                category:
+                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app 
+                    nargs: "*"
+                -l:
+                    full: --limit
+                    help: Maximum number of logs
+                    type: int
+
+        ### log_display()
+        display:
+            action_help: Display a log content
+            api: GET /logs/display
+            arguments:
+                path:
+                    help: Log file which to display the content
+                -n:
+                    full: --number
+                    help: Number of lines to display
+                    default: 50
+                    type: int
+                --share:
+                    help: Share the full log using yunopaste
+                    action: store_true

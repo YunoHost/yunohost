@@ -5,6 +5,14 @@ ynh_die() {
   exit "${2:-1}"
 }
 
+# Display a message in the 'INFO' logging category
+#
+# usage: ynh_info "Some message"
+ynh_info()
+{
+    echo "$1" >>"$YNH_STDINFO"
+}
+
 # Ignore the yunohost-cli log to prevent errors with conditionals commands
 #
 # [internal]

@@ -37,6 +37,7 @@ import yunohost.certificate
 
 from yunohost.service import service_regen_conf
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.domain')
 
@@ -61,7 +62,8 @@ def domain_list(auth):
     return {'domains': result_list}
 
 
-def domain_add(auth, domain, dyndns=False):
+@is_unit_operation()
+def domain_add(operation_logger, auth, domain, dyndns=False):
     """
     Create a custom domain
 
@@ -77,6 +79,8 @@ def domain_add(auth, domain, dyndns=False):
         auth.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
         raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
+
+    operation_logger.start()
 
     # DynDNS domain
     if dyndns:
@@ -110,23 +114,27 @@ def domain_add(auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'rmilter'])
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
             app_ssowatconf(auth)
 
-    except:
+    except Exception, e:
+        from sys import exc_info;
+        t, v, tb = exc_info()
+
         # Force domain removal silently
         try:
             domain_remove(auth, domain, True)
         except:
             pass
-        raise
+        raise t, v, tb
 
     hook_callback('post_domain_add', args=[domain])
 
     logger.success(m18n.n('domain_created'))
 
 
-def domain_remove(auth, domain, force=False):
+@is_unit_operation()
+def domain_remove(operation_logger, auth, domain, force=False):
     """
     Delete domains
 
@@ -157,12 +165,13 @@ def domain_remove(auth, domain, force=False):
                     raise MoulinetteError(errno.EPERM,
                                           m18n.n('domain_uninstall_app_first'))
 
+    operation_logger.start()
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
-    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
+    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])
@@ -202,7 +211,7 @@ def domain_dns_conf(domain, ttl=None):
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
-        logger.warning(m18n.n("domain_dns_conf_is_just_a_recommendation"))
+        logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
 
@@ -219,9 +228,9 @@ def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
-def domain_url_available(auth, domain, path):
+def _get_conflicting_apps(auth, domain, path):
     """
-    Check availability of a web path
+    Return a list of all conflicting apps with a domain/path (it can be empty)
 
     Keyword argument:
         domain -- The domain for the web path (e.g. your.domain.tld)
@@ -242,20 +251,30 @@ def domain_url_available(auth, domain, path):
     apps_map = app_map(raw=True)
 
     # Loop through all apps to check if path is taken by one of them
-    available = True
+    conflicts = []
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
             if path == p:
-                available = False
-                break
+                conflicts.append((p, a["id"], a["label"]))
             # We also don't want conflicts with other apps starting with
             # same name
             elif path.startswith(p) or p.startswith(path):
-                available = False
-                break
+                conflicts.append((p, a["id"], a["label"]))
 
-    return available
+    return conflicts
+
+
+def domain_url_available(auth, domain, path):
+    """
+    Check availability of a web path
+
+    Keyword argument:
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
+    """
+
+    return len(_get_conflicting_apps(auth, domain, path)) == 0
 
 
 def _get_maindomain():
@@ -384,17 +403,54 @@ def _get_DKIM(domain):
     with open(DKIM_file) as f:
         dkim_content = f.read()
 
-    dkim = re.match((
-        r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+[^"]*'
-        '(?=.*(;[\s]*|")v=(?P<v>[^";]+))'
-        '(?=.*(;[\s]*|")k=(?P<k>[^";]+))'
-        '(?=.*(;[\s]*|")p=(?P<p>[^";]+))'), dkim_content, re.M | re.S
-    )
+    # Gotta manage two formats :
+    #
+    # Legacy
+    # -----
+    #
+    # mail._domainkey IN      TXT     ( "v=DKIM1; k=rsa; "
+    #           "p=<theDKIMpublicKey>" )
+    #
+    # New
+    # ------
+    #
+    # mail._domainkey IN  TXT ( "v=DKIM1; h=sha256; k=rsa; "
+    #           "p=<theDKIMpublicKey>" )
+
+    is_legacy_format = " h=sha256; " not in dkim_content
+
+    # Legacy DKIM format
+    if is_legacy_format:
+        dkim = re.match((
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
+             '[^"]*"v=(?P<v>[^";]+);'
+             '[\s"]*k=(?P<k>[^";]+);'
+             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        )
+    else:
+        dkim = re.match((
+            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
+             '[^"]*"v=(?P<v>[^";]+);'
+             '[\s"]*h=(?P<h>[^";]+);'
+             '[\s"]*k=(?P<k>[^";]+);'
+             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        )
 
     if not dkim:
         return (None, None)
 
-    return (
-        dkim.group('host'),
-        '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'), k=dkim.group('k'), p=dkim.group('p'))
-    )
+    if is_legacy_format:
+        return (
+            dkim.group('host'),
+            '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'),
+                                           k=dkim.group('k'),
+                                           p=dkim.group('p'))
+        )
+    else:
+        return (
+            dkim.group('host'),
+            '"v={v}; h={h}; k={k}; p={p}"'.format(v=dkim.group('v'),
+                                                  h=dkim.group('h'),
+                                                  k=dkim.group('k'),
+                                                  p=dkim.group('p'))
+        )

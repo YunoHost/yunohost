@@ -1,4 +1,5 @@
 backup_dir="$1/conf/ynh/mysql"
+MYSQL_PKG="mariadb-server-10.1"
 
 # ensure that mysql is running
 service mysql status >/dev/null 2>&1 \
@@ -23,19 +24,14 @@ sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
     "applications, and is going to reset the MySQL root password." \
     "You can find this new password in /etc/yunohost/mysql." >&2
 
-  # retrieve MySQL package provider
-  ynh_package_is_installed "mariadb-server-10.0" \
-    && mysql_pkg="mariadb-server-10.0" \
-    || mysql_pkg="mysql-server-5.5"
-
   # set new password with debconf
   sudo debconf-set-selections << EOF
-$mysql_pkg mysql-server/root_password password $new_pwd
-$mysql_pkg mysql-server/root_password_again password $new_pwd
+$MYSQL_PKG mysql-server/root_password password $new_pwd
+$MYSQL_PKG mysql-server/root_password_again password $new_pwd
 EOF
 
   # reconfigure Debian package
-  sudo dpkg-reconfigure -freadline -u "$mysql_pkg" 2>&1
+  sudo dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
 }
 
 # store new root password
