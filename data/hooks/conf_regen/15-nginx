@@ -40,9 +40,6 @@ do_pre_regen() {
     mkdir -p "$domain_conf_dir"
     domain_ca_type=$(yunohost domain cert-status ${domain} | grep CA_type | tr -d " ")
     if [[ "$domain_ca_type" = "CA_type:Let'sEncrypt" ]]; then
-      if [ ! -f "/etc/yunohost/certs/${domain}/chain.pem" ];then
-        wget -O ${pending_dir}/etc/yunohost/certs/${domain}/chain.pem "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
-      fi
       sed "s/#ssl_stapling/ssl_stapling/g" "${nginx_conf_dir}/${domain}.conf"
       sed "s/#ssl_trusted_certificate/ssl_trusted_certificate/g" "${nginx_conf_dir}/${domain}.conf"
       sed "s/#resolver/resolver/g" "${nginx_conf_dir}/${domain}.conf"
