@@ -129,9 +129,9 @@ def tools_adminpw(auth, new_password):
 
     """
     from yunohost.user import _hash_user_password
-    from yunohost.utils.password import PasswordValidator
+    from yunohost.utils.password import LoggerPasswordValidator
 
-    PasswordValidator('admin').validate(new_password)
+    LoggerPasswordValidator('admin').validate(new_password)
     try:
         auth.update("cn=admin", {
             "userPassword": _hash_user_password(new_password),
@@ -152,8 +152,8 @@ def tools_validatepw(password):
         password
 
     """
-    from yunohost.utils.password import PasswordValidator
-    PasswordValidator('user').validate(password)
+    from yunohost.utils.password import LoggerPasswordValidator
+    LoggerPasswordValidator('user').validate(password)
 
 
 @is_unit_operation()
@@ -288,8 +288,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Check password
     if not force_password:
-        from yunohost.utils.password import PasswordValidator
-        PasswordValidator('admin').validate(password)
+        from yunohost.utils.password import LoggerPasswordValidator
+        LoggerPasswordValidator('admin').validate(password)
 
     if not ignore_dyndns:
         # Check if yunohost dyndns can handle the given domain

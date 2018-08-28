@@ -30,6 +30,7 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * enum (in form a python list)
 
 # we don't store the value in default options
+PWD_MODE = ["disabled", "weak", "strong"]
 PWD_CHOICES = ["error", "warn_only", "disabled"]
 PWD_DEFAULT_ERROR = {"type": "enum", "default": "error",
                      "choices": PWD_CHOICES}
@@ -41,39 +42,9 @@ DEFAULTS = OrderedDict([
     ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
 
     # Password Validation
-
-    ("security.password.admin.mode", PWD_DEFAULT_ERROR),
-    ("security.password.user.mode", PWD_DEFAULT_ERROR),
-    ("security.password.admin.length", PWD_DEFAULT_ERROR),
-    ("security.password.user.length", PWD_DEFAULT_ERROR),
-    ("security.password.admin.min_length.error", {"type": "int", "default": 8}),
-    ("security.password.user.min_length.error", {"type": "int", "default": 8}),
-    ("security.password.admin.min_length.warn", {"type": "int", "default": 12}),
-    ("security.password.user.min_length.warn", {"type": "int", "default": 8}),
-    ("security.password.admin.special", PWD_DEFAULT_ERROR),
-    ("security.password.user.special", PWD_DEFAULT_ERROR),
-    ("security.password.admin.numeric", PWD_DEFAULT_ERROR),
-    ("security.password.user.numeric", PWD_DEFAULT_ERROR),
-    ("security.password.admin.upper_lower", PWD_DEFAULT_ERROR),
-    ("security.password.user.upper_lower", PWD_DEFAULT_ERROR),
-    ("security.password.admin.ynh_common_list", PWD_DEFAULT_ERROR),
-    ("security.password.user.ynh_common_list", PWD_DEFAULT_ERROR),
-    ("security.password.admin.common_list", PWD_DEFAULT_ERROR),
-    ("security.password.user.common_list", PWD_DEFAULT_ERROR),
-    ("security.password.admin.cracklib_list", PWD_DEFAULT_ERROR),
-    ("security.password.user.cracklib_list", PWD_DEFAULT_ERROR),
-    ("security.password.admin.cracklib_list.error", {"type": "string", "default":
-        "1000000-most-used"}),
-    ("security.password.admin.cracklib_list.warn", {"type": "string", "default":
-        "1000000-most-used"}),
-    ("security.password.user.cracklib_list.error", {"type": "string", "default":
-        "100000-most-used"}),
-    ("security.password.user.cracklib_list.warn", {"type": "string", "default":
-        "1000000-most-used"}),
-    ("security.password.admin.online_pwned_list", {"type": "enum", "default": "disabled",
-                                       "choices": PWD_CHOICES}),
-    ("security.password.user.online_pwned_list", {"type": "enum", "default": "disabled",
-                                      "choices": PWD_CHOICES}),
+    # -1 disabled, 0 alert if listed, 1 6-letter, 2 normal, 3 strong, 4 strongest
+    ("security.password.admin.strength", {"type": "int", "default": 2}),
+    ("security.password.user.strength", {"type": "int", "default": 1}),
 ])
 
 
