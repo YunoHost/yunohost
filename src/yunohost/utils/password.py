@@ -185,9 +185,12 @@ class LoggerPasswordValidator(ProfilePasswordValidator):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("usage: password.py PASSWORD")
-
-    status, msg = ProfilePasswordValidator('user').validate(sys.argv[1])
+        import getpass
+        pwd = getpass.getpass("")
+        #print("usage: password.py PASSWORD")
+    else:
+        pwd = sys.argv[1]
+    status, msg = ProfilePasswordValidator('user').validate(pwd)
     if status == "error":
         sys.exit(msg)
     elif status == "warning":
