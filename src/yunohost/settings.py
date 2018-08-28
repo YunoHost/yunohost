@@ -30,17 +30,50 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * enum (in form a python list)
 
 # we don't store the value in default options
+PWD_CHOICES = ["error", "warn_only", "disabled"]
+PWD_DEFAULT_ERROR = {"type": "enum", "default": "error",
+                     "choices": PWD_CHOICES}
+
 DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True}),
     ("example.int", {"type": "int", "default": 42}),
     ("example.string", {"type": "string", "default": "yolo swag"}),
     ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
-    # Control the way password are checked
-    # -1 No control
-    # 0 Just display weak password info in debug
-    # 1 Warn user about weak password
-    # 2 Raise an error when the user put a weak password
-    ("security.password.check_mode", {"type": "int", "default": 2}),
+
+    # Password Validation
+
+    ("security.password.admin.mode", PWD_DEFAULT_ERROR),
+    ("security.password.user.mode", PWD_DEFAULT_ERROR),
+    ("security.password.admin.length", PWD_DEFAULT_ERROR),
+    ("security.password.user.length", PWD_DEFAULT_ERROR),
+    ("security.password.admin.min_length.error", {"type": "int", "default": 8}),
+    ("security.password.user.min_length.error", {"type": "int", "default": 8}),
+    ("security.password.admin.min_length.warn", {"type": "int", "default": 12}),
+    ("security.password.user.min_length.warn", {"type": "int", "default": 8}),
+    ("security.password.admin.special", PWD_DEFAULT_ERROR),
+    ("security.password.user.special", PWD_DEFAULT_ERROR),
+    ("security.password.admin.numeric", PWD_DEFAULT_ERROR),
+    ("security.password.user.numeric", PWD_DEFAULT_ERROR),
+    ("security.password.admin.upper_lower", PWD_DEFAULT_ERROR),
+    ("security.password.user.upper_lower", PWD_DEFAULT_ERROR),
+    ("security.password.admin.ynh_common_list", PWD_DEFAULT_ERROR),
+    ("security.password.user.ynh_common_list", PWD_DEFAULT_ERROR),
+    ("security.password.admin.common_list", PWD_DEFAULT_ERROR),
+    ("security.password.user.common_list", PWD_DEFAULT_ERROR),
+    ("security.password.admin.cracklib_list", PWD_DEFAULT_ERROR),
+    ("security.password.user.cracklib_list", PWD_DEFAULT_ERROR),
+    ("security.password.admin.cracklib_list.error", {"type": "string", "default":
+        "1000000-most-used"}),
+    ("security.password.admin.cracklib_list.warn", {"type": "string", "default":
+        "1000000-most-used"}),
+    ("security.password.user.cracklib_list.error", {"type": "string", "default":
+        "100000-most-used"}),
+    ("security.password.user.cracklib_list.warn", {"type": "string", "default":
+        "1000000-most-used"}),
+    ("security.password.admin.online_pwned_list", {"type": "enum", "default": "disabled",
+                                       "choices": PWD_CHOICES}),
+    ("security.password.user.online_pwned_list", {"type": "enum", "default": "disabled",
+                                      "choices": PWD_CHOICES}),
 ])
 
 

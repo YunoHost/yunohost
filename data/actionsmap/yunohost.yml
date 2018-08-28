@@ -1450,6 +1450,18 @@ tools:
                         pattern: *pattern_password
                         required: True
 
+        ### tools_validatepw()
+        validatepw:
+            action_help: Validate a password
+            api: PUT /validatepw
+            arguments:
+                -p:
+                    full: --password
+                    extra:
+                        password: ask_password
+                        pattern: *pattern_password
+                        required: True
+
         ### tools_maindomain()
         maindomain:
             action_help: Check the current main domain, or change it

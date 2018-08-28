@@ -32,21 +32,25 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_text
 from yunohost.settings import settings_get
 
+logger = logging.getLogger('yunohost.utils.password')
+
 PWDDICT_PATH = '/usr/local/share/dict/cracklib/'
 
 class HintException(Exception):
 
-    def __init__(self, message):
+    def __init__(self, message, **kwargs):
         # Call the base class constructor with the parameters it needs
         super(HintException, self).__init__(message)
-
+        self.kwargs = kwargs
         self.criticity = 'error'
 
+    @property
     def warn_only(self):
-        return m18n.n(e.args[0] + '_warn', **e.kwargs)
+        return m18n.n(self.args[0] + '_warn', **self.kwargs)
 
+    @property
     def error(self):
-        return m18n.n(e.args[0], **e.kwargs)
+        return m18n.n(self.args[0] + '_error', **self.kwargs)
 
 
 class PasswordValidator(object):
@@ -114,13 +118,12 @@ class PasswordValidator(object):
 
         if len(password) < self.config['min_length.error']:
             if self.config['min_length.warn'] == self.config['min_length.error']:
-                e = HintException('password_length',
-                                min_length=min_length)
+                raise HintException('password_length',
+                                min_length=self.config['min_length.error'])
             else:
-                e = HintException('password_length_warn',
+                raise HintException('password_length_warn',
                                 min_length=self.config['min_length.error'],
-                                better_length=self.config['min_length.warn']
-            raise e
+                                better_length=self.config['min_length.warn'])
 
         if len(password) < self.config['min_length.warn']:
              e = HintException('password_length',
@@ -133,7 +136,7 @@ class PasswordValidator(object):
         Check if password contains numeric characters
         """
 
-        if re.match(r'\d', password) is None:
+        if re.search(r'\d', password) is None:
             raise HintException('password_numeric')
 
     def check_upper_lower(self, password, old=None):
@@ -150,7 +153,7 @@ class PasswordValidator(object):
         Check if password contains at least one special character
         """
 
-        if re.match(r'\w+'):
+        if re.match(r'^\w*$', password):
             raise HintException('password_special')
 
     def check_ynh_common_list(self, password, old=None):
@@ -158,7 +161,8 @@ class PasswordValidator(object):
         Check if password is a common ynh password
         """
 
-        if password in ["yunohost", "olinuxino", "olinux"]:
+        if password in ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
+                        "root", "test"]:
             raise HintException('password_listed')
 
     def check_cracklib_list(self, password, old=None):
@@ -167,8 +171,8 @@ class PasswordValidator(object):
         https://github.com/danielmiessler/SecLists/tree/master/Passwords/Common-Credentials
         """
 
-        error_dict = self.config['cracklib.error']
-        warn_dict = self.config['cracklib.warn']
+        error_dict = self.config['cracklib_list.error']
+        warn_dict = self.config['cracklib_list.warn']
 
         self._check_cracklib_list(password, old, error_dict)
 
@@ -190,7 +194,7 @@ class PasswordValidator(object):
         from moulinette.utils.network import download_text
         hash = sha1(password).hexdigest()
         range = hash[:5]
-        needle = (hash[5:])
+        needle = (hash[5:].upper())
 
         try:
             hash_list = download_text('https://api.pwnedpasswords.com/range/' +
@@ -202,7 +206,7 @@ class PasswordValidator(object):
             if hash_list.find(needle) != -1:
                 raise HintException('password_listed')
 
-    def _check_cracklib_list(self, password, old=None, pwd_dict):
+    def _check_cracklib_list(self, password, old, pwd_dict):
         try:
             cracklib.VeryFascistCheck(password, old,
                                       os.path.join(PWDDICT_PATH, pwd_dict))
@@ -212,33 +216,33 @@ class PasswordValidator(object):
             if str(e) not in ["is too simple", "is a palindrome"]:
                 raise HintException('password_listed', pwd_list=pwd_dict)
 
-    def _get_config(self, name=None):
+    def _get_config(self):
         """
         Build profile config from settings
         """
 
-        if name is None:
-            if self.config is not None:
-                return self.config
-            self.config = {}
-            self.config['mode'] = _get_setting('mode')
-            for validator in self.validators:
-                self._get_config(validator)
-            self.config['min_length.error'] = _get_setting('min_length.error')
-            self.config['min_length.warn'] = _get_setting('min_length.warn')
-            self.config['cracklib.error'] = _get_setting('cracklib.error')
-            self.config['cracklib.warn'] = _get_setting('cracklib.warn')
+        def _set_param(name):
+            self.config[name] = self._get_setting(name)
 
+            if self.config[name] == 'error' and self.config['mode'] == 'warn_only':
+                self.config[name] = self.config['mode']
+            elif self.config[name] in ['error', 'warn_only'] and \
+                 self.config['mode'] == 'disabled':
+                self.config[name] = 'disabled'
+
+        if self.config is not None:
             return self.config
+        self.config = {}
+        self.config['mode'] = self._get_setting('mode')
+        for validator in self.validators:
+            _set_param(validator)
+        for param in ['min_length.', 'cracklib_list.']:
+            self.config[param + 'error'] = self._get_setting(param + 'error')
+            self.config[param + 'warn'] = self._get_setting(param + 'warn')
 
-        self.config[name] = settings_get('security.password' + self.profile + '.'
-                            + name)
+        return self.config
 
-        if self.config[name] == 'error' and self.config['mode'] == 'warn_only':
-            self.config[name] = self.config['mode']
-        elif self.config[name] in ['error', 'warn_only'] and
-             self.config['mode'] == 'disabled':
 
     def _get_setting(self, setting):
-        return settings_get('security.password' + self.profile + '.' + setting)
+        return settings_get('security.password.' + self.profile + '.' + setting)
 

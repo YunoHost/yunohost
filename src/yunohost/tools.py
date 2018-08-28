@@ -129,8 +129,9 @@ def tools_adminpw(auth, new_password):
 
     """
     from yunohost.user import _hash_user_password
+    from yunohost.utils.password import PasswordValidator
 
-    _check_password(new_password)
+    PasswordValidator('admin').validate(new_password)
     try:
         auth.update("cn=admin", {
             "userPassword": _hash_user_password(new_password),
@@ -141,6 +142,18 @@ def tools_adminpw(auth, new_password):
                               m18n.n('admin_password_change_failed'))
     else:
         logger.success(m18n.n('admin_password_changed'))
+
+
+def tools_validatepw(password):
+    """
+    Validate password
+
+    Keyword argument:
+        password
+
+    """
+    from yunohost.utils.password import PasswordValidator
+    PasswordValidator('user').validate(password)
 
 
 @is_unit_operation()
@@ -275,7 +288,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Check password
     if not force_password:
-        _check_password(password)
+        from yunohost.utils.password import PasswordValidator
+        PasswordValidator('admin').validate(password)
 
     if not ignore_dyndns:
         # Check if yunohost dyndns can handle the given domain
@@ -1057,23 +1071,3 @@ class Migration(object):
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
 
-def _check_password(password):
-    security_level = settings_get('security.password.check_mode')
-    if security_level == -1:
-        return
-    try:
-        if password in ["yunohost", "olinuxino", "olinux"]:
-            raise MoulinetteError(errno.EINVAL, m18n.n('password_too_weak') +
-                ' : it is based on a (reversed) dictionary word' )
-
-        try:
-            cracklib.VeryFascistCheck(password)
-        except ValueError as e:
-            raise MoulinetteError(errno.EINVAL, m18n.n('password_too_weak') + " : " + str(e) )
-    except MoulinetteError as e:
-        if security_level >= 2:
-            raise
-        elif security_level == 1:
-            logger.warn(e.strerror)
-        else:
-            logger.debug(e.strerror)
