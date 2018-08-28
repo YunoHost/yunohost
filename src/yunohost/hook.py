@@ -25,9 +25,11 @@
 """
 import os
 import re
+import sys
 import errno
 import tempfile
 from glob import iglob
+from importlib import import_module
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -414,8 +416,14 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, loggers):
 
 def _hook_exec_python(path, args, env, loggers):
 
-    pass
+    dir_ = os.path.dirname(path)
+    name = os.path.splitext(os.path.basename(path))[0]
 
+    if not dir_ in sys.path:
+        sys.path.append(dir_)
+    module = import_module(name)
+
+    return module.main(args, env, loggers)
 
 
 def _extract_filename_parts(filename):
