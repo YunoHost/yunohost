@@ -1861,3 +1861,53 @@ log:
                 --share:
                     help: Share the full log using yunopaste
                     action: store_true
+
+
+#############################
+#          Diagnosis        #
+#############################
+diagnosis:
+    category_help: Look for possible issues on the server
+    actions:
+
+        list:
+            action_help: List diagnosis categories
+            api: GET /diagnosis/list
+
+        report:
+            action_help: Show most recents diagnosis results
+            api: GET /diagnosis/report
+            arguments:
+                categories:
+                    help: Diagnosis categories to display (all by default)
+                    nargs: "*"
+                --full:
+                    help: Display additional information
+                    action: store_true
+
+        run:
+            action_help: Show most recents diagnosis results
+            api: POST /diagnosis/run
+            arguments:
+                categories:
+                    help: Diagnosis categories to run (all by default)
+                    nargs: "*"
+                --force:
+                    help: Display additional information
+                    action: store_true
+                -a:
+                    help: Serialized arguments for diagnosis scripts (e.g. "domain=domain.tld")
+                    full: --args
+
+        ignore:
+            action_help: Configure some diagnosis results to be ignored
+            api: PUT /diagnosis/ignore
+            arguments:
+                category:
+                    help: Diagnosis category to be affected
+                -a:
+                    help: Arguments, to be used to ignore only some parts of a report (e.g. "domain=domain.tld")
+                    full: --args
+                --unignore:
+                    help: Unignore a previously ignored report
+                    action: store_true
