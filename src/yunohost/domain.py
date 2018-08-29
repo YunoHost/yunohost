@@ -210,10 +210,12 @@ def domain_dns_conf(domain, ttl=None):
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    result += "\n\n"
-    result += "; Custom\n"
-    for record in dns_conf["custom"]:
-        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+    for name, record_list in dns_conf.items():
+        if name not in ("basic", "xmpp", "mail"):
+            result += "\n\n"
+            result += "; " + name + "\n"
+            for record in record_list:
+                result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
@@ -393,19 +395,17 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
-    # Custom
-    hookres = hook_callback('custom_dns_rules', args=[domain])
-    print(hookres)
-    custom = []
-    for h in hookres.values() :
-        custom.extend(h['stdreturn'])
-
+    # Official record
     res = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
-        "custom": custom,
     }
+
+    # Custom record
+    hookres = hook_callback('custom_dns_rules', args=[domain])
+    for n,v in hookres.items() :
+        res[n] = v['stdreturn']
 
     return res
 
