@@ -230,7 +230,6 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             (name, priority, path, succeed) as arguments
 
     """
-    result = {'succeed': {}, 'failed': {}, 'stdreturn' : []}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -292,16 +291,11 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 post_callback(name=name, priority=priority, path=path,
                               succeed=True)
             try:
-                result[state][name].append(path)
+                result[name][state].append(path)
             except KeyError:
-                result[state][name] = [path]
+                result[name][state] = [path]
 
-            #print(hook_return)
-            #for r in hook_return.:
-            result['stdreturn'].extend(hook_return) #for r in hook_return
-                #print(r)
-
-    #print(result['stdreturn'])
+            result[name]['stdreturn'] = hook_return
     return result
 
 
