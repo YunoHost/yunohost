@@ -24,13 +24,17 @@
     Look for possible issues on the server
 """
 
+import errno
+
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
 
-from yunohost.hook import hook_list
+from yunohost.hook import hook_list, hook_exec
 
 logger = log.getActionLogger('yunohost.diagnosis')
+
+DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
 
 def diagnosis_list():
     all_categories_names = [ h for h, _ in _list_diagnosis_categories() ]
@@ -39,8 +43,36 @@ def diagnosis_list():
 def diagnosis_report(categories=[], full=False):
     pass
 
-def diagnosis_run(categories=[], force=False, args=""):
-    pass
+def diagnosis_run(categories=[], force=False, args=None):
+
+    # Get all the categories
+    all_categories = _list_diagnosis_categories()
+    all_categories_names = [ category for category, _ in all_categories ]
+
+    # Check the requested category makes sense
+    if categories == []:
+        categories = all_categories_names
+    else:
+        unknown_categories = [ c for c in categories if c not in all_categories_names ]
+        if unknown_categories:
+            raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(categories)))
+
+    # Transform "arg1=val1&arg2=val2" to { "arg1": "val1", "arg2": "val2" }
+    if args is not None:
+        args = { arg.split("=")[0]: arg.split("=")[1] for arg in args.split("&") }
+    else:
+        args = {}
+    args["force"] = force
+
+
+    # Call the hook ...
+    for category in categories:
+        logger.debug("Running diagnosis for %s ..." % category)
+        path = [p for n, p in all_categories if n == category ][0]
+
+        # TODO : get the return value and do something with it
+        hook_exec(path, args=args, env=None)
+
 
 def diagnosis_ignore(category, args="", unignore=False):
     pass
