@@ -364,6 +364,7 @@
     "restore_running_app_script": "Running restore script of app '{app:s}'...",
     "restore_running_hooks": "Running restoration hooks...",
     "restore_system_part_failed": "Unable to restore the '{part:s}' system part",
+    "root_password_desynchronized": "Password of the user admin has been changed, but Root password has not been synchronized with your new admin password !",
     "server_shutdown": "The server will shutdown",
     "server_shutdown_confirm": "The server will shutdown immediatly, are you sure? [{answers:s}]",
     "server_reboot": "The server will reboot",

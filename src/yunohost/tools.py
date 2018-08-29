@@ -127,15 +127,28 @@ def tools_adminpw(auth, new_password):
 
     """
     from yunohost.user import _hash_user_password
+    import spwd
+    new_hash = _hash_user_password(new_password)
     try:
-        auth.update("cn=admin", {
-            "userPassword": _hash_user_password(new_password),
-        })
+        auth.update("cn=admin", { "userPassword": new_hash, })
     except:
         logger.exception('unable to change admin password')
         raise MoulinetteError(errno.EPERM,
                               m18n.n('admin_password_change_failed'))
     else:
+        # Write as root password
+        try:
+            hash_root = spwd.getspnam("root").sp_pwd
+
+            with open('/etc/shadow', 'r') as before_file:
+                before = before_file.read()
+
+            with open('/etc/shadow', 'w') as after_file:
+                after_file.write(before.replace("root:" + hash_root,
+                                                "root:" + new_hash))
+        except IOError as e:
+            logger.warning(m18n.n('root_password_desynchronized'))
+            return
         logger.success(m18n.n('admin_password_changed'))
 
 
