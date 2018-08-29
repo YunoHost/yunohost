@@ -28,10 +28,13 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
 
+from yunohost.hook import hook_list
+
 logger = log.getActionLogger('yunohost.diagnosis')
 
 def diagnosis_list():
-    pass
+    all_categories_names = [ h for h, _ in _list_diagnosis_categories() ]
+    return { "categories": all_categories_names }
 
 def diagnosis_report(categories=[], full=False):
     pass
@@ -42,3 +45,13 @@ def diagnosis_run(categories=[], force=False, args=""):
 def diagnosis_ignore(category, args="", unignore=False):
     pass
 
+############################################################
+
+def _list_diagnosis_categories():
+    hooks_raw = hook_list("diagnosis", list_by="priority", show_info=True)["hooks"]
+    hooks = []
+    for _, some_hooks in sorted(hooks_raw.items(), key=lambda h:int(h[0])):
+        for name, info in some_hooks.items():
+            hooks.append((name, info["path"]))
+
+    return hooks
