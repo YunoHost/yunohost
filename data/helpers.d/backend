@@ -220,7 +220,7 @@ logpath = $logpath
 maxretry = $max_retry
 EOF
 
-  sudo tee $finalfail2banfilterconf <<EOF
+  tee $finalfail2banfilterconf <<EOF
 [INCLUDES]
 before = common.conf
 [Definition]
