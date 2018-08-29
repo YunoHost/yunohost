@@ -71,13 +71,26 @@ def diagnosis_run(categories=[], force=False, args=None):
         path = [p for n, p in all_categories if n == category ][0]
 
         # TODO : get the return value and do something with it
-        hook_exec(path, args=args, env=None)
+        return {"report": hook_exec(path, args=args, env=None) }
 
 
 def diagnosis_ignore(category, args="", unignore=False):
     pass
 
 ############################################################
+
+class Diagnoser():
+
+    def __init__(self, args, env, loggers):
+
+        self.logger_debug, self.logger_warning, self.logger_info = loggers
+        self.env = env
+        self.args = self.validate_args(args)
+
+    def report(self):
+
+        # TODO : implement some caching mecanism in there
+        return list(self.run())
 
 def _list_diagnosis_categories():
     hooks_raw = hook_list("diagnosis", list_by="priority", show_info=True)["hooks"]
