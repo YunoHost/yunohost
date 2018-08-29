@@ -25,7 +25,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , metronome
  , rspamd (>= 1.6.0), redis-server, opendkim-tools
- , haveged
+ , haveged, fake-hwclock
  , equivs
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
