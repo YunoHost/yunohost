@@ -43,8 +43,33 @@ def diagnosis_list():
     all_categories_names = [ h for h, _ in _list_diagnosis_categories() ]
     return { "categories": all_categories_names }
 
-def diagnosis_report(categories=[], full=False):
-    pass
+def diagnosis_show(categories=[], full=False):
+
+    # Get all the categories
+    all_categories = _list_diagnosis_categories()
+    all_categories_names = [ category for category, _ in all_categories ]
+
+    # Check the requested category makes sense
+    if categories == []:
+        categories = all_categories_names
+    else:
+        unknown_categories = [ c for c in categories if c not in all_categories_names ]
+        if unknown_categories:
+            raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(categories)))
+
+    # Fetch all reports
+    all_reports = [ Diagnoser.get_cached_report(c) for c in categories ]
+
+    # "Render" the strings with m18n.n
+    for report in all_reports:
+
+        report["description"] = m18n.n(report["description"])
+
+        for r in report["reports"]:
+            type_, message_key, message_args = r["report"]
+            r["report"] = (type_, m18n.n(message_key, **message_args))
+
+    return {"reports": all_reports}
 
 def diagnosis_run(categories=[], force=False, args=None):
 
@@ -82,6 +107,7 @@ def diagnosis_ignore(category, args="", unignore=False):
 
 ############################################################
 
+
 class Diagnoser():
 
     def __init__(self, args, env, loggers):
@@ -90,19 +116,13 @@ class Diagnoser():
         self.env = env
         self.args = args
         self.args.update(self.validate_args(args))
-
-    @property
-    def cache_file(self):
-        return os.path.join(DIAGNOSIS_CACHE, "%s.json" % self.id_)
+        self.cache_file = Diagnoser.cache_file(self.id_)
 
     def cached_time_ago(self):
 
         if not os.path.exists(self.cache_file):
             return 99999999
         return time.time() - os.path.getmtime(self.cache_file)
-
-    def get_cached_report(self):
-        return read_json(self.cache_file)
 
     def write_cache(self, report):
         if not os.path.exists(DIAGNOSIS_CACHE):
@@ -113,7 +133,7 @@ class Diagnoser():
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Using cached report from %s" % self.cache_file)
-            return self.get_cached_report()
+            return Diagnoser.get_cached_report(self.id_)
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
@@ -128,6 +148,17 @@ class Diagnoser():
         self.write_cache(new_report)
 
         return new_report
+
+    @staticmethod
+    def cache_file(id_):
+        return os.path.join(DIAGNOSIS_CACHE, "%s.json" % id_)
+
+    @staticmethod
+    def get_cached_report(id_):
+        filename = Diagnoser.cache_file(id_)
+        report = read_json(filename)
+        report["timestamp"] = int(os.path.getmtime(filename))
+        return report
 
 
 

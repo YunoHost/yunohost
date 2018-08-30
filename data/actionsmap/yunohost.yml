@@ -1874,9 +1874,9 @@ diagnosis:
             action_help: List diagnosis categories
             api: GET /diagnosis/list
 
-        report:
+        show:
             action_help: Show most recents diagnosis results
-            api: GET /diagnosis/report
+            api: GET /diagnosis/show
             arguments:
                 categories:
                     help: Diagnosis categories to display (all by default)
