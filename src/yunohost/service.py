@@ -50,8 +50,8 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None):
-    """
+def service_add(name, status=None, log=None, runlevel=None, description=None):
+    """ 
     Add a custom service
 
     Keyword argument:
@@ -59,6 +59,7 @@ def service_add(name, status=None, log=None, runlevel=None):
         status -- Custom status command
         log -- Absolute path to log file to display
         runlevel -- Runlevel priority of the service
+        description -- description of the service
 
     """
     services = _get_services()
@@ -73,6 +74,9 @@ def service_add(name, status=None, log=None, runlevel=None):
 
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
+
+    if description is not None:
+        services[name]['description'] = description
 
     try:
         _save_services(services)
@@ -251,7 +255,10 @@ def service_status(names=[]):
 
         else:
             translation_key = "service_description_%s" % name
-            description = m18n.n(translation_key)
+            if "description" in services[name] is not None:
+                description = services[name].get("description")
+            else:
+                description = m18n.n(translation_key)
 
             # that mean that we don't have a translation for this string
             # that's the only way to test for that for now
