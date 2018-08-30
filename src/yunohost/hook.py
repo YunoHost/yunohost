@@ -398,10 +398,15 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
             errno.EIO, m18n.n('hook_exec_failed', path=path))
 
     try:
-        returnjson = read_json(stdreturn)
+        with open(stdreturn, 'r') as f:
+            if f.read() != '':
+                returnjson = read_json(stdreturn)
+            else:
+                returnjson = {}
     except Exception as e:
         returnjson = {}
-        errno.EIO, m18n.n('hook_json_return_error', path=path, msg=str(e))
+        raise MoulinetteError(
+            errno.EIO, m18n.n('hook_json_return_error', path=path, msg=str(e)))
 
     stdreturndir = os.path.split(stdreturn)[0]
     os.remove(stdreturn)
