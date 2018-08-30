@@ -8,7 +8,7 @@ from yunohost.diagnosis import Diagnoser
 
 class IPDiagnoser(Diagnoser):
 
-    id_ = os.path.splitext(os.path.basename(__file__))[0]
+    id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     description = "internet_connectivity"
     cache_duration = 60
 
