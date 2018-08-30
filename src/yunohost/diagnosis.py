@@ -118,6 +118,7 @@ class Diagnoser():
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
         new_report = { "id": self.id_,
+                       "description": self.description,
                        "cached_for": self.cache_duration,
                        "reports": list(self.run())
                      }
