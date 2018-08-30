@@ -58,7 +58,12 @@ def diagnosis_show(categories=[], full=False):
             raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(categories)))
 
     # Fetch all reports
-    all_reports = [ Diagnoser.get_cached_report(c) for c in categories ]
+    all_reports = []
+    for category in categories:
+        try:
+            all_reports.append(Diagnoser.get_cached_report(category))
+        except Exception as e:
+            logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e))) # FIXME : i18n
 
     # "Render" the strings with m18n.n
     for report in all_reports:
@@ -83,7 +88,7 @@ def diagnosis_run(categories=[], force=False, args=None):
     else:
         unknown_categories = [ c for c in categories if c not in all_categories_names ]
         if unknown_categories:
-            raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(categories)))
+            raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(unknown_categories)))
 
     # Transform "arg1=val1&arg2=val2" to { "arg1": "val1", "arg2": "val2" }
     if args is not None:
@@ -92,15 +97,20 @@ def diagnosis_run(categories=[], force=False, args=None):
         args = {}
     args["force"] = force
 
-
     # Call the hook ...
+    successes = []
     for category in categories:
         logger.debug("Running diagnosis for %s ..." % category)
         path = [p for n, p in all_categories if n == category ][0]
 
-        # TODO : get the return value and do something with it
-        return {"report": hook_exec(path, args=args, env=None) }
+        try:
+            hook_exec(path, args=args, env=None)
+            successes.append(category)
+        except Exception as e:
+            # FIXME / TODO : add stacktrace here ?
+            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e))) # FIXME : i18n 
 
+    return diagnosis_show(successes)
 
 def diagnosis_ignore(category, args="", unignore=False):
     pass
@@ -132,8 +142,8 @@ class Diagnoser():
     def report(self):
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
-            self.logger_debug("Using cached report from %s" % self.cache_file)
-            return Diagnoser.get_cached_report(self.id_)
+            self.logger_debug("Cache still valid : %s" % self.cache_file)
+            return
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
@@ -146,8 +156,6 @@ class Diagnoser():
         # TODO / FIXME : should handle the case where we only did a partial diagnosis
         self.logger_debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
-
-        return new_report
 
     @staticmethod
     def cache_file(id_):
