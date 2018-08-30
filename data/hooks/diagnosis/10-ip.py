@@ -9,7 +9,7 @@ from yunohost.diagnosis import Diagnoser
 class IPDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0]
-    description = m18n.n("internet_connectivity")
+    description = "internet_connectivity"
     cache_duration = 60
 
     def validate_args(self, args):
@@ -26,17 +26,17 @@ class IPDiagnoser(Diagnoser):
 
         if 4 in versions:
             ipv4 = self.get_public_ip(4)
-            yield dict(meta = {"version": "4"},
+            yield dict(meta = {"version": 4},
                        result = ipv4,
-                       report = ("SUCCESS", m18n.n("diagnosis_network_connected_ipv4")) if ipv4 \
-                           else ("ERROR",   m18n.n("diagnosis_network_no_ipv4")))
+                       report = ("SUCCESS", "diagnosis_network_connected_ipv4", {}) if ipv4 \
+                           else ("ERROR",   "diagnosis_network_no_ipv4", {}))
        
         if 6 in versions:
             ipv6 = self.get_public_ip(6)
-            yield dict(meta = {"version": "6"},
+            yield dict(meta = {"version": 6},
                        result = ipv6,
-                       report = ("SUCCESS", m18n.n("diagnosis_network_connected_ipv6")) if ipv6 \
-                           else ("WARNING", m18n.n("diagnosis_network_no_ipv6")))
+                       report = ("SUCCESS", "diagnosis_network_connected_ipv6", {}) if ipv6 \
+                           else ("WARNING", "diagnosis_network_no_ipv6", {}))
 
 
     def get_public_ip(self, protocol=4):
