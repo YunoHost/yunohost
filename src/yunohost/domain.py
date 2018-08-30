@@ -346,6 +346,10 @@ def _build_dns_conf(domain, ttl=3600):
             ["*", ttl, "AAAA", ipv6],
         ]
 
+    basic += [ 
+        ["@", ttl, "CAA", "128 issue 'letsencrypt.org'"]
+    ]
+
     # XMPP
     xmpp = [
         ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
