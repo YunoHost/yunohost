@@ -51,7 +51,7 @@ logger = log.getActionLogger('yunohost.service')
 
 
 def service_add(name, status=None, log=None, runlevel=None, description=None):
-    """ 
+    """
     Add a custom service
 
     Keyword argument:
