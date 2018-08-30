@@ -110,13 +110,14 @@ class Diagnoser():
 
     def report(self):
 
-        print(self.cached_time_ago())
-
         if self.args.get("force", False) or self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Using cached report from %s" % self.cache_file)
             return self.get_cached_report()
 
-        new_report = list(self.run())
+        new_report = { "id": self.id_,
+                       "cached_for": self.cache_duration,
+                       "reports": list(self.run())
+                     }
 
         # TODO / FIXME : should handle the case where we only did a partial diagnosis
         self.logger_debug("Updating cache %s" % self.cache_file)

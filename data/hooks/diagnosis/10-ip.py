@@ -38,7 +38,6 @@ class IPDiagnoser(Diagnoser):
                        report = ("SUCCESS", "diagnosis_network_connected_ipv6", {}) if ipv6 \
                            else ("WARNING", "diagnosis_network_no_ipv6", {}))
 
-
     def get_public_ip(self, protocol=4):
 
         if protocol == 4:
