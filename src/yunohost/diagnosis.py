@@ -88,7 +88,8 @@ class Diagnoser():
 
         self.logger_debug, self.logger_warning, self.logger_info = loggers
         self.env = env
-        self.args = self.validate_args(args)
+        self.args = args
+        self.args.update(self.validate_args(args))
 
     @property
     def cache_file(self):
@@ -110,9 +111,11 @@ class Diagnoser():
 
     def report(self):
 
-        if self.args.get("force", False) or self.cached_time_ago() < self.cache_duration:
+        if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Using cached report from %s" % self.cache_file)
             return self.get_cached_report()
+
+        self.logger_debug("Running diagnostic for %s" % self.id_)
 
         new_report = { "id": self.id_,
                        "cached_for": self.cache_duration,
