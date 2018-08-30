@@ -25,10 +25,13 @@
 """
 
 import errno
+import os
+import time
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import log
+from moulinette.utils.filesystem import read_json, write_to_json
 
 from yunohost.hook import hook_list, hook_exec
 
@@ -87,10 +90,41 @@ class Diagnoser():
         self.env = env
         self.args = self.validate_args(args)
 
+    @property
+    def cache_file(self):
+        return os.path.join(DIAGNOSIS_CACHE, "%s.json" % self.id_)
+
+    def cached_time_ago(self):
+
+        if not os.path.exists(self.cache_file):
+            return 99999999
+        return time.time() - os.path.getmtime(self.cache_file)
+
+    def get_cached_report(self):
+        return read_json(self.cache_file)
+
+    def write_cache(self, report):
+        if not os.path.exists(DIAGNOSIS_CACHE):
+            os.makedirs(DIAGNOSIS_CACHE)
+        return write_to_json(self.cache_file, report)
+
     def report(self):
 
-        # TODO : implement some caching mecanism in there
-        return list(self.run())
+        print(self.cached_time_ago())
+
+        if self.args.get("force", False) or self.cached_time_ago() < self.cache_duration:
+            self.logger_debug("Using cached report from %s" % self.cache_file)
+            return self.get_cached_report()
+
+        new_report = list(self.run())
+
+        # TODO / FIXME : should handle the case where we only did a partial diagnosis
+        self.logger_debug("Updating cache %s" % self.cache_file)
+        self.write_cache(new_report)
+
+        return new_report
+
+
 
 def _list_diagnosis_categories():
     hooks_raw = hook_list("diagnosis", list_by="priority", show_info=True)["hooks"]
