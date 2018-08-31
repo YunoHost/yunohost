@@ -41,9 +41,7 @@ from moulinette.utils.filesystem import read_file
 from yunohost.monitor import binary_to_human
 from yunohost.log import OperationLogger
 
-BACKUP_PATH = '/home/yunohost.backup'
-ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
-logger = getActionLogger('yunohost.backup')
+logger = getActionLogger('yunohost.repository')
 REPOSITORIES_PATH = '/etc/yunohost/repositories.yml'
 
 def backup_repository_list(name):
@@ -61,17 +59,22 @@ def backup_repository_info(name, human_readable=True, space_used=False):
     """
     repositories = _get_repositories()
 
-    if key not in repositories:
+    repository = repositories.pop(name, None)
+
+    if repository is None:
         raise MoulinetteError(errno.EINVAL, m18n.n(
             'backup_repository_doesnt_exists', name=name))
-
-    if human_readable:
-        logger.info("--human-readbale option not yet implemented")
 
     if space_used:
         logger.info("--space-used option not yet implemented")
 
-    return repositories[name]
+    if human_readable:
+        if 'quota' in repository:
+            repository['quota'] = binary_to_human(repository['quota'])
+        if 'used' in repository:
+            repository['used'] = binary_to_human(repository['used'])
+
+    return repository
 
 @is_unit_operation()
 def backup_repository_add(operation_logger, path, name, description=None,
@@ -106,7 +109,6 @@ def backup_repository_add(operation_logger, path, name, description=None,
     try:
         _save_repositories(repositories)
     except:
-        # we'll get a logger.warning with more details in _save_services
         raise MoulinetteError(errno.EIO, m18n.n('backup_repository_add_failed',
                                                 repository=name, path=path))
 
