@@ -941,7 +941,7 @@ backup:
                             action: store_true
                         --space-used:
                             help: Display size used
-                            action: store_true
+                            action: store_false
                 
                 ### backup_repository_add()
                 add:
@@ -954,12 +954,12 @@ backup:
                         path:
                             help: Path eventually on another server
                             extra:
-                                pattern: *pattern_backup_repo_path
+                                pattern: *pattern_backup_repository_path
                         -n:
                             full: --name
                             help: Name of the repository
                             extra:
-                                pattern: *pattern_backup_repo_name
+                                pattern: *pattern_backup_repository_name
                         -d:
                             full: --description
                             help: Short description of the repository
@@ -969,14 +969,19 @@ backup:
                         -q:
                             full: --quota
                             help: Quota to configure with this repository
-                        --no-encryption:
-                            help: If distant don't encrypt 
+                        --e:
+                            full: --encryption
+                            help: Type of encryption
 
                 ### backup_repository_update()
                 update:
                     action_help: Update a backup repository
                     api: PUT /backup/repository/<name>
                     arguments:
+                        name:
+                            help: Name of the backup repository to update
+                            extra:
+                                pattern: *pattern_backup_repository_name
                         -d:
                             full: --description
                             help: Short description of the repository
@@ -998,7 +1003,7 @@ backup:
                         name:
                             help: Name of the backup repository to remove
                             extra:
-                                pattern: *pattern_backup_repo_name
+                                pattern: *pattern_backup_repository_name
 
 #############################
 #          Monitor          #

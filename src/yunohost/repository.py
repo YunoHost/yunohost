@@ -52,7 +52,7 @@ def backup_repository_list(name):
     """
     pass
 
-def backup_repository_info(name):
+def backup_repository_info(name, human_readble=True, space_used=False):
     """
     Show info about a repository
 
@@ -61,7 +61,8 @@ def backup_repository_info(name):
     """
     pass
 
-def backup_repository_add(name):
+def backup_repository_add(name, path, name, description=None, methods=None,
+                          quota=None, encryption="passphrase"):
     """
     Add a backup repository
 
@@ -70,7 +71,7 @@ def backup_repository_add(name):
     """
     pass
 
-def backup_repository_update(name):
+def backup_repository_update(name, description=None, quota=None, password=None):
     """
     Update a backup repository
 
