@@ -929,12 +929,7 @@ backup:
                 list:
                     action_help: List available repositories where put archives
                     api: GET /backup/repositories
-                    arguments:
-                        name:
-                            help: Name of the repository
-                            extra:
-                                pattern: *pattern_backup_repo_name
-
+                
                 ### backup_repository_info()
                 info:
                     action_help: Show info about a repository
