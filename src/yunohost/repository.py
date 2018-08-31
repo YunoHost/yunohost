@@ -52,7 +52,7 @@ def backup_repository_list(name):
     """
     pass
 
-def backup_repository_info(name, human_readble=True, space_used=False):
+def backup_repository_info(name, human_readable=True, space_used=False):
     """
     Show info about a repository
 
