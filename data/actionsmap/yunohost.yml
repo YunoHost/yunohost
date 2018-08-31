@@ -937,7 +937,7 @@ backup:
                 ### backup_repository_info()
                 info:
                     action_help: Show info about a repository
-                    api: GET /backup/repositories
+                    api: GET /backup/repository
                     arguments:
                         -H:
                             full: --human-readable
