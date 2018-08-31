@@ -1180,7 +1180,7 @@ service:
                     metavar: NAME
 
         ### service_disable()
-        dis1able:
+        disable:
             action_help: Disable one or more services
             api: DELETE /services/<names>/enable
             arguments:
