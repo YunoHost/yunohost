@@ -56,8 +56,8 @@ do_pre_regen() {
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
     
     domain_ca_type=$(yunohost domain cert-status ${domain} | grep CA_type | tr -d " ")
-    if [[ domain_ca_type = "CA_type:Let'sEncrypt" ]]; then
-      IS_LETSENCRYPT = true
+    if [[ $domain_ca_type = "CA_type:Let'sEncrypt" ]]; then
+      IS_LETSENCRYPT=true
       export IS_LETSENCRYPT
       ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
     fi
