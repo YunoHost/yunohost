@@ -1136,6 +1136,10 @@ service:
                     full: --runlevel
                     help: Runlevel priority of the service
                     type: int
+                -n:
+                    full: --need_lock
+                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
+                    action: store_true
 
         ### service_remove()
         remove:
@@ -1176,7 +1180,7 @@ service:
                     metavar: NAME
 
         ### service_disable()
-        disable:
+        dis1able:
             action_help: Disable one or more services
             api: DELETE /services/<names>/enable
             arguments:
