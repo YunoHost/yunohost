@@ -71,12 +71,13 @@ def backup_repository_info(name, human_readable=True, space_used=False):
             'backup_repository_doesnt_exists', name=name))
 
     if space_used:
-        logger.info("--space-used option not yet implemented")
+        try:
+            repository['used'] = _get_repository_used_space(name)
 
     if human_readable:
         if 'quota' in repository:
             repository['quota'] = binary_to_human(repository['quota'])
-        if 'used' in repository:
+        if 'used' in repository and isinstance(repository['used', int):
             repository['used'] = binary_to_human(repository['used'])
 
     return repository
@@ -146,7 +147,7 @@ def backup_repository_update(operation_logger, name, description=None,
                           path=repository['path']))
 
 @is_unit_operation()
-def backup_repository_remove(operation_logger, name):
+def backup_repository_remove(operation_logger, name, purge=False):
     """
     Remove a backup repository
 
@@ -204,3 +205,16 @@ def _get_repositories():
                                   exc_info=1)
 
     return repositories
+
+
+def _get_repository_used_space(path, methods=None):
+    """
+    Return the used space on a repository or 'unknown' if method don't support
+    this feature
+
+    Keyword argument:
+        path -- Path of the repository
+
+    """
+    logger.info("--space-used option not yet implemented")
+    return 'unknown'
