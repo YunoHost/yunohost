@@ -929,6 +929,10 @@ backup:
                 list:
                     action_help: List available repositories where put archives
                     api: GET /backup/repositories
+                    arguments:
+                        --full:
+                            help: Show more details
+                            action: store_true
                 
                 ### backup_repository_info()
                 info:

@@ -44,11 +44,16 @@ from yunohost.log import OperationLogger
 logger = getActionLogger('yunohost.repository')
 REPOSITORIES_PATH = '/etc/yunohost/repositories.yml'
 
-def backup_repository_list(name):
+def backup_repository_list(name, full=False):
     """
     List available repositories where put archives
     """
-    return _get_repositories()
+    repositories = _get_repositories()
+
+    if full:
+        return repositories
+    else:
+        return repositories.keys()
 
 def backup_repository_info(name, human_readable=True, space_used=False):
     """
