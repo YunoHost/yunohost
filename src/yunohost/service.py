@@ -85,7 +85,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         _save_services(services)
     except:
         # we'll get a logger.warning with more details in _save_services
-        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', service=name))
+        raise MoulinetteError('service_add_failed', service=name)
 
     logger.success(m18n.n('service_added', service=name))
 
@@ -103,13 +103,13 @@ def service_remove(name):
     try:
         del services[name]
     except KeyError:
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
+        raise MoulinetteError('service_unknown', service=name)
 
     try:
         _save_services(services)
     except:
         # we'll get a logger.warning with more details in _save_services
-        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', service=name))
+        raise MoulinetteError('service_remove_failed', service=name)
 
     logger.success(m18n.n('service_removed', service=name))
 
@@ -320,10 +320,10 @@ def service_log(name, number=50):
     services = _get_services()
 
     if name not in services.keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
+        raise MoulinetteError('service_unknown', service=name)
 
     if 'log' not in services[name]:
-        raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', service=name))
+        raise MoulinetteError('service_no_log', service=name)
 
     log_list = services[name]['log']
 
@@ -609,7 +609,7 @@ def _run_service_command(action, service):
     """
     services = _get_services()
     if service not in services.keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
+        raise MoulinetteError('service_unknown', service=service)
 
     possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
     if action not in possible_actions:

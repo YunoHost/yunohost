@@ -581,7 +581,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     try:
         intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
     except requests.exceptions.Timeout as e:
-        raise MoulinetteError(errno.EINVAL, m18n.n('certmanager_couldnt_fetch_intermediate_cert'))
+        raise MoulinetteError('certmanager_couldnt_fetch_intermediate_cert')
 
     # Now save the key and signed certificate
     logger.debug("Saving the key and signed certificate...")

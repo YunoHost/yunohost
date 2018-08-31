@@ -507,7 +507,7 @@ class BackupManager():
 
         if not successfull_apps and not successfull_system:
             filesystem.rm(self.work_dir, True, True)
-            raise MoulinetteError(errno.EINVAL, m18n.n('backup_nothings_done'))
+            raise MoulinetteError('backup_nothings_done')
 
         # Add unlisted files from backup tmp dir
         self._add_to_list_to_backup('backup.csv')
@@ -857,7 +857,7 @@ class RestoreManager():
                 self.info["system"] = self.info["hooks"]
         except IOError:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+            raise MoulinetteError('backup_invalid_archive')
         else:
             logger.debug("restoring from backup '%s' created on %s", self.name,
                          datetime.utcfromtimestamp(self.info['created_at']))
@@ -1442,7 +1442,7 @@ class BackupMethod(object):
     @property
     def method_name(self):
         """Return the string name of a BackupMethod (eg "tar" or "copy")"""
-        raise MoulinetteError(errno.EINVAL, m18n.n('backup_abstract_method'))
+        raise MoulinetteError('backup_abstract_method')
 
     @property
     def name(self):
@@ -2132,7 +2132,7 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
                 if i == 'y' or i == 'Y':
                     force = True
             if not force:
-                raise MoulinetteError(errno.EEXIST, m18n.n('restore_failed'))
+                raise MoulinetteError('restore_failed')
 
     # TODO Partial app restore could not work if ldap is not restored before
     # TODO repair mysql if broken and it's a complete restore
@@ -2159,7 +2159,7 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
     if restore_manager.success:
         logger.success(m18n.n('restore_complete'))
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('restore_nothings_done'))
+        raise MoulinetteError('restore_nothings_done')
 
     return restore_manager.targets.results
 
@@ -2240,7 +2240,7 @@ def backup_info(name, with_details=False, human_readable=False):
         except KeyError:
             logger.debug("unable to retrieve '%s' inside the archive",
                          info_file, exc_info=1)
-            raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+            raise MoulinetteError('backup_invalid_archive')
         else:
             shutil.move(os.path.join(info_dir, 'info.json'), info_file)
         finally:
@@ -2253,7 +2253,7 @@ def backup_info(name, with_details=False, human_readable=False):
             info = json.load(f)
     except:
         logger.debug("unable to load '%s'", info_file, exc_info=1)
-        raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
+        raise MoulinetteError('backup_invalid_archive')
 
     # Retrieve backup size
     size = info.get('size', 0)

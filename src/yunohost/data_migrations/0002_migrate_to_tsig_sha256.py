@@ -52,7 +52,7 @@ class MyMigration(Migration):
                                'public_key_sha512': base64.b64encode(public_key_sha512),
                              }, timeout=30)
         except requests.ConnectionError:
-            raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+            raise MoulinetteError('no_internet_connection')
 
         if r.status_code != 201:
             try:

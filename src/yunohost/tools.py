@@ -112,7 +112,7 @@ def tools_ldapinit():
         pwd.getpwnam("admin")
     except KeyError:
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
-        raise MoulinetteError(errno.EINVAL, m18n.n('installation_failed'))
+        raise MoulinetteError('installation_failed')
 
     logger.success(m18n.n('ldap_initialized'))
     return auth
@@ -176,7 +176,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
 
     # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise MoulinetteError('domain_unknown')
 
     operation_logger.related_to.append(('domain', new_domain))
     operation_logger.start()
@@ -199,7 +199,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
         _set_maindomain(new_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
-        raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
+        raise MoulinetteError('maindomain_change_failed')
 
     _set_hostname(new_domain)
 
@@ -248,7 +248,7 @@ def _set_hostname(hostname, pretty_hostname=None):
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
+            raise MoulinetteError('domain_hostname_failed')
         else:
             logger.debug(out)
 
@@ -483,7 +483,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         # Update APT cache
         logger.debug(m18n.n('updating_apt_cache'))
         if not cache.update():
-            raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
+            raise MoulinetteError('update_cache_failed')
 
         cache.open(None)
         cache.upgrade(True)
@@ -807,7 +807,7 @@ def tools_migrations_list(pending=False, done=False):
 
     # Check for option conflict
     if pending and done:
-        raise MoulinetteError(errno.EINVAL, m18n.n("migrations_list_conflict_pending_done"))
+        raise MoulinetteError("migrations_list_conflict_pending_done")
 
     # Get all migrations
     migrations = _get_migrations_list()
@@ -864,7 +864,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
-        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers))))
+        raise MoulinetteError('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers)))
 
     logger.debug(m18n.n('migrations_current_target', target))
 

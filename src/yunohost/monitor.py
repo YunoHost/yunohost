@@ -83,7 +83,7 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
             result_dname = dn
     if len(devices) == 0:
         if mountpoint is not None:
-            raise MoulinetteError(errno.ENODEV, m18n.n('mountpoint_unknown'))
+            raise MoulinetteError('mountpoint_unknown')
         return result
 
     # Retrieve monitoring for unit(s)
@@ -141,7 +141,7 @@ def monitor_disk(units=None, mountpoint=None, human_readable=False):
             for dname in devices_names:
                 _set(dname, 'not-available')
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', unit=u))
+            raise MoulinetteError('unit_unknown', unit=u)
 
     if result_dname is not None:
         return result[result_dname]
@@ -237,7 +237,7 @@ def monitor_network(units=None, human_readable=False):
                 'gateway': gateway,
             }
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', unit=u))
+            raise MoulinetteError('unit_unknown', unit=u)
 
     if len(units) == 1:
         return result[units[0]]
@@ -287,7 +287,7 @@ def monitor_system(units=None, human_readable=False):
         elif u == 'infos':
             result[u] = json.loads(glances.getSystem())
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('unit_unknown', unit=u))
+            raise MoulinetteError('unit_unknown', unit=u)
 
     if len(units) == 1 and type(result[units[0]]) is not str:
         return result[units[0]]
@@ -303,7 +303,7 @@ def monitor_update_stats(period):
 
     """
     if period not in ['day', 'week', 'month']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('monitor_period_invalid'))
+        raise MoulinetteError('monitor_period_invalid')
 
     stats = _retrieve_stats(period)
     if not stats:
@@ -321,7 +321,7 @@ def monitor_update_stats(period):
         else:
             monitor = _monitor_all(p, 0)
     if not monitor:
-        raise MoulinetteError(errno.ENODATA, m18n.n('monitor_stats_no_update'))
+        raise MoulinetteError('monitor_stats_no_update')
 
     stats['timestamp'].append(time.time())
 
@@ -386,7 +386,7 @@ def monitor_show_stats(period, date=None):
 
     """
     if period not in ['day', 'week', 'month']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('monitor_period_invalid'))
+        raise MoulinetteError('monitor_period_invalid')
 
     result = _retrieve_stats(period, date)
     if result is False:
@@ -470,8 +470,8 @@ def _get_glances_api():
     from yunohost.service import service_status
 
     if service_status('glances')['status'] != 'running':
-        raise MoulinetteError(errno.EPERM, m18n.n('monitor_not_enabled'))
-    raise MoulinetteError(errno.EIO, m18n.n('monitor_glances_con_failed'))
+        raise MoulinetteError('monitor_not_enabled')
+    raise MoulinetteError('monitor_glances_con_failed')
 
 
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):

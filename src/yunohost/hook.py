@@ -112,7 +112,7 @@ def hook_info(action, name):
             })
 
     if not hooks:
-        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name=name))
+        raise MoulinetteError('hook_name_unknown', name=name)
     return {
         'action': action,
         'name': name,
@@ -174,7 +174,7 @@ def hook_list(action, list_by='name', show_info=False):
                 # Add only the name
                 d.add(name)
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('hook_list_by_invalid'))
+        raise MoulinetteError('hook_list_by_invalid')
 
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder

@@ -268,7 +268,7 @@ def firewall_reload(skip_upnp=False):
         reloaded = True
 
     if not reloaded:
-        raise MoulinetteError(errno.ESRCH, m18n.n('firewall_reload_failed'))
+        raise MoulinetteError('firewall_reload_failed')
 
     hook_callback('post_iptable_rules',
                   args=[upnp, os.path.exists("/proc/net/if_inet6")])
@@ -338,7 +338,7 @@ def firewall_upnp(action='status', no_refresh=False):
         if action == 'status':
             no_refresh = True
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('action_invalid', action=action))
+        raise MoulinetteError('action_invalid', action=action)
 
     # Refresh port mapping using UPnP
     if not no_refresh:
@@ -407,7 +407,7 @@ def firewall_upnp(action='status', no_refresh=False):
             firewall_reload(skip_upnp=True)
 
     if action == 'enable' and not enabled:
-        raise MoulinetteError(errno.ENXIO, m18n.n('upnp_port_open_failed'))
+        raise MoulinetteError('upnp_port_open_failed')
     return {'enabled': enabled}
 
 
@@ -419,7 +419,7 @@ def firewall_stop():
     """
 
     if os.system("iptables -w -P INPUT ACCEPT") != 0:
-        raise MoulinetteError(errno.ESRCH, m18n.n('iptables_unavailable'))
+        raise MoulinetteError('iptables_unavailable')
 
     os.system("iptables -w -F")
     os.system("iptables -w -X")

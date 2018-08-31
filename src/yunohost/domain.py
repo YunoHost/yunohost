@@ -78,7 +78,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
     try:
         auth.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
-        raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
+        raise MoulinetteError('domain_exists')
 
     operation_logger.start()
 
@@ -110,7 +110,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
         }
 
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
-            raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
+            raise MoulinetteError('domain_creation_failed')
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
@@ -147,11 +147,11 @@ def domain_remove(operation_logger, auth, domain, force=False):
     from yunohost.app import app_ssowatconf
 
     if not force and domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise MoulinetteError('domain_unknown')
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_cannot_remove_main'))
+        raise MoulinetteError('domain_cannot_remove_main')
 
     # Check if apps are installed on the domain
     for app in os.listdir('/etc/yunohost/apps/'):
@@ -169,7 +169,7 @@ def domain_remove(operation_logger, auth, domain, force=False):
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
-        raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
+        raise MoulinetteError('domain_deletion_failed')
 
     service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf(auth)
@@ -246,7 +246,7 @@ def _get_conflicting_apps(auth, domain, path):
 
     # Abort if domain is unknown
     if domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise MoulinetteError('domain_unknown')
 
     # This import cannot be put on top of file because it would create a
     # recursive import...

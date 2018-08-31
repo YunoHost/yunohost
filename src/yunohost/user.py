@@ -130,7 +130,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     # Validate uniqueness of username in system users
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
     if username in all_existing_usernames:
-        raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
+        raise MoulinetteError('system_username_exists')
 
     main_domain = _get_maindomain()
     aliases = [
@@ -226,7 +226,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
             return {'fullname': fullname, 'username': username, 'mail': mail}
 
-    raise MoulinetteError(169, m18n.n('user_creation_failed'))
+    raise MoulinetteError('user_creation_failed')
 
 
 @is_unit_operation([('username', 'user')])
@@ -257,7 +257,7 @@ def user_delete(operation_logger, auth, username, purge=False):
             if purge:
                 subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
     else:
-        raise MoulinetteError(169, m18n.n('user_deletion_failed'))
+        raise MoulinetteError('user_deletion_failed')
 
     app_ssowatconf(auth)
 
@@ -296,7 +296,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     # Populate user informations
     result = auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=' + username, attrs=attrs_to_fetch)
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+        raise MoulinetteError('user_unknown', user=username)
     user = result[0]
 
     # Get modifications from arguments
@@ -389,7 +389,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         app_ssowatconf(auth)
         return user_info(auth, username)
     else:
-        raise MoulinetteError(169, m18n.n('user_update_failed'))
+        raise MoulinetteError('user_update_failed')
 
 
 def user_info(auth, username):
@@ -414,7 +414,7 @@ def user_info(auth, username):
     if result:
         user = result[0]
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+        raise MoulinetteError('user_unknown', user=username)
 
     result_dict = {
         'username': user['uid'][0],
@@ -470,7 +470,7 @@ def user_info(auth, username):
     if result:
         return result_dict
     else:
-        raise MoulinetteError(167, m18n.n('user_info_failed'))
+        raise MoulinetteError('user_info_failed')
 
 #
 # SSH subcategory

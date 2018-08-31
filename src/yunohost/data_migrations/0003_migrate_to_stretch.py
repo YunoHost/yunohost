@@ -30,7 +30,7 @@ class MyMigration(Migration):
 
     def backward(self):
 
-        raise MoulinetteError(m18n.n("migration_0003_backward_impossible"))
+        raise MoulinetteError("migration_0003_backward_impossible")
 
     def migrate(self):
 
@@ -57,7 +57,7 @@ class MyMigration(Migration):
         self.apt_dist_upgrade(conf_flags=["old", "miss", "def"])
         _run_service_command("start", "mysql")
         if self.debian_major_version() == 8:
-            raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
+            raise MoulinetteError("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile)
 
         # Specific upgrade for fail2ban...
         logger.info(m18n.n("migration_0003_fail2ban_upgrade"))
@@ -107,11 +107,11 @@ class MyMigration(Migration):
         # would still be in 2.x...
         if not self.debian_major_version() == 8 \
            and not self.yunohost_major_version() == 2:
-            raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
+            raise MoulinetteError("migration_0003_not_jessie")
 
         # Have > 1 Go free space on /var/ ?
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
-            raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
+            raise MoulinetteError("migration_0003_not_enough_free_space")
 
         # Check system is up to date
         # (but we don't if 'stretch' is already in the sources.list ...
@@ -120,7 +120,7 @@ class MyMigration(Migration):
             self.apt_update()
             apt_list_upgradable = check_output("apt list --upgradable -a")
             if "upgradable" in apt_list_upgradable:
-                raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
+                raise MoulinetteError("migration_0003_system_not_fully_up_to_date")
 
     @property
     def disclaimer(self):

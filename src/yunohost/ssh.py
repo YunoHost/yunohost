@@ -23,7 +23,7 @@ def user_ssh_allow(auth, username):
     # TODO it would be good to support different kind of shells
 
     if not _get_user_for_ssh(auth, username):
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+        raise MoulinetteError('user_unknown', user=username)
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
 
@@ -42,7 +42,7 @@ def user_ssh_disallow(auth, username):
     # TODO it would be good to support different kind of shells
 
     if not _get_user_for_ssh(auth, username):
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+        raise MoulinetteError('user_unknown', user=username)
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
 

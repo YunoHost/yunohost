@@ -212,7 +212,7 @@ def app_removelist(operation_logger, name):
 
     # Make sure we know this appslist
     if name not in appslists.keys():
-        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
+        raise MoulinetteError('appslist_unknown', appslist=name)
 
     operation_logger.start()
 
@@ -459,7 +459,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
                               m18n.n('app_not_installed', app=app))
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
+        raise MoulinetteError("app_change_no_change_url_script", app_name=app)
 
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
@@ -471,7 +471,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     path = normalize_url_path(path)
 
     if (domain, path) == (old_domain, old_path):
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
+        raise MoulinetteError("app_change_url_identical_domains", domain=domain, path=path)
 
     # WARNING / FIXME : checkurl will modify the settings
     # (this is a non intuitive behavior that should be changed)
@@ -547,7 +547,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
                                                stderr=subprocess.STDOUT,
                                                shell=True).rstrip()
 
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors))
+        raise MoulinetteError("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors)
 
     logger.success(m18n.n("app_change_url_success",
                          app=app, domain=domain, path=path))
@@ -573,7 +573,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     try:
         app_list()
     except MoulinetteError:
-        raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
+        raise MoulinetteError('app_no_upgrade')
 
     upgraded_apps = []
 
@@ -684,7 +684,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             operation_logger.success()
 
     if not upgraded_apps:
-        raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
+        raise MoulinetteError('app_no_upgrade')
 
     app_ssowatconf(auth)
 
@@ -730,12 +730,12 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     elif os.path.exists(app):
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+        raise MoulinetteError('app_unknown')
     status['remote'] = manifest.get('remote', {})
 
     # Check ID
     if 'id' not in manifest or '__' in manifest['id']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_id_invalid'))
+        raise MoulinetteError('app_id_invalid')
 
     app_id = manifest['id']
 
@@ -1139,7 +1139,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         domain = app_domain
         operation_logger.related_to.append(('domain',domain))
     elif domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise MoulinetteError('domain_unknown')
 
     operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
@@ -1262,7 +1262,7 @@ def app_register_url(auth, app, domain, path):
                 app_label=app_label,
             ))
 
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
+        raise MoulinetteError('app_location_unavailable', apps="\n".join(apps))
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -1300,7 +1300,7 @@ def app_checkurl(auth, url, app=None):
     apps_map = app_map(raw=True)
 
     if domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise MoulinetteError('domain_unknown')
 
     if domain in apps_map:
         # Loop through apps
@@ -1349,10 +1349,10 @@ def app_initdb(user, password=None, db=None, sql=None):
     mysql_root_pwd = open('/etc/yunohost/mysql').read().rstrip()
     mysql_command = 'mysql -u root -p%s -e "CREATE DATABASE %s ; GRANT ALL PRIVILEGES ON %s.* TO \'%s\'@localhost IDENTIFIED BY \'%s\';"' % (mysql_root_pwd, db, db, user, password)
     if os.system(mysql_command) != 0:
-        raise MoulinetteError(errno.EIO, m18n.n('mysql_db_creation_failed'))
+        raise MoulinetteError('mysql_db_creation_failed')
     if sql is not None:
         if os.system('mysql -u %s -p%s %s < %s' % (user, password, db, sql)) != 0:
-            raise MoulinetteError(errno.EIO, m18n.n('mysql_db_init_failed'))
+            raise MoulinetteError('mysql_db_init_failed')
 
     if return_pwd:
         return password
@@ -1738,7 +1738,7 @@ def _get_app_status(app_id, format_date=False):
     """
     app_setting_path = APPS_SETTING_PATH + app_id
     if not os.path.isdir(app_setting_path):
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+        raise MoulinetteError('app_unknown')
     status = {}
 
     try:
@@ -1803,7 +1803,7 @@ def _extract_app_from_file(path, remove=False):
         extract_result = 1
 
     if extract_result != 0:
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_extraction_failed'))
+        raise MoulinetteError('app_extraction_failed')
 
     try:
         extracted_app_folder = APP_TMP_FOLDER
@@ -1814,7 +1814,7 @@ def _extract_app_from_file(path, remove=False):
             manifest = json.loads(str(json_manifest.read()))
             manifest['lastUpdate'] = int(time.time())
     except IOError:
-        raise MoulinetteError(errno.EIO, m18n.n('app_install_files_invalid'))
+        raise MoulinetteError('app_install_files_invalid')
     except ValueError as e:
         raise MoulinetteError(errno.EINVAL,
                               m18n.n('app_manifest_invalid', error=e.strerror))
@@ -1933,7 +1933,7 @@ def _fetch_app_from_git(app):
             app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
             manifest = app_info['manifest']
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+            raise MoulinetteError('app_unknown')
 
         if 'git' not in app_info:
             raise MoulinetteError(errno.EINVAL,
@@ -2312,7 +2312,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     app_label=app_label,
                 ))
 
-            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
+            raise MoulinetteError('app_location_unavailable', apps="\n".join(apps))
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
