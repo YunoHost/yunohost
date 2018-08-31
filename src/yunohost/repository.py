@@ -71,8 +71,7 @@ def backup_repository_info(name, human_readable=True, space_used=False):
             'backup_repository_doesnt_exists', name=name))
 
     if space_used:
-        try:
-            repository['used'] = _get_repository_used_space(name)
+        repository['used'] = _get_repository_used_space(name)
 
     if human_readable:
         if 'quota' in repository:
