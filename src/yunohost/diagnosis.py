@@ -139,7 +139,7 @@ class Diagnoser():
             os.makedirs(DIAGNOSIS_CACHE)
         return write_to_json(self.cache_file, report)
 
-    def report(self):
+    def diagnose(self):
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Cache still valid : %s" % self.cache_file)
