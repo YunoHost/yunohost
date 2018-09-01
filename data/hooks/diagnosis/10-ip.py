@@ -45,7 +45,7 @@ class IPDiagnoser(Diagnoser):
         elif protocol == 6:
             url = 'https://ip6.yunohost.org'
         else:
-            raise ValueError("invalid protocol version")
+            raise ValueError("invalid protocol version, it should be either 4 or 6 and was '%s'" % repr(protocol))
 
         try:
             return download_text(url, timeout=30).strip()
