@@ -44,11 +44,111 @@ from yunohost.log import OperationLogger
 logger = getActionLogger('yunohost.repository')
 REPOSITORIES_PATH = '/etc/yunohost/repositories.yml'
 
+class BackupRepository(object):
+
+    @classmethod
+    def get(cls, name):
+        cls.load()
+
+        if name not in cls.repositories:
+            raise MoulinetteError(errno.EINVAL, m18n.n(
+                'backup_repository_doesnt_exists', name=name))
+
+        return BackupRepository(**repositories[name])
+
+    @classmethod
+    def load(cls):
+        """
+        Read repositories configuration from file
+        """
+        cls.repositories = {}
+
+        if os.path.exists(REPOSITORIES_PATH):
+            try:
+                cls.repositories = read_json(REPOSITORIES_PATH)
+            except MoulinetteError as e:
+                raise MoulinetteError(1,
+                                      m18n.n('backup_cant_open_repositories_file',
+                                             reason=e),
+                                      exc_info=1)
+        return cls.repositories
+
+    @classmethod
+    def save(cls):
+        """
+        Save managed repositories to file
+        """
+        try:
+            write_to_json(REPOSITORIES_PATH, cls.repositories)
+        except Exception as e:
+            raise MoulinetteError(1, m18n.n('backup_cant_save_repositories_file',
+                                            reason=e),
+                                  exc_info=1)
+
+
+    def __init__(self, location, name, description=None, method=None,
+                 encryption=None, quota=None):
+
+        self.location = None
+        self._split_location()
+
+        self.name = location if name is None else name
+        if self.name in repositories:
+            raise MoulinetteError(errno.EIO, m18n.n('backup_repository_already_exists', repositories=name))
+
+        self.description = None
+        self.encryption = None
+        self.quota = None
+
+        if method is None:
+            method = 'tar' if self.domain is None else 'borg'
+        self.method = BackupMethod.create(method, self)
+
+    def compute_space_used(self):
+        if self.used is None:
+            try:
+                self.used = self.method.compute_space_used()
+            except NotYetImplemented as e:
+                self.used = 'unknown'
+        return self.used
+
+    def purge(self):
+        self.method.purge()
+
+    def delete(self, purge=False):
+        repositories = BackupRepositories.repositories
+
+        repository = repositories.pop(name)
+
+        BackupRepository.save()
+
+        if purge:
+            self.purge()
+
+    def save(self):
+        BackupRepository.reposirories[self.name] = self.__dict__
+        BackupRepository.save()
+
+    def _split_location(self):
+        """
+        Split a repository location into protocol, user, domain and path
+        """
+        location_regex = r'^((?P<protocol>ssh://)?(?P<user>[^@ ]+)@(?P<domain>[^: ]+:))?(?P<path>[^\0]+)$'
+        location_match = re.match(location_regex, self.location)
+
+        if location_match is None:
+            raise MoulinetteError(errno.EIO, m18n.n('backup_repositories_invalid_location', location=location))
+
+        self.protocol = location_match.group('protocol')
+        self.user = location_match.group('user')
+        self.domain = location_match.group('domain')
+        self.path = location_match.group('path')
+
 def backup_repository_list(name, full=False):
     """
     List available repositories where put archives
     """
-    repositories = _get_repositories()
+    repositories = BackupRepository.load()
 
     if full:
         return repositories
@@ -62,17 +162,13 @@ def backup_repository_info(name, human_readable=True, space_used=False):
     Keyword arguments:
         name -- Name of the backup repository
     """
-    repositories = _get_repositories()
+    repository = BackupRepository.get(name)
 
-    repository = repositories.pop(name, None)
-
-    if repository is None:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'backup_repository_doesnt_exists', name=name))
 
     if space_used:
-        repository['used'] = _get_repository_used_space(name)
+        repository.compute_space_used()
 
+    repository = repository.__dict__
     if human_readable:
         if 'quota' in repository:
             repository['quota'] = binary_to_human(repository['quota'])
@@ -82,7 +178,7 @@ def backup_repository_info(name, human_readable=True, space_used=False):
     return repository
 
 @is_unit_operation()
-def backup_repository_add(operation_logger, path, name, description=None,
+def backup_repository_add(operation_logger, location, name, description=None,
                           methods=None, quota=None, encryption="passphrase"):
     """
     Add a backup repository
@@ -90,34 +186,15 @@ def backup_repository_add(operation_logger, path, name, description=None,
     Keyword arguments:
         name -- Name of the backup repository
     """
-    repositories = _get_repositories()
-
-    if name in repositories:
-        raise MoulinetteError(errno.EIO, m18n.n('backup_repositories_already_exists', repositories=name))
-
-    repositories[name]= {
-        'path': path
-    }
-
-    if description is not None:
-        repositories[name]['description'] = description
-
-    if methods is not None:
-        repositories[name]['methods'] = methods
-
-    if quota is not None:
-        repositories[name]['quota'] = quota
-
-    if encryption is not None:
-        repositories[name]['encryption'] = encryption
+    repository = BackupRepository(location, name, description, methods, quota, encryption)
 
     try:
-        _save_repositories(repositories)
-    except:
+        repository.save()
+    except MoulinetteError as e:
         raise MoulinetteError(errno.EIO, m18n.n('backup_repository_add_failed',
-                                                repository=name, path=path))
+                                                repository=name, location=location))
 
-    logger.success(m18n.n('backup_repository_added', repository=name, path=path))
+    logger.success(m18n.n('backup_repository_added', repository=name, location=location))
 
 @is_unit_operation()
 def backup_repository_update(operation_logger, name, description=None,
@@ -128,22 +205,21 @@ def backup_repository_update(operation_logger, name, description=None,
     Keyword arguments:
         name -- Name of the backup repository
     """
-    repositories = _get_repositories()
-
-    if name not in repositories:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'backup_repository_doesnt_exists', name=name))
+    repository = BackupRepository.get(name)
 
     if description is not None:
-        repositories[name]['description'] = description
+        repository.description = description
 
     if quota is not None:
-        repositories[name]['quota'] = quota
+        repository.quota = quota
 
-    _save_repositories(repositories)
-
+    try:
+        repository.save()
+    except MoulinetteError as e:
+        raise MoulinetteError(errno.EIO, m18n.n('backup_repository_update_failed',
+                                                repository=name))
     logger.success(m18n.n('backup_repository_updated', repository=name,
-                          path=repository['path']))
+                          location=repository['location']))
 
 @is_unit_operation()
 def backup_repository_remove(operation_logger, name, purge=False):
@@ -154,66 +230,8 @@ def backup_repository_remove(operation_logger, name, purge=False):
         name -- Name of the backup repository to remove
 
     """
-    repositories = _get_repositories()
-
-    repository = repositories.pop(name)
-
-    if repository is None:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'backup_repository_doesnt_exists', name=name))
-
-    _save_repositories(repositories)
-
+    repository = BackupRepository.get(name)
+    repository.delete(purge)
     logger.success(m18n.n('backup_repository_removed', repository=name,
                           path=repository['path']))
 
-
-def _save_repositories(repositories):
-    """
-    Save managed repositories to file
-
-    Keyword argument:
-        repositories -- A dict of managed repositories with their parameters
-
-    """
-    try:
-        write_to_json(REPOSITORIES_PATH, repositories)
-    except Exception as e:
-        raise MoulinetteError(1, m18n.n('backup_cant_save_repositories_file',
-                                        reason=e),
-                              exc_info=1)
-
-
-def _get_repositories():
-    """
-    Read repositories configuration from file
-
-    Keyword argument:
-        repositories -- A dict of managed repositories with their parameters
-
-    """
-    repositories = {}
-
-    if os.path.exists(REPOSITORIES_PATH):
-        try:
-            repositories = read_json(REPOSITORIES_PATH)
-        except MoulinetteError as e:
-            raise MoulinetteError(1,
-                                  m18n.n('backup_cant_open_repositories_file',
-                                         reason=e),
-                                  exc_info=1)
-
-    return repositories
-
-
-def _get_repository_used_space(path, methods=None):
-    """
-    Return the used space on a repository or 'unknown' if method don't support
-    this feature
-
-    Keyword argument:
-        path -- Path of the repository
-
-    """
-    logger.info("--space-used option not yet implemented")
-    return 'unknown'
