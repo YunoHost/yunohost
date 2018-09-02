@@ -1136,6 +1136,9 @@ service:
                     full: --runlevel
                     help: Runlevel priority of the service
                     type: int
+                -d:
+                    full: --description
+                    help: Description of the service
 
         ### service_remove()
         remove:
