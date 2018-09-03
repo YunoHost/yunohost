@@ -680,7 +680,7 @@ class BackupManager():
             subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
             hook_exec(tmp_script, args=[tmp_app_bkp_dir, app],
-                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict, user="root")[0]
+                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)[0]
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
         except:
@@ -1310,8 +1310,7 @@ class RestoreManager():
                       args=[app_backup_in_archive, app_instance_name],
                       chdir=app_backup_in_archive,
                       raise_on_error=True,
-                      env=env_dict,
-                      user="root")[0]
+                      env=env_dict)[0]
         except:
             msg = m18n.n('restore_app_failed',app=app_instance_name)
             logger.exception(msg)
@@ -1336,7 +1335,7 @@ class RestoreManager():
             # Execute remove script
             # TODO: call app_remove instead
             if hook_exec(remove_script, args=[app_instance_name],
-                         env=env_dict_remove, user="root")[0] != 0:
+                         env=env_dict_remove)[0] != 0:
                 msg = m18n.n('app_not_properly_removed', app=app_instance_name)
                 logger.warning(msg)
                 operation_logger.error(msg)
