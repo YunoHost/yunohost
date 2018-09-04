@@ -152,8 +152,8 @@ def malformed_error(line_number):
 
 def main():
 
-    helper_files = glob.glob("../data/helpers.d/*")
-    helpers = {}
+    helper_files = sorted(glob.glob("../data/helpers.d/*"))
+    helpers = []
 
     for helper_file in helper_files:
         category_name = os.path.basename(helper_file)
@@ -163,7 +163,7 @@ def main():
         for b in p.blocks:
             p.parse_block(b)
 
-        helpers[category_name] = p.blocks
+        helpers.append((category_name, p.blocks))
 
     render(helpers)
 
