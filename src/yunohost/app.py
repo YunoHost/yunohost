@@ -1544,6 +1544,8 @@ def app_config_show_panel(app_id):
 
     if not os.path.exists(config_panel) or not os.path.exists(config_script):
         return {
+            "app_id": app_id,
+            "app_name": app_info_dict["name"],
             "config_panel": [],
         }
 
