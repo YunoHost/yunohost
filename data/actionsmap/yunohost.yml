@@ -1140,6 +1140,9 @@ service:
                     full: --need_lock
                     help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
                     action: store_true
+                -d:
+                    full: --description
+                    help: Description of the service
 
         ### service_remove()
         remove:
