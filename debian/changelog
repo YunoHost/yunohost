@@ -1,3 +1,14 @@
+yunohost (3.2.0~testing1) testing; urgency=low
+
+  * Add logging system of every unit operation (#165)
+  * Add a helper `ynh_info` for apps, so that they can comment on what is going on during scripts execution (#383)
+  * Fix the Sender Rewriting Scheme (#331)
+  * Add `ynh_render_template` to be able to render Jinja 2 templates (#463)
+
+ Thanks to all contributors : Bram, ljf, Aleks !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 23 Aug 2018 21:45:00 +0000
+
 yunohost (3.1.0) stable; urgency=low
 
   Highlights

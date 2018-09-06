@@ -40,6 +40,7 @@ from moulinette.core import MoulinetteError
 from moulinette.utils import log, filesystem
 
 from yunohost.hook import hook_callback, hook_list
+from yunohost.log import is_unit_operation
 
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
@@ -49,7 +50,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None):
     """
     Add a custom service
 
@@ -58,7 +59,8 @@ def service_add(name, status=None, log=None, runlevel=None):
         status -- Custom status command
         log -- Absolute path to log file to display
         runlevel -- Runlevel priority of the service
-
+        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
+        description -- description of the service
     """
     services = _get_services()
 
@@ -72,6 +74,12 @@ def service_add(name, status=None, log=None, runlevel=None):
 
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
+
+    if need_lock:
+        services[name]['need_lock'] = True
+
+    if description is not None:
+        services[name]['description'] = description
 
     try:
         _save_services(services)
@@ -150,8 +158,8 @@ def service_stop(names):
                                              logs=_get_journalctl_logs(name)))
             logger.debug(m18n.n('service_already_stopped', service=name))
 
-
-def service_enable(names):
+@is_unit_operation()
+def service_enable(operation_logger, names):
     """
     Enable one or more services
 
@@ -159,6 +167,7 @@ def service_enable(names):
         names -- Services name to enable
 
     """
+    operation_logger.start()
     if isinstance(names, str):
         names = [names]
     for name in names:
@@ -249,7 +258,10 @@ def service_status(names=[]):
 
         else:
             translation_key = "service_description_%s" % name
-            description = m18n.n(translation_key)
+            if "description" in services[name] is not None:
+                description = services[name].get("description")
+            else:
+                description = m18n.n(translation_key)
 
             # that mean that we don't have a translation for this string
             # that's the only way to test for that for now
@@ -343,7 +355,8 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+@is_unit_operation([('names', 'service')])
+def service_regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
     Regenerate the configuration file(s) for a service
@@ -375,6 +388,14 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                 }
 
         return pending_conf
+
+    if not dry_run:
+        operation_logger.related_to = [('service', x) for x in names]
+        if not names:
+            operation_logger.name_parameter_override = 'all'
+        elif len(names) != 1:
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to))+'_services'
+        operation_logger.start()
 
     # Clean pending conf directory
     if os.path.isdir(PENDING_CONF_DIR):
@@ -420,8 +441,13 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
+    operation_logger.related_to = []
+
     # Iterate over services and process pending conf
     for service, conf_files in _get_pending_conf(names).items():
+        if not dry_run:
+            operation_logger.related_to.append(('service', service))
+
         logger.debug(m18n.n(
             'service_regenconf_pending_applying' if not dry_run else
             'service_regenconf_dry_pending_applying',
@@ -570,6 +596,8 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
 
     hook_callback('conf_regen', names, pre_callback=_pre_call)
 
+    operation_logger.success()
+
     return result
 
 
@@ -697,13 +725,21 @@ def _tail(file, n):
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
     an indicator that is `True` if there are more lines in the file.
 
+    This function works even with splitted logs (gz compression, log rotate...)
     """
     avg_line_length = 74
     to_read = n
 
     try:
-        with open(file, 'r') as f:
-            while 1:
+        if file.endswith(".gz"):
+            import gzip
+            f = gzip.open(file)
+            lines = f.read().splitlines()
+        else:
+            f = open(file)
+            pos = 1
+            lines = []
+            while len(lines) < to_read and pos > 0:
                 try:
                     f.seek(-(avg_line_length * to_read), 2)
                 except IOError:
@@ -714,15 +750,48 @@ def _tail(file, n):
                 pos = f.tell()
                 lines = f.read().splitlines()
 
-                if len(lines) >= to_read or pos == 0:
+                if len(lines) >= to_read:
                     return lines[-to_read:]
 
                 avg_line_length *= 1.3
+        f.close()
 
     except IOError as e:
         logger.warning("Error while tailing file '%s': %s", file, e, exc_info=1)
         return []
 
+    if len(lines) < to_read:
+        previous_log_file = _find_previous_log_file(file)
+        if previous_log_file is not None:
+            lines = _tail(previous_log_file, to_read - len(lines)) + lines
+
+    return lines
+
+
+def _find_previous_log_file(file):
+    """
+    Find the previous log file
+    """
+    import re
+
+    splitext = os.path.splitext(file)
+    if splitext[1] == '.gz':
+        file = splitext[0]
+    splitext = os.path.splitext(file)
+    ext = splitext[1]
+    i = re.findall(r'\.(\d+)', ext)
+    i = int(i[0]) + 1 if len(i) > 0 else 1
+
+    previous_file = file if i == 1 else splitext[0]
+    previous_file = previous_file + '.%d' % (i)
+    if os.path.exists(previous_file):
+        return previous_file
+
+    previous_file = previous_file + ".gz"
+    if os.path.exists(previous_file):
+        return previous_file
+
+    return None
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     """Compare two files and return the differences

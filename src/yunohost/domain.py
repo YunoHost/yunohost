@@ -37,6 +37,7 @@ import yunohost.certificate
 
 from yunohost.service import service_regen_conf
 from yunohost.utils.network import get_public_ip
+from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.domain')
 
@@ -61,7 +62,8 @@ def domain_list(auth):
     return {'domains': result_list}
 
 
-def domain_add(auth, domain, dyndns=False):
+@is_unit_operation()
+def domain_add(operation_logger, auth, domain, dyndns=False):
     """
     Create a custom domain
 
@@ -77,6 +79,8 @@ def domain_add(auth, domain, dyndns=False):
         auth.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
         raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
+
+    operation_logger.start()
 
     # DynDNS domain
     if dyndns:
@@ -110,23 +114,27 @@ def domain_add(auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
             app_ssowatconf(auth)
 
-    except:
+    except Exception, e:
+        from sys import exc_info;
+        t, v, tb = exc_info()
+
         # Force domain removal silently
         try:
             domain_remove(auth, domain, True)
         except:
             pass
-        raise
+        raise t, v, tb
 
     hook_callback('post_domain_add', args=[domain])
 
     logger.success(m18n.n('domain_created'))
 
 
-def domain_remove(auth, domain, force=False):
+@is_unit_operation()
+def domain_remove(operation_logger, auth, domain, force=False):
     """
     Delete domains
 
@@ -157,12 +165,13 @@ def domain_remove(auth, domain, force=False):
                     raise MoulinetteError(errno.EPERM,
                                           m18n.n('domain_uninstall_app_first'))
 
+    operation_logger.start()
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
         raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
 
-    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq'])
+    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])

@@ -137,8 +137,10 @@ smtpd_recipient_restrictions =
     permit
 
 # SRS
-sender_canonical_maps = regexp:/etc/postfix/sender_canonical
+sender_canonical_maps = tcp:localhost:10001
 sender_canonical_classes = envelope_sender
+recipient_canonical_maps = tcp:localhost:10002
+recipient_canonical_classes= envelope_recipient,header_recipient
 
 # Ignore some headers
 smtp_header_checks = regexp:/etc/postfix/header_checks

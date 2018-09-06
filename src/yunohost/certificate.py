@@ -45,7 +45,7 @@ from yunohost.utils.network import get_public_ip
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command, service_regen_conf
-
+from yunohost.log import OperationLogger
 
 logger = getActionLogger('yunohost.certmanager')
 
@@ -97,11 +97,6 @@ def certificate_status(auth, domain_list, full=False):
 
     import yunohost.domain
 
-    # Check if old letsencrypt_ynh is installed
-    # TODO / FIXME - Remove this in the future once the letsencrypt app is
-    # not used anymore
-    _check_old_letsencrypt_app()
-
     # If no domains given, consider all yunohost domains
     if domain_list == []:
         domain_list = yunohost.domain.domain_list(auth)['domains']
@@ -144,11 +139,6 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
         self-signed  -- Instal self-signed certificates instead of Let's Encrypt
     """
 
-    # Check if old letsencrypt_ynh is installed
-    # TODO / FIXME - Remove this in the future once the letsencrypt app is
-    # not used anymore
-    _check_old_letsencrypt_app()
-
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
     else:
@@ -159,6 +149,9 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
 def _certificate_install_selfsigned(domain_list, force=False):
 
     for domain in domain_list:
+
+        operation_logger = OperationLogger('selfsigned_cert_install', [('domain', domain)],
+                           args={'force': force})
 
         # Paths of files and folder we'll need
         date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
@@ -181,6 +174,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
             if status["summary"]["code"] in ('good', 'great'):
                 raise MoulinetteError(errno.EINVAL, m18n.n(
                     'certmanager_attempt_to_replace_valid_cert', domain=domain))
+
+        operation_logger.start()
 
         # Create output folder for new certificate stuff
         os.makedirs(new_cert_folder)
@@ -238,9 +233,11 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
             logger.success(
                 m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
+            operation_logger.success()
         else:
-            logger.error(
-                "Installation of self-signed certificate installation for %s failed !", domain)
+            msg = "Installation of self-signed certificate installation for %s failed !" % (domain)
+            logger.error(msg)
+            operation_logger.error(msg)
 
 
 def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
@@ -281,12 +278,17 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # Actual install steps
     for domain in domain_list:
 
+        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
+                           args={'force': force, 'no_checks': no_checks,
+                                 'staging': staging})
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
         try:
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
+
+            operation_logger.start()
 
             _configure_for_acme_challenge(auth, domain)
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
@@ -295,10 +297,12 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
+            operation_logger.success()
         except Exception as e:
             _display_debug_information(domain)
-            logger.error("Certificate installation for %s failed !\nException: %s", domain, e)
-
+            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
+            logger.error(msg)
+            operation_logger.error(msg)
 
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
@@ -313,11 +317,6 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     """
 
     import yunohost.domain
-
-    # Check if old letsencrypt_ynh is installed
-    # TODO / FIXME - Remove this in the future once the letsencrypt app is
-    # not used anymore
-    _check_old_letsencrypt_app()
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
@@ -376,6 +375,11 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
     # Actual renew steps
     for domain in domain_list:
+
+        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
+                           args={'force': force, 'no_checks': no_checks,
+                                 'staging': staging, 'email': email})
+
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
 
@@ -383,17 +387,23 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
             if not no_checks:
                 _check_domain_is_ready_for_ACME(domain)
 
+            operation_logger.start()
+
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_renew_success", domain=domain))
+
+            operation_logger.success()
 
         except Exception as e:
             import traceback
             from StringIO import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
-            logger.error("Certificate renewing for %s failed !", domain)
+            msg = "Certificate renewing for %s failed !" % (domain)
+            logger.error(msg)
+            operation_logger.error(msg)
             logger.error(stack.getvalue())
             logger.error(str(e))
 
@@ -401,22 +411,9 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, e, stack.getvalue())
 
-
 ###############################################################################
 #   Back-end stuff                                                            #
 ###############################################################################
-
-def _check_old_letsencrypt_app():
-    import yunohost.domain
-
-    installedAppIds = [app["id"] for app in yunohost.app.app_list(installed=True)["apps"]]
-
-    if "letsencrypt" not in installedAppIds:
-        return
-
-    raise MoulinetteError(errno.EINVAL, m18n.n(
-        'certmanager_old_letsencrypt_app_detected'))
-
 
 def _install_cron():
     cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
