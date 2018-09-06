@@ -50,7 +50,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, description=None):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None):
     """
     Add a custom service
 
@@ -59,8 +59,8 @@ def service_add(name, status=None, log=None, runlevel=None, description=None):
         status -- Custom status command
         log -- Absolute path to log file to display
         runlevel -- Runlevel priority of the service
+        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
-
     """
     services = _get_services()
 
@@ -74,6 +74,9 @@ def service_add(name, status=None, log=None, runlevel=None, description=None):
 
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
+
+    if need_lock:
+        services[name]['need_lock'] = True
 
     if description is not None:
         services[name]['description'] = description
