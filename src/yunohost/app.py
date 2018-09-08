@@ -1496,8 +1496,12 @@ def app_action_run(app, action, args=None):
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
     args_list = args_odict.values()
 
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+
     env_dict = _make_environment_dict(args_odict, prefix="ACTION_")
     env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_ACTION"] = action
 
     _, path = tempfile.mkstemp()
@@ -1542,6 +1546,7 @@ def app_config_show_panel(app):
     config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
+    app_id, app_instance_nb = _parse_app_instance_name(app)
 
     if not os.path.exists(config_panel) or not os.path.exists(config_script):
         return {
@@ -1554,7 +1559,9 @@ def app_config_show_panel(app):
     config_panel = read_json(config_panel)
 
     env = {
-        "YNH_APP_ID": app,
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
     parsed_values = {}
 
@@ -1637,8 +1644,11 @@ def app_config_apply(app, args):
 
     config_panel = read_json(config_panel)
 
+    app_id, app_instance_nb = _parse_app_instance_name(app)
     env = {
-        "YNH_APP_ID": app,
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
     args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
