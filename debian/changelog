@@ -1,3 +1,18 @@
+yunohost (3.2.0) stable; urgency=low
+
+  * Add many print and exec helpers (#523)
+  * Add su directive as option for logrotate helper (#511)
+  * Add equivs, fake-hwclock and jq as base dependencies (#515, #514, #532)
+  * Allow to add a service description on "yunohost service add" (#529)
+  * Add option '--need-lock' to 'yunohost service add' (#530)
+  * Don't backup user home with .nobackup file (#536)
+  * Add a script to automatically generate helpers documentation (#538)
+  * [i18n] Improve Arabic translation
+
+ Thanks to all contributors (Bram, Maniack, irina11y, Josue, BoF, ljf, Aleks) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 11 Sep 2018 16:30:00 +0000
+
 yunohost (3.2.0~testing1) testing; urgency=low
 
   * Add logging system of every unit operation (#165)
