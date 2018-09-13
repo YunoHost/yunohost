@@ -340,7 +340,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
             domain_list.append(domain)
 
-        if len(domain_list) == 0:
+        if len(domain_list) == 0 and not email:
             logger.info("No certificate needs to be renewed.")
 
     # Else, validate the domain list given
