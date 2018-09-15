@@ -94,7 +94,7 @@ class MyMigration(Migration):
         # with /etc/lsb-release for instance -_-)
         # Instead, we rely on /etc/os-release which should be the raw info from
         # the distribution...
-        return int(check_output("grep VERSION_ID /etc/os-release | tr '\"' ' ' | cut -d ' ' -f2"))
+        return int(check_output("grep VERSION_ID /etc/os-release | head -n 1 | tr '\"' ' ' | cut -d ' ' -f2"))
 
     def yunohost_major_version(self):
         return int(get_installed_version("yunohost").split('.')[0])

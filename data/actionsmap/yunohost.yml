@@ -780,18 +780,18 @@ app:
               ### app_action_list()
               list:
                   action_help: List app actions
-                  api: GET /apps/<app_id>/actions
+                  api: GET /apps/<app>/actions
                   arguments:
-                    app_id:
-                        help: app id
+                    app:
+                        help: App name
 
               ### app_action_run()
               run:
                   action_help: Run app action
-                  api: PUT /apps/<app_id>/actions/<action>
+                  api: PUT /apps/<app>/actions/<action>
                   arguments:
-                    app_id:
-                        help: app id
+                    app:
+                        help: App name
                     action:
                         help: action id
                     -a:
@@ -805,18 +805,18 @@ app:
               ### app_config_show_panel()
               show-panel:
                   action_help: show config panel for the application
-                  api: GET /apps/<app_id>/config-panel
+                  api: GET /apps/<app>/config-panel
                   arguments:
-                      app_id:
-                          help: App ID
+                      app:
+                          help: App name
 
               ### app_config_apply()
               apply:
                   action_help: apply the new configuration
-                  api: POST /apps/<app_id>/config
+                  api: POST /apps/<app>/config
                   arguments:
-                      app_id:
-                          help: App ID
+                      app:
+                          help: App name
                       -a:
                           full: --args
                           help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
