@@ -5,7 +5,7 @@ ip=$(hostname --all-ip-address)
 
 # Fetch SSH fingerprints
 i=0
-for key in /etc/ssh/ssh_host_{rsa,ecdsa,ed25519}_key.pub ; do 
+for key in /etc/ssh/ssh_host_{rsa,ecdsa,ed25519}_key.pub 2> /dev/null ; do 
     output=$(ssh-keygen -l -f $key)
     fingerprint[$i]=" - $(echo $output | cut -d' ' -f2) $(echo $output| cut -d' ' -f4)"
     i=$(($i + 1))
