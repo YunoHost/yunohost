@@ -9,5 +9,17 @@
     "app_argument_choice_invalid": "Aquesta opció no és vàlida per l'argument '{name:s}', ha de ser una de {choices:s}",
     "app_argument_invalid": "Valor invàlid per l'argument '{name:s}':{error:s}",
     "app_argument_required": "Es necessita l'argument '{name:s}'",
-    "app_change_no_change_url_script": "L'aplicació {app_name:s} encara no permet canviar la seva URL, es possible que s'hagi d'actualitzar"
+    "app_change_no_change_url_script": "L'aplicació {app_name:s} encara no permet canviar la seva URL, es possible que s'hagi d'actualitzar.",
+    "app_change_url_failed_nginx_reload": "No s'ha pogut tornar a carregar nginx. Aquí teniu el resultat de \"nginx -t\":\n{nginx_errors:s}",
+    "app_change_url_identical_domains": "L'antic i el nou domini/camí són idèntics ('{domain:s}{path:s}'), no hi ha res per fer.",
+    "app_change_url_no_script": "Aquesta aplicació '{app_name:s}' encara no permet modificar la URL. Potser s'ha d'actualitzar l'aplicació.",
+    "app_change_url_success": "La URL de {app:s} s'ha canviat correctament a {domain:s}{path:s}",
+    "app_extraction_failed": "No s'han pogut extreure els fitxers d'instal·lació",
+    "app_id_invalid": "Id de l'aplicació incorrecte",
+    "app_incompatible": "L'aplicació {app} no és compatible amb la teva versió de YunoHost",
+    "app_install_files_invalid": "Fitxers d'instal·lació invàlids",
+    "app_location_already_used": "L'aplicació '{app}' ja està instal·lada en aquest camí ({path})",
+    "app_make_default_location_already_used": "No es pot fer l'aplicació '{app}' per defecte en el domini {domain} ja que ja és utilitzat per una altra aplicació '{other_app}'",
+    "app_location_install_failed": "No s'ha pogut instal·lar l'aplicació en aquest camí ja que entra en conflicte amb l'aplicació '{other_app}' ja instal·lada a '{other_path}'",
+    "app_location_unavailable": "Aquesta url no està disponible o entra en conflicte amb aplicacions ja instal·lades:\n{apps:s}"
 }
