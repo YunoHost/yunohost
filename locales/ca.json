@@ -1,1 +1,13 @@
-{}
+{
+    "action_invalid": "Acció '{action:s}' invàlida",
+    "admin_password": "Contrasenya d'administració",
+    "admin_password_change_failed": "No s'ha pogut canviar la contrasenya",
+    "admin_password_changed": "S'ha canviat la contrasenya d'administració",
+    "app_already_installed": "{app:s} ja està instal·lada",
+    "app_already_installed_cant_change_url": "Aquesta aplicació ja està instal·lada. La URL no és pot canviar únicament amb aquesta funció. Mireu a \"app changeurl\" si està disponible.",
+    "app_already_up_to_date": "{app:s} ja està actualitzada",
+    "app_argument_choice_invalid": "Aquesta opció no és vàlida per l'argument '{name:s}', ha de ser una de {choices:s}",
+    "app_argument_invalid": "Valor invàlid per l'argument '{name:s}':{error:s}",
+    "app_argument_required": "Es necessita l'argument '{name:s}'",
+    "app_change_no_change_url_script": "L'aplicació {app_name:s} encara no permet canviar la seva URL, es possible que s'hagi d'actualitzar"
+}
