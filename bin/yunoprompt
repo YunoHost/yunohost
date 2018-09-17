@@ -56,7 +56,7 @@ else
     echo "$LOGO_AND_FINGERPRINTS"
     echo -e "\e[m Post-installation \e[0m"
     echo "Congratulations! YunoHost has been successfully installed.\nTwo more steps are required to activate the services of your server."
-    read -p "Proceed to post-installation? (y/n) " -n 1
+    read -p "Proceed to post-installation? (y/n)\nAlternatively, you can proceed the post-installation on https://${ip}" -n 1
     RESULT=1
     while [ $RESULT -gt 0 ]; do
         if [[ $REPLY =~ ^[Nn]$ ]]; then
