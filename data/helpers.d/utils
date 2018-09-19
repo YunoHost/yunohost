@@ -173,7 +173,7 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
-        wget -nv -O $src_filename $src_url
+        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err $out
     fi
 
     # Check the control sum
