@@ -56,8 +56,9 @@ function new_default_provider(host)
      return nil, "Account creation/modification not available with LDAP.";
  end
 
- function provider.get_sasl_handler()
+ function provider.get_sasl_handler(session)
      local testpass_authentication_profile = {
+         session = session,
          plain_test = function(sasl, username, password, realm)
              return provider.test_password(username, password), true;
          end,
