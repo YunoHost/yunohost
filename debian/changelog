@@ -1,3 +1,12 @@
+yunohost (3.2.2) stable; urgency=low
+
+  * [hotfix] mod_auth_ldap: reflect SASL API changes in latest Metronome (#546)
+  * [enh] Add the internal helper ynh_handle_getopts_args (#520)
+
+ Thanks to all contributors (Maranda, Maniack) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 28 Sep 2018 23:04:00 +0000
+
 yunohost (3.2.1) stable; urgency=low
 
   * Don't send an email if no certificate needs to be renewed (#540)
