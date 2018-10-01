@@ -222,11 +222,7 @@ ynh_add_fpm_config () {
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
-		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
-		ynh_backup_if_checksum_is_different "$finalphpini"
-		sudo cp ../conf/php-fpm.ini "$finalphpini"
-		sudo chown root: "$finalphpini"
-		ynh_store_file_checksum "$finalphpini"
+		echo "Please do not use a separate ini file, merge you directives in the pool file instead." &>2
 	fi
 	sudo systemctl reload $fpm_service
 }
