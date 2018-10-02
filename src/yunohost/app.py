@@ -416,18 +416,27 @@ def app_map(app=None, raw=False, user=None):
                     and user not in app_settings['allowed_users'].split(','):
                 continue
 
-        domain = app_settings['domain']
-        path = app_settings.get('path', '/')
+        # let supports up to 9 additional domains.
+        #
+        # we could easily parse the key to support an infinite number of
+        # domains but that would make the code way more complex for very
+        # very marginal benefit (who needs more than 2-3 domains?)
+        for number in [""] + [str(x) for x in range(2, 10)]:
+            if 'domain' + number not in app_settings:
+                continue
 
-        if raw:
-            if domain not in result:
-                result[domain] = {}
-            result[domain][path] = {
-                'label': app_settings['label'],
-                'id': app_settings['id']
-            }
-        else:
-            result[domain + path] = app_settings['label']
+            domain = app_settings['domain' + number]
+            path = app_settings.get('path' + number, '/')
+
+            if raw:
+                if domain not in result:
+                    result[domain] = {}
+                result[domain][path] = {
+                    'label': app_settings['label'],
+                    'id': app_settings['id']
+                }
+            else:
+                result[domain + path] = app_settings['label']
 
     return result
 
@@ -1389,28 +1398,37 @@ def app_ssowatconf(auth):
             if 'no_sso' in app_settings:
                 continue
 
-            for item in _get_setting(app_settings, 'skipped_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'skipped_regex'):
-                skipped_regex.append(item)
-            for item in _get_setting(app_settings, 'unprotected_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'unprotected_regex'):
-                unprotected_regex.append(item)
-            for item in _get_setting(app_settings, 'protected_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'protected_regex'):
-                protected_regex.append(item)
-            if 'redirected_urls' in app_settings:
-                redirected_urls.update(app_settings['redirected_urls'])
-            if 'redirected_regex' in app_settings:
-                redirected_regex.update(app_settings['redirected_regex'])
+            # let supports up to 9 additional domains.
+            #
+            # we could easily parse the key to support an infinite number of
+            # domains but that would make the code way more complex for very
+            # very marginal benefit (who needs more than 2-3 domains?)
+            for number in [""] + [str(x) for x in range(2, 10)]:
+                if 'domain' + number not in app_settings:
+                    continue
+
+                for item in _get_setting(app_settings, 'skipped_uris' + number):
+                    if item[-1:] == '/':
+                        item = item[:-1]
+                    skipped_urls.append(app_settings['domain' + number] + app_settings['path' + number].rstrip('/') + item)
+                for item in _get_setting(app_settings, 'skipped_regex' + number):
+                    skipped_regex.append(item)
+                for item in _get_setting(app_settings, 'unprotected_uris' + number):
+                    if item[-1:] == '/':
+                        item = item[:-1]
+                    unprotected_urls.append(app_settings['domain' + number] + app_settings['path' + number].rstrip('/') + item)
+                for item in _get_setting(app_settings, 'unprotected_regex' + number):
+                    unprotected_regex.append(item)
+                for item in _get_setting(app_settings, 'protected_uris' + number):
+                    if item[-1:] == '/':
+                        item = item[:-1]
+                    protected_urls.append(app_settings['domain' + number] + app_settings['path' + number].rstrip('/') + item)
+                for item in _get_setting(app_settings, 'protected_regex' + number):
+                    protected_regex.append(item)
+                if 'redirected_urls' + number in app_settings:
+                    redirected_urls.update(app_settings['redirected_urls' + number])
+                if 'redirected_regex' + number in app_settings:
+                    redirected_regex.update(app_settings['redirected_regex' + number])
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
