@@ -125,14 +125,12 @@ def app_fetchlist(url=None, name=None):
             appslists_to_be_fetched = [name]
             operation_logger.success()
         else:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_appslist_name_required'))
+            raise MoulinetteError('custom_appslist_name_required')
 
     # If a name is given, look for an appslist with that name and fetch it
     elif name is not None:
         if name not in appslists.keys():
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('appslist_unknown', appslist=name))
+            raise MoulinetteError('appslist_unknown', appslist=name)
         else:
             appslists_to_be_fetched = [name]
 
@@ -343,8 +341,7 @@ def app_info(app, show_status=False, raw=False):
 
     """
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app=app))
+        raise MoulinetteError('app_not_installed', app=app)
 
     app_setting_path = APPS_SETTING_PATH + app
 
@@ -402,8 +399,7 @@ def app_map(app=None, raw=False, user=None):
 
     if app is not None:
         if not _is_installed(app):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed', app=app))
+            raise MoulinetteError('app_not_installed', app=app)
         apps = [app, ]
     else:
         apps = os.listdir(APPS_SETTING_PATH)
@@ -455,8 +451,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
 
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app))
+        raise MoulinetteError('app_not_installed', app=app)
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
         raise MoulinetteError("app_change_no_change_url_script", app_name=app)
@@ -593,8 +588,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
-            raise MoulinetteError(errno.ENOPKG,
-                                  m18n.n('app_not_installed', app=app_instance_name))
+            raise MoulinetteError('app_not_installed', app=app_instance_name)
 
         if app_instance_name in upgraded_apps:
             continue
@@ -746,8 +740,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     instance_number = _installed_instance_number(app_id, last=True) + 1
     if instance_number > 1:
         if 'multi_instance' not in manifest or not is_true(manifest['multi_instance']):
-            raise MoulinetteError(errno.EEXIST,
-                                  m18n.n('app_already_installed', app=app_id))
+            raise MoulinetteError('app_already_installed', app=app_id)
 
         # Change app_id to the forked app id
         app_instance_name = app_id + '__' + str(instance_number)
@@ -888,8 +881,7 @@ def app_remove(operation_logger, auth, app):
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app=app))
+        raise MoulinetteError('app_not_installed', app=app)
 
     operation_logger.start()
 
@@ -1152,8 +1144,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+        raise MoulinetteError('ssowat_persistent_conf_read_error', error=e.strerror)
     except IOError:
         ssowat_conf = {}
 
@@ -1166,8 +1157,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+        raise MoulinetteError('ssowat_persistent_conf_write_error', error=e.strerror)
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -1219,8 +1209,7 @@ def app_checkport(port):
     if tools_port_available(port):
         logger.success(m18n.n('port_available', port=int(port)))
     else:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('port_unavailable', port=int(port)))
+        raise MoulinetteError('port_unavailable', port=int(port))
 
 
 def app_register_url(auth, app, domain, path):
@@ -1247,8 +1236,7 @@ def app_register_url(auth, app, domain, path):
     if installed:
         settings = _get_app_settings(app)
         if "path" in settings.keys() and "domain" in settings.keys():
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_already_installed_cant_change_url'))
+            raise MoulinetteError('app_already_installed_cant_change_url')
 
     # Check the url is available
     conflicts = _get_conflicting_apps(auth, domain, path)
@@ -1458,8 +1446,7 @@ def app_ssowatconf(auth):
 def app_change_label(auth, app, new_label):
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app))
+        raise MoulinetteError('app_not_installed', app=app)
 
     app_setting(app, "label", value=new_label)
 
@@ -1640,8 +1627,7 @@ def app_config_apply(app, args):
 
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app))
+        raise MoulinetteError('app_not_installed', app=app_id)
 
     config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
@@ -1699,8 +1685,7 @@ def _get_app_settings(app_id):
 
     """
     if not _is_installed(app_id):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app=app_id))
+        raise MoulinetteError('app_not_installed', app=app_id)
     try:
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
@@ -1816,8 +1801,7 @@ def _extract_app_from_file(path, remove=False):
     except IOError:
         raise MoulinetteError('app_install_files_invalid')
     except ValueError as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_manifest_invalid', error=e.strerror))
+        raise MoulinetteError('app_manifest_invalid', error=e.strerror)
 
     logger.debug(m18n.n('done'))
 
@@ -1885,8 +1869,7 @@ def _fetch_app_from_git(app):
                     'wget', '-qO', app_tmp_archive, tarball_url])
             except subprocess.CalledProcessError:
                 logger.exception('unable to download %s', tarball_url)
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise MoulinetteError('app_sources_fetch_failed')
             else:
                 manifest, extracted_app_folder = _extract_app_from_file(
                     app_tmp_archive, remove=True)
@@ -1909,11 +1892,9 @@ def _fetch_app_from_git(app):
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise MoulinetteError('app_sources_fetch_failed')
             except ValueError as e:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_manifest_invalid', error=e.strerror))
+                raise MoulinetteError('app_manifest_invalid', error=e.strerror)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -1936,8 +1917,7 @@ def _fetch_app_from_git(app):
             raise MoulinetteError('app_unknown')
 
         if 'git' not in app_info:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_unsupported_remote_type'))
+            raise MoulinetteError('app_unsupported_remote_type')
         url = app_info['git']['url']
 
         if 'github.com' in url:
@@ -1949,8 +1929,7 @@ def _fetch_app_from_git(app):
                     'wget', '-qO', app_tmp_archive, tarball_url])
             except subprocess.CalledProcessError:
                 logger.exception('unable to download %s', tarball_url)
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise MoulinetteError('app_sources_fetch_failed')
             else:
                 manifest, extracted_app_folder = _extract_app_from_file(
                     app_tmp_archive, remove=True)
@@ -1966,11 +1945,9 @@ def _fetch_app_from_git(app):
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise MoulinetteError('app_sources_fetch_failed')
             except ValueError as e:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_manifest_invalid', error=e.strerror))
+                raise MoulinetteError('app_manifest_invalid', error=e.strerror)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -2237,8 +2214,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
         # Validate argument value
         if (arg_value is None or arg_value == '') \
                 and not arg.get('optional', False):
-            raise MoulinetteError(errno.EINVAL,
-                m18n.n('app_argument_required', name=arg_name))
+            raise MoulinetteError('app_argument_required', name=arg_name)
         elif arg_value is None:
             args_dict[arg_name] = ''
             continue
@@ -2462,8 +2438,7 @@ def _read_appslist_list():
     try:
         appslists = json.loads(appslists_json)
     except ValueError:
-        raise MoulinetteError(errno.EBADR,
-                              m18n.n('appslist_corrupted_json', filename=APPSLISTS_JSON))
+        raise MoulinetteError('appslist_corrupted_json', filename=APPSLISTS_JSON)
 
     return appslists
 
@@ -2493,15 +2468,13 @@ def _register_new_appslist(url, name):
 
     # Check if name conflicts with an existing list
     if name in appslist_list:
-        raise MoulinetteError(errno.EEXIST,
-                              m18n.n('appslist_name_already_tracked', name=name))
+        raise MoulinetteError('appslist_name_already_tracked', name=name)
 
     # Check if url conflicts with an existing list
     known_appslist_urls = [appslist["url"] for _, appslist in appslist_list.items()]
 
     if url in known_appslist_urls:
-        raise MoulinetteError(errno.EEXIST,
-                              m18n.n('appslist_url_already_tracked', url=url))
+        raise MoulinetteError('appslist_url_already_tracked', url=url)
 
     logger.debug("Registering new appslist %s at %s" % (name, url))
 

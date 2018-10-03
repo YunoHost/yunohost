@@ -327,8 +327,7 @@ class BackupManager():
             logger.debug("temporary directory for backup '%s' already exists",
                          self.work_dir)
             # FIXME May be we should clean the workdir here
-            raise MoulinetteError(
-                errno.EIO, m18n.n('backup_output_directory_not_empty'))
+            raise MoulinetteError('backup_output_directory_not_empty')
 
     ###########################################################################
     #   Backup target management                                              #
@@ -880,8 +879,7 @@ class RestoreManager():
                 logger.debug("unable to retrieve current_host from the backup",
                             exc_info=1)
                 # FIXME include the current_host by default ?
-                raise MoulinetteError(errno.EIO,
-                                    m18n.n('backup_invalid_archive'))
+                raise MoulinetteError('backup_invalid_archive')
 
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'yunohost', True)
@@ -1010,8 +1008,7 @@ class RestoreManager():
                 subprocess.call(['rmdir', self.work_dir])
                 logger.debug("Unmount dir: {}".format(self.work_dir))
             else:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('restore_removing_tmp_dir_failed'))
+                raise MoulinetteError('restore_removing_tmp_dir_failed')
         elif os.path.isdir(self.work_dir):
             logger.debug("temporary restore directory '%s' already exists",
                          self.work_dir)
@@ -1019,8 +1016,7 @@ class RestoreManager():
             if ret == 0:
                 logger.debug("Delete dir: {}".format(self.work_dir))
             else:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('restore_removing_tmp_dir_failed'))
+                raise MoulinetteError('restore_removing_tmp_dir_failed')
 
         filesystem.mkdir(self.work_dir, parents=True)
 
@@ -1524,8 +1520,7 @@ class BackupMethod(object):
         """
         if self.need_mount():
             if self._recursive_umount(self.work_dir) > 0:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('backup_cleaning_failed'))
+                raise MoulinetteError('backup_cleaning_failed')
 
         if self.manager.is_tmp_work_dir:
             filesystem.rm(self.work_dir, True, True)
@@ -1567,8 +1562,7 @@ class BackupMethod(object):
         if free_space < backup_size:
             logger.debug('Not enough space at %s (free: %s / needed: %d)',
                          self.repo, free_space, backup_size)
-            raise MoulinetteError(errno.EIO, m18n.n(
-                'not_enough_disk_space', path=self.repo))
+            raise MoulinetteError('not_enough_disk_space', path=self.repo)
 
     def _organize_files(self):
         """
@@ -1656,12 +1650,10 @@ class BackupMethod(object):
                 i = msignals.prompt(m18n.n('backup_ask_for_copying_if_needed',
                                         answers='y/N', size=str(size)))
             except NotImplemented:
-                raise MoulinetteError(errno.EIO,
-                                     m18n.n('backup_unable_to_organize_files'))
+                raise MoulinetteError('backup_unable_to_organize_files')
             else:
                 if i != 'y' and i != 'Y':
-                    raise MoulinetteError(errno.EIO,
-                                     m18n.n('backup_unable_to_organize_files'))
+                    raise MoulinetteError('backup_unable_to_organize_files')
 
         # Copy unbinded path
         logger.debug(m18n.n('backup_copying_to_organize_the_archive',
@@ -1751,8 +1743,7 @@ class CopyBackupMethod(BackupMethod):
         super(CopyBackupMethod, self).mount()
 
         if not os.path.isdir(self.repo):
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_no_uncompress_archive_dir'))
+            raise MoulinetteError('backup_no_uncompress_archive_dir')
 
         filesystem.mkdir(self.work_dir, parent=True)
         ret = subprocess.call(["mount", "-r", "--rbind", self.repo,
@@ -1763,8 +1754,7 @@ class CopyBackupMethod(BackupMethod):
             logger.warning(m18n.n("bind_mouting_disable"))
             subprocess.call(["mountpoint", "-q", dest,
                             "&&", "umount", "-R", dest])
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_cant_mount_uncompress_archive'))
+            raise MoulinetteError('backup_cant_mount_uncompress_archive')
 
 
 class TarBackupMethod(BackupMethod):
@@ -1809,8 +1799,7 @@ class TarBackupMethod(BackupMethod):
         except:
             logger.debug("unable to open '%s' for writing",
                          self._archive_file, exc_info=1)
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_archive_open_failed'))
+            raise MoulinetteError('backup_archive_open_failed')
 
         # Add files to the archive
         try:
@@ -1821,8 +1810,7 @@ class TarBackupMethod(BackupMethod):
             tar.close()
         except IOError:
             logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_creation_failed'))
+            raise MoulinetteError('backup_creation_failed')
 
         # Move info file
         shutil.copy(os.path.join(self.work_dir, 'info.json'),
@@ -1850,8 +1838,7 @@ class TarBackupMethod(BackupMethod):
         except:
             logger.debug("cannot open backup archive '%s'",
                          self._archive_file, exc_info=1)
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_archive_open_failed'))
+            raise MoulinetteError('backup_archive_open_failed')
         tar.close()
 
         # Mount the tarball
@@ -1912,12 +1899,10 @@ class BorgBackupMethod(BackupMethod):
         super(CopyBackupMethod, self).backup()
 
         # TODO run borg create command
-        raise MoulinetteError(
-            errno.EIO, m18n.n('backup_borg_not_implemented'))
+        raise MoulinetteError('backup_borg_not_implemented')
 
     def mount(self, mnt_path):
-        raise MoulinetteError(
-            errno.EIO, m18n.n('backup_borg_not_implemented'))
+        raise MoulinetteError('backup_borg_not_implemented')
 
 
 class CustomBackupMethod(BackupMethod):
@@ -1963,8 +1948,7 @@ class CustomBackupMethod(BackupMethod):
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
         if ret['failed']:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_custom_backup_error'))
+            raise MoulinetteError('backup_custom_backup_error')
 
     def mount(self, restore_manager):
         """
@@ -1977,8 +1961,7 @@ class CustomBackupMethod(BackupMethod):
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
         if ret['failed']:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_custom_mount_error'))
+            raise MoulinetteError('backup_custom_mount_error')
 
     def _get_args(self, action):
         """Return the arguments to give to the custom script"""
@@ -2014,8 +1997,7 @@ def backup_create(name=None, description=None, methods=[],
 
     # Validate there is no archive with the same name
     if name and name in backup_list()['archives']:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_archive_name_exists'))
+        raise MoulinetteError('backup_archive_name_exists')
 
     # Validate output_directory option
     if output_directory:
@@ -2025,17 +2007,14 @@ def backup_create(name=None, description=None, methods=[],
         if output_directory.startswith(ARCHIVES_PATH) or \
             re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
                  output_directory):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('backup_output_directory_forbidden'))
+            raise MoulinetteError('backup_output_directory_forbidden')
 
         # Check that output directory is empty
         if os.path.isdir(output_directory) and no_compress and \
                 os.listdir(output_directory):
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_output_directory_not_empty'))
+            raise MoulinetteError('backup_output_directory_not_empty')
     elif no_compress:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('backup_output_directory_required'))
+        raise MoulinetteError('backup_output_directory_required')
 
     # Define methods (retro-compat)
     if not methods:
@@ -2217,8 +2196,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('backup_archive_name_unknown', name=name))
+        raise MoulinetteError('backup_archive_name_unknown', name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2292,8 +2270,8 @@ def backup_delete(name):
 
     """
     if name not in backup_list()["archives"]:
-        raise MoulinetteError(errno.EIO, m18n.n('backup_archive_name_unknown',
-                                                name=name))
+        raise MoulinetteError('backup_archive_name_unknown',
+                                                name=name)
 
     hook_callback('pre_backup_delete', args=[name])
 

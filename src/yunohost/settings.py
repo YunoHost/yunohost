@@ -83,8 +83,7 @@ def settings_set(key, value):
     settings = _get_settings()
 
     if key not in settings:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
+        raise MoulinetteError('global_settings_key_doesnt_exists', settings_key=key)
 
     key_type = settings[key]["type"]
 
@@ -138,8 +137,7 @@ def settings_reset(key):
     settings = _get_settings()
 
     if key not in settings:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
+        raise MoulinetteError('global_settings_key_doesnt_exists', settings_key=key)
 
     settings[key]["value"] = settings[key]["default"]
     _save_settings(settings)

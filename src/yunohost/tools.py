@@ -406,8 +406,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
         if p.returncode != 0:
             logger.warning(out)
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('yunohost_ca_creation_failed'))
+            raise MoulinetteError('yunohost_ca_creation_failed')
         else:
             logger.debug(out)
 
@@ -1070,8 +1069,8 @@ def _load_migration(migration_file):
         import traceback
         traceback.print_exc()
 
-        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-            number=number, name=name))
+        raise MoulinetteError('migrations_error_failed_to_load_migration',
+            number=number, name=name)
 
 def _skip_all_migrations():
     """

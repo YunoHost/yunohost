@@ -148,8 +148,7 @@ def log_display(path, number=50, share=False):
         log_path = base_path + LOG_FILE_EXT
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('log_does_exists', log=path))
+        raise MoulinetteError('log_does_exists', log=path)
 
     infos = {}
 

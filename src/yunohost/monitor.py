@@ -390,11 +390,9 @@ def monitor_show_stats(period, date=None):
 
     result = _retrieve_stats(period, date)
     if result is False:
-        raise MoulinetteError(errno.ENOENT,
-                              m18n.n('monitor_stats_file_not_found'))
+        raise MoulinetteError('monitor_stats_file_not_found')
     elif result is None:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('monitor_stats_period_unavailable'))
+        raise MoulinetteError('monitor_stats_period_unavailable')
     return result
 
 

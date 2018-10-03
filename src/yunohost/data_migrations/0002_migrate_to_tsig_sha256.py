@@ -70,8 +70,8 @@ class MyMigration(Migration):
             # Migration didn't succeed, so we rollback and raise an exception
             os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
 
-            raise MoulinetteError(m18n.n('migrate_tsig_failed', domain=domain,
-                                  error_code=str(r.status_code), error=error))
+            raise MoulinetteError('migrate_tsig_failed', domain=domain,
+                                  error_code=str(r.status_code), error=error)
 
         # remove old certificates
         os.system("mv /etc/yunohost/dyndns/*+157* /tmp")

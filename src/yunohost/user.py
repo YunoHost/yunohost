@@ -188,8 +188,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
             with open('/etc/ssowat/conf.json.persistent') as json_conf:
                 ssowat_conf = json.loads(str(json_conf.read()))
         except ValueError as e:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+            raise MoulinetteError('ssowat_persistent_conf_read_error', error=e.strerror)
         except IOError:
             ssowat_conf = {}
 
@@ -199,8 +198,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
                 with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
                     json.dump(ssowat_conf, f, sort_keys=True, indent=4)
             except IOError as e:
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+                raise MoulinetteError('ssowat_persistent_conf_write_error', error=e.strerror)
 
     if auth.add('uid=%s,ou=users' % username, attr_dict):
         # Invalidate passwd to take user creation into account
@@ -355,8 +353,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
             if len(user['mail']) > 1 and mail in user['mail'][1:]:
                 user['mail'].remove(mail)
             else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_alias_remove_failed', mail=mail))
+                raise MoulinetteError('mail_alias_remove_failed', mail=mail)
         new_attr_dict['mail'] = user['mail']
 
     if add_mailforward:
@@ -375,8 +372,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
             if len(user['maildrop']) > 1 and mail in user['maildrop'][1:]:
                 user['maildrop'].remove(mail)
             else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_forward_remove_failed', mail=mail))
+                raise MoulinetteError('mail_forward_remove_failed', mail=mail)
         new_attr_dict['maildrop'] = user['maildrop']
 
     if mailbox_quota is not None:

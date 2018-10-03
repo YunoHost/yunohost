@@ -162,8 +162,7 @@ def domain_remove(operation_logger, auth, domain, force=False):
                 continue
             else:
                 if app_domain == domain:
-                    raise MoulinetteError(errno.EPERM,
-                                          m18n.n('domain_uninstall_app_first'))
+                    raise MoulinetteError('domain_uninstall_app_first')
 
     operation_logger.start()
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:

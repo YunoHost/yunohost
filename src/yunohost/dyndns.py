@@ -136,8 +136,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
     # Verify if domain is available
     if not _dyndns_available(subscribe_host, domain):
-        raise MoulinetteError(errno.ENOENT,
-                              m18n.n('dyndns_unavailable', domain=domain))
+        raise MoulinetteError('dyndns_unavailable', domain=domain)
 
     operation_logger.start()
 
@@ -167,8 +166,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
             error = json.loads(r.text)['error']
         except:
             error = "Server error, code: %s. (Message: \"%s\")" % (r.status_code, r.text)
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('dyndns_registration_failed', error=error))
+        raise MoulinetteError('dyndns_registration_failed', error=error)
 
     logger.success(m18n.n('dyndns_registered'))
 
@@ -302,8 +300,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
         subprocess.check_call(command)
     except subprocess.CalledProcessError:
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('dyndns_ip_update_failed'))
+        raise MoulinetteError('dyndns_ip_update_failed')
 
     logger.success(m18n.n('dyndns_ip_updated'))
 
@@ -359,5 +356,4 @@ def _guess_current_dyndns_domain(dyn_host):
         else:
             return (_domain, path)
 
-    raise MoulinetteError(errno.EINVAL,
-                          m18n.n('dyndns_no_domain_registered'))
+    raise MoulinetteError('dyndns_no_domain_registered')
