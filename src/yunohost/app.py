@@ -427,17 +427,17 @@ def app_map(app=None, raw=False, user=None):
 
             domain = app_settings['domain' + number]
             path = app_settings.get('path' + number, '/')
+            label = app_settings.get('label' + number, app_settings['label'])
 
             if raw:
                 if domain not in result:
                     result[domain] = {}
                 result[domain][path] = {
-                    'label': app_settings['label'],
+                    'label': label,
                     'id': app_settings['id']
                 }
             else:
-                result[domain + path] = app_settings['label']
-
+                result[domain + path] = label
     return result
 
 
