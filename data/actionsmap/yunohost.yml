@@ -731,6 +731,10 @@ app:
                     help: App ID
                 new_label:
                     help: New app label
+                -n:
+                    full: --number
+                    help: Label number for multi-urls apps
+                    type: int
 
         ### app_addaccess() TODO: Write help
         addaccess:

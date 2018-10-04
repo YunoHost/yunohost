@@ -1465,13 +1465,13 @@ def app_ssowatconf(auth):
     logger.success(m18n.n('ssowat_conf_generated'))
 
 
-def app_change_label(auth, app, new_label):
+def app_change_label(auth, app, new_label, number=""):
     installed = _is_installed(app)
     if not installed:
         raise MoulinetteError(errno.ENOPKG,
                               m18n.n('app_not_installed', app=app))
 
-    app_setting(app, "label", value=new_label)
+    app_setting(app, "label" + (str(number) if number is not None else ""), value=new_label)
 
     app_ssowatconf(auth)
 
