@@ -318,7 +318,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('mail_domain_unknown',
                                          domain=mail[mail.find('@') + 1:]))
-        if mail not in aliases:
+        if mail in aliases:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('mail_unavailable'))
         del user['mail'][0]
