@@ -58,9 +58,11 @@ do_pre_regen() {
     domain_ca_type=$(yunohost domain cert-status $domain --json | jq ".certificates.\"$domain\".CA_type")
     if [[ $domain_ca_type = "\"Let's Encrypt\"" ]]; then
       IS_LETSENCRYPT=true
-      export IS_LETSENCRYPT
-      ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
+    else
+      IS_LETSENCRYPT=false
     fi
+    export IS_LETSENCRYPT
+    ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
       
   done
 
