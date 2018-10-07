@@ -306,11 +306,21 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         new_attr_dict['userPassword'] = _hash_user_password(change_password)
 
     if mail:
+        main_domain = _get_maindomain()
+        aliases = [
+            'root@' + main_domain,
+            'admin@' + main_domain,
+            'webmaster@' + main_domain,
+            'postmaster@' + main_domain,
+        ]
         auth.validate_uniqueness({'mail': mail})
         if mail[mail.find('@') + 1:] not in domains:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('mail_domain_unknown',
                                          domain=mail[mail.find('@') + 1:]))
+        if mail not in aliases:
+            raise MoulinetteError(errno.EINVAL,
+                                  m18n.n('mail_unavailable'))
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
 
