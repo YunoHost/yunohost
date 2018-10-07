@@ -58,6 +58,10 @@ def _parse_cli_args():
         action='store_true', default=False,
         help="Log and print debug messages",
     )
+    parser.add_argument('--verbose',
+        action='store_true', default=False,
+        help="Be more verbose in the output",
+    )
     parser.add_argument('--quiet',
         action='store_true', default=False,
         help="Don't produce any output",
@@ -88,7 +92,7 @@ def _parse_cli_args():
 
     return (parser, opts, args)
 
-def _init_moulinette(debug=False, quiet=False):
+def _init_moulinette(debug=False, verbose=False, quiet=False):
     """Configure logging and initialize the moulinette"""
     # Define loggers handlers
     handlers = set(LOGGERS_HANDLERS)
@@ -104,6 +108,9 @@ def _init_moulinette(debug=False, quiet=False):
     # Define loggers level
     level = LOGGERS_LEVEL
     tty_level = TTY_LOG_LEVEL
+    if verbose:
+        tty_level = 'DEBUG'
+        logger.warning(m18n.n('verbose_deprecated'))
     if debug:
         tty_level = 'DEBUG'
 
