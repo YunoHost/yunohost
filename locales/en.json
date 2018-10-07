@@ -418,6 +418,7 @@
     "service_stop_failed": "Unable to stop service '{service:s}'\n\nRecent service logs:{logs:s}",
     "service_stopped": "The service '{service:s}' has been stopped",
     "service_unknown": "Unknown service '{service:s}'",
+    "ssh_port_not_opened": "Be careful. SSH port is closed.",
     "ssowat_conf_generated": "The SSOwat configuration has been generated",
     "ssowat_conf_updated": "The SSOwat configuration has been updated",
     "ssowat_persistent_conf_read_error": "Error while reading SSOwat persistent configuration: {error:s}. Edit /etc/ssowat/conf.json.persistent file to fix the JSON syntax",
