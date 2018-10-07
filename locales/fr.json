@@ -122,7 +122,6 @@
     "mail_alias_remove_failed": "Impossible de supprimer l'alias courriel « {mail:s} »",
     "mail_domain_unknown": "Le domaine « {domain:s} » du courriel est inconnu",
     "mail_forward_remove_failed": "Impossible de supprimer le courriel de transfert « {mail:s} »",
-    "mail_unavailable": "Adresse mail indisponible",
     "maindomain_change_failed": "Impossible de modifier le domaine principal",
     "maindomain_changed": "Le domaine principal a été modifié",
     "monitor_disabled": "La supervision du serveur a été désactivé",
