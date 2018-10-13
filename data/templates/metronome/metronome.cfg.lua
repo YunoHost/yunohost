@@ -124,16 +124,12 @@ Component "muc.{{ main_domain }}" "muc"
     modules_enabled = {
         "muc_limits";
         "muc_log";
+		"muc_log_mam";
         "muc_log_http";
     }
 
     muc_event_rate = 0.5
     muc_burst_factor = 10
-
-    muc_log_http_config = {
-        url_base = "logs";
-        theme = "metronome";
-    }
 
 ---Set up a PubSub server
 Component "pubsub.{{ main_domain }}" "pubsub"
