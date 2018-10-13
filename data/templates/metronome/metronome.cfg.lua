@@ -126,6 +126,7 @@ Component "muc.{{ main_domain }}" "muc"
         "muc_log";
 		"muc_log_mam";
         "muc_log_http";
+		"muc_vcard";
     }
 
     muc_event_rate = 0.5
