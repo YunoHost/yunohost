@@ -122,10 +122,10 @@ Component "muc.{{ main_domain }}" "muc"
     name = "{{ main_domain }} Chatrooms"
 
     modules_enabled = {
-        "muc_limits";
-        "muc_log";
+		"muc_limits";
+		"muc_log";
 		"muc_log_mam";
-        "muc_log_http";
+		"muc_log_http";
 		"muc_vcard";
     }
 
