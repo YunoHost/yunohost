@@ -1,6 +1,6 @@
 # Validate an IP address
 #
-# usage: ynh_validate_ip [family] [ip_address]
+# usage: ynh_validate_ip --family=family --ip_address=ip_address
 # | ret: 0 for valid ip addresses, 1 otherwise
 #
 # example: ynh_validate_ip 4 111.222.333.444
@@ -9,17 +9,21 @@ ynh_validate_ip()
 {
   # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
 
-  local IP_ADDRESS_FAMILY=$1
-  local IP_ADDRESS=$2
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [f]=family= [i]=ip_address= )
+  local family
+  local ip_address
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
 
-  [ "$IP_ADDRESS_FAMILY" == "4" ] || [ "$IP_ADDRESS_FAMILY" == "6" ] || return 1
+  [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
 
   python /dev/stdin << EOF
 import socket
 import sys
 family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }
 try:
-    socket.inet_pton(family["$IP_ADDRESS_FAMILY"], "$IP_ADDRESS")
+    socket.inet_pton(family["$family"], "$ip_address")
 except socket.error:
     sys.exit(1)
 sys.exit(0)
@@ -30,12 +34,18 @@ EOF
 #
 # example: ynh_validate_ip4 111.222.333.444
 #
-# usage: ynh_validate_ip4 <ip_address>
+# usage: ynh_validate_ip4 --ip_address=ip_address
 # | ret: 0 for valid ipv4 addresses, 1 otherwise
 #
 ynh_validate_ip4()
 {
-  ynh_validate_ip 4 $1
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [i]=ip_address= )
+  local ip_address
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_validate_ip 4 $ip_address
 }
 
 
@@ -43,10 +53,16 @@ ynh_validate_ip4()
 #
 # example: ynh_validate_ip6 2000:dead:beef::1
 #
-# usage: ynh_validate_ip6 <ip_address>
+# usage: ynh_validate_ip6 --ip_address=ip_address
 # | ret: 0 for valid ipv6 addresses, 1 otherwise
 #
 ynh_validate_ip6()
 {
-  ynh_validate_ip 6 $1
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [i]=ip_address= )
+  local ip_address
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_validate_ip 6 $ip_address
 }
