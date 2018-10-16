@@ -113,7 +113,7 @@ ynh_remove_logrotate () {
 #
 ynh_add_systemd_config () {
 	# Declare an array to define the options of this helper.
-	declare -Ar args_array=( [s]=service= [t]=template )
+	declare -Ar args_array=( [s]=service= [t]=template= )
 	local service
 	local template
 	# Manage arguments with getopts
