@@ -99,9 +99,9 @@ ynh_remove_logrotate () {
 
 # Create a dedicated systemd config
 #
-# usage: ynh_add_systemd_config [service] [template]
-# | arg: service - Service name (optionnal, $app by default)
-# | arg: template - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
+# usage: ynh_add_systemd_config [--service=service] [--template=template]
+# | arg: -s, --service - Service name (optionnal, $app by default)
+# | arg: -t, --template - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
 #
 # This will use the template ../conf/<templatename>.service
 # to generate a systemd config, by replacing the following keywords
@@ -112,11 +112,18 @@ ynh_remove_logrotate () {
 #   __FINALPATH__ by  $final_path
 #
 ynh_add_systemd_config () {
-	local service_name="${1:-$app}"
+	# Declare an array to define the options of this helper.
+	declare -Ar args_array=( [s]=service= [t]=template )
+	local service
+	local template
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	local service="${service:-$app}"
+	local template="${nonappend:-systemd.service}"
 
-	finalsystemdconf="/etc/systemd/system/$service_name.service"
+	finalsystemdconf="/etc/systemd/system/$service.service"
 	ynh_backup_if_checksum_is_different "$finalsystemdconf"
-	sudo cp ../conf/${2:-systemd.service} "$finalsystemdconf"
+	sudo cp ../conf/$template "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
@@ -129,22 +136,27 @@ ynh_add_systemd_config () {
 	ynh_store_file_checksum "$finalsystemdconf"
 
 	sudo chown root: "$finalsystemdconf"
-	sudo systemctl enable $service_name
+	sudo systemctl enable $service
 	sudo systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config
 #
-# usage: ynh_remove_systemd_config [service]
-# | arg: service - Service name (optionnal, $app by default)
+# usage: ynh_remove_systemd_config [--service=service]
+# | arg: -s, --service - Service name (optionnal, $app by default)
 #
 ynh_remove_systemd_config () {
-	local service_name="${1:-$app}"
+	# Declare an array to define the options of this helper.
+	declare -Ar args_array=( [s]=service= )
+	local service
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	local service="${service:-$app}"
 
-	local finalsystemdconf="/etc/systemd/system/$service_name.service"
+	local finalsystemdconf="/etc/systemd/system/$service.service"
 	if [ -e "$finalsystemdconf" ]; then
-		sudo systemctl stop $service_name
-		sudo systemctl disable $service_name
+		sudo systemctl stop $service
+		sudo systemctl disable $service
 		ynh_secure_remove "$finalsystemdconf"
 		sudo systemctl daemon-reload
 	fi
