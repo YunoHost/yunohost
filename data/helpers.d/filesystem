@@ -44,7 +44,7 @@ ynh_backup() {
     # TODO find a way to avoid injection by file strange naming !
 
     # Declare an array to define the options of this helper.
-    declare -Ar args_array=( [s]=src_path= [d]=dest_path [b]=is_big )
+    declare -Ar args_array=( [s]=src_path= [d]=dest_path= [b]=is_big )
     local src_path
     local dest_path
     local is_big
