@@ -65,7 +65,7 @@ modules_enabled = {
 		--"service_directory"; -- Enables Service Directories extension support
 		--"public_service"; -- Enables Server vCard support for public services in directories and advertises in features
 		--"register_api"; -- Provides secure API for both Out-Of-Band and In-Band registration for E-Mail verification
-		"websocket"; -- Enable support for WebSocket clients, aka "XMPP over WebSockets"
+		--"websocket"; -- Enable support for WebSocket clients, aka "XMPP over WebSockets"
 };
 
 -- Server PID
@@ -94,8 +94,8 @@ consider_bosh_secure = true
 cross_domain_bosh = true
 
 -- WebSocket configuration (mod_websocket)
-consider_websocket_secure = true
-cross_domain_websocket = true
+--consider_websocket_secure = true
+--cross_domain_websocket = true
 
 -- Disable account creation by default, for security
 allow_registration = false
