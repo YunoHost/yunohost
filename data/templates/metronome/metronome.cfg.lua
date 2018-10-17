@@ -51,6 +51,7 @@ modules_enabled = {
 		"admin_adhoc"; -- administration adhoc commands
 		"bookmarks"; -- XEP-0048 Bookmarks synchronization between PEP and Private Storage
 		"sec_labels"; -- Allows to use a simplified version XEP-0258 Security Labels and related ACDFs.
+		"privacy"; -- Add privacy lists and simple blocking command support
 
 		-- Other specific functionality
 		--"admin_telnet"; -- administration console, telnet to port 5582
