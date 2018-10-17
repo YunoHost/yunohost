@@ -22,49 +22,49 @@
 -- It looks for mod_modulename.lua in the plugins folder, so make sure that exists too.
 
 modules_enabled = {
-		-- Generally required
-			"roster"; -- Allow users to have a roster. Recommended.
-			"saslauth"; -- Authentication for clients. Recommended if you want to log in.
-			"tls"; -- Add support for secure TLS on c2s/s2s connections
-		  	"disco"; -- Service discovery
+	-- Generally required
+		"roster"; -- Allow users to have a roster. Recommended.
+		"saslauth"; -- Authentication for clients. Recommended if you want to log in.
+		"tls"; -- Add support for secure TLS on c2s/s2s connections
+		"disco"; -- Service discovery
  
-		-- Not essential, but recommended
-			"private"; -- Private XML storage (for room bookmarks, etc.)
-			"vcard"; -- Allow users to set vCards
-			"pep"; -- Allows setting of mood, tune, etc.
-			"posix"; -- POSIX functionality, sends server to background, enables syslog, etc.
-			"bidi"; -- Enables Bidirectional Server-to-Server Streams.
+	-- Not essential, but recommended
+		"private"; -- Private XML storage (for room bookmarks, etc.)
+		"vcard"; -- Allow users to set vCards
+		"pep"; -- Allows setting of mood, tune, etc.
+		"posix"; -- POSIX functionality, sends server to background, enables syslog, etc.
+		"bidi"; -- Enables Bidirectional Server-to-Server Streams.
  
-		-- Nice to have
-			"version"; -- Replies to server version requests
-		  	"uptime"; -- Report how long server has been running
-		  	"time"; -- Let others know the time here on this server
-		  	"ping"; -- Replies to XMPP pings with pongs
-			"register"; -- Allow users to register on this server using a client and change passwords
-			"stream_management"; -- Allows clients and servers to use Stream Management
-			"stanza_optimizations"; -- Allows clients to use Client State Indication and SIFT
-			"message_carbons"; -- Allows clients to enable carbon copies of messages
-			"mam"; -- Enable server-side message archives using Message Archive Management
-			"push"; -- Enable Push Notifications via PubSub using XEP-0357
-			"lastactivity"; -- Enables clients to know the last presence status of an user
-			"adhoc_cm"; -- Allow to set client certificates to login through SASL External via adhoc
-			"admin_adhoc"; -- administration adhoc commands
-			"bookmarks"; -- XEP-0048 Bookmarks synchronization between PEP and Private Storage
-			"sec_labels"; -- Allows to use a simplified version XEP-0258 Security Labels and related ACDFs.
+	-- Nice to have
+		"version"; -- Replies to server version requests
+		"uptime"; -- Report how long server has been running
+		"time"; -- Let others know the time here on this server
+		"ping"; -- Replies to XMPP pings with pongs
+		"register"; -- Allow users to register on this server using a client and change passwords
+		"stream_management"; -- Allows clients and servers to use Stream Management
+		"stanza_optimizations"; -- Allows clients to use Client State Indication and SIFT
+		"message_carbons"; -- Allows clients to enable carbon copies of messages
+		"mam"; -- Enable server-side message archives using Message Archive Management
+		"push"; -- Enable Push Notifications via PubSub using XEP-0357
+		"lastactivity"; -- Enables clients to know the last presence status of an user
+		"adhoc_cm"; -- Allow to set client certificates to login through SASL External via adhoc
+		"admin_adhoc"; -- administration adhoc commands
+		"bookmarks"; -- XEP-0048 Bookmarks synchronization between PEP and Private Storage
+		"sec_labels"; -- Allows to use a simplified version XEP-0258 Security Labels and related ACDFs.
 
-			-- Other specific functionality
-		  	--"admin_telnet"; -- administration console, telnet to port 5582
-			--"admin_web"; -- administration web interface
-			"bosh"; -- Enable support for BOSH clients, aka "XMPP over Bidirectional Streams over Synchronous HTTP"
-			--"compression"; -- Allow clients to enable Stream Compression
-			--"spim_block"; -- Require authorization via OOB form for messages from non-contacts and block unsollicited messages
-			--"gate_guard"; -- Enable config-based blacklisting and hit-based auto-banning features
-			--"incidents_handling"; -- Enable Incidents Handling support (can be administered via adhoc commands)
-			--"server_presence"; -- Enables Server Buddies extension support
-			--"service_directory"; -- Enables Service Directories extension support
-			--"public_service"; -- Enables Server vCard support for public services in directories and advertises in features
-			--"register_api"; -- Provides secure API for both Out-Of-Band and In-Band registration for E-Mail verification
-			"websocket"; -- Enable support for WebSocket clients, aka "XMPP over WebSockets"
+		-- Other specific functionality
+		--"admin_telnet"; -- administration console, telnet to port 5582
+		--"admin_web"; -- administration web interface
+		"bosh"; -- Enable support for BOSH clients, aka "XMPP over Bidirectional Streams over Synchronous HTTP"
+		--"compression"; -- Allow clients to enable Stream Compression
+		--"spim_block"; -- Require authorization via OOB form for messages from non-contacts and block unsollicited messages
+		--"gate_guard"; -- Enable config-based blacklisting and hit-based auto-banning features
+		--"incidents_handling"; -- Enable Incidents Handling support (can be administered via adhoc commands)
+		--"server_presence"; -- Enables Server Buddies extension support
+		--"service_directory"; -- Enables Service Directories extension support
+		--"public_service"; -- Enables Server vCard support for public services in directories and advertises in features
+		--"register_api"; -- Provides secure API for both Out-Of-Band and In-Band registration for E-Mail verification
+		"websocket"; -- Enable support for WebSocket clients, aka "XMPP over WebSockets"
 };
 
 -- Server PID
@@ -82,9 +82,10 @@ use_ipv6 = true
 
 -- Discovery items
 disco_items = {
-    { "muc.{{ main_domain }}" },
-    { "pubsub.{{ main_domain }}" },
-    { "vjud.{{ main_domain }}" }
+	{ "muc.{{ main_domain }}" },
+	{ "pubsub.{{ main_domain }}" },
+	{ "upload.{{ main_domain }}" },
+	{ "vjud.{{ main_domain }}" }
 };
 
 -- BOSH configuration (mod_bosh)
@@ -103,10 +104,10 @@ storage = "ldap"
 
 -- Logging configuration
 log = {
-    info = "/var/log/metronome/metronome.log"; -- Change 'info' to 'debug' for verbose logging
-    error = "/var/log/metronome/metronome.err";
-    -- "*syslog"; -- Uncomment this for logging to syslog
-    -- "*console"; -- Log to the console, useful for debugging with daemonize=false
+	info = "/var/log/metronome/metronome.log"; -- Change 'info' to 'debug' for verbose logging
+	error = "/var/log/metronome/metronome.err";
+	-- "*syslog"; -- Uncomment this for logging to syslog
+	-- "*console"; -- Log to the console, useful for debugging with daemonize=false
 }
 
 ------ Components ------
@@ -115,13 +116,13 @@ log = {
 
 ---Set up a local BOSH service
 Component "localhost" "http"
-    modules_enabled = { "bosh" }
+	modules_enabled = { "bosh" }
 
 ---Set up a MUC (multi-user chat) room server
 Component "muc.{{ main_domain }}" "muc"
-    name = "{{ main_domain }} Chatrooms"
+	name = "{{ main_domain }} Chatrooms"
 
-    modules_enabled = {
+	modules_enabled = {
 		"muc_limits";
 		"muc_log";
 		"muc_log_mam";
@@ -129,18 +130,26 @@ Component "muc.{{ main_domain }}" "muc"
 		"muc_vcard";
     }
 
-    muc_event_rate = 0.5
-    muc_burst_factor = 10
+	muc_event_rate = 0.5
+	muc_burst_factor = 10
 
 ---Set up a PubSub server
 Component "pubsub.{{ main_domain }}" "pubsub"
-    name = "{{ main_domain }} Publish/Subscribe"
+	name = "{{ main_domain }} Publish/Subscribe"
 
-    unrestricted_node_creation = true -- Anyone can create a PubSub node (from any server)
+	unrestricted_node_creation = true -- Anyone can create a PubSub node (from any server)
+
+---Set up a HTTP Upload service
+Component "upload.{{ main_domain }}" "http_upload"
+	name = "{{ main_domain }} Sharing Service"
+
+	http_file_size_limit = 6*1024*1024
+	http_file_quota = 60*1024*1024
+
 
 ---Set up a VJUD service
 Component "vjud.{{ main_domain }}" "vjud"
-    ud_disco_name = "{{ main_domain }} User Directory"
+	ud_disco_name = "{{ main_domain }} User Directory"
 
 
 ----------- Virtual hosts -----------
@@ -148,4 +157,3 @@ Component "vjud.{{ main_domain }}" "vjud"
 -- Settings under each VirtualHost entry apply *only* to that host.
 
 Include "conf.d/*.cfg.lua"
-
