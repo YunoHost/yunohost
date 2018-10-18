@@ -197,7 +197,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
-    _init_moulinette(opts.debug, opts.quiet)
+    _init_moulinette(opts.debug, opts.verbose, opts.quiet)
 
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
