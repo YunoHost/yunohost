@@ -253,6 +253,9 @@ ynh_local_curl () {
 		# Add --data arg and remove the last character, which is an unecessary '&'
 		POST_data="--data ${POST_data::-1}"
 	fi
+	
+	# Wait untils nginx has fully reloaded (avoid curl fail with http2)
+	sleep 2
 
 	# Curl the URL
 	curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
