@@ -105,7 +105,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.']{0,3})+$
+                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
