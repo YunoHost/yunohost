@@ -346,10 +346,6 @@ def _build_dns_conf(domain, ttl=3600):
             ["*", ttl, "AAAA", ipv6],
         ]
 
-    basic += [ 
-        ["@", ttl, "CAA", "128 issue 'letsencrypt.org'"]
-    ]
-
     # XMPP
     xmpp = [
         ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
@@ -382,10 +378,16 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
+    # Extra
+    extra = [
+        ["@", ttl, "CAA", "128 issue 'letsencrypt.org'"]
+    ]
+
     return {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
+        "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
 
 
