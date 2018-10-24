@@ -59,7 +59,8 @@ do_pre_regen() {
 
     export domain
     export domain_cert_ca=$(yunohost domain cert-status $domain --json \
-	                    | jq ".certificates.\"$domain\".CA_type")
+                            | jq ".certificates.\"$domain\".CA_type" \
+                            | tr -d '"')
     ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
       
   done
