@@ -56,7 +56,8 @@ do_pre_regen() {
     [[ $main_domain != $domain ]] \
       && touch "${domain_conf_dir}/yunohost_local.conf" \
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
-    
+
+    export domain
     export domain_cert_ca=$(yunohost domain cert-status $domain --json \
 	                    | jq ".certificates.\"$domain\".CA_type")
     ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
