@@ -330,6 +330,9 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "TXT", "name": "mail._domainkey", "value": "\"v=DKIM1; k=rsa; p=some-super-long-key\"", "ttl": 3600},
             {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
         ],
+        "extra": [
+            {"type": "CAA", "name": "@", "value": "128 issue 'letsencrypt.org", "ttl": 3600},
+        ],
     }
     """
 
