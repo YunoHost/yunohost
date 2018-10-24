@@ -253,6 +253,7 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     ]
 
     dns_conf = _build_dns_conf(domain)
+    del dns_conf["extra"] # Ignore records from the 'extra' category
 
     # Delete the old records for all domain/subdomains
 
