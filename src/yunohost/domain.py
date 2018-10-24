@@ -200,6 +200,11 @@ def domain_dns_conf(domain, ttl=None):
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
+    result += "\n\n"
+    result += "; Extra"
+    for record in dns_conf["extra"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
