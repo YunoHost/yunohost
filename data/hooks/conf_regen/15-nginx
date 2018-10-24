@@ -2,6 +2,8 @@
 
 set -e
 
+. /usr/share/yunohost/helpers.d/utils
+
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
     echo "You must be root to run this script" 1>&2
