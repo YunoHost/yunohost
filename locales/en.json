@@ -255,7 +255,7 @@
     "mail_domain_unknown": "Unknown mail address domain '{domain:s}'",
     "mail_forward_remove_failed": "Unable to remove mail forward '{mail:s}'",
     "mailbox_used_space_dovecot_down": "Dovecot mailbox service need to be up, if you want to get mailbox used space",
-    "mail_unavailable": "This email address is reserved. It will be assigned to the first user",
+    "mail_unavailable": "This email address is reserved and shall be automatically allocated to the very first user",
     "maindomain_change_failed": "Unable to change the main domain",
     "maindomain_changed": "The main domain has been changed",
     "migrate_tsig_end": "Migration to hmac-sha512 finished",
