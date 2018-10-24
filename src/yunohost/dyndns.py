@@ -227,8 +227,8 @@ def dyndns_update(dyn_host="dyndns.yunohost.org", domain=None, key=None,
     ]
 
 
-    old_ipv4 = check_output("dig @91.224.148.92 +short %s" % domain).strip()
-    old_ipv6 = check_output("dig @91.224.148.92 +short aaaa %s" % domain).strip()
+    old_ipv4 = check_output("dig @%s +short %s" % (dyn_host, domain)).strip()
+    old_ipv6 = check_output("dig @%s +short aaaa %s" % (dyn_host, domain)).strip()
 
     # Get current IPv4 and IPv6
     ipv4_ = get_public_ip()
