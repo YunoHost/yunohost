@@ -203,8 +203,6 @@ def firewall_reload(skip_upnp=False):
     # Check if SSH port is allowed
     ssh_port = _get_ssh_port()
     if ssh_port not in firewall_list()['opened_ports']:
-        _run_service_command('stop', 'ssh')
-        _run_service_command('disable', 'ssh')
         logger.warning(m18n.n('ssh_port_not_opened'))
     else:
         _run_service_command('enable', 'ssh') 
