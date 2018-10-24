@@ -2155,7 +2155,7 @@ def backup_list(with_info=False, human_readable=False):
             except ValueError:
                 continue
             result.append(name)
-        result.sort(key=lambda x: os.path.getctime(x))
+        result.sort(key=lambda x: os.path.getctime(os.path.join(ARCHIVES_PATH, x+".tar.gz")))
 
     if result and with_info:
         d = OrderedDict()
