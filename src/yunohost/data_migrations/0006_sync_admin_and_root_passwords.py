@@ -13,7 +13,7 @@ from moulinette.authenticators.ldap import Authenticator
 from yunohost.tools import Migration
 
 logger = getActionLogger('yunohost.migration')
-SMALL_PWD_LIST = ["yunohost", "olinux"]
+SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin", "root", "test", "rpi"]
 
 class MyMigration(Migration):
     "Synchronize admin and root passwords"
