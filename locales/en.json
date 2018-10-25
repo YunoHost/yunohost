@@ -299,7 +299,7 @@
     "migration_0007_general_disclaimer": "To improve the security of your server, it is recommended to let YunoHost manage the SSH configuration. Your current SSH configuration differs from the recommended configuration. If you let YunoHost reconfigure it, the way you connect to your server through SSH will change in the following way:",
     "migration_0007_port": " - you will have to connect using port 22 instead of your current custom SSH port. Feel free to reconfigure it ;",
     "migration_0007_root": " - you will not be able to connect as root through SSH. Instead you should use the admin user ;",
-    "migration_0007_dsa": " - the DSA key will be disabled. Hence, you might need to invalidate a warning from your SSH client, and recheck the fingerprint of your server ;",
+    "migration_0007_dsa": " - the DSA key will be disabled. Hence, you might need to invalidate a spooky warning from your SSH client, and recheck the fingerprint of your server ;",
     "migration_0007_warning": "If you understand those warnings and agree to let YunoHost override your current configuration, run the migration. Otherwise, you can also skip the migration - though it is not recommended.",
     "migration_0007_no_warning": "No major risk has been indentified about overriding your SSH configuration - but we can't be absolutely sure ;) ! If you agree to let YunoHost override your current configuration, run the migration. Otherwise, you can also skip the migration - though it is not recommended.",
     "migrations_backward": "Migrating backward.",
