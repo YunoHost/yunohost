@@ -442,6 +442,11 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_regen_conf(force=True)
 
     # Restore specific ssh conf
+    # c.f. the install script and in particular 
+    # https://github.com/YunoHost/install_script/pull/50
+    # The user can now choose during the install to keep
+    # the initial, existing sshd configuration
+    # instead of YunoHost's recommended conf
     bkp_sshd_conf = '/etc/ssh/sshd_config.to_restore'
     if os.path.exists(bkp_sshd_conf):
         os.rename(bkp_sshd_conf, '/etc/ssh/sshd_config')
