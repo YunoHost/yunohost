@@ -21,60 +21,80 @@
 
 import sys
 import os
+import json
 import cracklib
-
 import string
-ASCII_UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-ASCII_LOWERCASE = "abcdefghijklmnopqrstuvwxyz"
+
 SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
                   "root", "test", "rpi"]
 
-PWDDICT_FOLDER = '/usr/local/share/dict/cracklib/'
-PWDDICT_LIST = '100000-most-used'
+MOST_USED_PASSWORDS = '/usr/local/share/dict/cracklib/100000-most-used'
+
+# Length, digits, lowers, uppers, others
+STRENGTH_LEVELS = [
+    (6, 0, 0, 0, 0),
+    (8, 1, 1, 1, 0),
+    (8, 1, 1, 1, 1),
+    (12, 1, 1, 1, 1),
+]
+
 
 class PasswordValidator(object):
-    """
-    PasswordValidator class validate password
-    """
-
-    # Length, digits, lowers, uppers, others
-    strength_lvl = [
-        [6, 0, 0, 0, 0],
-        [8, 1, 1, 1, 0],
-        [8, 1, 1, 1, 1],
-        [12, 1, 1, 1, 1],
-    ]
 
     def __init__(self, profile):
+        """
+        Initialize a password validator.
+
+        The profile shall be either "user" or "admin"
+        and will correspond to a validation strength
+        defined via the setting "security.password.<profile>.strength"
+        """
+
         self.profile = profile
-        import json
         try:
+            # We do this "manually" instead of using settings_get()
+            # from settings.py because this file is also meant to be
+            # use as a script by ssowat.
+            # (or at least that's my understanding -- Alex)
             settings = json.load(open('/etc/yunohost/settings.json', "r"))
             setting_key = "security.password." + profile + ".strength"
             self.validation_strength = int(settings[setting_key])
         except Exception as e:
+            # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 2 if profile == 'admin' else 1
 
-    def validate(self, password):
+    def validation_summary(self, password):
         """
-        Validate a password and raise error or display a warning
+        Check if a password is listed in the list of most used password
+        and if the overall strength is good enough compared to the
+        validation_strength defined in the constructor.
+
+        Produces a summary-tuple comprised of a level (success, error, warning)
+        and a message key describing the issues found.
         """
         if self.validation_strength <= 0:
             return ("success", "")
 
-        self.listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
-        self.strength = self.compute(password)
-        if self.strength < self.validation_strength:
-            if self.listed:
+        listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
+        strength_level = self.strength_level(password)
+        if strength_level < self.validation_strength:
+            if listed:
                 return ("error", "password_listed_" + str(self.validation_strength))
             else:
                 return ("error", "password_too_simple_" + str(self.validation_strength))
 
-        if self.strength < 3:
+        if strength_level < 3:
             return ("warning", 'password_advice')
         return ("success", "")
 
-    def compute(self, password):
+    def strength(self, password):
+        """
+        Returns the strength of a password, defined as a tuple
+        containing the length of the password, the number of digits,
+        lowercase letters, uppercase letters, and other characters.
+
+        For instance, "PikachuDu67" is (11, 2, 7, 2, 0)
+        """
         # Indicators
         length = len(password)
         digits = 0
@@ -85,41 +105,52 @@ class PasswordValidator(object):
         for character in password:
             if character in string.digits:
                 digits = digits + 1
-            elif character in ASCII_UPPERCASE:
+            elif character in string.ascii_uppercase:
                 uppers = uppers + 1
-            elif character in ASCII_LOWERCASE:
+            elif character in string.ascii_lowercase:
                 lowers = lowers + 1
             else:
                 others = others + 1
 
-        return self.compare(length, digits, lowers, uppers, others)
+        return (length, digits, lowers, uppers, others)
 
-    def compare(self, length, digits, lowers, uppers, others):
-        strength = 0
+    def strength_level(self, password):
+        """
+        Computes the strength of a password and compares
+        it to the STRENGTH_LEVELS.
 
-        for i, config in enumerate(self.strength_lvl):
-            if length < config[0] or digits < config[1] \
-               or lowers < config[3] or uppers < config[4] \
-               or others < config[5]:
+        Returns an int corresponding to the highest STRENGTH_LEVEL
+        satisfied by the password.
+        """
+
+        strength = self.strength(password)
+
+        strength_level = 0
+        # Iterate over each level and its criterias
+        for level, level_criterias in enumerate(STRENGTH_LEVELS):
+            # Iterate simulatenously over the level criterias (e.g. [8, 1, 1, 1, 0])
+            # and the strength of the password (e.g. [11, 2, 7, 2, 0])
+            # and compare the values 1-by-1.
+            # If one False is found, the password does not satisfy the level
+            if False in [s>=c for s, c in zip(strength, level_criterias)]:
                 break
-            strength = i + 1
-        return strength
+            # Otherwise, the strength of the password is at least of the current level.
+            strength_level = level + 1
+
+        return strength_level
 
     def is_in_cracklib_list(self, password):
         try:
-            cracklib.VeryFascistCheck(password, None,
-                                      os.path.join(PWDDICT_FOLDER, PWDDICT_LIST))
+            cracklib.VeryFascistCheck(password, None, MOST_USED_PASSWORDS)
         except ValueError as e:
             # We only want the dictionnary check of cracklib, not the is_simple
             # test.
             if str(e) not in ["is too simple", "is a palindrome"]:
                 return True
+        return False
 
 
 class LoggerPasswordValidator(PasswordValidator):
-    """
-    PasswordValidator class validate password
-    """
 
     def validate(self, password):
         """
@@ -135,7 +166,7 @@ class LoggerPasswordValidator(PasswordValidator):
 
         logger = logging.getLogger('yunohost.utils.password')
 
-        status, msg = super(LoggerPasswordValidator, self).validate(password)
+        status, msg = super(LoggerPasswordValidator, self).validation_summary(password)
         if status == "error":
             raise MoulinetteError(1, m18n.n(msg))
         elif status == "warning":
@@ -148,7 +179,7 @@ if __name__ == '__main__':
         #print("usage: password.py PASSWORD")
     else:
         pwd = sys.argv[1]
-    status, msg = PasswordValidator('user').validate(pwd)
+    status, msg = PasswordValidator('user').validation_summary(pwd)
     print(msg)
     sys.exit(0)
 
