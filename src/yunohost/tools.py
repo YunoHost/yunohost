@@ -54,7 +54,6 @@ from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation, OperationLogger
-from yunohost.settings import settings_get
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
