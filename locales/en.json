@@ -334,7 +334,6 @@
     "password_too_simple_2": "Password needs to be at least 8 characters long and contains digit, upper and lower characters",
     "password_too_simple_3": "Password needs to be at least 8 characters long and contains digit, upper, lower and special characters",
     "password_too_simple_4": "Password needs to be at least 12 characters long and contains digit, upper, lower and special characters",
-    "password_advice": "Advice: a good password is at least 8 characters and contains digit, upper, lower and special characters",
     "path_removal_failed": "Unable to remove path {:s}",
     "pattern_backup_archive_name": "Must be a valid filename with max 30 characters, and alphanumeric and -_. characters only",
     "pattern_domain": "Must be a valid domain name (e.g. my-domain.org)",

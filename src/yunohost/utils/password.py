@@ -67,8 +67,8 @@ class PasswordValidator(object):
 
     def validate(self, password):
         """
-        Check the validation_summary and trigger the corresponding
-        exception or info message
+        Check the validation_summary and trigger an exception
+        if the password does not pass tests.
 
         This method is meant to be used from inside YunoHost's code
         (compared to validation_summary which is meant to be called
@@ -92,8 +92,6 @@ class PasswordValidator(object):
         status, msg = validation_summary(password)
         if status == "error":
             raise MoulinetteError(1, m18n.n(msg))
-        elif status == "warning":
-            logger.info(m18n.n(msg))
 
     def validation_summary(self, password):
         """
@@ -101,7 +99,7 @@ class PasswordValidator(object):
         and if the overall strength is good enough compared to the
         validation_strength defined in the constructor.
 
-        Produces a summary-tuple comprised of a level (success, error, warning)
+        Produces a summary-tuple comprised of a level (succes or error)
         and a message key describing the issues found.
         """
         if self.validation_strength < 0:
@@ -114,8 +112,6 @@ class PasswordValidator(object):
         if strength_level < self.validation_strength:
             return ("error", "password_too_simple_%s" % self.validation_strength)
 
-        if strength_level < 3:
-            return ("warning", 'password_advice')
         return ("success", "")
 
     def strength(self, password):
