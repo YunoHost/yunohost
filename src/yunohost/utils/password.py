@@ -26,17 +26,18 @@ import cracklib
 import string
 ASCII_UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ASCII_LOWERCASE = "abcdefghijklmnopqrstuvwxyz"
-PWDDICT_PATH = '/usr/local/share/dict/cracklib/'
 SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
                   "root", "test", "rpi"]
-PWD_LIST_FILE = '100000-most-used'
+
+PWDDICT_FOLDER = '/usr/local/share/dict/cracklib/'
+PWDDICT_LIST = '100000-most-used'
 
 class PasswordValidator(object):
     """
     PasswordValidator class validate password
     """
 
-    # Unlisted, length, digits, lowers, uppers, others
+    # Length, digits, lowers, uppers, others
     strength_lvl = [
         [6, 0, 0, 0, 0],
         [8, 1, 1, 1, 0],
@@ -54,7 +55,7 @@ class PasswordValidator(object):
         if self.validation_strength <= 0:
             return ("success", "")
 
-        self.listed = password in SMALL_PWD_LIST or self.is_in_cractklib_list(password, PWD_LIST_FILE)
+        self.listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
         self.strength = self.compute(password)
         if self.strength < self.validation_strength:
             if self.listed:
@@ -97,10 +98,10 @@ class PasswordValidator(object):
             strength = i + 1
         return strength
 
-    def is_in_cracklib_list(self, password, pwd_dict):
+    def is_in_cracklib_list(self, password):
         try:
             cracklib.VeryFascistCheck(password, None,
-                                      os.path.join(PWDDICT_PATH, pwd_dict))
+                                      os.path.join(PWDDICT_FOLDER, PWDDICT_LIST))
         except ValueError as e:
             # We only want the dictionnary check of cracklib, not the is_simple
             # test.
