@@ -32,7 +32,7 @@ MOST_USED_PASSWORDS = '/usr/local/share/dict/cracklib/100000-most-used'
 
 # Length, digits, lowers, uppers, others
 STRENGTH_LEVELS = [
-    (6, 0, 0, 0, 0),
+    (8, 0, 0, 0, 0),
     (8, 1, 1, 1, 0),
     (8, 1, 1, 1, 1),
     (12, 1, 1, 1, 1),
