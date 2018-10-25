@@ -16,7 +16,7 @@ logger = getActionLogger('yunohost.migration')
 SMALL_PWD_LIST = ["yunohost", "olinux"]
 
 class MyMigration(Migration):
-    "Migrate password"
+    "Synchronize admin and root passwords"
 
     def migrate(self):
 
@@ -28,17 +28,21 @@ class MyMigration(Migration):
 
     @property
     def mode(self):
-        if self._is_root_pwd_listed(SMALL_PWD_LIST):
-            return "auto"
 
-        return "manual"
+        # If the root password is still a "default" value,
+        # then this is an emergency and migration shall
+        # be applied automatically
+        #
+        # Otherwise, as playing with root password is touchy,
+        # we set this as a manual migration.
+        return "auto" if self._is_root_pwd_listed(SMALL_PWD_LIST) else "manual"
 
     @property
     def disclaimer(self):
         if self._is_root_pwd_listed(SMALL_PWD_LIST):
             return None
 
-        return m18n.n("migration_0006_root_admin_sync_warning")
+        return m18n.n("migration_0006_disclaimer")
 
     def _get_admin_hash(self):
         """
