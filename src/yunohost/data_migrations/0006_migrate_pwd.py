@@ -50,7 +50,8 @@ class MyMigration(Migration):
             | tr -d '\n ' \
             | tr ':' ' ' \
             | awk '{print $2}' \
-            | base64 -d")
+            | base64 -d \
+            | sed 's/{CRYPT}//g'")
         return admin_hash
 
     def _replace_root_hash(self, new_hash):
