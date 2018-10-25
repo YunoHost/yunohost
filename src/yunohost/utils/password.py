@@ -63,6 +63,36 @@ class PasswordValidator(object):
             # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 2 if profile == 'admin' else 1
 
+    def validate(self, password):
+        """
+        Check the validation_summary and trigger the corresponding
+        exception or info message
+
+        This method is meant to be used from inside YunoHost's code
+        (compared to validation_summary which is meant to be called
+        by ssowat)
+        """
+        if self.validation_strength == -1:
+            return
+
+        # Note that those imports are made here and can't be put
+        # on top (at least not the moulinette ones)
+        # because the moulinette needs to be correctly initialized
+        # as well as modules available in python's path.
+        import errno
+        import logging
+        from moulinette import m18n
+        from moulinette.core import MoulinetteError
+        from moulinette.utils.log import getActionLogger
+
+        logger = logging.getLogger('yunohost.utils.password')
+
+        status, msg = validation_summary(password)
+        if status == "error":
+            raise MoulinetteError(1, m18n.n(msg))
+        elif status == "warning":
+            logger.info(m18n.n(msg))
+
     def validation_summary(self, password):
         """
         Check if a password is listed in the list of most used password
@@ -95,7 +125,7 @@ class PasswordValidator(object):
 
         For instance, "PikachuDu67" is (11, 2, 7, 2, 0)
         """
-        # Indicators
+
         length = len(password)
         digits = 0
         uppers = 0
@@ -150,28 +180,9 @@ class PasswordValidator(object):
         return False
 
 
-class LoggerPasswordValidator(PasswordValidator):
-
-    def validate(self, password):
-        """
-        Validate a password and raise error or display a warning
-        """
-        if self.validation_strength == -1:
-            return
-        import errno
-        import logging
-        from moulinette import m18n
-        from moulinette.core import MoulinetteError
-        from moulinette.utils.log import getActionLogger
-
-        logger = logging.getLogger('yunohost.utils.password')
-
-        status, msg = super(LoggerPasswordValidator, self).validation_summary(password)
-        if status == "error":
-            raise MoulinetteError(1, m18n.n(msg))
-        elif status == "warning":
-            logger.info(m18n.n(msg))
-
+# This file is also meant to be used as an executable by
+# SSOwat to validate password from the portal when an user
+# change its password.
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         import getpass
@@ -182,5 +193,3 @@ if __name__ == '__main__':
     status, msg = PasswordValidator('user').validation_summary(pwd)
     print(msg)
     sys.exit(0)
-
-
