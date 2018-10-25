@@ -2252,8 +2252,8 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                         m18n.n('app_argument_choice_invalid',
                             name=arg_name, choices='yes, no, y, n, 1, 0'))
         elif arg_type == 'password':
-            from yunohost.utils.password import LoggerPasswordValidator
-            LoggerPasswordValidator('user').validate(arg_value)
+            from yunohost.utils.password import assert_password_is_strong_enough
+            assert_password_is_strong_enough('user', arg_value)
         args_dict[arg_name] = arg_value
 
     # END loop over action_args...

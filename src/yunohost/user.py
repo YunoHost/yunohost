@@ -117,10 +117,10 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.password import assert_password_is_strong_enough
 
     # Ensure sufficiently complex password
-    from yunohost.utils.password import LoggerPasswordValidator
-    LoggerPasswordValidator('user').validate(password)
+    assert_password_is_strong_enough("user", password)
 
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
@@ -284,6 +284,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     """
     from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.password import assert_password_is_strong_enough
 
     attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     new_attr_dict = {}
@@ -309,8 +310,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
 
     if change_password:
         # Ensure sufficiently complex password
-        from yunohost.utils.password import LoggerPasswordValidator
-        LoggerPasswordValidator('user').validate(change_password)
+        assert_password_is_strong_enough("user", password)
 
         new_attr_dict['userPassword'] = _hash_user_password(change_password)
 

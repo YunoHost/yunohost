@@ -38,6 +38,8 @@ STRENGTH_LEVELS = [
     (12, 1, 1, 1, 1),
 ]
 
+def assert_password_is_strong_enough(profile, password):
+    PasswordValidator(profile).validate(password)
 
 class PasswordValidator(object):
 
