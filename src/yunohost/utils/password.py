@@ -30,7 +30,6 @@ PWDDICT_PATH = '/usr/local/share/dict/cracklib/'
 SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
                   "root", "test", "rpi"]
 PWD_LIST_FILE = '100000-most-used'
-ACTIVATE_ONLINE_PWNED_LIST = False
 
 class PasswordValidator(object):
     """
@@ -55,7 +54,7 @@ class PasswordValidator(object):
         if self.validation_strength <= 0:
             return ("success", "")
 
-        self.strength = self.compute(password, ACTIVATE_ONLINE_PWNED_LIST)
+        self.strength = self.compute(password)
         if self.strength < self.validation_strength:
             if self.listed:
                 return ("error", "password_listed_" + str(self.validation_strength))
@@ -66,7 +65,7 @@ class PasswordValidator(object):
             return ("warning", 'password_advice')
         return ("success", "")
 
-    def compute(self, password, online=False):
+    def compute(self, password):
         # Indicators
         length = len(password)
         digits = 0
@@ -92,10 +91,6 @@ class PasswordValidator(object):
         # Check big list
         size_list = 100000
         if unlisted > 0 and not self.is_in_cracklib_list(password, PWD_LIST_FILE):
-            unlisted = size_list if online else 320000000
-
-        # Check online big list
-        if unlisted > size_list and online and not self.is_in_online_pwned_list(password):
             unlisted = 320000000
 
         self.listed = unlisted < 320000000
@@ -111,29 +106,6 @@ class PasswordValidator(object):
                 break
             strength = i + 1
         return strength
-
-    def is_in_online_pwned_list(self, password, silent=True):
-        """
-        Check if a password is in the list of breached passwords from
-        haveibeenpwned.com
-        """
-
-        from hashlib import sha1
-        import requests
-        hash = sha1(password).hexdigest()
-        range = hash[:5]
-        needle = (hash[5:].upper())
-
-        try:
-            hash_list =requests.get('https://api.pwnedpasswords.com/range/' +
-                                      range, timeout=30)
-        except e:
-            if not silent:
-                raise
-        else:
-            if hash_list.find(needle) != -1:
-                return True
-        return False
 
     def is_in_cracklib_list(self, password, pwd_dict):
         try:
