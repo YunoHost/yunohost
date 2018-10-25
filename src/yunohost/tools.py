@@ -145,7 +145,7 @@ def tools_adminpw(auth, new_password):
 
             with open('/etc/shadow', 'w') as after_file:
                 after_file.write(before.replace("root:" + hash_root,
-                                                "root:" + new_hash))
+                                                "root:" + new_hash.replace('{CRYPT}', '')))
         except IOError as e:
             logger.warning(m18n.n('root_password_desynchronized'))
             return
