@@ -330,7 +330,7 @@
     "packages_upgrade_critical_later": "Critical packages ({packages:s}) will be upgraded later",
     "packages_upgrade_failed": "Unable to upgrade all of the packages",
     "password_listed": "This password is among the most used password in the world. Please choose something a bit more unique.",
-    "password_too_simple_1": "Password needs to be at least 6 characters long",
+    "password_too_simple_1": "Password needs to be at least 8 characters long",
     "password_too_simple_2": "Password needs to be at least 8 characters long and contains digit, upper and lower characters",
     "password_too_simple_3": "Password needs to be at least 8 characters long and contains digit, upper, lower and special characters",
     "password_too_simple_4": "Password needs to be at least 12 characters long and contains digit, upper, lower and special characters",
