@@ -104,7 +104,7 @@ class PasswordValidator(object):
         Produces a summary-tuple comprised of a level (success, error, warning)
         and a message key describing the issues found.
         """
-        if self.validation_strength <= 0:
+        if self.validation_strength < 0:
             return ("success", "")
 
         listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
