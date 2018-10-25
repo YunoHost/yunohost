@@ -38,10 +38,10 @@ class PasswordValidator(object):
 
     # Unlisted, length, digits, lowers, uppers, others
     strength_lvl = [
-        [100000, 6, 0, 0, 0, 0],
-        [100000, 8, 1, 1, 1, 0],
-        [320000000, 8, 1, 1, 1, 1],
-        [320000000, 12, 1, 1, 1, 1],
+        [6, 0, 0, 0, 0],
+        [8, 1, 1, 1, 0],
+        [8, 1, 1, 1, 1],
+        [12, 1, 1, 1, 1],
     ]
 
     def __init__(self, validation_strength):
@@ -54,6 +54,7 @@ class PasswordValidator(object):
         if self.validation_strength <= 0:
             return ("success", "")
 
+        self.listed = password in SMALL_PWD_LIST or self.is_in_cractklib_list(password, PWD_LIST_FILE)
         self.strength = self.compute(password)
         if self.strength < self.validation_strength:
             if self.listed:
@@ -83,26 +84,15 @@ class PasswordValidator(object):
             else:
                 others = others + 1
 
-        # Check small list
-        unlisted = 0
-        if password not in SMALL_PWD_LIST:
-            unlisted = len(SMALL_PWD_LIST)
+        return self.compare(length, digits, lowers, uppers, others)
 
-        # Check big list
-        size_list = 100000
-        if unlisted > 0 and not self.is_in_cracklib_list(password, PWD_LIST_FILE):
-            unlisted = 320000000
-
-        self.listed = unlisted < 320000000
-        return self.compare(unlisted, length, digits, lowers, uppers, others)
-
-    def compare(self, unlisted, length, digits, lowers, uppers, others):
+    def compare(self, length, digits, lowers, uppers, others):
         strength = 0
 
         for i, config in enumerate(self.strength_lvl):
-            if unlisted < config[0] or length < config[1] \
-               or digits < config[2] or lowers < config[3] \
-               or uppers < config[4] or others < config[5]:
+            if length < config[0] or digits < config[1] \
+               or lowers < config[3] or uppers < config[4] \
+               or others < config[5]:
                 break
             strength = i + 1
         return strength
