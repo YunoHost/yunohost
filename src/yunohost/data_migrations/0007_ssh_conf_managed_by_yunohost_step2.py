@@ -11,6 +11,7 @@ from yunohost.settings import settings_set, settings_get
 
 logger = getActionLogger('yunohost.migration')
 
+SSHD_CONF = '/etc/ssh/sshd_config'
 
 class MyMigration(Migration):
     """
@@ -41,10 +42,8 @@ class MyMigration(Migration):
         # and no DSA key is used, then we're good to go
         # and the migration can be done automatically
         # (basically nothing shall change)
-        ynh_hash = _get_conf_hashes('ssh')
-        if '/etc/ssh/sshd_config' in ynh_hash:
-            ynh_hash = ynh_hash['/etc/ssh/sshd_config']
-        current_hash = _calculate_hash('/etc/ssh/sshd_config')
+        ynh_hash = _get_conf_hashes('ssh').get(SSHD_CONF, None)
+        current_hash = _calculate_hash(SSHD_CONF)
         dsa = settings_get("service.ssh._deprecated_dsa_hostkey")
         if ynh_hash == current_hash and not dsa:
             return "auto"
@@ -59,43 +58,39 @@ class MyMigration(Migration):
 
         # Detect key things to be aware of before enabling the
         # recommended configuration
-        dsa = False
+        dsa_key_enabled = False
         ports = []
         root_login = []
         port_rgx = r'^[ \t]*Port[ \t]+(\d+)[ \t]*(?:#.*)?$'
         root_rgx = r'^[ \t]*PermitRootLogin[ \t]([^# \t]*)[ \t]*(?:#.*)?$'
         dsa_rgx = r'^[ \t]*HostKey[ \t]+/etc/ssh/ssh_host_dsa_key[ \t]*(?:#.*)?$'
-        for line in open('/etc/ssh/sshd_config'):
+        for line in open(SSHD_CONF):
 
             ports = ports + re.findall(port_rgx, line)
 
             root_login = root_login + re.findall(root_rgx, line)
 
-            if not dsa and re.match(dsa_rgx, line) is not None:
-                dsa = True
+            if not dsa_key_enabled and re.match(dsa_rgx, line) is not None:
+                dsa_key_enabled = True
 
-        if len(ports) == 0:
-            ports = ['22']
-
-        port = ports != ['22']
-
-        root_user = root_login and root_login[-1] != 'no'
+        custom_port = ports != ['22'] and ports != []
+        root_login_enabled = root_login and root_login[-1] != 'no'
 
         # Build message
-        message = m18n.n("migration_0007_general_warning")
+        message = m18n.n("migration_0007_general_disclaimer")
 
-        if port:
+        if custom_port:
             message += "\n\n" + m18n.n("migration_0007_port")
 
-        if root_user:
+        if root_login_enabled:
             message += "\n\n" + m18n.n("migration_0007_root")
 
-        if dsa:
+        if dsa_key_enabled:
             message += "\n\n" + m18n.n("migration_0007_dsa")
 
-        if port or root_user or dsa:
-            message += "\n\n" + m18n.n("migration_0007_risk")
+        if custom_port or root_login_enabled or dsa_key_enabled:
+            message += "\n\n" + m18n.n("migration_0007_warning")
         else:
-            message += "\n\n" + m18n.n("migration_0007_no_risk")
+            message += "\n\n" + m18n.n("migration_0007_no_warning")
 
         return message
