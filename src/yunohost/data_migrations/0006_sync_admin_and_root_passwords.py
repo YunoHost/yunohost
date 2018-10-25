@@ -23,6 +23,8 @@ class MyMigration(Migration):
         new_hash = self._get_admin_hash()
         self._replace_root_hash(new_hash)
 
+        logger.info(m18n.n("migration_0006_done"))
+
     def backward(self):
         pass
 

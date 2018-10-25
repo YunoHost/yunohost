@@ -289,6 +289,7 @@
     "migration_0005_postgresql_96_not_installed": "Postgresql 9.4 has been found to be installed, but not postgresql 9.6 !? Something weird might have happened on your system :( ...",
     "migration_0005_not_enough_space": "Not enough space is available in {path} to run the migration right now :(.",
     "migration_0006_disclaimer": "Yunohost now expects admin and root passwords to be synchronized. By running this migration, your root password is going to be replaced by the admin password.",
+    "migration_0006_done": "Your root password have been replaced by your admin password.",
     "migrations_backward": "Migrating backward.",
     "migrations_bad_value_for_target": "Invalid number for target argument, available migrations numbers are 0 or {}",
     "migrations_cant_reach_migration_file": "Can't access migrations files at path %s",
