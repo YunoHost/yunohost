@@ -45,8 +45,15 @@ class PasswordValidator(object):
         [12, 1, 1, 1, 1],
     ]
 
-    def __init__(self, validation_strength):
-        self.validation_strength = validation_strength
+    def __init__(self, profile):
+        self.profile = profile
+        import json
+        try:
+            settings = json.load(open('/etc/yunohost/settings.json', "r"))
+            setting_key = "security.password." + profile + ".strength"
+            self.validation_strength = int(settings[setting_key])
+        except Exception as e:
+            self.validation_strength = 2 if profile == 'admin' else 1
 
     def validate(self, password):
         """
@@ -109,19 +116,7 @@ class PasswordValidator(object):
                 return True
 
 
-class ProfilePasswordValidator(PasswordValidator):
-    def __init__(self, profile):
-        self.profile = profile
-        import json
-        try:
-            settings = json.load(open('/etc/yunohost/settings.json', "r"))
-            self.validation_strength = int(settings["security.password." + profile +
-                '.strength'])
-        except Exception as e:
-            self.validation_strength = 2 if profile == 'admin' else 1
-            return
-
-class LoggerPasswordValidator(ProfilePasswordValidator):
+class LoggerPasswordValidator(PasswordValidator):
     """
     PasswordValidator class validate password
     """
@@ -153,7 +148,7 @@ if __name__ == '__main__':
         #print("usage: password.py PASSWORD")
     else:
         pwd = sys.argv[1]
-    status, msg = ProfilePasswordValidator('user').validate(pwd)
+    status, msg = PasswordValidator('user').validate(pwd)
     print(msg)
     sys.exit(0)
 
