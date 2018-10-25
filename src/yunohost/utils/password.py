@@ -107,11 +107,10 @@ class PasswordValidator(object):
 
         listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
         strength_level = self.strength_level(password)
+        if listed:
+            return ("error", "password_listed")
         if strength_level < self.validation_strength:
-            if listed:
-                return ("error", "password_listed_" + str(self.validation_strength))
-            else:
-                return ("error", "password_too_simple_" + str(self.validation_strength))
+            return ("error", "password_too_simple_%s" % self.validation_strength)
 
         if strength_level < 3:
             return ("warning", 'password_advice')
