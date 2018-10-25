@@ -29,12 +29,6 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * string
 # * enum (in form a python list)
 
-# we don't store the value in default options
-PWD_MODE = ["disabled", "weak", "strong"]
-PWD_CHOICES = ["error", "warn_only", "disabled"]
-PWD_DEFAULT_ERROR = {"type": "enum", "default": "error",
-                     "choices": PWD_CHOICES}
-
 DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True}),
     ("example.int", {"type": "int", "default": 42}),
