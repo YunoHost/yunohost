@@ -20,14 +20,18 @@ SSHD_CONF = '/etc/ssh/sshd_config'
 
 class MyMigration(Migration):
     """
-    This is an automatic migration, that ensure SSH conf is managed by YunoHost
-    (even if the "from_script" flag is present)
+    This is the first step of a couple of migrations that ensure SSH conf is
+    managed by YunoHost (even if the "from_script" flag is present, which was
+    previously preventing it from being managed by YunoHost)
     
+    The goal of this first (automatic) migration is to make sure that the
+    sshd_config is managed by the regen-conf mechanism.
+
     If the from_script flag exists, then we keep the current SSH conf such that it
     will appear as "manually modified" to the regenconf.
     
-    The admin can then choose in the next migration (manual, thi time) wether or 
-    not to actually use the recommended configuration.
+    In step 2 (manual), the admin will be able to choose wether or not to actually
+    use the recommended configuration, with an appropriate disclaimer.
     """
 
     def migrate(self):

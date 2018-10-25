@@ -13,7 +13,18 @@ logger = getActionLogger('yunohost.migration')
 
 
 class MyMigration(Migration):
-    "Reset SSH conf to the YunoHost one"
+    """
+    In this second step, the admin is asked if it's okay to use
+    the recommended SSH configuration - which also implies
+    disabling deprecated DSA key.
+
+    This has important implications in the way the user may connect
+    to its server (key change, and a spooky warning might be given
+    by SSH later)
+
+    A disclaimer explaining the various things to be aware of is
+    shown - and the user may also choose to skip this migration.
+    """
 
     def migrate(self):
         settings_set("service.ssh._deprecated_dsa_hostkey", False)
@@ -26,7 +37,10 @@ class MyMigration(Migration):
     @property
     def mode(self):
 
-        # Avoid having a super long disclaimer
+        # If the conf is already up to date
+        # and no DSA key is used, then we're good to go
+        # and the migration can be done automatically
+        # (basically nothing shall change)
         ynh_hash = _get_conf_hashes('ssh')
         if '/etc/ssh/sshd_config' in ynh_hash:
             ynh_hash = ynh_hash['/etc/ssh/sshd_config']
@@ -43,7 +57,8 @@ class MyMigration(Migration):
         if self.mode == "auto":
             return None
 
-        # Detect major risk to migrate to the new configuration
+        # Detect key things to be aware of before enabling the
+        # recommended configuration
         dsa = False
         ports = []
         root_login = []
