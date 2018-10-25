@@ -21,13 +21,25 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        if self._is_root_pwd_listed(SMALL_PWD_LIST):
-            new_hash = self._get_admin_hash()
-            self._replace_root_hash(new_hash)
+        new_hash = self._get_admin_hash()
+        self._replace_root_hash(new_hash)
 
     def backward(self):
-
         pass
+
+    @property
+    def mode(self):
+        if self._is_root_pwd_listed(SMALL_PWD_LIST):
+            return "auto"
+
+        return "manual"
+
+    @property
+    def disclaimer(self):
+        if self._is_root_pwd_listed(SMALL_PWD_LIST):
+            return None
+
+        return m18n.n("migration_0006_root_admin_sync_warning")
 
     def _get_admin_hash(self):
         """
