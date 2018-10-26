@@ -2189,10 +2189,14 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     for domain in domain_list(auth)['domains']:
                         msignals.display("- {}".format(domain))
 
-                if arg_type == 'user':
+                elif arg_type == 'user':
                     msignals.display(m18n.n('users_available'))
                     for user in user_list(auth)['users'].keys():
                         msignals.display("- {}".format(user))
+
+                elif arg_type == 'password':
+                    msignals.display(m18n.n('good_practices_about_user_password'))
+
 
                 try:
                     input_string = msignals.prompt(ask_string, is_password)
