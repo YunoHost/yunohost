@@ -89,7 +89,7 @@ class PasswordValidator(object):
 
         logger = logging.getLogger('yunohost.utils.password')
 
-        status, msg = validation_summary(password)
+        status, msg = self.validation_summary(password)
         if status == "error":
             raise MoulinetteError(1, m18n.n(msg))
 
