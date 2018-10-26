@@ -37,7 +37,7 @@ DEFAULTS = OrderedDict([
 
     # Password Validation
     # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
-    ("security.password.admin.strength", {"type": "int", "default": 2}),
+    ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
 ])
 
