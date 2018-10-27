@@ -44,25 +44,18 @@ do_pre_regen() {
     mkdir -p "$mail_autoconfig_dir"
 
     # NGINX server configuration
-    cat server.tpl.conf \
-      | sed "s/{{ domain }}/${domain}/g" \
-      > "${nginx_conf_dir}/${domain}.conf"
+    export domain
+    export domain_cert_ca=$(yunohost domain cert-status $domain --json \
+                            | jq ".certificates.\"$domain\".CA_type" \
+                            | tr -d '"')
 
-    cat autoconfig.tpl.xml \
-      | sed "s/{{ domain }}/${domain}/g" \
-      > "${mail_autoconfig_dir}/config-v1.1.xml"
-
+    ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
+    ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
 
     [[ $main_domain != $domain ]] \
       && touch "${domain_conf_dir}/yunohost_local.conf" \
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
 
-    export domain
-    export domain_cert_ca=$(yunohost domain cert-status $domain --json \
-                            | jq ".certificates.\"$domain\".CA_type" \
-                            | tr -d '"')
-    ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
-      
   done
 
   # remove old domain conf files
