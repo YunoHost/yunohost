@@ -29,12 +29,6 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * string
 # * enum (in form a python list)
 
-# we don't store the value in default options
-PWD_MODE = ["disabled", "weak", "strong"]
-PWD_CHOICES = ["error", "warn_only", "disabled"]
-PWD_DEFAULT_ERROR = {"type": "enum", "default": "error",
-                     "choices": PWD_CHOICES}
-
 DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True}),
     ("example.int", {"type": "int", "default": 42}),
@@ -42,8 +36,8 @@ DEFAULTS = OrderedDict([
     ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
 
     # Password Validation
-    # -1 disabled, 0 alert if listed, 1 6-letter, 2 normal, 3 strong, 4 strongest
-    ("security.password.admin.strength", {"type": "int", "default": 2}),
+    # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
+    ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
 ])
 

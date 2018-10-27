@@ -54,7 +54,6 @@ from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation, OperationLogger
-from yunohost.settings import settings_get
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
@@ -129,9 +128,10 @@ def tools_adminpw(auth, new_password):
 
     """
     from yunohost.user import _hash_user_password
-    from yunohost.utils.password import LoggerPasswordValidator
+    from yunohost.utils.password import assert_password_is_strong_enough
 
-    LoggerPasswordValidator('admin').validate(new_password)
+    assert_password_is_strong_enough("admin", new_password)
+
     try:
         auth.update("cn=admin", {
             "userPassword": _hash_user_password(new_password),
@@ -152,8 +152,9 @@ def tools_validatepw(password):
         password
 
     """
-    from yunohost.utils.password import LoggerPasswordValidator
-    LoggerPasswordValidator('user').validate(password)
+
+    from yunohost.utils.password import assert_password_is_strong_enough
+    assert_password_is_strong_enough("user", password)
 
 
 @is_unit_operation()
@@ -279,6 +280,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         password -- YunoHost admin password
 
     """
+    from yunohost.utils.password import assert_password_is_strong_enough
+
     dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
@@ -288,8 +291,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Check password
     if not force_password:
-        from yunohost.utils.password import LoggerPasswordValidator
-        LoggerPasswordValidator('admin').validate(password)
+        assert_password_is_strong_enough("admin", password)
 
     if not ignore_dyndns:
         # Check if yunohost dyndns can handle the given domain

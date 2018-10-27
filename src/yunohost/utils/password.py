@@ -2,7 +2,7 @@
 
 """ License
 
-    Copyright (C) 2013 YunoHost
+    Copyright (C) 2018 YunoHost
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
@@ -21,53 +21,108 @@
 
 import sys
 import os
+import json
 import cracklib
-
 import string
-ASCII_UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-ASCII_LOWERCASE = "abcdefghijklmnopqrstuvwxyz"
-PWDDICT_PATH = '/usr/local/share/dict/cracklib/'
+
 SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
                   "root", "test", "rpi"]
-PWD_LIST_FILE = '100000-most-used'
-ACTIVATE_ONLINE_PWNED_LIST = False
+
+MOST_USED_PASSWORDS = '/usr/local/share/dict/cracklib/100000-most-used'
+
+# Length, digits, lowers, uppers, others
+STRENGTH_LEVELS = [
+    (8, 0, 0, 0, 0),
+    (8, 1, 1, 1, 0),
+    (8, 1, 1, 1, 1),
+    (12, 1, 1, 1, 1),
+]
+
+def assert_password_is_strong_enough(profile, password):
+    PasswordValidator(profile).validate(password)
 
 class PasswordValidator(object):
-    """
-    PasswordValidator class validate password
-    """
 
-    # Unlisted, length, digits, lowers, uppers, others
-    strength_lvl = [
-        [100000, 6, 0, 0, 0, 0],
-        [100000, 8, 1, 1, 1, 0],
-        [320000000, 8, 1, 1, 1, 1],
-        [320000000, 12, 1, 1, 1, 1],
-    ]
+    def __init__(self, profile):
+        """
+        Initialize a password validator.
 
-    def __init__(self, validation_strength):
-        self.validation_strength = validation_strength
+        The profile shall be either "user" or "admin"
+        and will correspond to a validation strength
+        defined via the setting "security.password.<profile>.strength"
+        """
+
+        self.profile = profile
+        try:
+            # We do this "manually" instead of using settings_get()
+            # from settings.py because this file is also meant to be
+            # use as a script by ssowat.
+            # (or at least that's my understanding -- Alex)
+            settings = json.load(open('/etc/yunohost/settings.json', "r"))
+            setting_key = "security.password." + profile + ".strength"
+            self.validation_strength = int(settings[setting_key])
+        except Exception as e:
+            # Fallback to default value if we can't fetch settings for some reason
+            self.validation_strength = 1
 
     def validate(self, password):
         """
-        Validate a password and raise error or display a warning
+        Check the validation_summary and trigger an exception
+        if the password does not pass tests.
+
+        This method is meant to be used from inside YunoHost's code
+        (compared to validation_summary which is meant to be called
+        by ssowat)
         """
-        if self.validation_strength <= 0:
+        if self.validation_strength == -1:
+            return
+
+        # Note that those imports are made here and can't be put
+        # on top (at least not the moulinette ones)
+        # because the moulinette needs to be correctly initialized
+        # as well as modules available in python's path.
+        import errno
+        import logging
+        from moulinette import m18n
+        from moulinette.core import MoulinetteError
+        from moulinette.utils.log import getActionLogger
+
+        logger = logging.getLogger('yunohost.utils.password')
+
+        status, msg = self.validation_summary(password)
+        if status == "error":
+            raise MoulinetteError(1, m18n.n(msg))
+
+    def validation_summary(self, password):
+        """
+        Check if a password is listed in the list of most used password
+        and if the overall strength is good enough compared to the
+        validation_strength defined in the constructor.
+
+        Produces a summary-tuple comprised of a level (succes or error)
+        and a message key describing the issues found.
+        """
+        if self.validation_strength < 0:
             return ("success", "")
 
-        self.strength = self.compute(password, ACTIVATE_ONLINE_PWNED_LIST)
-        if self.strength < self.validation_strength:
-            if self.listed:
-                return ("error", "password_listed_" + str(self.validation_strength))
-            else:
-                return ("error", "password_too_simple_" + str(self.validation_strength))
+        listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
+        strength_level = self.strength_level(password)
+        if listed:
+            return ("error", "password_listed")
+        if strength_level < self.validation_strength:
+            return ("error", "password_too_simple_%s" % self.validation_strength)
 
-        if self.strength < 3:
-            return ("warning", 'password_advice')
         return ("success", "")
 
-    def compute(self, password, online=False):
-        # Indicators
+    def strength(self, password):
+        """
+        Returns the strength of a password, defined as a tuple
+        containing the length of the password, the number of digits,
+        lowercase letters, uppercase letters, and other characters.
+
+        For instance, "PikachuDu67" is (11, 2, 7, 2, 0)
+        """
+
         length = len(password)
         digits = 0
         uppers = 0
@@ -77,112 +132,54 @@ class PasswordValidator(object):
         for character in password:
             if character in string.digits:
                 digits = digits + 1
-            elif character in ASCII_UPPERCASE:
+            elif character in string.ascii_uppercase:
                 uppers = uppers + 1
-            elif character in ASCII_LOWERCASE:
+            elif character in string.ascii_lowercase:
                 lowers = lowers + 1
             else:
                 others = others + 1
 
-        # Check small list
-        unlisted = 0
-        if password not in SMALL_PWD_LIST:
-            unlisted = len(SMALL_PWD_LIST)
+        return (length, digits, lowers, uppers, others)
 
-        # Check big list
-        size_list = 100000
-        if unlisted > 0 and not self.is_in_cracklib_list(password, PWD_LIST_FILE):
-            unlisted = size_list if online else 320000000
+    def strength_level(self, password):
+        """
+        Computes the strength of a password and compares
+        it to the STRENGTH_LEVELS.
 
-        # Check online big list
-        if unlisted > size_list and online and not self.is_in_online_pwned_list(password):
-            unlisted = 320000000
+        Returns an int corresponding to the highest STRENGTH_LEVEL
+        satisfied by the password.
+        """
 
-        self.listed = unlisted < 320000000
-        return self.compare(unlisted, length, digits, lowers, uppers, others)
+        strength = self.strength(password)
 
-    def compare(self, unlisted, length, digits, lowers, uppers, others):
-        strength = 0
-
-        for i, config in enumerate(self.strength_lvl):
-            if unlisted < config[0] or length < config[1] \
-               or digits < config[2] or lowers < config[3] \
-               or uppers < config[4] or others < config[5]:
+        strength_level = 0
+        # Iterate over each level and its criterias
+        for level, level_criterias in enumerate(STRENGTH_LEVELS):
+            # Iterate simulatenously over the level criterias (e.g. [8, 1, 1, 1, 0])
+            # and the strength of the password (e.g. [11, 2, 7, 2, 0])
+            # and compare the values 1-by-1.
+            # If one False is found, the password does not satisfy the level
+            if False in [s>=c for s, c in zip(strength, level_criterias)]:
                 break
-            strength = i + 1
-        return strength
+            # Otherwise, the strength of the password is at least of the current level.
+            strength_level = level + 1
 
-    def is_in_online_pwned_list(self, password, silent=True):
-        """
-        Check if a password is in the list of breached passwords from
-        haveibeenpwned.com
-        """
+        return strength_level
 
-        from hashlib import sha1
-        import requests
-        hash = sha1(password).hexdigest()
-        range = hash[:5]
-        needle = (hash[5:].upper())
-
+    def is_in_cracklib_list(self, password):
         try:
-            hash_list =requests.get('https://api.pwnedpasswords.com/range/' +
-                                      range, timeout=30)
-        except e:
-            if not silent:
-                raise
-        else:
-            if hash_list.find(needle) != -1:
-                return True
-        return False
-
-    def is_in_cracklib_list(self, password, pwd_dict):
-        try:
-            cracklib.VeryFascistCheck(password, None,
-                                      os.path.join(PWDDICT_PATH, pwd_dict))
+            cracklib.VeryFascistCheck(password, None, MOST_USED_PASSWORDS)
         except ValueError as e:
             # We only want the dictionnary check of cracklib, not the is_simple
             # test.
             if str(e) not in ["is too simple", "is a palindrome"]:
                 return True
+        return False
 
 
-class ProfilePasswordValidator(PasswordValidator):
-    def __init__(self, profile):
-        self.profile = profile
-        import json
-        try:
-            settings = json.load(open('/etc/yunohost/settings.json', "r"))
-            self.validation_strength = int(settings["security.password." + profile +
-                '.strength'])
-        except Exception as e:
-            self.validation_strength = 2 if profile == 'admin' else 1
-            return
-
-class LoggerPasswordValidator(ProfilePasswordValidator):
-    """
-    PasswordValidator class validate password
-    """
-
-    def validate(self, password):
-        """
-        Validate a password and raise error or display a warning
-        """
-        if self.validation_strength == -1:
-            return
-        import errno
-        import logging
-        from moulinette import m18n
-        from moulinette.core import MoulinetteError
-        from moulinette.utils.log import getActionLogger
-
-        logger = logging.getLogger('yunohost.utils.password')
-
-        status, msg = super(LoggerPasswordValidator, self).validate(password)
-        if status == "error":
-            raise MoulinetteError(1, m18n.n(msg))
-        elif status == "warning":
-            logger.info(m18n.n(msg))
-
+# This file is also meant to be used as an executable by
+# SSOwat to validate password from the portal when an user
+# change its password.
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         import getpass
@@ -190,8 +187,6 @@ if __name__ == '__main__':
         #print("usage: password.py PASSWORD")
     else:
         pwd = sys.argv[1]
-    status, msg = ProfilePasswordValidator('user').validate(pwd)
+    status, msg = PasswordValidator('user').validation_summary(pwd)
     print(msg)
     sys.exit(0)
-
-
