@@ -144,19 +144,6 @@ def tools_adminpw(auth, new_password):
         logger.success(m18n.n('admin_password_changed'))
 
 
-def tools_validatepw(password):
-    """
-    Validate password
-
-    Keyword argument:
-        password
-
-    """
-
-    from yunohost.utils.password import assert_password_is_strong_enough
-    assert_password_is_strong_enough("user", password)
-
-
 @is_unit_operation()
 def tools_maindomain(operation_logger, auth, new_domain=None):
     """
