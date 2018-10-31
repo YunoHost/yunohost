@@ -22,13 +22,13 @@
 import sys
 import os
 import json
-import cracklib
 import string
+import subprocess
 
 SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
                   "root", "test", "rpi"]
 
-MOST_USED_PASSWORDS = '/usr/local/share/dict/cracklib/100000-most-used'
+MOST_USED_PASSWORDS = '/usr/share/yunohost/other/password/100000-most-used.txt'
 
 # Length, digits, lowers, uppers, others
 STRENGTH_LEVELS = [
@@ -105,7 +105,7 @@ class PasswordValidator(object):
         if self.validation_strength < 0:
             return ("success", "")
 
-        listed = password in SMALL_PWD_LIST or self.is_in_cracklib_list(password)
+        listed = password in SMALL_PWD_LIST or self.is_in_most_used_list(password)
         strength_level = self.strength_level(password)
         if listed:
             return ("error", "password_listed")
@@ -166,15 +166,19 @@ class PasswordValidator(object):
 
         return strength_level
 
-    def is_in_cracklib_list(self, password):
-        try:
-            cracklib.VeryFascistCheck(password, None, MOST_USED_PASSWORDS)
-        except ValueError as e:
-            # We only want the dictionnary check of cracklib, not the is_simple
-            # test.
-            if str(e) not in ["is too simple", "is a palindrome"]:
-                return True
-        return False
+    def is_in_most_used_list(self, password):
+
+        # Decompress file if compressed
+        if os.path.exists("%s.gz" % MOST_USED_PASSWORDS):
+            os.system("gzip -fd %s.gz" % MOST_USED_PASSWORDS)
+
+        # Grep the password in the file
+        # We use '-f -' to feed the pattern (= the password) through
+        # stdin to avoid it being shown in ps -ef --forest...
+        command = "grep -q -f - %s" % MOST_USED_PASSWORDS
+        p = subprocess.Popen(command.split(), stdin=subprocess.PIPE)
+        p.communicate(input=password)
+        return not bool(p.returncode)
 
 
 # This file is also meant to be used as an executable by
