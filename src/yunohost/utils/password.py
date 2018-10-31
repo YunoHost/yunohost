@@ -63,7 +63,7 @@ class PasswordValidator(object):
             self.validation_strength = int(settings[setting_key])
         except Exception as e:
             # Fallback to default value if we can't fetch settings for some reason
-            self.validation_strength = 2 if profile == 'admin' else 1
+            self.validation_strength = 1
 
     def validate(self, password):
         """
@@ -89,7 +89,7 @@ class PasswordValidator(object):
 
         logger = logging.getLogger('yunohost.utils.password')
 
-        status, msg = validation_summary(password)
+        status, msg = self.validation_summary(password)
         if status == "error":
             raise MoulinetteError(1, m18n.n(msg))
 
