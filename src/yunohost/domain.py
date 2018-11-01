@@ -209,6 +209,11 @@ def domain_dns_conf(domain, ttl=None):
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
+    result += "\n\n"
+    result += "; Extra"
+    for record in dns_conf["extra"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
@@ -334,6 +339,9 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "TXT", "name": "mail._domainkey", "value": "\"v=DKIM1; k=rsa; p=some-super-long-key\"", "ttl": 3600},
             {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
         ],
+        "extra": [
+            {"type": "CAA", "name": "@", "value": "128 issue 'letsencrypt.org", "ttl": 3600},
+        ],
     }
     """
 
@@ -387,10 +395,16 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
+    # Extra
+    extra = [
+        ["@", ttl, "CAA", "128 issue 'letsencrypt.org'"]
+    ]
+
     return {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
+        "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
 
 

@@ -358,7 +358,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
     service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     commands = [
-        'echo "01" > %s/serial' % ssl_dir,
         'rm %s/index.txt' % ssl_dir,
         'touch %s/index.txt' % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),

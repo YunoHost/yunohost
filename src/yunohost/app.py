@@ -346,7 +346,8 @@ def app_info(app, show_status=False, raw=False):
         ret['settings'] = _get_app_settings(app)
 
         # Determine upgradability
-        local_update_time = ret['settings'].get('update_time', ret['settings']['install_time'])
+        # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
+        local_update_time = ret['settings'].get('update_time', ret['settings'].get('install_time', 0))
 
         if 'lastUpdate' not in ret or 'git' not in ret:
             upgradable = "url_required"
