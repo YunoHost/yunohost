@@ -419,5 +419,8 @@
     "service_description_yunohost-firewall": "gère les ports de connexion ouverts et fermés aux services",
     "experimental_feature": "Attention : cette fonctionnalité est expérimentale et ne doit pas être considérée comme stable, vous ne devriez pas l'utiliser à moins que vous ne sachiez ce que vous faîtes.",
     "log_corrupted_md_file": "Le fichier yaml de metadata associé aux logs est corrompu  : '{md_file} 1'",
-    "log_category_404": "La catégorie de log  '{category} 1' n'existe pas."
+    "log_category_404": "La catégorie de log  '{category} 1' n'existe pas",
+    "log_link_to_log": "Log complet de cette opération : '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\"> 1{desc} 2</a> 3'",
+    "log_help_to_get_log": "Pour voir le log de cette opération '{desc} 1', utiliser la commande  'yunohost log display {name} 2'",
+    "log_link_to_failed_log": "L'opération  '{desc} 1' a échouée ! Pour avoir de l'aide, merci </a> 3de fournir le log complet de l'opération</a> 3"
 }
