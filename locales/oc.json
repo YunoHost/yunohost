@@ -402,5 +402,9 @@
     "backup_archive_writing_error": "Impossible d’ajustar los fichièrs a la salvagarda dins l’archiu comprimit",
     "backup_cant_mount_uncompress_archive": "Impossible de montar en lectura sola lo repertòri de l’archiu descomprimit",
     "backup_no_uncompress_archive_dir": "Lo repertòri de l’archiu descomprimit existís pas",
-    "pattern_username": "Deu èsser compausat solament de caractèrs alfanumerics en letras minusculas e de tirets basses"
+    "pattern_username": "Deu èsser compausat solament de caractèrs alfanumerics en letras minusculas e de tirets basses",
+    "experimental_feature": "Atencion : aquesta foncionalitat es experimentala e deu pas èsser considerada coma establa, deuriatz pas l’utilizar levat que sapiatz çò que fasètz.",
+    "log_corrupted_md_file": "Lo fichièr yaml de metadonada amb los jornals d’audit es corromput : « {md_file} »",
+    "log_category_404": "La categoria de jornals d’audit « {category} » existís pas",
+    "log_link_to_log": "Jornal complèt d’aquesta operacion : <a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>."
 }
