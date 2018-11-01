@@ -416,5 +416,8 @@
     "service_description_slapd": "stocke les utilisateurs, domaines et leurs informations liées",
     "service_description_ssh": "vous permet de vous connecter à distance à votre serveur via un terminal (protocole SSH)",
     "service_description_yunohost-api": "permet les interactions entre l’interface web de YunoHost et le système",
-    "service_description_yunohost-firewall": "gère les ports de connexion ouverts et fermés aux services"
+    "service_description_yunohost-firewall": "gère les ports de connexion ouverts et fermés aux services",
+    "experimental_feature": "Attention : cette fonctionnalité est expérimentale et ne doit pas être considérée comme stable, vous ne devriez pas l'utiliser à moins que vous ne sachiez ce que vous faîtes.",
+    "log_corrupted_md_file": "Le fichier yaml de metadata associé aux logs est corrompu  : '{md_file} 1'",
+    "log_category_404": "La catégorie de log  '{category} 1' n'existe pas."
 }
