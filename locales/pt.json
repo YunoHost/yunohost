@@ -192,5 +192,6 @@
     "backup_ask_for_copying_if_needed": "Alguns arquivos não consiguiram ser preparados para backup utilizando o metodo que não gasta espaço de disco temporariamente. Para realizar o backup {size:s}MB precisam ser usados temporariamente. Você concorda?",
     "backup_borg_not_implemented": "O método de backup Borg ainda não foi implementado.",
     "backup_cant_mount_uncompress_archive": "Não foi possível montar em modo leitura o diretorio de arquivos não comprimido",
-    "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo"
+    "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo",
+    "app_change_url_identical_domains": "45/5000\nO antigo e o novo domínio / url_path são idênticos ('{domain:s}{path:s}'), nada para fazer."
 }
