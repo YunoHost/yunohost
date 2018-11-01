@@ -193,5 +193,5 @@
     "backup_borg_not_implemented": "O método de backup Borg ainda não foi implementado.",
     "backup_cant_mount_uncompress_archive": "Não foi possível montar em modo leitura o diretorio de arquivos não comprimido",
     "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo",
-    "app_change_url_identical_domains": "45/5000\nO antigo e o novo domínio / url_path são idênticos ('{domain:s}{path:s}'), nada para fazer."
+    "app_change_url_identical_domains": "O antigo e o novo domínio / url_path são idênticos ('{domain:s}{path:s}'), nada para fazer."
 }
