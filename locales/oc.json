@@ -406,5 +406,6 @@
     "experimental_feature": "Atencion : aquesta foncionalitat es experimentala e deu pas èsser considerada coma establa, deuriatz pas l’utilizar levat que sapiatz çò que fasètz.",
     "log_corrupted_md_file": "Lo fichièr yaml de metadonada amb los jornals d’audit es corromput : « {md_file} »",
     "log_category_404": "La categoria de jornals d’audit « {category} » existís pas",
-    "log_link_to_log": "Jornal complèt d’aquesta operacion : <a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>."
+    "log_link_to_log": "Jornal complèt d’aquesta operacion : <a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>",
+    "log_help_to_get_log": "Per veire lo jornal d’aquesta operacion « {desc} », utilizatz la comanda « yunohost log display {name} »"
 }
