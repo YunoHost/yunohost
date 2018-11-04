@@ -32,6 +32,7 @@ import crypt
 import random
 import string
 import subprocess
+import cracklib
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -116,6 +117,10 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.password import assert_password_is_strong_enough
+
+    # Ensure sufficiently complex password
+    assert_password_is_strong_enough("user", password)
 
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
@@ -283,6 +288,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     """
     from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.password import assert_password_is_strong_enough
 
     attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     new_attr_dict = {}
@@ -307,6 +313,9 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
 
     if change_password:
+        # Ensure sufficiently complex password
+        assert_password_is_strong_enough("user", password)
+
         new_attr_dict['userPassword'] = _hash_user_password(change_password)
 
     if mail:

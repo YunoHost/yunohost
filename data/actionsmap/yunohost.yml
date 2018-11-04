@@ -125,6 +125,7 @@ user:
                         pattern: &pattern_password
                             - !!str ^.{3,}$
                             - "pattern_password"
+                        comment: good_practices_about_user_password
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -1456,6 +1457,7 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
 
         ### tools_maindomain()
         maindomain:
@@ -1493,8 +1495,12 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
+                    action: store_true
+                --force-password:
+                    help: Use this if you really want to set a weak password
                     action: store_true
 
         ### tools_update()
