@@ -32,7 +32,6 @@ import logging
 import subprocess
 import pwd
 import socket
-import cracklib
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
@@ -130,9 +129,9 @@ def tools_adminpw(auth, new_password):
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import assert_password_is_strong_enough
     import spwd
-    
+
     assert_password_is_strong_enough("admin", new_password)
-    
+
     new_hash = _hash_user_password(new_password)
 
     try:

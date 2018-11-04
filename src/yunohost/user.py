@@ -32,7 +32,6 @@ import crypt
 import random
 import string
 import subprocess
-import cracklib
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -132,7 +131,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
     if username in all_existing_usernames:
         raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
-        
+
     main_domain = _get_maindomain()
     aliases = [
         'root@' + main_domain,
@@ -140,9 +139,9 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         'webmaster@' + main_domain,
         'postmaster@' + main_domain,
     ]
-    
+
     if mail in aliases:
-        raise MoulinetteError(errno.EEXIST,m18n.n('mail_unavailable'))    
+        raise MoulinetteError(errno.EEXIST,m18n.n('mail_unavailable'))
 
     # Check that the mail domain exists
     if mail.split("@")[1] not in domain_list(auth)['domains']:
@@ -333,7 +332,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
                                          domain=mail[mail.find('@') + 1:]))
         if mail in aliases:
             raise MoulinetteError(errno.EEXIST,m18n.n('mail_unavailable'))
-            
+
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
 
