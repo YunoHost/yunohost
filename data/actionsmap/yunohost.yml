@@ -1446,7 +1446,7 @@ tools:
 
         ### tools_adminpw()
         adminpw:
-            action_help: Change admin password
+            action_help: Change password of admin and root users
             api: PUT /adminpw
             configuration:
                 authenticate: all
