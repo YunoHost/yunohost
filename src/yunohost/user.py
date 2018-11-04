@@ -32,6 +32,7 @@ import crypt
 import random
 import string
 import subprocess
+import cracklib
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -116,6 +117,10 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.password import assert_password_is_strong_enough
+
+    # Ensure sufficiently complex password
+    assert_password_is_strong_enough("user", password)
 
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
@@ -127,6 +132,17 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
     if username in all_existing_usernames:
         raise MoulinetteError(errno.EEXIST, m18n.n('system_username_exists'))
+        
+    main_domain = _get_maindomain()
+    aliases = [
+        'root@' + main_domain,
+        'admin@' + main_domain,
+        'webmaster@' + main_domain,
+        'postmaster@' + main_domain,
+    ]
+    
+    if mail in aliases:
+        raise MoulinetteError(errno.EEXIST,m18n.n('mail_unavailable'))    
 
     # Check that the mail domain exists
     if mail.split("@")[1] not in domain_list(auth)['domains']:
@@ -166,13 +182,6 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
     # If it is the first user, add some aliases
     if not auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
-        main_domain = _get_maindomain()
-        aliases = [
-            'root@' + main_domain,
-            'admin@' + main_domain,
-            'webmaster@' + main_domain,
-            'postmaster@' + main_domain,
-        ]
         attr_dict['mail'] = [attr_dict['mail']] + aliases
 
         # If exists, remove the redirection from the SSO
@@ -279,6 +288,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     """
     from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.password import assert_password_is_strong_enough
 
     attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     new_attr_dict = {}
@@ -303,14 +313,27 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
 
     if change_password:
+        # Ensure sufficiently complex password
+        assert_password_is_strong_enough("user", password)
+
         new_attr_dict['userPassword'] = _hash_user_password(change_password)
 
     if mail:
+        main_domain = _get_maindomain()
+        aliases = [
+            'root@' + main_domain,
+            'admin@' + main_domain,
+            'webmaster@' + main_domain,
+            'postmaster@' + main_domain,
+        ]
         auth.validate_uniqueness({'mail': mail})
         if mail[mail.find('@') + 1:] not in domains:
             raise MoulinetteError(errno.EINVAL,
                                   m18n.n('mail_domain_unknown',
                                          domain=mail[mail.find('@') + 1:]))
+        if mail in aliases:
+            raise MoulinetteError(errno.EEXIST,m18n.n('mail_unavailable'))
+            
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
 

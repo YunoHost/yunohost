@@ -346,7 +346,8 @@ def app_info(app, show_status=False, raw=False):
         ret['settings'] = _get_app_settings(app)
 
         # Determine upgradability
-        local_update_time = ret['settings'].get('update_time', ret['settings']['install_time'])
+        # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
+        local_update_time = ret['settings'].get('update_time', ret['settings'].get('install_time', 0))
 
         if 'lastUpdate' not in ret or 'git' not in ret:
             upgradable = "url_required"
@@ -513,7 +514,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
     if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'),
-                 args=args_list, env=env_dict, user="root") != 0:
+                 args=args_list, env=env_dict) != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
         operation_logger.error(msg)
@@ -640,7 +641,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
-                     args=args_list, env=env_dict, user="root") != 0:
+                     args=args_list, env=env_dict) != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
             logger.error(msg)
             operation_logger.error(msg)
@@ -800,7 +801,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict, user="root"
+            args=args_list, env=env_dict
         )
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
@@ -824,7 +825,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
-                    args=[app_instance_name], env=env_dict_remove, user="root"
+                    args=[app_instance_name], env=env_dict_remove
                 )
                 if remove_retcode != 0:
                     msg = m18n.n('app_not_properly_removed',
@@ -912,7 +913,7 @@ def app_remove(operation_logger, auth, app):
     operation_logger.flush()
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
-                 env=env_dict, user="root") == 0:
+                 env=env_dict) == 0:
         logger.success(m18n.n('app_removed', app=app))
 
         hook_callback('post_app_remove', args=args_list, env=env_dict)
@@ -1461,33 +1462,33 @@ def app_change_label(auth, app, new_label):
 # actions todo list:
 # * docstring
 
-def app_action_list(app_id):
+def app_action_list(app):
     logger.warning(m18n.n('experimental_feature'))
 
     # this will take care of checking if the app is installed
-    app_info_dict = app_info(app_id)
+    app_info_dict = app_info(app)
 
-    actions = os.path.join(APPS_SETTING_PATH, app_id, 'actions.json')
+    actions = os.path.join(APPS_SETTING_PATH, app, 'actions.json')
 
     return {
-        "app_id": app_id,
+        "app": app,
         "app_name": app_info_dict["name"],
         "actions": read_json(actions) if os.path.exists(actions) else [],
     }
 
 
-def app_action_run(app_id, action, args=None):
+def app_action_run(app, action, args=None):
     logger.warning(m18n.n('experimental_feature'))
 
     from yunohost.hook import hook_exec
     import tempfile
 
     # will raise if action doesn't exist
-    actions = app_action_list(app_id)["actions"]
+    actions = app_action_list(app)["actions"]
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
-        raise MoulinetteError(errno.EINVAL, "action '%s' not available for app '%s', available actions are: %s" % (action, app_id, ", ".join(actions.keys())))
+        raise MoulinetteError(errno.EINVAL, "action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())))
 
     action_declaration = actions[action]
 
@@ -1496,8 +1497,12 @@ def app_action_run(app_id, action, args=None):
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
     args_list = args_odict.values()
 
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+
     env_dict = _make_environment_dict(args_odict, prefix="ACTION_")
     env_dict["YNH_APP_ID"] = app_id
+    env_dict["YNH_APP_INSTANCE_NAME"] = app
+    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_ACTION"] = action
 
     _, path = tempfile.mkstemp()
@@ -1508,9 +1513,9 @@ def app_action_run(app_id, action, args=None):
     os.chmod(path, 700)
 
     if action_declaration.get("cwd"):
-        cwd = action_declaration["cwd"].replace("$app_id", app_id)
+        cwd = action_declaration["cwd"].replace("$app", app_id)
     else:
-        cwd = "/etc/yunohost/apps/" + app_id
+        cwd = "/etc/yunohost/apps/" + app
 
     retcode = hook_exec(
         path,
@@ -1521,7 +1526,7 @@ def app_action_run(app_id, action, args=None):
     )
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        raise MoulinetteError(retcode, "Error while executing action '%s' of app '%s': return code %s" % (action, app_id, retcode))
+        raise MoulinetteError(retcode, "Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode))
 
     os.remove(path)
 
@@ -1531,25 +1536,34 @@ def app_action_run(app_id, action, args=None):
 # Config panel todo list:
 # * docstrings
 # * merge translations on the json once the workflow is in place
-def app_config_show_panel(app_id):
+def app_config_show_panel(app):
     logger.warning(m18n.n('experimental_feature'))
 
     from yunohost.hook import hook_exec
 
     # this will take care of checking if the app is installed
-    app_info_dict = app_info(app_id)
+    app_info_dict = app_info(app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
-    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
+
+    app_id, app_instance_nb = _parse_app_instance_name(app)
 
     if not os.path.exists(config_panel) or not os.path.exists(config_script):
         return {
+            "app_id": app_id,
+            "app": app,
+            "app_name": app_info_dict["name"],
             "config_panel": [],
         }
 
     config_panel = read_json(config_panel)
 
-    env = {"YNH_APP_ID": app_id}
+    env = {
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+    }
     parsed_values = {}
 
     # I need to parse stdout to communicate between scripts because I can't
@@ -1573,7 +1587,6 @@ def app_config_show_panel(app_id):
     return_code = hook_exec(config_script,
               args=["show"],
               env=env,
-              user="root",
               stdout_callback=parse_stdout,
     )
 
@@ -1607,23 +1620,24 @@ def app_config_show_panel(app_id):
 
     return {
         "app_id": app_id,
+        "app": app,
         "app_name": app_info_dict["name"],
         "config_panel": config_panel,
     }
 
 
-def app_config_apply(app_id, args):
+def app_config_apply(app, args):
     logger.warning(m18n.n('experimental_feature'))
 
     from yunohost.hook import hook_exec
 
-    installed = _is_installed(app_id)
+    installed = _is_installed(app)
     if not installed:
         raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app_id))
+                              m18n.n('app_not_installed', app=app))
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
-    config_script = os.path.join(APPS_SETTING_PATH, app_id, 'scripts', 'config')
+    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+    config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
     if not os.path.exists(config_panel) or not os.path.exists(config_script):
         # XXX real exception
@@ -1631,7 +1645,12 @@ def app_config_apply(app_id, args):
 
     config_panel = read_json(config_panel)
 
-    env = {"YNH_APP_ID": app_id}
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+    env = {
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+    }
     args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
     for tab in config_panel.get("panel", []):
@@ -1656,7 +1675,6 @@ def app_config_apply(app_id, args):
     return_code = hook_exec(config_script,
               args=["apply"],
               env=env,
-              user="root",
     )
 
     if return_code != 0:
@@ -2189,10 +2207,14 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     for domain in domain_list(auth)['domains']:
                         msignals.display("- {}".format(domain))
 
-                if arg_type == 'user':
+                elif arg_type == 'user':
                     msignals.display(m18n.n('users_available'))
                     for user in user_list(auth)['users'].keys():
                         msignals.display("- {}".format(user))
+
+                elif arg_type == 'password':
+                    msignals.display(m18n.n('good_practices_about_user_password'))
+
 
                 try:
                     input_string = msignals.prompt(ask_string, is_password)
@@ -2251,6 +2273,9 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     raise MoulinetteError(errno.EINVAL,
                         m18n.n('app_argument_choice_invalid',
                             name=arg_name, choices='yes, no, y, n, 1, 0'))
+        elif arg_type == 'password':
+            from yunohost.utils.password import assert_password_is_strong_enough
+            assert_password_is_strong_enough('user', arg_value)
         args_dict[arg_name] = arg_value
 
     # END loop over action_args...

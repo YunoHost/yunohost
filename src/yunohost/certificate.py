@@ -97,11 +97,6 @@ def certificate_status(auth, domain_list, full=False):
 
     import yunohost.domain
 
-    # Check if old letsencrypt_ynh is installed
-    # TODO / FIXME - Remove this in the future once the letsencrypt app is
-    # not used anymore
-    _check_old_letsencrypt_app()
-
     # If no domains given, consider all yunohost domains
     if domain_list == []:
         domain_list = yunohost.domain.domain_list(auth)['domains']
@@ -143,11 +138,6 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
                        before attempting the install
         self-signed  -- Instal self-signed certificates instead of Let's Encrypt
     """
-
-    # Check if old letsencrypt_ynh is installed
-    # TODO / FIXME - Remove this in the future once the letsencrypt app is
-    # not used anymore
-    _check_old_letsencrypt_app()
 
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
@@ -328,11 +318,6 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
     import yunohost.domain
 
-    # Check if old letsencrypt_ynh is installed
-    # TODO / FIXME - Remove this in the future once the letsencrypt app is
-    # not used anymore
-    _check_old_letsencrypt_app()
-
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
     if domain_list == []:
@@ -355,7 +340,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 
             domain_list.append(domain)
 
-        if len(domain_list) == 0:
+        if len(domain_list) == 0 and not email:
             logger.info("No certificate needs to be renewed.")
 
     # Else, validate the domain list given
@@ -429,18 +414,6 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 ###############################################################################
 #   Back-end stuff                                                            #
 ###############################################################################
-
-def _check_old_letsencrypt_app():
-    import yunohost.domain
-
-    installedAppIds = [app["id"] for app in yunohost.app.app_list(installed=True)["apps"]]
-
-    if "letsencrypt" not in installedAppIds:
-        return
-
-    raise MoulinetteError(errno.EINVAL, m18n.n(
-        'certmanager_old_letsencrypt_app_detected'))
-
 
 def _install_cron():
     cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"

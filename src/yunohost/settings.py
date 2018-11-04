@@ -29,12 +29,16 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * string
 # * enum (in form a python list)
 
-# we don't store the value in default options
 DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True}),
     ("example.int", {"type": "int", "default": 42}),
     ("example.string", {"type": "string", "default": "yolo swag"}),
     ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
+
+    # Password Validation
+    # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
+    ("security.password.admin.strength", {"type": "int", "default": 1}),
+    ("security.password.user.strength", {"type": "int", "default": 1}),
 ])
 
 
@@ -90,9 +94,12 @@ def settings_set(key, value):
                 received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "int":
         if not isinstance(value, int) or isinstance(value, bool):
-            raise MoulinetteError(errno.EINVAL, m18n.n(
-                'global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type))
+            if isinstance(value, str):
+                value=int(value)
+            else:
+                raise MoulinetteError(errno.EINVAL, m18n.n(
+                    'global_settings_bad_type_for_setting', setting=key,
+                    received_type=type(value).__name__, expected_type=key_type))
     elif key_type == "string":
         if not isinstance(value, basestring):
             raise MoulinetteError(errno.EINVAL, m18n.n(

@@ -43,7 +43,7 @@ unique_subject	= no			# Set to 'no' to allow creation of
 new_certs_dir	= $dir/newcerts		# default place for new certs.
 
 certificate	= $dir/ca/cacert.pem 	# The CA certificate
-serial		= $dir/serial 		# The current serial number
+#serial		= $dir/serial 		# The current serial number
 #crlnumber	= $dir/crlnumber	# the current crl number
 					# must be commented out to leave a V1 CRL
 crl		= $dir/crl.pem 		# The current CRL

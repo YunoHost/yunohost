@@ -299,6 +299,23 @@ ynh_backup_if_checksum_is_different () {
 	fi
 }
 
+# Delete a file checksum from the app settings
+#
+# $app should be defined when calling this helper
+#
+# usage: ynh_remove_file_checksum file
+# | arg: -f, --file= - The file for which the checksum will be deleted
+ynh_delete_file_checksum () {
+	# Declare an array to define the options of this helper.
+	declare -Ar args_array=( [f]=file= )
+	local file
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
+	ynh_app_setting_delete $app $checksum_setting_name
+}
+
 # Remove a file or a directory securely
 #
 # usage: ynh_secure_remove path_to_remove

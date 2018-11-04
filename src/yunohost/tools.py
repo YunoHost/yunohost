@@ -32,6 +32,7 @@ import logging
 import subprocess
 import pwd
 import socket
+import cracklib
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
@@ -127,8 +128,13 @@ def tools_adminpw(auth, new_password):
 
     """
     from yunohost.user import _hash_user_password
+    from yunohost.utils.password import assert_password_is_strong_enough
     import spwd
+    
+    assert_password_is_strong_enough("admin", new_password)
+    
     new_hash = _hash_user_password(new_password)
+
     try:
         auth.update("cn=admin", { "userPassword": new_hash, })
     except:
@@ -263,7 +269,8 @@ def _is_inside_container():
 
 
 @is_unit_operation()
-def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
+def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
+                      force_password=False):
     """
     YunoHost post-install
 
@@ -274,12 +281,18 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
         password -- YunoHost admin password
 
     """
+    from yunohost.utils.password import assert_password_is_strong_enough
+
     dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
         raise MoulinetteError(errno.EPERM,
                               m18n.n('yunohost_already_installed'))
+
+    # Check password
+    if not force_password:
+        assert_password_is_strong_enough("admin", password)
 
     if not ignore_dyndns:
         # Check if yunohost dyndns can handle the given domain
@@ -311,6 +324,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
             dyndns = False
     else:
         dyndns = False
+
 
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
@@ -371,7 +385,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False):
     service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     commands = [
-        'echo "01" > %s/serial' % ssl_dir,
         'rm %s/index.txt' % ssl_dir,
         'touch %s/index.txt' % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
@@ -1059,3 +1072,4 @@ class Migration(object):
     @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
+
