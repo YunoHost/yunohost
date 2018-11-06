@@ -1,3 +1,26 @@
+# Check if apt is free to use, or wait, until timeout.
+#
+# [internal]
+#
+# usage: ynh_is_dpkg_free
+ynh_is_dpkg_free() {
+    local try
+    # With seq 1 17, timeout will be almost 30 minutes
+    for try in `seq 1 17`
+    do
+        # Check if /var/lib/dpkg/lock is used by another process
+        if sudo lsof /var/lib/dpkg/lock > /dev/null
+        then
+            echo "apt is already in use..."
+            # Sleep an exponential time at each round
+            sleep $(( try * try ))
+        else
+            break
+        fi
+    done
+    echo "apt still used, but timeout reached !"
+}
+
 # Check either a package is installed or not
 #
 # example: ynh_package_is_installed 'yunohost' && echo "ok"
@@ -5,6 +28,7 @@
 # usage: ynh_package_is_installed name
 # | arg: name - the package name to check
 ynh_package_is_installed() {
+    ynh_is_dpkg_free
     dpkg-query -W -f '${Status}' "$1" 2>/dev/null \
         | grep -c "ok installed" &>/dev/null
 }
@@ -30,6 +54,7 @@ ynh_package_version() {
 #
 # usage: ynh_apt update
 ynh_apt() {
+    ynh_is_dpkg_free
     DEBIAN_FRONTEND=noninteractive sudo apt-get -y $@
 }
 
@@ -105,6 +130,7 @@ ynh_package_install_from_equivs () {
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
+    ynh_is_dpkg_free
     (cp "$controlfile" "${TMPDIR}/control" && cd "$TMPDIR" \
      && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
