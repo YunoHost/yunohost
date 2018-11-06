@@ -465,8 +465,8 @@
     "migration_description_0004_php5_to_php7_pools": "Reconfigurez le pool PHP pour utiliser PHP 7 au lieu de 5",
     "migration_description_0005_postgresql_9p4_to_9p6": "Migration des bases de données de postgresql 9.4 vers 9.6",
     "migration_0005_postgresql_94_not_installed": "Postgresql n'a pas été installé sur votre système. Rien à faire !",
-    "migration_0005_postgresql_96_not_installed": "Postgresql  9.4 a été trouvé et installé, mais aucune version Postgresql  9.6 ! Quelque chose d'étrange a du arriver à votre système :( ...",
-    "migration_0005_not_enough_space": "Pas assez d'espace libre disponible sur {path} pour permettre de faire la migration actuellement :(.",
+    "migration_0005_postgresql_96_not_installed": "Postgresql 9.4 a été trouvé et installé, mais pas Postgresql 9.6 !? Quelque chose d’étrange a dû arriver à votre système :( …",
+    "migration_0005_not_enough_space": "Il n’y a pas assez d’espace libre de disponible sur {path} pour lancer maintenant la migration :(.",
     "recommend_to_add_first_user": "La post-installation est terminée, mais YunoHost a besoin d'au moins un utilisateur pour fonctionner correctement. Vous devez en ajouter un en utilisant 'yunohost user create' ou l'interface d'administration.",
     "service_description_php7.0-fpm": "exécute des applications écrites en PHP avec nginx",
     "users_available": "Liste des utilisateurs disponibles :"
