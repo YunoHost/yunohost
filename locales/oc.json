@@ -465,5 +465,6 @@
     "password_too_simple_1": "Lo senhal deu conténer almens 8 caractèrs",
     "password_too_simple_2": "Lo senhal deu conténer almens 8 caractèrs amb de nombres, de majusculas e de minusculas",
     "password_too_simple_3": "Lo senhal deu conténer almens 8 caractèrs amb de nombres, de majusculas, de minusculas e de caractèrs especials",
-    "password_too_simple_4": "Lo senhal deu conténer almens 12 caractèrs amb de nombres, de majusculas, de minusculas e de caractèrs especials"
+    "password_too_simple_4": "Lo senhal deu conténer almens 12 caractèrs amb de nombres, de majusculas, de minusculas e de caractèrs especials",
+    "root_password_desynchronized": "Lo senhal de l'administrator es estat cambiat, mas YunoHost a pas pogut l'espandir al senhal root !"
 }
