@@ -126,7 +126,7 @@
     "hook_exec_failed": "L'esecuzione dello script è fallita: {path:s}",
     "hook_exec_not_terminated": "L'esecuzione dello script non è stata terminata: {path:s}",
     "hook_name_unknown": "Nome di hook '{name:s}' sconosciuto",
-    "installation_complete": "Installazione finita",
+    "installation_complete": "Installazione completata",
     "installation_failed": "Installazione fallita",
     "ip6tables_unavailable": "Non puoi giocare con ip6tables qui. O sei in un container o il tuo kernel non lo supporta",
     "iptables_unavailable": "Non puoi giocare con iptables qui. O sei in un container o il tuo kernel non lo supporta",
