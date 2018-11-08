@@ -250,5 +250,15 @@
     "certmanager_certificate_fetching_or_enabling_failed": "L'attivazione del nuovo certificato per {domain:s} sembra fallita in qualche modo...",
     "certmanager_attempt_to_renew_nonLE_cert": "Il certificato per il dominio {domain:s} non è emesso da Let's Encrypt. Impossibile rinnovarlo automaticamente!",
     "certmanager_attempt_to_renew_valid_cert": "Il certificato per il dominio {domain:s} non è a scadere! Usa --force per ignorare",
-    "certmanager_domain_http_not_working": "Sembra che non sia possibile accedere al dominio {domain:s} attraverso HTTP. Verifica la configurazione del DNS e di nginx"
+    "certmanager_domain_http_not_working": "Sembra che non sia possibile accedere al dominio {domain:s} attraverso HTTP. Verifica la configurazione del DNS e di nginx",
+    "app_already_installed_cant_change_url": "Questa applicazione è già installata. L'URL non può essere cambiato solo da questa funzione. Guarda se `app changeurl` è disponibile.",
+    "app_already_up_to_date": "{app:s} è già aggiornata",
+    "app_change_no_change_url_script": "L'applicazione {app_name:s} non supporta ancora il cambio del proprio URL, potrebbe essere necessario aggiornarla.",
+    "app_change_url_failed_nginx_reload": "Riavvio di nginx fallito. Questo è il risultato di 'nginx -t':\n{nginx_errors:s}",
+    "app_change_url_identical_domains": "Il vecchio ed il nuovo dominio/percorso_url sono identici ('{domain:s}{path:s}'), nessuna operazione necessaria.",
+    "app_change_url_no_script": "L'applicazione '{app_name:s}' non supporta ancora la modifica dell'URL. Forse dovresti aggiornare l'applicazione.",
+    "app_change_url_success": "URL dell'applicazione {app:s} cambiato con successo in {domain:s}{path:s}",
+    "app_make_default_location_already_used": "Impostazione dell'applicazione '{app}' come predefinita del dominio {domain} non riuscita perchè è già stata impostata per l'altra applicazione '{other_app}'",
+    "app_location_unavailable": "Questo URL non è disponibile o va in conflitto con la/le applicazione/i già installata/e:\n{apps:s}",
+    "app_upgrade_app_name": "Aggiornando l'applicazione {app}..."
 }
