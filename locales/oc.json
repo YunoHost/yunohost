@@ -455,5 +455,16 @@
     "migration_0005_not_enough_space": "I a pas pro d’espaci disponible sus {path} per lançar la migracion d’aquela passa :(.",
     "recommend_to_add_first_user": "La post installacion es acabada, mas YunoHost fa besonh d’almens un utilizaire per foncionar coma cal. Vos cal n’ajustar un en utilizant la comanda « yunohost user create » o ben l’interfàcia d’administracion.",
     "service_description_php7.0-fpm": "executa d’aplicacions escrichas en PHP amb nginx",
-    "users_available": "Lista dels utilizaires disponibles :"
+    "users_available": "Lista dels utilizaires disponibles :",
+    "good_practices_about_admin_password": "Sètz per definir un nòu senhal per l’administracion. Lo senhal deu almens conténer 8 caractèrs - encara que siá de bon far d’utilizar un senhal mai long qu’aquò (ex. una passafrasa) e/o d’utilizar mantun tipes de caractèrs (majuscula, minuscula, nombre e caractèrs especials).",
+    "good_practices_about_user_password": "Sètz per definir un nòu senhal d’utilizaire. Lo senhal deu almens conténer 8 caractèrs - encara que siá de bon far d’utilizar un senhal mai long qu’aquò (ex. una passafrasa) e/o d’utilizar mantun tipes de caractèrs (majuscula, minuscula, nombre e caractèrs especials).",
+    "migration_description_0006_sync_admin_and_root_passwords": "Sincronizar los senhals admin e root",
+    "migration_0006_disclaimer": "Ara YunoHost s’espèra que los senhals admin e root sián sincronizats. En lançant aquesta migracion, vòstre senhal root serà remplaçat pel senhal admin.",
+    "migration_0006_done": "Lo senhal root es estat remplaçat pel senhal admin.",
+    "password_listed": "Aqueste senhal fa part dels senhals mai utilizats del monde. Volgatz ben ne causir un mai unic.",
+    "password_too_simple_1": "Lo senhal deu conténer almens 8 caractèrs",
+    "password_too_simple_2": "Lo senhal deu conténer almens 8 caractèrs amb de nombres, de majusculas e de minusculas",
+    "password_too_simple_3": "Lo senhal deu conténer almens 8 caractèrs amb de nombres, de majusculas, de minusculas e de caractèrs especials",
+    "password_too_simple_4": "Lo senhal deu conténer almens 12 caractèrs amb de nombres, de majusculas, de minusculas e de caractèrs especials",
+    "root_password_desynchronized": "Lo senhal de l’administrator es estat cambiat, mas YunoHost a pas pogut l’espandir al senhal root !"
 }
