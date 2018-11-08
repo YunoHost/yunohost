@@ -1,3 +1,36 @@
+yunohost (3.3.0) testing; urgency=low
+
+  Highlights
+  ==========
+
+  * [enh] Synchronize root password with admin password (#527)
+  * [enh] Check for weak passwords whenever a password is defined (#196)
+  * [fix] 'dyndns update' now checks the upstream DNS record (#519)
+  * [fix] Update Metronome configuration file to v3.11 standard (#559)
+  * [fix] Some php conf files wre not properly removed when an app was uninstalled (#566)
+  * [i18n] Improve Catalan, French, Occitan, Portuguese, Arabic, Italian translations
+
+  Misc
+  ====
+
+  * [enh] Add OCSP Stapling to nginx configuration if using Lets Encrypt (#533)
+  * [enh] Add CAA record in recommended DNS conf (#528)
+  * [helpers] Add `ynh_delete_file_checksum` (#524)
+  * [helpers] When using `ynh_setup_source`, silent unecessary messages (#545)
+  * [helpers] Use more blocks for dd in `ynh_string_random` (#569)
+  * [fix] Potential key error when retrieving install_time (#551)
+  * [fix] Allow `-` in user last names (#565)
+  * [fix] Fix possible HTTP2 issue with curl (#547)
+  * [fix] Fix BASE/URI in ldap conf (#554)
+  * [fix] Use random serial number for CA (prevent browser from complaining about some selfsigned certs) (#557)
+  * [enh] Pass Host header to YunoHost API (#560)
+  * [enh] Sort backup list according to their date (#562)
+  * [fix] Improve UX when admin tries to allocate reserved email alias (#553)
+
+ Thanks to all contributors (ljf, irinia11y, Maniack, xaloc33, Bram, flashemade, Maranda, Josue, frju365, Aleks, randomstuff, jershon, Genma, Quent-in, MyNameIsTroll, ButterflyOfFire, Jibec, silkevicious) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 08 Nov 2018 17:09:00 +0000
+
 yunohost (3.2.2) stable; urgency=low
 
   * [hotfix] mod_auth_ldap: reflect SASL API changes in latest Metronome (#546)
