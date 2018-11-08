@@ -260,5 +260,7 @@
     "app_change_url_success": "URL dell'applicazione {app:s} cambiato con successo in {domain:s}{path:s}",
     "app_make_default_location_already_used": "Impostazione dell'applicazione '{app}' come predefinita del dominio {domain} non riuscita perchè è già stata impostata per l'altra applicazione '{other_app}'",
     "app_location_unavailable": "Questo URL non è disponibile o va in conflitto con la/le applicazione/i già installata/e:\n{apps:s}",
-    "app_upgrade_app_name": "Aggiornando l'applicazione {app}..."
+    "app_upgrade_app_name": "Aggiornando l'applicazione {app}...",
+    "app_upgrade_some_app_failed": "Impossibile aggiornare alcune applicazioni",
+    "appslist_corrupted_json": "Caricamento della lista delle applicazioni non riuscita. Sembra che {filename:s} sia corrotto."
 }
