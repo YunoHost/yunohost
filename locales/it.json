@@ -262,5 +262,18 @@
     "app_location_unavailable": "Questo URL non è disponibile o va in conflitto con la/le applicazione/i già installata/e:\n{apps:s}",
     "app_upgrade_app_name": "Aggiornando l'applicazione {app}...",
     "app_upgrade_some_app_failed": "Impossibile aggiornare alcune applicazioni",
-    "appslist_corrupted_json": "Caricamento della lista delle applicazioni non riuscita. Sembra che {filename:s} sia corrotto."
+    "appslist_corrupted_json": "Caricamento della lista delle applicazioni non riuscita. Sembra che {filename:s} sia corrotto.",
+    "appslist_could_not_migrate": "Migrazione della lista delle applicazioni {appslist:s} non riuscita! Impossibile analizzare l'URL... La vecchia operazione pianificata è stata tenuta in {bkp_file:s}.",
+    "appslist_migrating": "Migrando la lista di applicazioni {appslist:s} ...",
+    "appslist_name_already_tracked": "C'è già una lista di applicazioni registrata con il nome {name:s}.",
+    "appslist_url_already_tracked": "C'è già una lista di applicazioni registrata con URL {url:s}.",
+    "ask_path": "Percorso",
+    "backup_abstract_method": "Questo metodo di backup non è ancora stato implementato",
+    "backup_applying_method_borg": "Inviando tutti i file da salvare nel backup nel deposito borg-backup...",
+    "backup_applying_method_copy": "Copiando tutti i files nel backup...",
+    "backup_applying_method_custom": "Chiamando il metodo di backup personalizzato '{method:s}'...",
+    "backup_applying_method_tar": "Creando l'archivio tar del backup...",
+    "backup_archive_mount_failed": "Montaggio dell'archivio del backup non riuscito",
+    "backup_archive_system_part_not_available": "La parte di sistema '{part:s}' non è disponibile in questo backup",
+    "backup_archive_writing_error": "Impossibile aggiungere i file al backup nell'archivio compresso"
 }
