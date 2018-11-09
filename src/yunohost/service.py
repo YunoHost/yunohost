@@ -431,9 +431,8 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
     names = pre_result['succeed'].keys()
 
     if not names:
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('service_regenconf_failed',
-                                     services=', '.join(pre_result['failed'])))
+        raise MoulinetteError('service_regenconf_failed',
+                                     services=', '.join(pre_result['failed']))
 
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True

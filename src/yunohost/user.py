@@ -145,8 +145,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
     # Check that the mail domain exists
     if mail.split("@")[1] not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('mail_domain_unknown',
+        raise MoulinetteError(m18n.n('mail_domain_unknown',
                                      domain=mail.split("@")[1]))
 
     operation_logger.start()
@@ -325,8 +324,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         ]
         auth.validate_uniqueness({'mail': mail})
         if mail[mail.find('@') + 1:] not in domains:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('mail_domain_unknown',
+            raise MoulinetteError(m18n.n('mail_domain_unknown',
                                          domain=mail[mail.find('@') + 1:]))
         if mail in aliases:
             raise MoulinetteError(errno.EEXIST,m18n.n('mail_unavailable'))
@@ -340,8 +338,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         for mail in add_mailalias:
             auth.validate_uniqueness({'mail': mail})
             if mail[mail.find('@') + 1:] not in domains:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('mail_domain_unknown',
+                raise MoulinetteError(m18n.n('mail_domain_unknown',
                                              domain=mail[mail.find('@') + 1:]))
             user['mail'].append(mail)
         new_attr_dict['mail'] = user['mail']

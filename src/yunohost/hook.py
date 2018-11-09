@@ -255,8 +255,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             try:
                 hl = hooks_names[n]
             except KeyError:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('hook_name_unknown', n))
+                raise MoulinetteError('hook_name_unknown', n)
             # Iterate over hooks with this name
             for h in hl:
                 # Update hooks dict

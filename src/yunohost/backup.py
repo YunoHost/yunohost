@@ -1083,14 +1083,12 @@ class RestoreManager():
             return True
         elif free_space > needed_space:
             # TODO Add --force options to avoid the error raising
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('restore_may_be_not_enough_disk_space',
+            raise MoulinetteError(m18n.n('restore_may_be_not_enough_disk_space',
                                   free_space=free_space,
                                   needed_space=needed_space,
                                   margin=margin))
         else:
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('restore_not_enough_disk_space',
+            raise MoulinetteError(m18n.n('restore_not_enough_disk_space',
                                   free_space=free_space,
                                   needed_space=needed_space,
                                   margin=margin))
@@ -1143,7 +1141,7 @@ class RestoreManager():
 
                     newlines.append(row)
         except (IOError, OSError, csv.Error) as e:
-            raise MoulinetteError(errno.EIO,m18n.n('error_reading_file',
+            raise MoulinetteError(m18n.n('error_reading_file',
                                                    file=backup_csv,
                                                    error=str(e)))
 
@@ -2204,9 +2202,8 @@ def backup_info(name, with_details=False, human_readable=False):
 
         # Raise exception if link is broken (e.g. on unmounted external storage)
         if not os.path.exists(archive_file):
-            raise MoulinetteError(errno.EIO,
-                                  m18n.n('backup_archive_broken_link',
-                                         path=archive_file))
+            raise MoulinetteError('backup_archive_broken_link',
+                                         path=archive_file)
 
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 

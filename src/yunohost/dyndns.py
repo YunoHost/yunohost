@@ -106,9 +106,8 @@ def _dyndns_available(provider, domain):
                           expected_status_code=None)
     except MoulinetteError as e:
         logger.error(str(e))
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('dyndns_could_not_check_available',
-                                     domain=domain, provider=provider))
+        raise MoulinetteError('dyndns_could_not_check_available',
+                                     domain=domain, provider=provider)
 
     return r == u"Domain %s is available" % domain
 
@@ -130,8 +129,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
-        raise MoulinetteError(errno.ENOENT,
-                              m18n.n('dyndns_domain_not_provided',
+        raise MoulinetteError(m18n.n('dyndns_domain_not_provided',
                                      domain=domain, provider=subscribe_host))
 
     # Verify if domain is available

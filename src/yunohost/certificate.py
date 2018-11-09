@@ -476,8 +476,7 @@ location ^~ '/.well-known/acme-challenge/'
             contents = f.read()
 
         if '/.well-known/acme-challenge' in contents:
-            raise MoulinetteError(errno.EINVAL, m18n.n(
-                'certmanager_conflicting_nginx_file', filepath=path))
+            raise MoulinetteError('certmanager_conflicting_nginx_file', filepath=path)
 
     # Write the conf
     if os.path.exists(nginx_conf_file):
