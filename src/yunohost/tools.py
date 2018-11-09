@@ -139,8 +139,7 @@ def tools_adminpw(auth, new_password, check_strength=True):
         auth.update("cn=admin", { "userPassword": new_hash, })
     except:
         logger.exception('unable to change admin password')
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('admin_password_change_failed'))
+        raise MoulinetteError('admin_password_change_failed')
     else:
         # Write as root password
         try:
@@ -289,8 +288,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('yunohost_already_installed'))
+        raise MoulinetteError('yunohost_already_installed')
 
     # Check password
     if not force_password:
@@ -319,9 +317,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
                 dyndns = True
             # If not, abort the postinstall
             else:
-                raise MoulinetteError(errno.EEXIST,
-                                      m18n.n('dyndns_unavailable',
-                                             domain=domain))
+                raise MoulinetteError('dyndns_unavailable', domain=domain)
         else:
             dyndns = False
     else:
@@ -364,8 +360,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=str(e)))
+        raise MoulinetteError('ssowat_persistent_conf_read_error', error=str(e))
     except IOError:
         ssowat_conf = {}
 
@@ -378,8 +373,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=str(e)))
+        raise MoulinetteError('ssowat_persistent_conf_write_error', error=str(e))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 

@@ -130,10 +130,7 @@ def service_start(names):
             logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed',
-                                             service=name,
-                                             logs=_get_journalctl_logs(name)))
+                raise MoulinetteError('service_start_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_started', service=name))
 
 
@@ -152,10 +149,7 @@ def service_stop(names):
             logger.success(m18n.n('service_stopped', service=name))
         else:
             if service_status(name)['status'] != 'inactive':
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed',
-                                             service=name,
-                                             logs=_get_journalctl_logs(name)))
+                raise MoulinetteError('service_stop_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_stopped', service=name))
 
 @is_unit_operation()
@@ -174,10 +168,7 @@ def service_enable(operation_logger, names):
         if _run_service_command('enable', name):
             logger.success(m18n.n('service_enabled', service=name))
         else:
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed',
-                                         service=name,
-                                         logs=_get_journalctl_logs(name)))
+            raise MoulinetteError('service_enable_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 def service_disable(names):
@@ -194,10 +185,7 @@ def service_disable(names):
         if _run_service_command('disable', name):
             logger.success(m18n.n('service_disabled', service=name))
         else:
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed',
-                                         service=name,
-                                         logs=_get_journalctl_logs(name)))
+            raise MoulinetteError('service_disable_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 def service_status(names=[]):
@@ -220,8 +208,7 @@ def service_status(names=[]):
 
     for name in names:
         if check_names and name not in services.keys():
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('service_unknown', service=name))
+            raise MoulinetteError('service_unknown', service=name)
 
         # this "service" isn't a service actually so we skip it
         #

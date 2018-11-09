@@ -2295,9 +2295,7 @@ def _create_archive_dir():
     """ Create the YunoHost archives directory if doesn't exist """
     if not os.path.isdir(ARCHIVES_PATH):
         if os.path.lexists(ARCHIVES_PATH):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('backup_output_symlink_dir_broken',
-                                         path=ARCHIVES_PATH))
+            raise MoulinetteError('backup_output_symlink_dir_broken', path=ARCHIVES_PATH)
 
         os.mkdir(ARCHIVES_PATH, 0750)
 

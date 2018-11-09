@@ -87,16 +87,14 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
         # Do not allow to subscribe to multiple dyndns domains...
         if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('domain_dyndns_already_subscribed'))
+            raise MoulinetteError('domain_dyndns_already_subscribed')
 
         from yunohost.dyndns import dyndns_subscribe, _dyndns_provides
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
         if not _dyndns_provides("dyndns.yunohost.org", domain):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('domain_dyndns_root_unknown'))
+            raise MoulinetteError('domain_dyndns_root_unknown')
 
         # Actually subscribe
         dyndns_subscribe(domain=domain)

@@ -318,7 +318,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if path[0] != '/':
         path = os.path.realpath(path)
     if not os.path.isfile(path):
-        raise MoulinetteError(errno.EIO, m18n.g('file_not_exist', path=path))
+        raise MoulinetteError('file_not_exist', path=path)
 
     # Construct command variables
     cmd_args = ''

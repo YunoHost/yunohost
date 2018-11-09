@@ -77,9 +77,7 @@ def _dyndns_provides(provider, domain):
         dyndomains = download_json('https://%s/domains' % provider, timeout=30)
     except MoulinetteError as e:
         logger.error(str(e))
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('dyndns_could_not_check_provide',
-                                     domain=domain, provider=provider))
+        raise MoulinetteError('dyndns_could_not_check_provide', domain=domain, provider=provider)
 
     # Extract 'dyndomain' from 'domain', e.g. 'nohost.me' from 'foo.nohost.me'
     dyndomain = '.'.join(domain.split('.')[1:])

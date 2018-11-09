@@ -71,8 +71,7 @@ def user_list(auth, fields=None):
             if attr in keys:
                 attrs.append(attr)
             else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('field_invalid', attr))
+                raise MoulinetteError('field_invalid', attrz1)
     else:
         attrs = ['uid', 'cn', 'mail', 'mailuserquota', 'loginShell']
 

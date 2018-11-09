@@ -188,7 +188,7 @@ def log_display(path, number=50, share=False):
                 if os.path.exists(log_path):
                     logger.warning(error)
                 else:
-                    raise MoulinetteError(errno.EINVAL, error)
+                    raise MoulinetteError(error)
 
     # Display logs if exist
     if os.path.exists(log_path):
