@@ -1036,7 +1036,7 @@ def app_removeaccess(auth, apps, users=[]):
             else:
                 for allowed_user in user_list(auth)['users'].keys():
                     if allowed_user not in users:
-                        allowed_users.append(allowed_user)
+                        allowed_users.add(allowed_user)
 
             operation_logger.related_to += [ ('user', x) for x in allowed_users ]
             operation_logger.flush()
