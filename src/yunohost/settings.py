@@ -54,8 +54,7 @@ def settings_get(key, full=False):
     settings = _get_settings()
 
     if key not in settings:
-        raise MoulinetteError(m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
+        raise MoulinetteError('global_settings_key_doesnt_exists', settings_key=key)
 
     if full:
         return settings[key]
@@ -101,18 +100,17 @@ def settings_set(key, value):
                         'global_settings_bad_type_for_setting', setting=key,
                         received_type=type(value).__name__, expected_type=key_type))
             else:
-                raise MoulinetteError(m18n.n('global_settings_bad_type_for_setting', setting=key,
-                    received_type=type(value).__name__, expected_type=key_type))
+                raise MoulinetteError('global_settings_bad_type_for_setting', setting=key,
+                    received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "string":
         if not isinstance(value, basestring):
-            raise MoulinetteError(m18n.n('global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type))
+            raise MoulinetteError('global_settings_bad_type_for_setting', setting=key,
+                received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
-            raise MoulinetteError(m18n.n(
-                'global_settings_bad_choice_for_enum', setting=key,
+            raise MoulinetteError('global_settings_bad_choice_for_enum', setting=key,
                 received_type=type(value).__name__,
-                expected_type=", ".join(settings[key]["choices"])))
+                expected_type=", ".join(settings[key]["choices"]))
     else:
         raise MoulinetteError('global_settings_unknown_type', setting=key,
             unknown_type=key_type)
@@ -209,8 +207,7 @@ def _get_settings():
                                           setting_key=key))
                     unknown_settings[key] = value
     except Exception as e:
-        raise MoulinetteError(m18n.n('global_settings_cant_open_settings', reason=e),
-                              exc_info=1)
+        raise MoulinetteError('global_settings_cant_open_settings', reason=e, exc_info=1)
 
     if unknown_settings:
         try:
@@ -231,12 +228,10 @@ def _save_settings(settings, location=SETTINGS_PATH):
     try:
         result = json.dumps(settings_without_description, indent=4)
     except Exception as e:
-        raise MoulinetteError(m18n.n('global_settings_cant_serialize_settings', reason=e),
-                              exc_info=1)
+        raise MoulinetteError('global_settings_cant_serialize_settings', reason=e, exc_info=1)
 
     try:
         with open(location, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
-        raise MoulinetteError(m18n.n('global_settings_cant_write_settings', reason=e),
-                              exc_info=1)
+        raise MoulinetteError('global_settings_cant_write_settings', reason=e, exc_info=1)

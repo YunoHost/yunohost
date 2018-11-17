@@ -1083,15 +1083,9 @@ class RestoreManager():
             return True
         elif free_space > needed_space:
             # TODO Add --force options to avoid the error raising
-            raise MoulinetteError(m18n.n('restore_may_be_not_enough_disk_space',
-                                  free_space=free_space,
-                                  needed_space=needed_space,
-                                  margin=margin))
+            raise MoulinetteError('restore_may_be_not_enough_disk_space', free_space=free_space,  needed_space=needed_space, margin=margin)
         else:
-            raise MoulinetteError(m18n.n('restore_not_enough_disk_space',
-                                  free_space=free_space,
-                                  needed_space=needed_space,
-                                  margin=margin))
+            raise MoulinetteError('restore_not_enough_disk_space', free_space=free_space, needed_space=needed_space, margin=margin)
 
     ###########################################################################
     #   "Actual restore" (reverse step of the backup collect part)            #
@@ -1141,9 +1135,7 @@ class RestoreManager():
 
                     newlines.append(row)
         except (IOError, OSError, csv.Error) as e:
-            raise MoulinetteError(m18n.n('error_reading_file',
-                                                   file=backup_csv,
-                                                   error=str(e)))
+            raise MoulinetteError('error_reading_file', file=backup_csv, error=str(e))
 
         if not contains_php5:
             return
