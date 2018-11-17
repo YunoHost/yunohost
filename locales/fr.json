@@ -477,5 +477,6 @@
     "migration_0006_done": "Votre mot de passe root a été remplacé par celui de votre adminitrateur.",
     "password_listed": "Ce mot de passe est l’un des mots de passe les plus utilisés dans le monde. Veuillez choisir quelque chose d’un peu plus unique.",
     "password_too_simple_1": "Le mot de passe doit comporter au moins 8 caractères",
-    "password_too_simple_2": "Le mot de passe doit comporter au moins 8 caractères et contenir des chiffres, des caractères majuscules et minuscules."
+    "password_too_simple_2": "Le mot de passe doit comporter au moins 8 caractères et contenir des chiffres, des caractères majuscules et minuscules",
+    "password_too_simple_3": "Le mot de passe doit comporter au moins 8 caractères et contenir des chiffres, des caractères majuscules, minuscules et spéciaux."
 }
