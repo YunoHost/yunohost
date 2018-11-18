@@ -383,6 +383,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Create SSL CA
     service_regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
+    # (Update the serial so that it's specific to this very instance)
+    os.system("openssl rand -hex 19 > %s/serial" % ssl_dir)
     commands = [
         'rm %s/index.txt' % ssl_dir,
         'touch %s/index.txt' % ssl_dir,

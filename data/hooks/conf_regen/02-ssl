@@ -24,7 +24,7 @@ do_init_regen() {
 
   # initialize some files
   [[ -f "${ssl_dir}/serial" ]] \
-    || echo "00" > "${ssl_dir}/serial"
+    || openssl rand -hex 19 > "${ssl_dir}/serial"
   [[ -f "${ssl_dir}/index.txt" ]] \
     || touch "${ssl_dir}/index.txt"
 
