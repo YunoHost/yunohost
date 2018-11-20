@@ -46,7 +46,6 @@ ynh_backup() {
     local SRC_PATH="$1"
     local DEST_PATH="${2:-}"
     local IS_BIG="${3:-0}"
-    local NEEDED="${4:-0}"
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
 
     # If backing up core only (used by ynh_backup_before_upgrade),
@@ -62,12 +61,14 @@ ynh_backup() {
     # Be sure the source path is not empty
     [[ -e "${SRC_PATH}" ]] || {
         echo "!!! Source path '${SRC_PATH}' does not exist !!!" >&2
-        if [ $NEEDED -eq 1 ]
+	
+	# This is a temporary fix for fail2ban config files missing after the migration to stretch.
+        if echo "${SRC_PATH}" | grep --quiet "/etc/fail2ban"
         then
-                return 1
+		touch "${SRC_PATH}"
+		echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
         else
-                echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
-                echo "This file is dummy... Please contact the maintainer of this app..." | tee "${SRC_PATH}" > /dev/null
+                return 1
         fi
     }
 
