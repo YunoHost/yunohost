@@ -26,7 +26,7 @@ This repository is the core of YunoHost code.
 - [Modules for the XMPP server Metronome](https://github.com/YunoHost/yunohost/tree/stable/lib/metronome/modules).
 - [Debian files](https://github.com/YunoHost/yunohost/tree/stable/debian) for package creation.
 
-## How does it works?
+## How does it work?
 - Python core scripts are accessible through two interfaces thanks to the [moulinette framework](https://github.com/YunoHost/moulinette):
  - [CLI](https://en.wikipedia.org/wiki/Command-line_interface) for `yunohost` command.
  - [API](https://en.wikipedia.org/wiki/Application_programming_interface) for [web administration module](https://github.com/YunoHost/yunohost-admin) (other modules could be implemented).
