@@ -62,7 +62,7 @@ ynh_backup() {
     [[ -e "${SRC_PATH}" ]] || {
         echo "!!! Source path '${SRC_PATH}' does not exist !!!" >&2
 	
-	# This is a temporary fix for fail2ban config files missing after the migration to stretch.
+        # This is a temporary fix for fail2ban config files missing after the migration to stretch.
         if echo "${SRC_PATH}" | grep --quiet "/etc/fail2ban"
         then
 		touch "${SRC_PATH}"
