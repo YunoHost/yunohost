@@ -60,7 +60,7 @@ do_pre_regen() {
 
   # copy configuration files
   cp -a ldap.conf slapd.conf "$ldap_dir"
-  cp -a sudo.schema mailserver.schema "$schema_dir"
+  cp -a sudo.schema mailserver.schema yunohost.schema "$schema_dir"
 
   install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
 }

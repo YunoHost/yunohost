@@ -89,6 +89,12 @@ def tools_ldapinit():
         except Exception as e:
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
+    for rdn, attr_dict in ldap_map['depends_children'].items():
+        try:
+            auth.add(rdn, attr_dict)
+        except Exception as e:
+            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
+
     admin_dict = {
         'cn': 'admin',
         'uid': 'admin',
