@@ -1,5 +1,5 @@
 server_host = localhost
 server_port = 389
 search_base = dc=yunohost,dc=org
-query_filter = (&(objectClass=mailAccount)(mail=%s))
+query_filter = (&(objectClass=mailAccount)(mail=%s)(permission=cn=main.mail,ou=permission,dc=yunohost,dc=org))
 result_attribute = maildrop
