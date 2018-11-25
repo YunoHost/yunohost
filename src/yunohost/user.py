@@ -214,10 +214,10 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         app_ssowatconf(auth)
         # TODO: Send a welcome mail to user
         logger.success(m18n.n('user_created'))
-        # Create group for user and add to group 'ALL'
+        # Create group for user and add to group 'all_users'
         user_group_add(auth, groupname=username, gid=uid)
         user_group_update(auth, groupname=username, add_user=username, force=True)
-        user_group_update(auth, 'ALL', add_user=username, force=True)
+        user_group_update(auth, 'all_users', add_user=username, force=True)
 
         hook_callback('post_user_create',
                         args=[username, mail, password, firstname, lastname])
@@ -598,7 +598,7 @@ def user_group_delete(operation_logger, auth, groupname, force=False):
     from yunohost.app import app_ssowatconf
     from yunohost.permission import _permission_sync_to_user
 
-    if not force and (groupname == 'ALL' or groupname == 'admins' or groupname in user_list(auth, ['uid'])['users']):
+    if not force and (groupname == 'all_users' or groupname == 'admins' or groupname in user_list(auth, ['uid'])['users']):
         raise MoulinetteError(errno.EPERM, m18n.n('group_deletion_not_allowed', user=groupname))
 
     operation_logger.start()
@@ -627,7 +627,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
 
     attrs_to_fetch = ['member']
 
-    if (groupname == 'ALL' or groupname == 'admins') and not force:
+    if (groupname == 'all_users' or groupname == 'admins') and not force:
         raise MoulinetteError(errno.EINVAL, m18n.n('edit_group_not_allowed', group=groupname))
 
     # Populate group informations

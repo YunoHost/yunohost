@@ -51,8 +51,8 @@ children:
         objectClass:
             - posixGroup
             - top
-    cn=ALL,ou=groups:
-        cn: ALL
+    cn=all_users,ou=groups:
+        cn: all_users
         gidNumber: "4002"
         objectClass:
             - posixGroup
@@ -66,7 +66,7 @@ depends_children:
             - posixGroup
             - permissionYnh
         groupPermission:
-            - "cn=ALL,ou=groups,dc=yunohost,dc=org"
+            - "cn=all_users,ou=groups,dc=yunohost,dc=org"
     cn=main.metronome,ou=permission:
         cn: main.metronome
         gidNumber: "5002"
@@ -74,4 +74,4 @@ depends_children:
             - posixGroup
             - permissionYnh
         groupPermission:
-            - "cn=ALL,ou=groups,dc=yunohost,dc=org"
+            - "cn=all_users,ou=groups,dc=yunohost,dc=org"
