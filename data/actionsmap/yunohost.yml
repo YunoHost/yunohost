@@ -63,7 +63,7 @@ _global:
 #           User            #
 #############################
 user:
-    category_help: Manage users
+    category_help: Manage users and groups
     actions:
 
         ### user_list()
@@ -217,6 +217,193 @@ user:
                     help: Username or email to get information
 
     subcategories:
+        group:
+            subcategory_help: Manage group
+            actions:
+                ### user_group_list()
+                list:
+                    action_help: List group
+                    api: GET /users/groups
+                    configuration:
+                        authenticate: all
+                        authenticator: ldap-anonymous
+                    arguments:
+                        --fields:
+                            help: fields to fetch
+                            nargs: "+"
+
+                ### user_group_add()
+                add:
+                    action_help: Create group
+                    api: POST /users/groups
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        groupname:
+                            help: The unique group name to add
+                            extra:
+                                pattern: &pattern_groupname
+                                    - !!str ^[a-z0-9_]+$
+                                    - "pattern_groupname"
+
+                ### user_group_delete()
+                delete:
+                    action_help: Delete group
+                    api: DELETE /users/groups/<groupname>
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        groupname:
+                            help: Username to delete
+                            extra:
+                                pattern: *pattern_groupname
+
+                ### user_group_update()
+                update:
+                    action_help: Update group
+                    api: PUT /users/groups/<groupname>
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        groupname:
+                            help: Username to update
+                            extra:
+                                pattern: *pattern_groupname
+                        -a:
+                            full: --add-user
+                            help: User to add in group
+                            nargs: "*"
+                            metavar: USERNAME
+                            extra:
+                                pattern: *pattern_username
+                        -r:
+                            full: --remove-user
+                            help: User to remove in group
+                            nargs: "*"
+                            metavar: USERNAME
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_group_info()
+                info:
+                    action_help: Get group information
+                    api: GET /users/<username>
+                    configuration:
+                        authenticate: all
+                        authenticator: ldap-anonymous
+                    arguments:
+                        groupname:
+                            help: Groupname to get information
+                            extra:
+                                pattern: *pattern_username
+
+        permission:
+            subcategory_help: Manage user permission
+            actions:
+                ### user_permission_list()
+                list:
+                    action_help: List access to user and group
+                    api: GET /users/permission/<app>
+                    configuration:
+                        authenticate: all
+                        authenticator: ldap-anonymous
+                    arguments:
+                        -a:
+                            full: --app
+                            help: Application to manage the permission
+                            nargs: "*"
+                            metavar: APP
+                        -p:
+                            full: --permission
+                            help: Name of permission (main by default)
+                            nargs: "*"
+                            metavar: PERMISSION
+                        -u:
+                            full: --username
+                            help: Username
+                            nargs: "*"
+                            metavar: USER
+                        -g:
+                            full: --group
+                            help: Group name
+                            nargs: "*"
+                            metavar: GROUP
+
+                ### user_permission_add()
+                add:
+                    action_help: Grant access right to users and group
+                    api: POST /users/permission/<app>
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        app:
+                            help: Application to manage the permission
+                            nargs: "*"
+                        -p:
+                            full: --permission
+                            help: Name of permission (main by default)
+                            nargs: "*"
+                            metavar: PERMISSION
+                        -u:
+                            full: --username
+                            help: Username
+                            nargs: "*"
+                            metavar: USER
+                            extra:
+                                pattern: *pattern_username
+                        -g:
+                            full: --group
+                            help: Group name
+                            nargs: "*"
+                            metavar: GROUP
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_permission_remove()
+                remove:
+                    action_help: Revoke access right to users and group
+                    api: PUT /users/permission/<app>
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        app:
+                            help: Application to manage the permission
+                            nargs: "*"
+                        -p:
+                            full: --permission
+                            help: Name of permission (main by default)
+                            nargs: "*"
+                            metavar: PERMISSION
+                        -u:
+                            full: --username
+                            help: Username
+                            nargs: "*"
+                            metavar: USER
+                            extra:
+                                pattern: *pattern_username
+                        -g:
+                            full: --group
+                            help: Group name
+                            nargs: "*"
+                            metavar: GROUP
+                            extra:
+                                pattern: *pattern_username
+
+                ## user_permission_clear()
+                clear:
+                    action_help: Reset access rights for the app
+                    api: DELETE /users/permission/<app>
+                    configuration:
+                        authenticate: all
+                    arguments:
+                        app:
+                            help: Application to manage the permission
+                            nargs: "*"
+                        -p:
+                            full: --permission
+                            help: Name of permission (main by default)
+                            nargs: "*"
+                            metavar: PERMISSION
 
         ssh:
             subcategory_help: Manage ssh access
