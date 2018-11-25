@@ -26,6 +26,7 @@
 import os
 import re
 import pwd
+import grp
 import json
 import crypt
 import random
@@ -123,7 +124,8 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     # Validate uniqueness of username and mail in LDAP
     auth.validate_uniqueness({
         'uid': username,
-        'mail': mail
+        'mail': mail,
+        'cn': username
     })
 
     # Validate uniqueness of username in system users
@@ -150,7 +152,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
     # Get random UID/GID
     all_uid = {x.pw_uid for x in pwd.getpwall()}
-    all_gid = {x.pw_gid for x in pwd.getpwall()}
+    all_gid = {x.gr_gid for x in grp.getgrall()}
 
     uid_guid_found = False
     while not uid_guid_found:
@@ -160,7 +162,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
     attr_dict = {
-        'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount'],
+        'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh'],
         'givenName': firstname,
         'sn': lastname,
         'displayName': fullname,
@@ -201,25 +203,26 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         # Invalidate passwd to take user creation into account
         subprocess.call(['nscd', '-i', 'passwd'])
 
-        # Update SFTP user group
-        memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
-        memberlist.append(username)
-        if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
-            try:
-                # Attempt to create user home folder
-                subprocess.check_call(
-                    ['su', '-', username, '-c', "''"])
-            except subprocess.CalledProcessError:
-                if not os.path.isdir('/home/{0}'.format(username)):
-                    logger.warning(m18n.n('user_home_creation_failed'),
-                                   exc_info=1)
-            app_ssowatconf(auth)
-            # TODO: Send a welcome mail to user
-            logger.success(m18n.n('user_created'))
-            hook_callback('post_user_create',
-                          args=[username, mail, password, firstname, lastname])
+        try:
+            # Attempt to create user home folder
+            subprocess.check_call(
+                ['su', '-', username, '-c', "''"])
+        except subprocess.CalledProcessError:
+            if not os.path.isdir('/home/{0}'.format(username)):
+                logger.warning(m18n.n('user_home_creation_failed'),
+                                exc_info=1)
+        app_ssowatconf(auth)
+        # TODO: Send a welcome mail to user
+        logger.success(m18n.n('user_created'))
+        # Create group for user and add to group 'ALL'
+        user_group_add(auth, groupname=username, gid=uid)
+        user_group_update(auth, groupname=username, add_user=username, force=True)
+        user_group_update(auth, 'ALL', add_user=username, force=True)
 
-            return {'fullname': fullname, 'username': username, 'mail': mail}
+        hook_callback('post_user_create',
+                        args=[username, mail, password, firstname, lastname])
+
+        return {'fullname': fullname, 'username': username, 'mail': mail}
 
     raise YunohostError('user_creation_failed')
 
@@ -242,18 +245,23 @@ def user_delete(operation_logger, auth, username, purge=False):
         # Invalidate passwd to take user deletion into account
         subprocess.call(['nscd', '-i', 'passwd'])
 
-        # Update SFTP user group
-        memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
-        try:
-            memberlist.remove(username)
-        except:
-            pass
-        if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
-            if purge:
-                subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
-                subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
+        if purge:
+            subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
     else:
         raise YunohostError('user_deletion_failed')
+
+    user_group_delete(auth, username, force=True)
+
+    group_list = auth.search('ou=groups,dc=yunohost,dc=org',
+                             '(&(objectclass=groupOfNamesYnh)(memberUid=%s))'
+                             % username, ['cn'])
+    for group in group_list:
+        user_list = auth.search('ou=groups,dc=yunohost,dc=org',
+                                'cn=' + group['cn'][0],
+                                ['memberUid'])[0]
+        user_list['memberUid'].remove(username)
+        if not auth.update('cn=%s,ou=groups' % group['cn'][0], user_list):
+            raise YunohostError('group_update_failed')
 
     app_ssowatconf(auth)
 
@@ -461,6 +469,278 @@ def user_info(auth, username):
         return result_dict
     else:
         raise YunohostError('user_info_failed')
+
+#
+# Group subcategory
+#
+#
+def user_group_list(auth, fields=None):
+    """
+    List users
+
+    Keyword argument:
+        filter -- LDAP filter used to search
+        offset -- Starting number for user fetching
+        limit -- Maximum number of user fetched
+        fields -- fields to fetch
+
+    """
+    group_attr = {
+        'cn' : 'groupname',
+        'member' : 'members',
+        'permission' : 'permission'
+    }
+    attrs = ['cn']
+    groups = {}
+
+    if fields:
+        keys = group_attr.keys()
+        for attr in fields:
+            if attr in keys:
+                attrs.append(attr)
+            else:
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('field_invalid', attr))
+    else:
+        attrs = ['cn', 'member']
+
+    result = auth.search('ou=groups,dc=yunohost,dc=org',
+                         '(objectclass=groupOfNamesYnh)',
+                         attrs)
+
+    for group in result:
+        # The group "admins" should be hidden for the user
+        if group_attr['cn'] == "admins":
+            continue
+        entry = {}
+        for attr, values in group.items():
+            if values:
+                if attr == "member":
+                    entry[group_attr[attr]] = []
+                    for v in values:
+                            entry[group_attr[attr]].append(v.split("=")[1].split(",")[0])
+                elif attr == "permission":
+                    entry[group_attr[attr]] = {}
+                    for v in values:
+                        permission = v.split("=")[1].split(",")[0].split(".")[0]
+                        pType = v.split("=")[1].split(",")[0].split(".")[1]
+                        if permission in entry[group_attr[attr]]:
+                            entry[group_attr[attr]][permission].append(pType)
+                        else:
+                            entry[group_attr[attr]][permission] = [pType]
+                else:
+                    entry[group_attr[attr]] = values[0]
+
+        groupname = entry[group_attr['cn']]
+        groups[groupname] = entry
+    return {'groups' : groups}
+
+
+@is_unit_operation([('groupname', 'user')])
+def user_group_add(operation_logger, auth, groupname,gid=None):
+    """
+    Create group
+
+    Keyword argument:
+        groupname -- Must be unique
+
+    """
+    from yunohost.app import app_ssowatconf
+    from yunohost.permission import _permission_sync_to_user
+
+    operation_logger.start()
+
+    # Validate uniqueness of groupname in LDAP
+    conflict = auth.get_conflict({
+        'cn': groupname
+    }, base_dn='ou=groups,dc=yunohost,dc=org')
+    if conflict:
+        raise MoulinetteError(errno.EEXIST, m18n.n('group_name_already_exist', name=groupname))
+
+    # Validate uniqueness of groupname in system group
+    all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
+    if groupname in all_existing_groupnames:
+        raise MoulinetteError(errno.EEXIST, m18n.n('system_groupname_exists'))
+
+    if not gid:
+        # Get random GID
+        all_gid = {x.gr_gid for x in grp.getgrall()}
+
+        uid_guid_found = False
+        while not uid_guid_found:
+            gid = str(random.randint(200, 99999))
+            uid_guid_found = gid not in all_gid
+
+    attr_dict = {
+        'objectClass': ['top', 'groupOfNamesYnh', 'posixGroup'],
+        'cn': groupname,
+        'gidNumber': gid,
+    }
+
+    if auth.add('cn=%s,ou=groups' % groupname, attr_dict):
+        _permission_sync_to_user(auth)
+        app_ssowatconf(auth)
+        logger.success(m18n.n('group_created'))
+        return {'name': groupname}
+
+    raise MoulinetteError(169, m18n.n('group_creation_failed'))
+
+
+@is_unit_operation([('groupname', 'user')])
+def user_group_delete(operation_logger, auth, groupname, force=False):
+    """
+    Delete user
+
+    Keyword argument:
+        groupname -- Groupname to delete
+
+    """
+    from yunohost.app import app_ssowatconf
+    from yunohost.permission import _permission_sync_to_user
+
+    if not force and (groupname == 'ALL' or groupname == 'admins' or groupname in user_list(auth, ['uid'])['users']):
+        raise MoulinetteError(errno.EPERM, m18n.n('group_deletion_not_allowed', user=groupname))
+
+    operation_logger.start()
+    if not auth.remove('cn=%s,ou=groups' % groupname):
+        raise MoulinetteError(169, m18n.n('group_deletion_failed'))
+
+    _permission_sync_to_user(auth)
+    app_ssowatconf(auth)
+    logger.success(m18n.n('group_deleted'))
+
+
+@is_unit_operation([('groupname', 'user')])
+def user_group_update(operation_logger, auth, groupname, add_user=None, remove_user=None, force=False):
+    """
+    Update user informations
+
+    Keyword argument:
+        groupname -- Groupname to update
+        add_user -- User to add in group
+        remove_user -- User to remove in group
+
+    """
+
+    from yunohost.app import app_ssowatconf
+    from yunohost.permission import _permission_sync_to_user
+
+    attrs_to_fetch = ['member']
+
+    if (groupname == 'ALL' or groupname == 'admins') and not force:
+        raise MoulinetteError(errno.EINVAL, m18n.n('edit_group_not_allowed', group=groupname))
+
+    # Populate group informations
+    result = auth.search(base='ou=groups,dc=yunohost,dc=org',
+                         filter='cn=' + groupname, attrs=attrs_to_fetch)
+    if not result:
+        raise MoulinetteError(errno.EINVAL, m18n.n('group_unknown', group=groupname))
+    group = result[0]
+
+    new_group_list = {'member': set(), 'memberUid': set()}
+    if 'member' in group:
+        new_group_list['member'] = set(group['member'])
+    else:
+        group['member'] = []
+
+    user_l = user_list(auth, ['uid'])['users']
+
+    if add_user:
+        if not isinstance(add_user, list):
+            add_user = [add_user]
+        for user in add_user:
+            if not user in user_l:
+                raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=user))
+            userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
+            if userDN in group['member']:
+                logger.warning(m18n.n('user_alread_in_group', user=user, group=groupname))
+            new_group_list['member'].add(userDN)
+
+    if remove_user:
+        if not isinstance(remove_user, list):
+            remove_user = [remove_user]
+        for user in remove_user:
+            userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
+            if user == groupname:
+                raise MoulinetteError(errno.EINVAL,
+                                      m18n.n('remove_user_of_group_not_allowed', user=user, group=groupname))
+            if 'member' in group and userDN in group['member']:
+                new_group_list['member'].remove(userDN)
+            else:
+                logger.warning(m18n.n('user_not_in_group', user=user, group=groupname))
+
+    # Sychronise memberUid with member (to keep the posix group structure)
+    # In posixgroup the main group of each user is only written in the gid number of the user
+    for member in new_group_list['member']:
+        member_Uid = member.split("=")[1].split(",")[0]
+        # Don't add main user in the group.
+        # Note that in the Unix system the main user of the group is linked by the gid in the user attribute.
+        # So the main user need to be not in the memberUid list of his own group.
+        if member_Uid != groupname:
+            new_group_list['memberUid'].add(member_Uid)
+
+    operation_logger.start()
+
+    if new_group_list['member'] != set(group['member']):
+        if not auth.update('cn=%s,ou=groups' % groupname, new_group_list):
+            raise MoulinetteError(169, m18n.n('group_update_failed'))
+
+    _permission_sync_to_user(auth)
+    logger.success(m18n.n('group_updated'))
+    app_ssowatconf(auth)
+    return user_group_info(auth, groupname)
+
+
+def user_group_info(auth, groupname):
+    """
+    Get user informations
+
+    Keyword argument:
+        groupname -- Groupname to get informations
+
+    """
+    group_attrs = [
+        'cn', 'member', 'permission'
+    ]
+    result = auth.search('ou=groups,dc=yunohost,dc=org', "cn=" + groupname, group_attrs)
+
+    if not result:
+        raise MoulinetteError(errno.EINVAL, m18n.n('group_unknown', group=groupname))
+    else:
+        group = result[0]
+
+        result_dict = {
+            'groupname': group['cn'][0],
+            'member': None
+        }
+        if 'member' in group:
+            result_dict['member'] = {m.split("=")[1].split(",")[0] for m in group['member']}
+        return result_dict
+
+#
+# Permission subcategory
+#
+#
+import yunohost.permission
+
+def user_permission_list(auth, app=None, permission=None, username=None, group=None):
+    return yunohost.permission.user_permission_list(auth, app, permission, username, group)
+
+@is_unit_operation([('app', 'user')])
+def user_permission_add(operation_logger, auth, app, permission="main", username=None, group=None):
+    return yunohost.permission.user_permission_update(operation_logger, auth, app, permission=permission,
+                                                       add_username=username, add_group=group,
+                                                       del_username=None, del_group=None)
+
+@is_unit_operation([('app', 'user')])
+def user_permission_remove(operation_logger, auth, app, permission="main", username=None, group=None):
+    return yunohost.permission.user_permission_update(operation_logger, auth, app, permission=permission,
+                                                      add_username=None, add_group=None,
+                                                      del_username=username, del_group=group)
+
+@is_unit_operation([('app', 'user')])
+def user_permission_clear(operation_logger, auth, app, permission=None):
+    return yunohost.permission.user_permission_clear(operation_logger, auth, app, permission)
 
 #
 # SSH subcategory
