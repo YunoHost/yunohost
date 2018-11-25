@@ -32,7 +32,7 @@ def install_changeurl_app(path):
 
 
 def check_changeurl_app(path):
-    appmap = app_map(raw=True)
+    appmap = app_map(auth, raw=True)
 
     assert path in appmap[maindomain].keys()
 

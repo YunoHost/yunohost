@@ -246,7 +246,7 @@ def _get_conflicting_apps(auth, domain, path):
     from yunohost.app import app_map
 
     # Fetch apps map
-    apps_map = app_map(raw=True)
+    apps_map = app_map(auth, raw=True)
 
     # Loop through all apps to check if path is taken by one of them
     conflicts = []

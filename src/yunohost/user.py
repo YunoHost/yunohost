@@ -522,8 +522,8 @@ def user_group_list(auth, fields=None):
                 elif attr == "permission":
                     entry[group_attr[attr]] = {}
                     for v in values:
-                        permission = v.split("=")[1].split(",")[0].split(".")[0]
-                        pType = v.split("=")[1].split(",")[0].split(".")[1]
+                        permission = v.split("=")[1].split(",")[0].split(".")[1]
+                        pType = v.split("=")[1].split(",")[0].split(".")[0]
                         if permission in entry[group_attr[attr]]:
                             entry[group_attr[attr]][permission].append(pType)
                         else:

@@ -381,7 +381,7 @@ def app_info(app, show_status=False, raw=False):
     return info
 
 
-def app_map(app=None, raw=False, user=None):
+def app_map(auth, app=None, raw=False, user=None):
     """
     List apps by domain
 
@@ -391,6 +391,8 @@ def app_map(app=None, raw=False, user=None):
         app -- Specific app to map
 
     """
+    from yunohost.permission import user_permission_list
+
     apps = []
     result = {}
 
@@ -410,11 +412,9 @@ def app_map(app=None, raw=False, user=None):
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
         if user is not None:
-            if ('mode' not in app_settings
-                or ('mode' in app_settings
-                    and app_settings['mode'] == 'private')) \
-                    and 'allowed_users' in app_settings \
-                    and user not in app_settings['allowed_users'].split(','):
+            if not auth.search(base='ou=permission,dc=yunohost,dc=org',
+                               filter='(&(objectclass=permissionYnh)(cn=main.%s)(inheritPermission=uid=%s,ou=users,dc=yunohost,dc=org))' % (app_id, user),
+                               attrs=['cn']):
                 continue
 
         domain = app_settings['domain']
@@ -446,6 +446,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     """
     from yunohost.hook import hook_exec, hook_callback
     from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
+    from yunohost.permission import permission_update
 
     installed = _is_installed(app)
     if not installed:
@@ -534,6 +535,8 @@ def app_change_url(operation_logger, auth, app, domain, path):
     # this should idealy be done in the change_url script but let's avoid common mistakes
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
+
+    permission_update(auth, app, permission="main", add_url=[domain+path], remove_url=[old_domain+old_path])
 
     app_ssowatconf(auth)
 
@@ -707,6 +710,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
+    from yunohost.permission import permission_add, permission_update
 
     # Fetch or extract sources
     try:
@@ -769,7 +773,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     _check_manifest_requirements(manifest, app_id)
 
     # Check if app can be forked
-    instance_number = _installed_instance_number(app_id, last=True) + 1
+    instance_number = _installed_instance_number(auth, app_id, last=True) + 1
     if instance_number > 1:
         if 'multi_instance' not in manifest or not is_true(manifest['multi_instance']):
             raise YunohostError('app_already_installed', app=app_id)
@@ -827,6 +831,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
+
+    # Create permission before the install (useful if the install script redefine the permission)
+    permission_add(auth, app=app_instance_name, permission="main")
 
     # Execute the app install script
     install_retcode = 1
@@ -896,6 +903,13 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
 
+    # Add path in permission if it's defined in the app install script
+    app_settings = _get_app_settings(app_instance_name)
+    domain = app_settings['domain']
+    path = app_settings.get('path', '/')
+    if domain and path:
+        permission_update(auth, app_instance_name, permission="main", add_url=[domain+path])
+
     app_ssowatconf(auth)
 
     logger.success(m18n.n('installation_complete'))
@@ -913,6 +927,7 @@ def app_remove(operation_logger, auth, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
+    from yunohost.permission import permission_remove
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app)
 
@@ -954,10 +969,18 @@ def app_remove(operation_logger, auth, app):
         shutil.rmtree(app_setting_path)
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
+
+    # Remove all permission in LDAP
+    result = auth.search(base='ou=permission,dc=yunohost,dc=org',
+                         filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app, attrs=['cn'])
+    permission_list = [p['cn'][0] for p in result]
+    for l in permission_list:
+        permission_remove(auth, app, l.split('.')[0], force=True)
+
     app_ssowatconf(auth)
 
-
-def app_addaccess(auth, apps, users=[]):
+@is_unit_operation(['permission','app'])
+def app_addaccess(operation_logger, auth, apps, users=[]):
     """
     Grant access right to users (everyone by default)
 
@@ -966,64 +989,17 @@ def app_addaccess(auth, apps, users=[]):
         apps
 
     """
-    from yunohost.user import user_list, user_info
-    from yunohost.hook import hook_callback
+    from yunohost.permission import user_permission_update
 
-    result = {}
+    permission = user_permission_update(operation_logger, auth, app=apps, permission="main", add_username=users)
 
-    if not users:
-        users = user_list(auth)['users'].keys()
-    elif not isinstance(users, list):
-        users = [users, ]
-    if not isinstance(apps, list):
-        apps = [apps, ]
-
-    for app in apps:
-
-        app_settings = _get_app_settings(app)
-        if not app_settings:
-            continue
-
-        if 'mode' not in app_settings:
-            app_setting(app, 'mode', 'private')
-            app_settings['mode'] = 'private'
-
-        if app_settings['mode'] == 'private':
-
-            # Start register change on system
-            related_to = [('app', app)]
-            operation_logger = OperationLogger('app_addaccess', related_to)
-            operation_logger.start()
-
-            allowed_users = set()
-            if 'allowed_users' in app_settings and app_settings['allowed_users']:
-                allowed_users = set(app_settings['allowed_users'].split(','))
-
-            for allowed_user in users:
-                if allowed_user not in allowed_users:
-                    try:
-                        user_info(auth, allowed_user)
-                    except YunohostError:
-                        logger.warning(m18n.n('user_unknown', user=allowed_user))
-                        continue
-                    allowed_users.add(allowed_user)
-                    operation_logger.related_to.append(('user', allowed_user))
-
-            operation_logger.flush()
-            new_users = ','.join(allowed_users)
-            app_setting(app, 'allowed_users', new_users)
-            hook_callback('post_app_addaccess', args=[app, new_users])
-
-            operation_logger.success()
-
-            result[app] = allowed_users
-
-    app_ssowatconf(auth)
+    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
 
     return {'allowed_users': result}
 
 
-def app_removeaccess(auth, apps, users=[]):
+@is_unit_operation(['permission','app'])
+def app_removeaccess(operation_logger, auth, apps, users=[]):
     """
     Revoke access right to users (everyone by default)
 
@@ -1032,59 +1008,17 @@ def app_removeaccess(auth, apps, users=[]):
         apps
 
     """
-    from yunohost.user import user_list
-    from yunohost.hook import hook_callback
+    from yunohost.permission import user_permission_update
 
-    result = {}
+    permission = user_permission_update(operation_logger, auth, app=apps, permission="main", del_username=users)
 
-    remove_all = False
-    if not users:
-        remove_all = True
-    elif not isinstance(users, list):
-        users = [users, ]
-    if not isinstance(apps, list):
-        apps = [apps, ]
-
-    for app in apps:
-        app_settings = _get_app_settings(app)
-        if not app_settings:
-            continue
-        allowed_users = set()
-
-        if app_settings.get('skipped_uris', '') != '/':
-
-            # Start register change on system
-            related_to = [('app', app)]
-            operation_logger = OperationLogger('app_removeaccess', related_to)
-            operation_logger.start()
-
-            if remove_all:
-                pass
-            elif 'allowed_users' in app_settings:
-                for allowed_user in app_settings['allowed_users'].split(','):
-                    if allowed_user not in users:
-                        allowed_users.add(allowed_user)
-            else:
-                for allowed_user in user_list(auth)['users'].keys():
-                    if allowed_user not in users:
-                        allowed_users.add(allowed_user)
-
-            operation_logger.related_to += [('user', x) for x in allowed_users]
-            operation_logger.flush()
-            new_users = ','.join(allowed_users)
-            app_setting(app, 'allowed_users', new_users)
-            hook_callback('post_app_removeaccess', args=[app, new_users])
-
-            result[app] = allowed_users
-
-            operation_logger.success()
-
-    app_ssowatconf(auth)
+    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
 
     return {'allowed_users': result}
 
 
-def app_clearaccess(auth, apps):
+@is_unit_operation(['permission','app'])
+def app_clearaccess(operation_logger, auth, apps):
     """
     Reset access rights for the app
 
@@ -1092,32 +1026,9 @@ def app_clearaccess(auth, apps):
         apps
 
     """
-    from yunohost.hook import hook_callback
+    from yunohost.permission import user_permission_clear
 
-    if not isinstance(apps, list):
-        apps = [apps]
-
-    for app in apps:
-        app_settings = _get_app_settings(app)
-        if not app_settings:
-            continue
-
-        # Start register change on system
-        related_to = [('app', app)]
-        operation_logger = OperationLogger('app_clearaccess', related_to)
-        operation_logger.start()
-
-        if 'mode' in app_settings:
-            app_setting(app, 'mode', delete=True)
-
-        if 'allowed_users' in app_settings:
-            app_setting(app, 'allowed_users', delete=True)
-
-        hook_callback('post_app_clearaccess', args=[app])
-
-        operation_logger.success()
-
-    app_ssowatconf(auth)
+    user_permission_clear(operation_logger, auth, app=apps, permission="main")
 
 
 def app_debug(app):
@@ -1166,8 +1077,9 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         raise YunohostError('domain_unknown')
 
     operation_logger.start()
-    if '/' in app_map(raw=True)[domain]:
-        raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain, other_app=app_map(raw=True)[domain]["/"]["id"])
+    if '/' in app_map(auth, raw=True)[domain]:
+        raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
+                            other_app=app_map(auth, raw=True)[domain]["/"]["id"]))
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
@@ -1312,7 +1224,7 @@ def app_checkurl(auth, url, app=None):
 
     domain, path = _normalize_domain_path(domain, path)
 
-    apps_map = app_map(raw=True)
+    apps_map = app_map(auth, raw=True)
 
     if domain not in domain_list(auth)['domains']:
         raise YunohostError('domain_unknown')
@@ -1379,6 +1291,7 @@ def app_ssowatconf(auth):
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_list
+    from yunohost.permission import user_permission_list
 
     main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
@@ -1438,6 +1351,13 @@ def app_ssowatconf(auth):
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
+    permission = {}
+    for a in user_permission_list(auth)['permissions'].values():
+        for p in a.values():
+            if 'URL' in p:
+                for u in p['URL']:
+                    permission[u] = p['allowed_users']
+
     conf_dict = {
         'portal_domain': main_domain,
         'portal_path': '/yunohost/sso/',
@@ -1456,8 +1376,9 @@ def app_ssowatconf(auth):
         'protected_regex': protected_regex,
         'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
-        'users': {username: app_map(user=username)
+        'users': {username: app_map(auth, user=username)
                   for username in user_list(auth)['users'].keys()},
+        'permission': permission,
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
@@ -1985,7 +1906,7 @@ def _fetch_app_from_git(app):
     return manifest, extracted_app_folder
 
 
-def _installed_instance_number(app, last=False):
+def _installed_instance_number(auth, app, last=False):
     """
     Check if application is installed and return instance number
 
@@ -2017,7 +1938,7 @@ def _installed_instance_number(app, last=False):
 
     else:
         instance_number_list = []
-        instances_dict = app_map(app=app, raw=True)
+        instances_dict = app_map(auth, app=app, raw=True)
         for key, domain in instances_dict.items():
             for key, path in domain.items():
                 instance_number_list.append(path['instance'])
