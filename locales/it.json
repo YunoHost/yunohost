@@ -277,5 +277,13 @@
     "backup_archive_system_part_not_available": "La parte di sistema '{part:s}' non è disponibile in questo backup",
     "backup_archive_writing_error": "Impossibile aggiungere i file al backup nell'archivio compresso",
     "backup_ask_for_copying_if_needed": "Alcuni files non possono essere preparati al backup utilizzando il metodo che consente di evitare il consumo temporaneo di spazio nel sistema. Per eseguire il backup, {size:s}MB dovranno essere utilizzati temporaneamente. Sei d'accordo?",
-    "backup_borg_not_implemented": "Il metodo di backup Borg non è ancora stato implementato"
+    "backup_borg_not_implemented": "Il metodo di backup Borg non è ancora stato implementato",
+    "backup_cant_mount_uncompress_archive": "Impossibile montare in modalità sola lettura la cartella di archivio non compressa",
+    "backup_copying_to_organize_the_archive": "Copiando {size:s}MB per organizzare l'archivio",
+    "backup_couldnt_bind": "Impossibile legare {src:s} a {dest:s}.",
+    "backup_csv_addition_failed": "Impossibile aggiungere file del backup nel file CSV",
+    "backup_csv_creation_failed": "Impossibile creare il file CVS richiesto per le future operazioni di ripristino",
+    "backup_custom_backup_error": "Il metodo di backup personalizzato è fallito allo step 'backup'",
+    "backup_custom_mount_error": "Il metodo di backup personalizzato è fallito allo step 'montaggio'",
+    "backup_custom_need_mount_error": "Il metodo di backup personalizzato è fallito allo step 'need_mount'"
 }
