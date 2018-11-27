@@ -33,7 +33,7 @@ class MyMigration(Migration):
 
     def backward(self):
 
-        raise MoulinetteError(m18n.n("migration_0007_backward_impossible"))
+        raise MoulinetteError(m18n.n("migration_0008_backward_impossible"))
 
     @property
     def mode(self):
@@ -77,20 +77,20 @@ class MyMigration(Migration):
         root_login_enabled = root_login and root_login[-1] != 'no'
 
         # Build message
-        message = m18n.n("migration_0007_general_disclaimer")
+        message = m18n.n("migration_0008_general_disclaimer")
 
         if custom_port:
-            message += "\n\n" + m18n.n("migration_0007_port")
+            message += "\n\n" + m18n.n("migration_0008_port")
 
         if root_login_enabled:
-            message += "\n\n" + m18n.n("migration_0007_root")
+            message += "\n\n" + m18n.n("migration_0008_root")
 
         if dsa_key_enabled:
-            message += "\n\n" + m18n.n("migration_0007_dsa")
+            message += "\n\n" + m18n.n("migration_0008_dsa")
 
         if custom_port or root_login_enabled or dsa_key_enabled:
-            message += "\n\n" + m18n.n("migration_0007_warning")
+            message += "\n\n" + m18n.n("migration_0008_warning")
         else:
-            message += "\n\n" + m18n.n("migration_0007_no_warning")
+            message += "\n\n" + m18n.n("migration_0008_no_warning")
 
         return message

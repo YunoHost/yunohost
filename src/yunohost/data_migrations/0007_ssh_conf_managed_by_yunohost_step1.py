@@ -85,11 +85,11 @@ class MyMigration(Migration):
         # Restart ssh and backward if it fail
         if not _run_service_command('restart', 'ssh'):
             self.backward()
-            raise MoulinetteError(m18n.n("migration_0006_cancel"))
+            raise MoulinetteError(m18n.n("migration_0007_cancel"))
 
     def backward(self):
 
         # We don't backward completely but it should be enough
         copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
         if not _run_service_command('restart', 'ssh'):
-            raise MoulinetteError(m18n.n("migration_0006_cannot_restart"))
+            raise MoulinetteError(m18n.n("migration_0007_cannot_restart"))
