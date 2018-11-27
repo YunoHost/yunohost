@@ -17,7 +17,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
  , ca-certificates, netcat-openbsd, iproute
  , mariadb-server, php-mysql | php-mysqlnd
- , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd
+ , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
  , dovecot-antispam, fail2ban
