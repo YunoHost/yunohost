@@ -8,9 +8,9 @@ ListenAddress ::
 ListenAddress 0.0.0.0
 Protocol 2
 # HostKeys for protocol version 2
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_ecdsa_key
-HostKey /etc/ssh/ssh_host_ed25519_key
+{% for key in ssh_keys %}
+HostKey {{ key }}
+{% endfor %}
 
 #Privilege Separation is turned on for security
 UsePrivilegeSeparation yes

@@ -2,6 +2,8 @@
 
 set -e
 
+. /usr/share/yunohost/helpers.d/utils
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -14,11 +16,13 @@ do_pre_regen() {
         || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
 
       # Support legacy setting (this setting might be disabled by a user during a migration)
+      ssh_keys=$(ls /etc/ssh/ssh_host_{rsa,ecdsa,ed25519}_key 2>/dev/null)
       if [[ "$(yunohost settings get 'service.ssh.allow_deprecated_dsa_hostkey')" == "True" ]]; then
-          sed -i '/HostKey \/etc\/ssh\/ssh_host_rsa_key/a HostKey /etc/ssh/ssh_host_dsa_key' sshd_config
+          ssh_keys="$ssh_keys $(ls /etc/ssh/ssh_host_dsa_key 2>/dev/null)"
       fi
 
-      install -D -m 644 sshd_config "${pending_dir}/etc/ssh/sshd_config"
+      export $ssh_keys
+      ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
   fi
 }
 
