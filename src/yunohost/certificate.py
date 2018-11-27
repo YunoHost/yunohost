@@ -805,6 +805,9 @@ def _enable_certificate(domain, new_cert_folder):
 
     _run_service_command("reload", "nginx")
 
+    from yunohost.hook import hook_callback
+    hook_callback('post_cert_update', args=[domain])
+
 
 def _backup_current_cert(domain):
     logger.debug("Backuping existing certificate for domain %s", domain)
