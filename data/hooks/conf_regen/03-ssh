@@ -13,8 +13,8 @@ do_pre_regen() {
       [[ -f /proc/net/if_inet6 ]] \
         || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
 
-      # Add DSA HostKey to let user remove it with migration 7
-      if [[ "$(yunohost settings get 'service.ssh._deprecated_dsa_hostkey')" == "True" ]]; then
+      # Support legacy setting (this setting might be disabled by a user during a migration)
+      if [[ "$(yunohost settings get 'service.ssh.allow_deprecated_dsa_hostkey')" == "True" ]]; then
           sed -i '/HostKey \/etc\/ssh\/ssh_host_rsa_key/a HostKey /etc/ssh/ssh_host_dsa_key' sshd_config
       fi
 

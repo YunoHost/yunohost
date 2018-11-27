@@ -23,13 +23,13 @@ class MyMigration(Migration):
     This is the first step of a couple of migrations that ensure SSH conf is
     managed by YunoHost (even if the "from_script" flag is present, which was
     previously preventing it from being managed by YunoHost)
-    
+
     The goal of this first (automatic) migration is to make sure that the
     sshd_config is managed by the regen-conf mechanism.
 
     If the from_script flag exists, then we keep the current SSH conf such that it
     will appear as "manually modified" to the regenconf.
-    
+
     In step 2 (manual), the admin will be able to choose wether or not to actually
     use the recommended configuration, with an appropriate disclaimer.
     """
@@ -44,15 +44,15 @@ class MyMigration(Migration):
                 dsa = True
                 break
         if dsa:
-            settings_set("service.ssh._deprecated_dsa_hostkey", True)
+            settings_set("service.ssh.allow_deprecated_dsa_hostkey", True)
 
         # Create sshd_config.d dir
         if not os.path.exists(SSHD_CONF + '.d'):
             mkdir(SSHD_CONF + '.d', 0755, uid='root', gid='root')
 
         # Here, we make it so that /etc/ssh/sshd_config is managed
-        # by the regen conf (in particular in the case where the 
-        # from_script flag is present - in which case it was *not* 
+        # by the regen conf (in particular in the case where the
+        # from_script flag is present - in which case it was *not*
         # managed by the regenconf)
         # But because we can't be sure the user wants to use the
         # recommended conf, we backup then restore the /etc/ssh/sshd_config

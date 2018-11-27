@@ -28,7 +28,7 @@ class MyMigration(Migration):
     """
 
     def migrate(self):
-        settings_set("service.ssh._deprecated_dsa_hostkey", False)
+        settings_set("service.ssh.allow_deprecated_dsa_hostkey", False)
         service_regen_conf(names=['ssh'], force=True)
 
     def backward(self):
@@ -44,7 +44,7 @@ class MyMigration(Migration):
         # (basically nothing shall change)
         ynh_hash = _get_conf_hashes('ssh').get(SSHD_CONF, None)
         current_hash = _calculate_hash(SSHD_CONF)
-        dsa = settings_get("service.ssh._deprecated_dsa_hostkey")
+        dsa = settings_get("service.ssh.allow_deprecated_dsa_hostkey")
         if ynh_hash == current_hash and not dsa:
             return "auto"
 
