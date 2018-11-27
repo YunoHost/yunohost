@@ -275,5 +275,7 @@
     "backup_applying_method_tar": "Creando l'archivio tar del backup...",
     "backup_archive_mount_failed": "Montaggio dell'archivio del backup non riuscito",
     "backup_archive_system_part_not_available": "La parte di sistema '{part:s}' non è disponibile in questo backup",
-    "backup_archive_writing_error": "Impossibile aggiungere i file al backup nell'archivio compresso"
+    "backup_archive_writing_error": "Impossibile aggiungere i file al backup nell'archivio compresso",
+    "backup_ask_for_copying_if_needed": "Alcuni files non possono essere preparati al backup utilizzando il metodo che consente di evitare il consumo temporaneo di spazio nel sistema. Per eseguire il backup, {size:s}MB dovranno essere utilizzati temporaneamente. Sei d'accordo?",
+    "backup_borg_not_implemented": "Il metodo di backup Borg non è ancora stato implementato"
 }
