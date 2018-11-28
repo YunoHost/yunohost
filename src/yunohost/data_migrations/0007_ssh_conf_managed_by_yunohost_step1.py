@@ -65,7 +65,7 @@ class MyMigration(Migration):
             copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
 
         # If we detect the conf as manually modified
-        ynh_hash = _get_conf_hashes('ssh')[SSHD_CONF]
+        ynh_hash = _get_conf_hashes('ssh').get(SSHD_CONF, None)
         current_hash = _calculate_hash(SSHD_CONF)
         if ynh_hash != current_hash:
 

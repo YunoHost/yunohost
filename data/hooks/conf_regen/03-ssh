@@ -21,7 +21,7 @@ do_pre_regen() {
           ssh_keys="$ssh_keys $(ls /etc/ssh/ssh_host_dsa_key 2>/dev/null)"
       fi
 
-      export $ssh_keys
+      export ssh_keys
       ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
   fi
 }
