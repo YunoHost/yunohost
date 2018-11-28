@@ -287,7 +287,7 @@ user:
                 ### user_group_info()
                 info:
                     action_help: Get group information
-                    api: GET /users/<username>
+                    api: GET /users/groups/<groupname>
                     configuration:
                         authenticate: all
                         authenticator: ldap-anonymous
