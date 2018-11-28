@@ -118,7 +118,7 @@ def tools_ldapinit():
     return auth
 
 
-def tools_adminpw(auth, new_password):
+def tools_adminpw(auth, new_password, check_strength=True):
     """
     Change admin password
 
@@ -130,7 +130,8 @@ def tools_adminpw(auth, new_password):
     from yunohost.utils.password import assert_password_is_strong_enough
     import spwd
 
-    assert_password_is_strong_enough("admin", new_password)
+    if check_strength:
+        assert_password_is_strong_enough("admin", new_password)
 
     new_hash = _hash_user_password(new_password)
 
@@ -416,7 +417,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     tools_maindomain(auth, domain)
 
     # Change LDAP admin password
-    tools_adminpw(auth, password)
+    tools_adminpw(auth, password, check_strength=not force_password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
