@@ -4,7 +4,7 @@
 Protocol 2
 Port 22
 
-ListenAddress ::
+{% if ipv6_enabled == "true" %}ListenAddress ::{% endif %}
 ListenAddress 0.0.0.0
 
 {% for key in ssh_keys.split() %}
