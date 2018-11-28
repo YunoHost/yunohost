@@ -68,11 +68,11 @@ def tools_ldapinit():
     """
 
     # Instantiate LDAP Authenticator
-    auth = init_authenticator(('ldap', 'default'),
-                              {'uri': "ldap://localhost:389",
-                               'base_dn': "dc=yunohost,dc=org",
-                               'user_rdn': "cn=admin"})
-    auth.authenticate('yunohost')
+    AUTH_IDENTIFIER = ('ldap', 'as-root')
+    AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
+                       'base_dn': 'dc=yunohost,dc=org',
+                       'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
+    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
         ldap_map = yaml.load(f)
