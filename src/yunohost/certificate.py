@@ -304,6 +304,8 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             logger.error(msg)
             operation_logger.error(msg)
 
+      service_regen_conf(names=['nginx')
+
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
