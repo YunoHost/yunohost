@@ -60,7 +60,7 @@ class PasswordValidator(object):
             # (or at least that's my understanding -- Alex)
             settings = json.load(open('/etc/yunohost/settings.json', "r"))
             setting_key = "security.password." + profile + ".strength"
-            self.validation_strength = int(settings[setting_key])
+            self.validation_strength = int(settings[setting_key]["value"])
         except Exception as e:
             # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 1
