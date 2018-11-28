@@ -304,8 +304,6 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             logger.error(msg)
             operation_logger.error(msg)
 
-      service_regen_conf(names=['nginx'])
-
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
@@ -804,6 +802,10 @@ def _enable_certificate(domain, new_cert_folder):
 
     for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
+
+    if os.path.isfile('/etc/yunohost/installed'):
+        # (We don't do this yet if postinstall is not finished yet)
+        service_regen_conf(names=['nginx'])
 
     _run_service_command("reload", "nginx")
 
