@@ -710,7 +710,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import permission_add, permission_update
+    from yunohost.permission import permission_add, permission_update, permission_remove
 
     # Fetch or extract sources
     try:
@@ -867,6 +867,13 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )
+                # Remove all permission in LDAP
+                result = auth.search(base='ou=permission,dc=yunohost,dc=org',
+                                    filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
+                permission_list = [p['cn'][0] for p in result]
+                for l in permission_list:
+                    permission_remove(auth, app_instance_name, l.split('.')[0], force=True)
+
                 if remove_retcode != 0:
                     msg = m18n.n('app_not_properly_removed',
                                  app=app_instance_name)

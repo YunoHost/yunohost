@@ -316,7 +316,7 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None):
 
 
 @is_unit_operation(['permission','app'])
-def permission_add(operation_logger, auth, app, permission, url=None):
+def permission_add(operation_logger, auth, app, permission, url=None, default_allow=True):
     """
     Create a new permission for a specific application
 
@@ -348,8 +348,9 @@ def permission_add(operation_logger, auth, app, permission, url=None):
         'objectClass': ['top', 'permissionYnh', 'posixGroup'],
         'cn': permission_name,
         'gidNumber': gid,
-        'groupPermission': 'cn=all_users,ou=groups,dc=yunohost,dc=org'
     }
+    if default_allow:
+        attr_dict['groupPermission'] = 'cn=all_users,ou=groups,dc=yunohost,dc=org'
 
     if url:
         attr_dict['URL'] = []

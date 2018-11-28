@@ -25,3 +25,73 @@ ynh_app_setting_set() {
 ynh_app_setting_delete() {
     sudo yunohost app setting -d "$1" "$2" --quiet
 }
+
+# Create a new permission for the app
+#
+# usage: ynh_permission_create --app "app" --permission "permission" --defaultdisallow [--url "url" ["url" ...]]
+# | arg: app - the application id
+# | arg: permission - the name for the permission (by default a permission named "main" already exist)
+# | arg: defaultdisallow - define if all user will be allowed by default
+# | arg: url - the url for the the permission
+ynh_permission_create() {
+    declare -Ar args_array=( [a]=app= [p]=permission= [d]=defaultdisallow [u]=url= )
+    local app
+    local permission
+    local defaultdisallow
+    local url
+    ynh_handle_getopts_args "$@"
+    if [[ -n ${defaultdisallow:-} ]]; then
+        defaultdisallow=",default_allow=False"
+    fi
+
+    if [[ -n ${url:-} ]]; then
+        url=",url=['${url//';'/"','"}']"
+    fi
+    yunohost tools shell -c "from yunohost.permission import permission_add; permission_add(auth, '$app', '$permission' ${defaultdisallow:-} ${url:-}, sync_perm=False)"
+}
+
+# Remove a permission for the app (note that when the app is removed all permission is automatically removed)
+#
+# usage: ynh_permission_remove --app "app" --permission "permission"
+# | arg: app - the application id
+# | arg: permission - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
+ynh_permission_remove() {
+    declare -Ar args_array=( [a]=app= [p]=permission= )
+    local app
+    local permission
+    ynh_handle_getopts_args "$@"
+
+    yunohost tools shell -c "from yunohost.permission import permission_remove; permission_remove(auth, '$app', '$permission')"
+}
+
+# Add a path managed by the SSO
+#
+# usage: ynh_permission_add_path --app "app" --permission "permission" --url "url" ["url" ...]
+# | arg: app - the application id
+# | arg: permission - the name for the permission
+# | arg: url - the FULL url for the the permission (ex domain.tld/apps/admin)
+ynh_permission_add_path() {
+    declare -Ar args_array=( [a]=app= [p]=permission= [u]=url= )
+    local app
+    local permission
+    local url
+    ynh_handle_getopts_args "$@"
+
+    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update(auth, '$app', '$permission', add_url=['${url//';'/"','"}'])"
+}
+
+# Remove a path managed by the SSO
+#
+# usage: ynh_permission_del_path --app "app" --permission "permission" --url "url" ["url" ...]
+# | arg: app - the application id
+# | arg: permission - the name for the permission
+# | arg: url - the FULL url for the the permission (ex domain.tld/apps/admin)
+ynh_permission_del_path() {
+    declare -Ar args_array=( [a]=app= [p]=permission= [u]=url= )
+    local app
+    local permission
+    local url
+    ynh_handle_getopts_args "$@"
+
+    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update(auth, '$app', '$permission', remove_url=['${url//';'/"','"}'])"
+}
