@@ -87,3 +87,11 @@ Match User sftpusers
         AllowTcpForwarding no
         GatewayPorts no
         X11Forwarding no
+
+# root login is allowed on local networks
+# It's meant to be a backup solution in case LDAP is down and
+# user admin can't be used...
+# If the server is a VPS, it's expected that the owner of the
+# server has access to a web console through which to log in.
+Match Address 192.168.0.0/16,10.0.0.0/16
+        PermitRootLogin yes
