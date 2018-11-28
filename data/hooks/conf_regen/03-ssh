@@ -15,8 +15,9 @@ do_pre_regen() {
       [[ -f /proc/net/if_inet6 ]] \
         || sed -i "s/ListenAddress ::/#ListenAddress ::/g" sshd_config
 
-      # Support legacy setting (this setting might be disabled by a user during a migration)
       ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2>/dev/null)
+
+      # Support legacy setting (this setting might be disabled by a user during a migration)
       if [[ "$(yunohost settings get 'service.ssh.allow_deprecated_dsa_hostkey')" == "True" ]]; then
           ssh_keys="$ssh_keys $(ls /etc/ssh/ssh_host_dsa_key 2>/dev/null)"
       fi
@@ -27,12 +28,15 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-  regen_conf_files=$1
-
-  if [[ ! -f /etc/yunohost/from_script ]]; then
-    [[ -z "$regen_conf_files" ]] \
-      || sudo service ssh restart
-  fi
+	regen_conf_files=$1
+	if [[ ! -f /etc/yunohost/from_script ]]; then
+		if [[ -n "$regen_conf_files" ]];
+		then
+			sudo service ssh restart
+			chown root:root "/etc/ssh/sshd_config"
+			chmod 644 "/etc/ssh/sshd_config"
+		fi
+	fi
 }
 
 FORCE=${2:-0}
