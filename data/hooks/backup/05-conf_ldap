@@ -13,5 +13,7 @@ backup_dir="${1}/conf/ldap"
 ynh_backup "/etc/ldap/slapd.conf" "${backup_dir}/slapd.conf"
 sudo slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
 
-# Backup the database
-sudo slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+# Backup the database (all but not the permission except the permission for mail, metronome and sftp
+sudo slapcat -b dc=yunohost,dc=org \
+    -H 'ldap:///dc=yunohost,dc=org???(|(!(objectClass=permissionYnh))(cn=main.mail)(cn=main.metronome)(cn=main.sftp))' \
+    -l "${backup_dir}/dc=yunohost-dc=org.ldif"

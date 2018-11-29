@@ -105,6 +105,7 @@
     "backup_output_directory_not_empty": "The output directory is not empty",
     "backup_output_directory_required": "You must provide an output directory for the backup",
     "backup_output_symlink_dir_broken": "You have a broken symlink instead of your archives directory '{path:s}'. You may have a specific setup to backup your data on an other filesystem, in this case you probably forgot to remount or plug your hard dirve or usb key.",
+    "backup_permission": "Backup permission for app {app:s}",
     "backup_php5_to_php7_migration_may_fail": "Could not convert your archive to support php7, your php apps may fail to restore (reason: {error:s})",
     "backup_running_app_script": "Running backup script of app '{app:s}'…",
     "backup_running_hooks": "Running backup hooks…",

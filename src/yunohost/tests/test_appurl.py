@@ -6,9 +6,11 @@ from yunohost.app import app_install, app_remove
 from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
 
 # Instantiate LDAP Authenticator
-auth_identifier = ('ldap', 'ldap-anonymous')
-auth_parameters = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
-auth = init_authenticator(auth_identifier, auth_parameters)
+AUTH_IDENTIFIER = ('ldap', 'as-root')
+AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
+                   'base_dn': 'dc=yunohost,dc=org',
+                   'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
+auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
 
 # Get main domain

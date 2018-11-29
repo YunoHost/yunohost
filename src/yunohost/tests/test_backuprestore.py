@@ -18,8 +18,10 @@ from yunohost.utils.error import YunohostError
 maindomain = ""
 
 # Instantiate LDAP Authenticator
-AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
-AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
+AUTH_IDENTIFIER = ('ldap', 'as-root')
+AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
+                   'base_dn': 'dc=yunohost,dc=org',
+                   'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
 auth = None
 
 

@@ -685,6 +685,12 @@ class BackupManager():
                       raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
+
+            # backup permissions
+            logger.debug(m18n.n('backup_permission', app=app))
+            ldap_url = "ldap:///dc=yunohost,dc=org???(&(objectClass=permissionYnh)(cn=*.%s))" % app
+            os.system("slapcat -b dc=yunohost,dc=org -H '%s' -l '%s/permission.ldif'" % (ldap_url, settings_dir))
+
         except:
             abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
@@ -1278,6 +1284,9 @@ class RestoreManager():
             shutil.copytree(app_settings_in_archive, app_settings_new_path)
             filesystem.chmod(app_settings_new_path, 0o400, 0o400, True)
             filesystem.chown(app_scripts_new_path, 'admin', None, True)
+
+            # Restore permissions
+            os.system("slapadd -l '%s/permission.ldif'" % app_settings_in_archive)
 
             # Copy the app scripts to a writable temporary folder
             # FIXME : use 'install -Dm555' or something similar to what's done
