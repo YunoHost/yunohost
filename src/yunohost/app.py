@@ -1296,7 +1296,7 @@ def app_checkurl(auth, url, app=None):
                 raise MoulinetteError('app_location_already_used', app=a["id"], path=path)
             # can't install "/a/b/" if "/a/" exists
             elif path.startswith(p) or p.startswith(path):
-                raise MoulinetteError('app_location_install_failed', other_path=p, other_app=a['id'))
+                raise MoulinetteError('app_location_install_failed', other_path=p, other_app=a['id'])
 
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
@@ -1618,7 +1618,7 @@ def app_config_apply(app, args):
 
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError('app_not_installed', app=app_id)
+        raise MoulinetteError('app_not_installed', app=app)
 
     config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')

@@ -127,8 +127,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
-        raise MoulinetteError(m18n.n('dyndns_domain_not_provided',
-                                     domain=domain, provider=subscribe_host))
+        raise MoulinetteError('dyndns_domain_not_provided', domain=domain, provider=subscribe_host)
 
     # Verify if domain is available
     if not _dyndns_available(subscribe_host, domain):
