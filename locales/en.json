@@ -182,6 +182,7 @@
     "dyndns_domain_not_provided": "Dyndns provider {provider:s} cannot provide domain {domain:s}.",
     "dyndns_unavailable": "Domain {domain:s} is not available.",
     "edit_group_not_allowed": "You are not allowed to edit the group {group:s}",
+    "edit_permission_with_group_all_users_not_allowed": "You are not allowed to edit permission for group 'all_users', use 'yunohost user permission clear APP' or 'yunohost user permission add APP -u USER' instead.",
     "executing_command": "Executing command '{command:s}'…",
     "executing_script": "Executing script '{script:s}'…",
     "extracting": "Extracting…",
