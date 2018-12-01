@@ -206,9 +206,6 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
 
             key = keys[0]
 
-    operation_logger.related_to.append(('domain', domain))
-    operation_logger.start()
-
     # This mean that hmac-md5 is used
     # (Re?)Trigger the migration to sha256 and return immediately.
     # The actual update will be done in next run.
@@ -258,6 +255,8 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         logger.info("No updated needed.")
         return
     else:
+        operation_logger.related_to.append(('domain', domain))
+        operation_logger.start()
         logger.info("Updated needed, going on...")
 
     dns_conf = _build_dns_conf(domain)
