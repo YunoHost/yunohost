@@ -1,3 +1,18 @@
+yunohost (3.3.2) stable; urgency=low
+
+  * [fix] Regen nginx conf to be sure it integrates OCSP Stapling (#588)
+  * [fix] Broken new settings and options to control passwords checks / constrains (#589)
+  * [fix] Log dyndns update only if we really update something (#591)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Dev 2018 17:23:00 +0000
+
+yunohost (3.3.2) stable; urgency=low
+
+  * [fix] Log dyndns update only if we really update something (#591)
+  * [fix] Broken new settings and options to control passwords checks / constrains (#589)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Dev 2018 17:17:00 +0000
+
 yunohost (3.3.1) stable; urgency=low
 
   * [fix] Wait for dpkg lock to be free in apt helpers (#571)
