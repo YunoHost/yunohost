@@ -803,6 +803,11 @@ def _enable_certificate(domain, new_cert_folder):
     for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
 
+    if os.path.isfile('/etc/yunohost/installed'):
+        # regen nginx conf to be sure it integrates OCSP Stapling
+        # (We don't do this yet if postinstall is not finished yet)
+        service_regen_conf(names=['nginx'])
+
     _run_service_command("reload", "nginx")
 
 
