@@ -129,6 +129,8 @@ ynh_handle_getopts_args () {
 							shift_value=$(( shift_value - 1 ))
 						fi
 
+						# Declare the content of option_var as a variable.
+						eval ${option_var}=""
 						# Then read the array value per value
 						for i in `seq 0 $(( ${#all_args[@]} - 1 ))`
 						do
@@ -140,8 +142,6 @@ ynh_handle_getopts_args () {
 									break
 								fi
 							else
-								# Declare the content of option_var as a variable.
-								eval ${option_var}=""
 								# Else, add this value to this option
 								# Each value will be separated by ';'
 								if [ -n "${!option_var}" ]

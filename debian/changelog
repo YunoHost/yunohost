@@ -1,3 +1,17 @@
+yunohost (3.3.1) stable; urgency=low
+
+  * [fix] Wait for dpkg lock to be free in apt helpers (#571)
+  * [fix] app_removeaccess call set.add (#573)
+  * [fix] Fix app_addaccess behaviour when 'allowed_users' is initially empty (#575)
+  * [fix] Typo in user_update when update password (#577)
+  * [fix] Do not fail on missing fail2ban config during the backup (#558)
+  * [fix] Generate a random serial for local certification auth (followup of #557)
+  * [i18n] Update Italian, Occitan, French translations
+
+ Thanks to all contributors (Maniack, airwoodix, Aleks, ljf, silkevicious, Quent-in, Jibec) <3 !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 23 Nov 2018 15:58:00 +0000
+
 yunohost (3.3.0) testing; urgency=low
 
   Highlights

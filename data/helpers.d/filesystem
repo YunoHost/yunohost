@@ -62,11 +62,15 @@ ynh_backup() {
     # ==============================================================================
     # Be sure the source path is not empty
     [[ -e "${SRC_PATH}" ]] || {
-        echo "Source path '${SRC_PATH}' does not exist" >&2
-
         if [ "$NOT_MANDATORY" == "0" ]
         then
-                return 1
+                # This is a temporary fix for fail2ban config files missing after the migration to stretch.
+                if echo "${SRC_PATH}" | grep --quiet "/etc/fail2ban"
+                then
+                        touch "${SRC_PATH}"
+                        echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
+                else
+                        return 1
         else
                 return 0
         fi

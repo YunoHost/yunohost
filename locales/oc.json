@@ -451,7 +451,7 @@
     "migration_description_0004_php5_to_php7_pools": "Tornar configurar lo pools PHP per utilizar PHP 7 allòc del 5",
     "migration_description_0005_postgresql_9p4_to_9p6": "Migracion de las basas de donadas de postgresql 9.4 cap a 9.6",
     "migration_0005_postgresql_94_not_installed": "Postgresql es pas installat sul sistèma. Pas res de far !",
-    "migration_0005_postgresql_96_not_installed": "Avèm trobat que Postgresql 9.4 es installat, mas cap de version de Postgresql 9.6 pas trobada ! Quicòm d’estranh a degut arribar a vòstre sistèma :( ...",
+    "migration_0005_postgresql_96_not_installed": "Avèm trobat que Postgresql 9.4 es installat, mas cap de version de Postgresql 9.6 pas trobada !? Quicòm d’estranh a degut arribar a vòstre sistèma :( …",
     "migration_0005_not_enough_space": "I a pas pro d’espaci disponible sus {path} per lançar la migracion d’aquela passa :(.",
     "recommend_to_add_first_user": "La post installacion es acabada, mas YunoHost fa besonh d’almens un utilizaire per foncionar coma cal. Vos cal n’ajustar un en utilizant la comanda « yunohost user create » o ben l’interfàcia d’administracion.",
     "service_description_php7.0-fpm": "executa d’aplicacions escrichas en PHP amb nginx",

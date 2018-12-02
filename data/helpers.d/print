@@ -7,7 +7,7 @@ ynh_die() {
 
 # Display a message in the 'INFO' logging category
 #
-# usage: ynh_info "Some message"
+# usage: ynh_print_info "Some message"
 ynh_print_info() {
     echo "$1" >> "$YNH_STDINFO"
 }
