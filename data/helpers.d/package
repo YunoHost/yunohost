@@ -15,7 +15,7 @@ ynh_wait_dpkg_free() {
             # Sleep an exponential time at each round
             sleep $(( try * try ))
         else
-            break
+            return 0
         fi
     done
     echo "apt still used, but timeout reached !"
