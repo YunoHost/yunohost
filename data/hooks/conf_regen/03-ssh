@@ -9,7 +9,7 @@ do_pre_regen() {
 
     # If the (legacy) 'from_script' flag is here,
     # we won't touch anything in the ssh config.
-    [[ ! -f /etc/yunohost/from_script ]] || return
+    [[ ! -f /etc/yunohost/from_script ]] || return 0
 
     cd /usr/share/yunohost/templates/ssh
     
@@ -39,10 +39,10 @@ do_post_regen() {
 
     # If the (legacy) 'from_script' flag is here,
     # we won't touch anything in the ssh config.
-    [[ ! -f /etc/yunohost/from_script ]] || return
+    [[ ! -f /etc/yunohost/from_script ]] || return 0
 
     # If no file changed, there's nothing to do
-    [[ -n "$regen_conf_files" ]] || return
+    [[ -n "$regen_conf_files" ]] || return 0
 
     # Enforce permissions for /etc/ssh/sshd_config
     chown root:root "/etc/ssh/sshd_config"
