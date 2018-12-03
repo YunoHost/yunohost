@@ -64,24 +64,6 @@ class MyMigration(Migration):
             service_regen_conf(names=['ssh'], force=True)
             copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
 
-        # If we detect the conf as manually modified
-        ynh_hash = _get_conf_hashes('ssh').get(SSHD_CONF, None)
-        current_hash = _calculate_hash(SSHD_CONF)
-        if ynh_hash != current_hash:
-
-             # And if there's not already an "Include ssh_config.d/*" directive
-            include_rgx = r'^[ \t]*Include[ \t]+sshd_config\.d/\*[ \t]*(?:#.*)?$'
-            add_include = False
-            for line in open(SSHD_CONF):
-                if re.match(include_rgx, line) is not None:
-                    add_include = True
-                    break
-
-            # We add an "Include sshd_config.d/*" directive
-            if add_include:
-                with open(SSHD_CONF, "a") as conf:
-                    conf.write('Include sshd_config.d/*')
-
         # Restart ssh and backward if it fail
         if not _run_service_command('restart', 'ssh'):
             self.backward()

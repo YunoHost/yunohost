@@ -4,7 +4,7 @@
 Protocol 2
 Port 22
 
-ListenAddress ::
+{% if ipv6_enabled == "true" %}ListenAddress ::{% endif %}
 ListenAddress 0.0.0.0
 
 {% for key in ssh_keys.split() %}
@@ -67,3 +67,12 @@ Match User sftpusers
         ChrootDirectory /home/%u
         AllowTcpForwarding no
         GatewayPorts no
+        X11Forwarding no
+
+# root login is allowed on local networks
+# It's meant to be a backup solution in case LDAP is down and
+# user admin can't be used...
+# If the server is a VPS, it's expected that the owner of the
+# server has access to a web console through which to log in.
+Match Address 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,169.254.0.0/16,fe80::/10,fd00::/8
+        PermitRootLogin yes
