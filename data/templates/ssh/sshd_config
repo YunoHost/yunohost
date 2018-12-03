@@ -10,77 +10,58 @@ ListenAddress 0.0.0.0
 {% for key in ssh_keys.split() %}
 HostKey {{ key }}{% endfor %}
 
-#Privilege Separation is turned on for security
-UsePrivilegeSeparation yes
+# ##############################################
+# Stuff recommended by Mozilla "modern" compat'
+# https://infosec.mozilla.org/guidelines/openssh
+# ##############################################
 
-# Logging
+# Keys, ciphers and MACS
+KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256,diffie-hellman-group-exchange-sha256
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com
+
+# Use kernel sandbox mechanisms where possible in unprivileged processes
+UsePrivilegeSeparation sandbox
+
+# LogLevel VERBOSE logs user's key fingerprint on login.
+# Needed to have a clear audit track of which key was using to log in.
 SyslogFacility AUTH
-LogLevel INFO
+LogLevel VERBOSE
 
-# Authentication:
+# #######################
+# Authentication settings
+# #######################
+
+# Comment from Mozilla about the motivation behind disabling root login
+#
+# Root login is not allowed for auditing reasons. This is because it's difficult to track which process belongs to which root user:
+#
+# On Linux, user sessions are tracking using a kernel-side session id, however, this session id is not recorded by OpenSSH.
+# Additionally, only tools such as systemd and auditd record the process session id.
+# On other OSes, the user session id is not necessarily recorded at all kernel-side.
+# Using regular users in combination with /bin/su or /usr/bin/sudo ensure a clear audit track.
+
 LoginGraceTime 120
 PermitRootLogin no
 StrictModes yes
-
 PubkeyAuthentication yes
-#AuthorizedKeysFile     %h/.ssh/authorized_keys
-
-# Don't read the user's ~/.rhosts and ~/.shosts files
-IgnoreRhosts yes
-# similar for protocol version 2
-HostbasedAuthentication no
-# Uncomment if you don't trust ~/.ssh/known_hosts for RhostsRSAAuthentication
-#IgnoreUserKnownHosts yes
-
-# To enable empty passwords, change to yes (NOT RECOMMENDED)
 PermitEmptyPasswords no
-
-# Change to yes to enable challenge-response passwords (beware issues with
-# some PAM modules and threads)
 ChallengeResponseAuthentication no
-
-# Change to no to disable tunnelled clear text passwords
-#PasswordAuthentication yes
-
-# Kerberos options
-#KerberosAuthentication no
-#KerberosGetAFSToken no
-#KerberosOrLocalPasswd yes
-#KerberosTicketCleanup yes
-
-# GSSAPI options
-#GSSAPIAuthentication no
-#GSSAPICleanupCredentials yes
-
-X11Forwarding yes
-X11DisplayOffset 10
-PrintMotd no
-PrintLastLog yes
-TCPKeepAlive yes
-#UseLogin no
-
-# keep ssh sessions fresh
-ClientAliveInterval 60
-
-#MaxStartups 10:30:60
-Banner /etc/issue.net
-
-# Allow client to pass locale environment variables
-AcceptEnv LANG LC_*
-
-Subsystem sftp internal-sftp
-
-# Set this to 'yes' to enable PAM authentication, account processing,
-# and session processing. If this is enabled, PAM authentication will
-# be allowed through the ChallengeResponseAuthentication and
-# PasswordAuthentication.  Depending on your PAM configuration,
-# PAM authentication via ChallengeResponseAuthentication may bypass
-# the setting of "PermitRootLogin without-password".
-# If you just want the PAM account and session checks to run without
-# PAM authentication, then enable this but set PasswordAuthentication
-# and ChallengeResponseAuthentication to 'no'.
 UsePAM yes
 
+# Change to no to disable tunnelled clear text passwords
+# (i.e. everybody will need to authenticate using ssh keys)
+#PasswordAuthentication yes
+
+# Post-login stuff
+Banner /etc/issue.net
+PrintMotd no
+PrintLastLog yes
+ClientAliveInterval 60
+AcceptEnv LANG LC_*
+
+# SFTP stuff
+Subsystem sftp internal-sftp
 Match User sftpusers
         ForceCommand internal-sftp
         ChrootDirectory /home/%u
