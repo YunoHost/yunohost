@@ -404,7 +404,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
             else:
                 returnjson = {}
     except Exception as e:
-        returnjson = {}
+        os.remove(stdreturn)
+        os.rmdir(stdreturndir)
         raise MoulinetteError(
             errno.EIO, m18n.n('hook_json_return_error', path=path, msg=str(e)))
 
