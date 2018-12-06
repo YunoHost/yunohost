@@ -874,30 +874,33 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
     else:  # can't happen, this case is handle before
         raise Exception()
 
-    # If we are migrating in "automatic mode" (i.e. from debian
-    # configure during an upgrade of the package) but we are asked to run
-    # migrations is to be ran manually by the user
-    manual_migrations = [m for m in migrations if m.mode == "manual"]
-    if not skip and auto and manual_migrations:
-        for m in manual_migrations:
-            logger.warn(m18n.n('migrations_to_be_ran_manually',
-                               number=m.number,
-                               name=m.name))
-        return
-
-    # If some migrations have disclaimers, require the --accept-disclaimer
-    # option
-    migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
-    if not skip and not accept_disclaimer and migrations_with_disclaimer:
-        for m in migrations_with_disclaimer:
-            logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                               number=m.number,
-                               name=m.name,
-                               disclaimer=m.disclaimer))
-        return
-
     # effectively run selected migrations
     for migration in migrations:
+
+        if not skip:
+            # If we are migrating in "automatic mode" (i.e. from debian configure
+            # during an upgrade of the package) but we are asked to run migrations
+            # to be ran manually by the user, stop there and ask the user to
+            # run the migration manually.
+            if auto and migration.mode == "manual":
+                logger.warn(m18n.n('migrations_to_be_ran_manually',
+                                   number=migration.number,
+                                   name=migration.name))
+                break
+
+            # If some migrations have disclaimers,
+            if migration.disclaimer:
+                # require the --accept-disclaimer option. Otherwise, stop everything
+                # here and display the disclaimer
+                if not accept_disclaimer:
+                    logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                                       number=migration.number,
+                                       name=migration.name,
+                                       disclaimer=migration.disclaimer))
+                    break
+                # --accept-disclaimer will only work for the first migration
+                else:
+                    accept_disclaimer = False
 
         # Start register change on system
         operation_logger= OperationLogger('tools_migrations_migrate_' + mode)
