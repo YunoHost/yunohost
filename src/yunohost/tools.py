@@ -903,7 +903,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
         if not skip:
 
-            logger.warn(m18n.n('migrations_show_currently_running_migration',
+            logger.info(m18n.n('migrations_show_currently_running_migration',
                                number=migration.number, name=migration.name))
 
             try:
