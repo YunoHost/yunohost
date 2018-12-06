@@ -938,6 +938,10 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
         operation_logger.success()
 
+        # Skip migrations one at a time
+        if skip:
+            break
+
     # special case where we want to go back from the start
     if target == 0:
         state["last_run_migration"] = None
