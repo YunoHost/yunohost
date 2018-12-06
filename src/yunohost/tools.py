@@ -434,7 +434,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(skip=True, auto=True)
+    _skip_all_migrations()
 
     os.system('touch /etc/yunohost/installed')
 
@@ -950,7 +950,6 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     write_to_json(MIGRATIONS_STATE_PATH, state)
 
-
 def tools_migrations_state():
     """
     Show current migration state
@@ -1049,6 +1048,25 @@ def _load_migration(migration_file):
 
         raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
             number=number, name=name))
+
+def _skip_all_migrations():
+    """
+    Skip all pending migrations.
+    This is meant to be used during postinstall to
+    initialize the migration system.
+    """
+    state = tools_migrations_state()
+
+    # load all migrations
+    migrations = _get_migrations_list()
+    migrations = sorted(migrations, key=lambda x: x.number)
+    last_migration = migrations[-1]
+
+    state["last_run_migration"] = {
+        "number": last_migration.number,
+        "name": last_migration.name
+    }
+    write_to_json(MIGRATIONS_STATE_PATH, state)
 
 
 class Migration(object):
