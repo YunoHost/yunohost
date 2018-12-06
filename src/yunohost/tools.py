@@ -924,6 +924,9 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
                 break
+            else:
+                logger.success(m18n.n('migrations_success',
+                                      number=migration.number, name=migration.name))
 
         else:  # if skip
             logger.warn(m18n.n('migrations_skip_migration',
