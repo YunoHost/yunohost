@@ -304,6 +304,7 @@
     "migrations_show_currently_running_migration": "Running migration {number} {name}...",
     "migrations_show_last_migration": "Last ran migration is {}",
     "migrations_skip_migration": "Skipping migration {number} {name}...",
+    "migrations_success": "Successfully ran migration {number} {name}!",
     "migrations_to_be_ran_manually":  "Migration {number} {name} has to be ran manually. Please go to Tools > Migrations on the webadmin, or run `yunohost tools migrations migrate`.",
     "migrations_need_to_accept_disclaimer": "To run the migration {number} {name}, your must accept the following disclaimer:\n---\n{disclaimer}\n---\nIf you accept to run the migration, please re-run the command with the option --accept-disclaimer.",
     "monitor_disabled": "The server monitoring has been disabled",
