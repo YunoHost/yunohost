@@ -155,6 +155,8 @@ def tools_adminpw(auth, new_password, check_strength=True):
         except IOError as e:
             logger.warning(m18n.n('root_password_desynchronized'))
             return
+
+        logger.info(m18n.n("root_password_replaced_by_admin_password"))
         logger.success(m18n.n('admin_password_changed'))
 
 
