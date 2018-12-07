@@ -34,7 +34,7 @@ from logging import FileHandler, getLogger, Formatter
 from sys import exc_info
 
 from moulinette import m18n, msettings
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
@@ -148,7 +148,7 @@ def log_display(path, number=50, share=False):
         log_path = base_path + LOG_FILE_EXT
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise MoulinetteError('log_does_exists', log=path)
+        raise YunohostError('log_does_exists', log=path)
 
     infos = {}
 
@@ -188,7 +188,7 @@ def log_display(path, number=50, share=False):
                 if os.path.exists(log_path):
                     logger.warning(error)
                 else:
-                    raise MoulinetteError(error)
+                    raise YunohostError(error)
 
     # Display logs if exist
     if os.path.exists(log_path):

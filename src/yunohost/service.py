@@ -36,7 +36,7 @@ from difflib import unified_diff
 from datetime import datetime
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils import log, filesystem
 
 from yunohost.log import is_unit_operation
@@ -85,7 +85,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         _save_services(services)
     except:
         # we'll get a logger.warning with more details in _save_services
-        raise MoulinetteError('service_add_failed', service=name)
+        raise YunohostError('service_add_failed', service=name)
 
     logger.success(m18n.n('service_added', service=name))
 
@@ -103,13 +103,13 @@ def service_remove(name):
     try:
         del services[name]
     except KeyError:
-        raise MoulinetteError('service_unknown', service=name)
+        raise YunohostError('service_unknown', service=name)
 
     try:
         _save_services(services)
     except:
         # we'll get a logger.warning with more details in _save_services
-        raise MoulinetteError('service_remove_failed', service=name)
+        raise YunohostError('service_remove_failed', service=name)
 
     logger.success(m18n.n('service_removed', service=name))
 
@@ -130,7 +130,7 @@ def service_start(names):
             logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
-                raise MoulinetteError('service_start_failed', service=name, logs=_get_journalctl_logs(name))
+                raise YunohostError('service_start_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_started', service=name))
 
 
@@ -149,7 +149,7 @@ def service_stop(names):
             logger.success(m18n.n('service_stopped', service=name))
         else:
             if service_status(name)['status'] != 'inactive':
-                raise MoulinetteError('service_stop_failed', service=name, logs=_get_journalctl_logs(name))
+                raise YunohostError('service_stop_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_stopped', service=name))
 
 @is_unit_operation()
@@ -168,7 +168,7 @@ def service_enable(operation_logger, names):
         if _run_service_command('enable', name):
             logger.success(m18n.n('service_enabled', service=name))
         else:
-            raise MoulinetteError('service_enable_failed', service=name, logs=_get_journalctl_logs(name))
+            raise YunohostError('service_enable_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 def service_disable(names):
@@ -185,7 +185,7 @@ def service_disable(names):
         if _run_service_command('disable', name):
             logger.success(m18n.n('service_disabled', service=name))
         else:
-            raise MoulinetteError('service_disable_failed', service=name, logs=_get_journalctl_logs(name))
+            raise YunohostError('service_disable_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 def service_status(names=[]):
@@ -208,7 +208,7 @@ def service_status(names=[]):
 
     for name in names:
         if check_names and name not in services.keys():
-            raise MoulinetteError('service_unknown', service=name)
+            raise YunohostError('service_unknown', service=name)
 
         # this "service" isn't a service actually so we skip it
         #
@@ -307,10 +307,10 @@ def service_log(name, number=50):
     services = _get_services()
 
     if name not in services.keys():
-        raise MoulinetteError('service_unknown', service=name)
+        raise YunohostError('service_unknown', service=name)
 
     if 'log' not in services[name]:
-        raise MoulinetteError('service_no_log', service=name)
+        raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
 
@@ -418,7 +418,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
     names = pre_result['succeed'].keys()
 
     if not names:
-        raise MoulinetteError('service_regenconf_failed',
+        raise YunohostError('service_regenconf_failed',
                                      services=', '.join(pre_result['failed']))
 
     # Set the processing method
@@ -595,7 +595,7 @@ def _run_service_command(action, service):
     """
     services = _get_services()
     if service not in services.keys():
-        raise MoulinetteError('service_unknown', service=service)
+        raise YunohostError('service_unknown', service=service)
 
     possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
     if action not in possible_actions:

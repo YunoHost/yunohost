@@ -40,7 +40,7 @@ import apt
 import apt.progress
 
 from moulinette import msettings, msignals, m18n
-from moulinette.core import MoulinetteError, init_authenticator
+from yunohost.utils.error import YunohostError, init_authenticator
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
@@ -112,7 +112,7 @@ def tools_ldapinit():
         pwd.getpwnam("admin")
     except KeyError:
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
-        raise MoulinetteError('installation_failed')
+        raise YunohostError('installation_failed')
 
     logger.success(m18n.n('ldap_initialized'))
     return auth
@@ -139,7 +139,7 @@ def tools_adminpw(auth, new_password, check_strength=True):
         auth.update("cn=admin", { "userPassword": new_hash, })
     except:
         logger.exception('unable to change admin password')
-        raise MoulinetteError('admin_password_change_failed')
+        raise YunohostError('admin_password_change_failed')
     else:
         # Write as root password
         try:
@@ -175,7 +175,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
 
     # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
-        raise MoulinetteError('domain_unknown')
+        raise YunohostError('domain_unknown')
 
     operation_logger.related_to.append(('domain', new_domain))
     operation_logger.start()
@@ -198,7 +198,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
         _set_maindomain(new_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
-        raise MoulinetteError('maindomain_change_failed')
+        raise YunohostError('maindomain_change_failed')
 
     _set_hostname(new_domain)
 
@@ -247,7 +247,7 @@ def _set_hostname(hostname, pretty_hostname=None):
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            raise MoulinetteError('domain_hostname_failed')
+            raise YunohostError('domain_hostname_failed')
         else:
             logger.debug(out)
 
@@ -288,7 +288,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
-        raise MoulinetteError('yunohost_already_installed')
+        raise YunohostError('yunohost_already_installed')
 
     # Check password
     if not force_password:
@@ -317,7 +317,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
                 dyndns = True
             # If not, abort the postinstall
             else:
-                raise MoulinetteError('dyndns_unavailable', domain=domain)
+                raise YunohostError('dyndns_unavailable', domain=domain)
         else:
             dyndns = False
     else:
@@ -360,7 +360,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise MoulinetteError('ssowat_persistent_conf_read_error', error=str(e))
+        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
     except IOError:
         ssowat_conf = {}
 
@@ -373,7 +373,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise MoulinetteError('ssowat_persistent_conf_write_error', error=str(e))
+        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -400,7 +400,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
         if p.returncode != 0:
             logger.warning(out)
-            raise MoulinetteError('yunohost_ca_creation_failed')
+            raise YunohostError('yunohost_ca_creation_failed')
         else:
             logger.debug(out)
 
@@ -476,7 +476,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         # Update APT cache
         logger.debug(m18n.n('updating_apt_cache'))
         if not cache.update():
-            raise MoulinetteError('update_cache_failed')
+            raise YunohostError('update_cache_failed')
 
         cache.open(None)
         cache.upgrade(True)
@@ -495,7 +495,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     if not ignore_apps:
         try:
             app_fetchlist()
-        except MoulinetteError:
+        except YunohostError:
             # FIXME : silent exception !?
             pass
 
@@ -626,7 +626,7 @@ def tools_diagnosis(auth, private=False):
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except (MoulinetteError, Fault) as e:
+    except (YunohostError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
@@ -642,7 +642,7 @@ def tools_diagnosis(auth, private=False):
 
     try:
         system = monitor_system(units=['cpu', 'memory'], human_readable=True)
-    except MoulinetteError as e:
+    except YunohostError as e:
         logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['memory'] = {
@@ -668,7 +668,7 @@ def tools_diagnosis(auth, private=False):
     # YNH Applications
     try:
         applications = app_list()['apps']
-    except MoulinetteError as e:
+    except YunohostError as e:
         diagnosis['applications'] = m18n.n('diagnosis_no_apps')
     else:
         diagnosis['applications'] = {}
@@ -800,7 +800,7 @@ def tools_migrations_list(pending=False, done=False):
 
     # Check for option conflict
     if pending and done:
-        raise MoulinetteError("migrations_list_conflict_pending_done")
+        raise YunohostError("migrations_list_conflict_pending_done")
 
     # Get all migrations
     migrations = _get_migrations_list()
@@ -857,7 +857,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
-        raise MoulinetteError('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers)))
+        raise YunohostError('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers)))
 
     logger.debug(m18n.n('migrations_current_target', target))
 
@@ -1063,7 +1063,7 @@ def _load_migration(migration_file):
         import traceback
         traceback.print_exc()
 
-        raise MoulinetteError('migrations_error_failed_to_load_migration',
+        raise YunohostError('migrations_error_failed_to_load_migration',
             number=number, name=name)
 
 def _skip_all_migrations():

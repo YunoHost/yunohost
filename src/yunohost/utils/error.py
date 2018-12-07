@@ -20,6 +20,7 @@
 """
 
 from moulinette.core import MoulinetteError
+from moulinette.__init__ import m18n
 
 class YunohostError(MoulinetteError):
     """Yunohost base exception"""

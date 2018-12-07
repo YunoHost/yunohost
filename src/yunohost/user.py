@@ -34,7 +34,7 @@ import string
 import subprocess
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
@@ -71,7 +71,7 @@ def user_list(auth, fields=None):
             if attr in keys:
                 attrs.append(attr)
             else:
-                raise MoulinetteError('field_invalid', attr)
+                raise YunohostError('field_invalid', attr)
     else:
         attrs = ['uid', 'cn', 'mail', 'mailuserquota', 'loginShell']
 
@@ -129,7 +129,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     # Validate uniqueness of username in system users
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
     if username in all_existing_usernames:
-        raise MoulinetteError('system_username_exists')
+        raise YunohostError('system_username_exists')
 
     main_domain = _get_maindomain()
     aliases = [
@@ -140,11 +140,11 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     ]
 
     if mail in aliases:
-        raise MoulinetteError('mail_unavailable')
+        raise YunohostError('mail_unavailable')
 
     # Check that the mail domain exists
     if mail.split("@")[1] not in domain_list(auth)['domains']:
-        raise MoulinetteError(m18n.n('mail_domain_unknown',
+        raise YunohostError(m18n.n('mail_domain_unknown',
                                      domain=mail.split("@")[1]))
 
     operation_logger.start()
@@ -186,7 +186,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
             with open('/etc/ssowat/conf.json.persistent') as json_conf:
                 ssowat_conf = json.loads(str(json_conf.read()))
         except ValueError as e:
-            raise MoulinetteError('ssowat_persistent_conf_read_error', error=e.strerror)
+            raise YunohostError('ssowat_persistent_conf_read_error', error=e.strerror)
         except IOError:
             ssowat_conf = {}
 
@@ -196,7 +196,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
                 with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
                     json.dump(ssowat_conf, f, sort_keys=True, indent=4)
             except IOError as e:
-                raise MoulinetteError('ssowat_persistent_conf_write_error', error=e.strerror)
+                raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
 
     if auth.add('uid=%s,ou=users' % username, attr_dict):
         # Invalidate passwd to take user creation into account
@@ -222,7 +222,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
             return {'fullname': fullname, 'username': username, 'mail': mail}
 
-    raise MoulinetteError('user_creation_failed')
+    raise YunohostError('user_creation_failed')
 
 
 @is_unit_operation([('username', 'user')])
@@ -253,7 +253,7 @@ def user_delete(operation_logger, auth, username, purge=False):
             if purge:
                 subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
     else:
-        raise MoulinetteError('user_deletion_failed')
+        raise YunohostError('user_deletion_failed')
 
     app_ssowatconf(auth)
 
@@ -292,7 +292,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     # Populate user informations
     result = auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=' + username, attrs=attrs_to_fetch)
     if not result:
-        raise MoulinetteError('user_unknown', user=username)
+        raise YunohostError('user_unknown', user=username)
     user = result[0]
 
     # Get modifications from arguments
@@ -323,10 +323,10 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         ]
         auth.validate_uniqueness({'mail': mail})
         if mail[mail.find('@') + 1:] not in domains:
-            raise MoulinetteError(m18n.n('mail_domain_unknown',
+            raise YunohostError(m18n.n('mail_domain_unknown',
                                          domain=mail[mail.find('@') + 1:]))
         if mail in aliases:
-            raise MoulinetteError('mail_unavailable')
+            raise YunohostError('mail_unavailable')
 
         del user['mail'][0]
         new_attr_dict['mail'] = [mail] + user['mail']
@@ -337,7 +337,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         for mail in add_mailalias:
             auth.validate_uniqueness({'mail': mail})
             if mail[mail.find('@') + 1:] not in domains:
-                raise MoulinetteError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
+                raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
             user['mail'].append(mail)
         new_attr_dict['mail'] = user['mail']
 
@@ -348,7 +348,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
             if len(user['mail']) > 1 and mail in user['mail'][1:]:
                 user['mail'].remove(mail)
             else:
-                raise MoulinetteError('mail_alias_remove_failed', mail=mail)
+                raise YunohostError('mail_alias_remove_failed', mail=mail)
         new_attr_dict['mail'] = user['mail']
 
     if add_mailforward:
@@ -367,7 +367,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
             if len(user['maildrop']) > 1 and mail in user['maildrop'][1:]:
                 user['maildrop'].remove(mail)
             else:
-                raise MoulinetteError('mail_forward_remove_failed', mail=mail)
+                raise YunohostError('mail_forward_remove_failed', mail=mail)
         new_attr_dict['maildrop'] = user['maildrop']
 
     if mailbox_quota is not None:
@@ -380,7 +380,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         app_ssowatconf(auth)
         return user_info(auth, username)
     else:
-        raise MoulinetteError('user_update_failed')
+        raise YunohostError('user_update_failed')
 
 
 def user_info(auth, username):
@@ -405,7 +405,7 @@ def user_info(auth, username):
     if result:
         user = result[0]
     else:
-        raise MoulinetteError('user_unknown', user=username)
+        raise YunohostError('user_unknown', user=username)
 
     result_dict = {
         'username': user['uid'][0],
@@ -461,7 +461,7 @@ def user_info(auth, username):
     if result:
         return result_dict
     else:
-        raise MoulinetteError('user_info_failed')
+        raise YunohostError('user_info_failed')
 
 #
 # SSH subcategory

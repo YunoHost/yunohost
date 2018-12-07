@@ -12,7 +12,7 @@ from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
 from yunohost.domain import _get_maindomain
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 
 # Get main domain
 maindomain = ""
@@ -214,7 +214,7 @@ def test_backup_system_part_that_does_not_exists(mocker):
     mocker.spy(m18n, "n")
 
     # Create the backup
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_create(system=["yolol"], apps=None)
 
     m18n.n.assert_any_call('backup_hook_unknown', hook="yolol")
@@ -295,7 +295,7 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_create(system=None, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call('backup_app_failed', app='backup_recommended_app')
@@ -315,7 +315,7 @@ def test_backup_not_enough_free_space(monkeypatch, mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_create(system=None, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call('not_enough_disk_space', path=ANY)
@@ -327,7 +327,7 @@ def test_backup_app_not_installed(mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_create(system=None, apps=["wordpress"])
 
     m18n.n.assert_any_call("unbackup_app", app="wordpress")
@@ -343,8 +343,9 @@ def test_backup_app_with_no_backup_script(mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_create(system=None, apps=["backup_recommended_app"])
+>>>>>>> modif YunohostError to YunohostError
 
     m18n.n.assert_any_call("backup_with_no_backup_script_for_app", app="backup_recommended_app")
     m18n.n.assert_any_call('backup_nothings_done')
@@ -420,7 +421,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
 
     assert not _is_installed("wordpress")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_restore(auth, system=None, name=backup_list()["archives"][0],
                              apps=["wordpress"])
 
@@ -441,7 +442,7 @@ def test_restore_app_not_enough_free_space(monkeypatch, mocker):
 
     assert not _is_installed("wordpress")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_restore(auth, system=None, name=backup_list()["archives"][0],
                              apps=["wordpress"])
 
@@ -460,7 +461,7 @@ def test_restore_app_not_in_backup(mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_restore(auth, system=None, name=backup_list()["archives"][0],
                              apps=["yoloswag"])
 
@@ -480,7 +481,7 @@ def test_restore_app_already_installed(mocker):
     assert _is_installed("wordpress")
 
     mocker.spy(m18n, "n")
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_restore(auth, system=None, name=backup_list()["archives"][0],
                              apps=["wordpress"])
 
@@ -544,7 +545,7 @@ def test_restore_archive_with_no_json(mocker):
     assert "badbackup" in backup_list()["archives"]
 
     mocker.spy(m18n, "n")
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         backup_restore(auth, name="badbackup", force=True)
     m18n.n.assert_any_call('backup_invalid_archive')
 

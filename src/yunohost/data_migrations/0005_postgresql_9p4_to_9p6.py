@@ -1,7 +1,7 @@
 import subprocess
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
@@ -20,10 +20,10 @@ class MyMigration(Migration):
             return
 
         if not self.package_is_installed("postgresql-9.6"):
-            raise MoulinetteError("migration_0005_postgresql_96_not_installed")
+            raise YunohostError("migration_0005_postgresql_96_not_installed")
 
         if not space_used_by_directory("/var/lib/postgresql/9.4") > free_space_in_directory("/var/lib/postgresql"):
-            raise MoulinetteError("migration_0005_not_enough_space", path="/var/lib/postgresql/")
+            raise YunohostError("migration_0005_not_enough_space", path="/var/lib/postgresql/")
 
         subprocess.check_call("service postgresql stop", shell=True)
         subprocess.check_call("pg_dropcluster --stop 9.6 main", shell=True)

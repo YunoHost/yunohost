@@ -1,6 +1,6 @@
 import pytest
 
-from moulinette.core import MoulinetteError, init_authenticator
+from yunohost.utils.error import YunohostError, init_authenticator
 
 from yunohost.app import app_install, app_remove
 from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
@@ -43,7 +43,7 @@ def test_urlavailable():
     assert domain_url_available(auth, maindomain, "/macnuggets")
 
     # We don't know the domain yolo.swag
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         assert domain_url_available(auth, "yolo.swag", "/macnuggets")
 
 
@@ -55,13 +55,13 @@ def test_registerurl():
     assert not domain_url_available(auth, maindomain, "/urlregisterapp")
 
     # Try installing at same location
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         app_install(auth, "./tests/apps/register_url_app_ynh",
                 args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"))
 
 
 def test_registerurl_baddomain():
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         app_install(auth, "./tests/apps/register_url_app_ynh",
                 args="domain=%s&path=%s" % ("yolo.swag", "/urlregisterapp"))
