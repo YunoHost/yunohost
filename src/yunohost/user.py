@@ -115,7 +115,6 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf
     from yunohost.utils.password import assert_password_is_strong_enough
 
     # Ensure sufficiently complex password
@@ -211,13 +210,14 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
             if not os.path.isdir('/home/{0}'.format(username)):
                 logger.warning(m18n.n('user_home_creation_failed'),
                                 exc_info=1)
-        app_ssowatconf(auth)
+
+        # Create group for user and add to group 'all_users'
+        user_group_add(auth, groupname=username, gid=uid, sync_perm=False)
+        user_group_update(auth, groupname=username, add_user=username, force=True, sync_perm=False)
+        user_group_update(auth, 'all_users', add_user=username, force=True, sync_perm=True)
+
         # TODO: Send a welcome mail to user
         logger.success(m18n.n('user_created'))
-        # Create group for user and add to group 'all_users'
-        user_group_add(auth, groupname=username, gid=uid)
-        user_group_update(auth, groupname=username, add_user=username, force=True)
-        user_group_update(auth, 'all_users', add_user=username, force=True)
 
         hook_callback('post_user_create',
                         args=[username, mail, password, firstname, lastname])
@@ -237,7 +237,6 @@ def user_delete(operation_logger, auth, username, purge=False):
         purge
 
     """
-    from yunohost.app import app_ssowatconf
     from yunohost.hook import hook_callback
 
     operation_logger.start()
@@ -250,7 +249,7 @@ def user_delete(operation_logger, auth, username, purge=False):
     else:
         raise YunohostError('user_deletion_failed')
 
-    user_group_delete(auth, username, force=True)
+    user_group_delete(auth, username, force=True, sync_perm=True)
 
     group_list = auth.search('ou=groups,dc=yunohost,dc=org',
                              '(&(objectclass=groupOfNamesYnh)(memberUid=%s))'
@@ -262,8 +261,6 @@ def user_delete(operation_logger, auth, username, purge=False):
         user_list['memberUid'].remove(username)
         if not auth.update('cn=%s,ou=groups' % group['cn'][0], user_list):
             raise YunohostError('group_update_failed')
-
-    app_ssowatconf(auth)
 
     hook_callback('post_user_delete', args=[username, purge])
 
@@ -537,7 +534,7 @@ def user_group_list(auth, fields=None):
 
 
 @is_unit_operation([('groupname', 'user')])
-def user_group_add(operation_logger, auth, groupname,gid=None):
+def user_group_add(operation_logger, auth, groupname,gid=None, sync_perm=True):
     """
     Create group
 
@@ -545,8 +542,7 @@ def user_group_add(operation_logger, auth, groupname,gid=None):
         groupname -- Must be unique
 
     """
-    from yunohost.app import app_ssowatconf
-    from yunohost.permission import _permission_sync_to_user
+    from yunohost.permission import permission_sync_to_user
 
     operation_logger.start()
 
@@ -578,16 +574,16 @@ def user_group_add(operation_logger, auth, groupname,gid=None):
     }
 
     if auth.add('cn=%s,ou=groups' % groupname, attr_dict):
-        _permission_sync_to_user(auth)
-        app_ssowatconf(auth)
         logger.success(m18n.n('group_created'))
+        if sync_perm:
+            permission_sync_to_user(auth)
         return {'name': groupname}
 
     raise MoulinetteError(169, m18n.n('group_creation_failed'))
 
 
 @is_unit_operation([('groupname', 'user')])
-def user_group_delete(operation_logger, auth, groupname, force=False):
+def user_group_delete(operation_logger, auth, groupname, force=False, sync_perm=True):
     """
     Delete user
 
@@ -595,8 +591,7 @@ def user_group_delete(operation_logger, auth, groupname, force=False):
         groupname -- Groupname to delete
 
     """
-    from yunohost.app import app_ssowatconf
-    from yunohost.permission import _permission_sync_to_user
+    from yunohost.permission import permission_sync_to_user
 
     if not force and (groupname == 'all_users' or groupname == 'admins' or groupname in user_list(auth, ['uid'])['users']):
         raise MoulinetteError(errno.EPERM, m18n.n('group_deletion_not_allowed', user=groupname))
@@ -605,13 +600,13 @@ def user_group_delete(operation_logger, auth, groupname, force=False):
     if not auth.remove('cn=%s,ou=groups' % groupname):
         raise MoulinetteError(169, m18n.n('group_deletion_failed'))
 
-    _permission_sync_to_user(auth)
-    app_ssowatconf(auth)
     logger.success(m18n.n('group_deleted'))
+    if sync_perm:
+        permission_sync_to_user(auth)
 
 
 @is_unit_operation([('groupname', 'user')])
-def user_group_update(operation_logger, auth, groupname, add_user=None, remove_user=None, force=False):
+def user_group_update(operation_logger, auth, groupname, add_user=None, remove_user=None, force=False, sync_perm=True):
     """
     Update user informations
 
@@ -622,8 +617,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
 
     """
 
-    from yunohost.app import app_ssowatconf
-    from yunohost.permission import _permission_sync_to_user
+    from yunohost.permission import permission_sync_to_user
 
     attrs_to_fetch = ['member']
 
@@ -685,9 +679,9 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
         if not auth.update('cn=%s,ou=groups' % groupname, new_group_list):
             raise MoulinetteError(169, m18n.n('group_update_failed'))
 
-    _permission_sync_to_user(auth)
     logger.success(m18n.n('group_updated'))
-    app_ssowatconf(auth)
+    if sync_perm:
+        permission_sync_to_user(auth)
     return user_group_info(auth, groupname)
 
 
@@ -723,24 +717,27 @@ def user_group_info(auth, groupname):
 #
 import yunohost.permission
 
-def user_permission_list(auth, app=None, permission=None, username=None, group=None):
+def user_permission_list(auth, app=None, permission=None, username=None, group=None, sync_perm=True):
     return yunohost.permission.user_permission_list(auth, app, permission, username, group)
 
 @is_unit_operation([('app', 'user')])
-def user_permission_add(operation_logger, auth, app, permission="main", username=None, group=None):
+def user_permission_add(operation_logger, auth, app, permission="main", username=None, group=None, sync_perm=True):
     return yunohost.permission.user_permission_update(operation_logger, auth, app, permission=permission,
                                                        add_username=username, add_group=group,
-                                                       del_username=None, del_group=None)
+                                                       del_username=None, del_group=None,
+                                                       sync_perm=sync_perm)
 
 @is_unit_operation([('app', 'user')])
-def user_permission_remove(operation_logger, auth, app, permission="main", username=None, group=None):
+def user_permission_remove(operation_logger, auth, app, permission="main", username=None, group=None, sync_perm=True):
     return yunohost.permission.user_permission_update(operation_logger, auth, app, permission=permission,
                                                       add_username=None, add_group=None,
-                                                      del_username=username, del_group=group)
+                                                      del_username=username, del_group=group,
+                                                      sync_perm=sync_perm)
 
 @is_unit_operation([('app', 'user')])
-def user_permission_clear(operation_logger, auth, app, permission=None):
-    return yunohost.permission.user_permission_clear(operation_logger, auth, app, permission)
+def user_permission_clear(operation_logger, auth, app, permission=None, sync_perm=True):
+    return yunohost.permission.user_permission_clear(operation_logger, auth, app, permission,
+                                                     sync_perm=sync_perm)
 
 #
 # SSH subcategory

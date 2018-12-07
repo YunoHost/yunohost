@@ -32,7 +32,6 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from yunohost.user import user_list, user_group_list
-from yunohost.app import app_ssowatconf
 from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
@@ -232,7 +231,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         else:
             raise MoulinetteError(169, m18n.n('permission_update_failed'))
 
-    _permission_sync_to_user(auth)
+    permission_sync_to_user(auth)
 
     for a in app:
         allowed_users = set()
@@ -253,11 +252,10 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         if del_group:
             hook_callback('post_app_removeaccess', args=[app, disallowed_users])
 
-    app_ssowatconf(auth)
     return user_permission_list(auth, app, permission)
 
 
-def user_permission_clear(operation_logger, auth, app=[], permission=None):
+def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_perm=True):
     """
     Reset the permission for a specific application
 
@@ -300,7 +298,7 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None):
             else:
                 raise MoulinetteError(169, m18n.n('permission_update_failed'))
 
-    _permission_sync_to_user(auth)
+    permission_sync_to_user(auth)
 
     for a in app:
         permission_name = 'main.' + a
@@ -311,12 +309,11 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None):
             new_user_list = ','.join(allowed_users)
             hook_callback('post_app_removeaccess', args=[app, new_user_list])
 
-    app_ssowatconf(auth)
     return user_permission_list(auth, app, permission)
 
 
 @is_unit_operation(['permission','app'])
-def permission_add(operation_logger, auth, app, permission, url=None, default_allow=True):
+def permission_add(operation_logger, auth, app, permission, url=None, default_allow=True, sync_perm=True):
     """
     Create a new permission for a specific application
 
@@ -362,7 +359,8 @@ def permission_add(operation_logger, auth, app, permission, url=None, default_al
 
     operation_logger.start()
     if auth.add('cn=%s,ou=permission' % permission_name, attr_dict):
-        _permission_sync_to_user(auth)
+        if sync_perm:
+            permission_sync_to_user(auth)
         logger.success(m18n.n('permission_created', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
@@ -370,7 +368,7 @@ def permission_add(operation_logger, auth, app, permission, url=None, default_al
 
 
 @is_unit_operation(['permission','app'])
-def permission_update(operation_logger, auth, app, permission, add_url=None, remove_url=None):
+def permission_update(operation_logger, auth, app, permission, add_url=None, remove_url=None, sync_perm=True):
     """
     Update a permission for a specific application
 
@@ -416,7 +414,8 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
 
     operation_logger.start()
     if auth.update('cn=%s,ou=permission' % permission_name, {'cn':permission_name, 'URL': url}):
-        _permission_sync_to_user(auth)
+        if sync_perm:
+            permission_sync_to_user(auth)
         logger.success(m18n.n('permission_updated', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
@@ -424,7 +423,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
 
 
 @is_unit_operation(['permission','app'])
-def permission_remove(operation_logger, auth, app, permission, force=False):
+def permission_remove(operation_logger, auth, app, permission, force=False, sync_perm=True):
     """
     Remove a permission for a specific application
 
@@ -440,15 +439,17 @@ def permission_remove(operation_logger, auth, app, permission, force=False):
     operation_logger.start()
     if not auth.remove('cn=%s,ou=permission' % str(permission + '.' + app)):
         raise MoulinetteError(169, m18n.n('permission_deletion_failed', permission=permission, app=app))
-    _permission_sync_to_user(auth)
+    if sync_perm:
+        permission_sync_to_user(auth)
     logger.success(m18n.n('permission_deleted', permission=permission, app=app))
 
 
-def _permission_sync_to_user(auth):
+def permission_sync_to_user(auth):
     """
     Sychronise the inheritPermission attribut in the permission object from the user<->group link and the group<->permission link
     """
     import os
+    from yunohost.app import app_ssowatconf
 
     permission_attrs = [
         'cn',
@@ -486,6 +487,9 @@ def _permission_sync_to_user(auth):
         inheritPermission = {'inheritPermission': val, 'memberUid': uid_val}
         if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
             raise MoulinetteError(169, m18n.n('permission_update_failed'))
+    logger.success(m18n.n('permission_generated'))
+
+    app_ssowatconf(auth)
 
     # Reload unscd because if not the group is not updated in the system from LDAP
     os.system('systemctl restart unscd')

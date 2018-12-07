@@ -61,7 +61,7 @@ ynh_permission_remove() {
     local permission
     ynh_handle_getopts_args "$@"
 
-    yunohost tools shell -c "from yunohost.permission import permission_remove; permission_remove(auth, '$app', '$permission')"
+    yunohost tools shell -c "from yunohost.permission import permission_remove; permission_remove(auth, '$app', '$permission', sync_perm=False)"
 }
 
 # Add a path managed by the SSO
@@ -77,7 +77,7 @@ ynh_permission_add_path() {
     local url
     ynh_handle_getopts_args "$@"
 
-    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update(auth, '$app', '$permission', add_url=['${url//';'/"','"}'])"
+    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update(auth, '$app', '$permission', add_url=['${url//';'/"','"}'], sync_perm=False)"
 }
 
 # Remove a path managed by the SSO
@@ -93,5 +93,5 @@ ynh_permission_del_path() {
     local url
     ynh_handle_getopts_args "$@"
 
-    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update(auth, '$app', '$permission', remove_url=['${url//';'/"','"}'])"
+    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update(auth, '$app', '$permission', remove_url=['${url//';'/"','"}'], sync_perm=False)"
 }

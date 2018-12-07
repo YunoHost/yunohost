@@ -536,9 +536,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_update(auth, app, permission="main", add_url=[domain+path], remove_url=[old_domain+old_path])
-
-    app_ssowatconf(auth)
+    permission_update(auth, app, permission="main", add_url=[domain+path], remove_url=[old_domain+old_path], sync_perm=True)
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") == False:
@@ -568,6 +566,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+    from yunohost.permission import permission_sync_to_user
 
     # Retrieve interface
     is_api = msettings.get('interface') == 'api'
@@ -687,7 +686,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     if not upgraded_apps:
         raise YunohostError('app_no_upgrade')
 
-    app_ssowatconf(auth)
+    permission_sync_to_user(auth)
 
     logger.success(m18n.n('upgrade_complete'))
 
@@ -710,7 +709,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import permission_add, permission_update, permission_remove
+    from yunohost.permission import permission_add, permission_update, permission_remove, permission_sync_to_user
 
     # Fetch or extract sources
     try:
@@ -915,9 +914,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     domain = app_settings['domain']
     path = app_settings.get('path', '/')
     if domain and path:
-        permission_update(auth, app_instance_name, permission="main", add_url=[domain+path])
+        permission_update(auth, app_instance_name, permission="main", add_url=[domain+path], sync_perm=False)
 
-    app_ssowatconf(auth)
+    permission_sync_to_user(auth)
 
     logger.success(m18n.n('installation_complete'))
 
@@ -934,7 +933,7 @@ def app_remove(operation_logger, auth, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
-    from yunohost.permission import permission_remove
+    from yunohost.permission import permission_remove, permission_sync_to_user
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app)
 
@@ -982,9 +981,9 @@ def app_remove(operation_logger, auth, app):
                          filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app, attrs=['cn'])
     permission_list = [p['cn'][0] for p in result]
     for l in permission_list:
-        permission_remove(auth, app, l.split('.')[0], force=True)
+        permission_remove(auth, app, l.split('.')[0], force=True, sync_perm=False)
 
-    app_ssowatconf(auth)
+    permission_sync_to_user(auth)
 
 @is_unit_operation(['permission','app'])
 def app_addaccess(operation_logger, auth, apps, users=[]):
@@ -1037,6 +1036,9 @@ def app_clearaccess(operation_logger, auth, apps):
 
     user_permission_clear(operation_logger, auth, app=apps, permission="main")
 
+    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
+
+    return {'allowed_users': result}
 
 def app_debug(app):
     """
