@@ -36,6 +36,7 @@ import glob
 import pwd
 import grp
 from collections import OrderedDict
+import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
@@ -66,9 +67,12 @@ re_app_instance_name = re.compile(
 )
 
 
-def app_listlists():
+def app_listlists(human_readable=False):
     """
     List fetched lists
+
+    Keyword argument:
+        human_readable -- Show human readable dates
 
     """
 
@@ -79,6 +83,14 @@ def app_listlists():
 
     # Get the list
     appslist_list = _read_appslist_list()
+
+    # Human readable date
+    if human_readable:
+        for app in appslist_list:
+            now_for_humans = datetime.datetime.fromtimestamp(
+                appslist_list[app].get("lastUpdate"))
+            appslist_list[app]["lastUpdate"] = now_for_humans.strftime(
+                '%Y-%m-%d %H:%M:%S')
 
     return appslist_list
 
