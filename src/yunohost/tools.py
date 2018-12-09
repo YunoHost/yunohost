@@ -443,6 +443,24 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
+
+    # Restore original ssh conf, as chosen by the
+    # admin during the initial install
+    #
+    # c.f. the install script and in particular
+    # https://github.com/YunoHost/install_script/pull/50
+    # The user can now choose during the install to keep
+    # the initial, existing sshd configuration
+    # instead of YunoHost's recommended conf
+    #
+    original_sshd_conf = '/etc/ssh/sshd_config.before_yunohost'
+    if os.path.exists(original_sshd_conf):
+        os.rename(original_sshd_conf, '/etc/ssh/sshd_config')
+    else:
+        # We need to explicitly ask the regen conf to regen ssh
+        # (by default, i.e. first argument = None, it won't because it's too touchy)
+        service_regen_conf(names=["ssh"], force=True)
+
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))

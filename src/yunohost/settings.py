@@ -39,6 +39,7 @@ DEFAULTS = OrderedDict([
     # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
+    ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
 ])
 
 
