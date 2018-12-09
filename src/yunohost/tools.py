@@ -434,7 +434,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(skip=True, auto=True)
+    _skip_all_migrations()
 
     os.system('touch /etc/yunohost/installed')
 
@@ -874,30 +874,33 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
     else:  # can't happen, this case is handle before
         raise Exception()
 
-    # If we are migrating in "automatic mode" (i.e. from debian
-    # configure during an upgrade of the package) but we are asked to run
-    # migrations is to be ran manually by the user
-    manual_migrations = [m for m in migrations if m.mode == "manual"]
-    if not skip and auto and manual_migrations:
-        for m in manual_migrations:
-            logger.warn(m18n.n('migrations_to_be_ran_manually',
-                               number=m.number,
-                               name=m.name))
-        return
-
-    # If some migrations have disclaimers, require the --accept-disclaimer
-    # option
-    migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
-    if not skip and not accept_disclaimer and migrations_with_disclaimer:
-        for m in migrations_with_disclaimer:
-            logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                               number=m.number,
-                               name=m.name,
-                               disclaimer=m.disclaimer))
-        return
-
     # effectively run selected migrations
     for migration in migrations:
+
+        if not skip:
+            # If we are migrating in "automatic mode" (i.e. from debian configure
+            # during an upgrade of the package) but we are asked to run migrations
+            # to be ran manually by the user, stop there and ask the user to
+            # run the migration manually.
+            if auto and migration.mode == "manual":
+                logger.warn(m18n.n('migrations_to_be_ran_manually',
+                                   number=migration.number,
+                                   name=migration.name))
+                break
+
+            # If some migrations have disclaimers,
+            if migration.disclaimer:
+                # require the --accept-disclaimer option. Otherwise, stop everything
+                # here and display the disclaimer
+                if not accept_disclaimer:
+                    logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                                       number=migration.number,
+                                       name=migration.name,
+                                       disclaimer=migration.disclaimer))
+                    break
+                # --accept-disclaimer will only work for the first migration
+                else:
+                    accept_disclaimer = False
 
         # Start register change on system
         operation_logger= OperationLogger('tools_migrations_migrate_' + mode)
@@ -905,7 +908,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
         if not skip:
 
-            logger.warn(m18n.n('migrations_show_currently_running_migration',
+            logger.info(m18n.n('migrations_show_currently_running_migration',
                                number=migration.number, name=migration.name))
 
             try:
@@ -926,6 +929,9 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
                 break
+            else:
+                logger.success(m18n.n('migrations_success',
+                                      number=migration.number, name=migration.name))
 
         else:  # if skip
             logger.warn(m18n.n('migrations_skip_migration',
@@ -940,12 +946,15 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
         operation_logger.success()
 
+        # Skip migrations one at a time
+        if skip:
+            break
+
     # special case where we want to go back from the start
     if target == 0:
         state["last_run_migration"] = None
 
     write_to_json(MIGRATIONS_STATE_PATH, state)
-
 
 def tools_migrations_state():
     """
@@ -1045,6 +1054,25 @@ def _load_migration(migration_file):
 
         raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
             number=number, name=name))
+
+def _skip_all_migrations():
+    """
+    Skip all pending migrations.
+    This is meant to be used during postinstall to
+    initialize the migration system.
+    """
+    state = tools_migrations_state()
+
+    # load all migrations
+    migrations = _get_migrations_list()
+    migrations = sorted(migrations, key=lambda x: x.number)
+    last_migration = migrations[-1]
+
+    state["last_run_migration"] = {
+        "number": last_migration.number,
+        "name": last_migration.name
+    }
+    write_to_json(MIGRATIONS_STATE_PATH, state)
 
 
 class Migration(object):
