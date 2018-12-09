@@ -33,6 +33,8 @@ import shutil
 import subprocess
 import csv
 import tempfile
+import pytz
+from datetime import datetime
 from glob import glob
 from collections import OrderedDict
 
@@ -2266,8 +2268,8 @@ def backup_info(name, with_details=False, human_readable=False):
 
     result = {
         'path': archive_file,
-        'created_at': time.strftime(m18n.n('format_datetime_short'),
-                                    time.gmtime(info['created_at'])),
+        'created_at': datetime.utcfromtimestamp(info['created_at'])
+                        .replace(tzinfo=pytz.utc),
         'description': info['description'],
         'size': size,
     }

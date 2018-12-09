@@ -1762,8 +1762,7 @@ def _get_app_status(app_id, format_date=False):
             if not v:
                 status[f] = '-'
             else:
-                status[f] = time.strftime(m18n.n('format_datetime_short'),
-                                          time.gmtime(v))
+                status[f] = datetime.utcfromtimestamp(v).replace(tzinfo=pytz.utc)
     return status
 
 
