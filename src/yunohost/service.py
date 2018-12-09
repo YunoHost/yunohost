@@ -31,7 +31,6 @@ import subprocess
 import errno
 import shutil
 import hashlib
-import pytz
 
 from difflib import unified_diff
 from datetime import datetime
@@ -276,7 +275,6 @@ def service_status(names=[]):
             }
             if "ActiveEnterTimestamp" in status:
                 result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
-                result[name]['active_at'] = result[name]['active_at'].replace(tzinfo=pytz.utc)
             else:
                 result[name]['active_at'] = "unknown"
 
@@ -926,7 +924,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
     """
     if save:
         backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
-            system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
+            system_conf.lstrip('/'), datetime.utcnow().strftime("%Y%m%d.%H%M%S")))
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):

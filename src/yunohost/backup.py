@@ -33,7 +33,6 @@ import shutil
 import subprocess
 import csv
 import tempfile
-import pytz
 from datetime import datetime
 from glob import glob
 from collections import OrderedDict
@@ -301,7 +300,7 @@ class BackupManager():
             (string) A backup name created from current date 'YYMMDD-HHMMSS'
         """
         # FIXME: case where this name already exist
-        return time.strftime('%Y%m%d-%H%M%S')
+        return time.strftime('%Y%m%d-%H%M%S', time.gmtime())
 
     def _init_work_dir(self):
         """Initialize preparation directory
@@ -2268,8 +2267,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
     result = {
         'path': archive_file,
-        'created_at': datetime.utcfromtimestamp(info['created_at'])
-                        .replace(tzinfo=pytz.utc),
+        'created_at': datetime.utcfromtimestamp(info['created_at']),
         'description': info['description'],
         'size': size,
     }
