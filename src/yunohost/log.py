@@ -28,7 +28,6 @@ import os
 import yaml
 import errno
 import collections
-import pytz
 
 from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
@@ -184,9 +183,9 @@ def log_display(path, number=50, share=False):
                 infos['metadata_path'] = md_path
                 infos['metadata'] = metadata
                 if 'started_at' in infos['metadata']:
-                    infos['metadata']['started_at'] = infos['metadata']['started_at'].replace(tzinfo=pytz.utc)
+                    infos['metadata']['started_at'] = infos['metadata']['started_at']
                 if 'ended_at' in infos['metadata']:
-                    infos['metadata']['ended_at'] = infos['metadata']['ended_at'].replace(tzinfo=pytz.utc)
+                    infos['metadata']['ended_at'] = infos['metadata']['ended_at']
                 if 'log_path' in metadata:
                     log_path = metadata['log_path']
             except yaml.YAMLError:
@@ -321,7 +320,7 @@ class OperationLogger(object):
         """
 
         if self.started_at is None:
-            self.started_at = datetime.now(tz=pytz.utc)
+            self.started_at = datetime.utcnow()
             self.flush()
             self._register_log()
 
@@ -413,7 +412,7 @@ class OperationLogger(object):
             return
         if error is not None and not isinstance(error, basestring):
             error = str(error)
-        self.ended_at = datetime.now(tz=pytz.utc)
+        self.ended_at = datetime.utcnow()
         self._error = error
         self._success = error is None
         if self.logger is not None:
