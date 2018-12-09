@@ -154,7 +154,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
                            args={'force': force})
 
         # Paths of files and folder we'll need
-        date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
+        date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
         new_cert_folder = "%s/%s-history/%s-selfsigned" % (
             CERT_FOLDER, domain, date_tag)
 
@@ -587,7 +587,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     logger.debug("Saving the key and signed certificate...")
 
     # Create corresponding directory
-    date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
+    date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
 
     if staging:
         folder_flag = "staging"
@@ -674,7 +674,7 @@ def _get_status(domain):
     cert_subject = cert.get_subject().CN
     cert_issuer = cert.get_issuer().CN
     valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
-    days_remaining = (valid_up_to - datetime.now()).days
+    days_remaining = (valid_up_to - datetime.utcnow()).days
 
     if cert_issuer == _name_self_CA():
         CA_type = {
@@ -816,7 +816,7 @@ def _backup_current_cert(domain):
 
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
-    date_tag = datetime.now().strftime("%Y%m%d.%H%M%S")
+    date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
     backup_folder = "%s-backups/%s" % (cert_folder_domain, date_tag)
 
     shutil.copytree(cert_folder_domain, backup_folder)
