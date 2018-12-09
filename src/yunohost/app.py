@@ -72,9 +72,6 @@ def app_listlists():
     """
     List fetched lists
 
-    Keyword argument:
-        human_readable -- Show human readable dates
-
     """
 
     # Migrate appslist system if needed
