@@ -965,7 +965,7 @@ def app_addaccess(auth, apps, users=[]):
             operation_logger.start()
 
             allowed_users = set()
-            if 'allowed_users' in app_settings:
+            if 'allowed_users' in app_settings and app_settings['allowed_users']:
                 allowed_users = set(app_settings['allowed_users'].split(','))
 
             for allowed_user in users:

@@ -313,7 +313,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
 
     if change_password:
         # Ensure sufficiently complex password
-        assert_password_is_strong_enough("user", password)
+        assert_password_is_strong_enough("user", change_password)
 
         new_attr_dict['userPassword'] = _hash_user_password(change_password)
 

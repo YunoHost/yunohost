@@ -11,7 +11,7 @@ def render(data):
     from ansi2html.style import get_styles
 
     conv = Ansi2HTMLConverter()
-    shell_css = "\n".join(map(str, get_styles(conv.dark_bg, conv.scheme)))
+    shell_css = "\n".join(map(str, get_styles(conv.dark_bg)))
 
     def shell_to_html(shell):
         return conv.convert(shell, False)
@@ -28,6 +28,7 @@ class Parser():
 
     def __init__(self, filename):
 
+        self.filename = filename
         self.file = open(filename, "r").readlines()
         self.blocks = None
 
@@ -42,6 +43,9 @@ class Parser():
                           "code": [] }
 
         for i, line in enumerate(self.file):
+ 
+            if line.startswith("#!/bin/bash"):
+               continue
 
             line = line.rstrip().replace("\t", "    ")
 
@@ -64,7 +68,7 @@ class Parser():
                 else:
                     # We're getting out of a comment bloc, we should find
                     # the name of the function
-                    assert len(line.split()) >= 1
+                    assert len(line.split()) >= 1, "Malformed line %s in %s" % (i, self.filename)
                     current_block["line"] = i
                     current_block["name"] = line.split()[0].strip("(){")
                     # Then we expect to read the function
@@ -143,11 +147,11 @@ class Parser():
         b["usage"] = b["usage"].strip()
 
 
+
 def is_global_comment(line):
     return line.startswith('#')
 
 def malformed_error(line_number):
-    import pdb; pdb.set_trace()
     return "Malformed file line {} ?".format(line_number)
 
 def main():

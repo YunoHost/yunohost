@@ -1,3 +1,34 @@
+yunohost (3.3.3) stable; urgency=low
+
+  * [fix] ynh_wait_dpkg_free displaying a warning despite everything being okay (#593)
+  * [fix] Quotes for recommended CAA DNS record (#596)
+  * [fix] Manual migration and disclaimer behaviors (#594)
+  * [fix] Explicit root password change each time admin password is changed
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 09 Dec 2018 20:58:00 +0000
+
+yunohost (3.3.2) stable; urgency=low
+
+  * [fix] Regen nginx conf to be sure it integrates OCSP Stapling (#588)
+  * [fix] Broken new settings and options to control passwords checks / constrains (#589)
+  * [fix] Log dyndns update only if we really update something (#591)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Dec 2018 17:23:00 +0000
+
+yunohost (3.3.1) stable; urgency=low
+
+  * [fix] Wait for dpkg lock to be free in apt helpers (#571)
+  * [fix] app_removeaccess call set.add (#573)
+  * [fix] Fix app_addaccess behaviour when 'allowed_users' is initially empty (#575)
+  * [fix] Typo in user_update when update password (#577)
+  * [fix] Do not fail on missing fail2ban config during the backup (#558)
+  * [fix] Generate a random serial for local certification auth (followup of #557)
+  * [i18n] Update Italian, Occitan, French translations
+
+ Thanks to all contributors (Maniack, airwoodix, Aleks, ljf, silkevicious, Quent-in, Jibec) <3 !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 23 Nov 2018 15:58:00 +0000
+
 yunohost (3.3.0) testing; urgency=low
 
   Highlights
