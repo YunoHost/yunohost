@@ -182,10 +182,6 @@ def log_display(path, number=50, share=False):
                 metadata = yaml.safe_load(md_file)
                 infos['metadata_path'] = md_path
                 infos['metadata'] = metadata
-                if 'started_at' in infos['metadata']:
-                    infos['metadata']['started_at'] = infos['metadata']['started_at']
-                if 'ended_at' in infos['metadata']:
-                    infos['metadata']['ended_at'] = infos['metadata']['ended_at']
                 if 'log_path' in metadata:
                     log_path = metadata['log_path']
             except yaml.YAMLError:
