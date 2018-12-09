@@ -50,6 +50,10 @@ _global:
                     uri: ldap://localhost:389
                     base_dn: dc=yunohost,dc=org
         argument_auth: true
+
+    preaction:
+        yunohost.preactions.checkmigrations:
+            - main
     arguments:
         -v:
             full: --version

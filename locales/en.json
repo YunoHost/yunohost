@@ -318,6 +318,7 @@
     "migrations_loading_migration": "Loading migration {number} {name}…",
     "migrations_migration_has_failed": "Migration {number} {name} has failed with exception {exception}, aborting",
     "migrations_no_migrations_to_run": "No migrations to run",
+    "migrations_required": "To be able do the yunohost operation you need to do the migration",
     "migrations_show_currently_running_migration": "Running migration {number} {name}…",
     "migrations_show_last_migration": "Last ran migration is {}",
     "migrations_skip_migration": "Skipping migration {number} {name}…",
