@@ -470,11 +470,6 @@ app:
         listlists:
             action_help: List registered application lists
             api: GET /appslists
-            arguments:
-                -H:
-                    full: --human-readable
-                    help: Return the lastUpdate with a human readable date
-                    action: store_true
 
         ### app_removelist()
         removelist:
