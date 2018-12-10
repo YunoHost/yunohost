@@ -198,7 +198,7 @@ def add_archive_system_from_2p4():
 def test_backup_only_ldap():
 
     # Create the backup
-    backup_create(system=["conf_ldap"])
+    backup_create(system=["conf_ldap"], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -215,7 +215,7 @@ def test_backup_system_part_that_does_not_exists(mocker):
 
     # Create the backup
     with pytest.raises(MoulinetteError):
-        backup_create(system=["yolol"])
+        backup_create(system=["yolol"], apps=None)
 
     m18n.n.assert_any_call('backup_hook_unknown', hook="yolol")
     m18n.n.assert_any_call('backup_nothings_done')
@@ -227,7 +227,7 @@ def test_backup_system_part_that_does_not_exists(mocker):
 def test_backup_and_restore_all_sys():
 
     # Create the backup
-    backup_create(system=[])
+    backup_create(system=[], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -244,7 +244,7 @@ def test_backup_and_restore_all_sys():
 
     # Restore the backup
     backup_restore(auth, name=archives[0], force=True,
-                   system=[])
+                   system=[], apps=None)
 
     # Check ssowat conf is back
     assert os.path.exists("/etc/ssowat/conf.json")
@@ -258,7 +258,7 @@ def test_backup_and_restore_all_sys():
 def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
 
     # Backup current system
-    backup_create(system=[])
+    backup_create(system=[], apps=None)
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
@@ -266,11 +266,13 @@ def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
     try:
         backup_restore(auth, name=backup_list()["archives"][1],
                              system=[],
+                             apps=None,
                              force=True)
     finally:
         # Restore system as it was
         backup_restore(auth, name=backup_list()["archives"][0],
                              system=[],
+                             apps=None,
                              force=True)
 
 ###############################################################################
@@ -369,7 +371,7 @@ def test_backup_app_with_no_restore_script(mocker):
 def test_backup_with_different_output_directory():
 
     # Create the backup
-    backup_create(system=["conf_ssh"],
+    backup_create(system=["conf_ssh"], apps=None,
                   output_directory="/opt/test_backup_output_directory",
                   name="backup")
 
@@ -386,7 +388,7 @@ def test_backup_with_different_output_directory():
 @pytest.mark.clean_opt_dir
 def test_backup_with_no_compress():
     # Create the backup
-    backup_create(system=["conf_nginx"],
+    backup_create(system=["conf_nginx"], apps=None,
                   output_directory="/opt/test_backup_output_directory",
                   no_compress=True,
                   name="backup")
