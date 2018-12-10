@@ -15,7 +15,7 @@ from yunohost.domain import _get_maindomain
 from moulinette.core import MoulinetteError
 
 # Get main domain
-maindomain = _get_maindomain()
+maindomain = ""
 
 # Instantiate LDAP Authenticator
 AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
@@ -23,6 +23,9 @@ AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org
 auth = None
 
 def setup_function(function):
+
+    global maindomain
+    maindomain = _get_maindomain()
 
     print ""
 
