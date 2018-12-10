@@ -392,7 +392,7 @@
     "service_conf_file_remove_failed": "Unable to remove the configuration file '{conf}'",
     "service_conf_file_removed": "The configuration file '{conf}' has been removed",
     "service_conf_file_updated": "The configuration file '{conf}' has been updated",
-    "service_conf_new_managed_file": "The configuration file '{conf}' is now managed by the service {service}.",
+    "service_conf_now_managed_by_yunohost": "The configuration file '{conf}' is now managed by YunoHost.",
     "service_conf_up_to_date": "The configuration is already up-to-date for service '{service}'",
     "service_conf_updated": "The configuration has been updated for service '{service}'",
     "service_conf_would_be_updated": "The configuration would have been updated for service '{service}'",
