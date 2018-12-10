@@ -860,7 +860,7 @@ class RestoreManager():
             raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
         else:
             logger.debug("restoring from backup '%s' created on %s", self.name,
-                         time.ctime(self.info['created_at']))
+                         datetime.utcfromtimestamp(self.info['created_at']))
 
     def _postinstall_if_needed(self):
         """
