@@ -508,8 +508,8 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
                     # we assume that it is safe to regen it, since the file is backuped
                     # anyway (by default in _regen), as long as we warn the user
                     # appropriately.
-                    logger.info(m18n.n('service_conf_new_managed_file',
-                                       conf=system_path, service=service))
+                    logger.info(m18n.n('service_conf_now_managed_by_yunohost',
+                                       conf=system_path))
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'new'
                 elif force:
