@@ -19,10 +19,8 @@ maindomain = _get_maindomain()
 
 
 def setup_function(function):
-    # For some reason the nginx reload can take some time to propagate
-    time.sleep(1)
-    global auth
-    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+    pass
+
 
 def teardown_function(function):
     app_remove(auth, "change_url_app")
