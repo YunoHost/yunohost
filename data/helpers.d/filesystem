@@ -71,6 +71,7 @@ ynh_backup() {
                         echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
                 else
                         return 1
+                fi
         else
                 return 0
         fi
