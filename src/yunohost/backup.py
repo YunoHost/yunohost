@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import csv
 import tempfile
+from datetime import datetime
 from glob import glob
 from collections import OrderedDict
 
@@ -299,7 +300,7 @@ class BackupManager():
             (string) A backup name created from current date 'YYMMDD-HHMMSS'
         """
         # FIXME: case where this name already exist
-        return time.strftime('%Y%m%d-%H%M%S')
+        return time.strftime('%Y%m%d-%H%M%S', time.gmtime())
 
     def _init_work_dir(self):
         """Initialize preparation directory
@@ -859,7 +860,7 @@ class RestoreManager():
             raise MoulinetteError(errno.EIO, m18n.n('backup_invalid_archive'))
         else:
             logger.debug("restoring from backup '%s' created on %s", self.name,
-                         time.ctime(self.info['created_at']))
+                         datetime.utcfromtimestamp(self.info['created_at']))
 
     def _postinstall_if_needed(self):
         """
@@ -2266,8 +2267,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
     result = {
         'path': archive_file,
-        'created_at': time.strftime(m18n.n('format_datetime_short'),
-                                    time.gmtime(info['created_at'])),
+        'created_at': datetime.utcfromtimestamp(info['created_at']),
         'description': info['description'],
         'size': size,
     }

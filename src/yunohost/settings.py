@@ -155,7 +155,7 @@ def settings_reset_all():
     # addition but we'll see if this is a common need.
     # Another solution would be to use etckeeper and integrate those
     # modification inside of it and take advantage of its git history
-    old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.now().strftime("%F_%X")
+    old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.utcnow().strftime("%F_%X")
     _save_settings(settings, location=old_settings_backup_path)
 
     for value in settings.values():

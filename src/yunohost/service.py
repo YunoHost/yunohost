@@ -248,10 +248,7 @@ def service_status(names=[]):
                 'status': "unknown",
                 'loaded': "unknown",
                 'active': "unknown",
-                'active_at': {
-                    "timestamp": "unknown",
-                    "human": "unknown",
-                },
+                'active_at': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
                 'service_file_path': "unknown",
             }
@@ -273,13 +270,13 @@ def service_status(names=[]):
                 'status': str(status.get("SubState", "unknown")),
                 'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
                 'active': str(status.get("ActiveState", "unknown")),
-                'active_at': {
-                    "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
-                    "human": datetime.fromtimestamp(status["ActiveEnterTimestamp"] / 1000000).strftime("%F %X") if "ActiveEnterTimestamp" in status else "unknown",
-                },
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
             }
+            if "ActiveEnterTimestamp" in status:
+                result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
+            else:
+                result[name]['active_at'] = "unknown"
 
     if len(names) == 1:
         return result[names[0]]
@@ -293,7 +290,7 @@ def _get_service_information_from_systemd(service):
 
     d = dbus.SystemBus()
 
-    systemd = d.get_object('org.freedesktop.systemd1','/org/freedesktop/systemd1')
+    systemd = d.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
     manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
 
     try:
@@ -933,7 +930,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
     """
     if save:
         backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
-            system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
+            system_conf.lstrip('/'), datetime.utcnow().strftime("%Y%m%d.%H%M%S")))
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):

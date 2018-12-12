@@ -316,7 +316,7 @@ class OperationLogger(object):
         """
 
         if self.started_at is None:
-            self.started_at = datetime.now()
+            self.started_at = datetime.utcnow()
             self.flush()
             self._register_log()
 
@@ -408,7 +408,7 @@ class OperationLogger(object):
             return
         if error is not None and not isinstance(error, basestring):
             error = str(error)
-        self.ended_at = datetime.now()
+        self.ended_at = datetime.utcnow()
         self._error = error
         self._success = error is None
         if self.logger is not None:

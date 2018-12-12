@@ -36,6 +36,7 @@ import glob
 import pwd
 import grp
 from collections import OrderedDict
+import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.core import MoulinetteError
@@ -79,6 +80,10 @@ def app_listlists():
 
     # Get the list
     appslist_list = _read_appslist_list()
+
+    for app in appslist_list:
+        appslist_list[app]["lastUpdate"] = datetime.datetime.utcfromtimestamp(
+            appslist_list[app].get("lastUpdate"))
 
     return appslist_list
 
@@ -1755,8 +1760,7 @@ def _get_app_status(app_id, format_date=False):
             if not v:
                 status[f] = '-'
             else:
-                status[f] = time.strftime(m18n.n('format_datetime_short'),
-                                          time.gmtime(v))
+                status[f] = datetime.utcfromtimestamp(v)
     return status
 
 
