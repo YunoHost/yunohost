@@ -4,7 +4,6 @@ import re
 from shutil import copyfile
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, rm
 
@@ -12,6 +11,7 @@ from yunohost.tools import Migration
 from yunohost.service import service_regen_conf, _get_conf_hashes, \
                              _calculate_hash, _run_service_command
 from yunohost.settings import settings_set
+from yunohost.utils.error import YunohostError
 
 logger = getActionLogger('yunohost.migration')
 
@@ -67,11 +67,11 @@ class MyMigration(Migration):
         # Restart ssh and backward if it fail
         if not _run_service_command('restart', 'ssh'):
             self.backward()
-            raise MoulinetteError(m18n.n("migration_0007_cancel"))
+            raise YunohostError("migration_0007_cancel")
 
     def backward(self):
 
         # We don't backward completely but it should be enough
         copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
         if not _run_service_command('restart', 'ssh'):
-            raise MoulinetteError(m18n.n("migration_0007_cannot_restart"))
+            raise YunohostError("migration_0007_cannot_restart")

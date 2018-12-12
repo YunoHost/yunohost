@@ -1,13 +1,12 @@
 import re
 
-from moulinette import m18n
-from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
 from yunohost.service import service_regen_conf, _get_conf_hashes, \
                              _calculate_hash
 from yunohost.settings import settings_set, settings_get
+from yunohost.utils.error import YunohostError
 
 logger = getActionLogger('yunohost.migration')
 
@@ -33,7 +32,7 @@ class MyMigration(Migration):
 
     def backward(self):
 
-        raise MoulinetteError(m18n.n("migration_0008_backward_impossible"))
+        raise YunohostError("migration_0008_backward_impossible")
 
     @property
     def mode(self):
