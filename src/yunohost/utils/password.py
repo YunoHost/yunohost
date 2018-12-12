@@ -91,7 +91,7 @@ class PasswordValidator(object):
 
         status, msg = self.validation_summary(password)
         if status == "error":
-            raise YunohostError(1, m18n.n(msg))
+            raise YunohostError(msg)
 
     def validation_summary(self, password):
         """

@@ -144,8 +144,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
     # Check that the mail domain exists
     if mail.split("@")[1] not in domain_list(auth)['domains']:
-        raise YunohostError(m18n.n('mail_domain_unknown',
-                                     domain=mail.split("@")[1]))
+        raise YunohostError('mail_domain_unknown', domain=mail.split("@")[1])
 
     operation_logger.start()
 
@@ -323,8 +322,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         ]
         auth.validate_uniqueness({'mail': mail})
         if mail[mail.find('@') + 1:] not in domains:
-            raise YunohostError(m18n.n('mail_domain_unknown',
-                                         domain=mail[mail.find('@') + 1:]))
+            raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
         if mail in aliases:
             raise YunohostError('mail_unavailable')
 

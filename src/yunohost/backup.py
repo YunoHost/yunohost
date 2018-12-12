@@ -2164,7 +2164,7 @@ def backup_list(with_info=False, human_readable=False):
         for a in result:
             try:
                 d[a] = backup_info(a, human_readable=human_readable)
-            except YunohostError, e:
+            except YunohostError as e:
                 logger.warning('%s: %s' % (a, e.strerror))
 
         result = d
