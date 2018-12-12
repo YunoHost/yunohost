@@ -95,9 +95,10 @@ def settings_set(key, value):
                 try:
                     value=int(value)
                 except:
-                    raise MoulinetteError(errno.EINVAL, m18n.n(
-                        'global_settings_bad_type_for_setting', setting=key,
-                        received_type=type(value).__name__, expected_type=key_type))
+                    raise YunohostError('global_settings_bad_type_for_setting',
+                                        setting=key,
+                                        received_type=type(value).__name__,
+                                        expected_type=key_type)
             else:
                 raise YunohostError('global_settings_bad_type_for_setting', setting=key,
                     received_type=type(value).__name__, expected_type=key_type)
