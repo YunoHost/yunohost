@@ -197,6 +197,7 @@
     "global_settings_setting_security_password_admin_strength": "Admin password strength",
     "global_settings_setting_security_password_user_strength": "User password strength",
     "global_settings_unknown_setting_from_settings_file": "Unknown key in settings: '{setting_key:s}', discarding it and save it in /etc/yunohost/unkown_settings.json",
+    "global_settings_setting_service_ssh_allow_deprecated_dsa_hostkey": "Allow the use of (deprecated) DSA hostkey for the SSH daemon configuration",
     "global_settings_unknown_type": "Unexpected situation, the setting {setting:s} appears to have the type {unknown_type:s} but it's not a type supported by the system.",
     "good_practices_about_admin_password": "You are now about to define a new administration password. The password should be at least 8 characters - though it is good practice to use longer password (i.e. a passphrase) and/or to use various kind of characters (uppercase, lowercase, digits and special characters).",
     "good_practices_about_user_password": "You are now about to define a new user password. The password should be at least 8 characters - though it is good practice to use longer password (i.e. a passphrase) and/or to use various kind of characters (uppercase, lowercase, digits and special characters).",
