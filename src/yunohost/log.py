@@ -26,7 +26,6 @@
 
 import os
 import yaml
-import errno
 import collections
 
 from datetime import datetime

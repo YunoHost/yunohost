@@ -27,7 +27,6 @@ import os
 import re
 import json
 import yaml
-import errno
 
 from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError

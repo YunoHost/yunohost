@@ -25,7 +25,6 @@
 """
 import os
 import re
-import errno
 import tempfile
 from glob import iglob
 

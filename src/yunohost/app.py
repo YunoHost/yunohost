@@ -30,7 +30,6 @@ import yaml
 import time
 import re
 import urlparse
-import errno
 import subprocess
 import glob
 import pwd
@@ -2076,10 +2075,9 @@ def _check_manifest_requirements(manifest, app_instance_name):
     for pkgname, spec in requirements.items():
         version = versions[pkgname]
         if version not in packages.SpecifierSet(spec):
-            raise YunohostError(
-                errno.EINVAL, m18n.n('app_requirements_unmeet',
-                                     pkgname=pkgname, version=version,
-                                     spec=spec, app=app_instance_name))
+            raise YunohostError('app_requirements_unmeet',
+                                pkgname=pkgname, version=version,
+                                spec=spec, app=app_instance_name)
 
 
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):

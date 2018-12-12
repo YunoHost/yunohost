@@ -31,7 +31,6 @@ import calendar
 import subprocess
 import xmlrpclib
 import os.path
-import errno
 import os
 import dns.resolver
 import cPickle as pickle

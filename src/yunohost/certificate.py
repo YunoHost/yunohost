@@ -24,7 +24,6 @@
 
 import os
 import sys
-import errno
 import shutil
 import pwd
 import grp

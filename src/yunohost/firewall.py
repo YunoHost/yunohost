@@ -26,7 +26,6 @@
 import os
 import sys
 import yaml
-import errno
 try:
     import miniupnpc
 except ImportError:

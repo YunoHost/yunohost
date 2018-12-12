@@ -2,7 +2,6 @@
 
 import re
 import os
-import errno
 import pwd
 import subprocess
 

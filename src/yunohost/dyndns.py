@@ -29,7 +29,6 @@ import json
 import glob
 import time
 import base64
-import errno
 import subprocess
 
 from moulinette import m18n

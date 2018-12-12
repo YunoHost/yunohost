@@ -28,7 +28,6 @@ import time
 import yaml
 import json
 import subprocess
-import errno
 import shutil
 import hashlib
 

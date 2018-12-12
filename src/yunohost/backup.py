@@ -26,7 +26,6 @@
 import os
 import re
 import json
-import errno
 import time
 import tarfile
 import shutil

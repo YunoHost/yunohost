@@ -1,6 +1,5 @@
 import os
 import json
-import errno
 
 from datetime import datetime
 from collections import OrderedDict

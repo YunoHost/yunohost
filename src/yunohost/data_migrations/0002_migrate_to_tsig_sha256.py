@@ -4,7 +4,6 @@ import requests
 import base64
 import time
 import json
-import errno
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError

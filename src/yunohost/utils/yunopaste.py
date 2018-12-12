@@ -2,7 +2,6 @@
 
 import requests
 import json
-import errno
 
 from yunohost.utils.error import YunohostError
 

@@ -27,7 +27,6 @@ import os
 import re
 import pwd
 import json
-import errno
 import crypt
 import random
 import string
