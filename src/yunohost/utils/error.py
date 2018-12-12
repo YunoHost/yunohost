@@ -20,11 +20,11 @@
 """
 
 from moulinette.core import MoulinetteError
-from moulinette.__init__ import m18n
+from moulinette import m18n
 
 class YunohostError(MoulinetteError):
     """Yunohost base exception"""
     def __init__(self, key, *args, **kwargs):
         msg = m18n.n(key, *args, **kwargs)
-        super(MoulinetteError, self).__init__(msg)
+        super(YunohostError, self).__init__(msg)
 
