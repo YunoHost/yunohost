@@ -840,9 +840,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
-                raise YunohostError(msg)
+                raise YunohostError(msg, __raw_msg__=True)
             msg = error_msg
-            raise YunohostError(msg)
+            raise YunohostError(msg, __raw_msg__=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)

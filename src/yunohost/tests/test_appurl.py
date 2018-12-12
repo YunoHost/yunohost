@@ -1,7 +1,7 @@
 import pytest
 
-from yunohost.utils.error import YunohostError, init_authenticator
-
+from moulinette.core import init_authenticator
+from yunohost.utils.error import YunohostError
 from yunohost.app import app_install, app_remove
 from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
 

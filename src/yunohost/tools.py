@@ -39,7 +39,8 @@ import apt
 import apt.progress
 
 from moulinette import msettings, msignals, m18n
-from yunohost.utils.error import YunohostError, init_authenticator
+from moulinette.core import init_authenticator
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
