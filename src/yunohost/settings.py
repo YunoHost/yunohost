@@ -206,7 +206,7 @@ def _get_settings():
                                           setting_key=key))
                     unknown_settings[key] = value
     except Exception as e:
-        raise YunohostError('global_settings_cant_open_settings', reason=e, exc_info=1)
+        raise YunohostError('global_settings_cant_open_settings', reason=e)
 
     if unknown_settings:
         try:
@@ -227,10 +227,10 @@ def _save_settings(settings, location=SETTINGS_PATH):
     try:
         result = json.dumps(settings_without_description, indent=4)
     except Exception as e:
-        raise YunohostError('global_settings_cant_serialize_settings', reason=e, exc_info=1)
+        raise YunohostError('global_settings_cant_serialize_settings', reason=e)
 
     try:
         with open(location, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
-        raise YunohostError('global_settings_cant_write_settings', reason=e, exc_info=1)
+        raise YunohostError('global_settings_cant_write_settings', reason=e)
