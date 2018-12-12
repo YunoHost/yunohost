@@ -345,7 +345,6 @@ def test_backup_app_with_no_backup_script(mocker):
 
     with pytest.raises(YunohostError):
         backup_create(system=None, apps=["backup_recommended_app"])
->>>>>>> modif YunohostError to YunohostError
 
     m18n.n.assert_any_call("backup_with_no_backup_script_for_app", app="backup_recommended_app")
     m18n.n.assert_any_call('backup_nothings_done')
