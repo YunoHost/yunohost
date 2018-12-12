@@ -54,10 +54,15 @@ def migrate_LDAP_db(auth):
         user_group_update(auth, 'all_users', add_user=username, force=True, sync_perm=False)
 
 
-def migrate_app_permission(auth):
+def migrate_app_permission(auth, app=None):
     logger.info(m18n.n("migration_0009_migrate_permission"))
 
-    for app_info in app_list(installed=True)['apps']:
+    if app:
+        apps = app_list(installed=True, filter=app)['apps']
+    else:
+        apps = app_list(installed=True)['apps']
+
+    for app_info in apps:
         app = app_info['id']
         permission = app_setting(app, 'allowed_users')
         path = app_setting(app, 'path')

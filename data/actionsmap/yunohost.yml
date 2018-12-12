@@ -1085,7 +1085,7 @@ backup:
             api: POST /backup/restore/<name>
             configuration:
                 authenticate: all
-                authenticator: ldap-anonymous
+                authenticator: as-root
             arguments:
                 name:
                     help: Name of the local backup archive
