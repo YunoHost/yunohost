@@ -29,6 +29,7 @@ import json
 import yaml
 
 from moulinette import m18n, msettings
+from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
@@ -76,7 +77,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
     try:
         auth.validate_uniqueness({'virtualdomain': domain})
-    except YunohostError:
+    except MoulinetteError:
         raise YunohostError('domain_exists')
 
     operation_logger.start()

@@ -32,13 +32,13 @@ import base64
 import subprocess
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
 from moulinette.utils.process import check_output
 
-
+from yunohost.utils.error import YunohostError
 from yunohost.domain import _get_maindomain, _build_dns_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -74,7 +74,7 @@ def _dyndns_provides(provider, domain):
         # Dyndomains will be a list of domains supported by the provider
         # e.g. [ "nohost.me", "noho.st" ]
         dyndomains = download_json('https://%s/domains' % provider, timeout=30)
-    except YunohostError as e:
+    except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError('dyndns_could_not_check_provide', domain=domain, provider=provider)
 
@@ -101,7 +101,7 @@ def _dyndns_available(provider, domain):
     try:
         r = download_json('https://%s/test/%s' % (provider, domain),
                           expected_status_code=None)
-    except YunohostError as e:
+    except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError('dyndns_could_not_check_available',
                                      domain=domain, provider=provider)
