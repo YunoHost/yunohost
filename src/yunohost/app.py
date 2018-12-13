@@ -183,7 +183,7 @@ def app_fetchlist(url=None, name=None):
             with open(list_file, "w") as f:
                 f.write(appslist)
         except Exception as e:
-            raise YunohostError("Error while writing appslist %s: %s" % (name, str(e)))
+            raise YunohostError("Error while writing appslist %s: %s" % (name, str(e)), __raw_msg__=True)
 
         now = int(time.time())
         appslists[name]["lastUpdate"] = now
@@ -1472,7 +1472,7 @@ def app_action_run(app, action, args=None):
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
-        raise YunohostError("action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())))
+        raise YunohostError("action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())), __raw_msg__=True)
 
     action_declaration = actions[action]
 
@@ -2431,7 +2431,7 @@ def _write_appslist_list(appslist_lists):
             json.dump(appslist_lists, f)
     except Exception as e:
         raise YunohostError("Error while writing list of appslist %s: %s" %
-                              (APPSLISTS_JSON, str(e)))
+                              (APPSLISTS_JSON, str(e)), __raw_msg__=True)
 
 
 def _register_new_appslist(url, name):
