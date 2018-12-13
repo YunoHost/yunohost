@@ -11,6 +11,7 @@ logger = getActionLogger('yunohost.migration')
 
 
 class MyMigration(Migration):
+
     "Migrate DBs from Postgresql 9.4 to 9.6 after migrating to Stretch"
 
     def migrate(self):

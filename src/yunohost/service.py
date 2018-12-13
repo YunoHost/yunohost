@@ -151,6 +151,7 @@ def service_stop(names):
                 raise YunohostError('service_stop_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_stopped', service=name))
 
+
 @is_unit_operation()
 def service_enable(operation_logger, names):
     """
@@ -377,7 +378,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
         if not names:
             operation_logger.name_parameter_override = 'all'
         elif len(names) != 1:
-            operation_logger.name_parameter_override = str(len(operation_logger.related_to))+'_services'
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to)) + '_services'
         operation_logger.start()
 
     # Clean pending conf directory
@@ -389,7 +390,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
                 shutil.rmtree(os.path.join(PENDING_CONF_DIR, name),
                               ignore_errors=True)
     else:
-        filesystem.mkdir(PENDING_CONF_DIR, 0755, True)
+        filesystem.mkdir(PENDING_CONF_DIR, 0o755, True)
 
     # Format common hooks arguments
     common_args = [1 if force else 0, 1 if dry_run else 0]
@@ -400,7 +401,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
+        filesystem.mkdir(service_pending_path, 0o755, True, uid='root')
 
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
@@ -418,7 +419,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
 
     if not names:
         raise YunohostError('service_regenconf_failed',
-                                     services=', '.join(pre_result['failed']))
+                            services=', '.join(pre_result['failed']))
 
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
@@ -603,7 +604,7 @@ def _run_service_command(action, service):
     cmd = 'systemctl %s %s' % (action, service)
 
     need_lock = services[service].get('need_lock', False) \
-                and action in ['start', 'stop', 'restart', 'reload']
+        and action in ['start', 'stop', 'restart', 'reload']
 
     try:
         # Launch the command
@@ -637,10 +638,10 @@ def _give_lock(action, service, p):
     else:
         systemctl_PID_name = "ControlPID"
 
-    cmd_get_son_PID ="systemctl show %s -p %s" % (service, systemctl_PID_name)
+    cmd_get_son_PID = "systemctl show %s -p %s" % (service, systemctl_PID_name)
     son_PID = 0
     # As long as we did not found the PID and that the command is still running
-    while son_PID == 0 and p.poll() == None:
+    while son_PID == 0 and p.poll() is None:
         # Call systemctl to get the PID
         # Output of the command is e.g. ControlPID=1234
         son_PID = subprocess.check_output(cmd_get_son_PID.split()) \
@@ -657,11 +658,12 @@ def _give_lock(action, service, p):
 
     return son_PID
 
+
 def _remove_lock(PID_to_remove):
     # FIXME ironically not concurrency safe because it's not atomic...
 
     PIDs = filesystem.read_file(MOULINETTE_LOCK).split("\n")
-    PIDs_to_keep = [ PID for PID in PIDs if int(PID) != PID_to_remove ]
+    PIDs_to_keep = [PID for PID in PIDs if int(PID) != PID_to_remove]
     filesystem.write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
 
 
@@ -774,6 +776,7 @@ def _find_previous_log_file(file):
         return previous_file
 
     return None
+
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     """Compare two files and return the differences
@@ -919,22 +922,22 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):
-            filesystem.mkdir(backup_dir, 0755, True)
+            filesystem.mkdir(backup_dir, 0o755, True)
 
         shutil.copy2(system_conf, backup_path)
         logger.debug(m18n.n('service_conf_file_backed_up',
-                           conf=system_conf, backup=backup_path))
+                            conf=system_conf, backup=backup_path))
 
     try:
         if not new_conf:
             os.remove(system_conf)
             logger.debug(m18n.n('service_conf_file_removed',
-                               conf=system_conf))
+                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
 
             if not os.path.isdir(system_dir):
-                filesystem.mkdir(system_dir, 0755, True)
+                filesystem.mkdir(system_dir, 0o755, True)
 
             shutil.copyfile(new_conf, system_conf)
             logger.debug(m18n.n('service_conf_file_updated',

@@ -104,7 +104,7 @@ def _dyndns_available(provider, domain):
     except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError('dyndns_could_not_check_available',
-                                     domain=domain, provider=provider)
+                            domain=domain, provider=provider)
 
     return r == u"Domain %s is available" % domain
 
@@ -149,7 +149,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
-    import requests # lazy loading this module for performance reasons
+    import requests  # lazy loading this module for performance reasons
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
@@ -211,7 +211,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
                                 exception=e,
                                 number=migration.number,
                                 name=migration.name),
-                                exc_info=1)
+                         exc_info=1)
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
@@ -224,7 +224,6 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         'server %s' % dyn_host,
         'zone %s' % host,
     ]
-
 
     old_ipv4 = check_output("dig @%s +short %s" % (dyn_host, domain)).strip() or None
     old_ipv6 = check_output("dig @%s +short aaaa %s" % (dyn_host, domain)).strip() or None
@@ -252,7 +251,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         logger.info("Updated needed, going on...")
 
     dns_conf = _build_dns_conf(domain)
-    del dns_conf["extra"] # Ignore records from the 'extra' category
+    del dns_conf["extra"]  # Ignore records from the 'extra' category
 
     # Delete the old records for all domain/subdomains
 
@@ -273,7 +272,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
-            record["value"] = record["value"].replace(";","\;")
+            record["value"] = record["value"].replace(";", "\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")

@@ -283,6 +283,7 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
 
 
 class OperationLogger(object):
+
     """
     Instances of this class represents unit operation done on the ynh instance.
 
@@ -423,7 +424,7 @@ class OperationLogger(object):
         else:
             if is_api:
                 msg = "<strong>" + m18n.n('log_link_to_failed_log',
-                                    name=self.name, desc=desc) + "</strong>"
+                                          name=self.name, desc=desc) + "</strong>"
             else:
                 msg = m18n.n('log_help_to_get_failed_log', name=self.name,
                              desc=desc)

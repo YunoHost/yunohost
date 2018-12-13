@@ -17,7 +17,7 @@ APPSLISTS_JSON = '/etc/yunohost/appslists.json'
 def setup_function(function):
 
     # Clear all appslist
-    files = glob.glob(REPO_PATH+"/*")
+    files = glob.glob(REPO_PATH + "/*")
     for f in files:
         os.remove(f)
 
@@ -42,9 +42,9 @@ def cron_job_is_there():
     return r == 0
 
 
-###############################################################################
-#   Test listing of appslists and registering of appslists                      #
-###############################################################################
+#
+# Test listing of appslists and registering of appslists                      #
+#
 
 
 def test_appslist_list_empty():
@@ -103,9 +103,9 @@ def test_appslist_list_register_conflict_url():
     assert "plopette" not in appslist_dict.keys()
 
 
-###############################################################################
-#   Test fetching of appslists                                                 #
-###############################################################################
+#
+# Test fetching of appslists                                                 #
+#
 
 
 def test_appslist_fetch():
@@ -244,9 +244,9 @@ def test_appslist_fetch_timeout():
         app_fetchlist()
 
 
-###############################################################################
-#   Test remove of appslist                                                    #
-###############################################################################
+#
+# Test remove of appslist                                                    #
+#
 
 
 def test_appslist_remove():
@@ -274,9 +274,9 @@ def test_appslist_remove_unknown():
         app_removelist("dummy")
 
 
-###############################################################################
-#   Test migration from legacy appslist system                                 #
-###############################################################################
+#
+# Test migration from legacy appslist system                                 #
+#
 
 
 def add_legacy_cron(name, url):

@@ -38,8 +38,10 @@ STRENGTH_LEVELS = [
     (12, 1, 1, 1, 1),
 ]
 
+
 def assert_password_is_strong_enough(profile, password):
     PasswordValidator(profile).validate(password)
+
 
 class PasswordValidator(object):
 
@@ -157,7 +159,7 @@ class PasswordValidator(object):
             # and the strength of the password (e.g. [11, 2, 7, 2, 0])
             # and compare the values 1-by-1.
             # If one False is found, the password does not satisfy the level
-            if False in [s>=c for s, c in zip(strength, level_criterias)]:
+            if False in [s >= c for s, c in zip(strength, level_criterias)]:
                 break
             # Otherwise, the strength of the password is at least of the current level.
             strength_level = level + 1
@@ -186,7 +188,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         import getpass
         pwd = getpass.getpass("")
-        #print("usage: password.py PASSWORD")
+        # print("usage: password.py PASSWORD")
     else:
         pwd = sys.argv[1]
     status, msg = PasswordValidator('user').validation_summary(pwd)

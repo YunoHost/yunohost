@@ -354,7 +354,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     # prepend environment variables
     cmd = '{0} {1}'.format(
         ' '.join(['{0}={1}'.format(k, shell_quote(v))
-                for k, v in env.items()]), cmd)
+                  for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
@@ -369,8 +369,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     )
 
     if stdinfo:
-        callbacks = ( callbacks[0], callbacks[1],
-                       lambda l: logger.info(l.rstrip()))
+        callbacks = (callbacks[0], callbacks[1],
+                     lambda l: logger.info(l.rstrip()))
 
     logger.debug("About to run the command '%s'" % command)
 

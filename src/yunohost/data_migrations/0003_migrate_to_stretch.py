@@ -24,6 +24,7 @@ YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
 class MyMigration(Migration):
+
     "Upgrade the system to Debian Stretch and Yunohost 3.0"
 
     mode = "manual"
@@ -168,11 +169,11 @@ class MyMigration(Migration):
         # - switch yunohost's repo to forge
         for f in sources_list:
             command = "sed -i -e 's@ jessie @ stretch @g' " \
-                             "-e '/backports/ s@^#*@#@' " \
-                             "-e 's@ jessie/updates @ stretch/updates @g' " \
-                             "-e 's@ jessie-updates @ stretch-updates @g' " \
-                             "-e 's@repo.yunohost@forge.yunohost@g' " \
-                             "{}".format(f)
+                      "-e '/backports/ s@^#*@#@' " \
+                      "-e 's@ jessie/updates @ stretch/updates @g' " \
+                      "-e 's@ jessie-updates @ stretch-updates @g' " \
+                      "-e 's@repo.yunohost@forge.yunohost@g' " \
+                      "{}".format(f)
             os.system(command)
 
     def get_apps_equivs_packages(self):
@@ -286,7 +287,7 @@ class MyMigration(Migration):
         # Create tmp directory if it does not exists
         tmp_dir = os.path.join("/tmp/", self.name)
         if not os.path.exists(tmp_dir):
-            os.mkdir(tmp_dir, 0700)
+            os.mkdir(tmp_dir, 0o700)
 
         for f in self.files_to_keep:
             dest_file = f.strip('/').replace("/", "_")

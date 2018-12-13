@@ -22,12 +22,14 @@
 from moulinette.core import MoulinetteError
 from moulinette import m18n
 
+
 class YunohostError(MoulinetteError):
+
     """Yunohost base exception"""
+
     def __init__(self, key, __raw_msg__=False, *args, **kwargs):
         if __raw_msg__:
             msg = key
         else:
             msg = m18n.n(key, *args, **kwargs)
         super(YunohostError, self).__init__(msg, __raw_msg__=True)
-

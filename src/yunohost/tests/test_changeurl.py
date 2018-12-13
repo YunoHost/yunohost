@@ -53,6 +53,7 @@ def test_appchangeurl():
 
     check_changeurl_app("/newchangeurl")
 
+
 def test_appchangeurl_sameurl():
     install_changeurl_app("/changeurl")
     check_changeurl_app("/changeurl")

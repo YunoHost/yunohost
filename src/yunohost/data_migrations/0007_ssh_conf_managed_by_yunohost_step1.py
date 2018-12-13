@@ -8,8 +8,10 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, rm
 
 from yunohost.tools import Migration
-from yunohost.service import service_regen_conf, _get_conf_hashes, \
-                             _calculate_hash, _run_service_command
+from yunohost.service import service_regen_conf, \
+                             _get_conf_hashes, \
+                             _calculate_hash, \
+                             _run_service_command
 from yunohost.settings import settings_set
 from yunohost.utils.error import YunohostError
 
@@ -19,6 +21,7 @@ SSHD_CONF = '/etc/ssh/sshd_config'
 
 
 class MyMigration(Migration):
+
     """
     This is the first step of a couple of migrations that ensure SSH conf is
     managed by YunoHost (even if the "from_script" flag is present, which was
@@ -48,7 +51,7 @@ class MyMigration(Migration):
 
         # Create sshd_config.d dir
         if not os.path.exists(SSHD_CONF + '.d'):
-            mkdir(SSHD_CONF + '.d', 0755, uid='root', gid='root')
+            mkdir(SSHD_CONF + '.d', 0o755, uid='root', gid='root')
 
         # Here, we make it so that /etc/ssh/sshd_config is managed
         # by the regen conf (in particular in the case where the

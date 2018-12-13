@@ -5,6 +5,7 @@ import json
 
 from yunohost.utils.error import YunohostError
 
+
 def yunopaste(data):
 
     paste_server = "https://paste.yunohost.org"
