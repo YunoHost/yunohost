@@ -1510,7 +1510,7 @@ def app_action_run(app, action, args=None):
     )
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        raise YunohostError(retcode, "Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode))
+        raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), __raw_msg__=True)
 
     os.remove(path)
 
