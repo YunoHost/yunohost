@@ -134,7 +134,7 @@
     "certmanager_self_ca_conf_file_not_found": "Configuration file not found for self-signing authority (file: {file:s})",
     "certmanager_unable_to_parse_self_CA_name": "Unable to parse name of self-signing authority (file: {file:s})",
     "confirm_app_install_warning": "Warning : this application may work but is not well-integrated in YunoHost. Some features such as single sign-on and backup/restore might not be available. Install anyway ? [{answers:s}] ",
-    "confirm_app_install_danger": "WARNING ! This application is still experimental (if not explicitly not working) and it is likely to break your system ! You should probably NOT install it unless you know what you are doing. Are you willing to take that risk ? [{answers:s}] ",
+    "confirm_app_install_danger": "WARNING! This application is still experimental (if not explicitly not working) and it is likely to break your system! You should probably NOT install it unless you know what you are doing. Are you willing to take that risk? [{answers:s}] ",
     "confirm_app_install_thirdparty": "WARNING ! Installing 3rd party applications may compromise the integrity and security of your system. You should probably NOT install it unless you know what you are doing. Are you willing to take that risk ? [{answers:s}] ",
     "custom_app_url_required": "You must provide a URL to upgrade your custom app {app:s}",
     "custom_appslist_name_required": "You must provide a name for your custom app list",
