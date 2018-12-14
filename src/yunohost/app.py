@@ -725,7 +725,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         if confirm is None or force or msettings.get('interface') == 'api':
             return
 
-        answer = msignals.prompt(m18n.n('confirm_app_install_'+confirm,
+        answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
                                    answers='Y/N'))
         if answer.upper() != "Y":
             raise MoulinetteError(errno.EINVAL, m18n.n("aborting"))
