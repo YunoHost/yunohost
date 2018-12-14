@@ -23,7 +23,12 @@ from moulinette.core import MoulinetteError
 from moulinette import m18n
 
 class YunohostError(MoulinetteError):
-    """Yunohost base exception"""
+    """
+    Yunohost base exception
+    
+    The (only?) main difference with MoulinetteError being that keys
+    are translated via m18n.n (namespace) instead of m18n.g (global?)
+    """
     def __init__(self, key, __raw_msg__=False, *args, **kwargs):
         if __raw_msg__:
             msg = key
