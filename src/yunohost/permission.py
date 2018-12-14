@@ -114,7 +114,7 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
     return {'permissions': permissions}
 
 
-def user_permission_update(operation_logger, auth, app=[], permission=None, add_username=None, add_group=None, del_username=None, del_group=None):
+def user_permission_update(operation_logger, auth, app=[], permission=None, add_username=None, add_group=None, del_username=None, del_group=None, sync_perm=True):
     """
     Allow or Disallow a user or group to a permission for a specific application
 
@@ -231,7 +231,8 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         else:
             raise MoulinetteError(169, m18n.n('permission_update_failed'))
 
-    permission_sync_to_user(auth)
+    if sync_perm:
+        permission_sync_to_user(auth)
 
     for a in app:
         allowed_users = set()
