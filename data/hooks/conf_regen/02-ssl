@@ -24,46 +24,57 @@ do_init_regen() {
 
   # initialize some files
   [[ -f "${ssl_dir}/serial" ]] \
-    || echo "00" > "${ssl_dir}/serial"
+    || openssl rand -hex 19 > "${ssl_dir}/serial"
   [[ -f "${ssl_dir}/index.txt" ]] \
     || touch "${ssl_dir}/index.txt"
 
   openssl_conf="/usr/share/yunohost/templates/ssl/openssl.cnf"
+  ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
+  ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
+  ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
 
   # create default certificates
-  if [[ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ]]; then
+  if [[ ! -f "$ynh_ca" ]]; then
       echo -e "\n# Creating the CA key (?)\n" >>$LOGFILE
-      openssl req -x509 -new -config "$openssl_conf" \
-        -days 3650 -out "${ssl_dir}/ca/cacert.pem" \
-        -keyout "${ssl_dir}/ca/cakey.pem" -nodes -batch >>$LOGFILE 2>&1
-      cp "${ssl_dir}/ca/cacert.pem" \
-        /etc/yunohost/certs/yunohost.org/ca.pem
-      ln -sf /etc/yunohost/certs/yunohost.org/ca.pem \
-        /etc/ssl/certs/ca-yunohost_crt.pem
+
+      openssl req -x509 \
+        -new \
+        -config "$openssl_conf" \
+        -days 3650 \
+        -out "${ssl_dir}/ca/cacert.pem" \
+        -keyout "${ssl_dir}/ca/cakey.pem" \
+        -nodes -batch >>$LOGFILE 2>&1
+
+      cp "${ssl_dir}/ca/cacert.pem" "$ynh_ca"
+      ln -sf "$ynh_ca" /etc/ssl/certs/ca-yunohost_crt.pem
       update-ca-certificates
   fi
 
-  if [[ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ]]; then
+  if [[ ! -f "$ynh_crt" ]]; then
       echo -e "\n# Creating initial key and certificate (?)\n" >>$LOGFILE
-      openssl req -new -config "$openssl_conf" \
-        -days 730 -out "${ssl_dir}/certs/yunohost_csr.pem" \
-        -keyout "${ssl_dir}/certs/yunohost_key.pem" -nodes -batch >>$LOGFILE 2>&1
-      openssl ca -config "$openssl_conf" \
-        -days 730 -in "${ssl_dir}/certs/yunohost_csr.pem" \
-        -out "${ssl_dir}/certs/yunohost_crt.pem" -batch >>$LOGFILE 2>&1
+
+      openssl req -new \
+        -config "$openssl_conf" \
+        -days 730 \
+        -out "${ssl_dir}/certs/yunohost_csr.pem" \
+        -keyout "${ssl_dir}/certs/yunohost_key.pem" \
+        -nodes -batch >>$LOGFILE 2>&1
+
+      openssl ca \
+        -config "$openssl_conf" \
+        -days 730 \
+        -in "${ssl_dir}/certs/yunohost_csr.pem" \
+        -out "${ssl_dir}/certs/yunohost_crt.pem" \
+        -batch >>$LOGFILE 2>&1
 
       last_cert=$(ls $ssl_dir/newcerts/*.pem | sort -V | tail -n 1)
       chmod 640 "${ssl_dir}/certs/yunohost_key.pem"
       chmod 640 "$last_cert"
 
-      cp "${ssl_dir}/certs/yunohost_key.pem" \
-        /etc/yunohost/certs/yunohost.org/key.pem
-      cp "$last_cert" \
-        /etc/yunohost/certs/yunohost.org/crt.pem
-      ln -sf /etc/yunohost/certs/yunohost.org/crt.pem \
-        /etc/ssl/certs/yunohost_crt.pem
-      ln -sf /etc/yunohost/certs/yunohost.org/key.pem \
-        /etc/ssl/private/yunohost_key.pem
+      cp "${ssl_dir}/certs/yunohost_key.pem" "$ynh_key"
+      cp "$last_cert" "$ynh_crt"
+      ln -sf "$ynh_crt" /etc/ssl/certs/yunohost_crt.pem
+      ln -sf "$ynh_key" /etc/ssl/private/yunohost_key.pem
   fi
 }
 

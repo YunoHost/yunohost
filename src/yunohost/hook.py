@@ -25,12 +25,11 @@
 """
 import os
 import re
-import errno
 import tempfile
 from glob import iglob
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_json
 
@@ -113,7 +112,7 @@ def hook_info(action, name):
             })
 
     if not hooks:
-        raise MoulinetteError(errno.EINVAL, m18n.n('hook_name_unknown', name=name))
+        raise YunohostError('hook_name_unknown', name=name)
     return {
         'action': action,
         'name': name,
@@ -175,7 +174,7 @@ def hook_list(action, list_by='name', show_info=False):
                 # Add only the name
                 d.add(name)
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('hook_list_by_invalid'))
+        raise YunohostError('hook_list_by_invalid')
 
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder
@@ -256,8 +255,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             try:
                 hl = hooks_names[n]
             except KeyError:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('hook_name_unknown', n))
+                raise YunohostError('hook_name_unknown', n)
             # Iterate over hooks with this name
             for h in hl:
                 # Update hooks dict
@@ -283,7 +281,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                                          path=path, args=args)
                 hook_return = hook_exec(path, args=hook_args, chdir=chdir, env=env,
                           no_trace=no_trace, raise_on_error=True)[1]
-            except MoulinetteError as e:
+            except YunohostError as e:
                 state = 'failed'
                 logger.error(e.strerror, exc_info=1)
                 post_callback(name=name, priority=priority, path=path,
@@ -318,7 +316,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if path[0] != '/':
         path = os.path.realpath(path)
     if not os.path.isfile(path):
-        raise MoulinetteError(errno.EIO, m18n.g('file_not_exist', path=path))
+        raise YunohostError('file_not_exist', path=path)
 
     # Construct command variables
     cmd_args = ''
@@ -360,7 +358,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     # prepend environment variables
     cmd = '{0} {1}'.format(
         ' '.join(['{0}={1}'.format(k, shell_quote(v))
-                for k, v in env.items()]), cmd)
+                  for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     if logger.isEnabledFor(log.DEBUG):
@@ -375,8 +373,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     )
 
     if stdinfo:
-        callbacks = ( callbacks[0], callbacks[1],
-                       lambda l: logger.info(l.rstrip()))
+        callbacks = (callbacks[0], callbacks[1],
+                     lambda l: logger.info(l.rstrip()))
 
     logger.debug("About to run the command '%s'" % command)
 
@@ -388,17 +386,16 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     # Check and return process' return code
     if returncode is None:
         if raise_on_error:
-            raise MoulinetteError(
-                errno.EIO, m18n.n('hook_exec_not_terminated', path=path))
+            raise YunohostError('hook_exec_not_terminated', path=path)
         else:
             logger.error(m18n.n('hook_exec_not_terminated', path=path))
             return 1, ''
     elif raise_on_error and returncode != 0:
-        raise MoulinetteError(
-            errno.EIO, m18n.n('hook_exec_failed', path=path))
+        raise YunohostError('hook_exec_failed', path=path)
 
     try:
-        with open(stdreturn, 'r') as f:
+
+      with open(stdreturn, 'r') as f:
             if f.read() != '':
                 returnjson = read_json(stdreturn)
             else:
@@ -406,8 +403,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     except Exception as e:
         os.remove(stdreturn)
         os.rmdir(stdreturndir)
-        raise MoulinetteError(
-            errno.EIO, m18n.n('hook_json_return_error', path=path, msg=str(e)))
+        raise YunohostError('hook_json_return_error', path=path, msg=str(e))
 
     stdreturndir = os.path.split(stdreturn)[0]
     os.remove(stdreturn)
