@@ -280,7 +280,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         remove_mailalias -- Mail aliases to remove
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import assert_password_is_strong_enough
 
