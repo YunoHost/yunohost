@@ -496,8 +496,7 @@ def user_group_list(auth, fields=None):
             if attr in keys:
                 attrs.append(attr)
             else:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('field_invalid', attr))
+                raise YunohostError('field_invalid', attr)
     else:
         attrs = ['cn', 'member']
 
@@ -551,12 +550,12 @@ def user_group_add(operation_logger, auth, groupname,gid=None, sync_perm=True):
         'cn': groupname
     }, base_dn='ou=groups,dc=yunohost,dc=org')
     if conflict:
-        raise MoulinetteError(errno.EEXIST, m18n.n('group_name_already_exist', name=groupname))
+        raise YunohostError('group_name_already_exist', name=groupname)
 
     # Validate uniqueness of groupname in system group
     all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
     if groupname in all_existing_groupnames:
-        raise MoulinetteError(errno.EEXIST, m18n.n('system_groupname_exists'))
+        raise YunohostError('system_groupname_exists')
 
     if not gid:
         # Get random GID
@@ -579,7 +578,7 @@ def user_group_add(operation_logger, auth, groupname,gid=None, sync_perm=True):
             permission_sync_to_user(auth)
         return {'name': groupname}
 
-    raise MoulinetteError(169, m18n.n('group_creation_failed'))
+    raise YunohostError('group_creation_failed')
 
 
 @is_unit_operation([('groupname', 'user')])
@@ -594,11 +593,11 @@ def user_group_delete(operation_logger, auth, groupname, force=False, sync_perm=
     from yunohost.permission import permission_sync_to_user
 
     if not force and (groupname == 'all_users' or groupname == 'admins' or groupname in user_list(auth, ['uid'])['users']):
-        raise MoulinetteError(errno.EPERM, m18n.n('group_deletion_not_allowed', user=groupname))
+        raise YunohostError('group_deletion_not_allowed', user=groupname)
 
     operation_logger.start()
     if not auth.remove('cn=%s,ou=groups' % groupname):
-        raise MoulinetteError(169, m18n.n('group_deletion_failed'))
+        raise YunohostError('group_deletion_failed')
 
     logger.success(m18n.n('group_deleted'))
     if sync_perm:
@@ -622,13 +621,13 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
     attrs_to_fetch = ['member']
 
     if (groupname == 'all_users' or groupname == 'admins') and not force:
-        raise MoulinetteError(errno.EINVAL, m18n.n('edit_group_not_allowed', group=groupname))
+        raise YunohostError('edit_group_not_allowed', group=groupname)
 
     # Populate group informations
     result = auth.search(base='ou=groups,dc=yunohost,dc=org',
                          filter='cn=' + groupname, attrs=attrs_to_fetch)
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('group_unknown', group=groupname))
+        raise YunohostError('group_unknown', group=groupname)
     group = result[0]
 
     new_group_list = {'member': set(), 'memberUid': set()}
@@ -644,7 +643,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
             add_user = [add_user]
         for user in add_user:
             if not user in user_l:
-                raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=user))
+                raise YunohostError('user_unknown', user=user)
             userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if userDN in group['member']:
                 logger.warning(m18n.n('user_alread_in_group', user=user, group=groupname))
@@ -656,8 +655,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
         for user in remove_user:
             userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if user == groupname:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('remove_user_of_group_not_allowed', user=user, group=groupname))
+                raise YunohostError('remove_user_of_group_not_allowed', user=user, group=groupname)
             if 'member' in group and userDN in group['member']:
                 new_group_list['member'].remove(userDN)
             else:
@@ -677,7 +675,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
 
     if new_group_list['member'] != set(group['member']):
         if not auth.update('cn=%s,ou=groups' % groupname, new_group_list):
-            raise MoulinetteError(169, m18n.n('group_update_failed'))
+            raise YunohostError('group_update_failed')
 
     logger.success(m18n.n('group_updated'))
     if sync_perm:
@@ -699,7 +697,7 @@ def user_group_info(auth, groupname):
     result = auth.search('ou=groups,dc=yunohost,dc=org', "cn=" + groupname, group_attrs)
 
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('group_unknown', group=groupname))
+        raise YunohostError('group_unknown', group=groupname)
     else:
         group = result[0]
 

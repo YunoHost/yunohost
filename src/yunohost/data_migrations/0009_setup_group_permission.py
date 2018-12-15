@@ -1,8 +1,8 @@
 import yaml
-import errno
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError, init_authenticator
+from moulinette.core import init_authenticator
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
@@ -39,7 +39,7 @@ def migrate_LDAP_db(auth):
         for rdn, attr_dict in ldap_map['depends_children'].items():
             auth.add(rdn, attr_dict)
     except Exception as e:
-        raise MoulinetteError(errno.EINVAL, m18n.n(("LDAP_update_failled")))
+        raise YunohostError("LDAP_update_failled")
 
     logger.info(m18n.n("migration_0009_create_group"))
 

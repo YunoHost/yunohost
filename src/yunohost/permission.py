@@ -24,13 +24,12 @@
     Manage permissions
 """
 
-import errno
 import grp
 import random
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
+from yunohost.utils.error import YunohostError
 from yunohost.user import user_list, user_group_list
 from yunohost.log import is_unit_operation
 
@@ -163,23 +162,23 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
     # Validate that the group exist
     for g in add_group:
         if not g in user_group_list(auth, ['cn'])['groups']:
-            raise MoulinetteError(errno.EINVAL, m18n.n('group_unknown', group=g))
+            raise YunohostError('group_unknown', group=g)
     for u in add_username:
         if not u in user_list(auth, ['uid'])['users']:
-            raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=u))
+            raise YunohostError('user_unknown', user=u)
     for g in del_group:
         if not g in user_group_list(auth, ['cn'])['groups']:
-            raise MoulinetteError(errno.EINVAL, m18n.n('group_unknown', group=g))
+            raise YunohostError('group_unknown', group=g)
     for u in del_username:
         if not u in user_list(auth, ['uid'])['users']:
-            raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=u))
+            raise YunohostError('user_unknown', user=u)
 
     # Merge user and group (note that we consider all user as a group)
     add_group.extend(add_username)
     del_group.extend(del_username)
 
     if 'all_users' in add_group or 'all_users' in del_group:
-        raise MoulinetteError(errno.EINVAL, m18n.n('edit_permission_with_group_all_users_not_allowed'))
+        raise YunohostError('edit_permission_with_group_all_users_not_allowed')
 
     # Populate permission informations
     permission_attrs = [
@@ -196,14 +195,14 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         for per in permission:
             permission_name = per + '.' + a
             if not permission_name in result:
-                raise MoulinetteError(errno.EINVAL, m18n.n('permission_not_found', permission=per, app=a))
+                raise YunohostError('permission_not_found', permission=per, app=a)
             new_per_dict[permission_name] = set()
             if 'groupPermission' in result[permission_name]:
                 new_per_dict[permission_name] = set(result[permission_name]['groupPermission'])
 
             for g in del_group:
                 if 'cn=all_users,ou=groups,dc=yunohost,dc=org' in new_per_dict[permission_name]:
-                    raise MoulinetteError(errno.EINVAL, m18n.n('need_define_permission_before'))
+                    raise YunohostError('need_define_permission_before')
                 group_name = 'cn=' + g + ',ou=groups,dc=yunohost,dc=org'
                 if not group_name in new_per_dict[permission_name]:
                     logger.warning(m18n.n('group_alread_disallowed', permission=per, app=a, group=g))
@@ -229,7 +228,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
             p = per.split('.')
             logger.success(m18n.n('permission_updated', permission=p[0], app=p[1]))
         else:
-            raise MoulinetteError(169, m18n.n('permission_update_failed'))
+            raise YunohostError('permission_update_failed')
 
     if sync_perm:
         permission_sync_to_user(auth)
@@ -290,14 +289,14 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
         for per in permission:
             permission_name = per + '.' + a
             if not permission_name in result:
-                raise MoulinetteError(errno.EINVAL, m18n.n('permission_not_found', permission=per, app=a))
+                raise YunohostError('permission_not_found', permission=per, app=a)
             if 'groupPermission' in result[permission_name] and 'cn=all_users,ou=groups,dc=yunohost,dc=org' in result[permission_name]['groupPermission']:
                  logger.warning(m18n.n('permission_already_clear', permission=per, app=a))
                  continue
             if auth.update('cn=%s,ou=permission' % permission_name, default_permission):
                 logger.success(m18n.n('permission_updated', permission=per, app=a))
             else:
-                raise MoulinetteError(169, m18n.n('permission_update_failed'))
+                raise YunohostError('permission_update_failed')
 
     permission_sync_to_user(auth)
 
@@ -332,7 +331,7 @@ def permission_add(operation_logger, auth, app, permission, url=None, default_al
         'cn': permission_name
     }, base_dn='ou=permission,dc=yunohost,dc=org')
     if conflict:
-        raise MoulinetteError(errno.EEXIST, m18n.n('permission_already_exist', permission=permission, app=app))
+        raise YunohostError('permission_already_exist', permission=permission, app=app)
 
     # Get random GID
     all_gid = {x.gr_gid for x in grp.getgrall()}
@@ -365,7 +364,7 @@ def permission_add(operation_logger, auth, app, permission, url=None, default_al
         logger.success(m18n.n('permission_created', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
-    raise MoulinetteError(169, m18n.n('premission_creation_failled'))
+    raise YunohostError('premission_creation_failled')
 
 
 @is_unit_operation(['permission','app'])
@@ -388,7 +387,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
     result = auth.search(base='ou=permission,dc=yunohost,dc=org',
                          filter='cn=' + permission_name, attrs=['URL'])
     if not result:
-        raise MoulinetteError(errno.EINVAL, m18n.n('permission_not_found', permission=permission, app=app))
+        raise YunohostError('permission_not_found', permission=permission, app=app)
     permission_obj = result[0]
 
     if not 'URL' in permission_obj:
@@ -420,7 +419,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
         logger.success(m18n.n('permission_updated', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
-    raise MoulinetteError(169, m18n.n('premission_update_failled'))
+    raise YunohostError('premission_update_failled')
 
 
 @is_unit_operation(['permission','app'])
@@ -435,11 +434,11 @@ def permission_remove(operation_logger, auth, app, permission, force=False, sync
     """
 
     if permission == "main" and not force:
-        raise MoulinetteError(errno.EPERM, m18n.n('remove_main_permission_not_allowed'))
+        raise YunohostError('remove_main_permission_not_allowed')
 
     operation_logger.start()
     if not auth.remove('cn=%s,ou=permission' % str(permission + '.' + app)):
-        raise MoulinetteError(169, m18n.n('permission_deletion_failed', permission=permission, app=app))
+        raise YunohostError('permission_deletion_failed', permission=permission, app=app)
     if sync_perm:
         permission_sync_to_user(auth)
     logger.success(m18n.n('permission_deleted', permission=permission, app=app))
@@ -487,7 +486,7 @@ def permission_sync_to_user(auth):
         uid_val = [v.split("=")[1].split(",")[0] for v in val]
         inheritPermission = {'inheritPermission': val, 'memberUid': uid_val}
         if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
-            raise MoulinetteError(169, m18n.n('permission_update_failed'))
+            raise YunohostError('permission_update_failed')
     logger.success(m18n.n('permission_generated'))
 
     app_ssowatconf(auth)

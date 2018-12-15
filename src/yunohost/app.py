@@ -1088,7 +1088,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
     operation_logger.start()
     if '/' in app_map(auth, raw=True)[domain]:
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
-                            other_app=app_map(auth, raw=True)[domain]["/"]["id"]))
+                            other_app=app_map(auth, raw=True)[domain]["/"]["id"])
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
