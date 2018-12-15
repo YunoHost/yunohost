@@ -687,7 +687,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
 
 @is_unit_operation()
-def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on_failure=False):
+def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on_failure=False, force=False):
     """
     Install apps
 
@@ -696,7 +696,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         label -- Custom name for the app
         args -- Serialize arguments for app installation
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
-
+        force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
@@ -715,9 +715,38 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         },
     }
 
-    if app in app_list(raw=True) or ('@' in app) or ('http://' in app) or ('https://' in app):
+    def confirm_install(confirm):
+
+        # Ignore if there's nothing for confirm (good quality app), if --force is used
+        # or if request on the API (confirm already implemented on the API side)
+        if confirm is None or force or msettings.get('interface') == 'api':
+            return
+
+        answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                   answers='Y/N'))
+        if answer.upper() != "Y":
+            raise MoulinetteError(errno.EINVAL, m18n.n("aborting"))
+
+
+    raw_app_list = app_list(raw=True)
+    if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
+        if app in raw_app_list:
+            state = raw_app_list[app].get("state", "notworking")
+            level = raw_app_list[app].get("level", None)
+            confirm = "danger"
+            if state in ["working", "validated"]:
+                if isinstance(level, int) and level >= 3:
+                    confirm = None
+                elif isinstance(level, int) and level > 0:
+                    confirm = "warning"
+        else:
+            confirm = "thirdparty"
+
+        confirm_install(confirm)
+
         manifest, extracted_app_folder = _fetch_app_from_git(app)
     elif os.path.exists(app):
+        confirm_install("thirdparty")
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
         raise YunohostError('app_unknown')
