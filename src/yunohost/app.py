@@ -183,7 +183,7 @@ def app_fetchlist(url=None, name=None):
             with open(list_file, "w") as f:
                 f.write(appslist)
         except Exception as e:
-            raise YunohostError("Error while writing appslist %s: %s" % (name, str(e)), __raw_msg__=True)
+            raise YunohostError("Error while writing appslist %s: %s" % (name, str(e)), raw_msg=True)
 
         now = int(time.time())
         appslists[name]["lastUpdate"] = now
@@ -839,9 +839,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
-                raise YunohostError(msg, __raw_msg__=True)
+                raise YunohostError(msg, raw_msg=True)
             msg = error_msg
-            raise YunohostError(msg, __raw_msg__=True)
+            raise YunohostError(msg, raw_msg=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -1470,7 +1470,7 @@ def app_action_run(app, action, args=None):
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
-        raise YunohostError("action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())), __raw_msg__=True)
+        raise YunohostError("action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())), raw_msg=True)
 
     action_declaration = actions[action]
 
@@ -1508,7 +1508,7 @@ def app_action_run(app, action, args=None):
     )
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), __raw_msg__=True)
+        raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), raw_msg=True)
 
     os.remove(path)
 
@@ -2428,7 +2428,7 @@ def _write_appslist_list(appslist_lists):
             json.dump(appslist_lists, f)
     except Exception as e:
         raise YunohostError("Error while writing list of appslist %s: %s" %
-                            (APPSLISTS_JSON, str(e)), __raw_msg__=True)
+                            (APPSLISTS_JSON, str(e)), raw_msg=True)
 
 
 def _register_new_appslist(url, name):
