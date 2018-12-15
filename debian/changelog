@@ -1,3 +1,103 @@
+yunohost (3.3.3) stable; urgency=low
+
+  * [fix] ynh_wait_dpkg_free displaying a warning despite everything being okay (#593)
+  * [fix] Quotes for recommended CAA DNS record (#596)
+  * [fix] Manual migration and disclaimer behaviors (#594)
+  * [fix] Explicit root password change each time admin password is changed
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 09 Dec 2018 20:58:00 +0000
+
+yunohost (3.3.2) stable; urgency=low
+
+  * [fix] Regen nginx conf to be sure it integrates OCSP Stapling (#588)
+  * [fix] Broken new settings and options to control passwords checks / constrains (#589)
+  * [fix] Log dyndns update only if we really update something (#591)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Dec 2018 17:23:00 +0000
+
+yunohost (3.3.1) stable; urgency=low
+
+  * [fix] Wait for dpkg lock to be free in apt helpers (#571)
+  * [fix] app_removeaccess call set.add (#573)
+  * [fix] Fix app_addaccess behaviour when 'allowed_users' is initially empty (#575)
+  * [fix] Typo in user_update when update password (#577)
+  * [fix] Do not fail on missing fail2ban config during the backup (#558)
+  * [fix] Generate a random serial for local certification auth (followup of #557)
+  * [i18n] Update Italian, Occitan, French translations
+
+ Thanks to all contributors (Maniack, airwoodix, Aleks, ljf, silkevicious, Quent-in, Jibec) <3 !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 23 Nov 2018 15:58:00 +0000
+
+yunohost (3.3.0) testing; urgency=low
+
+  Highlights
+  ==========
+
+  * [enh] Synchronize root password with admin password (#527)
+  * [enh] Check for weak passwords whenever a password is defined (#196)
+  * [fix] 'dyndns update' now checks the upstream DNS record (#519)
+  * [fix] Update Metronome configuration file to v3.11 standard (#559)
+  * [fix] Some php conf files wre not properly removed when an app was uninstalled (#566)
+  * [i18n] Improve Catalan, French, Occitan, Portuguese, Arabic, Italian translations
+
+  Misc
+  ====
+
+  * [enh] Add OCSP Stapling to nginx configuration if using Lets Encrypt (#533)
+  * [enh] Add CAA record in recommended DNS conf (#528)
+  * [helpers] Add `ynh_delete_file_checksum` (#524)
+  * [helpers] When using `ynh_setup_source`, silent unecessary messages (#545)
+  * [helpers] Use more blocks for dd in `ynh_string_random` (#569)
+  * [fix] Potential key error when retrieving install_time (#551)
+  * [fix] Allow `-` in user last names (#565)
+  * [fix] Fix possible HTTP2 issue with curl (#547)
+  * [fix] Fix BASE/URI in ldap conf (#554)
+  * [fix] Use random serial number for CA (prevent browser from complaining about some selfsigned certs) (#557)
+  * [enh] Pass Host header to YunoHost API (#560)
+  * [enh] Sort backup list according to their date (#562)
+  * [fix] Improve UX when admin tries to allocate reserved email alias (#553)
+
+ Thanks to all contributors (ljf, irinia11y, Maniack, xaloc33, Bram, flashemade, Maranda, Josue, frju365, Aleks, randomstuff, jershon, Genma, Quent-in, MyNameIsTroll, ButterflyOfFire, Jibec, silkevicious) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 08 Nov 2018 17:09:00 +0000
+
+yunohost (3.2.2) stable; urgency=low
+
+  * [hotfix] mod_auth_ldap: reflect SASL API changes in latest Metronome (#546)
+  * [enh] Add the internal helper ynh_handle_getopts_args (#520)
+
+ Thanks to all contributors (Maranda, Maniack) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 28 Sep 2018 23:04:00 +0000
+
+yunohost (3.2.1) stable; urgency=low
+
+  * Don't send an email if no certificate needs to be renewed (#540)
+  * Fix an issue with home backups (#541)
+  * Fix an issue with installs on OVH VPS
+  * Tell the user about post-install available in browser in bootprompt (#544)
+  * Improve Arabic translation
+
+ Thanks to all contributors (BoF, ljf, Aleks) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Sep 2018 18:06:00 +0000
+
+yunohost (3.2.0) stable; urgency=low
+
+  * Add many print and exec helpers (#523)
+  * Add su directive as option for logrotate helper (#511)
+  * Add equivs, fake-hwclock and jq as base dependencies (#515, #514, #532)
+  * Allow to add a service description on "yunohost service add" (#529)
+  * Add option '--need-lock' to 'yunohost service add' (#530)
+  * Don't backup user home with .nobackup file (#536)
+  * Add a script to automatically generate helpers documentation (#538)
+  * [i18n] Improve Arabic translation
+
+ Thanks to all contributors (Bram, Maniack, irina11y, Josue, BoF, ljf, Aleks) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 11 Sep 2018 16:30:00 +0000
+
 yunohost (3.2.0~testing1) testing; urgency=low
 
   * Add logging system of every unit operation (#165)

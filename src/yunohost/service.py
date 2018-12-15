@@ -28,7 +28,6 @@ import time
 import yaml
 import json
 import subprocess
-import errno
 import shutil
 import hashlib
 
@@ -36,11 +35,11 @@ from difflib import unified_diff
 from datetime import datetime
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils import log, filesystem
 
-from yunohost.hook import hook_callback
 from yunohost.log import is_unit_operation
+from yunohost.hook import hook_callback, hook_list
 
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
@@ -50,7 +49,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None):
     """
     Add a custom service
 
@@ -59,7 +58,8 @@ def service_add(name, status=None, log=None, runlevel=None):
         status -- Custom status command
         log -- Absolute path to log file to display
         runlevel -- Runlevel priority of the service
-
+        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
+        description -- description of the service
     """
     services = _get_services()
 
@@ -74,11 +74,17 @@ def service_add(name, status=None, log=None, runlevel=None):
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
 
+    if need_lock:
+        services[name]['need_lock'] = True
+
+    if description is not None:
+        services[name]['description'] = description
+
     try:
         _save_services(services)
     except:
         # we'll get a logger.warning with more details in _save_services
-        raise MoulinetteError(errno.EIO, m18n.n('service_add_failed', service=name))
+        raise YunohostError('service_add_failed', service=name)
 
     logger.success(m18n.n('service_added', service=name))
 
@@ -96,13 +102,13 @@ def service_remove(name):
     try:
         del services[name]
     except KeyError:
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
+        raise YunohostError('service_unknown', service=name)
 
     try:
         _save_services(services)
     except:
         # we'll get a logger.warning with more details in _save_services
-        raise MoulinetteError(errno.EIO, m18n.n('service_remove_failed', service=name))
+        raise YunohostError('service_remove_failed', service=name)
 
     logger.success(m18n.n('service_removed', service=name))
 
@@ -123,10 +129,7 @@ def service_start(names):
             logger.success(m18n.n('service_started', service=name))
         else:
             if service_status(name)['status'] != 'running':
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_start_failed',
-                                             service=name,
-                                             logs=_get_journalctl_logs(name)))
+                raise YunohostError('service_start_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_started', service=name))
 
 
@@ -145,11 +148,9 @@ def service_stop(names):
             logger.success(m18n.n('service_stopped', service=name))
         else:
             if service_status(name)['status'] != 'inactive':
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('service_stop_failed',
-                                             service=name,
-                                             logs=_get_journalctl_logs(name)))
+                raise YunohostError('service_stop_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_stopped', service=name))
+
 
 @is_unit_operation()
 def service_enable(operation_logger, names):
@@ -167,10 +168,7 @@ def service_enable(operation_logger, names):
         if _run_service_command('enable', name):
             logger.success(m18n.n('service_enabled', service=name))
         else:
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_enable_failed',
-                                         service=name,
-                                         logs=_get_journalctl_logs(name)))
+            raise YunohostError('service_enable_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 def service_disable(names):
@@ -187,10 +185,7 @@ def service_disable(names):
         if _run_service_command('disable', name):
             logger.success(m18n.n('service_disabled', service=name))
         else:
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('service_disable_failed',
-                                         service=name,
-                                         logs=_get_journalctl_logs(name)))
+            raise YunohostError('service_disable_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 def service_status(names=[]):
@@ -213,8 +208,7 @@ def service_status(names=[]):
 
     for name in names:
         if check_names and name not in services.keys():
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('service_unknown', service=name))
+            raise YunohostError('service_unknown', service=name)
 
         # this "service" isn't a service actually so we skip it
         #
@@ -241,17 +235,17 @@ def service_status(names=[]):
                 'status': "unknown",
                 'loaded': "unknown",
                 'active': "unknown",
-                'active_at': {
-                    "timestamp": "unknown",
-                    "human": "unknown",
-                },
+                'active_at': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
                 'service_file_path': "unknown",
             }
 
         else:
             translation_key = "service_description_%s" % name
-            description = m18n.n(translation_key)
+            if "description" in services[name] is not None:
+                description = services[name].get("description")
+            else:
+                description = m18n.n(translation_key)
 
             # that mean that we don't have a translation for this string
             # that's the only way to test for that for now
@@ -263,13 +257,13 @@ def service_status(names=[]):
                 'status': str(status.get("SubState", "unknown")),
                 'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
                 'active': str(status.get("ActiveState", "unknown")),
-                'active_at': {
-                    "timestamp": str(status.get("ActiveEnterTimestamp", "unknown")),
-                    "human": datetime.fromtimestamp(status["ActiveEnterTimestamp"] / 1000000).strftime("%F %X") if "ActiveEnterTimestamp" in status else "unknown",
-                },
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
             }
+            if "ActiveEnterTimestamp" in status:
+                result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
+            else:
+                result[name]['active_at'] = "unknown"
 
     if len(names) == 1:
         return result[names[0]]
@@ -283,7 +277,7 @@ def _get_service_information_from_systemd(service):
 
     d = dbus.SystemBus()
 
-    systemd = d.get_object('org.freedesktop.systemd1','/org/freedesktop/systemd1')
+    systemd = d.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
     manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
 
     try:
@@ -313,10 +307,10 @@ def service_log(name, number=50):
     services = _get_services()
 
     if name not in services.keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=name))
+        raise YunohostError('service_unknown', service=name)
 
     if 'log' not in services[name]:
-        raise MoulinetteError(errno.EPERM, m18n.n('service_no_log', service=name))
+        raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
 
@@ -384,7 +378,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
         if not names:
             operation_logger.name_parameter_override = 'all'
         elif len(names) != 1:
-            operation_logger.name_parameter_override = str(len(operation_logger.related_to))+'_services'
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to)) + '_services'
         operation_logger.start()
 
     # Clean pending conf directory
@@ -396,7 +390,7 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
                 shutil.rmtree(os.path.join(PENDING_CONF_DIR, name),
                               ignore_errors=True)
     else:
-        filesystem.mkdir(PENDING_CONF_DIR, 0755, True)
+        filesystem.mkdir(PENDING_CONF_DIR, 0o755, True)
 
     # Format common hooks arguments
     common_args = [1 if force else 0, 1 if dry_run else 0]
@@ -407,10 +401,16 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the service
         service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0755, True, uid='root')
+        filesystem.mkdir(service_pending_path, 0o755, True, uid='root')
 
         # return the arguments to pass to the script
         return pre_args + [service_pending_path, ]
+
+    # Don't regen SSH if not specifically specified
+    if not names:
+        names = hook_list('conf_regen', list_by='name',
+                          show_info=False)['hooks']
+        names.remove('ssh')
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
@@ -418,9 +418,8 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
     names = pre_result['succeed'].keys()
 
     if not names:
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('service_regenconf_failed',
-                                     services=', '.join(pre_result['failed'])))
+        raise YunohostError('service_regenconf_failed',
+                            services=', '.join(pre_result['failed']))
 
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
@@ -492,8 +491,8 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
                     # we assume that it is safe to regen it, since the file is backuped
                     # anyway (by default in _regen), as long as we warn the user
                     # appropriately.
-                    logger.info(m18n.n('service_conf_new_managed_file',
-                                       conf=system_path, service=service))
+                    logger.info(m18n.n('service_conf_now_managed_by_yunohost',
+                                       conf=system_path))
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'new'
                 elif force:
@@ -596,7 +595,7 @@ def _run_service_command(action, service):
     """
     services = _get_services()
     if service not in services.keys():
-        raise MoulinetteError(errno.EINVAL, m18n.n('service_unknown', service=service))
+        raise YunohostError('service_unknown', service=service)
 
     possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
     if action not in possible_actions:
@@ -605,7 +604,7 @@ def _run_service_command(action, service):
     cmd = 'systemctl %s %s' % (action, service)
 
     need_lock = services[service].get('need_lock', False) \
-                and action in ['start', 'stop', 'restart', 'reload']
+        and action in ['start', 'stop', 'restart', 'reload']
 
     try:
         # Launch the command
@@ -639,10 +638,10 @@ def _give_lock(action, service, p):
     else:
         systemctl_PID_name = "ControlPID"
 
-    cmd_get_son_PID ="systemctl show %s -p %s" % (service, systemctl_PID_name)
+    cmd_get_son_PID = "systemctl show %s -p %s" % (service, systemctl_PID_name)
     son_PID = 0
     # As long as we did not found the PID and that the command is still running
-    while son_PID == 0 and p.poll() == None:
+    while son_PID == 0 and p.poll() is None:
         # Call systemctl to get the PID
         # Output of the command is e.g. ControlPID=1234
         son_PID = subprocess.check_output(cmd_get_son_PID.split()) \
@@ -659,11 +658,12 @@ def _give_lock(action, service, p):
 
     return son_PID
 
+
 def _remove_lock(PID_to_remove):
     # FIXME ironically not concurrency safe because it's not atomic...
 
     PIDs = filesystem.read_file(MOULINETTE_LOCK).split("\n")
-    PIDs_to_keep = [ PID for PID in PIDs if int(PID) != PID_to_remove ]
+    PIDs_to_keep = [PID for PID in PIDs if int(PID) != PID_to_remove]
     filesystem.write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
 
 
@@ -776,6 +776,7 @@ def _find_previous_log_file(file):
         return previous_file
 
     return None
+
 
 def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
     """Compare two files and return the differences
@@ -917,26 +918,26 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
     """
     if save:
         backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
-            system_conf.lstrip('/'), time.strftime("%Y%m%d.%H%M%S")))
+            system_conf.lstrip('/'), datetime.utcnow().strftime("%Y%m%d.%H%M%S")))
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):
-            filesystem.mkdir(backup_dir, 0755, True)
+            filesystem.mkdir(backup_dir, 0o755, True)
 
         shutil.copy2(system_conf, backup_path)
         logger.debug(m18n.n('service_conf_file_backed_up',
-                           conf=system_conf, backup=backup_path))
+                            conf=system_conf, backup=backup_path))
 
     try:
         if not new_conf:
             os.remove(system_conf)
             logger.debug(m18n.n('service_conf_file_removed',
-                               conf=system_conf))
+                                conf=system_conf))
         else:
             system_dir = os.path.dirname(system_conf)
 
             if not os.path.isdir(system_dir):
-                filesystem.mkdir(system_dir, 0755, True)
+                filesystem.mkdir(system_dir, 0o755, True)
 
             shutil.copyfile(new_conf, system_conf)
             logger.debug(m18n.n('service_conf_file_updated',

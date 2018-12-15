@@ -4,7 +4,8 @@
 
     Copyright (C) 2013 YunoHost
 
-    This program is free software; you can redistribute it and/or modify
+    This progra
+    m is free software; you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
@@ -27,10 +28,10 @@ import os
 import re
 import json
 import yaml
-import errno
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 import yunohost.certificate
@@ -79,7 +80,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
     try:
         auth.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
-        raise MoulinetteError(errno.EEXIST, m18n.n('domain_exists'))
+        raise YunohostError('domain_exists')
 
     operation_logger.start()
 
@@ -88,16 +89,14 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
         # Do not allow to subscribe to multiple dyndns domains...
         if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('domain_dyndns_already_subscribed'))
+            raise YunohostError('domain_dyndns_already_subscribed')
 
         from yunohost.dyndns import dyndns_subscribe, _dyndns_provides
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
         if not _dyndns_provides("dyndns.yunohost.org", domain):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('domain_dyndns_root_unknown'))
+            raise YunohostError('domain_dyndns_root_unknown')
 
         # Actually subscribe
         dyndns_subscribe(domain=domain)
@@ -111,15 +110,15 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
         }
 
         if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
-            raise MoulinetteError(errno.EIO, m18n.n('domain_creation_failed'))
+            raise YunohostError('domain_creation_failed')
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
             service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
             app_ssowatconf(auth)
 
-    except Exception, e:
-        from sys import exc_info;
+    except Exception as e:
+        from sys import exc_info
         t, v, tb = exc_info()
 
         # Force domain removal silently
@@ -148,11 +147,11 @@ def domain_remove(operation_logger, auth, domain, force=False):
     from yunohost.app import app_ssowatconf
 
     if not force and domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise YunohostError('domain_unknown')
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_cannot_remove_main'))
+        raise YunohostError('domain_cannot_remove_main')
 
     # Check if apps are installed on the domain
     for app in os.listdir('/etc/yunohost/apps/'):
@@ -163,14 +162,13 @@ def domain_remove(operation_logger, auth, domain, force=False):
                 continue
             else:
                 if app_domain == domain:
-                    raise MoulinetteError(errno.EPERM,
-                                          m18n.n('domain_uninstall_app_first'))
+                    raise YunohostError('domain_uninstall_app_first')
 
     operation_logger.start()
     if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
-        raise MoulinetteError(errno.EIO, m18n.n('domain_deletion_failed'))
+        raise YunohostError('domain_deletion_failed')
 
     service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf(auth)
@@ -208,6 +206,11 @@ def domain_dns_conf(domain, ttl=None):
     result += "\n\n"
     result += "; Mail"
     for record in dns_conf["mail"]:
+        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+    result += "\n\n
+
+    result += "; Extra"
+    for record in dns_conf["extra"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     for name, record_list in dns_conf.items():
@@ -249,7 +252,7 @@ def _get_conflicting_apps(auth, domain, path):
 
     # Abort if domain is unknown
     if domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise YunohostError('domain_unknown')
 
     # This import cannot be put on top of file because it would create a
     # recursive import...
@@ -342,6 +345,9 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "TXT", "name": "mail._domainkey", "value": "\"v=DKIM1; k=rsa; p=some-super-long-key\"", "ttl": 3600},
             {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
         ],
+        "extra": [
+            {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
+        ],
         "example_of_a_custom_rule": [
             {"type": "SRV", "name": "_matrix", "value": "domain.tld.", "ttl": 3600}
         ],
@@ -398,11 +404,17 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
+    # Extra
+    extra = [
+        ["@", ttl, "CAA", '128 issue "letsencrypt.org"']
+    ]
+
     # Official record
     res = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
+        "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
 
     # Custom record

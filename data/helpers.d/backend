@@ -1,8 +1,9 @@
 # Use logrotate to manage the logfile
 #
-# usage: ynh_use_logrotate [logfile] [--non-append]
+# usage: ynh_use_logrotate [logfile] [--non-append|--append] [specific_user/specific_group]
 # | arg: logfile - absolute path of logfile
 # | arg: --non-append - (Option) Replace the config file instead of appending this new config.
+# | arg: specific_user : run logrotate as the specified user and group. If not specified logrotate is runned as root.
 #
 # If no argument provided, a standard directory will be use. /var/log/${app}
 # You can provide a path with the directory only or with the logfile.
@@ -13,6 +14,7 @@
 # Unless you use the option --non-append
 ynh_use_logrotate () {
 	local customtee="tee -a"
+	local user_group="${3:-}"
 	if [ $# -gt 0 ] && [ "$1" == "--non-append" ]; then
 		customtee="tee"
 		# Destroy this argument for the next command.
@@ -29,6 +31,12 @@ ynh_use_logrotate () {
 	else
 		local logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
 	fi
+	local su_directive=""
+	if [[ -n $user_group ]]; then
+		su_directive="	# Run logorotate as specific user - group
+	su ${user_group%/*} ${user_group#*/}"
+	fi
+
 	cat > ./${app}-logrotate << EOF	# Build a config file for logrotate
 $logfile {
 		# Rotate if the logfile exceeds 100Mo
@@ -47,6 +55,7 @@ $logfile {
 	notifempty
 		# Keep old logs in the same dir
 	noolddir
+	$su_directive
 }
 EOF
 	sudo mkdir -p $(dirname "$logfile")	# Create the log directory, if not exist
@@ -213,11 +222,7 @@ ynh_add_fpm_config () {
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
-		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
-		ynh_backup_if_checksum_is_different "$finalphpini"
-		sudo cp ../conf/php-fpm.ini "$finalphpini"
-		sudo chown root: "$finalphpini"
-		ynh_store_file_checksum "$finalphpini"
+		echo "Please do not use a separate ini file, merge you directives in the pool file instead." &>2
 	fi
 	sudo systemctl reload $fpm_service
 }
@@ -228,10 +233,10 @@ ynh_add_fpm_config () {
 ynh_remove_fpm_config () {
 	local fpm_config_dir=$(ynh_app_setting_get $app fpm_config_dir)
 	local fpm_service=$(ynh_app_setting_get $app fpm_service)
-	# Assume php version 5 if not set
+	# Assume php version 7 if not set
 	if [ -z "$fpm_config_dir" ]; then
-		fpm_config_dir="/etc/php5/fpm"
-		fpm_service="php5-fpm"
+		fpm_config_dir="/etc/php/7.0/fpm"
+		fpm_service="php7.0-fpm"
 	fi
 	ynh_secure_remove "$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove "$fpm_config_dir/conf.d/20-$app.ini" 2>&1

@@ -19,6 +19,7 @@ MIGRATION_COMMENT = "; YunoHost note : this file was automatically moved from {}
 
 
 class MyMigration(Migration):
+
     "Migrate php5-fpm 'pool' conf files to php7 stuff"
 
     def migrate(self):
@@ -58,7 +59,7 @@ class MyMigration(Migration):
         _run_service_command("enable", "php7.0-fpm")
         os.system("systemctl stop php5-fpm")
         os.system("systemctl disable php5-fpm")
-        os.system("rm /etc/logrotate.d/php5-fpm") # We remove this otherwise the logrotate cron will be unhappy
+        os.system("rm /etc/logrotate.d/php5-fpm")  # We remove this otherwise the logrotate cron will be unhappy
 
         # Get list of nginx conf file
         nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
