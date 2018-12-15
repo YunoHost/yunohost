@@ -137,7 +137,7 @@ def app_fetchlist(url=None, name=None):
     else:
         appslists_to_be_fetched = appslists.keys()
 
-    import requests # lazy loading this module for performance reasons
+    import requests  # lazy loading this module for performance reasons
     # Fetch all appslists to be fetched
     for name in appslists_to_be_fetched:
 
@@ -172,7 +172,7 @@ def app_fetchlist(url=None, name=None):
         appslist = appslist_request.text
         try:
             json.loads(appslist)
-        except ValueError, e:
+        except ValueError as e:
             logger.error(m18n.n('appslist_retrieve_bad_format',
                                 appslist=name))
             continue
@@ -542,7 +542,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
         raise YunohostError("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors)
 
     logger.success(m18n.n("app_change_url_success",
-                         app=app, domain=domain, path=path))
+                          app=app, domain=domain, path=path))
 
     hook_callback('post_app_change_url', args=args_list, env=env_dict)
 
@@ -701,7 +701,6 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
 
-
     # Fetch or extract sources
     try:
         os.listdir(INSTALL_TMP)
@@ -758,7 +757,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
     # Start register change on system
-    operation_logger.extra.update({'env':env_dict})
+    operation_logger.extra.update({'env': env_dict})
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
@@ -816,8 +815,8 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
                 # Execute remove script
                 operation_logger_remove = OperationLogger('remove_on_failed_install',
-                                                 [('app', app_instance_name)],
-                                                 env=env_dict_remove)
+                                                          [('app', app_instance_name)],
+                                                          env=env_dict_remove)
                 operation_logger_remove.start()
 
                 remove_retcode = hook_exec(
@@ -944,7 +943,6 @@ def app_addaccess(auth, apps, users=[]):
 
     for app in apps:
 
-
         app_settings = _get_app_settings(app)
         if not app_settings:
             continue
@@ -957,7 +955,7 @@ def app_addaccess(auth, apps, users=[]):
 
             # Start register change on system
             related_to = [('app', app)]
-            operation_logger= OperationLogger('app_addaccess', related_to)
+            operation_logger = OperationLogger('app_addaccess', related_to)
             operation_logger.start()
 
             allowed_users = set()
@@ -1020,7 +1018,7 @@ def app_removeaccess(auth, apps, users=[]):
 
             # Start register change on system
             related_to = [('app', app)]
-            operation_logger= OperationLogger('app_removeaccess', related_to)
+            operation_logger = OperationLogger('app_removeaccess', related_to)
             operation_logger.start()
 
             if remove_all:
@@ -1034,7 +1032,7 @@ def app_removeaccess(auth, apps, users=[]):
                     if allowed_user not in users:
                         allowed_users.add(allowed_user)
 
-            operation_logger.related_to += [ ('user', x) for x in allowed_users ]
+            operation_logger.related_to += [('user', x) for x in allowed_users]
             operation_logger.flush()
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
@@ -1069,7 +1067,7 @@ def app_clearaccess(auth, apps):
 
         # Start register change on system
         related_to = [('app', app)]
-        operation_logger= OperationLogger('app_clearaccess', related_to)
+        operation_logger = OperationLogger('app_clearaccess', related_to)
         operation_logger.start()
 
         if 'mode' in app_settings:
@@ -1126,7 +1124,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
 
     if domain is None:
         domain = app_domain
-        operation_logger.related_to.append(('domain',domain))
+        operation_logger.related_to.append(('domain', domain))
     elif domain not in domain_list(auth)['domains']:
         raise YunohostError('domain_unknown')
 
@@ -1218,7 +1216,7 @@ def app_register_url(auth, app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from domain import _get_conflicting_apps, _normalize_domain_path
+    from .domain import _get_conflicting_apps, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1569,10 +1567,10 @@ def app_config_show_panel(app):
             parsed_values[key] = value
 
     return_code = hook_exec(config_script,
-              args=["show"],
-              env=env,
-              stdout_callback=parse_stdout,
-    )
+                            args=["show"],
+                            env=env,
+                            stdout_callback=parse_stdout,
+                            )
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
@@ -1656,9 +1654,9 @@ def app_config_apply(app, args):
             logger.warning("Ignore key '%s' from arguments because it is not in the config", key)
 
     return_code = hook_exec(config_script,
-              args=["apply"],
-              env=env,
-    )
+                            args=["apply"],
+                            env=env,
+                            )
 
     if return_code != 0:
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
@@ -2185,7 +2183,6 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                 elif arg_type == 'password':
                     msignals.display(m18n.n('good_practices_about_user_password'))
 
-
                 try:
                     input_string = msignals.prompt(ask_string, is_password)
                 except NotImplementedError:
@@ -2385,7 +2382,7 @@ def _install_appslist_fetch_cron():
     with open(cron_job_file, "w") as f:
         f.write('\n'.join(cron_job))
 
-    _set_permissions(cron_job_file, "root", "root", 0755)
+    _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
 # FIXME - Duplicate from certificate.py, should be moved into a common helper
@@ -2431,7 +2428,7 @@ def _write_appslist_list(appslist_lists):
             json.dump(appslist_lists, f)
     except Exception as e:
         raise YunohostError("Error while writing list of appslist %s: %s" %
-                              (APPSLISTS_JSON, str(e)), raw_msg=True)
+                            (APPSLISTS_JSON, str(e)), raw_msg=True)
 
 
 def _register_new_appslist(url, name):
@@ -2541,7 +2538,7 @@ def _patch_php5(app_folder):
             continue
 
         c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
-                   "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
-                   "-e 's@php5@php7.0@g' " \
-                   "%s" % filename
+            "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
+            "-e 's@php5@php7.0@g' " \
+            "%s" % filename
         os.system(c)

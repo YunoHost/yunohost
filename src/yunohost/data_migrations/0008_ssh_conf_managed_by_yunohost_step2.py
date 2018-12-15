@@ -3,7 +3,8 @@ import re
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.service import service_regen_conf, _get_conf_hashes, \
+from yunohost.service import service_regen_conf, \
+                             _get_conf_hashes, \
                              _calculate_hash
 from yunohost.settings import settings_set, settings_get
 from yunohost.utils.error import YunohostError
@@ -12,7 +13,9 @@ logger = getActionLogger('yunohost.migration')
 
 SSHD_CONF = '/etc/ssh/sshd_config'
 
+
 class MyMigration(Migration):
+
     """
     In this second step, the admin is asked if it's okay to use
     the recommended SSH configuration - which also implies

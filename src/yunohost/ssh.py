@@ -98,7 +98,7 @@ def user_ssh_add_key(auth, username, key, comment):
         # create empty file to set good permissions
         write_to_file(authorized_keys_file, "")
         chown(authorized_keys_file, uid=user["uid"][0])
-        chmod(authorized_keys_file, 0600)
+        chmod(authorized_keys_file, 0o600)
 
     authorized_keys_content = read_file(authorized_keys_file)
 

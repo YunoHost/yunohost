@@ -374,10 +374,10 @@ def firewall_upnp(action='status', no_refresh=False):
                         try:
                             # Add new port mapping
                             upnpc.addportmapping(port, protocol, upnpc.lanaddr,
-                                port, 'yunohost firewall: port %d' % port, '')
+                                                 port, 'yunohost firewall: port %d' % port, '')
                         except:
                             logger.debug('unable to add port %d using UPnP',
-                                        port, exc_info=1)
+                                         port, exc_info=1)
                             enabled = False
 
     if enabled != firewall['uPnP']['enabled']:

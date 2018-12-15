@@ -18,7 +18,8 @@ def teardown_function(function):
 
 
 def test_settings_get_bool():
-    assert settings_get("example.bool") == True
+    assert settings_get("example.bool")
+
 
 def test_settings_get_full_bool():
     assert settings_get("example.bool", True) == {"type": "bool", "value": True, "default": True, "description": "Example boolean option"}
@@ -27,6 +28,7 @@ def test_settings_get_full_bool():
 def test_settings_get_int():
     assert settings_get("example.int") == 42
 
+
 def test_settings_get_full_int():
     assert settings_get("example.int", True) == {"type": "int", "value": 42, "default": 42, "description": "Example int option"}
 
@@ -34,12 +36,14 @@ def test_settings_get_full_int():
 def test_settings_get_string():
     assert settings_get("example.string") == "yolo swag"
 
+
 def test_settings_get_full_string():
     assert settings_get("example.string", True) == {"type": "string", "value": "yolo swag", "default": "yolo swag", "description": "Example string option"}
 
 
 def test_settings_get_enum():
     assert settings_get("example.enum") == "a"
+
 
 def test_settings_get_full_enum():
     assert settings_get("example.enum", True) == {"type": "enum", "value": "a", "default": "a", "description": "Example enum option", "choices": ["a", "b", "c"]}
@@ -150,7 +154,6 @@ def test_reset_all_backup():
         del settings_after_modification[i]["description"]
 
     assert settings_after_modification == json.load(open(old_settings_backup_path, "r"))
-
 
 
 def test_unknown_keys():

@@ -136,7 +136,7 @@ def tools_adminpw(auth, new_password, check_strength=True):
     new_hash = _hash_user_password(new_password)
 
     try:
-        auth.update("cn=admin", { "userPassword": new_hash, })
+        auth.update("cn=admin", {"userPassword": new_hash, })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
@@ -265,7 +265,7 @@ def _is_inside_container():
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
-    container = ['lxc','lxd','docker']
+    container = ['lxc', 'lxd', 'docker']
     return out.split()[0] in container
 
 
@@ -322,7 +322,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
             dyndns = False
     else:
         dyndns = False
-
 
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
@@ -539,7 +538,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
         # If API call
         if is_api:
             critical_packages = ("moulinette", "yunohost",
-                "yunohost-admin", "ssowat", "python")
+                                 "yunohost-admin", "ssowat", "python")
             critical_upgrades = set()
 
             for pkg in cache.get_changes():
@@ -574,7 +573,6 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
                 operation_logger.success()
         else:
             logger.info(m18n.n('packages_no_upgrade'))
-
 
     if not ignore_apps:
         try:
@@ -719,7 +717,7 @@ def _check_if_vulnerable_to_meltdown():
     try:
         call = subprocess.Popen("bash %s --batch json --variant 3" %
                                 SCRIPT_PATH, shell=True,
-                                  stdout=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
 
         output, _ = call.communicate()
@@ -815,12 +813,12 @@ def tools_migrations_list(pending=False, done=False):
             migrations = [m for m in migrations if m.number > last_migration]
 
     # Reduce to dictionnaries
-    migrations = [{ "id": migration.id,
-                    "number": migration.number,
-                    "name": migration.name,
-                    "mode": migration.mode,
-                    "description": migration.description,
-                    "disclaimer": migration.disclaimer } for migration in migrations ]
+    migrations = [{"id": migration.id,
+                   "number": migration.number,
+                   "name": migration.name,
+                   "mode": migration.mode,
+                   "description": migration.description,
+                   "disclaimer": migration.disclaimer} for migration in migrations]
 
     return {"migrations": migrations}
 
@@ -914,7 +912,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                     accept_disclaimer = False
 
         # Start register change on system
-        operation_logger= OperationLogger('tools_migrations_migrate_' + mode)
+        operation_logger = OperationLogger('tools_migrations_migrate_' + mode)
         operation_logger.start()
 
         if not skip:
@@ -934,9 +932,9 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
                 msg = m18n.n('migrations_migration_has_failed',
-                                    exception=e,
-                                    number=migration.number,
-                                    name=migration.name)
+                             exception=e,
+                             number=migration.number,
+                             name=migration.name)
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
                 break
@@ -966,6 +964,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
         state["last_run_migration"] = None
 
     write_to_json(MIGRATIONS_STATE_PATH, state)
+
 
 def tools_migrations_state():
     """
@@ -1009,7 +1008,7 @@ def _get_migrations_list():
     migrations = []
 
     try:
-        import data_migrations
+        from . import data_migrations
     except ImportError:
         # not data migrations present, return empty list
         return migrations
@@ -1032,7 +1031,7 @@ def _get_migration_by_name(migration_name):
     """
 
     try:
-        import data_migrations
+        from . import data_migrations
     except ImportError:
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
@@ -1051,7 +1050,7 @@ def _load_migration(migration_file):
     number, name = migration_id.split("_", 1)
 
     logger.debug(m18n.n('migrations_loading_migration',
-        number=number, name=name))
+                        number=number, name=name))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -1064,7 +1063,8 @@ def _load_migration(migration_file):
         traceback.print_exc()
 
         raise YunohostError('migrations_error_failed_to_load_migration',
-            number=number, name=name)
+                            number=number, name=name)
+
 
 def _skip_all_migrations():
     """
@@ -1115,4 +1115,3 @@ class Migration(object):
     @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
-

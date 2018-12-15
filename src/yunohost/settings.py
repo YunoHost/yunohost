@@ -88,12 +88,12 @@ def settings_set(key, value):
     if key_type == "bool":
         if not isinstance(value, bool):
             raise YunohostError('global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type)
+                                received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "int":
         if not isinstance(value, int) or isinstance(value, bool):
             if isinstance(value, str):
                 try:
-                    value=int(value)
+                    value = int(value)
                 except:
                     raise YunohostError('global_settings_bad_type_for_setting',
                                         setting=key,
@@ -101,19 +101,19 @@ def settings_set(key, value):
                                         expected_type=key_type)
             else:
                 raise YunohostError('global_settings_bad_type_for_setting', setting=key,
-                    received_type=type(value).__name__, expected_type=key_type)
+                                    received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "string":
         if not isinstance(value, basestring):
             raise YunohostError('global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type)
+                                received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
             raise YunohostError('global_settings_bad_choice_for_enum', setting=key,
-                received_type=type(value).__name__,
-                expected_type=", ".join(settings[key]["choices"]))
+                                received_type=type(value).__name__,
+                                expected_type=", ".join(settings[key]["choices"]))
     else:
         raise YunohostError('global_settings_unknown_type', setting=key,
-            unknown_type=key_type)
+                            unknown_type=key_type)
 
     settings[key]["value"] = value
 

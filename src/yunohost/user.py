@@ -40,6 +40,7 @@ from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
 
+
 def user_list(auth, fields=None):
     """
     List users
@@ -98,7 +99,7 @@ def user_list(auth, fields=None):
 
 @is_unit_operation([('username', 'user')])
 def user_create(operation_logger, auth, username, firstname, lastname, mail, password,
-        mailbox_quota="0"):
+                mailbox_quota="0"):
     """
     Create user
 
@@ -262,8 +263,8 @@ def user_delete(operation_logger, auth, username, purge=False):
 
 @is_unit_operation([('username', 'user')], exclude=['auth', 'change_password'])
 def user_update(operation_logger, auth, username, firstname=None, lastname=None, mail=None,
-        change_password=None, add_mailforward=None, remove_mailforward=None,
-        add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
+                change_password=None, add_mailforward=None, remove_mailforward=None,
+                add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
     """
     Update user informations
 
@@ -466,17 +467,22 @@ def user_info(auth, username):
 #
 import yunohost.ssh
 
+
 def user_ssh_allow(auth, username):
     return yunohost.ssh.user_ssh_allow(auth, username)
+
 
 def user_ssh_disallow(auth, username):
     return yunohost.ssh.user_ssh_disallow(auth, username)
 
+
 def user_ssh_list_keys(auth, username):
     return yunohost.ssh.user_ssh_list_keys(auth, username)
 
+
 def user_ssh_add_key(auth, username, key, comment):
     return yunohost.ssh.user_ssh_add_key(auth, username, key, comment)
+
 
 def user_ssh_remove_key(auth, username, key):
     return yunohost.ssh.user_ssh_remove_key(auth, username, key)
@@ -484,6 +490,7 @@ def user_ssh_remove_key(auth, username, key):
 #
 # End SSH subcategory
 #
+
 
 def _convertSize(num, suffix=''):
     for unit in ['K', 'M', 'G', 'T', 'P', 'E', 'Z']:
@@ -520,6 +527,3 @@ def _hash_user_password(password):
 
     salt = '$6$' + salt + '$'
     return '{CRYPT}' + crypt.crypt(str(password), salt)
-
-
-

@@ -80,9 +80,9 @@ DNS_RESOLVERS = [
     "80.67.188.188"   # LDN
 ]
 
-###############################################################################
-#   Front-end stuff                                                           #
-###############################################################################
+#
+# Front-end stuff                                                           #
+#
 
 
 def certificate_status(auth, domain_list, full=False):
@@ -149,7 +149,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
     for domain in domain_list:
 
         operation_logger = OperationLogger('selfsigned_cert_install', [('domain', domain)],
-                           args={'force': force})
+                                           args={'force': force})
 
         # Paths of files and folder we'll need
         date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
@@ -215,10 +215,10 @@ def _certificate_install_selfsigned(domain_list, force=False):
             crt_pem.write(ca_pem.read())
 
         # Set appropriate permissions
-        _set_permissions(new_cert_folder, "root", "root", 0755)
-        _set_permissions(key_file, "root", "ssl-cert", 0640)
-        _set_permissions(crt_file, "root", "ssl-cert", 0640)
-        _set_permissions(conf_file, "root", "root", 0600)
+        _set_permissions(new_cert_folder, "root", "root", 0o755)
+        _set_permissions(key_file, "root", "ssl-cert", 0o640)
+        _set_permissions(crt_file, "root", "ssl-cert", 0o640)
+        _set_permissions(conf_file, "root", "root", 0o600)
 
         # Actually enable the certificate we created
         _enable_certificate(domain, new_cert_folder)
@@ -273,8 +273,8 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     for domain in domain_list:
 
         operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
-                           args={'force': force, 'no_checks': no_checks,
-                                 'staging': staging})
+                                           args={'force': force, 'no_checks': no_checks,
+                                                 'staging': staging})
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
@@ -297,6 +297,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
             logger.error(msg)
             operation_logger.error(msg)
+
 
 def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
     """
@@ -367,8 +368,8 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     for domain in domain_list:
 
         operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
-                           args={'force': force, 'no_checks': no_checks,
-                                 'staging': staging, 'email': email})
+                                           args={'force': force, 'no_checks': no_checks,
+                                                 'staging': staging, 'email': email})
 
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
@@ -401,9 +402,10 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, e, stack.getvalue())
 
-###############################################################################
-#   Back-end stuff                                                            #
-###############################################################################
+#
+# Back-end stuff                                                            #
+#
+
 
 def _install_cron():
     cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
@@ -412,7 +414,7 @@ def _install_cron():
         f.write("#!/bin/bash\n")
         f.write("yunohost domain cert-renew --email\n")
 
-    _set_permissions(cron_job_file, "root", "root", 0755)
+    _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
 def _email_renewing_failed(domain, exception_message, stack):
@@ -517,8 +519,8 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     if not os.path.exists(TMP_FOLDER):
         os.makedirs(TMP_FOLDER)
 
-    _set_permissions(WEBROOT_FOLDER, "root", "www-data", 0650)
-    _set_permissions(TMP_FOLDER, "root", "root", 0640)
+    _set_permissions(WEBROOT_FOLDER, "root", "www-data", 0o650)
+    _set_permissions(TMP_FOLDER, "root", "root", 0o640)
 
     # Regen conf for dnsmasq if needed
     _regen_dnsmasq_if_needed()
@@ -529,7 +531,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
     domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
     _generate_key(domain_key_file)
-    _set_permissions(domain_key_file, "root", "ssl-cert", 0640)
+    _set_permissions(domain_key_file, "root", "ssl-cert", 0o640)
 
     _prepare_certificate_signing_request(domain, domain_key_file, TMP_FOLDER)
 
@@ -563,7 +565,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
         raise YunohostError('certmanager_cert_signing_failed')
 
-    import requests # lazy loading this module for performance reasons
+    import requests  # lazy loading this module for performance reasons
     try:
         intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
     except requests.exceptions.Timeout as e:
@@ -585,12 +587,12 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
     os.makedirs(new_cert_folder)
 
-    _set_permissions(new_cert_folder, "root", "root", 0655)
+    _set_permissions(new_cert_folder, "root", "root", 0o655)
 
     # Move the private key
     domain_key_file_finaldest = os.path.join(new_cert_folder, "key.pem")
     shutil.move(domain_key_file, domain_key_file_finaldest)
-    _set_permissions(domain_key_file_finaldest, "root", "ssl-cert", 0640)
+    _set_permissions(domain_key_file_finaldest, "root", "ssl-cert", 0o640)
 
     # Write the cert
     domain_cert_file = os.path.join(new_cert_folder, "crt.pem")
@@ -599,7 +601,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
         f.write(signed_certificate)
         f.write(intermediate_certificate)
 
-    _set_permissions(domain_cert_file, "root", "ssl-cert", 0640)
+    _set_permissions(domain_cert_file, "root", "ssl-cert", 0o640)
 
     if staging:
         return
@@ -614,7 +616,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
-    from OpenSSL import crypto # lazy loading this module for performance reasons
+    from OpenSSL import crypto  # lazy loading this module for performance reasons
     # Init a request
     csr = crypto.X509Req()
 
@@ -645,7 +647,7 @@ def _get_status(domain):
     if not os.path.isfile(cert_file):
         raise YunohostError('certmanager_no_cert_file', domain=domain, file=cert_file)
 
-    from OpenSSL import crypto # lazy loading this module for performance reasons
+    from OpenSSL import crypto  # lazy loading this module for performance reasons
     try:
         cert = crypto.load_certificate(
             crypto.FILETYPE_PEM, open(cert_file).read())
@@ -735,19 +737,19 @@ def _get_status(domain):
         "ACME_eligible": ACME_eligible
     }
 
-###############################################################################
-#   Misc small stuff ...                                                      #
-###############################################################################
+#
+# Misc small stuff ...                                                      #
+#
 
 
 def _generate_account_key():
     logger.debug("Generating account key ...")
     _generate_key(ACCOUNT_KEY_FILE)
-    _set_permissions(ACCOUNT_KEY_FILE, "root", "root", 0400)
+    _set_permissions(ACCOUNT_KEY_FILE, "root", "root", 0o400)
 
 
 def _generate_key(destination_path):
-    from OpenSSL import crypto # lazy loading this module for performance reasons
+    from OpenSSL import crypto  # lazy loading this module for performance reasons
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
 
@@ -836,7 +838,7 @@ def _dns_ip_match_public_ip(public_ip, domain):
 
 
 def _domain_is_accessible_through_HTTP(ip, domain):
-    import requests # lazy loading this module for performance reasons
+    import requests  # lazy loading this module for performance reasons
     try:
         requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
     except requests.exceptions.Timeout as e:

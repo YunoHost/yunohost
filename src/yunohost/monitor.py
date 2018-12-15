@@ -288,7 +288,7 @@ def monitor_system(units=None, human_readable=False):
         else:
             raise YunohostError('unit_unknown', unit=u)
 
-    if len(units) == 1 and type(result[units[0]]) is not str:
+    if len(units) == 1 and not isinstance(result[units[0]], str):
         return result[units[0]]
     return result
 
@@ -404,7 +404,7 @@ def monitor_enable(with_stats=False):
 
     """
     from yunohost.service import (service_status, service_enable,
-        service_start)
+                                  service_start)
 
     glances = service_status('glances')
     if glances['status'] != 'running':
@@ -414,7 +414,7 @@ def monitor_enable(with_stats=False):
 
     # Install crontab
     if with_stats:
-        #  day: every 5 min  #  week: every 1 h  #  month: every 4 h  #
+        # day: every 5 min  #  week: every 1 h  #  month: every 4 h  #
         rules = ('*/5 * * * * root {cmd} day >> /dev/null\n'
                  '3 * * * * root {cmd} week >> /dev/null\n'
                  '6 */4 * * * root {cmd} month >> /dev/null').format(
@@ -431,7 +431,7 @@ def monitor_disable():
 
     """
     from yunohost.service import (service_status, service_disable,
-        service_stop)
+                                  service_stop)
 
     glances = service_status('glances')
     if glances['status'] != 'inactive':

@@ -16,6 +16,7 @@ logger = getActionLogger('yunohost.migration')
 
 
 class MyMigration(Migration):
+
     "Migrate Dyndns stuff from MD5 TSIG to SHA512 TSIG"
 
     def backward(self):
@@ -70,7 +71,7 @@ class MyMigration(Migration):
             os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
 
             raise YunohostError('migrate_tsig_failed', domain=domain,
-                                  error_code=str(r.status_code), error=error)
+                                error_code=str(r.status_code), error=error)
 
         # remove old certificates
         os.system("mv /etc/yunohost/dyndns/*+157* /tmp")
@@ -87,4 +88,3 @@ class MyMigration(Migration):
 
         logger.info(m18n.n('migrate_tsig_end'))
         return
-
