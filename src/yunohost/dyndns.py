@@ -29,7 +29,6 @@ import json
 import glob
 import time
 import base64
-import errno
 import subprocess
 
 from moulinette import m18n
@@ -39,7 +38,7 @@ from moulinette.utils.filesystem import read_file, write_to_file, rm
 from moulinette.utils.network import download_json
 from moulinette.utils.process import check_output
 
-
+from yunohost.utils.error import YunohostError
 from yunohost.domain import _get_maindomain, _build_dns_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -77,9 +76,7 @@ def _dyndns_provides(provider, domain):
         dyndomains = download_json('https://%s/domains' % provider, timeout=30)
     except MoulinetteError as e:
         logger.error(str(e))
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('dyndns_could_not_check_provide',
-                                     domain=domain, provider=provider))
+        raise YunohostError('dyndns_could_not_check_provide', domain=domain, provider=provider)
 
     # Extract 'dyndomain' from 'domain', e.g. 'nohost.me' from 'foo.nohost.me'
     dyndomain = '.'.join(domain.split('.')[1:])
@@ -106,9 +103,8 @@ def _dyndns_available(provider, domain):
                           expected_status_code=None)
     except MoulinetteError as e:
         logger.error(str(e))
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('dyndns_could_not_check_available',
-                                     domain=domain, provider=provider))
+        raise YunohostError('dyndns_could_not_check_available',
+                                     domain=domain, provider=provider)
 
     return r == u"Domain %s is available" % domain
 
@@ -130,14 +126,11 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
-        raise MoulinetteError(errno.ENOENT,
-                              m18n.n('dyndns_domain_not_provided',
-                                     domain=domain, provider=subscribe_host))
+        raise YunohostError('dyndns_domain_not_provided', domain=domain, provider=subscribe_host)
 
     # Verify if domain is available
     if not _dyndns_available(subscribe_host, domain):
-        raise MoulinetteError(errno.ENOENT,
-                              m18n.n('dyndns_unavailable', domain=domain))
+        raise YunohostError('dyndns_unavailable', domain=domain)
 
     operation_logger.start()
 
@@ -161,14 +154,13 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
     except requests.ConnectionError:
-        raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+        raise YunohostError('no_internet_connection')
     if r.status_code != 201:
         try:
             error = json.loads(r.text)['error']
         except:
             error = "Server error, code: %s. (Message: \"%s\")" % (r.status_code, r.text)
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('dyndns_registration_failed', error=error))
+        raise YunohostError('dyndns_registration_failed', error=error)
 
     logger.success(m18n.n('dyndns_registered'))
 
@@ -202,7 +194,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
             keys = glob.glob('/etc/yunohost/dyndns/K{0}.+*.private'.format(domain))
 
             if not keys:
-                raise MoulinetteError(errno.EIO, m18n.n('dyndns_key_not_found'))
+                raise YunohostError('dyndns_key_not_found')
 
             key = keys[0]
 
@@ -302,8 +294,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
         subprocess.check_call(command)
     except subprocess.CalledProcessError:
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('dyndns_ip_update_failed'))
+        raise YunohostError('dyndns_ip_update_failed')
 
     logger.success(m18n.n('dyndns_ip_updated'))
 
@@ -329,7 +320,7 @@ def dyndns_removecron():
     try:
         os.remove("/etc/cron.d/yunohost-dyndns")
     except:
-        raise MoulinetteError(errno.EIO, m18n.n('dyndns_cron_remove_failed'))
+        raise YunohostError('dyndns_cron_remove_failed')
 
     logger.success(m18n.n('dyndns_cron_removed'))
 
@@ -359,5 +350,4 @@ def _guess_current_dyndns_domain(dyn_host):
         else:
             return (_domain, path)
 
-    raise MoulinetteError(errno.EINVAL,
-                          m18n.n('dyndns_no_domain_registered'))
+    raise YunohostError('dyndns_no_domain_registered')

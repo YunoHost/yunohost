@@ -2,12 +2,11 @@
 
 import re
 import os
-import errno
 import pwd
 import subprocess
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
@@ -23,7 +22,7 @@ def user_ssh_allow(auth, username):
     # TODO it would be good to support different kind of shells
 
     if not _get_user_for_ssh(auth, username):
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+        raise YunohostError('user_unknown', user=username)
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
 
@@ -42,7 +41,7 @@ def user_ssh_disallow(auth, username):
     # TODO it would be good to support different kind of shells
 
     if not _get_user_for_ssh(auth, username):
-        raise MoulinetteError(errno.EINVAL, m18n.n('user_unknown', user=username))
+        raise YunohostError('user_unknown', user=username)
 
     auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
 

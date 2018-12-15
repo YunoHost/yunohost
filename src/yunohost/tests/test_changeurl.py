@@ -6,7 +6,7 @@ from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
 
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 
 # Instantiate LDAP Authenticator
 AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
@@ -57,5 +57,5 @@ def test_appchangeurl_sameurl():
     install_changeurl_app("/changeurl")
     check_changeurl_app("/changeurl")
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         app_change_url(auth, "change_url_app", maindomain, "changeurl")

@@ -81,17 +81,15 @@ class PasswordValidator(object):
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        import errno
         import logging
-        from moulinette import m18n
-        from moulinette.core import MoulinetteError
+        from yunohost.utils.error import YunohostError
         from moulinette.utils.log import getActionLogger
 
         logger = logging.getLogger('yunohost.utils.password')
 
         status, msg = self.validation_summary(password)
         if status == "error":
-            raise MoulinetteError(1, m18n.n(msg))
+            raise YunohostError(msg)
 
     def validation_summary(self, password):
         """

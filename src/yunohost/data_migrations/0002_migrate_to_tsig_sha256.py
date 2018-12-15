@@ -4,10 +4,9 @@ import requests
 import base64
 import time
 import json
-import errno
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
@@ -29,7 +28,7 @@ class MyMigration(Migration):
             try:
                 (domain, private_key_path) = _guess_current_dyndns_domain(dyn_host)
                 assert "+157" in private_key_path
-            except (MoulinetteError, AssertionError):
+            except (YunohostError, AssertionError):
                 logger.info(m18n.n("migrate_tsig_not_needed"))
                 return
 
@@ -52,7 +51,7 @@ class MyMigration(Migration):
                                'public_key_sha512': base64.b64encode(public_key_sha512),
                              }, timeout=30)
         except requests.ConnectionError:
-            raise MoulinetteError(errno.ENETUNREACH, m18n.n('no_internet_connection'))
+            raise YunohostError('no_internet_connection')
 
         if r.status_code != 201:
             try:
@@ -70,8 +69,8 @@ class MyMigration(Migration):
             # Migration didn't succeed, so we rollback and raise an exception
             os.system("mv /etc/yunohost/dyndns/*+165* /tmp")
 
-            raise MoulinetteError(m18n.n('migrate_tsig_failed', domain=domain,
-                                  error_code=str(r.status_code), error=error))
+            raise YunohostError('migrate_tsig_failed', domain=domain,
+                                  error_code=str(r.status_code), error=error)
 
         # remove old certificates
         os.system("mv /etc/yunohost/dyndns/*+157* /tmp")

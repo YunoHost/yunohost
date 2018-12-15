@@ -5,7 +5,7 @@ import string
 import subprocess
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import append_to_file
