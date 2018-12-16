@@ -5,7 +5,6 @@ import os
 import pwd
 import subprocess
 
-from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 

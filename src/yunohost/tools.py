@@ -27,7 +27,6 @@ import re
 import os
 import yaml
 import json
-import logging
 import subprocess
 import pwd
 import socket
