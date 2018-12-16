@@ -256,6 +256,7 @@ def user_delete(operation_logger, auth, username, purge=False):
         if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
             if purge:
                 subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
+                subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
     else:
         raise MoulinetteError(169, m18n.n('user_deletion_failed'))
 
@@ -532,6 +533,3 @@ def _hash_user_password(password):
 
     salt = '$6$' + salt + '$'
     return '{CRYPT}' + crypt.crypt(str(password), salt)
-
-
-
