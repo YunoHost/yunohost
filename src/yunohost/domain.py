@@ -114,16 +114,13 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
             service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
             app_ssowatconf(auth)
 
-    except Exception as e:
-        from sys import exc_info
-        t, v, tb = exc_info()
-
+    except Exception:
         # Force domain removal silently
         try:
             domain_remove(auth, domain, True)
         except:
             pass
-        raise t, v, tb
+        raise
 
     hook_callback('post_domain_add', args=[domain])
 
