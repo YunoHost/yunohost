@@ -1,12 +1,11 @@
 import os
 import json
-import errno
 
 from datetime import datetime
 from collections import OrderedDict
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 logger = getActionLogger('yunohost.settings')
@@ -39,6 +38,7 @@ DEFAULTS = OrderedDict([
     # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
+    ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
 ])
 
 
@@ -53,8 +53,7 @@ def settings_get(key, full=False):
     settings = _get_settings()
 
     if key not in settings:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
+        raise YunohostError('global_settings_key_doesnt_exists', settings_key=key)
 
     if full:
         return settings[key]
@@ -82,39 +81,39 @@ def settings_set(key, value):
     settings = _get_settings()
 
     if key not in settings:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
+        raise YunohostError('global_settings_key_doesnt_exists', settings_key=key)
 
     key_type = settings[key]["type"]
 
     if key_type == "bool":
         if not isinstance(value, bool):
-            raise MoulinetteError(errno.EINVAL, m18n.n(
-                'global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type))
+            raise YunohostError('global_settings_bad_type_for_setting', setting=key,
+                                received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "int":
         if not isinstance(value, int) or isinstance(value, bool):
             if isinstance(value, str):
-                value=int(value)
+                try:
+                    value = int(value)
+                except:
+                    raise YunohostError('global_settings_bad_type_for_setting',
+                                        setting=key,
+                                        received_type=type(value).__name__,
+                                        expected_type=key_type)
             else:
-                raise MoulinetteError(errno.EINVAL, m18n.n(
-                    'global_settings_bad_type_for_setting', setting=key,
-                    received_type=type(value).__name__, expected_type=key_type))
+                raise YunohostError('global_settings_bad_type_for_setting', setting=key,
+                                    received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "string":
         if not isinstance(value, basestring):
-            raise MoulinetteError(errno.EINVAL, m18n.n(
-                'global_settings_bad_type_for_setting', setting=key,
-                received_type=type(value).__name__, expected_type=key_type))
+            raise YunohostError('global_settings_bad_type_for_setting', setting=key,
+                                received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
-            raise MoulinetteError(errno.EINVAL, m18n.n(
-                'global_settings_bad_choice_for_enum', setting=key,
-                received_type=type(value).__name__,
-                expected_type=", ".join(settings[key]["choices"])))
+            raise YunohostError('global_settings_bad_choice_for_enum', setting=key,
+                                received_type=type(value).__name__,
+                                expected_type=", ".join(settings[key]["choices"]))
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_unknown_type', setting=key,
-            unknown_type=key_type))
+        raise YunohostError('global_settings_unknown_type', setting=key,
+                            unknown_type=key_type)
 
     settings[key]["value"] = value
 
@@ -132,8 +131,7 @@ def settings_reset(key):
     settings = _get_settings()
 
     if key not in settings:
-        raise MoulinetteError(errno.EINVAL, m18n.n(
-            'global_settings_key_doesnt_exists', settings_key=key))
+        raise YunohostError('global_settings_key_doesnt_exists', settings_key=key)
 
     settings[key]["value"] = settings[key]["default"]
     _save_settings(settings)
@@ -154,7 +152,7 @@ def settings_reset_all():
     # addition but we'll see if this is a common need.
     # Another solution would be to use etckeeper and integrate those
     # modification inside of it and take advantage of its git history
-    old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.now().strftime("%F_%X")
+    old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.utcnow().strftime("%F_%X")
     _save_settings(settings, location=old_settings_backup_path)
 
     for value in settings.values():
@@ -209,8 +207,7 @@ def _get_settings():
                                           setting_key=key))
                     unknown_settings[key] = value
     except Exception as e:
-        raise MoulinetteError(errno.EIO, m18n.n('global_settings_cant_open_settings', reason=e),
-                              exc_info=1)
+        raise YunohostError('global_settings_cant_open_settings', reason=e)
 
     if unknown_settings:
         try:
@@ -231,14 +228,10 @@ def _save_settings(settings, location=SETTINGS_PATH):
     try:
         result = json.dumps(settings_without_description, indent=4)
     except Exception as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('global_settings_cant_serialize_settings', reason=e),
-                              exc_info=1)
+        raise YunohostError('global_settings_cant_serialize_settings', reason=e)
 
     try:
         with open(location, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
-        raise MoulinetteError(errno.EIO,
-                              m18n.n('global_settings_cant_write_settings', reason=e),
-                              exc_info=1)
+        raise YunohostError('global_settings_cant_write_settings', reason=e)

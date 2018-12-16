@@ -5,7 +5,7 @@ import string
 import subprocess
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import append_to_file
@@ -15,7 +15,9 @@ from yunohost.tools import Migration
 logger = getActionLogger('yunohost.migration')
 SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin", "root", "test", "rpi"]
 
+
 class MyMigration(Migration):
+
     "Synchronize admin and root passwords"
 
     def migrate(self):
@@ -23,7 +25,7 @@ class MyMigration(Migration):
         new_hash = self._get_admin_hash()
         self._replace_root_hash(new_hash)
 
-        logger.info(m18n.n("migration_0006_done"))
+        logger.info(m18n.n("root_password_replaced_by_admin_password"))
 
     def backward(self):
         pass

@@ -27,8 +27,6 @@ import re
 import os
 import yaml
 import json
-import errno
-import logging
 import subprocess
 import pwd
 import socket
@@ -40,7 +38,8 @@ import apt
 import apt.progress
 
 from moulinette import msettings, msignals, m18n
-from moulinette.core import MoulinetteError, init_authenticator
+from moulinette.core import init_authenticator
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_json, write_to_json
@@ -112,7 +111,7 @@ def tools_ldapinit():
         pwd.getpwnam("admin")
     except KeyError:
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
-        raise MoulinetteError(errno.EINVAL, m18n.n('installation_failed'))
+        raise YunohostError('installation_failed')
 
     logger.success(m18n.n('ldap_initialized'))
     return auth
@@ -136,11 +135,10 @@ def tools_adminpw(auth, new_password, check_strength=True):
     new_hash = _hash_user_password(new_password)
 
     try:
-        auth.update("cn=admin", { "userPassword": new_hash, })
+        auth.update("cn=admin", {"userPassword": new_hash, })
     except:
         logger.exception('unable to change admin password')
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('admin_password_change_failed'))
+        raise YunohostError('admin_password_change_failed')
     else:
         # Write as root password
         try:
@@ -152,9 +150,11 @@ def tools_adminpw(auth, new_password, check_strength=True):
             with open('/etc/shadow', 'w') as after_file:
                 after_file.write(before.replace("root:" + hash_root,
                                                 "root:" + new_hash.replace('{CRYPT}', '')))
-        except IOError as e:
+        except IOError:
             logger.warning(m18n.n('root_password_desynchronized'))
             return
+
+        logger.info(m18n.n("root_password_replaced_by_admin_password"))
         logger.success(m18n.n('admin_password_changed'))
 
 
@@ -174,7 +174,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
 
     # Check domain exists
     if new_domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise YunohostError('domain_unknown')
 
     operation_logger.related_to.append(('domain', new_domain))
     operation_logger.start()
@@ -197,7 +197,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
         _set_maindomain(new_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
-        raise MoulinetteError(errno.EPERM, m18n.n('maindomain_change_failed'))
+        raise YunohostError('maindomain_change_failed')
 
     _set_hostname(new_domain)
 
@@ -206,7 +206,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
 
     # Regen configurations
     try:
-        with open('/etc/yunohost/installed', 'r') as f:
+        with open('/etc/yunohost/installed', 'r'):
             service_regen_conf()
     except IOError:
         pass
@@ -246,7 +246,7 @@ def _set_hostname(hostname, pretty_hostname=None):
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            raise MoulinetteError(errno.EIO, m18n.n('domain_hostname_failed'))
+            raise YunohostError('domain_hostname_failed')
         else:
             logger.debug(out)
 
@@ -264,7 +264,7 @@ def _is_inside_container():
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
-    container = ['lxc','lxd','docker']
+    container = ['lxc', 'lxd', 'docker']
     return out.split()[0] in container
 
 
@@ -287,8 +287,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('yunohost_already_installed'))
+        raise YunohostError('yunohost_already_installed')
 
     # Check password
     if not force_password:
@@ -317,14 +316,11 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
                 dyndns = True
             # If not, abort the postinstall
             else:
-                raise MoulinetteError(errno.EEXIST,
-                                      m18n.n('dyndns_unavailable',
-                                             domain=domain))
+                raise YunohostError('dyndns_unavailable', domain=domain)
         else:
             dyndns = False
     else:
         dyndns = False
-
 
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
@@ -362,8 +358,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=str(e)))
+        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
     except IOError:
         ssowat_conf = {}
 
@@ -376,8 +371,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=str(e)))
+        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -404,8 +398,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
         if p.returncode != 0:
             logger.warning(out)
-            raise MoulinetteError(errno.EPERM,
-                                  m18n.n('yunohost_ca_creation_failed'))
+            raise YunohostError('yunohost_ca_creation_failed')
         else:
             logger.debug(out)
 
@@ -432,7 +425,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
-    tools_migrations_migrate(skip=True, auto=True)
+    _skip_all_migrations()
 
     os.system('touch /etc/yunohost/installed')
 
@@ -441,6 +434,24 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_start("yunohost-firewall")
 
     service_regen_conf(force=True)
+
+    # Restore original ssh conf, as chosen by the
+    # admin during the initial install
+    #
+    # c.f. the install script and in particular
+    # https://github.com/YunoHost/install_script/pull/50
+    # The user can now choose during the install to keep
+    # the initial, existing sshd configuration
+    # instead of YunoHost's recommended conf
+    #
+    original_sshd_conf = '/etc/ssh/sshd_config.before_yunohost'
+    if os.path.exists(original_sshd_conf):
+        os.rename(original_sshd_conf, '/etc/ssh/sshd_config')
+    else:
+        # We need to explicitly ask the regen conf to regen ssh
+        # (by default, i.e. first argument = None, it won't because it's too touchy)
+        service_regen_conf(names=["ssh"], force=True)
+
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))
@@ -463,7 +474,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         # Update APT cache
         logger.debug(m18n.n('updating_apt_cache'))
         if not cache.update():
-            raise MoulinetteError(errno.EPERM, m18n.n('update_cache_failed'))
+            raise YunohostError('update_cache_failed')
 
         cache.open(None)
         cache.upgrade(True)
@@ -482,7 +493,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
     if not ignore_apps:
         try:
             app_fetchlist()
-        except MoulinetteError:
+        except YunohostError:
             # FIXME : silent exception !?
             pass
 
@@ -526,7 +537,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
         # If API call
         if is_api:
             critical_packages = ("moulinette", "yunohost",
-                "yunohost-admin", "ssowat", "python")
+                                 "yunohost-admin", "ssowat", "python")
             critical_upgrades = set()
 
             for pkg in cache.get_changes():
@@ -561,7 +572,6 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
                 operation_logger.success()
         else:
             logger.info(m18n.n('packages_no_upgrade'))
-
 
     if not ignore_apps:
         try:
@@ -613,7 +623,7 @@ def tools_diagnosis(auth, private=False):
     diagnosis['system'] = OrderedDict()
     try:
         disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except (MoulinetteError, Fault) as e:
+    except (YunohostError, Fault) as e:
         logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['disks'] = {}
@@ -629,7 +639,7 @@ def tools_diagnosis(auth, private=False):
 
     try:
         system = monitor_system(units=['cpu', 'memory'], human_readable=True)
-    except MoulinetteError as e:
+    except YunohostError as e:
         logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
     else:
         diagnosis['system']['memory'] = {
@@ -655,7 +665,7 @@ def tools_diagnosis(auth, private=False):
     # YNH Applications
     try:
         applications = app_list()['apps']
-    except MoulinetteError as e:
+    except YunohostError as e:
         diagnosis['applications'] = m18n.n('diagnosis_no_apps')
     else:
         diagnosis['applications'] = {}
@@ -706,7 +716,7 @@ def _check_if_vulnerable_to_meltdown():
     try:
         call = subprocess.Popen("bash %s --batch json --variant 3" %
                                 SCRIPT_PATH, shell=True,
-                                  stdout=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
 
         output, _ = call.communicate()
@@ -787,7 +797,7 @@ def tools_migrations_list(pending=False, done=False):
 
     # Check for option conflict
     if pending and done:
-        raise MoulinetteError(errno.EINVAL, m18n.n("migrations_list_conflict_pending_done"))
+        raise YunohostError("migrations_list_conflict_pending_done")
 
     # Get all migrations
     migrations = _get_migrations_list()
@@ -802,12 +812,12 @@ def tools_migrations_list(pending=False, done=False):
             migrations = [m for m in migrations if m.number > last_migration]
 
     # Reduce to dictionnaries
-    migrations = [{ "id": migration.id,
-                    "number": migration.number,
-                    "name": migration.name,
-                    "mode": migration.mode,
-                    "description": migration.description,
-                    "disclaimer": migration.disclaimer } for migration in migrations ]
+    migrations = [{"id": migration.id,
+                   "number": migration.number,
+                   "name": migration.name,
+                   "mode": migration.mode,
+                   "description": migration.description,
+                   "disclaimer": migration.disclaimer} for migration in migrations]
 
     return {"migrations": migrations}
 
@@ -844,7 +854,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     # validate input, target must be "0" or a valid number
     elif target != 0 and target not in all_migration_numbers:
-        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers))))
+        raise YunohostError('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers)))
 
     logger.debug(m18n.n('migrations_current_target', target))
 
@@ -872,38 +882,41 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
     else:  # can't happen, this case is handle before
         raise Exception()
 
-    # If we are migrating in "automatic mode" (i.e. from debian
-    # configure during an upgrade of the package) but we are asked to run
-    # migrations is to be ran manually by the user
-    manual_migrations = [m for m in migrations if m.mode == "manual"]
-    if not skip and auto and manual_migrations:
-        for m in manual_migrations:
-            logger.warn(m18n.n('migrations_to_be_ran_manually',
-                               number=m.number,
-                               name=m.name))
-        return
-
-    # If some migrations have disclaimers, require the --accept-disclaimer
-    # option
-    migrations_with_disclaimer = [m for m in migrations if m.disclaimer]
-    if not skip and not accept_disclaimer and migrations_with_disclaimer:
-        for m in migrations_with_disclaimer:
-            logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                               number=m.number,
-                               name=m.name,
-                               disclaimer=m.disclaimer))
-        return
-
     # effectively run selected migrations
     for migration in migrations:
 
+        if not skip:
+            # If we are migrating in "automatic mode" (i.e. from debian configure
+            # during an upgrade of the package) but we are asked to run migrations
+            # to be ran manually by the user, stop there and ask the user to
+            # run the migration manually.
+            if auto and migration.mode == "manual":
+                logger.warn(m18n.n('migrations_to_be_ran_manually',
+                                   number=migration.number,
+                                   name=migration.name))
+                break
+
+            # If some migrations have disclaimers,
+            if migration.disclaimer:
+                # require the --accept-disclaimer option. Otherwise, stop everything
+                # here and display the disclaimer
+                if not accept_disclaimer:
+                    logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                                       number=migration.number,
+                                       name=migration.name,
+                                       disclaimer=migration.disclaimer))
+                    break
+                # --accept-disclaimer will only work for the first migration
+                else:
+                    accept_disclaimer = False
+
         # Start register change on system
-        operation_logger= OperationLogger('tools_migrations_migrate_' + mode)
+        operation_logger = OperationLogger('tools_migrations_migrate_' + mode)
         operation_logger.start()
 
         if not skip:
 
-            logger.warn(m18n.n('migrations_show_currently_running_migration',
+            logger.info(m18n.n('migrations_show_currently_running_migration',
                                number=migration.number, name=migration.name))
 
             try:
@@ -918,12 +931,15 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
                 msg = m18n.n('migrations_migration_has_failed',
-                                    exception=e,
-                                    number=migration.number,
-                                    name=migration.name)
+                             exception=e,
+                             number=migration.number,
+                             name=migration.name)
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
                 break
+            else:
+                logger.success(m18n.n('migrations_success',
+                                      number=migration.number, name=migration.name))
 
         else:  # if skip
             logger.warn(m18n.n('migrations_skip_migration',
@@ -937,6 +953,10 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
         }
 
         operation_logger.success()
+
+        # Skip migrations one at a time
+        if skip:
+            break
 
     # special case where we want to go back from the start
     if target == 0:
@@ -987,7 +1007,7 @@ def _get_migrations_list():
     migrations = []
 
     try:
-        import data_migrations
+        from . import data_migrations
     except ImportError:
         # not data migrations present, return empty list
         return migrations
@@ -1010,7 +1030,7 @@ def _get_migration_by_name(migration_name):
     """
 
     try:
-        import data_migrations
+        from . import data_migrations
     except ImportError:
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
@@ -1029,7 +1049,7 @@ def _load_migration(migration_file):
     number, name = migration_id.split("_", 1)
 
     logger.debug(m18n.n('migrations_loading_migration',
-        number=number, name=name))
+                        number=number, name=name))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -1041,8 +1061,28 @@ def _load_migration(migration_file):
         import traceback
         traceback.print_exc()
 
-        raise MoulinetteError(errno.EINVAL, m18n.n('migrations_error_failed_to_load_migration',
-            number=number, name=name))
+        raise YunohostError('migrations_error_failed_to_load_migration',
+                            number=number, name=name)
+
+
+def _skip_all_migrations():
+    """
+    Skip all pending migrations.
+    This is meant to be used during postinstall to
+    initialize the migration system.
+    """
+    state = tools_migrations_state()
+
+    # load all migrations
+    migrations = _get_migrations_list()
+    migrations = sorted(migrations, key=lambda x: x.number)
+    last_migration = migrations[-1]
+
+    state["last_run_migration"] = {
+        "number": last_migration.number,
+        "name": last_migration.name
+    }
+    write_to_json(MIGRATIONS_STATE_PATH, state)
 
 
 class Migration(object):
@@ -1074,4 +1114,3 @@ class Migration(object):
     @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
-

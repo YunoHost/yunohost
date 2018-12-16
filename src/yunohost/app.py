@@ -30,15 +30,15 @@ import yaml
 import time
 import re
 import urlparse
-import errno
 import subprocess
 import glob
 import pwd
 import grp
 from collections import OrderedDict
+from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json
 
@@ -80,6 +80,12 @@ def app_listlists():
     # Get the list
     appslist_list = _read_appslist_list()
 
+    # Convert 'lastUpdate' timestamp to datetime
+    for name, infos in appslist_list.items():
+        if infos["lastUpdate"] is None:
+            infos["lastUpdate"] = 0
+        infos["lastUpdate"] = datetime.utcfromtimestamp(infos["lastUpdate"])
+
     return appslist_list
 
 
@@ -118,14 +124,12 @@ def app_fetchlist(url=None, name=None):
             appslists_to_be_fetched = [name]
             operation_logger.success()
         else:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('custom_appslist_name_required'))
+            raise YunohostError('custom_appslist_name_required')
 
     # If a name is given, look for an appslist with that name and fetch it
     elif name is not None:
         if name not in appslists.keys():
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('appslist_unknown', appslist=name))
+            raise YunohostError('appslist_unknown', appslist=name)
         else:
             appslists_to_be_fetched = [name]
 
@@ -133,7 +137,7 @@ def app_fetchlist(url=None, name=None):
     else:
         appslists_to_be_fetched = appslists.keys()
 
-    import requests # lazy loading this module for performance reasons
+    import requests  # lazy loading this module for performance reasons
     # Fetch all appslists to be fetched
     for name in appslists_to_be_fetched:
 
@@ -168,7 +172,7 @@ def app_fetchlist(url=None, name=None):
         appslist = appslist_request.text
         try:
             json.loads(appslist)
-        except ValueError, e:
+        except ValueError as e:
             logger.error(m18n.n('appslist_retrieve_bad_format',
                                 appslist=name))
             continue
@@ -179,9 +183,7 @@ def app_fetchlist(url=None, name=None):
             with open(list_file, "w") as f:
                 f.write(appslist)
         except Exception as e:
-            raise MoulinetteError(errno.EIO,
-                                  "Error while writing appslist %s: %s" %
-                                  (name, str(e)))
+            raise YunohostError("Error while writing appslist %s: %s" % (name, str(e)), raw_msg=True)
 
         now = int(time.time())
         appslists[name]["lastUpdate"] = now
@@ -205,7 +207,7 @@ def app_removelist(operation_logger, name):
 
     # Make sure we know this appslist
     if name not in appslists.keys():
-        raise MoulinetteError(errno.ENOENT, m18n.n('appslist_unknown', appslist=name))
+        raise YunohostError('appslist_unknown', appslist=name)
 
     operation_logger.start()
 
@@ -336,8 +338,7 @@ def app_info(app, show_status=False, raw=False):
 
     """
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app=app))
+        raise YunohostError('app_not_installed', app=app)
 
     app_setting_path = APPS_SETTING_PATH + app
 
@@ -395,8 +396,7 @@ def app_map(app=None, raw=False, user=None):
 
     if app is not None:
         if not _is_installed(app):
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_not_installed', app=app))
+            raise YunohostError('app_not_installed', app=app)
         apps = [app, ]
     else:
         apps = os.listdir(APPS_SETTING_PATH)
@@ -448,11 +448,10 @@ def app_change_url(operation_logger, auth, app, domain, path):
 
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app))
+        raise YunohostError('app_not_installed', app=app)
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_no_change_url_script", app_name=app))
+        raise YunohostError("app_change_no_change_url_script", app_name=app)
 
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
@@ -464,7 +463,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     path = normalize_url_path(path)
 
     if (domain, path) == (old_domain, old_path):
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_identical_domains", domain=domain, path=path))
+        raise YunohostError("app_change_url_identical_domains", domain=domain, path=path)
 
     # WARNING / FIXME : checkurl will modify the settings
     # (this is a non intuitive behavior that should be changed)
@@ -540,10 +539,10 @@ def app_change_url(operation_logger, auth, app, domain, path):
                                                stderr=subprocess.STDOUT,
                                                shell=True).rstrip()
 
-        raise MoulinetteError(errno.EINVAL, m18n.n("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors))
+        raise YunohostError("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors)
 
     logger.success(m18n.n("app_change_url_success",
-                         app=app, domain=domain, path=path))
+                          app=app, domain=domain, path=path))
 
     hook_callback('post_app_change_url', args=args_list, env=env_dict)
 
@@ -565,8 +564,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     try:
         app_list()
-    except MoulinetteError:
-        raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
+    except YunohostError:
+        raise YunohostError('app_no_upgrade')
 
     upgraded_apps = []
 
@@ -586,8 +585,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
-            raise MoulinetteError(errno.ENOPKG,
-                                  m18n.n('app_not_installed', app=app_instance_name))
+            raise YunohostError('app_not_installed', app=app_instance_name)
 
         if app_instance_name in upgraded_apps:
             continue
@@ -677,7 +675,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
             operation_logger.success()
 
     if not upgraded_apps:
-        raise MoulinetteError(errno.ENODATA, m18n.n('app_no_upgrade'))
+        raise YunohostError('app_no_upgrade')
 
     app_ssowatconf(auth)
 
@@ -689,7 +687,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
 
 @is_unit_operation()
-def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on_failure=False):
+def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on_failure=False, force=False):
     """
     Install apps
 
@@ -698,11 +696,10 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         label -- Custom name for the app
         args -- Serialize arguments for app installation
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
-
+        force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-
 
     # Fetch or extract sources
     try:
@@ -718,17 +715,46 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         },
     }
 
-    if app in app_list(raw=True) or ('@' in app) or ('http://' in app) or ('https://' in app):
+    def confirm_install(confirm):
+
+        # Ignore if there's nothing for confirm (good quality app), if --force is used
+        # or if request on the API (confirm already implemented on the API side)
+        if confirm is None or force or msettings.get('interface') == 'api':
+            return
+
+        answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                   answers='Y/N'))
+        if answer.upper() != "Y":
+            raise YunohostError("aborting")
+
+
+    raw_app_list = app_list(raw=True)
+    if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
+        if app in raw_app_list:
+            state = raw_app_list[app].get("state", "notworking")
+            level = raw_app_list[app].get("level", None)
+            confirm = "danger"
+            if state in ["working", "validated"]:
+                if isinstance(level, int) and level >= 3:
+                    confirm = None
+                elif isinstance(level, int) and level > 0:
+                    confirm = "warning"
+        else:
+            confirm = "thirdparty"
+
+        confirm_install(confirm)
+
         manifest, extracted_app_folder = _fetch_app_from_git(app)
     elif os.path.exists(app):
+        confirm_install("thirdparty")
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+        raise YunohostError('app_unknown')
     status['remote'] = manifest.get('remote', {})
 
     # Check ID
     if 'id' not in manifest or '__' in manifest['id']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_id_invalid'))
+        raise YunohostError('app_id_invalid')
 
     app_id = manifest['id']
 
@@ -739,8 +765,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     instance_number = _installed_instance_number(app_id, last=True) + 1
     if instance_number > 1:
         if 'multi_instance' not in manifest or not is_true(manifest['multi_instance']):
-            raise MoulinetteError(errno.EEXIST,
-                                  m18n.n('app_already_installed', app=app_id))
+            raise YunohostError('app_already_installed', app=app_id)
 
         # Change app_id to the forked app id
         app_instance_name = app_id + '__' + str(instance_number)
@@ -761,7 +786,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
     # Start register change on system
-    operation_logger.extra.update({'env':env_dict})
+    operation_logger.extra.update({'env': env_dict})
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
@@ -819,8 +844,8 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
                 # Execute remove script
                 operation_logger_remove = OperationLogger('remove_on_failed_install',
-                                                 [('app', app_instance_name)],
-                                                 env=env_dict_remove)
+                                                          [('app', app_instance_name)],
+                                                          env=env_dict_remove)
                 operation_logger_remove.start()
 
                 remove_retcode = hook_exec(
@@ -843,9 +868,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
-                raise MoulinetteError(errno.EINTR, msg)
+                raise YunohostError(msg, raw_msg=True)
             msg = error_msg
-            raise MoulinetteError(errno.EIO, msg)
+            raise YunohostError(msg, raw_msg=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -881,8 +906,7 @@ def app_remove(operation_logger, auth, app):
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
     if not _is_installed(app):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app=app))
+        raise YunohostError('app_not_installed', app=app)
 
     operation_logger.start()
 
@@ -948,7 +972,6 @@ def app_addaccess(auth, apps, users=[]):
 
     for app in apps:
 
-
         app_settings = _get_app_settings(app)
         if not app_settings:
             continue
@@ -961,7 +984,7 @@ def app_addaccess(auth, apps, users=[]):
 
             # Start register change on system
             related_to = [('app', app)]
-            operation_logger= OperationLogger('app_addaccess', related_to)
+            operation_logger = OperationLogger('app_addaccess', related_to)
             operation_logger.start()
 
             allowed_users = set()
@@ -972,7 +995,7 @@ def app_addaccess(auth, apps, users=[]):
                 if allowed_user not in allowed_users:
                     try:
                         user_info(auth, allowed_user)
-                    except MoulinetteError:
+                    except YunohostError:
                         logger.warning(m18n.n('user_unknown', user=allowed_user))
                         continue
                     allowed_users.add(allowed_user)
@@ -1024,7 +1047,7 @@ def app_removeaccess(auth, apps, users=[]):
 
             # Start register change on system
             related_to = [('app', app)]
-            operation_logger= OperationLogger('app_removeaccess', related_to)
+            operation_logger = OperationLogger('app_removeaccess', related_to)
             operation_logger.start()
 
             if remove_all:
@@ -1038,7 +1061,7 @@ def app_removeaccess(auth, apps, users=[]):
                     if allowed_user not in users:
                         allowed_users.add(allowed_user)
 
-            operation_logger.related_to += [ ('user', x) for x in allowed_users ]
+            operation_logger.related_to += [('user', x) for x in allowed_users]
             operation_logger.flush()
             new_users = ','.join(allowed_users)
             app_setting(app, 'allowed_users', new_users)
@@ -1073,7 +1096,7 @@ def app_clearaccess(auth, apps):
 
         # Start register change on system
         related_to = [('app', app)]
-        operation_logger= OperationLogger('app_clearaccess', related_to)
+        operation_logger = OperationLogger('app_clearaccess', related_to)
         operation_logger.start()
 
         if 'mode' in app_settings:
@@ -1130,23 +1153,19 @@ def app_makedefault(operation_logger, auth, app, domain=None):
 
     if domain is None:
         domain = app_domain
-        operation_logger.related_to.append(('domain',domain))
+        operation_logger.related_to.append(('domain', domain))
     elif domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise YunohostError('domain_unknown')
 
     operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
-        raise MoulinetteError(errno.EEXIST,
-                              m18n.n('app_make_default_location_already_used',
-                                     app=app, domain=app_domain,
-                                     other_app=app_map(raw=True)[domain]["/"]["id"]))
+        raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain, other_app=app_map(raw=True)[domain]["/"]["id"])
 
     try:
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('ssowat_persistent_conf_read_error', error=e.strerror))
+        raise YunohostError('ssowat_persistent_conf_read_error', error=e.strerror)
     except IOError:
         ssowat_conf = {}
 
@@ -1159,8 +1178,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise MoulinetteError(errno.EPERM,
-                              m18n.n('ssowat_persistent_conf_write_error', error=e.strerror))
+        raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -1212,8 +1230,7 @@ def app_checkport(port):
     if tools_port_available(port):
         logger.success(m18n.n('port_available', port=int(port)))
     else:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('port_unavailable', port=int(port)))
+        raise YunohostError('port_unavailable', port=int(port))
 
 
 def app_register_url(auth, app, domain, path):
@@ -1228,7 +1245,7 @@ def app_register_url(auth, app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from domain import _get_conflicting_apps, _normalize_domain_path
+    from .domain import _get_conflicting_apps, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1240,8 +1257,7 @@ def app_register_url(auth, app, domain, path):
     if installed:
         settings = _get_app_settings(app)
         if "path" in settings.keys() and "domain" in settings.keys():
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_already_installed_cant_change_url'))
+            raise YunohostError('app_already_installed_cant_change_url')
 
     # Check the url is available
     conflicts = _get_conflicting_apps(auth, domain, path)
@@ -1255,7 +1271,7 @@ def app_register_url(auth, app, domain, path):
                 app_label=app_label,
             ))
 
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
+        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -1293,7 +1309,7 @@ def app_checkurl(auth, url, app=None):
     apps_map = app_map(raw=True)
 
     if domain not in domain_list(auth)['domains']:
-        raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+        raise YunohostError('domain_unknown')
 
     if domain in apps_map:
         # Loop through apps
@@ -1303,14 +1319,10 @@ def app_checkurl(auth, url, app=None):
                 installed = True
                 continue
             if path == p:
-                raise MoulinetteError(errno.EINVAL,
-                                      m18n.n('app_location_already_used',
-                                             app=a["id"], path=path))
+                raise YunohostError('app_location_already_used', app=a["id"], path=path)
             # can't install "/a/b/" if "/a/" exists
             elif path.startswith(p) or p.startswith(path):
-                raise MoulinetteError(errno.EPERM,
-                                      m18n.n('app_location_install_failed',
-                                             other_path=p, other_app=a['id']))
+                raise YunohostError('app_location_install_failed', other_path=p, other_app=a['id'])
 
     if app is not None and not installed:
         app_setting(app, 'domain', value=domain)
@@ -1342,10 +1354,10 @@ def app_initdb(user, password=None, db=None, sql=None):
     mysql_root_pwd = open('/etc/yunohost/mysql').read().rstrip()
     mysql_command = 'mysql -u root -p%s -e "CREATE DATABASE %s ; GRANT ALL PRIVILEGES ON %s.* TO \'%s\'@localhost IDENTIFIED BY \'%s\';"' % (mysql_root_pwd, db, db, user, password)
     if os.system(mysql_command) != 0:
-        raise MoulinetteError(errno.EIO, m18n.n('mysql_db_creation_failed'))
+        raise YunohostError('mysql_db_creation_failed')
     if sql is not None:
         if os.system('mysql -u %s -p%s %s < %s' % (user, password, db, sql)) != 0:
-            raise MoulinetteError(errno.EIO, m18n.n('mysql_db_init_failed'))
+            raise YunohostError('mysql_db_init_failed')
 
     if return_pwd:
         return password
@@ -1451,8 +1463,7 @@ def app_ssowatconf(auth):
 def app_change_label(auth, app, new_label):
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app))
+        raise YunohostError('app_not_installed', app=app)
 
     app_setting(app, "label", value=new_label)
 
@@ -1488,7 +1499,7 @@ def app_action_run(app, action, args=None):
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
-        raise MoulinetteError(errno.EINVAL, "action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())))
+        raise YunohostError("action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())), raw_msg=True)
 
     action_declaration = actions[action]
 
@@ -1526,7 +1537,7 @@ def app_action_run(app, action, args=None):
     )
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        raise MoulinetteError(retcode, "Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode))
+        raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), raw_msg=True)
 
     os.remove(path)
 
@@ -1585,10 +1596,10 @@ def app_config_show_panel(app):
             parsed_values[key] = value
 
     return_code = hook_exec(config_script,
-              args=["show"],
-              env=env,
-              stdout_callback=parse_stdout,
-    )
+                            args=["show"],
+                            env=env,
+                            stdout_callback=parse_stdout,
+                            )
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
@@ -1633,8 +1644,7 @@ def app_config_apply(app, args):
 
     installed = _is_installed(app)
     if not installed:
-        raise MoulinetteError(errno.ENOPKG,
-                              m18n.n('app_not_installed', app=app))
+        raise YunohostError('app_not_installed', app=app)
 
     config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
@@ -1673,9 +1683,9 @@ def app_config_apply(app, args):
             logger.warning("Ignore key '%s' from arguments because it is not in the config", key)
 
     return_code = hook_exec(config_script,
-              args=["apply"],
-              env=env,
-    )
+                            args=["apply"],
+                            env=env,
+                            )
 
     if return_code != 0:
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
@@ -1692,8 +1702,7 @@ def _get_app_settings(app_id):
 
     """
     if not _is_installed(app_id):
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_not_installed', app=app_id))
+        raise YunohostError('app_not_installed', app=app_id)
     try:
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
@@ -1731,7 +1740,7 @@ def _get_app_status(app_id, format_date=False):
     """
     app_setting_path = APPS_SETTING_PATH + app_id
     if not os.path.isdir(app_setting_path):
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+        raise YunohostError('app_unknown')
     status = {}
 
     try:
@@ -1755,8 +1764,7 @@ def _get_app_status(app_id, format_date=False):
             if not v:
                 status[f] = '-'
             else:
-                status[f] = time.strftime(m18n.n('format_datetime_short'),
-                                          time.gmtime(v))
+                status[f] = datetime.utcfromtimestamp(v)
     return status
 
 
@@ -1797,7 +1805,7 @@ def _extract_app_from_file(path, remove=False):
         extract_result = 1
 
     if extract_result != 0:
-        raise MoulinetteError(errno.EINVAL, m18n.n('app_extraction_failed'))
+        raise YunohostError('app_extraction_failed')
 
     try:
         extracted_app_folder = APP_TMP_FOLDER
@@ -1808,10 +1816,9 @@ def _extract_app_from_file(path, remove=False):
             manifest = json.loads(str(json_manifest.read()))
             manifest['lastUpdate'] = int(time.time())
     except IOError:
-        raise MoulinetteError(errno.EIO, m18n.n('app_install_files_invalid'))
+        raise YunohostError('app_install_files_invalid')
     except ValueError as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_manifest_invalid', error=e.strerror))
+        raise YunohostError('app_manifest_invalid', error=e.strerror)
 
     logger.debug(m18n.n('done'))
 
@@ -1879,8 +1886,7 @@ def _fetch_app_from_git(app):
                     'wget', '-qO', app_tmp_archive, tarball_url])
             except subprocess.CalledProcessError:
                 logger.exception('unable to download %s', tarball_url)
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise YunohostError('app_sources_fetch_failed')
             else:
                 manifest, extracted_app_folder = _extract_app_from_file(
                     app_tmp_archive, remove=True)
@@ -1903,11 +1909,9 @@ def _fetch_app_from_git(app):
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_manifest_invalid', error=e.strerror))
+                raise YunohostError('app_manifest_invalid', error=e.strerror)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -1927,11 +1931,10 @@ def _fetch_app_from_git(app):
             app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
             manifest = app_info['manifest']
         else:
-            raise MoulinetteError(errno.EINVAL, m18n.n('app_unknown'))
+            raise YunohostError('app_unknown')
 
         if 'git' not in app_info:
-            raise MoulinetteError(errno.EINVAL,
-                                  m18n.n('app_unsupported_remote_type'))
+            raise YunohostError('app_unsupported_remote_type')
         url = app_info['git']['url']
 
         if 'github.com' in url:
@@ -1943,8 +1946,7 @@ def _fetch_app_from_git(app):
                     'wget', '-qO', app_tmp_archive, tarball_url])
             except subprocess.CalledProcessError:
                 logger.exception('unable to download %s', tarball_url)
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise YunohostError('app_sources_fetch_failed')
             else:
                 manifest, extracted_app_folder = _extract_app_from_file(
                     app_tmp_archive, remove=True)
@@ -1960,11 +1962,9 @@ def _fetch_app_from_git(app):
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
             except subprocess.CalledProcessError:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_sources_fetch_failed'))
+                raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
-                raise MoulinetteError(errno.EIO,
-                                      m18n.n('app_manifest_invalid', error=e.strerror))
+                raise YunohostError('app_manifest_invalid', error=e.strerror)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -2083,7 +2083,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
         yunohost_req = requirements.get('yunohost', None)
         if (not yunohost_req or
                 not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
-            raise MoulinetteError(errno.EINVAL, '{0}{1}'.format(
+            raise YunohostError('{0}{1}'.format(
                 m18n.g('colon', m18n.n('app_incompatible'), app=app_instance_name),
                 m18n.n('app_package_need_update', app=app_instance_name)))
     elif not requirements:
@@ -2096,18 +2096,15 @@ def _check_manifest_requirements(manifest, app_instance_name):
         versions = packages.get_installed_version(
             *requirements.keys(), strict=True, as_dict=True)
     except packages.PackageException as e:
-        raise MoulinetteError(errno.EINVAL,
-                              m18n.n('app_requirements_failed',
-                                     error=str(e), app=app_instance_name))
+        raise YunohostError('app_requirements_failed', error=str(e), app=app_instance_name)
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():
         version = versions[pkgname]
         if version not in packages.SpecifierSet(spec):
-            raise MoulinetteError(
-                errno.EINVAL, m18n.n('app_requirements_unmeet',
-                                     pkgname=pkgname, version=version,
-                                     spec=spec, app=app_instance_name))
+            raise YunohostError('app_requirements_unmeet',
+                                pkgname=pkgname, version=version,
+                                spec=spec, app=app_instance_name)
 
 
 def _parse_args_from_manifest(manifest, action, args={}, auth=None):
@@ -2215,7 +2212,6 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                 elif arg_type == 'password':
                     msignals.display(m18n.n('good_practices_about_user_password'))
 
-
                 try:
                     input_string = msignals.prompt(ask_string, is_password)
                 except NotImplementedError:
@@ -2231,36 +2227,27 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
         # Validate argument value
         if (arg_value is None or arg_value == '') \
                 and not arg.get('optional', False):
-            raise MoulinetteError(errno.EINVAL,
-                m18n.n('app_argument_required', name=arg_name))
+            raise YunohostError('app_argument_required', name=arg_name)
         elif arg_value is None:
             args_dict[arg_name] = ''
             continue
 
         # Validate argument choice
         if arg_choices and arg_value not in arg_choices:
-            raise MoulinetteError(errno.EINVAL,
-                m18n.n('app_argument_choice_invalid',
-                    name=arg_name, choices=', '.join(arg_choices)))
+            raise YunohostError('app_argument_choice_invalid', name=arg_name, choices=', '.join(arg_choices))
 
         # Validate argument type
         if arg_type == 'domain':
             if arg_value not in domain_list(auth)['domains']:
-                raise MoulinetteError(errno.EINVAL,
-                    m18n.n('app_argument_invalid',
-                        name=arg_name, error=m18n.n('domain_unknown')))
+                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('domain_unknown'))
         elif arg_type == 'user':
             try:
                 user_info(auth, arg_value)
-            except MoulinetteError as e:
-                raise MoulinetteError(errno.EINVAL,
-                    m18n.n('app_argument_invalid',
-                        name=arg_name, error=e.strerror))
+            except YunohostError as e:
+                raise YunohostError('app_argument_invalid', name=arg_name, error=e.strerror)
         elif arg_type == 'app':
             if not _is_installed(arg_value):
-                raise MoulinetteError(errno.EINVAL,
-                    m18n.n('app_argument_invalid',
-                        name=arg_name, error=m18n.n('app_unknown')))
+                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))
         elif arg_type == 'boolean':
             if isinstance(arg_value, bool):
                 arg_value = 1 if arg_value else 0
@@ -2270,9 +2257,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                 elif str(arg_value).lower() in ["0", "no", "n"]:
                     arg_value = 0
                 else:
-                    raise MoulinetteError(errno.EINVAL,
-                        m18n.n('app_argument_choice_invalid',
-                            name=arg_name, choices='yes, no, y, n, 1, 0'))
+                    raise YunohostError('app_argument_choice_invalid', name=arg_name, choices='yes, no, y, n, 1, 0')
         elif arg_type == 'password':
             from yunohost.utils.password import assert_password_is_strong_enough
             assert_password_is_strong_enough('user', arg_value)
@@ -2306,7 +2291,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                     app_label=app_label,
                 ))
 
-            raise MoulinetteError(errno.EINVAL, m18n.n('app_location_unavailable', apps="\n".join(apps)))
+            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
@@ -2426,7 +2411,7 @@ def _install_appslist_fetch_cron():
     with open(cron_job_file, "w") as f:
         f.write('\n'.join(cron_job))
 
-    _set_permissions(cron_job_file, "root", "root", 0755)
+    _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
 # FIXME - Duplicate from certificate.py, should be moved into a common helper
@@ -2456,8 +2441,7 @@ def _read_appslist_list():
     try:
         appslists = json.loads(appslists_json)
     except ValueError:
-        raise MoulinetteError(errno.EBADR,
-                              m18n.n('appslist_corrupted_json', filename=APPSLISTS_JSON))
+        raise YunohostError('appslist_corrupted_json', filename=APPSLISTS_JSON)
 
     return appslists
 
@@ -2472,9 +2456,8 @@ def _write_appslist_list(appslist_lists):
         with open(APPSLISTS_JSON, "w") as f:
             json.dump(appslist_lists, f)
     except Exception as e:
-        raise MoulinetteError(errno.EIO,
-                              "Error while writing list of appslist %s: %s" %
-                              (APPSLISTS_JSON, str(e)))
+        raise YunohostError("Error while writing list of appslist %s: %s" %
+                            (APPSLISTS_JSON, str(e)), raw_msg=True)
 
 
 def _register_new_appslist(url, name):
@@ -2487,15 +2470,13 @@ def _register_new_appslist(url, name):
 
     # Check if name conflicts with an existing list
     if name in appslist_list:
-        raise MoulinetteError(errno.EEXIST,
-                              m18n.n('appslist_name_already_tracked', name=name))
+        raise YunohostError('appslist_name_already_tracked', name=name)
 
     # Check if url conflicts with an existing list
     known_appslist_urls = [appslist["url"] for _, appslist in appslist_list.items()]
 
     if url in known_appslist_urls:
-        raise MoulinetteError(errno.EEXIST,
-                              m18n.n('appslist_url_already_tracked', url=url))
+        raise YunohostError('appslist_url_already_tracked', url=url)
 
     logger.debug("Registering new appslist %s at %s" % (name, url))
 
@@ -2586,7 +2567,7 @@ def _patch_php5(app_folder):
             continue
 
         c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
-                   "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
-                   "-e 's@php5@php7.0@g' " \
-                   "%s" % filename
+            "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
+            "-e 's@php5@php7.0@g' " \
+            "%s" % filename
         os.system(c)
