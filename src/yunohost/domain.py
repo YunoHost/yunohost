@@ -25,7 +25,6 @@
 """
 import os
 import re
-import json
 import yaml
 
 from moulinette import m18n, msettings
