@@ -150,7 +150,7 @@ def tools_adminpw(auth, new_password, check_strength=True):
             with open('/etc/shadow', 'w') as after_file:
                 after_file.write(before.replace("root:" + hash_root,
                                                 "root:" + new_hash.replace('{CRYPT}', '')))
-        except IOError as e:
+        except IOError:
             logger.warning(m18n.n('root_password_desynchronized'))
             return
 
@@ -206,7 +206,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
 
     # Regen configurations
     try:
-        with open('/etc/yunohost/installed', 'r') as f:
+        with open('/etc/yunohost/installed', 'r'):
             service_regen_conf()
     except IOError:
         pass
