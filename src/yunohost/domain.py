@@ -111,7 +111,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
             app_ssowatconf(auth)
 
     except Exception:
