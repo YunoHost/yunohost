@@ -13,7 +13,8 @@ DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 6787
 
 # Level for which loggers will log
-LOGGERS_LEVEL = 'INFO'
+LOGGERS_LEVEL = 'DEBUG'
+API_LOGGER_LEVEL = 'INFO'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
@@ -97,8 +98,10 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
 
     # Define loggers level
     level = LOGGERS_LEVEL
+    api_level = API_LOGGER_LEVEL
     if debug:
         level = 'DEBUG'
+        api_level = 'DEBUG'
 
     # Custom logging configuration
     logging = {
@@ -119,6 +122,7 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
         },
         'handlers': {
             'api': {
+                'level': api_level,
                 'class': 'moulinette.interfaces.api.APIQueueHandler',
             },
             'file': {
