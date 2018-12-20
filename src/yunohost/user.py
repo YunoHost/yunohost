@@ -251,6 +251,7 @@ def user_delete(operation_logger, auth, username, purge=False):
         if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
             if purge:
                 subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
+                subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
     else:
         raise YunohostError('user_deletion_failed')
 
