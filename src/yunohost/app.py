@@ -1901,10 +1901,10 @@ def _fetch_app_from_git(app):
                 # we will be able to use it. Without this option all the history
                 # of the submodules repo is downloaded.
                 subprocess.check_call([
-                    'git', 'clone', '--depth=1', '--recursive', url,
+                    'git', 'clone', '--recursive', url,
                     extracted_app_folder])
                 subprocess.check_call([
-                    'git', 'reset', '--hard', branch
+                    'git', 'reset', '--hard', 'remotes/origin/'+ branch
                 ], cwd=extracted_app_folder)
                 with open(extracted_app_folder + '/manifest.json') as f:
                     manifest = json.loads(str(f.read()))
