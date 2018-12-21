@@ -53,13 +53,18 @@ ynh_use_nodejs () {
 #
 # ynh_install_nodejs will install the version of node provided as argument by using n.
 #
-# usage: ynh_install_nodejs [nodejs_version]
-# | arg: nodejs_version - Version of node to install.
+# usage: ynh_install_nodejs --nodejs_version=nodejs_version
+# | arg: -n, --nodejs_version - Version of node to install.
 #        If possible, prefer to use major version number (e.g. 8 instead of 8.10.0).
 #        The crontab will handle the update of minor versions when needed.
 ynh_install_nodejs () {
 	# Use n, https://github.com/tj/n to manage the nodejs versions
-	nodejs_version="$1"
+
+	# Declare an array to define the options of this helper.
+	declare -Ar args_array=( [n]=nodejs_version= )
+	local nodejs_version
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
 
 	# Create $n_install_dir
 	mkdir -p "$n_install_dir"
