@@ -1,5 +1,6 @@
 import re
 
+from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
