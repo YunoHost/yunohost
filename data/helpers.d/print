@@ -1,15 +1,28 @@
 # Print a message to stderr and exit
-# usage: ynh_die MSG [RETCODE]
+# usage: ynh_die --message=MSG [--ret_code=RETCODE]
 ynh_die() {
-  echo "$1" 1>&2
-  exit "${2:-1}"
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [m]=message= [c]=ret_code= )
+  local message
+  local ret_code
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  echo "$message" 1>&2
+  exit "${ret_code:-1}"
 }
 
 # Display a message in the 'INFO' logging category
 #
-# usage: ynh_info "Some message"
+# usage: ynh_info --message="Some message"
 ynh_print_info() {
-    echo "$1" >> "$YNH_STDINFO"
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=( [m]=message= )
+    local message
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    echo "$message" >> "$YNH_STDINFO"
 }
 
 # Ignore the yunohost-cli log to prevent errors with conditional commands
@@ -39,18 +52,30 @@ ynh_print_log () {
 
 # Print a warning on stderr
 #
-# usage: ynh_print_warn "Text to print"
-# | arg: text - The text to print
+# usage: ynh_print_warn --message="Text to print"
+# | arg: -m, --message - The text to print
 ynh_print_warn () {
-  ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${1}" >&2
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [m]=message= )
+  local message
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${message}" >&2
 }
 
 # Print an error on stderr
 #
-# usage: ynh_print_err "Text to print"
-# | arg: text - The text to print
+# usage: ynh_print_err --message="Text to print"
+# | arg: -m, --message - The text to print
 ynh_print_err () {
-  ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${1}" >&2
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [m]=message= )
+  local message
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${message}" >&2
 }
 
 # Execute a command and print the result as an error
