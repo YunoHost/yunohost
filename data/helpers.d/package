@@ -1,24 +1,36 @@
 # Check either a package is installed or not
 #
-# example: ynh_package_is_installed 'yunohost' && echo "ok"
+# example: ynh_package_is_installed --package=yunohost && echo "ok"
 #
-# usage: ynh_package_is_installed name
-# | arg: name - the package name to check
+# usage: ynh_package_is_installed --package=name
+# | arg: -p, --package - the package name to check
 ynh_package_is_installed() {
-    dpkg-query -W -f '${Status}' "$1" 2>/dev/null \
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=( [p]=package= )
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    dpkg-query -W -f '${Status}' "$package" 2>/dev/null \
         | grep -c "ok installed" &>/dev/null
 }
 
 # Get the version of an installed package
 #
-# example: version=$(ynh_package_version 'yunohost')
+# example: version=$(ynh_package_version --package=yunohost)
 #
-# usage: ynh_package_version name
-# | arg: name - the package name to get version
+# usage: ynh_package_version --package=name
+# | arg: -p, --package - the package name to get version
 # | ret: the version or an empty string
 ynh_package_version() {
-    if ynh_package_is_installed "$1"; then
-        dpkg-query -W -f '${Version}' "$1" 2>/dev/null
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=( [p]=package= )
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if ynh_package_is_installed "$package"; then
+        dpkg-query -W -f '${Version}' "$package" 2>/dev/null
     else
         echo ''
     fi
