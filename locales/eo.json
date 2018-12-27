@@ -1,1 +1,20 @@
-{}
+{
+    "admin_password_change_failed": "Malebla ŝanĝi pasvorton",
+    "admin_password_changed": "Pasvorto de la estro estas ŝanĝita",
+    "app_already_installed": "{app:s} estas jam instalita",
+    "app_already_up_to_date": "{app:s} estas ĝisdata",
+    "app_argument_required": "Parametro {name:s} estas bezonata",
+    "app_change_url_identical_domains": "Malnovaj kaj novaj domajno/URL estas la sama ('{domain:s}{path:s}'), nenio fareblas.",
+    "app_change_url_success": "URL de appo {app:s} ŝanĝita al {domain:s}{path:s}",
+    "app_extraction_failed": "Malebla malkompaktigi instaldosierojn",
+    "app_id_invalid": "Nevalida apo id",
+    "app_incompatible": "Apo {app} ne estas kongrua kun via YunoHost versio",
+    "app_install_files_invalid": "Nevalidaj instaldosieroj",
+    "app_location_already_used": "Apo {app} jam estas instalita al tiu loco ({path})",
+    "user_updated": "Uzanto estas ĝisdatita",
+    "users_available": "Uzantoj disponeblaj :",
+    "yunohost_already_installed": "YunoHost estas jam instalita",
+    "yunohost_ca_creation_failed": "Ne eblas krei atestan aŭtoritaton",
+    "yunohost_ca_creation_success": "Loka atesta aŭtoritato estas kreita.",
+    "yunohost_installing": "Instalata YunoHost..."
+}
