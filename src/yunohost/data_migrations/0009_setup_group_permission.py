@@ -107,7 +107,3 @@ class MyMigration(Migration):
 
         permission_sync_to_user(auth)
         logger.info(m18n.n("migration_0009_done"))
-
-    @property
-    def disclaimer(self):
-        return m18n.n("migration_0009_disclaimer")

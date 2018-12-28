@@ -334,7 +334,6 @@
     "migration_0008_warning": "If you understand those warnings and agree to let YunoHost override your current configuration, run the migration. Otherwise, you can also skip the migration - though it is not recommended.",
     "migration_0008_no_warning": "No major risk has been indentified about overriding your SSH configuration - but we can't be absolutely sure ;)! If you agree to let YunoHost override your current configuration, run the migration. Otherwise, you can also skip the migration - though it is not recommended.",
     "migration_0009_create_group": "Create group for each user.",
-    "migration_0009_disclaimer": "Your LDAP schema will be updated and your LDAP database will be updated",
     "migration_0009_done": "Migration sucess. You are now able to use groups of user.",
     "migration_0009_migrate_permission": "Migrate permission from apps settings to LDAP",
     "migration_0009_update_LDAP_database": "Update LDAP database for groups and permission support",
