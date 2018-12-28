@@ -51,20 +51,27 @@ class BackupRepository(object):
     repositories = {}
 
     @classmethod
+    def create(cls, location, name, *args, **kwargs):
+        cls.load()
+
+        return BackupRepository(True, location, name, *args, **kwargs)
+
+    @classmethod
     def get(cls, name):
         cls.load()
 
         if name not in cls.repositories:
             raise YunohostError('backup_repository_doesnt_exists', name=name)
 
-        return BackupRepository(**cls.repositories[name])
+        return BackupRepository(False, **cls.repositories[name])
 
     @classmethod
     def load(cls):
         """
         Read repositories configuration from file
         """
-        cls.repositories = {}
+        if cls.repositories != {}:
+            return cls.repositories
 
         if os.path.exists(REPOSITORIES_PATH):
             try:
@@ -83,15 +90,15 @@ class BackupRepository(object):
         except Exception as e:
             raise YunohostError('backup_cant_save_repositories_file', reason=e)
 
-    def __init__(self, location, name=None, description=None, method=None,
+    def __init__(self, created=True, location, name=None, description=None, method=None,
                  encryption=None, quota=None):
 
         self.location = location
         self._split_location()
 
         self.name = location if name is None else name
-        if self.name in BackupMethod.repositories:
-            raise YunohostError('backup_repository_already_exists', repositories=name)
+        if created and self.name in BackupMethod.repositories:
+            raise YunohostError('backup_repository_already_exists', repositories=self.name)
 
         self.description = description
         self.encryption = encryption
@@ -99,17 +106,11 @@ class BackupRepository(object):
 
         if method is None:
             method = 'tar' if self.domain is None else 'borg'
-        self.method = BackupMethod.create(method, self)
-        
-        # Check for forbidden folders
-        if self.path.startswith(ARCHIVES_PATH) or \
-            re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
-                     self.path):
-            raise YunohostError('backup_output_directory_forbidden')
+        if created:
+            self.method = BackupMethod.create(method, self)
+        else:
+            self.method = BackupMethod.get(method, self)
 
-        # Check that output directory is empty
-        if os.path.isdir(location) and os.listdir(location):
-            raise YunohostError('backup_output_directory_not_empty')
 
     def compute_space_used(self):
         if self.used is None:
