@@ -71,7 +71,6 @@ class BackupRestoreTargetsManager(object):
     """
 
     def __init__(self):
-
         self.targets = {}
         self.results = {
             "system": {},
@@ -1969,8 +1968,7 @@ class CustomBackupMethod(BackupMethod):
 # "Front-end"                                                               #
 #
 
-def backup_create(name=None, description=None, methods=[],
-                  output_directory=None, no_compress=False,
+def backup_create(name=None, description=None, repos=[],
                   system=[], apps=[]):
     """
     Create a backup local archive
@@ -1995,30 +1993,6 @@ def backup_create(name=None, description=None, methods=[],
     if name and name in backup_list()['archives']:
         raise YunohostError('backup_archive_name_exists')
 
-    # Validate output_directory option
-    if output_directory:
-        output_directory = os.path.abspath(output_directory)
-
-        # Check for forbidden folders
-        if output_directory.startswith(ARCHIVES_PATH) or \
-            re.match(r'^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$',
-                     output_directory):
-            raise YunohostError('backup_output_directory_forbidden')
-
-        # Check that output directory is empty
-        if os.path.isdir(output_directory) and no_compress and \
-                os.listdir(output_directory):
-            raise YunohostError('backup_output_directory_not_empty')
-    elif no_compress:
-        raise YunohostError('backup_output_directory_required')
-
-    # Define methods (retro-compat)
-    if not methods:
-        if no_compress:
-            methods = ['copy']
-        else:
-            methods = ['tar']  # In future, borg will be the default actions
-
     # If no --system or --apps given, backup everything
     if system is None and apps is None:
         system = []
@@ -2032,20 +2006,15 @@ def backup_create(name=None, description=None, methods=[],
     _create_archive_dir()
 
     # Prepare files to backup
-    if no_compress:
-        backup_manager = BackupManager(name, description,
-                                       work_dir=output_directory)
-    else:
-        backup_manager = BackupManager(name, description)
+    backup_manager = BackupManager(name, description)
 
     # Add backup methods
-    if output_directory:
-        methods = BackupMethod.create(methods, output_directory)
-    else:
-        methods = BackupMethod.create(methods)
+    if repos == []:
+        repos = ['/home/yunohost.backup/archives']
 
-    for method in methods:
-        backup_manager.add(method)
+    methods = []
+    for repo in repos:
+        backup_manager.add(BackupMethod.create(methods, repo))
 
     # Add backup targets (system and apps)
     backup_manager.set_system_targets(system)
