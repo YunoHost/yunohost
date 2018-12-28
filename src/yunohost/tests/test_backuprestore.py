@@ -13,6 +13,7 @@ from yunohost.app import _is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
+from yunohost.user import user_permission_list
 
 # Get main domain
 maindomain = ""
@@ -535,12 +536,18 @@ def _test_backup_and_restore_app(app):
     # Uninstall the app
     app_remove(auth, app)
     assert not app_is_installed(app)
+    assert app not in user_permission_list(auth)['permissions']
 
     # Restore the app
     backup_restore(auth, system=None, name=archives[0],
                    apps=[app])
 
     assert app_is_installed(app)
+
+    # Check permission
+    per_list = user_permission_list(auth)['permissions']
+    assert app in per_list
+    assert "main" in per_list[app]
 
 #
 # Some edge cases                                                            #
