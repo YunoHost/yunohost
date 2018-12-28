@@ -28,6 +28,7 @@ do_pre_regen() {
 
     export ssh_keys
     export ipv6_enabled
+    export sftp_secure
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
 }
 

@@ -408,6 +408,21 @@ user:
                         key:
                             help: The key to be removed
 
+                ### user_ssh_enable_permission()
+                enable-permission:
+                    action_help: Enable sftp permission
+                    api: POST /users/ssh/sftp/enable
+                    configuration:
+                        authenticate: all
+                        authenticator: as-root
+
+                ### user_ssh_disable_permission()
+                disable-permission:
+                    action_help: Disable sftp permission
+                    api: POST /users/ssh/sftp/disable
+                    configuration:
+                        authenticate: all
+                        authenticator: as-root
 
 #############################
 #          Domain           #

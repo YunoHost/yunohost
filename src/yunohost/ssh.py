@@ -6,10 +6,13 @@ import pwd
 import subprocess
 
 from yunohost.utils.error import YunohostError
+from moulinette import m18n
+from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
+logger = getActionLogger('yunohost.user')
 
 def user_ssh_allow(username):
     """
@@ -146,6 +149,31 @@ def user_ssh_remove_key(username, key):
     authorized_keys_content = authorized_keys_content.replace(key, "")
 
     write_to_file(authorized_keys_file, authorized_keys_content)
+
+
+def user_ssh_enable_permission(auth):
+    """
+    Enable the permission for sftp. When disabled all user are allowed to access by sftp.
+
+    """
+    from permission import permission_add, user_permission_list
+
+    if user_permission_list(auth, app="sftp", permission="main")['permissions']:
+        logger.warning(m18n.n('sftp_permission_already_enabled'))
+    else:
+        permission_add(auth, "sftp", "main")
+
+def user_ssh_disable_permission(auth):
+    """
+    Diable the permission for sftp. When disabled all user are allowed to access by sftp.
+
+    """
+    from permission import permission_remove, user_permission_list
+
+    if user_permission_list(auth, app="sftp", permission="main")['permissions']:
+        permission_remove(auth, "sftp", "main", force=True)
+    else:
+        logger.warning(m18n.n('sftp_permission_already_disabled'))
 
 #
 # Helpers
