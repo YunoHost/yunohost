@@ -5,7 +5,7 @@ import requests_mock
 import glob
 import time
 
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 
 from yunohost.app import app_fetchlist, app_removelist, app_listlists, _using_legacy_appslist_system, _migrate_appslist_system, _register_new_appslist
 
@@ -17,7 +17,7 @@ APPSLISTS_JSON = '/etc/yunohost/appslists.json'
 def setup_function(function):
 
     # Clear all appslist
-    files = glob.glob(REPO_PATH+"/*")
+    files = glob.glob(REPO_PATH + "/*")
     for f in files:
         os.remove(f)
 
@@ -42,9 +42,9 @@ def cron_job_is_there():
     return r == 0
 
 
-###############################################################################
-#   Test listing of appslists and registering of appslists                      #
-###############################################################################
+#
+# Test listing of appslists and registering of appslists                      #
+#
 
 
 def test_appslist_list_empty():
@@ -79,7 +79,7 @@ def test_appslist_list_register_conflict_name():
     """
 
     _register_new_appslist("https://lol.com/appslist.json", "dummy")
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         _register_new_appslist("https://lol.com/appslist2.json", "dummy")
 
     appslist_dict = app_listlists()
@@ -94,7 +94,7 @@ def test_appslist_list_register_conflict_url():
     """
 
     _register_new_appslist("https://lol.com/appslist.json", "dummy")
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         _register_new_appslist("https://lol.com/appslist.json", "plopette")
 
     appslist_dict = app_listlists()
@@ -103,9 +103,9 @@ def test_appslist_list_register_conflict_url():
     assert "plopette" not in appslist_dict.keys()
 
 
-###############################################################################
-#   Test fetching of appslists                                                 #
-###############################################################################
+#
+# Test fetching of appslists                                                 #
+#
 
 
 def test_appslist_fetch():
@@ -161,7 +161,7 @@ def test_appslist_fetch_unknownlist():
 
     assert app_listlists() == {}
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         app_fetchlist(name="swag")
 
 
@@ -170,7 +170,7 @@ def test_appslist_fetch_url_but_no_name():
     Do a fetchlist with url given, but no name given
     """
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         app_fetchlist(url=URL_OFFICIAL_APP_LIST)
 
 
@@ -244,9 +244,9 @@ def test_appslist_fetch_timeout():
         app_fetchlist()
 
 
-###############################################################################
-#   Test remove of appslist                                                    #
-###############################################################################
+#
+# Test remove of appslist                                                    #
+#
 
 
 def test_appslist_remove():
@@ -270,13 +270,13 @@ def test_appslist_remove_unknown():
     Attempt to remove an unknown list
     """
 
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         app_removelist("dummy")
 
 
-###############################################################################
-#   Test migration from legacy appslist system                                 #
-###############################################################################
+#
+# Test migration from legacy appslist system                                 #
+#
 
 
 def add_legacy_cron(name, url):

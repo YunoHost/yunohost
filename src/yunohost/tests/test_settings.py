@@ -2,7 +2,7 @@ import os
 import json
 import pytest
 
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 
 from yunohost.settings import settings_get, settings_list, _get_settings, \
     settings_set, settings_reset, settings_reset_all, \
@@ -18,7 +18,8 @@ def teardown_function(function):
 
 
 def test_settings_get_bool():
-    assert settings_get("example.bool") == True
+    assert settings_get("example.bool")
+
 
 def test_settings_get_full_bool():
     assert settings_get("example.bool", True) == {"type": "bool", "value": True, "default": True, "description": "Example boolean option"}
@@ -27,12 +28,14 @@ def test_settings_get_full_bool():
 def test_settings_get_int():
     assert settings_get("example.int") == 42
 
+
 def test_settings_get_full_int():
     assert settings_get("example.int", True) == {"type": "int", "value": 42, "default": 42, "description": "Example int option"}
 
 
 def test_settings_get_string():
     assert settings_get("example.string") == "yolo swag"
+
 
 def test_settings_get_full_string():
     assert settings_get("example.string", True) == {"type": "string", "value": "yolo swag", "default": "yolo swag", "description": "Example string option"}
@@ -41,12 +44,13 @@ def test_settings_get_full_string():
 def test_settings_get_enum():
     assert settings_get("example.enum") == "a"
 
+
 def test_settings_get_full_enum():
     assert settings_get("example.enum", True) == {"type": "enum", "value": "a", "default": "a", "description": "Example enum option", "choices": ["a", "b", "c"]}
 
 
 def test_settings_get_doesnt_exists():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_get("doesnt.exists")
 
 
@@ -70,39 +74,39 @@ def test_settings_set_enum():
 
 
 def test_settings_set_doesexit():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("doesnt.exist", True)
 
 
 def test_settings_set_bad_type_bool():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.bool", 42)
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.bool", "pouet")
 
 
 def test_settings_set_bad_type_int():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.int", True)
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.int", "pouet")
 
 
 def test_settings_set_bad_type_string():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.string", True)
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.string", 42)
 
 
 def test_settings_set_bad_value_enum():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.enum", True)
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.enum", "e")
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.enum", 42)
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_set("example.enum", "pouet")
 
 
@@ -119,7 +123,7 @@ def test_reset():
 
 
 def test_settings_reset_doesexit():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         settings_reset("doesnt.exist")
 
 
@@ -150,7 +154,6 @@ def test_reset_all_backup():
         del settings_after_modification[i]["description"]
 
     assert settings_after_modification == json.load(open(old_settings_backup_path, "r"))
-
 
 
 def test_unknown_keys():

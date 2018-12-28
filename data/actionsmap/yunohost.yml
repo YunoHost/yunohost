@@ -105,7 +105,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.']{0,3})+$
+                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
@@ -125,6 +125,7 @@ user:
                         pattern: &pattern_password
                             - !!str ^.{3,}$
                             - "pattern_password"
+                        comment: good_practices_about_user_password
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -147,6 +148,7 @@ user:
                     extra:
                         pattern: *pattern_username
                 --purge:
+                    help: Purge user's home and mail directories
                     action: store_true
 
         ### user_update()
@@ -556,6 +558,10 @@ app:
                     full: --no-remove-on-failure
                     help: Debug option to avoid removing the app on a failed installation
                     action: store_true
+                -f:
+                    full: --force
+                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
+                    action: store_true
 
         ### app_remove() TODO: Write help
         remove:
@@ -780,18 +786,18 @@ app:
               ### app_action_list()
               list:
                   action_help: List app actions
-                  api: GET /apps/<app_id>/actions
+                  api: GET /apps/<app>/actions
                   arguments:
-                    app_id:
-                        help: app id
+                    app:
+                        help: App name
 
               ### app_action_run()
               run:
                   action_help: Run app action
-                  api: PUT /apps/<app_id>/actions/<action>
+                  api: PUT /apps/<app>/actions/<action>
                   arguments:
-                    app_id:
-                        help: app id
+                    app:
+                        help: App name
                     action:
                         help: action id
                     -a:
@@ -805,18 +811,18 @@ app:
               ### app_config_show_panel()
               show-panel:
                   action_help: show config panel for the application
-                  api: GET /apps/<app_id>/config-panel
+                  api: GET /apps/<app>/config-panel
                   arguments:
-                      app_id:
-                          help: App ID
+                      app:
+                          help: App name
 
               ### app_config_apply()
               apply:
                   action_help: apply the new configuration
-                  api: POST /apps/<app_id>/config
+                  api: POST /apps/<app>/config
                   arguments:
-                      app_id:
-                          help: App ID
+                      app:
+                          help: App name
                       -a:
                           full: --args
                           help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
@@ -1227,6 +1233,13 @@ service:
                     full: --runlevel
                     help: Runlevel priority of the service
                     type: int
+                -n:
+                    full: --need_lock
+                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
+                    action: store_true
+                -d:
+                    full: --description
+                    help: Description of the service
 
         ### service_remove()
         remove:
@@ -1529,7 +1542,7 @@ tools:
 
         ### tools_adminpw()
         adminpw:
-            action_help: Change admin password
+            action_help: Change password of admin and root users
             api: PUT /adminpw
             configuration:
                 authenticate: all
@@ -1540,6 +1553,7 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
 
         ### tools_maindomain()
         maindomain:
@@ -1577,8 +1591,12 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
+                    action: store_true
+                --force-password:
+                    help: Use this if you really want to set a weak password
                     action: store_true
 
         ### tools_update()
