@@ -1,4 +1,7 @@
 import yaml
+import time
+import os
+import shutil
 
 from moulinette import m18n
 from moulinette.core import init_authenticator
@@ -23,8 +26,8 @@ def migrate_LDAP_db(auth):
     logger.info(m18n.n("migration_0009_update_LDAP_database"))
     try:
         auth.remove('cn=sftpusers,ou=groups')
-    except Exception as e:
-        logger.warn("Error when trying remove sftpusers group")
+    except:
+        logger.warn(m18n.n("error_when_removing_sftpuser_group"))
 
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
         ldap_map = yaml.load(f)
@@ -39,16 +42,18 @@ def migrate_LDAP_db(auth):
         for rdn, attr_dict in ldap_map['depends_children'].items():
             auth.add(rdn, attr_dict)
     except Exception as e:
-        raise YunohostError("LDAP_update_failled")
+        raise YunohostError("migration_0009_LDAP_update_failled", error=e)
 
     logger.info(m18n.n("migration_0009_create_group"))
 
-    #Create group for each yunohost user
+    #Create a group for each yunohost user
     user_list = auth.search('ou=users,dc=yunohost,dc=org',
                             '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
                             ['uid', 'uidNumber'])
     for user_info in user_list:
         username = user_info['uid'][0]
+        auth.update('uid=%s,ou=users' % username,
+                    {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
         user_group_add(auth, username, gid=user_info['uidNumber'][0], sync_perm=False)
         user_group_update(auth, groupname=username, add_user=username, force=True, sync_perm=False)
         user_group_update(auth, 'all_users', add_user=username, force=True, sync_perm=False)
@@ -88,6 +93,19 @@ class MyMigration(Migration):
     required = True
 
     def migrate(self):
+        # Backup LDAP and the apps settings before to do the migration
+        logger.info(m18n.n("migration_0009_backup_before_migration"))
+        try:
+            backup_folder = "/home/yunohost.backup/premigration/" + time.strftime('%Y%m%d-%H%M%S', time.gmtime())
+            os.makedirs(backup_folder, 0o750)
+            os.system("systemctl stop slapd")
+            os.system("cp -r --preserve /etc/ldap %s/ldap_config" % backup_folder)
+            os.system("cp -r --preserve /var/lib/ldap %s/ldap_db" % backup_folder)
+            os.system("cp -r --preserve /etc/yunohost/apps %s/apps_settings" % backup_folder)
+            os.system("systemctl start slapd")
+        except Exception as e:
+            raise YunohostError("migration_0009_can_not_backup_before_migration", error=e)
+
         # Update LDAP schema restart slapd
         logger.info(m18n.n("migration_0009_update_LDAP_schema"))
         service_regen_conf(names=['slapd'], force=True)
@@ -99,11 +117,26 @@ class MyMigration(Migration):
                            'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
         auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
-        #Update LDAP database
-        migrate_LDAP_db(auth)
+        try:
+            #Update LDAP database
+            migrate_LDAP_db(auth)
 
-        # Migrate permission
-        migrate_app_permission(auth)
+            # Migrate permission
+            migrate_app_permission(auth)
 
-        permission_sync_to_user(auth)
+            permission_sync_to_user(auth)
+        except Exception as e:
+            logger.warn(m18n.n("migration_0009_migration_failled_try_rollback", error=e))
+            os.system("systemctl stop slapd")
+            os.system("rm -r /etc/ldap/slapd.d") # To be sure that we don't keep some part of the old config
+            os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
+            os.system("cp -r --preserve %s/ldap_db/. /var/lib/ldap/" % backup_folder)
+            os.system("cp -r --preserve %s/apps_settings/. /etc/yunohost/apps/" % backup_folder)
+            os.system("systemctl start slapd")
+            os.system("rm -r " + backup_folder)
+            logger.info(m18n.n("migration_0009_rollback_success"))
+            raise YunohostError("migration_0009_failled")
+
+        os.system("rm -r " + backup_folder)
+
         logger.info(m18n.n("migration_0009_done"))
