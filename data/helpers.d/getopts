@@ -98,10 +98,10 @@ ynh_handle_getopts_args () {
 
 				if [ "$parameter" = "?" ]
 				then
-					ynh_die "Invalid argument: -${OPTARG:-}"
+					ynh_die --message="Invalid argument: -${OPTARG:-}"
 				elif [ "$parameter" = ":" ]
 				then
-					ynh_die "-$OPTARG parameter requires an argument."
+					ynh_die --message="-$OPTARG parameter requires an argument."
 				else
 					local shift_value=1
 					# Use the long option, corresponding to the short option read by getopts, as a variable
