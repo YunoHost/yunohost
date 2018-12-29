@@ -121,7 +121,7 @@ ynh_package_install_from_equivs () {
      && equivs-build ./control 1>/dev/null \
      && sudo dpkg --force-depends \
           -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f) || ynh_die "Unable to install dependencies"
+     && ynh_package_install -f) || ynh_die --message="Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
@@ -162,9 +162,9 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
     ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
-        || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        || ynh_die --message="Unable to install dependencies"	# Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
-    ynh_app_setting_set $app apt_dependencies $dependencies
+    ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
 }
 
 # Remove fake package and its dependencies
