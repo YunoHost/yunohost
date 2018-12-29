@@ -3,7 +3,7 @@ import os
 from shutil import copy2
 
 from moulinette import m18n, msettings
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_file
@@ -24,13 +24,14 @@ YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
 class MyMigration(Migration):
+
     "Upgrade the system to Debian Stretch and Yunohost 3.0"
 
     mode = "manual"
 
     def backward(self):
 
-        raise MoulinetteError(m18n.n("migration_0003_backward_impossible"))
+        raise YunohostError("migration_0003_backward_impossible")
 
     def migrate(self):
 
@@ -57,7 +58,7 @@ class MyMigration(Migration):
         self.apt_dist_upgrade(conf_flags=["old", "miss", "def"])
         _run_service_command("start", "mysql")
         if self.debian_major_version() == 8:
-            raise MoulinetteError(m18n.n("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile))
+            raise YunohostError("migration_0003_still_on_jessie_after_main_upgrade", log=self.logfile)
 
         # Specific upgrade for fail2ban...
         logger.info(m18n.n("migration_0003_fail2ban_upgrade"))
@@ -107,11 +108,11 @@ class MyMigration(Migration):
         # would still be in 2.x...
         if not self.debian_major_version() == 8 \
            and not self.yunohost_major_version() == 2:
-            raise MoulinetteError(m18n.n("migration_0003_not_jessie"))
+            raise YunohostError("migration_0003_not_jessie")
 
         # Have > 1 Go free space on /var/ ?
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
-            raise MoulinetteError(m18n.n("migration_0003_not_enough_free_space"))
+            raise YunohostError("migration_0003_not_enough_free_space")
 
         # Check system is up to date
         # (but we don't if 'stretch' is already in the sources.list ...
@@ -120,7 +121,7 @@ class MyMigration(Migration):
             self.apt_update()
             apt_list_upgradable = check_output("apt list --upgradable -a")
             if "upgradable" in apt_list_upgradable:
-                raise MoulinetteError(m18n.n("migration_0003_system_not_fully_up_to_date"))
+                raise YunohostError("migration_0003_system_not_fully_up_to_date")
 
     @property
     def disclaimer(self):
@@ -168,11 +169,11 @@ class MyMigration(Migration):
         # - switch yunohost's repo to forge
         for f in sources_list:
             command = "sed -i -e 's@ jessie @ stretch @g' " \
-                             "-e '/backports/ s@^#*@#@' " \
-                             "-e 's@ jessie/updates @ stretch/updates @g' " \
-                             "-e 's@ jessie-updates @ stretch-updates @g' " \
-                             "-e 's@repo.yunohost@forge.yunohost@g' " \
-                             "{}".format(f)
+                      "-e '/backports/ s@^#*@#@' " \
+                      "-e 's@ jessie/updates @ stretch/updates @g' " \
+                      "-e 's@ jessie-updates @ stretch-updates @g' " \
+                      "-e 's@repo.yunohost@forge.yunohost@g' " \
+                      "{}".format(f)
             os.system(command)
 
     def get_apps_equivs_packages(self):
@@ -286,7 +287,7 @@ class MyMigration(Migration):
         # Create tmp directory if it does not exists
         tmp_dir = os.path.join("/tmp/", self.name)
         if not os.path.exists(tmp_dir):
-            os.mkdir(tmp_dir, 0700)
+            os.mkdir(tmp_dir, 0o700)
 
         for f in self.files_to_keep:
             dest_file = f.strip('/').replace("/", "_")

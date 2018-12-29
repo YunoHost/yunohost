@@ -10,12 +10,14 @@ CAN_BIND=${CAN_BIND:-1}
 # 
 # If DEST is ended by a slash it complete this path with the basename of SRC.
 #
-# usage: ynh_backup --src_path=src_path [--dest_path=dest_path] [--is_big]
+# usage: ynh_backup --src_path=src_path [--dest_path=dest_path] [--is_big] [--not_mandatory]
 # | arg: -s, --src_path - file or directory to bind or symlink or copy. it shouldn't be in
 # the backup dir. 
 # | arg: -d, --dest_path - destination file or directory inside the
 # backup dir
 # | arg: -b, --is_big - Indicate data are big (mail, video, image ...)
+# | arg: -m, --not_mandatory - Indicate that if the file is missing, the backup can ignore it.
+# | arg: arg - Deprecated arg
 #
 # example:
 # # Wordpress app context
@@ -44,14 +46,16 @@ ynh_backup() {
     # TODO find a way to avoid injection by file strange naming !
 
     # Declare an array to define the options of this helper.
-    declare -Ar args_array=( [s]=src_path= [d]=dest_path= [b]=is_big )
+    declare -Ar args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )
     local src_path
     local dest_path
     local is_big
+    local not_mandatory
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     local dest_path="${dest_path:-}"
     local is_big="${is_big:-0}"
+    local not_mandatory="${not_mandatory:-0}"
 
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
 
@@ -68,7 +72,19 @@ ynh_backup() {
     # Be sure the source path is not empty
     [[ -e "${src_path}" ]] || {
         echo "Source path '${src_path}' does not exist" >&2
-        return 1
+        if [ "$not_mandatory" == "0" ]
+        then
+                # This is a temporary fix for fail2ban config files missing after the migration to stretch.
+                if echo "${src_path}" | grep --quiet "/etc/fail2ban"
+                then
+                        touch "${src_path}"
+                        echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
+                else
+                        return 1
+                fi
+        else
+                return 0
+        fi
     }
 
     # Transform the source path as an absolute path
@@ -175,12 +191,13 @@ with open(sys.argv[1], 'r') as backup_file:
 # Use the registered path in backup_list by ynh_backup to restore the file at
 # the good place.
 #
-# usage: ynh_restore_file --origin_path=origin_path [--dest_path=dest_path]
+# usage: ynh_restore_file --origin_path=origin_path [--dest_path=dest_path] [--not_mandatory]
 # | arg: -o, --origin_path - Path where was located the file or the directory before
 # to be backuped or relative path to $YNH_CWD where it is located in the backup archive
 # | arg: -d, --dest_path - Path where restore the file or the dir, if unspecified,
 # the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
 # the archive, the destination will be searched into backup.csv
+# | arg: -m, --not_mandatory - Indicate that if the file is missing, the restore process can ignore it.
 #
 # If DEST_PATH already exists and is lighter than 500 Mo, a backup will be made in 
 # /home/yunohost.conf/backup/. Otherwise, the existing file is removed.
@@ -197,20 +214,27 @@ with open(sys.argv[1], 'r') as backup_file:
 #
 ynh_restore_file () {
     # Declare an array to define the options of this helper.
-    declare -Ar args_array=( [o]=origin_path= [d]=dest_path= )
+    declare -Ar args_array=( [o]=origin_path= [d]=dest_path= [m]=not_mandatory )
     local origin_path
     local archive_path
     local dest_path
+    local not_mandatory
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     local origin_path="/${origin_path#/}"
     local archive_path="$YNH_CWD${origin_path}"
     # Default value for dest_path = /$origin_path
     local dest_path="${dest_path:-$origin_path}"
+    local not_mandatory="${not_mandatory:-0}"
 
     # If archive_path doesn't exist, search for a corresponding path in CSV
     if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]; then
-        archive_path="$YNH_BACKUP_DIR/$(_get_archive_path \"$origin_path\")"
+        if [ "$not_mandatory" == "0" ]
+        then
+            archive_path="$YNH_BACKUP_DIR/$(_get_archive_path \"$origin_path\")"
+        else
+            return 0
+        fi
     fi
 
     # Move the old directory if it already exists

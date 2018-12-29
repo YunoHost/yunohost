@@ -14,7 +14,7 @@ ynh_die() {
 
 # Display a message in the 'INFO' logging category
 #
-# usage: ynh_info --message="Some message"
+# usage: ynh_print_info --message="Some message"
 ynh_print_info() {
     # Declare an array to define the options of this helper.
     declare -Ar args_array=( [m]=message= )

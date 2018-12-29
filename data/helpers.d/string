@@ -12,7 +12,7 @@ ynh_string_random() {
     ynh_handle_getopts_args "$@"
     length=${length:-24}
 
-    dd if=/dev/urandom bs=1 count=200 2> /dev/null \
+    dd if=/dev/urandom bs=1 count=1000 2> /dev/null \
       | tr -c -d 'A-Za-z0-9' \
       | sed -n 's/\(.\{'"$length"'\}\).*/\1/p'
 }

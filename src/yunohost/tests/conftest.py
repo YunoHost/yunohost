@@ -7,12 +7,14 @@ sys.path.append("..")
 def pytest_addoption(parser):
     parser.addoption("--yunodebug", action="store_true", default=False)
 
-###############################################################################
-#   Tweak translator to raise exceptions if string keys are not defined       #
-###############################################################################
+#
+# Tweak translator to raise exceptions if string keys are not defined       #
+#
 
 
 old_translate = moulinette.core.Translator.translate
+
+
 def new_translate(self, key, *args, **kwargs):
 
     if key not in self._translations[self.default_locale].keys():
@@ -21,14 +23,15 @@ def new_translate(self, key, *args, **kwargs):
     return old_translate(self, key, *args, **kwargs)
 moulinette.core.Translator.translate = new_translate
 
+
 def new_m18nn(self, key, *args, **kwargs):
     return self._namespaces[self._current_namespace].translate(key, *args, **kwargs)
 
 moulinette.core.Moulinette18n.n = new_m18nn
 
-###############################################################################
-#   Init the moulinette to have the cli loggers stuff                         #
-###############################################################################
+#
+# Init the moulinette to have the cli loggers stuff                         #
+#
 
 
 def pytest_cmdline_main(config):

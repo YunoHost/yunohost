@@ -4,6 +4,7 @@ location /yunohost/api/ {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
+    proxy_set_header Host $http_host;
 
     # Custom 502 error page
     error_page 502 /yunohost/api/error/502;
