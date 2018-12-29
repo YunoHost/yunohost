@@ -19,7 +19,7 @@ ynh_string_random() {
 
 # Substitute/replace a string (or expression) by another in a file
 #
-# usage: ynh_replace_string match_string replace_string target_file
+# usage: ynh_replace_string --match_string=match_string --replace_string=replace_string --target_file=target_file
 # | arg: -m, --match_string - String to be searched and replaced in the file
 # | arg: -r, --replace_string - String that will replace matches
 # | arg: -f, --target_file - File in which the string will be replaced.
@@ -46,7 +46,7 @@ ynh_replace_string () {
 
 # Substitute/replace a special string by another in a file
 #
-# usage: ynh_replace_special_string match_string replace_string target_file
+# usage: ynh_replace_special_string --match_string=match_string --replace_string=replace_string --target_file=target_file
 # | arg: -m, --match_string - String to be searched and replaced in the file
 # | arg: -r, --replace_string - String that will replace matches
 # | arg: -t, --target_file - File in which the string will be replaced.
@@ -70,5 +70,5 @@ ynh_replace_special_string () {
 	match_string=${match_string//&/"\&"}
 	replace_string=${replace_string//&/"\&"}
 
-	ynh_replace_string "$match_string" "$replace_string" "$target_file"
+	ynh_replace_string --match_string="$match_string" --replace_string="$replace_string" --target_file="$target_file"
 }
