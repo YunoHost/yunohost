@@ -122,18 +122,18 @@ ynh_add_systemd_config () {
 	local template="${nonappend:-systemd.service}"
 
 	finalsystemdconf="/etc/systemd/system/$service.service"
-	ynh_backup_if_checksum_is_different "$finalsystemdconf"
+	ynh_backup_if_checksum_is_different --file="$finalsystemdconf"
 	sudo cp ../conf/$template "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
 	if test -n "${final_path:-}"; then
-		ynh_replace_string "__FINALPATH__" "$final_path" "$finalsystemdconf"
+		ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalsystemdconf"
 	fi
 	if test -n "${app:-}"; then
-		ynh_replace_string "__APP__" "$app" "$finalsystemdconf"
+		ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file="$finalsystemdconf"
 	fi
-	ynh_store_file_checksum "$finalsystemdconf"
+	ynh_store_file_checksum --file="$finalsystemdconf"
 
 	sudo chown root: "$finalsystemdconf"
 	sudo systemctl enable $service
@@ -157,7 +157,7 @@ ynh_remove_systemd_config () {
 	if [ -e "$finalsystemdconf" ]; then
 		sudo systemctl stop $service
 		sudo systemctl disable $service
-		ynh_secure_remove "$finalsystemdconf"
+		ynh_secure_remove --file="$finalsystemdconf"
 		sudo systemctl daemon-reload
 	fi
 }
@@ -183,7 +183,7 @@ ynh_remove_systemd_config () {
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 	local others_var=${1:-}
-	ynh_backup_if_checksum_is_different "$finalnginxconf"
+	ynh_backup_if_checksum_is_different --file="$finalnginxconf"
 	sudo cp ../conf/nginx.conf "$finalnginxconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
@@ -191,20 +191,20 @@ ynh_add_nginx_config () {
 	if test -n "${path_url:-}"; then
 		# path_url_slash_less is path_url, or a blank value if path_url is only '/'
 		local path_url_slash_less=${path_url%/}
-		ynh_replace_string "__PATH__/" "$path_url_slash_less/" "$finalnginxconf"
-		ynh_replace_string "__PATH__" "$path_url" "$finalnginxconf"
+		ynh_replace_string --match_string="__PATH__/" --replace_string="$path_url_slash_less/" --target_file="$finalnginxconf"
+		ynh_replace_string --match_string="__PATH__" --replace_string="$path_url" --target_file="$finalnginxconf"
 	fi
 	if test -n "${domain:-}"; then
-		ynh_replace_string "__DOMAIN__" "$domain" "$finalnginxconf"
+		ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$finalnginxconf"
 	fi
 	if test -n "${port:-}"; then
-		ynh_replace_string "__PORT__" "$port" "$finalnginxconf"
+		ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$finalnginxconf"
 	fi
 	if test -n "${app:-}"; then
-		ynh_replace_string "__NAME__" "$app" "$finalnginxconf"
+		ynh_replace_string --match_string="__NAME__" --replace_string="$app" --target_file="$finalnginxconf"
 	fi
 	if test -n "${final_path:-}"; then
-		ynh_replace_string "__FINALPATH__" "$final_path" "$finalnginxconf"
+		ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalnginxconf"
 	fi
 
 	# Replace all other variable given as arguments
@@ -212,17 +212,17 @@ ynh_add_nginx_config () {
 	do
 		# ${var_to_replace^^} make the content of the variable on upper-cases
 		# ${!var_to_replace} get the content of the variable named $var_to_replace 
-		ynh_replace_string "__${var_to_replace^^}__" "${!var_to_replace}" "$finalnginxconf"
+		ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalnginxconf"
 	done
 	
 	if [ "${path_url:-}" != "/" ]
 	then
-		ynh_replace_string "^#sub_path_only" "" "$finalnginxconf"
+		ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"
 	else
-		ynh_replace_string "^#root_path_only" "" "$finalnginxconf"
+		ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$finalnginxconf"
 	fi
 
-	ynh_store_file_checksum "$finalnginxconf"
+	ynh_store_file_checksum --file="$finalnginxconf"
 
 	sudo systemctl reload nginx
 }
@@ -231,7 +231,7 @@ ynh_add_nginx_config () {
 #
 # usage: ynh_remove_nginx_config
 ynh_remove_nginx_config () {
-	ynh_secure_remove "/etc/nginx/conf.d/$domain.d/$app.conf"
+	ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
 	sudo systemctl reload nginx
 }
 
@@ -247,24 +247,24 @@ ynh_add_fpm_config () {
 		fpm_config_dir="/etc/php5/fpm"
 		fpm_service="php5-fpm"
 	fi
-	ynh_app_setting_set $app fpm_config_dir "$fpm_config_dir"
-	ynh_app_setting_set $app fpm_service "$fpm_service"
+	ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
+	ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
 	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
-	ynh_backup_if_checksum_is_different "$finalphpconf"
+	ynh_backup_if_checksum_is_different --file="$finalphpconf"
 	sudo cp ../conf/php-fpm.conf "$finalphpconf"
-	ynh_replace_string "__NAMETOCHANGE__" "$app" "$finalphpconf"
-	ynh_replace_string "__FINALPATH__" "$final_path" "$finalphpconf"
-	ynh_replace_string "__USER__" "$app" "$finalphpconf"
+	ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
+	ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
+	ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
 	sudo chown root: "$finalphpconf"
-	ynh_store_file_checksum "$finalphpconf"
+	ynh_store_file_checksum --file="$finalphpconf"
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
 		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
-		ynh_backup_if_checksum_is_different "$finalphpini"
+		ynh_backup_if_checksum_is_different --file="$finalphpini"
 		sudo cp ../conf/php-fpm.ini "$finalphpini"
 		sudo chown root: "$finalphpini"
-		ynh_store_file_checksum "$finalphpini"
+		ynh_store_file_checksum --file="$finalphpini"
 	fi
 	sudo systemctl reload $fpm_service
 }
@@ -273,14 +273,14 @@ ynh_add_fpm_config () {
 #
 # usage: ynh_remove_fpm_config
 ynh_remove_fpm_config () {
-	local fpm_config_dir=$(ynh_app_setting_get $app fpm_config_dir)
-	local fpm_service=$(ynh_app_setting_get $app fpm_service)
+	local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+	local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
 	# Assume php version 5 if not set
 	if [ -z "$fpm_config_dir" ]; then
 		fpm_config_dir="/etc/php5/fpm"
 		fpm_service="php5-fpm"
 	fi
-	ynh_secure_remove "$fpm_config_dir/pool.d/$app.conf"
-	ynh_secure_remove "$fpm_config_dir/conf.d/20-$app.ini" 2>&1
+	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
+	ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini" 2>&1
 	sudo systemctl reload $fpm_service
 }
