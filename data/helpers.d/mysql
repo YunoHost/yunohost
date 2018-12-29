@@ -176,7 +176,7 @@ ynh_mysql_setup_db () {
 	db_password="${db_password:-$new_db_pwd}"
 
 	ynh_mysql_create_db "$db_name" "$db_user" "$db_password"	# Create the database
-	ynh_app_setting_set $app mysqlpwd $db_password	# Store the password in the app's config
+	ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_password	# Store the password in the app's config
 }
 
 # Remove a database if it exists, and the associated user
