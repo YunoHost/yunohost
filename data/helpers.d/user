@@ -78,7 +78,7 @@ ynh_system_user_create () {
 		else
 			local user_home_dir="--no-create-home"
 		fi
-		sudo useradd $user_home_dir --system --user-group $username --shell /usr/sbin/nologin || ynh_die "Unable to create $username system account"
+		sudo useradd $user_home_dir --system --user-group $username --shell /usr/sbin/nologin || ynh_die --message="Unable to create $username system account"
 	fi
 }
 
