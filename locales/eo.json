@@ -22,5 +22,15 @@
     "service_description_mysql": "stokas aplikaĵojn datojn (SQL datumbazo)",
     "service_description_nginx": "servas aŭ permesas atingi ĉiujn retejojn gastigita sur via servilo",
     "service_description_nslcd": "mastrumas Yunohost uzantojn konektojn per komanda linio",
-    "service_description_php7.0-fpm": "rulas aplikaĵojn skibitaj en PHP kun nginx"
+    "service_description_php7.0-fpm": "rulas aplikaĵojn skibita en PHP kun nginx",
+    "service_description_postfix": "uzita por sendi kaj ricevi retpoŝtojn",
+    "service_description_redis-server": "specialita datumbazo uzita por rapida datumo atingo, atendovicoj kaj komunikadoj inter programoj",
+    "service_description_rmilter": "kontrolas diversajn parametrojn en retpoŝtoj",
+    "service_description_rspamd": "filtras trudmesaĝojn, kaj aliaj funkcioj rilate al retpoŝto",
+    "service_description_slapd": "stokas uzantojn, domajnojn kaj rilatajn informojn",
+    "service_description_ssh": "permesas al vi konekti al via servilo kun fora terminalo (SSH protokolo)",
+    "service_description_yunohost-api": "mastrumas interagojn inter la YunoHost retinterfaco kaj la sistemo",
+    "service_description_yunohost-firewall": "mastrumas malfermitajn kaj fermitajn konektejojn al servoj",
+    "service_disable_failed": "Neebla malaktivigi servon '{service:s}'\n\nFreŝaj protokoloj de la servo : {logs:s}",
+    "service_disabled": "Servo '{service:s}' estas malaktivigita"
 }
