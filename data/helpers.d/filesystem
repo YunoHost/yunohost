@@ -145,7 +145,7 @@ ynh_restore () {
     while read line; do
         local ORIGIN_PATH=$(echo "$line" | grep -ohP "^\"\K.*(?=\",\".*\"$)")
         local ARCHIVE_PATH=$(echo "$line" | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
-        ynh_restore_file "$ARCHIVE_PATH" "$ORIGIN_PATH"
+        ynh_restore_file --origin_path="$ARCHIVE_PATH" --dest_path="$ORIGIN_PATH"
     done
 }
 
@@ -223,7 +223,7 @@ ynh_restore_file () {
             mkdir -p "$(dirname "$backup_file")"
             mv "${dest_path}" "$backup_file"	# Move the current file or directory
         else
-            ynh_secure_remove ${dest_path}
+            ynh_secure_remove --file=${dest_path}
         fi
     fi
 
@@ -289,7 +289,7 @@ ynh_store_file_checksum () {
 	ynh_handle_getopts_args "$@"
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	ynh_app_setting_set $app $checksum_setting_name $(sudo md5sum "$file" | cut -d' ' -f1)
+	ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
 }
 
 # Verify the checksum and backup the file if it's different
@@ -310,7 +310,7 @@ ynh_backup_if_checksum_is_different () {
 	ynh_handle_getopts_args "$@"
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	local checksum_value=$(ynh_app_setting_get $app $checksum_setting_name)
+	local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
 	if [ -n "$checksum_value" ]
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
@@ -338,12 +338,12 @@ ynh_delete_file_checksum () {
 	ynh_handle_getopts_args "$@"
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	ynh_app_setting_delete $app $checksum_setting_name
+	ynh_app_setting_delete --app=$app --key=$checksum_setting_name
 }
 
 # Remove a file or a directory securely
 #
-# usage: ynh_secure_remove file=path_to_remove
+# usage: ynh_secure_remove --file=path_to_remove
 # | arg: -f, --file - File or directory to remove
 ynh_secure_remove () {
 	# Declare an array to define the options of this helper.
