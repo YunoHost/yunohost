@@ -49,7 +49,7 @@ ynh_restore_upgradebackup () {
 			sudo yunohost app remove $app
 			# Restore the backup
 			sudo yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force
-			ynh_die "The app was restored to the way it was before the failed upgrade."
+			ynh_die --message="The app was restored to the way it was before the failed upgrade."
 		fi
 	else
       		echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
@@ -97,7 +97,7 @@ ynh_backup_before_upgrade () {
 				sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
 			fi
 		else
-			ynh_die "Backup failed, the upgrade process was aborted."
+			ynh_die --message="Backup failed, the upgrade process was aborted."
 		fi
         else
                 echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
@@ -178,12 +178,12 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
-        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err $out
+        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err --message="$out"
     fi
 
     # Check the control sum
     echo "${src_sum} ${src_filename}" | ${src_sumprg} -c --status \
-        || ynh_die "Corrupt source"
+        || ynh_die --message="Corrupt source"
 
     # Extract source into the app dir
     mkdir -p "$dest_dir"
@@ -199,7 +199,7 @@ ynh_setup_source () {
             local tmp_dir=$(mktemp -d)
             unzip -quo $src_filename -d "$tmp_dir"
             cp -a $tmp_dir/*/. "$dest_dir"
-            ynh_secure_remove "$tmp_dir"
+            ynh_secure_remove --file="$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
         fi
@@ -211,7 +211,7 @@ ynh_setup_source () {
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
             tar -xf $src_filename -C "$dest_dir" $strip
         else
-            ynh_die "Archive format unrecognized."
+            ynh_die --message="Archive format unrecognized."
         fi
     fi
 
@@ -221,7 +221,7 @@ ynh_setup_source () {
         (cd "$dest_dir" \
             && for p in $YNH_CWD/../sources/patches/${source_id}-*.patch; do \
                 patch -p1 < $p; done) \
-            || ynh_die "Unable to apply patches"
+            || ynh_die --message="Unable to apply patches"
         cd $old_dir
     fi
 
