@@ -445,6 +445,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
+    from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
 
     installed = _is_installed(app)
     if not installed:
@@ -457,18 +458,13 @@ def app_change_url(operation_logger, auth, app, domain, path):
     old_path = app_setting(app, "path")
 
     # Normalize path and domain format
-    domain = domain.strip().lower()
-
-    old_path = normalize_url_path(old_path)
-    path = normalize_url_path(path)
+    old_domain, old_path = _normalize_domain_path(old_domain, old_path)
+    domain, path = _normalize_domain_path(domain, path)
 
     if (domain, path) == (old_domain, old_path):
         raise YunohostError("app_change_url_identical_domains", domain=domain, path=path)
 
-    # WARNING / FIXME : checkurl will modify the settings
-    # (this is a non intuitive behavior that should be changed)
-    # (or checkurl renamed in reserve_url)
-    app_checkurl(auth, '%s%s' % (domain, path), app)
+    _get_conflicting_apps(auth, domain, path)
 
     manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
 
@@ -486,9 +482,9 @@ def app_change_url(operation_logger, auth, app, domain, path):
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
-    env_dict["YNH_APP_OLD_PATH"] = old_path.rstrip("/")
+    env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
-    env_dict["YNH_APP_NEW_PATH"] = path.rstrip("/")
+    env_dict["YNH_APP_NEW_PATH"] = path
 
     if domain != old_domain:
         operation_logger.related_to.append(('domain', old_domain))
@@ -1251,7 +1247,6 @@ def app_register_url(auth, app, domain, path):
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...
-    # FIXME should look into change_url once it's merged
 
     installed = app in app_list(installed=True, raw=True).keys()
     if installed:
@@ -2527,13 +2522,6 @@ def random_password(length=8):
 
     char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
     return ''.join([random.SystemRandom().choice(char_set) for x in range(length)])
-
-
-def normalize_url_path(url_path):
-    if url_path.strip("/").strip():
-        return '/' + url_path.strip("/").strip() + '/'
-
-    return "/"
 
 
 def unstable_apps():

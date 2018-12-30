@@ -298,7 +298,7 @@ def _normalize_domain_path(domain, path):
         domain = domain[len("http://"):]
 
     # Remove trailing slashes
-    domain = domain.rstrip("/")
+    domain = domain.rstrip("/").lower()
     path = "/" + path.strip("/")
 
     return domain, path
