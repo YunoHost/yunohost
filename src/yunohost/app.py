@@ -1284,7 +1284,7 @@ def app_checkurl(auth, url, app=None):
 
     logger.error("Packagers /!\\ : 'app checkurl' is deprecated ! Please use the helper 'ynh_webpath_register' instead !")
 
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, _normalize_domain_path
 
     if "https://" == url[:8]:
         url = url[8:]
@@ -1298,8 +1298,7 @@ def app_checkurl(auth, url, app=None):
     path = url[url.index('/'):]
     installed = False
 
-    if path[-1:] != '/':
-        path = path + '/'
+    domain, path = _normalize_domain_path(domain, path)
 
     apps_map = app_map(raw=True)
 
