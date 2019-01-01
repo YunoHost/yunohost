@@ -24,7 +24,6 @@
     Manage backups
 """
 import os
-import re
 import json
 import time
 import tarfile
@@ -52,6 +51,7 @@ from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 from yunohost.service import service_regen_conf
 from yunohost.log import OperationLogger
+from yunohost.repository import BackupRepository
 from functools import reduce
 
 BACKUP_PATH = '/home/yunohost.backup'
@@ -1425,7 +1425,9 @@ class BackupMethod(object):
                    BackupRepository object. If None, the default repo is used :
                    /home/yunohost.backup/archives/
         """
-        self.repo = ARCHIVES_PATH if repo is None else repo
+        if not repo or isinstance(repo, basestring):
+            repo = BackupRepository.get_or_create(ARCHIVES_PATH)
+        self.repo = repo
 
     @property
     def method_name(self):
@@ -1596,7 +1598,7 @@ class BackupMethod(object):
                 try:
                     subprocess.check_call(["mount", "--rbind", src, dest])
                     subprocess.check_call(["mount", "-o", "remount,ro,bind", dest])
-                except Exception as e:
+                except Exception:
                     logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
                     # To check if dest is mounted, use /proc/mounts that
                     # escape spaces as \040
@@ -1697,6 +1699,7 @@ class CopyBackupMethod(BackupMethod):
 
     def __init__(self, repo=None):
         super(CopyBackupMethod, self).__init__(repo)
+        filesystem.mkdir(self.repo.path, parent=True)
 
     @property
     def method_name(self):
@@ -1709,7 +1712,7 @@ class CopyBackupMethod(BackupMethod):
 
         for path in self.manager.paths_to_backup:
             source = path['source']
-            dest = os.path.join(self.repo, path['dest'])
+            dest = os.path.join(self.repo.path, path['dest'])
             if source == dest:
                 logger.debug("Files already copyed")
                 return
@@ -1735,18 +1738,18 @@ class CopyBackupMethod(BackupMethod):
         # the ynh cli
         super(CopyBackupMethod, self).mount()
 
-        if not os.path.isdir(self.repo):
+        if not os.path.isdir(self.repo.path):
             raise YunohostError('backup_no_uncompress_archive_dir')
 
         filesystem.mkdir(self.work_dir, parent=True)
-        ret = subprocess.call(["mount", "-r", "--rbind", self.repo,
+        ret = subprocess.call(["mount", "-r", "--rbind", self.repo.path,
                               self.work_dir])
         if ret == 0:
             return
         else:
             logger.warning(m18n.n("bind_mouting_disable"))
-            subprocess.call(["mountpoint", "-q", dest,
-                            "&&", "umount", "-R", dest])
+            subprocess.call(["mountpoint", "-q", self.repo.path,
+                            "&&", "umount", "-R", self.repo.path])
             raise YunohostError('backup_cant_mount_uncompress_archive')
 
 
@@ -1758,6 +1761,7 @@ class TarBackupMethod(BackupMethod):
 
     def __init__(self, repo=None):
         super(TarBackupMethod, self).__init__(repo)
+        filesystem.mkdir(self.repo.path, parent=True)
 
     @property
     def method_name(self):
@@ -1766,7 +1770,7 @@ class TarBackupMethod(BackupMethod):
     @property
     def _archive_file(self):
         """Return the compress archive path"""
-        return os.path.join(self.repo, self.name + '.tar.gz')
+        return os.path.join(self.repo.path, self.name + '.tar.gz')
 
     def backup(self):
         """
@@ -1781,8 +1785,8 @@ class TarBackupMethod(BackupMethod):
                                          compress archive
         """
 
-        if not os.path.exists(self.repo):
-            filesystem.mkdir(self.repo, 0o750, parents=True, uid='admin')
+        if not os.path.exists(self.repo.path):
+            filesystem.mkdir(self.repo.path, 0o750, parents=True, uid='admin')
 
         # Check free space in output
         self._check_is_enough_free_space()
@@ -2012,9 +2016,9 @@ def backup_create(name=None, description=None, repos=[],
     if repos == []:
         repos = ['/home/yunohost.backup/archives']
 
-    methods = []
     for repo in repos:
-        backup_manager.add(BackupMethod.create(methods, repo))
+        repo = BackupRepository.get(repo)
+        backup_manager.add(repo.method)
 
     # Add backup targets (system and apps)
     backup_manager.set_system_targets(system)
