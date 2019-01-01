@@ -91,7 +91,7 @@ class BackupRepository(object):
         except Exception as e:
             raise YunohostError('backup_cant_save_repositories_file', reason=e)
 
-    def __init__(self, created=True, location, name=None, description=None, method=None,
+    def __init__(self, created, location, name=None, description=None, method=None,
                  encryption=None, quota=None):
 
         self.location = location
@@ -126,127 +126,125 @@ class BackupRepository(object):
 
         repositories.pop(self.name)
 
-            BackupRepository.save()
+        BackupRepository.save()
 
-            if purge:
-                self.purge()
+        if purge:
+            self.purge()
 
-        def save(self):
-            BackupRepository.reposirories[self.name] = self.__dict__
-            BackupRepository.save()
+    def save(self):
+        BackupRepository.reposirories[self.name] = self.__dict__
+        BackupRepository.save()
 
-        def _split_location(self):
-            """
-            Split a repository location into protocol, user, domain and path
-            """
-            location_regex = r'^((?P<protocol>ssh://)?(?P<user>[^@ ]+)@(?P<domain>[^: ]+:))?(?P<path>[^\0]+)$'
-            location_match = re.match(location_regex, self.location)
-
-            if location_match is None:
-                raise YunohostError('backup_repositories_invalid_location',
-                                    location=location)
-
-            self.protocol = location_match.group('protocol')
-            self.user = location_match.group('user')
-            self.domain = location_match.group('domain')
-            self.path = location_match.group('path')
-
-
-    def backup_repository_list(name, full=False):
+    def _split_location(self):
         """
-        List available repositories where put archives
+        Split a repository location into protocol, user, domain and path
         """
-        repositories = BackupRepository.load()
+        location_regex = r'^((?P<protocol>ssh://)?(?P<user>[^@ ]+)@(?P<domain>[^: ]+:))?(?P<path>[^\0]+)$'
+        location_match = re.match(location_regex, self.location)
 
-        if full:
-            return repositories
-        else:
-            return repositories.keys()
+        if location_match is None:
+            raise YunohostError('backup_repositories_invalid_location',
+                                location=location)
 
+        self.protocol = location_match.group('protocol')
+        self.user = location_match.group('user')
+        self.domain = location_match.group('domain')
+        self.path = location_match.group('path')
 
-    def backup_repository_info(name, human_readable=True, space_used=False):
-        """
-        Show info about a repository
+def backup_repository_list(name, full=False):
+    """
+    List available repositories where put archives
+    """
+    repositories = BackupRepository.load()
 
-        Keyword arguments:
-            name -- Name of the backup repository
-        """
-        repository = BackupRepository.get(name)
+    if full:
+        return repositories
+    else:
+        return repositories.keys()
 
-        if space_used:
-            repository.compute_space_used()
+def backup_repository_info(name, human_readable=True, space_used=False):
+    """
+    Show info about a repository
 
-        repository = repository.__dict__
-        if human_readable:
-            if 'quota' in repository:
-                repository['quota'] = binary_to_human(repository['quota'])
-            if 'used' in repository and isinstance(repository['used'], int):
-                repository['used'] = binary_to_human(repository['used'])
+    Keyword arguments:
+        name -- Name of the backup repository
+    """
+    repository = BackupRepository.get(name)
 
-        return repository
+    if space_used:
+        repository.compute_space_used()
 
+    repository = repository.__dict__
+    if human_readable:
+        if 'quota' in repository:
+            repository['quota'] = binary_to_human(repository['quota'])
+        if 'used' in repository and isinstance(repository['used'], int):
+            repository['used'] = binary_to_human(repository['used'])
 
-    @is_unit_operation()
-    def backup_repository_add(operation_logger, location, name, description=None,
-                            methods=None, quota=None, encryption="passphrase"):
-        """
-        Add a backup repository
-
-        Keyword arguments:
-            location -- Location of the repository (could be a remote location)
-            name -- Name of the backup repository
-            description -- An optionnal description
-            quota -- Maximum size quota of the repository
-            encryption -- If available, the kind of encryption to use
-        """
-        repository = BackupRepository(
-            location, name, description, methods, quota, encryption)
-
-        try:
-            repository.save()
-        except MoulinetteError:
-            raise YunohostError('backup_repository_add_failed',
-                                repository=name, location=location)
-
-        logger.success(m18n.n('backup_repository_added',
-                            repository=name, location=location))
+    return repository
 
 
-    @is_unit_operation()
-    def backup_repository_update(operation_logger, name, description=None,
-                                quota=None, password=None):
-        """
-        Update a backup repository
+@is_unit_operation()
+def backup_repository_add(operation_logger, location, name, description=None,
+                        methods=None, quota=None, encryption="passphrase"):
+    """
+    Add a backup repository
 
-        Keyword arguments:
-            name -- Name of the backup repository
-        """
-        repository = BackupRepository.get(name)
+    Keyword arguments:
+        location -- Location of the repository (could be a remote location)
+        name -- Name of the backup repository
+        description -- An optionnal description
+        quota -- Maximum size quota of the repository
+        encryption -- If available, the kind of encryption to use
+    """
+    repository = BackupRepository(
+        location, name, description, methods, quota, encryption)
 
-        if description is not None:
-            repository.description = description
+    try:
+        repository.save()
+    except MoulinetteError:
+        raise YunohostError('backup_repository_add_failed',
+                            repository=name, location=location)
 
-        if quota is not None:
-            repository.quota = quota
-
-        try:
-            repository.save()
-        except MoulinetteError:
-            raise YunohostError('backup_repository_update_failed', repository=name)
-        logger.success(m18n.n('backup_repository_updated', repository=name,
-                            location=repository['location']))
+    logger.success(m18n.n('backup_repository_added',
+                        repository=name, location=location))
 
 
-    @is_unit_operation()
-    def backup_repository_remove(operation_logger, name, purge=False):
-        """
-        Remove a backup repository
+@is_unit_operation()
+def backup_repository_update(operation_logger, name, description=None,
+                            quota=None, password=None):
+    """
+    Update a backup repository
 
-        Keyword arguments:
-            name -- Name of the backup repository to remove
+    Keyword arguments:
+        name -- Name of the backup repository
+    """
+    repository = BackupRepository.get(name)
 
-        """
-        repository = BackupRepository.get(name)
-        repository.delete(purge)
-        logger.success(m18n.n('backup_repository_removed', repository=name,
-                            path=repository['path']))
+    if description is not None:
+        repository.description = description
+
+    if quota is not None:
+        repository.quota = quota
+
+    try:
+        repository.save()
+    except MoulinetteError:
+        raise YunohostError('backup_repository_update_failed', repository=name)
+    logger.success(m18n.n('backup_repository_updated', repository=name,
+                        location=repository['location']))
+
+
+@is_unit_operation()
+def backup_repository_remove(operation_logger, name, purge=False):
+    """
+    Remove a backup repository
+
+    Keyword arguments:
+        name -- Name of the backup repository to remove
+
+    """
+    repository = BackupRepository.get(name)
+    repository.delete(purge)
+    logger.success(m18n.n('backup_repository_removed', repository=name,
+                        path=repository['path']))

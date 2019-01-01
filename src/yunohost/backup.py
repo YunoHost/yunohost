@@ -1888,13 +1888,37 @@ class TarBackupMethod(BackupMethod):
 
 class BorgBackupMethod(BackupMethod):
 
+    def __init__(self, repo=None):
+        super(TarBackupMethod, self).__init__(repo)
+        if not self.repo.domain:
+            filesystem.mkdir(self.repo.path, parent=True)
+        else:
+            #Todo Initialize remote repo
+            pass
+
     @property
     def method_name(self):
         return 'borg'
 
     def backup(self):
         """ Backup prepared files with borg """
-        super(CopyBackupMethod, self).backup()
+        super(BorgBackupMethod, self).backup()
+        
+        for path in self.manager.paths_to_backup:
+            source = path['source']
+            dest = os.path.join(self.repo.path, path['dest'])
+            if source == dest:
+                logger.debug("Files already copyed")
+                return
+
+            dest_parent = os.path.dirname(dest)
+            if not os.path.exists(dest_parent):
+                filesystem.mkdir(dest_parent, 0o750, True, uid='admin')
+
+            if os.path.isdir(source):
+                shutil.copytree(source, dest)
+            else:
+                shutil.copy(source, dest)
 
         # TODO run borg create command
         raise YunohostError('backup_borg_not_implemented')
