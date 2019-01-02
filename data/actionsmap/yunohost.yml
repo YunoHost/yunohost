@@ -891,6 +891,10 @@ backup:
             action_help: List available local backup archives
             api: GET /backup/archives
             arguments:
+                -r:
+                    full: --repos
+                    help: List archives in these repositories
+                    nargs: "*"
                 -i:
                     full: --with-info
                     help: Show backup information for each archive

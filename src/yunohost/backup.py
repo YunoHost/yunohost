@@ -1889,42 +1889,75 @@ class TarBackupMethod(BackupMethod):
 class BorgBackupMethod(BackupMethod):
 
     def __init__(self, repo=None):
-        super(TarBackupMethod, self).__init__(repo)
+        super(BorgBackupMethod, self).__init__(repo)
+
         if not self.repo.domain:
             filesystem.mkdir(self.repo.path, parent=True)
-        else:
-            #Todo Initialize remote repo
-            pass
+        
+        cmd = ['borg', 'init', self.repo.location]
+
+        if self.repo.quota:
+            cmd += ['--storage-quota', self.repo.quota]
+        borg = self._run_borg_command(cmd)
+        return_code = borg.wait()
+        if return_code:
+            raise YunohostError('backup_borg_init_error')
+
 
     @property
     def method_name(self):
         return 'borg'
+    
+    def need_mount(self):
+        return True
 
     def backup(self):
         """ Backup prepared files with borg """
-        super(BorgBackupMethod, self).backup()
+
+        archive = self.repo.location + '::' + self.name
+        cmd = ['borg', 'create', archive, './']
+        borg = self._run_borg_command(cmd)
+        return_code = borg.wait()
+        if return_code:
+            raise YunohostError('backup_borg_mount_error')
+
+    def mount(self, restore_manager):
+        """ Extract and mount needed files with borg """
+        super(BorgBackupMethod, self).mount(restore_manager)
         
-        for path in self.manager.paths_to_backup:
-            source = path['source']
-            dest = os.path.join(self.repo.path, path['dest'])
-            if source == dest:
-                logger.debug("Files already copyed")
-                return
+        # Export as tar needed files through a pipe
+        archive = self.repo.location + '::' + self.name
+        cmd = ['borg', 'export-tar', archive, '-']
+        borg = self._run_borg_command(cmd, stdout=subprocess.PIPE)
 
-            dest_parent = os.path.dirname(dest)
-            if not os.path.exists(dest_parent):
-                filesystem.mkdir(dest_parent, 0o750, True, uid='admin')
+        # And uncompress it into the working directory
+        untar = subprocess.Popen(['tar', 'x'], cwd=self.work_dir, stdin=borg.stdout)
+        borg_return_code = borg.wait()
+        untar_return_code = untar.wait()
+        if borg_return_code + untar_return_code != 0:
+            err = untar.communicate()[1]
+            raise YunohostError('backup_borg_backup_error')
 
-            if os.path.isdir(source):
-                shutil.copytree(source, dest)
-            else:
-                shutil.copy(source, dest)
+    def _run_borg_command(self, cmd, stdout=None):
+        env = dict(os.environ)
 
-        # TODO run borg create command
-        raise YunohostError('backup_borg_not_implemented')
+        if self.repo.domain:
+            # TODO Use the best/good key
+            private_key = "/root/.ssh/ssh_host_ed25519_key"
+            
+            # Don't check ssh fingerprint strictly the first time
+            # TODO improve this by publishing and checking this with DNS
+            strict = 'yes' if self.repo.domain in open('/root/.ssh/known_hosts').read() else 'no'
+            env['BORG_RSH'] = "ssh -i %s -oStrictHostKeyChecking=%s"
+            env['BORG_RSH'] = env['BORG_RSH'] % (private_key, strict)
+        
+        # In case, borg need a passphrase to get access to the repo
+        if self.repo.passphrase:
+            cmd += ['-e', 'repokey']
+            env['BORG_PASSPHRASE'] = self.repo.passphrase
 
-    def mount(self, mnt_path):
-        raise YunohostError('backup_borg_not_implemented')
+        return subprocess.Popen(cmd, env=env, stdout=stdout)
+
 
 
 class CustomBackupMethod(BackupMethod):
@@ -1943,7 +1976,7 @@ class CustomBackupMethod(BackupMethod):
 
     @property
     def method_name(self):
-        return 'borg'
+        return 'custom'
 
     def need_mount(self):
         """Call the backup_method hook to know if we need to organize files
