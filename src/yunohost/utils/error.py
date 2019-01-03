@@ -18,14 +18,23 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
-import os
+
+from moulinette.core import MoulinetteError
+from moulinette import m18n
 
 
-def free_space_in_directory(dirpath):
-    stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_bavail
+class YunohostError(MoulinetteError):
 
+    """
+    Yunohost base exception
+    
+    The (only?) main difference with MoulinetteError being that keys
+    are translated via m18n.n (namespace) instead of m18n.g (global?)
+    """
 
-def space_used_by_directory(dirpath):
-    stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_blocks
+    def __init__(self, key, __raw_msg__=False, *args, **kwargs):
+        if __raw_msg__:
+            msg = key
+        else:
+            msg = m18n.n(key, *args, **kwargs)
+        super(YunohostError, self).__init__(msg, __raw_msg__=True)

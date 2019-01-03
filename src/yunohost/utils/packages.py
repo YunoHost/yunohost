@@ -33,6 +33,7 @@ logger = logging.getLogger('yunohost.utils.packages')
 # Exceptions -----------------------------------------------------------------
 
 class PackageException(Exception):
+
     """Base exception related to a package
 
     Represent an exception related to the package named `pkgname`. If no
@@ -50,16 +51,19 @@ class PackageException(Exception):
 
 
 class UnknownPackage(PackageException):
+
     """The package is not found in the cache."""
     message_key = 'package_unknown'
 
 
 class UninstalledPackage(PackageException):
+
     """The package is not installed."""
     message_key = 'package_not_installed'
 
 
 class InvalidSpecifier(ValueError):
+
     """An invalid specifier was found."""
 
 
@@ -68,6 +72,7 @@ class InvalidSpecifier(ValueError):
 # See: https://github.com/pypa/packaging
 
 class Specifier(object):
+
     """Unique package version specifier
 
     Restrict a package version according to the `spec`. It must be a string
@@ -257,6 +262,7 @@ class Specifier(object):
 
 
 class SpecifierSet(object):
+
     """A set of package version specifiers
 
     Combine several Specifier separated by a comma. It allows to restrict

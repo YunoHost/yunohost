@@ -105,7 +105,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.']{0,3})+$
+                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
@@ -125,6 +125,7 @@ user:
                         pattern: &pattern_password
                             - !!str ^.{3,}$
                             - "pattern_password"
+                        comment: good_practices_about_user_password
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -147,6 +148,7 @@ user:
                     extra:
                         pattern: *pattern_username
                 --purge:
+                    help: Purge user's home and mail directories
                     action: store_true
 
         ### user_update()
@@ -555,6 +557,10 @@ app:
                 -n:
                     full: --no-remove-on-failure
                     help: Debug option to avoid removing the app on a failed installation
+                    action: store_true
+                -f:
+                    full: --force
+                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
                     action: store_true
 
         ### app_remove() TODO: Write help
@@ -1445,7 +1451,7 @@ tools:
 
         ### tools_adminpw()
         adminpw:
-            action_help: Change admin password
+            action_help: Change password of admin and root users
             api: PUT /adminpw
             configuration:
                 authenticate: all
@@ -1456,6 +1462,7 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
 
         ### tools_maindomain()
         maindomain:
@@ -1493,8 +1500,12 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
+                    action: store_true
+                --force-password:
+                    help: Use this if you really want to set a weak password
                     action: store_true
 
         ### tools_update()

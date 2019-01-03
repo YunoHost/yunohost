@@ -222,11 +222,7 @@ ynh_add_fpm_config () {
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
-		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
-		ynh_backup_if_checksum_is_different "$finalphpini"
-		sudo cp ../conf/php-fpm.ini "$finalphpini"
-		sudo chown root: "$finalphpini"
-		ynh_store_file_checksum "$finalphpini"
+		echo "Please do not use a separate ini file, merge you directives in the pool file instead." &>2
 	fi
 	sudo systemctl reload $fpm_service
 }
@@ -237,10 +233,10 @@ ynh_add_fpm_config () {
 ynh_remove_fpm_config () {
 	local fpm_config_dir=$(ynh_app_setting_get $app fpm_config_dir)
 	local fpm_service=$(ynh_app_setting_get $app fpm_service)
-	# Assume php version 5 if not set
+	# Assume php version 7 if not set
 	if [ -z "$fpm_config_dir" ]; then
-		fpm_config_dir="/etc/php5/fpm"
-		fpm_service="php5-fpm"
+		fpm_config_dir="/etc/php/7.0/fpm"
+		fpm_service="php7.0-fpm"
 	fi
 	ynh_secure_remove "$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove "$fpm_config_dir/conf.d/20-$app.ini" 2>&1

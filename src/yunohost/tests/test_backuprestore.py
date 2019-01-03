@@ -12,17 +12,21 @@ from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
 from yunohost.domain import _get_maindomain
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 
 # Get main domain
-maindomain = _get_maindomain()
+maindomain = ""
 
 # Instantiate LDAP Authenticator
 AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
 AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
 auth = None
 
+
 def setup_function(function):
+
+    global maindomain
+    maindomain = _get_maindomain()
 
     print ""
 
@@ -84,9 +88,9 @@ def teardown_function(function):
         shutil.rmtree("/opt/test_backup_output_directory")
 
 
-###############################################################################
-#  Helpers                                                                    #
-###############################################################################
+#
+# Helpers                                                                    #
+#
 
 def app_is_installed(app):
 
@@ -108,12 +112,14 @@ def backup_test_dependencies_are_met():
 
     return True
 
+
 def tmp_backup_directory_is_empty():
 
     if not os.path.exists("/home/yunohost.backup/tmp/"):
         return True
     else:
         return len(os.listdir('/home/yunohost.backup/tmp/')) == 0
+
 
 def clean_tmp_backup_directory():
 
@@ -122,10 +128,10 @@ def clean_tmp_backup_directory():
 
     mount_lines = subprocess.check_output("mount").split("\n")
 
-    points_to_umount = [ line.split(" ")[2]
-                         for line in mount_lines
-                            if  len(line) >= 3
-                            and line.split(" ")[2].startswith("/home/yunohost.backup/tmp") ]
+    points_to_umount = [line.split(" ")[2]
+                        for line in mount_lines
+                        if len(line) >= 3
+                        and line.split(" ")[2].startswith("/home/yunohost.backup/tmp")]
 
     for point in reversed(points_to_umount):
         os.system("umount %s" % point)
@@ -134,6 +140,7 @@ def clean_tmp_backup_directory():
         shutil.rmtree("/home/yunohost.backup/tmp/%s" % f)
 
     shutil.rmtree("/home/yunohost.backup/tmp/")
+
 
 def reset_ssowat_conf():
 
@@ -188,14 +195,15 @@ def add_archive_system_from_2p4():
     os.system("cp ./tests/apps/backup_system_from_2p4/backup.tar.gz \
                /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
 
-###############################################################################
-#  System backup                                                              #
-###############################################################################
+#
+# System backup                                                              #
+#
+
 
 def test_backup_only_ldap():
 
     # Create the backup
-    backup_create(ignore_system=False, ignore_apps=True, system=["conf_ldap"])
+    backup_create(system=["conf_ldap"], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -211,20 +219,21 @@ def test_backup_system_part_that_does_not_exists(mocker):
     mocker.spy(m18n, "n")
 
     # Create the backup
-    with pytest.raises(MoulinetteError):
-        backup_create(ignore_system=False, ignore_apps=True, system=["yolol"])
+    with pytest.raises(YunohostError):
+        backup_create(system=["yolol"], apps=None)
 
     m18n.n.assert_any_call('backup_hook_unknown', hook="yolol")
     m18n.n.assert_any_call('backup_nothings_done')
 
-###############################################################################
-#  System backup and restore                                                  #
-###############################################################################
+#
+# System backup and restore                                                  #
+#
+
 
 def test_backup_and_restore_all_sys():
 
     # Create the backup
-    backup_create(ignore_system=False, ignore_apps=True)
+    backup_create(system=[], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -241,40 +250,41 @@ def test_backup_and_restore_all_sys():
 
     # Restore the backup
     backup_restore(auth, name=archives[0], force=True,
-                   ignore_system=False, ignore_apps=True)
+                   system=[], apps=None)
 
     # Check ssowat conf is back
     assert os.path.exists("/etc/ssowat/conf.json")
 
 
-###############################################################################
-#  System restore from 2.4                                                    #
-###############################################################################
+#
+# System restore from 2.4                                                    #
+#
 
 @pytest.mark.with_system_archive_from_2p4
 def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
 
     # Backup current system
-    backup_create(ignore_system=False, ignore_apps=True)
+    backup_create(system=[], apps=None)
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
     # Restore system archive from 2.4
     try:
         backup_restore(auth, name=backup_list()["archives"][1],
-                             ignore_system=False,
-                             ignore_apps=True,
-                             force=True)
+                       system=[],
+                       apps=None,
+                       force=True)
     finally:
         # Restore system as it was
         backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_system=False,
-                             ignore_apps=True,
-                             force=True)
+                       system=[],
+                       apps=None,
+                       force=True)
 
-###############################################################################
-#  App backup                                                                 #
-###############################################################################
+#
+# App backup                                                                 #
+#
+
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_script_failure_handling(monkeypatch, mocker):
@@ -292,10 +302,11 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
-        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+    with pytest.raises(YunohostError):
+        backup_create(system=None, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call('backup_app_failed', app='backup_recommended_app')
+
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_not_enough_free_space(monkeypatch, mocker):
@@ -312,8 +323,8 @@ def test_backup_not_enough_free_space(monkeypatch, mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
-        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+    with pytest.raises(YunohostError):
+        backup_create(system=None, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call('not_enough_disk_space', path=ANY)
 
@@ -324,8 +335,8 @@ def test_backup_app_not_installed(mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
-        backup_create(ignore_system=True, ignore_apps=False, apps=["wordpress"])
+    with pytest.raises(YunohostError):
+        backup_create(system=None, apps=["wordpress"])
 
     m18n.n.assert_any_call("unbackup_app", app="wordpress")
     m18n.n.assert_any_call('backup_nothings_done')
@@ -340,8 +351,8 @@ def test_backup_app_with_no_backup_script(mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
-        backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+    with pytest.raises(YunohostError):
+        backup_create(system=None, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call("backup_with_no_backup_script_for_app", app="backup_recommended_app")
     m18n.n.assert_any_call('backup_nothings_done')
@@ -359,7 +370,7 @@ def test_backup_app_with_no_restore_script(mocker):
     # Backuping an app with no restore script will only display a warning to the
     # user...
 
-    backup_create(ignore_system=True, ignore_apps=False, apps=["backup_recommended_app"])
+    backup_create(system=None, apps=["backup_recommended_app"])
 
     m18n.n.assert_any_call("backup_with_no_restore_script_for_app", app="backup_recommended_app")
 
@@ -368,7 +379,7 @@ def test_backup_app_with_no_restore_script(mocker):
 def test_backup_with_different_output_directory():
 
     # Create the backup
-    backup_create(ignore_system=False, ignore_apps=True, system=["conf_ssh"],
+    backup_create(system=["conf_ssh"], apps=None,
                   output_directory="/opt/test_backup_output_directory",
                   name="backup")
 
@@ -382,10 +393,11 @@ def test_backup_with_different_output_directory():
     assert len(archives_info["system"].keys()) == 1
     assert "conf_ssh" in archives_info["system"].keys()
 
+
 @pytest.mark.clean_opt_dir
 def test_backup_with_no_compress():
     # Create the backup
-    backup_create(ignore_system=False, ignore_apps=True, system=["conf_nginx"],
+    backup_create(system=["conf_nginx"], apps=None,
                   output_directory="/opt/test_backup_output_directory",
                   no_compress=True,
                   name="backup")
@@ -393,17 +405,15 @@ def test_backup_with_no_compress():
     assert os.path.exists("/opt/test_backup_output_directory/info.json")
 
 
-###############################################################################
-#  App restore                                                                #
-###############################################################################
+#
+# App restore                                                                #
+#
 
 @pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_app_wordpress_from_Ynh2p4():
 
-    backup_restore(auth, name=backup_list()["archives"][0],
-                         ignore_system=True,
-                         ignore_apps=False,
-                         apps=["wordpress"])
+    backup_restore(auth, system=None, name=backup_list()["archives"][0],
+                   apps=["wordpress"])
 
 
 @pytest.mark.with_wordpress_archive_from_2p4
@@ -419,11 +429,9 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
 
     assert not _is_installed("wordpress")
 
-    with pytest.raises(MoulinetteError):
-        backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_system=True,
-                             ignore_apps=False,
-                             apps=["wordpress"])
+    with pytest.raises(YunohostError):
+        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+                       apps=["wordpress"])
 
     m18n.n.assert_any_call('restore_app_failed', app='wordpress')
     m18n.n.assert_any_call('restore_nothings_done')
@@ -442,16 +450,14 @@ def test_restore_app_not_enough_free_space(monkeypatch, mocker):
 
     assert not _is_installed("wordpress")
 
-    with pytest.raises(MoulinetteError):
-        backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_system=True,
-                             ignore_apps=False,
-                             apps=["wordpress"])
+    with pytest.raises(YunohostError):
+        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+                       apps=["wordpress"])
 
     m18n.n.assert_any_call('restore_not_enough_disk_space',
-        free_space=0,
-        margin=ANY,
-        needed_space=ANY)
+                           free_space=0,
+                           margin=ANY,
+                           needed_space=ANY)
     assert not _is_installed("wordpress")
 
 
@@ -463,11 +469,9 @@ def test_restore_app_not_in_backup(mocker):
 
     mocker.spy(m18n, "n")
 
-    with pytest.raises(MoulinetteError):
-        backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_system=True,
-                             ignore_apps=False,
-                             apps=["yoloswag"])
+    with pytest.raises(YunohostError):
+        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+                       apps=["yoloswag"])
 
     m18n.n.assert_any_call('backup_archive_app_not_found', app="yoloswag")
     assert not _is_installed("wordpress")
@@ -479,19 +483,15 @@ def test_restore_app_already_installed(mocker):
 
     assert not _is_installed("wordpress")
 
-    backup_restore(auth, name=backup_list()["archives"][0],
-                         ignore_system=True,
-                         ignore_apps=False,
-                         apps=["wordpress"])
+    backup_restore(auth, system=None, name=backup_list()["archives"][0],
+                   apps=["wordpress"])
 
     assert _is_installed("wordpress")
 
     mocker.spy(m18n, "n")
-    with pytest.raises(MoulinetteError):
-        backup_restore(auth, name=backup_list()["archives"][0],
-                             ignore_system=True,
-                             ignore_apps=False,
-                             apps=["wordpress"])
+    with pytest.raises(YunohostError):
+        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+                       apps=["wordpress"])
 
     m18n.n.assert_any_call('restore_already_installed_app', app="wordpress")
     m18n.n.assert_any_call('restore_nothings_done')
@@ -520,7 +520,7 @@ def test_backup_and_restore_with_ynh_restore():
 def _test_backup_and_restore_app(app):
 
     # Create a backup of this app
-    backup_create(ignore_system=True, ignore_apps=False, apps=[app])
+    backup_create(system=None, apps=[app])
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -535,14 +535,15 @@ def _test_backup_and_restore_app(app):
     assert not app_is_installed(app)
 
     # Restore the app
-    backup_restore(auth, name=archives[0], ignore_system=True,
-                   ignore_apps=False, apps=[app])
+    backup_restore(auth, system=None, name=archives[0],
+                   apps=[app])
 
     assert app_is_installed(app)
 
-###############################################################################
-#  Some edge cases                                                            #
-###############################################################################
+#
+# Some edge cases                                                            #
+#
+
 
 def test_restore_archive_with_no_json(mocker):
 
@@ -553,9 +554,8 @@ def test_restore_archive_with_no_json(mocker):
     assert "badbackup" in backup_list()["archives"]
 
     mocker.spy(m18n, "n")
-    with pytest.raises(MoulinetteError):
-        backup_restore(auth, name="badbackup", force=True,
-                       ignore_system=False, ignore_apps=False)
+    with pytest.raises(YunohostError):
+        backup_restore(auth, name="badbackup", force=True)
     m18n.n.assert_any_call('backup_invalid_archive')
 
 
@@ -567,7 +567,7 @@ def test_backup_binds_are_readonly(monkeypatch):
 
         confssh = os.path.join(self.work_dir, "conf/ssh")
         output = subprocess.check_output("touch %s/test 2>&1 || true" % confssh,
-                                         shell=True)
+                                         shell=True, env={'LANG': 'en_US.UTF-8'})
 
         assert "Read-only file system" in output
 
@@ -577,7 +577,7 @@ def test_backup_binds_are_readonly(monkeypatch):
         self.clean()
 
     monkeypatch.setattr("yunohost.backup.BackupMethod.mount_and_backup",
-            custom_mount_and_backup)
+                        custom_mount_and_backup)
 
     # Create the backup
-    backup_create(ignore_system=False, ignore_apps=True)
+    backup_create(system=[])
