@@ -136,7 +136,7 @@ ynh_handle_getopts_args () {
 						for i in `seq 0 $(( ${#all_args[@]} - 1 ))`
 						do
 							# If this argument is an option, end here.
-							if [ "${all_args[$i]:0:1}" == "-" ] || [ -z "${all_args[$i]}" ]
+							if [ "${all_args[$i]:0:1}" == "-" ]
 							then
 								# Ignore the first value of the array, which is the option itself
 								if [ "$i" -ne 0 ]; then
