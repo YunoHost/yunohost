@@ -165,26 +165,26 @@ ynh_mysql_drop_user() {
 # After executing this helper, the password of the created database will be available in $db_pwd
 # It will also be stored as "mysqlpwd" into the app settings.
 #
-# usage: ynh_mysql_setup_db --db_user=user --db_name=name [--db_password=pwd]
+# usage: ynh_mysql_setup_db --db_user=user --db_name=name [--db_pwd=pwd]
 # | arg: -u, --db_user - Owner of the database
 # | arg: -n, --db_name - Name of the database
-# | arg: -p, --db_password - Password of the database. If not given, a password will be generated
+# | arg: -p, --db_pwd - Password of the database. If not given, a password will be generated
 ynh_mysql_setup_db () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=unp
-	declare -Ar args_array=( [u]=db_user= [n]=db_name= [p]=db_password= )
+	declare -Ar args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
-	local db_password
+	local db_pwd
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
 	local new_db_pwd=$(ynh_string_random)	# Generate a random password
-	# If $db_password is not given, use new_db_pwd instead for db_password.
-	db_password="${db_password:-$new_db_pwd}"
+	# If $db_pwd is not given, use new_db_pwd instead for db_pwd
+	db_pwd="${db_pwd:-$new_db_pwd}"
 
-	ynh_mysql_create_db "$db_name" "$db_user" "$db_password"	# Create the database
-	ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_password	# Store the password in the app's config
+	ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
+	ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd	# Store the password in the app's config
 }
 
 # Remove a database if it exists, and the associated user
