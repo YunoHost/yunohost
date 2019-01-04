@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Check if apt is free to use, or wait, until timeout.
 #
 # [internal]
@@ -29,6 +31,7 @@ ynh_wait_dpkg_free() {
 # | arg: -p, --package - the package name to check
 ynh_package_is_installed() {
     # Declare an array to define the options of this helper.
+    local legacy_args=p
     declare -Ar args_array=( [p]=package= )
     local package
     # Manage arguments with getopts
@@ -48,6 +51,7 @@ ynh_package_is_installed() {
 # | ret: the version or an empty string
 ynh_package_version() {
     # Declare an array to define the options of this helper.
+    local legacy_args=p
     declare -Ar args_array=( [p]=package= )
     local package
     # Manage arguments with getopts

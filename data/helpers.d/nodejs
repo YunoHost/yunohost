@@ -1,3 +1,5 @@
+#!/bin/bash
+
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -61,6 +63,7 @@ ynh_install_nodejs () {
 	# Use n, https://github.com/tj/n to manage the nodejs versions
 
 	# Declare an array to define the options of this helper.
+	local legacy_args=n
 	declare -Ar args_array=( [n]=nodejs_version= )
 	local nodejs_version
 	# Manage arguments with getopts

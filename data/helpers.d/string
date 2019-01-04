@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Generate a random string
 #
 # example: pwd=$(ynh_string_random --length=8)
@@ -6,6 +8,7 @@
 # | arg: -l, --length - the string length to generate (default: 24)
 ynh_string_random() {
     # Declare an array to define the options of this helper.
+    local legacy_args=l
     declare -Ar args_array=( [l]=length= )
     local length
     # Manage arguments with getopts
@@ -29,6 +32,7 @@ ynh_string_random() {
 # (see sed manual page for more information)
 ynh_replace_string () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=mrf
 	declare -Ar args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
 	local match_string
 	local replace_string
@@ -55,6 +59,7 @@ ynh_replace_string () {
 # characters, you can't use some regular expressions and sub-expressions.
 ynh_replace_special_string () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=mrf
 	declare -Ar args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
 	local match_string
 	local replace_string

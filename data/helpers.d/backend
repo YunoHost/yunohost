@@ -16,6 +16,7 @@
 # Unless you use the option --non-append
 ynh_use_logrotate () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=lnuya
 	declare -Ar args_array=( [l]=logfile= [n]=nonappend [u]=specific_user= [y]=non [a]=append )
 	# [y]=non [a]=append are only for legacy purpose, to not fail on the old option '--non-append'
 	local logfile
@@ -113,6 +114,7 @@ ynh_remove_logrotate () {
 #
 ynh_add_systemd_config () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=st
 	declare -Ar args_array=( [s]=service= [t]=template= )
 	local service
 	local template
@@ -147,6 +149,7 @@ ynh_add_systemd_config () {
 #
 ynh_remove_systemd_config () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=s
 	declare -Ar args_array=( [s]=service= )
 	local service
 	# Manage arguments with getopts

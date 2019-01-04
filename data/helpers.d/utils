@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Extract a key from a plain command output
 #
 # example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
@@ -146,6 +148,7 @@ ynh_backup_before_upgrade () {
 # | arg: -s, --source_id - Name of the app, if the package contains more than one app
 ynh_setup_source () {
     # Declare an array to define the options of this helper.
+    local legacy_args=ds
     declare -Ar args_array=( [d]=dest_dir= [s]=source_id= )
     local dest_dir
     local source_id

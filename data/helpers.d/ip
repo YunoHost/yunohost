@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Validate an IP address
 #
 # usage: ynh_validate_ip --family=family --ip_address=ip_address
@@ -10,6 +12,7 @@ ynh_validate_ip()
   # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
 
   # Declare an array to define the options of this helper.
+  local legacy_args=fi
   declare -Ar args_array=( [f]=family= [i]=ip_address= )
   local family
   local ip_address
@@ -40,6 +43,7 @@ EOF
 ynh_validate_ip4()
 {
   # Declare an array to define the options of this helper.
+  local legacy_args=i
   declare -Ar args_array=( [i]=ip_address= )
   local ip_address
   # Manage arguments with getopts
@@ -59,6 +63,7 @@ ynh_validate_ip4()
 ynh_validate_ip6()
 {
   # Declare an array to define the options of this helper.
+  local legacy_args=i
   declare -Ar args_array=( [i]=ip_address= )
   local ip_address
   # Manage arguments with getopts

@@ -1,7 +1,10 @@
+#!/bin/bash
+
 # Print a message to stderr and exit
 # usage: ynh_die --message=MSG [--ret_code=RETCODE]
 ynh_die() {
   # Declare an array to define the options of this helper.
+  local legacy_args=mc
   declare -Ar args_array=( [m]=message= [c]=ret_code= )
   local message
   local ret_code
@@ -17,6 +20,7 @@ ynh_die() {
 # usage: ynh_print_info --message="Some message"
 ynh_print_info() {
     # Declare an array to define the options of this helper.
+    local legacy_args=m
     declare -Ar args_array=( [m]=message= )
     local message
     # Manage arguments with getopts
@@ -56,6 +60,7 @@ ynh_print_log () {
 # | arg: -m, --message - The text to print
 ynh_print_warn () {
   # Declare an array to define the options of this helper.
+  local legacy_args=m
   declare -Ar args_array=( [m]=message= )
   local message
   # Manage arguments with getopts
@@ -70,6 +75,7 @@ ynh_print_warn () {
 # | arg: -m, --message - The text to print
 ynh_print_err () {
   # Declare an array to define the options of this helper.
+  local legacy_args=m
   declare -Ar args_array=( [m]=message= )
   local message
   # Manage arguments with getopts

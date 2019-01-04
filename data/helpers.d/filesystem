@@ -1,3 +1,5 @@
+#!/bin/bash
+
 CAN_BIND=${CAN_BIND:-1}
 
 # Add a file or a directory to the list of paths to backup
@@ -46,6 +48,7 @@ ynh_backup() {
     # TODO find a way to avoid injection by file strange naming !
 
     # Declare an array to define the options of this helper.
+    local legacy_args=sdbm
     declare -Ar args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )
     local src_path
     local dest_path
@@ -214,6 +217,7 @@ with open(sys.argv[1], 'r') as backup_file:
 #
 ynh_restore_file () {
     # Declare an array to define the options of this helper.
+    local legacy_args=odm
     declare -Ar args_array=( [o]=origin_path= [d]=dest_path= [m]=not_mandatory )
     local origin_path
     local archive_path
@@ -307,6 +311,7 @@ properly with chmod/chown." >&2
 # | arg: -f, --file - The file on which the checksum will performed, then stored.
 ynh_store_file_checksum () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=f
 	declare -Ar args_array=( [f]=file= )
 	local file
 	# Manage arguments with getopts
@@ -328,6 +333,7 @@ ynh_store_file_checksum () {
 # | ret: Return the name a the backup file, or nothing
 ynh_backup_if_checksum_is_different () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=f
 	declare -Ar args_array=( [f]=file= )
 	local file
 	# Manage arguments with getopts
@@ -356,6 +362,7 @@ ynh_backup_if_checksum_is_different () {
 # | arg: -f, --file= - The file for which the checksum will be deleted
 ynh_delete_file_checksum () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=f
 	declare -Ar args_array=( [f]=file= )
 	local file
 	# Manage arguments with getopts
@@ -371,6 +378,7 @@ ynh_delete_file_checksum () {
 # | arg: -f, --file - File or directory to remove
 ynh_secure_remove () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=f
 	declare -Ar args_array=( [f]=file= )
 	local file
 	# Manage arguments with getopts
