@@ -175,7 +175,7 @@ ynh_mysql_setup_db () {
 	declare -Ar args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
-	local db_pwd
+	db_pwd=""
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
