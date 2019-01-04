@@ -40,8 +40,8 @@ ynh_mysql_execute_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    ynh_mysql_connect_as "root" "$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
-        "$database" <<< "$sql"
+    ynh_mysql_connect_as --user="root" --password="$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
+        --database="$database" <<< "$sql"
 }
 
 # Execute a command from a file as root user
@@ -59,8 +59,8 @@ ynh_mysql_execute_file_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    ynh_mysql_connect_as "root" "$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
-        "$database" < "$file"
+    ynh_mysql_connect_as --user="root" --password="$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
+        --database="$database" < "$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
@@ -83,7 +83,7 @@ ynh_mysql_create_db() {
         sql+=" WITH GRANT OPTION;"
     fi
 
-    ynh_mysql_execute_as_root "$sql"
+    ynh_mysql_execute_as_root --sql="$sql"
 }
 
 # Drop a database
@@ -96,7 +96,7 @@ ynh_mysql_create_db() {
 # usage: ynh_mysql_drop_db db
 # | arg: db - the database name to drop
 ynh_mysql_drop_db() {
-    ynh_mysql_execute_as_root "DROP DATABASE ${1};"
+    ynh_mysql_execute_as_root --sql="DROP DATABASE ${1};"
 }
 
 # Dump a database
@@ -126,7 +126,7 @@ ynh_mysql_dump_db() {
 # | arg: pwd - the password to identify user by
 ynh_mysql_create_user() {
     ynh_mysql_execute_as_root \
-        "CREATE USER '${1}'@'localhost' IDENTIFIED BY '${2}';"
+        --sql="CREATE USER '${1}'@'localhost' IDENTIFIED BY '${2}';"
 }
 
 # Check if a mysql user exists
@@ -142,7 +142,7 @@ ynh_mysql_user_exists()
    # Manage arguments with getopts
    ynh_handle_getopts_args "$@"
 
-   if [[ -z $(ynh_mysql_execute_as_root "SELECT User from mysql.user WHERE User = '$user';") ]]
+   if [[ -z $(ynh_mysql_execute_as_root --sql="SELECT User from mysql.user WHERE User = '$user';") ]]
    then
       return 1
    else
@@ -157,7 +157,7 @@ ynh_mysql_user_exists()
 # usage: ynh_mysql_drop_user user
 # | arg: user - the user name to drop
 ynh_mysql_drop_user() {
-    ynh_mysql_execute_as_root "DROP USER '${1}'@'localhost';"
+    ynh_mysql_execute_as_root --sql="DROP USER '${1}'@'localhost';"
 }
 
 # Create a database, an user and its password. Then store the password in the app's config
@@ -210,7 +210,7 @@ ynh_mysql_remove_db () {
 	fi
 
 	# Remove mysql user if it exists
-        if $(ynh_mysql_user_exists $db_user); then
+        if $(ynh_mysql_user_exists --user=$db_user); then
 		ynh_mysql_drop_user $db_user
 	fi
 }
