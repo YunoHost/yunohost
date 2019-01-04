@@ -166,8 +166,9 @@ ynh_handle_getopts_args () {
 		# Check if there's getopts arguments
 		if [ "${arguments[0]:0:1}" != "-" ]
 		then
-			# If not, enter in legacy mode and manage the arguments as positionnal ones.
-			ynh_print_info --message="! Helper used in legacy mode !"
+			# If not, enter in legacy mode and manage the arguments as positionnal ones..
+			# Dot not echo, to prevent to go through a helper output. But print only in the log.
+			set -x; echo "! Helper used in legacy mode !" > /dev/null; set +x
 			local i
 			for i in `seq 0 $(( ${#arguments[@]} -1 ))`
 			do
@@ -177,6 +178,10 @@ ynh_handle_getopts_args () {
 				getopts_parameters=${legacy_args:-${getopts_parameters//:}}
 				# Get the option_flag from getopts_parameters, by using the option_flag according to the position of the argument.
 				option_flag=${getopts_parameters:$i:1}
+				if [ -z "$option_flag" ]; then
+						ynh_print_warn --message="Too many arguments ! \"${arguments[$i]}\" will be ignored."
+						continue
+				fi
 				# Use the long option, corresponding to the option_flag, as a variable
 				# (e.g. for [u]=user, 'user' will be used as a variable)
 				# Also, remove '=' at the end of the long option
