@@ -38,6 +38,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
+from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
@@ -1436,6 +1437,11 @@ class BackupMethod(object):
         raise YunohostError('backup_abstract_method')
 
     @property
+    def archive_path(self):
+        """Return the archive path"""
+        return self.repo.location + '::' + self.name
+    
+    @property
     def name(self):
         """Return the backup name"""
         return self.manager.name
@@ -1940,7 +1946,7 @@ class TarBackupMethod(BackupMethod):
                                     path=archive_file)
 
     def _get_info_string(self):
-        info_file = "%s/%s.info.json" % (self.repo.path, self.name)
+        info_file = os.path.join(self.repo.path, self.name + '.info.json')
 
         if not os.path.exists(info_file):
             tar = tarfile.open(self.archive_path, "r:gz")
@@ -1976,20 +1982,12 @@ class BorgBackupMethod(BackupMethod):
 
         if self.repo.quota:
             cmd += ['--storage-quota', self.repo.quota]
-        borg = self._run_borg_command(cmd)
-        return_code = borg.wait()
-        if return_code:
-            raise YunohostError('backup_borg_init_error')
-
+        self._call('init', cmd)
 
     @property
     def method_name(self):
         return 'borg'
     
-    @property
-    def archive_path(self):
-        """Return the archive path"""
-        return self.repo.location + '::' + self.name
     
     def need_mount(self):
         return True
@@ -1998,10 +1996,7 @@ class BorgBackupMethod(BackupMethod):
         """ Backup prepared files with borg """
 
         cmd = ['borg', 'create', self.archive_path, './']
-        borg = self._run_borg_command(cmd)
-        return_code = borg.wait()
-        if return_code:
-            raise YunohostError('backup_borg_mount_error')
+        self._call('backup', cmd)
 
     def mount(self, restore_manager):
         """ Extract and mount needed files with borg """
@@ -2016,42 +2011,41 @@ class BorgBackupMethod(BackupMethod):
         borg_return_code = borg.wait()
         untar_return_code = untar.wait()
         if borg_return_code + untar_return_code != 0:
-            err = untar.communicate()[1]
-            raise YunohostError('backup_borg_backup_error')
+            # err = untar.communicate()[1]
+            raise YunohostError('backup_borg_mount_error')
 
     def list(self):
-        cmd = ['borg', 'list', self.repo.location, '--short']
-        borg = self._run_borg_command(cmd)
-        return_code = borg.wait()
-        if return_code:
-            raise YunohostError('backup_borg_list_error')
-        
-        out, _ = borg.communicate()
-        
-        result = out.strip().splitlines()
+        """ Return a list of archives names
 
+        Exceptions:
+        backup_borg_list_error -- Raised if the borg script failed
+        """
+        cmd = ['borg', 'list', self.repo.location, '--short']
+        out = self._call('list', cmd)
+        result = out.strip().splitlines()
         return result
     
     def _assert_archive_exists(self):
+        """ Trigger an error if archive is missing
+
+        Exceptions:
+        backup_borg_exist_error -- Raised if the borg script failed
+        """
         cmd = ['borg', 'list', self.archive_path]
-        borg = self._run_borg_command(cmd)
-        return_code = borg.wait()
-        if return_code:
-            raise YunohostError('backup_borg_archive_name_unknown')
+        self._call('exist', cmd)
 
     def _get_info_string(self):
-        # Export as tar info file through a pipe
-        cmd = ['borg', 'extract', '--stdout', self.archive_path, 'info.json']
-        borg = self._run_borg_command(cmd)
-        return_code = borg.wait()
-        if return_code:
-            raise YunohostError('backup_borg_info_error')
-        
-        out, _ = borg.communicate()
+        """ Return json string of the info.json file
 
-        return out
+        Exceptions:
+        backup_borg_info_error -- Raised if the custom script failed
+        """
+        cmd = ['borg', 'extract', '--stdout', self.archive_path, 'info.json']
+        return self._call('info', cmd)
 
     def _run_borg_command(self, cmd, stdout=None):
+        """ Call a submethod of borg with the good context
+        """
         env = dict(os.environ)
 
         if self.repo.domain:
@@ -2070,6 +2064,16 @@ class BorgBackupMethod(BackupMethod):
             env['BORG_PASSPHRASE'] = self.repo.passphrase
 
         return subprocess.Popen(cmd, env=env, stdout=stdout)
+    
+    def _call(self, action, cmd):
+        borg = self._run_borg_command(cmd)
+        return_code = borg.wait()
+        if return_code:
+            raise YunohostError('backup_borg_' + action + '_error')
+        
+        out, _ = borg.communicate()
+
+        return out
 
 
 
@@ -2101,9 +2105,9 @@ class CustomBackupMethod(BackupMethod):
             return self._need_mount
 
         ret = hook_callback('backup_method', [self.method],
-                            args=self._get_args('need_mount'))
+                            args=['need_mount'])
 
-        self._need_mount = True if ret['succeed'] else False
+        self._need_mount = bool(ret['succeed'])
         return self._need_mount
 
     def backup(self):
@@ -2114,10 +2118,8 @@ class CustomBackupMethod(BackupMethod):
         backup_custom_backup_error -- Raised if the custom script failed
         """
 
-        ret = hook_callback('backup_method', [self.method],
-                            args=self._get_args('backup'))
-        if ret['failed']:
-            raise YunohostError('backup_custom_backup_error')
+        self._call('backup', self.work_dir, self.name, self.repo.location, self.manager.size,
+                self.manager.description)
 
     def mount(self, restore_manager):
         """
@@ -2127,15 +2129,47 @@ class CustomBackupMethod(BackupMethod):
         backup_custom_mount_error -- Raised if the custom script failed
         """
         super(CustomBackupMethod, self).mount(restore_manager)
-        ret = hook_callback('backup_method', [self.method],
-                            args=self._get_args('mount'))
-        if ret['failed']:
-            raise YunohostError('backup_custom_mount_error')
+        self._call('mount', self.work_dir, self.name, self.repo.location, self.manager.size,
+                self.manager.description)
 
-    def _get_args(self, action):
-        """Return the arguments to give to the custom script"""
-        return [action, self.work_dir, self.name, self.repo, self.manager.size,
-                self.manager.description]
+    def list(self):
+        """ Return a list of archives names
+
+        Exceptions:
+        backup_custom_list_error -- Raised if the custom script failed
+        """
+        out = self._call('list', self.repo.location)
+        result = out.strip().splitlines()
+        return result
+    
+    def _assert_archive_exists(self):
+        """ Trigger an error if archive is missing
+
+        Exceptions:
+        backup_custom_exist_error -- Raised if the custom script failed
+        """
+        self._call('exist', self.name, self.repo.location)
+
+    def _get_info_string(self):
+        """ Return json string of the info.json file
+
+        Exceptions:
+        backup_custom_info_error -- Raised if the custom script failed
+        """
+        return self._call('info', self.name, self.repo.location)
+    
+    def _call(self, *args):
+        """ Call a submethod of backup method hook
+
+        Exceptions:
+        backup_custom_ACTION_error -- Raised if the custom script failed
+        """
+        ret = hook_callback('backup_method', [self.method],
+                            args=args)
+        if ret['failed']:
+            raise YunohostError('backup_custom_' + args[0] + '_error')
+
+        return ret['succeed'][self.method]['stdreturn']
 
 
 #
@@ -2333,7 +2367,7 @@ def backup_info(name, repo=None, with_details=False, human_readable=False):
 
     repo = BackupRepository.get(repo)
 
-    info = repo.info(name)
+    info = repo.method.info(name)
     
     # Historically backup size was not here, in that case we know it's a tar archive
     size = info.get('size', 0)
