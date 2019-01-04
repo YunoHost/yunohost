@@ -110,6 +110,9 @@ class BackupRepository(object):
             method = 'tar' if self.domain is None else 'borg'
         self.method = BackupMethod.get(method, self)
 
+    def list(self, with_info=False):
+        return self.method.list(with_info)
+
     def compute_space_used(self):
         if self.used is None:
             try:

@@ -1403,6 +1403,7 @@ class BackupMethod(object):
         mount_and_backup(self, backup_manager)
         mount(self, restore_manager)
         create(cls, method, **kwargs)
+        info(archive_name)
 
     Usage:
         method = BackupMethod.create("tar")
@@ -1504,6 +1505,20 @@ class BackupMethod(object):
         """
         self.manager = restore_manager
 
+    def info(self, name):
+        self._assert_archive_exists()
+           
+        info_json = self._get_info_string()
+        if not self._info_json:
+            raise YunohostError('backup_info_json_not_implemented')
+        try:
+            info = json.load(info_json)
+        except:
+            logger.debug("unable to load info json", exc_info=1)
+            raise YunohostError('backup_invalid_archive')
+        
+        return info
+    
     def clean(self):
         """
         Umount sub directories of working dirextories and delete it if temporary
@@ -1768,7 +1783,7 @@ class TarBackupMethod(BackupMethod):
         return 'tar'
 
     @property
-    def _archive_file(self):
+    def archive_path(self):
         """Return the compress archive path"""
         return os.path.join(self.repo.path, self.name + '.tar.gz')
 
@@ -1793,10 +1808,10 @@ class TarBackupMethod(BackupMethod):
 
         # Open archive file for writing
         try:
-            tar = tarfile.open(self._archive_file, "w:gz")
+            tar = tarfile.open(self.archive_path, "w:gz")
         except:
             logger.debug("unable to open '%s' for writing",
-                         self._archive_file, exc_info=1)
+                         self.archive_path, exc_info=1)
             raise YunohostError('backup_archive_open_failed')
 
         # Add files to the archive
@@ -1812,13 +1827,13 @@ class TarBackupMethod(BackupMethod):
 
         # Move info file
         shutil.copy(os.path.join(self.work_dir, 'info.json'),
-                    os.path.join(ARCHIVES_PATH, self.name + '.info.json'))
+                    os.path.join(self.repo.path, self.name + '.info.json'))
 
         # If backuped to a non-default location, keep a symlink of the archive
         # to that location
-        link = os.path.join(ARCHIVES_PATH, self.name + '.tar.gz')
+        link = os.path.join(self.repo.path, self.name + '.tar.gz')
         if not os.path.isfile(link):
-            os.symlink(self._archive_file, link)
+            os.symlink(self.archive_path, link)
 
     def mount(self, restore_manager):
         """
@@ -1829,19 +1844,22 @@ class TarBackupMethod(BackupMethod):
         backup_archive_open_failed -- Raised if the archive can't be open
         """
         super(TarBackupMethod, self).mount(restore_manager)
+        
+        # Check file exist and it's not a broken link
+        self._assert_archive_exists()
 
         # Check the archive can be open
         try:
-            tar = tarfile.open(self._archive_file, "r:gz")
+            tar = tarfile.open(self.archive_path, "r:gz")
         except:
             logger.debug("cannot open backup archive '%s'",
-                         self._archive_file, exc_info=1)
+                         self.archive_path, exc_info=1)
             raise YunohostError('backup_archive_open_failed')
         tar.close()
 
         # Mount the tarball
         logger.debug(m18n.n("restore_extracting"))
-        tar = tarfile.open(self._archive_file, "r:gz")
+        tar = tarfile.open(self.archive_path, "r:gz")
         tar.extract('info.json', path=self.work_dir)
 
         try:
@@ -1885,6 +1903,66 @@ class TarBackupMethod(BackupMethod):
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
 
+    def list(self):
+        result = []
+
+        try:
+            # Retrieve local archives
+            archives = os.listdir(self.repo.path)
+        except OSError:
+            logger.debug("unable to iterate over local archives", exc_info=1)
+        else:
+            # Iterate over local archives
+            for f in archives:
+                try:
+                    name = f[:f.rindex('.tar.gz')]
+                except ValueError:
+                    continue
+                result.append(name)
+            result.sort(key=lambda x: os.path.getctime(self.archive_path))
+
+        return result
+
+    def _archive_exists(self):
+        return os.path.lexists(self.archive_path)
+    
+    def _assert_archive_exists(self):
+        if not self._archive_exists():
+            raise YunohostError('backup_archive_name_unknown', name=self.name)
+
+        # If symlink, retrieve the real path
+        if os.path.islink(self.archive_path):
+            archive_file = os.path.realpath(self.archive_path)
+
+            # Raise exception if link is broken (e.g. on unmounted external storage)
+            if not os.path.exists(archive_file):
+                raise YunohostError('backup_archive_broken_link',
+                                    path=archive_file)
+
+    def _get_info_string(self):
+        info_file = "%s/%s.info.json" % (self.repo.path, self.name)
+
+        if not os.path.exists(info_file):
+            tar = tarfile.open(self.archive_path, "r:gz")
+            info_dir = info_file + '.d'
+            try:
+                tar.extract('info.json', path=info_dir)
+            except KeyError:
+                logger.debug("unable to retrieve '%s' inside the archive",
+                             info_file, exc_info=1)
+                raise YunohostError('backup_invalid_archive')
+            else:
+                shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+            finally:
+                tar.close()
+            os.rmdir(info_dir)
+
+        try:
+            return read_file(info_file)
+        except MoulinetteError:
+            logger.debug("unable to load '%s'", info_file, exc_info=1)
+            raise YunohostError('backup_invalid_archive')
+
 
 class BorgBackupMethod(BackupMethod):
 
@@ -1908,14 +1986,18 @@ class BorgBackupMethod(BackupMethod):
     def method_name(self):
         return 'borg'
     
+    @property
+    def archive_path(self):
+        """Return the archive path"""
+        return self.repo.location + '::' + self.name
+    
     def need_mount(self):
         return True
 
     def backup(self):
         """ Backup prepared files with borg """
 
-        archive = self.repo.location + '::' + self.name
-        cmd = ['borg', 'create', archive, './']
+        cmd = ['borg', 'create', self.archive_path, './']
         borg = self._run_borg_command(cmd)
         return_code = borg.wait()
         if return_code:
@@ -1926,8 +2008,7 @@ class BorgBackupMethod(BackupMethod):
         super(BorgBackupMethod, self).mount(restore_manager)
         
         # Export as tar needed files through a pipe
-        archive = self.repo.location + '::' + self.name
-        cmd = ['borg', 'export-tar', archive, '-']
+        cmd = ['borg', 'export-tar', self.archive_path, '-']
         borg = self._run_borg_command(cmd, stdout=subprocess.PIPE)
 
         # And uncompress it into the working directory
@@ -1937,6 +2018,38 @@ class BorgBackupMethod(BackupMethod):
         if borg_return_code + untar_return_code != 0:
             err = untar.communicate()[1]
             raise YunohostError('backup_borg_backup_error')
+
+    def list(self):
+        cmd = ['borg', 'list', self.repo.location, '--short']
+        borg = self._run_borg_command(cmd)
+        return_code = borg.wait()
+        if return_code:
+            raise YunohostError('backup_borg_list_error')
+        
+        out, _ = borg.communicate()
+        
+        result = out.strip().splitlines()
+
+        return result
+    
+    def _assert_archive_exists(self):
+        cmd = ['borg', 'list', self.archive_path]
+        borg = self._run_borg_command(cmd)
+        return_code = borg.wait()
+        if return_code:
+            raise YunohostError('backup_borg_archive_name_unknown')
+
+    def _get_info_string(self):
+        # Export as tar info file through a pipe
+        cmd = ['borg', 'extract', '--stdout', self.archive_path, 'info.json']
+        borg = self._run_borg_command(cmd)
+        return_code = borg.wait()
+        if return_code:
+            raise YunohostError('backup_borg_info_error')
+        
+        out, _ = borg.communicate()
+
+        return out
 
     def _run_borg_command(self, cmd, stdout=None):
         env = dict(os.environ)
@@ -2169,46 +2282,43 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
     return restore_manager.targets.results
 
 
-def backup_list(with_info=False, human_readable=False):
+def backup_list(repos=[], with_info=False, human_readable=False):
     """
     List available local backup archives
 
     Keyword arguments:
+        repos -- Repositories from which list archives
         with_info -- Show backup information for each archive
         human_readable -- Print sizes in human readable format
 
     """
-    result = []
-
-    try:
-        # Retrieve local archives
-        archives = os.listdir(ARCHIVES_PATH)
-    except OSError:
-        logger.debug("unable to iterate over local archives", exc_info=1)
+    result = OrderedDict()
+    
+    if repos == []:
+        repos = BackupRepository.all()
     else:
-        # Iterate over local archives
-        for f in archives:
-            try:
-                name = f[:f.rindex('.tar.gz')]
-            except ValueError:
-                continue
-            result.append(name)
-        result.sort(key=lambda x: os.path.getctime(os.path.join(ARCHIVES_PATH, x + ".tar.gz")))
-
-    if result and with_info:
-        d = OrderedDict()
-        for a in result:
-            try:
-                d[a] = backup_info(a, human_readable=human_readable)
-            except YunohostError as e:
-                logger.warning('%s: %s' % (a, e.strerror))
-
-        result = d
-
-    return {'archives': result}
+        for k, repo in repos:
+            repos[k] = BackupRepository.get(repo)
 
 
-def backup_info(name, with_details=False, human_readable=False):
+    for repo in repos:
+        result[repo.name] = repo.list(with_info)
+        
+        # Add details
+        if result[repo.name] and with_info:
+            d = OrderedDict()
+            for a in result[repo.name]:
+                try:
+                    d[a] = backup_info(a, repo=repo.location, human_readable=human_readable)
+                except YunohostError as e:
+                    logger.warning('%s: %s' % (a, e.strerror))
+
+            result[repo.name] = d
+    
+    return result
+
+
+def backup_info(name, repo=None, with_details=False, human_readable=False):
     """
     Get info about a local backup archive
 
@@ -2218,62 +2328,29 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
+    if not repo:
+        repo = '/home/yunohost.backup/archives/'
 
-    # Check file exist (even if it's a broken symlink)
-    if not os.path.lexists(archive_file):
-        raise YunohostError('backup_archive_name_unknown', name=name)
+    repo = BackupRepository.get(repo)
 
-    # If symlink, retrieve the real path
-    if os.path.islink(archive_file):
-        archive_file = os.path.realpath(archive_file)
-
-        # Raise exception if link is broken (e.g. on unmounted external storage)
-        if not os.path.exists(archive_file):
-            raise YunohostError('backup_archive_broken_link',
-                                path=archive_file)
-
-    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
-
-    if not os.path.exists(info_file):
-        tar = tarfile.open(archive_file, "r:gz")
-        info_dir = info_file + '.d'
-        try:
-            tar.extract('info.json', path=info_dir)
-        except KeyError:
-            logger.debug("unable to retrieve '%s' inside the archive",
-                         info_file, exc_info=1)
-            raise YunohostError('backup_invalid_archive')
-        else:
-            shutil.move(os.path.join(info_dir, 'info.json'), info_file)
-        finally:
-            tar.close()
-        os.rmdir(info_dir)
-
-    try:
-        with open(info_file) as f:
-            # Retrieve backup info
-            info = json.load(f)
-    except:
-        logger.debug("unable to load '%s'", info_file, exc_info=1)
-        raise YunohostError('backup_invalid_archive')
-
-    # Retrieve backup size
+    info = repo.info(name)
+    
+    # Historically backup size was not here, in that case we know it's a tar archive
     size = info.get('size', 0)
     if not size:
-        tar = tarfile.open(archive_file, "r:gz")
+        tar = tarfile.open(repo.archive_path, "r:gz")
         size = reduce(lambda x, y: getattr(x, 'size', x) + getattr(y, 'size', y),
-                      tar.getmembers())
+                    tar.getmembers())
         tar.close()
-    if human_readable:
-        size = binary_to_human(size) + 'B'
-
+    
     result = {
-        'path': archive_file,
+        'path': repo.archive_path,
         'created_at': datetime.utcfromtimestamp(info['created_at']),
         'description': info['description'],
         'size': size,
     }
+    if human_readable:
+        result['size'] = binary_to_human(result['size']) + 'B'
 
     if with_details:
         system_key = "system"
@@ -2284,6 +2361,7 @@ def backup_info(name, with_details=False, human_readable=False):
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
     return result
+
 
 
 def backup_delete(name):
