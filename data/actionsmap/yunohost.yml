@@ -1178,6 +1178,33 @@ service:
                     nargs: "+"
                     metavar: NAME
 
+        ### service_reload()
+        reload:
+            action_help: Reload one or more services
+            arguments:
+                names:
+                    help: Service name to reload
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_restart()
+        restart:
+            action_help: Restart one or more services. If the services are not running yet, they will be started.
+            arguments:
+                names:
+                    help: Service name to restart
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_reload_or_restart()
+        reload_or_restart:
+            action_help: Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
+            arguments:
+                names:
+                    help: Service name to reload or restart
+                    nargs: "+"
+                    metavar: NAME
+
         ### service_enable()
         enable:
             action_help: Enable one or more services
