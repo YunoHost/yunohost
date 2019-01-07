@@ -455,7 +455,7 @@
     "system_upgraded": "The system has been upgraded",
     "system_username_exists": "Username already exists in the system users",
     "unbackup_app": "App '{app:s}' will not be saved",
-    "unexpected_error": "An unexpected error occured",
+    "unexpected_error": "An unexpected error occured: {error}",
     "unit_unknown": "Unknown unit '{unit:s}'",
     "unlimit": "No quota",
     "unrestore_app": "App '{app:s}' will not be restored",
