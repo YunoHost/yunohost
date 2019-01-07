@@ -832,10 +832,10 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         install_retcode = -1
     except Exception:
         import traceback
-        logger.exception(m18n.n('unexpected_error', traceback=u"\n" + traceback.format_exc()))
+        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
     finally:
         if install_retcode != 0:
-            error_msg = operation_logger.error(m18n.n('unexpected_error', traceback='shell command return code: %s' % install_retcode))
+            error_msg = operation_logger.error(m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode))
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
