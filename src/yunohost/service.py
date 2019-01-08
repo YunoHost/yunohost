@@ -203,7 +203,7 @@ def service_reload_or_restart(names):
             logger.success(m18n.n('service_reloaded_or_restarted', service=name))
         else:
             if service_status(name)['status'] != 'inactive':
-                raise YunohostError('service_reloaded_or_restarted_failed', service=name, logs=_get_journalctl_logs(name))
+                raise YunohostError('service_reload_or_restart_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 @is_unit_operation()
