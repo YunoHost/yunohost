@@ -910,11 +910,12 @@ class RestoreManager():
             service_regen_conf(names=['slapd'], force=True)
             migration_0009.migrate_LDAP_db(auth)
 
-    def clean(self):
+    def clean(self, auth):
         """
         End a restore operations by cleaning the working directory and
         regenerate ssowat conf (if some apps were restored)
         """
+        from permission import permission_sync_to_user
 
         successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
@@ -922,6 +923,8 @@ class RestoreManager():
             # Quickfix: the old app_ssowatconf(auth) instruction failed due to
             # ldap restore hooks
             os.system('sudo yunohost app ssowatconf')
+
+        permission_sync_to_user(auth, force=True)
 
         if os.path.ismount(self.work_dir):
             ret = subprocess.call(["umount", self.work_dir])
@@ -1135,7 +1138,7 @@ class RestoreManager():
             self._migrate_system_if_needed(auth)
             self._restore_apps(auth)
         finally:
-            self.clean()
+            self.clean(auth)
 
     def _patch_backup_csv_file(self):
         """
