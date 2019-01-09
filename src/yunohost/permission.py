@@ -364,7 +364,7 @@ def permission_add(operation_logger, auth, app, permission, url=None, default_al
         logger.success(m18n.n('permission_created', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
-    raise YunohostError('premission_creation_failled')
+    raise YunohostError('permission_creation_failled')
 
 
 @is_unit_operation(['permission','app'])

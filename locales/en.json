@@ -411,7 +411,7 @@
     "permission_already_clear": "Permission '{permission:s}' already clear for app {app:s}",
     "permission_already_exist": "Permission '{permission:s}' for app {app:s} already exist",
     "permission_created": "Permission '{permission:s}' for app {app:s} created",
-    "premission_creation_failled": "Permission creation failed",
+    "permission_creation_failled": "Permission creation failed",
     "permission_deleted": "Permission '{permission:s}' for app {app:s} deleted",
     "permission_deletion_failed": "Permission '{permission:s}' for app {app:s} deletion failed",
     "permission_not_found": "Permission '{permission:s}' not found for application {app:s}",
