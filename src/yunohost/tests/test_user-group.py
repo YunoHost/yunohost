@@ -4,6 +4,7 @@ from moulinette.core import init_authenticator, MoulinetteError
 from yunohost.user import user_list, user_info, user_group_list, user_create, user_delete, user_update, user_group_add, user_group_delete, user_group_update, user_group_info
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
+from yunohost.tests.test_permission import check_LDAP_db_integrity
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -38,6 +39,12 @@ def setup_function(function):
 
 def teardown_function(function):
     clean_user_groups()
+
+@pytest.fixture(autouse=True)
+def check_LDAP_db_integrity_call():
+    check_LDAP_db_integrity()
+    yield
+    check_LDAP_db_integrity()
 
 #
 # List functions
@@ -186,6 +193,7 @@ def test_bad_update_user_1():
     # Check user not found
     with pytest.raises(YunohostError):
         user_update(auth, "not_exit", firstname="NewName", lastname="NewLast")
+
 
 def bad_update_group_1():
     # Check groups not found

@@ -14,6 +14,7 @@ from yunohost.backup import backup_create, backup_restore, backup_list, backup_i
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 from yunohost.user import user_permission_list
+from yunohost.tests.test_permission import check_LDAP_db_integrity
 
 # Get main domain
 maindomain = ""
@@ -90,6 +91,12 @@ def teardown_function(function):
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
 
+
+@pytest.fixture(autouse=True)
+def check_LDAP_db_integrity_call():
+    check_LDAP_db_integrity()
+    yield
+    check_LDAP_db_integrity()
 
 #
 # Helpers                                                                    #
