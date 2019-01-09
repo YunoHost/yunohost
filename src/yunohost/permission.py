@@ -444,49 +444,64 @@ def permission_remove(operation_logger, auth, app, permission, force=False, sync
     logger.success(m18n.n('permission_deleted', permission=permission, app=app))
 
 
-def permission_sync_to_user(auth):
+def permission_sync_to_user(auth, force=False):
     """
     Sychronise the inheritPermission attribut in the permission object from the user<->group link and the group<->permission link
+
+    Keyword argument:
+        force    -- Force to recreate all attributes. Used generally with the backup which wich use "slapadd" which don't use the memberOf overlay.
+                    Note that by removing all value and adding a new time, we force the overlay to update all attributes
     """
+    # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
+    # So we need to check before each ldap operation that we really change something in LDAP
     import os
     from yunohost.app import app_ssowatconf
 
     permission_attrs = [
         'cn',
         'member',
-        'permission',
     ]
     group_info = auth.search('ou=groups,dc=yunohost,dc=org',
                              '(objectclass=groupOfNamesYnh)', permission_attrs)
-    user_permission={}
-
-    for group in group_info:
-        if 'permission' not in group:
-            continue
-        if not 'member' in group:
-            continue
-        for permission in group['permission']:
-            permission = permission.split("=")[1].split(",")[0]
-            if not permission in user_permission:
-                user_permission[permission] = set()
-            for member in group['member']:
-                user_permission[permission].add(member)
+    group_info = {g['cn'][0]: g for g in group_info}
 
     for per in auth.search('ou=permission,dc=yunohost,dc=org',
-                           '(objectclass=permissionYnh)', ['cn', 'inheritPermission']):
-        if per['cn'][0] in user_permission:
-            val = set(user_permission[per['cn'][0]])
-        else:
-            # If the new value and the old value à empty nothing to do
-            if not 'inheritPermission' in per:
-                continue
-            val = set()
-        if 'inheritPermission' in per and val == set(per['inheritPermission']):
+                           '(objectclass=permissionYnh)',
+                           ['cn', 'inheritPermission', 'groupPermission', 'memberUid']):
+        if 'groupPermission' not in per:
             continue
-        uid_val = [v.split("=")[1].split(",")[0] for v in val]
-        inheritPermission = {'inheritPermission': val, 'memberUid': uid_val}
-        if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
-            raise YunohostError('permission_update_failed')
+        user_permission = set()
+        for group in per['groupPermission']:
+            group = group.split("=")[1].split(",")[0]
+            if 'member' not in group_info[group]:
+                continue
+            for user in group_info[group]['member']:
+                user_permission.add(user)
+
+        if 'inheritPermission' not in per:
+            per['inheritPermission'] = []
+        if 'memberUid' not in per:
+            per['memberUid'] = []
+
+        uid_val = [v.split("=")[1].split(",")[0] for v in user_permission]
+        if user_permission == set(per['inheritPermission']) and set(uid_val) == set(per['memberUid']) and not force:
+            continue
+        inheritPermission = {'inheritPermission': user_permission, 'memberUid': uid_val}
+        if force:
+            if per['groupPermission']:
+                if not auth.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': []}):
+                    raise YunohostError('permission_update_failed_clear')
+                if not auth.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': per['groupPermission']}):
+                    raise YunohostError('permission_update_failed_populate')
+            if per['inheritPermission']:
+                if not auth.update('cn=%s,ou=permission' % per['cn'][0], {'inheritPermission': []}):
+                    raise YunohostError('permission_update_failed_clear')
+            if user_permission:
+                if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
+                    raise YunohostError('permission_update_failed')
+        else:
+            if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
+                raise YunohostError('permission_update_failed')
     logger.success(m18n.n('permission_generated'))
 
     app_ssowatconf(auth)
