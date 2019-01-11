@@ -507,4 +507,5 @@ def permission_sync_to_user(auth, force=False):
     app_ssowatconf(auth)
 
     # Reload unscd because if not the group is not updated in the system from LDAP
-    os.system('systemctl restart unscd')
+    os.system('nscd --invalidate=passwd')
+    os.system('nscd --invalidate=group')
