@@ -85,10 +85,10 @@ ynh_app_upstream_version () {
     ynh_handle_getopts_args "$@"
 
     manifest="${manifest:-../manifest.json}"
-    if [ ! -e "$manifest_path" ]; then
-        manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+    if [ ! -e "$manifest" ]; then
+        manifest="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
-    version_key=$(ynh_read_manifest --manifest="$manifest_path" --manifest_key="version")
+    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
     echo "${version_key/~ynh*/}"
 }
 
@@ -107,10 +107,10 @@ ynh_app_package_version () {
     ynh_handle_getopts_args "$@"
 
     manifest="${manifest:-../manifest.json}"
-    if [ ! -e "$manifest_path" ]; then
-        manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+    if [ ! -e "$manifest" ]; then
+        manifest="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
-    version_key=$(ynh_read_manifest --manifest="$manifest_path" --manifest_key="version")
+    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
     echo "${version_key/*~ynh/}"
 }
 
