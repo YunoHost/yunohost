@@ -4,8 +4,8 @@
 #
 # usage: ynh_multimedia_build_main_dir
 ynh_multimedia_build_main_dir () {
-        local ynh_media_release="v1.1"
-        local checksum="9ec4321a92aa2c388af4ee0072735e3e"
+        local ynh_media_release="v1.2"
+        local checksum="806a827ba1902d6911095602a9221181"
 
         # Download yunohost.multimedia scripts
         wget -nv https://github.com/YunoHost-Apps/yunohost.multimedia/archive/${ynh_media_release}.tar.gz 
