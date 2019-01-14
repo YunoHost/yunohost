@@ -40,7 +40,7 @@ from moulinette import msignals, m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, mkdir
 
 from yunohost.app import (
     app_info, _is_installed, _parse_app_instance_name, _patch_php5
@@ -2295,7 +2295,9 @@ def _create_archive_dir():
         if os.path.lexists(ARCHIVES_PATH):
             raise YunohostError('backup_output_symlink_dir_broken', path=ARCHIVES_PATH)
 
-        os.mkdir(ARCHIVES_PATH, 0o750)
+        # Create the archive folder, with 'admin' as owner, such that
+        # people can scp archives out of the server
+        mkdir(ARCHIVES_PATH, mode=0o750, parents=True, uid="admin", gid="root")
 
 
 def _call_for_each_path(self, callback, csv_path=None):
