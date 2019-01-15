@@ -61,13 +61,10 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
         app = [app]
     if permission and not isinstance(permission, list):
         permission = [permission]
+    if not isinstance(username, list):
+        username = [username]
     if not isinstance(group, list):
         group = [group]
-    if isinstance(username, list):
-        group.extend(username)
-    else:
-        group.append(username)
-    group = filter(None, group)
 
     permissions = {}
 
@@ -94,7 +91,9 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
             continue
         if permission and not permission_name in permission:
             continue
-        if group and not set(group) & set(group_name):
+        if username[0] and not set(username) & set(user_name):
+            continue
+        if group[0] and not set(group) & set(group_name):
             continue
 
         if not app_name in permissions:
