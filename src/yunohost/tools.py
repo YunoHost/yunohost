@@ -531,7 +531,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
 
     if not ignore_packages:
 
-        apt.apt_pkg.config.init()
+        apt.apt_pkg.init()
         apt.apt_pkg.config.set("DPkg::Options::", "--force-confold")
 
         cache = apt.Cache()
