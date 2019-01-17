@@ -20,7 +20,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
- , dovecot-antispam, fail2ban
+ , dovecot-antispam, fail2ban, iptables
  , nginx-extras (>=1.6.2), php-fpm, php-ldap, php-intl
  , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , metronome
