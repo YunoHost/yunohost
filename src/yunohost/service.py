@@ -152,6 +152,60 @@ def service_stop(names):
             logger.debug(m18n.n('service_already_stopped', service=name))
 
 
+def service_reload(names):
+    """
+    Reload one or more services
+
+    Keyword argument:
+        name -- Services name to reload
+
+    """
+    if isinstance(names, str):
+        names = [names]
+    for name in names:
+        if _run_service_command('reload', name):
+            logger.success(m18n.n('service_reloaded', service=name))
+        else:
+            if service_status(name)['status'] != 'inactive':
+                raise YunohostError('service_reload_failed', service=name, logs=_get_journalctl_logs(name))
+
+
+def service_restart(names):
+    """
+    Restart one or more services. If the services are not running yet, they will be started.
+
+    Keyword argument:
+        name -- Services name to restart
+
+    """
+    if isinstance(names, str):
+        names = [names]
+    for name in names:
+        if _run_service_command('restart', name):
+            logger.success(m18n.n('service_restarted', service=name))
+        else:
+            if service_status(name)['status'] != 'inactive':
+                raise YunohostError('service_restart_failed', service=name, logs=_get_journalctl_logs(name))
+
+
+def service_reload_or_restart(names):
+    """
+    Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
+
+    Keyword argument:
+        name -- Services name to reload or restart
+
+    """
+    if isinstance(names, str):
+        names = [names]
+    for name in names:
+        if _run_service_command('reload-or-restart', name):
+            logger.success(m18n.n('service_reloaded_or_restarted', service=name))
+        else:
+            if service_status(name)['status'] != 'inactive':
+                raise YunohostError('service_reload_or_restart_failed', service=name, logs=_get_journalctl_logs(name))
+
+
 @is_unit_operation()
 def service_enable(operation_logger, names):
     """
@@ -597,14 +651,14 @@ def _run_service_command(action, service):
     if service not in services.keys():
         raise YunohostError('service_unknown', service=service)
 
-    possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+    possible_actions = ['start', 'stop', 'restart', 'reload', 'reload-or-restart', 'enable', 'disable']
     if action not in possible_actions:
         raise ValueError("Unknown action '%s', available actions are: %s" % (action, ", ".join(possible_actions)))
 
     cmd = 'systemctl %s %s' % (action, service)
 
     need_lock = services[service].get('need_lock', False) \
-        and action in ['start', 'stop', 'restart', 'reload']
+        and action in ['start', 'stop', 'restart', 'reload', 'reload-or-restart']
 
     try:
         # Launch the command
