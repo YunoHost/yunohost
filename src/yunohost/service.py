@@ -663,7 +663,7 @@ def _run_service_command(action, service):
     try:
         # Launch the command
         logger.debug("Running '%s'" % cmd)
-        p = subprocess.Popen(cmd.split(), stderr=subprocess.STDOUT)
+        p = subprocess.check_call(cmd.split(), stderr=subprocess.STDOUT)
         # If this command needs a lock (because the service uses yunohost
         # commands inside), find the PID and add a lock for it
         if need_lock:
