@@ -675,6 +675,10 @@ def _run_service_command(action, service):
             logger.warning(m18n.n('service_cmd_exec_failed', command=cmd))
             return False
 
+    except Exception as e:
+        logger.warning(m18n.n("unexpected_error", error=str(e)))
+        return False
+
     finally:
         # Remove the lock if one was given
         if need_lock and PID != 0:
