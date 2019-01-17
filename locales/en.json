@@ -57,6 +57,8 @@
     "ask_list_to_remove": "List to remove",
     "ask_main_domain": "Main domain",
     "ask_new_admin_password": "New administration password",
+    "ask_new_domain": "New domain",
+    "ask_new_path": "New path",
     "ask_password": "Password",
     "ask_path": "Path",
     "backup_abstract_method": "This backup method hasn't yet been implemented",
