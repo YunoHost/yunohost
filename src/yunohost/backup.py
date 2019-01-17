@@ -1746,8 +1746,8 @@ class CopyBackupMethod(BackupMethod):
             return
         else:
             logger.warning(m18n.n("bind_mouting_disable"))
-            subprocess.call(["mountpoint", "-q", dest,
-                            "&&", "umount", "-R", dest])
+            subprocess.call(["mountpoint", "-q", self.work_dir,
+                            "&&", "umount", "-R", self.work_dir])
             raise YunohostError('backup_cant_mount_uncompress_archive')
 
 

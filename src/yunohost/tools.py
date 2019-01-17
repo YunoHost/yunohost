@@ -530,6 +530,11 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
     is_api = True if msettings.get('interface') == 'api' else False
 
     if not ignore_packages:
+
+        apt.apt_pkg.init()
+        apt.apt_pkg.config.set("DPkg::Options::", "--force-confdef")
+        apt.apt_pkg.config.set("DPkg::Options::", "--force-confold")
+
         cache = apt.Cache()
         cache.open(None)
         cache.upgrade(True)
@@ -558,6 +563,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
 
             operation_logger.start()
             try:
+                os.environ["DEBIAN_FRONTEND"] = "noninteractive"
                 # Apply APT changes
                 # TODO: Logs output for the API
                 cache.commit(apt.progress.text.AcquireProgress(),
@@ -570,6 +576,8 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
             else:
                 logger.info(m18n.n('done'))
                 operation_logger.success()
+            finally:
+                del os.environ["DEBIAN_FRONTEND"]
         else:
             logger.info(m18n.n('packages_no_upgrade'))
 
