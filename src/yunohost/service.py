@@ -663,7 +663,7 @@ def _run_service_command(action, service):
     try:
         # Launch the command
         logger.debug("Running '%s'" % cmd)
-        p = subprocess.check_call(cmd.split(), stderr=subprocess.STDOUT)
+        p = subprocess.Popen(cmd.split(), stderr=subprocess.STDOUT)
         # If this command needs a lock (because the service uses yunohost
         # commands inside), find the PID and add a lock for it
         if need_lock:
@@ -671,10 +671,9 @@ def _run_service_command(action, service):
         # Wait for the command to complete
         p.communicate()
 
-    except subprocess.CalledProcessError as e:
-        # TODO: Log output?
-        logger.warning(m18n.n('service_cmd_exec_failed', command=' '.join(e.cmd)))
-        return False
+        if p.returncode != 0:
+            logger.warning(m18n.n('service_cmd_exec_failed', command=cmd))
+            return False
 
     finally:
         # Remove the lock if one was given
