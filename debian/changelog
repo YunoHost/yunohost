@@ -1,3 +1,9 @@
+yunohost (3.3.4) stable; urgency=low
+
+  * [fix] Use --force-confold and noninteractive debian frontend during core upgrade (#614)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 02:00:00 +0000
+
 yunohost (3.3.3) stable; urgency=low
 
   * [fix] ynh_wait_dpkg_free displaying a warning despite everything being okay (#593)
