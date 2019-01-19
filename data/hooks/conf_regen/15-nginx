@@ -49,6 +49,10 @@ do_pre_regen() {
                             | jq ".certificates.\"$domain\".CA_type" \
                             | tr -d '"')
 
+    if [[ -e "/etc/ssl/private/dh2048.pem" ]]; then
+      export dh_params=true;
+    fi                  
+
     ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
     ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
 
