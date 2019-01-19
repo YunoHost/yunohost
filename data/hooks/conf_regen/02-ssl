@@ -50,6 +50,13 @@ do_init_regen() {
       update-ca-certificates
   fi
 
+  if [[ ! -e "/etc/ssl/private/dh2048.pem" ]]; then
+    echo -e "\n# Creating the dh_params \n" >>$LOGFILE
+    (openssl dhparam -out /tmp/dhparam.pem 2048 -dsaparam > /dev/null 2>&1 &)
+  else
+    echo -e "\n# A dh_params file already exists \n" >>$LOGFILE
+  fi
+  
   if [[ ! -f "$ynh_crt" ]]; then
       echo -e "\n# Creating initial key and certificate (?)\n" >>$LOGFILE
 
