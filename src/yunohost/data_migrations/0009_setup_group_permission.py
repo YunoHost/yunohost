@@ -76,7 +76,7 @@ def migrate_app_permission(auth, app=None):
         url = None
         if domain and path:
             url = domain + path
-        permission_add(auth, app, 'main', url=url, default_allow=True, sync_perm=False)
+        permission_add(auth, app, 'main', urls=[url], default_allow=True, sync_perm=False)
         if permission:
             allowed_group = permission.split(',')
             user_permission_add(auth, [app], 'main', group=allowed_group, sync_perm=False)

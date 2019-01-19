@@ -312,14 +312,14 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
 
 
 @is_unit_operation(['permission','app'])
-def permission_add(operation_logger, auth, app, permission, url=None, default_allow=True, sync_perm=True):
+def permission_add(operation_logger, auth, app, permission, urls=None, default_allow=True, sync_perm=True):
     """
     Create a new permission for a specific application
 
     Keyword argument:
         app        -- an application OR sftp, xmpp (metronome), mail
         permission -- name of the permission ("main" by default)
-        url        -- list of url to specify for the permission
+        urls       -- list of urls to specify for the permission
 
     """
     from yunohost.domain import _normalize_domain_path
@@ -348,11 +348,11 @@ def permission_add(operation_logger, auth, app, permission, url=None, default_al
     if default_allow:
         attr_dict['groupPermission'] = 'cn=all_users,ou=groups,dc=yunohost,dc=org'
 
-    if url:
+    if urls:
         attr_dict['URL'] = []
-        for u in url:
-            domain = u[:u.index('/')]
-            path = u[u.index('/'):]
+        for url in urls:
+            domain = url[:url.index('/')]
+            path = url[url.index('/'):]
             domain, path = _normalize_domain_path(domain, path)
             attr_dict['URL'].append(domain + path)
 
