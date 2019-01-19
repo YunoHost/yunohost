@@ -885,7 +885,7 @@ class RestoreManager():
                 raise YunohostError('backup_invalid_archive')
 
             logger.debug("executing the post-install...")
-            tools_postinstall(domain, 'yunohost', True)
+            tools_postinstall(domain, 'Yunohost', True)
 
     def clean(self):
         """
