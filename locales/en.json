@@ -168,6 +168,7 @@
     "done": "Done",
     "downloading": "Downloading…",
     "dyndns_could_not_check_provide": "Could not check if {provider:s} can provide {domain:s}.",
+    "dyndns_could_not_check_available": "Could not check if {domain:s} is available on {provider:s}.",
     "dyndns_cron_installed": "The DynDNS cron job has been installed",
     "dyndns_cron_remove_failed": "Unable to remove the DynDNS cron job",
     "dyndns_cron_removed": "The DynDNS cron job has been removed",
