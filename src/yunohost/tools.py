@@ -322,6 +322,17 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     else:
         dyndns = False
 
+    cron_job_file = "/etc/cron.hourly/yunohost-generate-dh-params"
+
+    command = "openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
+
+
+    with open(cron_job_file, "w") as f:
+        f.write("#!/bin/bash\n")
+        f.write(command)
+
+    _set_permissions(cron_job_file, "root", "root", 0o755)
+
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
