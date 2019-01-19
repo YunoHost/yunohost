@@ -648,7 +648,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
                 raise YunohostError('user_unknown', user=user)
             userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if userDN in group['member']:
-                logger.warning(m18n.n('user_alread_in_group', user=user, group=groupname))
+                logger.warning(m18n.n('user_already_in_group', user=user, group=groupname))
             new_group_list['member'].add(userDN)
 
     if remove_user:

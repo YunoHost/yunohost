@@ -204,7 +204,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
                     raise YunohostError('need_define_permission_before')
                 group_name = 'cn=' + g + ',ou=groups,dc=yunohost,dc=org'
                 if not group_name in new_per_dict[permission_name]:
-                    logger.warning(m18n.n('group_alread_disallowed', permission=per, app=a, group=g))
+                    logger.warning(m18n.n('group_already_disallowed', permission=per, app=a, group=g))
                 else:
                     new_per_dict[permission_name].remove(group_name)
 
@@ -213,7 +213,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
             for g in add_group:
                 group_name = 'cn=' + g + ',ou=groups,dc=yunohost,dc=org'
                 if group_name in new_per_dict[permission_name]:
-                    logger.warning(m18n.n('group_alread_allowed', permission=per, app=a, group=g))
+                    logger.warning(m18n.n('group_already_allowed', permission=per, app=a, group=g))
                 else:
                     new_per_dict[permission_name].add(group_name)
 
@@ -363,7 +363,7 @@ def permission_add(operation_logger, auth, app, permission, urls=None, default_a
         logger.success(m18n.n('permission_created', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
-    raise YunohostError('permission_creation_failled')
+    raise YunohostError('permission_creation_failed')
 
 
 @is_unit_operation(['permission','app'])
@@ -418,7 +418,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
         logger.success(m18n.n('permission_updated', permission=permission, app=app))
         return user_permission_list(auth, app, permission)
 
-    raise YunohostError('premission_update_failled')
+    raise YunohostError('premission_update_failed')
 
 
 @is_unit_operation(['permission','app'])

@@ -42,7 +42,7 @@ def migrate_LDAP_db(auth):
         for rdn, attr_dict in ldap_map['depends_children'].items():
             auth.add(rdn, attr_dict)
     except Exception as e:
-        raise YunohostError("migration_0009_LDAP_update_failled", error=e)
+        raise YunohostError("migration_0009_LDAP_update_failed", error=e)
 
     logger.info(m18n.n("migration_0009_create_group"))
 
@@ -126,7 +126,7 @@ class MyMigration(Migration):
 
             permission_sync_to_user(auth)
         except Exception as e:
-            logger.warn(m18n.n("migration_0009_migration_failled_try_rollback", error=e))
+            logger.warn(m18n.n("migration_0009_migration_failed_try_rollback", error=e))
             os.system("systemctl stop slapd")
             os.system("rm -r /etc/ldap/slapd.d") # To be sure that we don't keep some part of the old config
             os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
@@ -135,7 +135,7 @@ class MyMigration(Migration):
             os.system("systemctl start slapd")
             os.system("rm -r " + backup_folder)
             logger.info(m18n.n("migration_0009_rollback_success"))
-            raise YunohostError("migration_0009_failled")
+            raise YunohostError("migration_0009_failed")
 
         os.system("rm -r " + backup_folder)
 
