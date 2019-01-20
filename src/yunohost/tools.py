@@ -324,7 +324,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     cron_job_file = "/etc/cron.hourly/yunohost-generate-dh-params"
 
-    command = "openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
+    command = "nice -n 19 openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
 
 
     with open(cron_job_file, "w") as f:
