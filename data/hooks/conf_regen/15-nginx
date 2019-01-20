@@ -50,7 +50,9 @@ do_pre_regen() {
                             | tr -d '"')
 
     if [[ -e "/etc/ssl/private/dh2048.pem" ]]; then
-      export dh_params=true;
+      export dh_params=true
+    else
+      export dh_params=false
     fi                  
 
     ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
