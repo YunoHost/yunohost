@@ -324,7 +324,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     cron_job_file = "/etc/cron.hourly/yunohost-generate-dh-params"
 
-    command = "nice -n 19 openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
+    command = "nice -n 19 openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam 2> /dev/null && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
 
 
     with open(cron_job_file, "w") as f:
@@ -332,7 +332,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         f.write(command)
 
     _set_permissions(cron_job_file, "root", "root", 0o755)
-
+        
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
@@ -463,6 +463,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         # (by default, i.e. first argument = None, it won't because it's too touchy)
         service_regen_conf(names=["ssh"], force=True)
 
+    service_regen_conf(['nginx'], force=True)     
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))
