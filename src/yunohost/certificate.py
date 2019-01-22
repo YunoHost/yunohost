@@ -858,12 +858,40 @@ def _domain_is_accessible_through_HTTP(ip, domain):
         requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
     except requests.exceptions.Timeout as e:
         logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
-        return False
     except Exception as e:
         logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
+    else:
+        return True
+
+    # fallback on external YunoHost service because http loopback might be
+    # broken (this is actually way more common than excepted and LE doesn't
+    # care about local loopback, it wants outside reachability)
+
+    try:
+        response = requests.post("https://http-check.yunohost.org/check/", data={"domain": domain})
+    except Exception as e:
+        logger.warning("Error while trying to reach https://http-check.yunohost.org/check/ because: %s" % (e))
         return False
 
-    return True
+    if response.status_code == 200:
+        return True
+
+    # this mean that the domain couldn't be reached with a known exception
+    # (timeout for now)
+    # also talks about teapot
+    if response.status_code == 418:
+        return False
+
+    try:
+        data_response = response.json()
+    except Exception as e:
+        logger.warning("Could not decode https://http-check.yunohost.org/check/ response body ('%s') as json because: %s" % (response.text, e))
+        return False
+
+    # XXX need to deferanciate between errors and unreachable domain
+    logger.debug("yunohost-http-check couldn't test or reach the local because: %s" % data_response["content"])
+
+    return False
 
 
 def _get_local_dns_ip(domain):
