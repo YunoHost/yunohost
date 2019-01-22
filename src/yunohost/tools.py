@@ -868,7 +868,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     # no new migrations to run
     if target == last_run_migration_number:
-        logger.warn(m18n.n('migrations_no_migrations_to_run'))
+        logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
     logger.debug(m18n.n('migrations_show_last_migration', last_run_migration_number))
