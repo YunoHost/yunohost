@@ -49,7 +49,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, type_log="file"):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, log_type="file"):
     """
     Add a custom service
 
@@ -60,7 +60,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         runlevel -- Runlevel priority of the service
         need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
-        type_log -- Precise if the corresponding log is a file or a systemd log
+        log_type -- Precise if the corresponding log is a file or a systemd log
     """
     services = _get_services()
 
@@ -75,14 +75,14 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         
         services[name]['log'] = log
 
-        if not isinstance(type_log, list):
-            type_log = [type_log]
+        if not isinstance(log_type, list):
+            log_type = [log_type]
 
-        if len(type_log) < len(log):
-            type_log.extend([type_log[-1]] * (len(log) - len(type_log))) # extend list to have the same size as log
+        if len(log_type) < len(log):
+            log_type.extend([log_type[-1]] * (len(log) - len(log_type))) # extend list to have the same size as log
 
-        if len(type_log) == len(log):
-            services[name]['type_log'] = type_log
+        if len(log_type) == len(log):
+            services[name]['log_type'] = log_type
         else:
             raise YunohostError('service_add_failed', service=name)
                 
@@ -383,13 +383,13 @@ def service_log(name, number=50):
         raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
-    type_log_list = services[name]['type_log']
+    log_type_list = services[name]['log_type']
 
     result = {}
 
     for index in range(len(log_list)):
         log_path = log_list[index]
-        log_type = type_log_list[index]
+        log_type = log_type_list[index]
 
         if log_type == "file":
             # log is a file, read it

@@ -1150,7 +1150,7 @@ service:
                     full: --description
                     help: Description of the service
                 -t:
-                    full: --type_log
+                    full: --log_type
                     help: Type of the log (file or systemd)
                     nargs: "+"
                     choices:
