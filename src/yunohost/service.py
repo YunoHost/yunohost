@@ -376,7 +376,7 @@ def service_log(name, number=50):
     for log_path in log_list:
         # log is a file, read it
         if log_path == "systemd":
-            result[log_path] = _get_journalctl_logs(name)
+            result[log_path] = _get_journalctl_logs(name, int(number))
             continue
         elif not os.path.isdir(log_path):
             result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
@@ -1050,9 +1050,9 @@ def manually_modified_files():
     return output
 
 
-def _get_journalctl_logs(service):
+def _get_journalctl_logs(service, number="all"):
     try:
-        return subprocess.check_output("journalctl -xn -u %s" % service, shell=True)
+        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(service, number), shell=True)
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
