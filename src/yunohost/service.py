@@ -375,7 +375,10 @@ def service_log(name, number=50):
 
     for log_path in log_list:
         # log is a file, read it
-        if not os.path.isdir(log_path):
+        if log_path == "systemd":
+            result[log_path] = _get_journalctl_logs(name)
+            continue
+        elif not os.path.isdir(log_path):
             result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
             continue
 
