@@ -49,7 +49,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, type_log="file"):
     """
     Add a custom service
 
@@ -60,6 +60,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         runlevel -- Runlevel priority of the service
         need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
+        type_log -- Precise if the corresponding log is a file or a systemd log
     """
     services = _get_services()
 
@@ -69,8 +70,23 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         services[name] = {'status': status}
 
     if log is not None:
+        if not isinstance(log, list):
+            log = [log]
+        
         services[name]['log'] = log
 
+        if not isinstance(type_log, list):
+            type_log = [type_log]
+
+        if len(type_log) < len(log):
+            type_log.extend([type_log[-1]] * (len(log) - len(type_log))) # extend list to have the same size as log
+
+        if len(type_log) == len(log):
+            services[name]['type_log'] = type_log
+        else:
+            raise YunohostError('service_add_failed', service=name)
+                
+        
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
 
@@ -367,31 +383,33 @@ def service_log(name, number=50):
         raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
-
-    if not isinstance(log_list, list):
-        log_list = [log_list]
+    type_log_list = services[name]['type_log']
 
     result = {}
 
-    for log_path in log_list:
-        # log is a file, read it
-        if log_path == "systemd":
-            result[log_path] = _get_journalctl_logs(name, int(number)).splitlines()
-            continue
-        elif not os.path.isdir(log_path):
-            result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
-            continue
+    for index in range(len(log_list)):
+        log_path = log_list[index]
+        log_type = type_log_list[index]
 
-        for log_file in os.listdir(log_path):
-            log_file_path = os.path.join(log_path, log_file)
-            # not a file : skip
-            if not os.path.isfile(log_file_path):
+        if log_type == "file":
+            # log is a file, read it
+            if not os.path.isdir(log_path):
+                result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
                 continue
 
-            if not log_file.endswith(".log"):
-                continue
+            for log_file in os.listdir(log_path):
+                log_file_path = os.path.join(log_path, log_file)
+                # not a file : skip
+                if not os.path.isfile(log_file_path):
+                    continue
 
-            result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+                if not log_file.endswith(".log"):
+                    continue
+
+                result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+        else:
+            # get log with journalctl
+            result[log_path] = _get_journalctl_logs(log_path, int(number)).splitlines()
 
     return result
 
