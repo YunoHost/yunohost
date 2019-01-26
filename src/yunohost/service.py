@@ -392,8 +392,7 @@ def service_log(name, number=50):
 
     result = {}
 
-    for index in range(len(log_list)):
-        log_path = log_list[index]
+    for index, log_path in enumerate(log_list):
         log_type = log_type_list[index]
 
         if log_type == "file":
