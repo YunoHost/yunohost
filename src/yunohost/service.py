@@ -72,7 +72,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
     if log is not None:
         if not isinstance(log, list):
             log = [log]
-        
+
         services[name]['log'] = log
 
         if not isinstance(log_type, list):
@@ -85,8 +85,8 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
             services[name]['log_type'] = log_type
         else:
             raise YunohostError('service_add_failed', service=name)
-                
-        
+
+
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
 
@@ -383,7 +383,12 @@ def service_log(name, number=50):
         raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
-    log_type_list = services[name]['log_type']
+    log_type_list = services[name].get('log_type', [])
+
+    if not isinstance(log_list, list):
+        log_list = [log_list]
+    if len(log_type_list) < len(log_list):
+        log_type_list.extend(["file"] * (len(log_list)-len(log_type_list)))
 
     result = {}
 
