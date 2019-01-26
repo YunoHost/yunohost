@@ -131,11 +131,11 @@ ynh_package_install_from_equivs () {
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
     ynh_wait_dpkg_free
-    (cp "$controlfile" "${TMPDIR}/control" && cd "$TMPDIR" \
-     && equivs-build ./control 1>/dev/null \
-     && sudo dpkg --force-depends \
-          -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f) || ynh_die "Unable to install dependencies"
+    cp "$controlfile" "${TMPDIR}/control"
+    (cd "$TMPDIR"
+    equivs-build ./control 1> /dev/null
+    dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
+    ynh_package_install -f || ynh_die "Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
