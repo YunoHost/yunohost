@@ -1149,6 +1149,14 @@ service:
                 -d:
                     full: --description
                     help: Description of the service
+                -t:
+                    full: --log_type
+                    help: Type of the log (file or systemd)
+                    nargs: "+"
+                    choices:
+                        - file
+                        - systemd
+                    default: file
 
         ### service_remove()
         remove:
