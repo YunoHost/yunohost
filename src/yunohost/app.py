@@ -465,7 +465,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
         raise YunohostError("app_change_url_identical_domains", domain=domain, path=path)
 
     # Check the url is available
-    conflicts = _get_conflicting_apps(auth, domain, path)
+    conflicts = _get_conflicting_apps(auth, domain, path, ignore_app=app)
     if conflicts:
         apps = []
         for path, app_id, app_label in conflicts:

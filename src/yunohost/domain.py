@@ -226,13 +226,14 @@ def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
-def _get_conflicting_apps(auth, domain, path):
+def _get_conflicting_apps(auth, domain, path, ignore_app=None):
     """
     Return a list of all conflicting apps with a domain/path (it can be empty)
 
     Keyword argument:
         domain -- The domain for the web path (e.g. your.domain.tld)
         path -- The path to check (e.g. /coffee)
+        ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
     """
 
     domain, path = _normalize_domain_path(domain, path)
@@ -253,6 +254,8 @@ def _get_conflicting_apps(auth, domain, path):
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
+            if a["id"] == ignore_app:
+                continue
             if path == p:
                 conflicts.append((p, a["id"], a["label"]))
             # We also don't want conflicts with other apps starting with
