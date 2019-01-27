@@ -61,7 +61,8 @@ ynh_system_user_create () {
 	local use_shell
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
- 	local use_shell="${use_shell:-0}"
+ 	use_shell="${use_shell:-0}"
+ 	home_dir="${home_dir:-}"
 
 	if ! ynh_system_user_exists "$username"	# Check if the user exists on the system
 	then	# If the user doesn't exist
