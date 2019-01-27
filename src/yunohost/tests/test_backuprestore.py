@@ -171,7 +171,7 @@ def install_app(app, path, additionnal_args=""):
 
     app_install(auth, "./tests/apps/%s" % app,
                 args="domain=%s&path=%s%s" % (maindomain, path,
-                                              additionnal_args))
+                                              additionnal_args), force=True)
 
 
 def add_archive_wordpress_from_2p4():

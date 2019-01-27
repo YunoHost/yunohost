@@ -49,7 +49,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, log_type="file"):
     """
     Add a custom service
 
@@ -60,6 +60,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         runlevel -- Runlevel priority of the service
         need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
+        log_type -- Precise if the corresponding log is a file or a systemd log
     """
     services = _get_services()
 
@@ -69,7 +70,22 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         services[name] = {'status': status}
 
     if log is not None:
+        if not isinstance(log, list):
+            log = [log]
+
         services[name]['log'] = log
+
+        if not isinstance(log_type, list):
+            log_type = [log_type]
+
+        if len(log_type) < len(log):
+            log_type.extend([log_type[-1]] * (len(log) - len(log_type))) # extend list to have the same size as log
+
+        if len(log_type) == len(log):
+            services[name]['log_type'] = log_type
+        else:
+            raise YunohostError('service_add_failed', service=name)
+
 
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
@@ -150,6 +166,60 @@ def service_stop(names):
             if service_status(name)['status'] != 'inactive':
                 raise YunohostError('service_stop_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_stopped', service=name))
+
+
+def service_reload(names):
+    """
+    Reload one or more services
+
+    Keyword argument:
+        name -- Services name to reload
+
+    """
+    if isinstance(names, str):
+        names = [names]
+    for name in names:
+        if _run_service_command('reload', name):
+            logger.success(m18n.n('service_reloaded', service=name))
+        else:
+            if service_status(name)['status'] != 'inactive':
+                raise YunohostError('service_reload_failed', service=name, logs=_get_journalctl_logs(name))
+
+
+def service_restart(names):
+    """
+    Restart one or more services. If the services are not running yet, they will be started.
+
+    Keyword argument:
+        name -- Services name to restart
+
+    """
+    if isinstance(names, str):
+        names = [names]
+    for name in names:
+        if _run_service_command('restart', name):
+            logger.success(m18n.n('service_restarted', service=name))
+        else:
+            if service_status(name)['status'] != 'inactive':
+                raise YunohostError('service_restart_failed', service=name, logs=_get_journalctl_logs(name))
+
+
+def service_reload_or_restart(names):
+    """
+    Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
+
+    Keyword argument:
+        name -- Services name to reload or restart
+
+    """
+    if isinstance(names, str):
+        names = [names]
+    for name in names:
+        if _run_service_command('reload-or-restart', name):
+            logger.success(m18n.n('service_reloaded_or_restarted', service=name))
+        else:
+            if service_status(name)['status'] != 'inactive':
+                raise YunohostError('service_reload_or_restart_failed', service=name, logs=_get_journalctl_logs(name))
 
 
 @is_unit_operation()
@@ -313,28 +383,37 @@ def service_log(name, number=50):
         raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
+    log_type_list = services[name].get('log_type', [])
 
     if not isinstance(log_list, list):
         log_list = [log_list]
+    if len(log_type_list) < len(log_list):
+        log_type_list.extend(["file"] * (len(log_list)-len(log_type_list)))
 
     result = {}
 
-    for log_path in log_list:
-        # log is a file, read it
-        if not os.path.isdir(log_path):
-            result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
-            continue
+    for index, log_path in enumerate(log_list):
+        log_type = log_type_list[index]
 
-        for log_file in os.listdir(log_path):
-            log_file_path = os.path.join(log_path, log_file)
-            # not a file : skip
-            if not os.path.isfile(log_file_path):
+        if log_type == "file":
+            # log is a file, read it
+            if not os.path.isdir(log_path):
+                result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
                 continue
 
-            if not log_file.endswith(".log"):
-                continue
+            for log_file in os.listdir(log_path):
+                log_file_path = os.path.join(log_path, log_file)
+                # not a file : skip
+                if not os.path.isfile(log_file_path):
+                    continue
 
-            result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+                if not log_file.endswith(".log"):
+                    continue
+
+                result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+        else:
+            # get log with journalctl
+            result[log_path] = _get_journalctl_logs(log_path, int(number)).splitlines()
 
     return result
 
@@ -597,14 +676,14 @@ def _run_service_command(action, service):
     if service not in services.keys():
         raise YunohostError('service_unknown', service=service)
 
-    possible_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+    possible_actions = ['start', 'stop', 'restart', 'reload', 'reload-or-restart', 'enable', 'disable']
     if action not in possible_actions:
         raise ValueError("Unknown action '%s', available actions are: %s" % (action, ", ".join(possible_actions)))
 
     cmd = 'systemctl %s %s' % (action, service)
 
     need_lock = services[service].get('need_lock', False) \
-        and action in ['start', 'stop', 'restart', 'reload']
+        and action in ['start', 'stop', 'restart', 'reload', 'reload-or-restart']
 
     try:
         # Launch the command
@@ -617,9 +696,12 @@ def _run_service_command(action, service):
         # Wait for the command to complete
         p.communicate()
 
-    except subprocess.CalledProcessError as e:
-        # TODO: Log output?
-        logger.warning(m18n.n('service_cmd_exec_failed', command=' '.join(e.cmd)))
+        if p.returncode != 0:
+            logger.warning(m18n.n('service_cmd_exec_failed', command=cmd))
+            return False
+
+    except Exception as e:
+        logger.warning(m18n.n("unexpected_error", error=str(e)))
         return False
 
     finally:
@@ -990,9 +1072,9 @@ def manually_modified_files():
     return output
 
 
-def _get_journalctl_logs(service):
+def _get_journalctl_logs(service, number="all"):
     try:
-        return subprocess.check_output("journalctl -xn -u %s" % service, shell=True)
+        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(service, number), shell=True)
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()

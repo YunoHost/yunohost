@@ -1,3 +1,22 @@
+yunohost (3.4.1) testing; urgency=low
+
+  * [fix] `_run_service_command` not properly returning False if command fails (#616)
+  * [enh] Change git clone for gitlab working with branch (#615)
+  * [fix] Set owner of archives folder to 'admin' (#613)
+  * [enh] Add reload and restart actions to 'yunohost service' (#611)
+  * [fix] propagate --no-checks cert-install option to renew crontab (#610)
+  * [fix] Several issues with bootprompt (#609)
+  * [fix] Fix the way change_url updates the domain/path (#608)
+  * [fix] Repair tests (#607)
+  * [fix] Explicit dependance to iptables (1667ba1)
+  * [i18n] Tiny typographic changes (#612)
+  * [i18n] Improve translations for Hungarian, Esperanto, German
+  * Misc minor fixes and improvements.
+
+ Thanks to all contributors (Aleks, Bram, J. Meggyeshazi, Jibec, Josué, M. Martin, P. Bourré, anubis) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 22:16:00 +0000
+
 yunohost (3.4.0) testing; urgency=low
 
   * Misc fixes (#601, #600, #593)
@@ -23,6 +42,12 @@ yunohost (3.4.0) testing; urgency=low
  Thanks to all contributors (Aleks, A. Pierré, ButterflyOfFire, Bram, irina11y, Josué, Maniack Crudelis, Sylkevicious, T. Hill, chateau, frju365, gdayon, liberodark, ljf, nqb, wilPoly) ! <3
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Dec 2018 22:13:00 +0000
+
+yunohost (3.3.4) stable; urgency=low
+
+  * [fix] Use --force-confold and noninteractive debian frontend during core upgrade (#614)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 02:00:00 +0000
 
 yunohost (3.3.3) stable; urgency=low
 

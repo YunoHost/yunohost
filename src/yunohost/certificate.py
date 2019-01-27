@@ -286,7 +286,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
 
             _configure_for_acme_challenge(auth, domain)
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
-            _install_cron()
+            _install_cron(no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
@@ -407,12 +407,27 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
 #
 
 
-def _install_cron():
+def _install_cron(no_checks=False):
     cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
+
+    # we need to check if "--no-checks" isn't already put inside the existing
+    # crontab, if it's the case it's probably because another domain needed it
+    # at some point so we keep it
+    if not no_checks and os.path.exists(cron_job_file):
+        with open(cron_job_file, "r") as f:
+            # no the best test in the world but except if we uses a shell
+            # script parser I'm not expected a much more better way to do that
+            no_checks = "--no-checks" in f.read()
+
+    command = "yunohost domain cert-renew --email\n"
+
+    if no_checks:
+        # handle trailing "\n with ":-1"
+        command = command[:-1] + " --no-checks\n"
 
     with open(cron_job_file, "w") as f:
         f.write("#!/bin/bash\n")
-        f.write("yunohost domain cert-renew --email\n")
+        f.write(command)
 
     _set_permissions(cron_job_file, "root", "root", 0o755)
 
