@@ -117,10 +117,10 @@ ynh_remove_systemd_config () {
 
 	local finalsystemdconf="/etc/systemd/system/$service_name.service"
 	if [ -e "$finalsystemdconf" ]; then
-		sudo systemctl stop $service_name
-		sudo systemctl disable $service_name
+		ynh_systemd_action --service_name=$service_name --action=stop
+		systemctl disable $service_name
 		ynh_secure_remove "$finalsystemdconf"
-		sudo systemctl daemon-reload
+		systemctl daemon-reload
 	fi
 }
 
@@ -186,7 +186,7 @@ ynh_add_nginx_config () {
 
 	ynh_store_file_checksum "$finalnginxconf"
 
-	sudo systemctl reload nginx
+	ynh_systemd_action --service_name=nginx --action=reload
 }
 
 # Remove the dedicated nginx config
@@ -194,7 +194,7 @@ ynh_add_nginx_config () {
 # usage: ynh_remove_nginx_config
 ynh_remove_nginx_config () {
 	ynh_secure_remove "/etc/nginx/conf.d/$domain.d/$app.conf"
-	sudo systemctl reload nginx
+	ynh_systemd_action --service_name=nginx --action=reload
 }
 
 # Create a dedicated php-fpm config
@@ -229,7 +229,7 @@ ynh_add_fpm_config () {
 		sudo chown root: "$finalphpini"
 		ynh_store_file_checksum "$finalphpini"
 	fi
-	sudo systemctl reload $fpm_service
+	ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 
 # Remove the dedicated php-fpm config
@@ -245,5 +245,5 @@ ynh_remove_fpm_config () {
 	fi
 	ynh_secure_remove "$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove "$fpm_config_dir/conf.d/20-$app.ini" 2>&1
-	sudo systemctl reload $fpm_service
+	ynh_systemd_action --service_name=$fpm_service --action=reload
 }
