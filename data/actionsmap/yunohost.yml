@@ -1254,6 +1254,31 @@ service:
                     action: store_true
 
 #############################
+#         Themes          #
+#############################
+themes:
+    category_help: Manage themes
+    actions:
+
+      ### themes_list()
+      list:
+        action_help: List installed themes
+        api: GET /themes/
+
+      ### themes_get()
+      get:
+        action_help: Get current active theme name
+        api: GET /themes/current
+
+      ### themes_set()
+      set:
+        action_help: Set current active theme
+        api: POST /themes/current/<name>
+        arguments:
+          name:
+            help: Theme name
+
+#############################
 #         Firewall          #
 #############################
 firewall:
@@ -1742,7 +1767,7 @@ log:
             api: GET /logs
             arguments:
                 category:
-                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app 
+                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app
                     nargs: "*"
                 -l:
                     full: --limit
