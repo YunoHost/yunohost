@@ -34,7 +34,7 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        self.logfile = "/tmp/{}.log".format(self.name)
+        self.logfile = "/var/log/yunohost/{}.log".format(self.name)
 
         self.check_assertions()
 
