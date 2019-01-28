@@ -98,10 +98,10 @@ ynh_handle_getopts_args () {
 
 				if [ "$parameter" = "?" ]
 				then
-					ynh_die --message="Invalid argument: -${OPTARG:-}"
+					ynh_die "Invalid argument: -${OPTARG:-}"
 				elif [ "$parameter" = ":" ]
 				then
-					ynh_die --message="-$OPTARG parameter requires an argument."
+					ynh_die "-$OPTARG parameter requires an argument."
 				else
 					local shift_value=1
 					# Use the long option, corresponding to the short option read by getopts, as a variable
@@ -179,7 +179,7 @@ ynh_handle_getopts_args () {
 				# Get the option_flag from getopts_parameters, by using the option_flag according to the position of the argument.
 				option_flag=${getopts_parameters:$i:1}
 				if [ -z "$option_flag" ]; then
-						ynh_print_warn --message="Too many arguments ! \"${arguments[$i]}\" will be ignored."
+						ynh_print_warn "Too many arguments ! \"${arguments[$i]}\" will be ignored."
 						continue
 				fi
 				# Use the long option, corresponding to the option_flag, as a variable
