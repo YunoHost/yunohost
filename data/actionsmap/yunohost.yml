@@ -1274,6 +1274,8 @@ themes:
       set:
         action_help: Set current active theme
         api: POST /themes/current/<name>
+        configuration:
+          authenticate: all
         arguments:
           name:
             help: Theme name

@@ -2,6 +2,7 @@ import json
 import os
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
+import settings
 logger = getActionLogger('yunohost.themes')
 
 THEMES_PATH = '/usr/share/ssowat/portal/assets/themes/'
@@ -14,7 +15,6 @@ def themes_list():
     """
 
     themesList = [f for f in os.listdir(THEMES_PATH) if os.path.isdir(os.path.join(THEMES_PATH, f))]
-
     return { 'themes': themesList }
 
 def themes_get():
@@ -23,12 +23,10 @@ def themes_get():
 
     """
 
-    with open('/etc/ssowat/conf.json') as f:
-        ssowatConf = json.loads(str(f.read()))
+    currentTheme = settings.settings_get("ssowat.theme")
+    logger.info(m18n.n('theme_current', theme=currentTheme))
 
-    logger.info(m18n.n('theme_current', theme=ssowatConf["theme"]))
-
-def themes_set(name):
+def themes_set(auth, name):
     """
     Set currently active theme
 
@@ -36,22 +34,15 @@ def themes_set(name):
         name -- Theme name
 
     """
+    from yunohost.app import app_ssowatconf
 
-    SSOWAT_CONFIG_LOCATION = '/etc/ssowat/conf.json'
     ASKED_THEME_PATH = os.path.isdir(THEMES_PATH + name)
 
+    # check that the asked theme exists in themes directory
     if ASKED_THEME_PATH:
-
-        with open(SSOWAT_CONFIG_LOCATION, 'r') as f:
-            data = json.load(f)
-            data['theme'] = name
-
-        os.remove(SSOWAT_CONFIG_LOCATION)
-        with open(SSOWAT_CONFIG_LOCATION, 'w') as f:
-            json.dump(data, f, indent=4)
-
+        settings.settings_set('ssowat.theme', name)
+        app_ssowatconf(auth)
         logger.success(m18n.n('theme_changed', theme=name))
 
     else:
-
         logger.error(m18n.n('theme_absent', theme=name))

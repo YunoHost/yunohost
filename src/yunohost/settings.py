@@ -39,6 +39,8 @@ DEFAULTS = OrderedDict([
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
+    # Theming
+    ("ssowat.theme", {"type": "string", "default": "default"}),
 ])
 
 

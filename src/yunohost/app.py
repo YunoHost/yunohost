@@ -1373,6 +1373,7 @@ def app_ssowatconf(auth):
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_list
+    import settings
 
     main_domain = _get_maindomain()
     domains = domain_list(auth)['domains']
@@ -1442,6 +1443,7 @@ def app_ssowatconf(auth):
             'Email': 'mail'
         },
         'domains': domains,
+        'theme': settings.settings_get("ssowat.theme"),
         'skipped_urls': skipped_urls,
         'unprotected_urls': unprotected_urls,
         'protected_urls': protected_urls,
