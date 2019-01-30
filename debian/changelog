@@ -1,3 +1,12 @@
+yunohost (3.4.2.1) stable; urgency=low
+
+  Small issues
+  - Fix parsing of the Meltdown vulnerability checker (ignore stderr :/)
+  - Mail autoconfig was broken, follow-up of #564
+  - Handle the fact that the archive folder might not exist, in migration 0008
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 16:37:00 +0000
+
 yunohost (3.4.2) stable; urgency=low
 
   - [fix] Do not log stretch migration in /tmp/ (#632)
