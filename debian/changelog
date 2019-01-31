@@ -1,3 +1,36 @@
+yunohost (3.4.2.2) stable; urgency=low
+
+  - Silly bug in migraton 8 :|
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 21:17:00 +0000
+
+yunohost (3.4.2.1) stable; urgency=low
+
+  Small issues
+  - Fix parsing of the Meltdown vulnerability checker (ignore stderr :/)
+  - Mail autoconfig was broken, follow-up of #564
+  - Handle the fact that the archive folder might not exist, in migration 0008
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 16:37:00 +0000
+
+yunohost (3.4.2) stable; urgency=low
+
+  - [fix] Do not log stretch migration in /tmp/ (#632)
+  - [fix] Some issues with ynh_handle_getopts_args (#628)
+  - [fix] Revert some stuff about separates php-ini file (c.f. #548) (#627)
+  - [fix] App conflicted with itself during change_url (#626)
+  - [fix] Improve `ynh_package_install_from_equivs` debuggability (#625)
+  - [enh] Add systemd log handling (#624)
+  - [enh] Update spectre meltdown checker (#620)
+  - [fix] Propagate HTTP2, more_set_headers and ecdh_curve changes to webadmin (#618)
+  - [enh] Control the login shell when creating users in ynh_system_user_create (#455, #629)
+  - [fix] Postgresql-9.4 was being detected as installed whereas it was in fact not (969577b)
+  - [fix] Restoring system failed because of temporary dumb password being refused (51712f9)
+
+ Thanks to all contributors (Aleks, frju365, JimboJoe, kay0u, Maniack, opi) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Jan 2019 16:42:00 +0000
+
 yunohost (3.4.1) testing; urgency=low
 
   * [fix] `_run_service_command` not properly returning False if command fails (#616)
