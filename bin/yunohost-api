@@ -149,6 +149,11 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
                 'handlers': [],
                 'propagate': True,
             },
+            'gnupg': {
+                'level': 'INFO',
+                'handlers': [],
+                'propagate': False,
+            },
         },
         'root': {
             'level': level,
