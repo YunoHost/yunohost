@@ -186,6 +186,7 @@
     "extracting": "Extracting…",
     "experimental_feature": "Warning: this feature is experimental and not consider stable, you shouldn't be using it except if you know what you are doing.",
     "field_invalid": "Invalid field '{:s}'",
+    "file_does_not_exist": "The file {path:s} does not exists.",
     "firewall_reload_failed": "Unable to reload the firewall",
     "firewall_reloaded": "The firewall has been reloaded",
     "firewall_rules_cmd_failed": "Some firewall rules commands have failed. For more information, see the log.",
