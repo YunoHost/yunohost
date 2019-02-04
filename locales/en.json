@@ -469,7 +469,7 @@
     "unlimit": "No quota",
     "unrestore_app": "App '{app:s}' will not be restored",
     "update_cache_failed": "Unable to update APT cache",
-    "updating_apt_cache": "Updating the list of available packages…",
+    "updating_apt_cache": "Fetching available upgrades for system packages…",
     "upgrade_complete": "Upgrade complete",
     "upgrading_packages": "Upgrading packages…",
     "upnp_dev_not_found": "No UPnP device found",
