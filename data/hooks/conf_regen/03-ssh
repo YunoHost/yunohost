@@ -12,7 +12,7 @@ do_pre_regen() {
     [[ ! -f /etc/yunohost/from_script ]] || return 0
 
     cd /usr/share/yunohost/templates/ssh
-    
+
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
 
@@ -23,8 +23,14 @@ do_pre_regen() {
         ssh_keys="$ssh_keys $(ls /etc/ssh/ssh_host_dsa_key 2>/dev/null || true)"
     fi
 
+    # Support different strategy for security configurations
+    if [[ -n "$(yunohost settings get 'security.ciphers.compatibility')" ]]; then
+        security_ciphers_compatibility="$(yunohost settings get 'security.ciphers.compatibility')"
+    fi
+
     export ssh_keys
     export ipv6_enabled
+    export security_ciphers_compatibility
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
 }
 
