@@ -392,6 +392,11 @@ ynh_secure_remove () {
 	/var/www \
 	/home/yunohost.app"
 
+    if [[ -n "$2" ]]
+    then
+		echo "/!\ Packager ! You provided a second argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time." >&2
+    fi
+
 	if [[ "$forbidden_path" =~ "$file" \
 		# Match all paths or subpaths in $forbidden_path
 		|| "$file" =~ ^/[[:alnum:]]+$ \

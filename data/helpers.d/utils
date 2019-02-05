@@ -120,6 +120,8 @@ ynh_backup_before_upgrade () {
 # SOURCE_FORMAT=tar.gz
 # # (Optional) Put false if sources are directly in the archive root
 # # default: true
+# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories
+# # to remove.
 # SOURCE_IN_SUBDIR=false
 # # (Optionnal) Name of the local archive (offline setup support)
 # # default: ${src_id}.${src_format}
@@ -138,6 +140,8 @@ ynh_backup_before_upgrade () {
 # If it's ok, the source archive will be uncompressed in $dest_dir. If the
 # SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
 # removed.
+# If SOURCE_IN_SUBDIR is a numeric value, 2 for example, the 2 first level
+# directories will be removed
 #
 # Finally, patches named sources/patches/${src_id}-*.patch and extra files in
 # sources/extra_files/$src_id will be applied to dest_dir
@@ -190,7 +194,7 @@ ynh_setup_source () {
 
     # Extract source into the app dir
     mkdir -p "$dest_dir"
-    
+
     if ! "$src_extract"
     then
         mv $src_filename $dest_dir
@@ -208,8 +212,14 @@ ynh_setup_source () {
         fi
     else
         local strip=""
-        if $src_in_subdir ; then
-            strip="--strip-components 1"
+        if [ "$src_in_subdir" != "false" ]
+        then
+            if [ "$src_in_subdir" == "true" ]; then
+                local sub_dirs=1
+            else
+                local sub_dirs="$src_in_subdir"
+            fi
+            strip="--strip-components $sub_dirs"
         fi
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
             tar -xf $src_filename -C "$dest_dir" $strip

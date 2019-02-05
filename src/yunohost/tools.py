@@ -472,7 +472,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        logger.debug(m18n.n('updating_apt_cache'))
+        logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise YunohostError('update_cache_failed')
 
