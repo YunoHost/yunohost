@@ -1,3 +1,7 @@
+#!/bin/bash
+
+source /usr/share/yunohost/helpers.d/getopts
+
 CAN_BIND=${CAN_BIND:-1}
 
 # Add a file or a directory to the list of paths to backup
@@ -10,13 +14,13 @@ CAN_BIND=${CAN_BIND:-1}
 # 
 # If DEST is ended by a slash it complete this path with the basename of SRC.
 #
-# usage: ynh_backup src [dest [is_big [not_mandatory [arg]]]]
-# | arg: src - file or directory to bind or symlink or copy. it shouldn't be in
+# usage: ynh_backup --src_path=src_path [--dest_path=dest_path] [--is_big] [--not_mandatory]
+# | arg: -s, --src_path - file or directory to bind or symlink or copy. it shouldn't be in
 # the backup dir. 
-# | arg: dest - destination file or directory inside the
+# | arg: -d, --dest_path - destination file or directory inside the
 # backup dir
-# | arg: is_big - 1 to indicate data are big (mail, video, image ...)
-# | arg: not_mandatory - 1 to indicate that if the file is missing, the backup can ignore it.
+# | arg: -b, --is_big - Indicate data are big (mail, video, image ...)
+# | arg: -m, --not_mandatory - Indicate that if the file is missing, the backup can ignore it.
 # | arg: arg - Deprecated arg
 #
 # example:
@@ -44,16 +48,26 @@ CAN_BIND=${CAN_BIND:-1}
 #
 ynh_backup() {
     # TODO find a way to avoid injection by file strange naming !
-    local SRC_PATH="$1"
-    local DEST_PATH="${2:-}"
-    local IS_BIG="${3:-0}"
-    local NOT_MANDATORY="${4:-0}"
+
+    # Declare an array to define the options of this helper.
+    local legacy_args=sdbm
+    declare -Ar args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )
+    local src_path
+    local dest_path
+    local is_big
+    local not_mandatory
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    local dest_path="${dest_path:-}"
+    local is_big="${is_big:-0}"
+    local not_mandatory="${not_mandatory:-0}"
+
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
 
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
-    if [ "$IS_BIG" == "1" ] && [ "$BACKUP_CORE_ONLY" == "1" ] ; then
-      echo "$SRC_PATH will not be saved, because backup_core_only is set." >&2
+    if [ "$is_big" == "1" ] && [ "$BACKUP_CORE_ONLY" == "1" ] ; then
+      echo "$src_path will not be saved, because backup_core_only is set." >&2
       return 0
     fi
     
@@ -61,15 +75,16 @@ ynh_backup() {
     # Format correctly source and destination paths
     # ==============================================================================
     # Be sure the source path is not empty
-    [[ -e "${SRC_PATH}" ]] || {
-        if [ "$NOT_MANDATORY" == "0" ]
+    [[ -e "${src_path}" ]] || {
+        echo "Source path '${src_path}' does not exist" >&2
+        if [ "$not_mandatory" == "0" ]
         then
 		echo "Source path '${SRC_PATH}' does not exist" >&2
 
                 # This is a temporary fix for fail2ban config files missing after the migration to stretch.
-                if echo "${SRC_PATH}" | grep --quiet "/etc/fail2ban"
+                if echo "${src_path}" | grep --quiet "/etc/fail2ban"
                 then
-                        touch "${SRC_PATH}"
+                        touch "${src_path}"
                         echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
                 else
                         return 1
@@ -81,17 +96,17 @@ ynh_backup() {
 
     # Transform the source path as an absolute path
     # If it's a dir remove the ending /
-    SRC_PATH=$(realpath "$SRC_PATH")
+    src_path=$(realpath "$src_path")
 
     # If there is no destination path, initialize it with the source path
     # relative to "/".
-    # eg: SRC_PATH=/etc/yunohost -> DEST_PATH=etc/yunohost
-    if [[ -z "$DEST_PATH" ]]; then
+    # eg: src_path=/etc/yunohost -> dest_path=etc/yunohost
+    if [[ -z "$dest_path" ]]; then
 
-        DEST_PATH="${SRC_PATH#/}"
+        dest_path="${src_path#/}"
 
     else
-        if [[ "${DEST_PATH:0:1}" == "/" ]]; then
+        if [[ "${dest_path:0:1}" == "/" ]]; then
 
             # If the destination path is an absolute path, transform it as a path
             # relative to the current working directory ($YNH_CWD)
@@ -100,43 +115,43 @@ ynh_backup() {
             # $YNH_BACKUP_DIR/apps/APP_INSTANCE_NAME/backup/
             #
             # If it's a system part backup script, YNH_CWD is equal to $YNH_BACKUP_DIR
-            DEST_PATH="${DEST_PATH#$YNH_CWD/}"
+            dest_path="${dest_path#$YNH_CWD/}"
 
             # Case where $2 is an absolute dir but doesn't begin with $YNH_CWD
-            [[ "${DEST_PATH:0:1}" == "/" ]] \
-                && DEST_PATH="${DEST_PATH#/}"
+            [[ "${dest_path:0:1}" == "/" ]] \
+                && dest_path="${dest_path#/}"
         fi
 
-        # Complete DEST_PATH if ended by a /
-        [[ "${DEST_PATH: -1}" == "/" ]] \
-            &&  DEST_PATH="${DEST_PATH}/$(basename $SRC_PATH)"
+        # Complete dest_path if ended by a /
+        [[ "${dest_path: -1}" == "/" ]] \
+            &&  dest_path="${dest_path}/$(basename $src_path)"
     fi
 
-    # Check if DEST_PATH already exists in tmp archive
-    [[ ! -e "${DEST_PATH}" ]] || {
-        echo "Destination path '${DEST_PATH}' already exist" >&2
+    # Check if dest_path already exists in tmp archive
+    [[ ! -e "${dest_path}" ]] || {
+        echo "Destination path '${dest_path}' already exist" >&2
         return 1
     }
 
     # Add the relative current working directory to the destination path
-    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR}"
-    REL_DIR="${REL_DIR%/}/"
-    DEST_PATH="${REL_DIR}${DEST_PATH}"
-    DEST_PATH="${DEST_PATH#/}"
+    local rel_dir="${YNH_CWD#$YNH_BACKUP_DIR}"
+    rel_dir="${rel_dir%/}/"
+    dest_path="${rel_dir}${dest_path}"
+    dest_path="${dest_path#/}"
     # ==============================================================================
 
     # ==============================================================================
     # Write file to backup into backup_list
     # ==============================================================================
-    local SRC=$(echo "${SRC_PATH}" | sed -r 's/"/\"\"/g')
-    local DEST=$(echo "${DEST_PATH}" | sed -r 's/"/\"\"/g')
-    echo "\"${SRC}\",\"${DEST}\"" >> "${YNH_BACKUP_CSV}"
+    local src=$(echo "${src_path}" | sed -r 's/"/\"\"/g')
+    local dest=$(echo "${dest_path}" | sed -r 's/"/\"\"/g')
+    echo "\"${src}\",\"${dest}\"" >> "${YNH_BACKUP_CSV}"
 
     # ==============================================================================
 
     # Create the parent dir of the destination path
     # It's for retro compatibility, some script consider ynh_backup creates this dir
-    mkdir -p $(dirname "$YNH_BACKUP_DIR/${DEST_PATH}")
+    mkdir -p $(dirname "$YNH_BACKUP_DIR/${dest_path}")
 }
 
 # Restore all files linked to the restore hook or to the restore app script
@@ -153,7 +168,7 @@ ynh_restore () {
     while read line; do
         local ORIGIN_PATH=$(echo "$line" | grep -ohP "^\"\K.*(?=\",\".*\"$)")
         local ARCHIVE_PATH=$(echo "$line" | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
-        ynh_restore_file "$ARCHIVE_PATH" "$ORIGIN_PATH"
+        ynh_restore_file --origin_path="$ARCHIVE_PATH" --dest_path="$ORIGIN_PATH"
     done
 }
 
@@ -183,13 +198,13 @@ with open(sys.argv[1], 'r') as backup_file:
 # Use the registered path in backup_list by ynh_backup to restore the file at
 # the good place.
 #
-# usage: ynh_restore_file ORIGIN_PATH [ DEST_PATH [NOT_MANDATORY]]
-# | arg: ORIGIN_PATH - Path where was located the file or the directory before
+# usage: ynh_restore_file --origin_path=origin_path [--dest_path=dest_path] [--not_mandatory]
+# | arg: -o, --origin_path - Path where was located the file or the directory before
 # to be backuped or relative path to $YNH_CWD where it is located in the backup archive
-# | arg: DEST_PATH   - Path where restore the file or the dir, if unspecified,
+# | arg: -d, --dest_path - Path where restore the file or the dir, if unspecified,
 # the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in
 # the archive, the destination will be searched into backup.csv
-# | arg: NOT_MANDATORY - 1 to indicate that if the file is missing, the restore process can ignore it.
+# | arg: -m, --not_mandatory - Indicate that if the file is missing, the restore process can ignore it.
 #
 # If DEST_PATH already exists and is lighter than 500 Mo, a backup will be made in 
 # /home/yunohost.conf/backup/. Otherwise, the existing file is removed.
@@ -205,49 +220,58 @@ with open(sys.argv[1], 'r') as backup_file:
 # ynh_restore_file "conf/nginx.conf"
 #
 ynh_restore_file () {
-    local ORIGIN_PATH="/${1#/}"
-    local ARCHIVE_PATH="$YNH_CWD${ORIGIN_PATH}"
-    # Default value for DEST_PATH = /$ORIGIN_PATH
-    local DEST_PATH="${2:-$ORIGIN_PATH}"
-    local NOT_MANDATORY="${3:-0}"
+    # Declare an array to define the options of this helper.
+    local legacy_args=odm
+    declare -Ar args_array=( [o]=origin_path= [d]=dest_path= [m]=not_mandatory )
+    local origin_path
+    local archive_path
+    local dest_path
+    local not_mandatory
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    local origin_path="/${origin_path#/}"
+    local archive_path="$YNH_CWD${origin_path}"
+    # Default value for dest_path = /$origin_path
+    local dest_path="${dest_path:-$origin_path}"
+    local not_mandatory="${not_mandatory:-0}"
 
-    # If ARCHIVE_PATH doesn't exist, search for a corresponding path in CSV
-    if [ ! -d "$ARCHIVE_PATH" ] && [ ! -f "$ARCHIVE_PATH" ] && [ ! -L "$ARCHIVE_PATH" ]; then
-        if [ "$NOT_MANDATORY" == "0" ]
+    # If archive_path doesn't exist, search for a corresponding path in CSV
+    if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]; then
+        if [ "$not_mandatory" == "0" ]
         then
-            ARCHIVE_PATH="$YNH_BACKUP_DIR/$(_get_archive_path \"$ORIGIN_PATH\")"
+            archive_path="$YNH_BACKUP_DIR/$(_get_archive_path \"$origin_path\")"
         else
             return 0
         fi
     fi
 
     # Move the old directory if it already exists
-    if [[ -e "${DEST_PATH}" ]]
+    if [[ -e "${dest_path}" ]]
     then
         # Check if the file/dir size is less than 500 Mo
-        if [[ $(du -sb ${DEST_PATH} | cut -d"/" -f1) -le "500000000" ]]
+        if [[ $(du -sb ${dest_path} | cut -d"/" -f1) -le "500000000" ]]
         then
-            local backup_file="/home/yunohost.conf/backup/${DEST_PATH}.backup.$(date '+%Y%m%d.%H%M%S')"
+            local backup_file="/home/yunohost.conf/backup/${dest_path}.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir -p "$(dirname "$backup_file")"
-            mv "${DEST_PATH}" "$backup_file"	# Move the current file or directory
+            mv "${dest_path}" "$backup_file"	# Move the current file or directory
         else
-            ynh_secure_remove ${DEST_PATH}
+            ynh_secure_remove --file=${dest_path}
         fi
     fi
 
-    # Restore ORIGIN_PATH into DEST_PATH
-    mkdir -p $(dirname "$DEST_PATH")
+    # Restore origin_path into dest_path
+    mkdir -p $(dirname "$dest_path")
 
     # Do a copy if it's just a mounting point
     if mountpoint -q $YNH_BACKUP_DIR; then
-        if [[ -d "${ARCHIVE_PATH}" ]]; then
-            ARCHIVE_PATH="${ARCHIVE_PATH}/."
-            mkdir -p "$DEST_PATH"
+        if [[ -d "${archive_path}" ]]; then
+            archive_path="${archive_path}/."
+            mkdir -p "$dest_path"
         fi
-        cp -a "$ARCHIVE_PATH" "${DEST_PATH}"
+        cp -a "$archive_path" "${dest_path}"
     # Do a move if YNH_BACKUP_DIR is already a copy
     else
-        mv "$ARCHIVE_PATH" "${DEST_PATH}"
+        mv "$archive_path" "${dest_path}"
     fi
 }
 
@@ -287,11 +311,18 @@ properly with chmod/chown." >&2
 #
 # $app should be defined when calling this helper
 #
-# usage: ynh_store_file_checksum file
-# | arg: file - The file on which the checksum will performed, then stored.
+# usage: ynh_store_file_checksum --file=file
+# | arg: -f, --file - The file on which the checksum will performed, then stored.
 ynh_store_file_checksum () {
-	local checksum_setting_name=checksum_${1//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	ynh_app_setting_set $app $checksum_setting_name $(sudo md5sum "$1" | cut -d' ' -f1)
+	# Declare an array to define the options of this helper.
+	local legacy_args=f
+	declare -Ar args_array=( [f]=file= )
+	local file
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
+	ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
 }
 
 # Verify the checksum and backup the file if it's different
@@ -300,14 +331,20 @@ ynh_store_file_checksum () {
 #
 # $app should be defined when calling this helper
 #
-# usage: ynh_backup_if_checksum_is_different file
-# | arg: file - The file on which the checksum test will be perfomed.
+# usage: ynh_backup_if_checksum_is_different --file=file
+# | arg: -f, --file - The file on which the checksum test will be perfomed.
 #
 # | ret: Return the name a the backup file, or nothing
 ynh_backup_if_checksum_is_different () {
-	local file=$1
+	# Declare an array to define the options of this helper.
+	local legacy_args=f
+	declare -Ar args_array=( [f]=file= )
+	local file
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	local checksum_value=$(ynh_app_setting_get $app $checksum_setting_name)
+	local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
 	if [ -n "$checksum_value" ]
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
@@ -329,21 +366,28 @@ ynh_backup_if_checksum_is_different () {
 # | arg: -f, --file= - The file for which the checksum will be deleted
 ynh_delete_file_checksum () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=f
 	declare -Ar args_array=( [f]=file= )
 	local file
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	ynh_app_setting_delete $app $checksum_setting_name
+	ynh_app_setting_delete --app=$app --key=$checksum_setting_name
 }
 
 # Remove a file or a directory securely
 #
-# usage: ynh_secure_remove path_to_remove
-# | arg: path_to_remove - File or directory to remove
+# usage: ynh_secure_remove --file=path_to_remove
+# | arg: -f, --file - File or directory to remove
 ynh_secure_remove () {
-	local path_to_remove=$1
+	# Declare an array to define the options of this helper.
+	local legacy_args=f
+	declare -Ar args_array=( [f]=file= )
+	local file
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
 	local forbidden_path=" \
 	/var/www \
 	/home/yunohost.app"
@@ -353,20 +397,20 @@ ynh_secure_remove () {
 		echo "/!\ Packager ! You provided a second argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time." >&2
     fi
 
-	if [[ "$forbidden_path" =~ "$path_to_remove" \
+	if [[ "$forbidden_path" =~ "$file" \
 		# Match all paths or subpaths in $forbidden_path
-		|| "$path_to_remove" =~ ^/[[:alnum:]]+$ \
+		|| "$file" =~ ^/[[:alnum:]]+$ \
 		# Match all first level paths from / (Like /var, /root, etc...)
-		|| "${path_to_remove:${#path_to_remove}-1}" = "/" ]]
+		|| "${file:${#file}-1}" = "/" ]]
 		# Match if the path finishes by /. Because it seems there is an empty variable
 	then
-		echo "Avoid deleting $path_to_remove." >&2
+		echo "Avoid deleting $file." >&2
 	else
-		if [ -e "$path_to_remove" ]
+		if [ -e "$file" ]
 		then
-			sudo rm -R "$path_to_remove"
+			sudo rm -R "$file"
 		else
-			echo "$path_to_remove wasn't deleted because it doesn't exist." >&2
+			echo "$file wasn't deleted because it doesn't exist." >&2
 		fi
 	fi
 }
