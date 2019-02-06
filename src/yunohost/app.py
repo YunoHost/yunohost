@@ -1173,7 +1173,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=e.strerror)
+        raise YunohostError('ssowat_persistent_conf_read_error', error=e)
     except IOError:
         ssowat_conf = {}
 
@@ -1186,7 +1186,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
+        raise YunohostError('ssowat_persistent_conf_write_error', error=e)
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -1824,7 +1824,7 @@ def _extract_app_from_file(path, remove=False):
     except IOError:
         raise YunohostError('app_install_files_invalid')
     except ValueError as e:
-        raise YunohostError('app_manifest_invalid', error=e.strerror)
+        raise YunohostError('app_manifest_invalid', error=e)
 
     logger.debug(m18n.n('done'))
 
@@ -1917,7 +1917,7 @@ def _fetch_app_from_git(app):
             except subprocess.CalledProcessError:
                 raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e.strerror)
+                raise YunohostError('app_manifest_invalid', error=e)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -1970,7 +1970,7 @@ def _fetch_app_from_git(app):
             except subprocess.CalledProcessError:
                 raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e.strerror)
+                raise YunohostError('app_manifest_invalid', error=e)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -2250,7 +2250,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
             try:
                 user_info(auth, arg_value)
             except YunohostError as e:
-                raise YunohostError('app_argument_invalid', name=arg_name, error=e.strerror)
+                raise YunohostError('app_argument_invalid', name=arg_name, error=e)
         elif arg_type == 'app':
             if not _is_installed(arg_value):
                 raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))
