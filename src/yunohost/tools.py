@@ -472,7 +472,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        logger.debug(m18n.n('updating_apt_cache'))
+        logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise YunohostError('update_cache_failed')
 
@@ -725,9 +725,14 @@ def _check_if_vulnerable_to_meltdown():
         call = subprocess.Popen("bash %s --batch json --variant 3" %
                                 SCRIPT_PATH, shell=True,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.PIPE)
 
-        output, _ = call.communicate()
+        # TODO / FIXME : here we are ignoring error messages ...
+        # in particular on RPi2 and other hardware, the script complains about
+        # "missing some kernel info (see -v), accuracy might be reduced"
+        # Dunno what to do about that but we probably don't want to harass
+        # users with this warning ...
+        output, err = call.communicate()
         assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
         CVEs = json.loads(output)

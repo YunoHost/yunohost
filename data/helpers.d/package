@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Check if apt is free to use, or wait, until timeout.
 #
 # [internal]
@@ -23,26 +25,40 @@ ynh_wait_dpkg_free() {
 
 # Check either a package is installed or not
 #
-# example: ynh_package_is_installed 'yunohost' && echo "ok"
+# example: ynh_package_is_installed --package=yunohost && echo "ok"
 #
-# usage: ynh_package_is_installed name
-# | arg: name - the package name to check
+# usage: ynh_package_is_installed --package=name
+# | arg: -p, --package - the package name to check
 ynh_package_is_installed() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    declare -Ar args_array=( [p]=package= )
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
     ynh_wait_dpkg_free
-    dpkg-query -W -f '${Status}' "$1" 2>/dev/null \
+    dpkg-query -W -f '${Status}' "$package" 2>/dev/null \
         | grep -c "ok installed" &>/dev/null
 }
 
 # Get the version of an installed package
 #
-# example: version=$(ynh_package_version 'yunohost')
+# example: version=$(ynh_package_version --package=yunohost)
 #
-# usage: ynh_package_version name
-# | arg: name - the package name to get version
+# usage: ynh_package_version --package=name
+# | arg: -p, --package - the package name to get version
 # | ret: the version or an empty string
 ynh_package_version() {
-    if ynh_package_is_installed "$1"; then
-        dpkg-query -W -f '${Version}' "$1" 2>/dev/null
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    declare -Ar args_array=( [p]=package= )
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if ynh_package_is_installed "$package"; then
+        dpkg-query -W -f '${Version}' "$package" 2>/dev/null
     else
         echo ''
     fi
@@ -135,7 +151,7 @@ ynh_package_install_from_equivs () {
     (cd "$TMPDIR"
     equivs-build ./control 1> /dev/null
     dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
-    ynh_package_install -f || ynh_die "Unable to install dependencies"
+    ynh_package_install -f || ynh_die --message="Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
@@ -176,9 +192,9 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
     ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
-        || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        || ynh_die --message="Unable to install dependencies"	# Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
-    ynh_app_setting_set $app apt_dependencies $dependencies
+    ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
 }
 
 # Remove fake package and its dependencies
