@@ -49,6 +49,7 @@ do_pre_regen() {
     mkdir -p "$mail_autoconfig_dir"
 
     # NGINX server configuration
+    echo "RDS Using security_ciphers_compatibility=$security_ciphers_compatibility"
     export security_ciphers_compatibility
     export domain
     export domain_cert_ca=$(yunohost domain cert-status $domain --json \
