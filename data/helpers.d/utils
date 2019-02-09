@@ -296,3 +296,36 @@ ynh_render_template() {
                     jinja2.Template(sys.stdin.read()
                  ).render(os.environ));' < $template_path > $output_path
 }
+
+# Join several urls together
+# Return a concatenate normalized url path
+#
+# example: url_path=$(ynh_url_join $url_path /admin /index.php)
+#          ynh_url_join example admin index.php -> /example/admin/index.php
+#          ynh_url_join /example admin /index.php -> /example/admin/index.php
+#          ynh_url_join / -> /
+#
+# usage: ynh_url_join url1 url2 ...
+ynh_url_join() {
+    if [ "$#" -eq 0 ]; then
+        ynh_die "Illegal number of parameters"
+    fi
+    
+    local full_url=""
+
+    for var in "$@"
+    do
+        if [ "${var:0:1}" != "/" ]; then    # If the first character is not a /
+		    var="/$var"    # Add / at begin of path variable
+        fi
+
+        if [ "${var:${#var}-1}" == "/" ]; then    # If the last character is a /
+		    var="${var:0:${#var}-1}"	# Delete the last character
+        fi
+        full_url=${full_url}${var}
+    done
+
+
+    full_url=$(ynh_normalize_url_path ${full_url:-'/'})
+    echo $full_url
+}
