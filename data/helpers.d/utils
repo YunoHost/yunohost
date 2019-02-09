@@ -258,8 +258,8 @@ ynh_setup_source () {
 ynh_local_curl () {
 	# Define url of page to curl
 	path_url=$(ynh_normalize_url_path $path_url)
-	local_page=$(ynh_normalize_url_path $1)
-	full_path=$path_url$local_page
+	local local_page=$(ynh_normalize_url_path $1)
+	local full_path=$path_url$local_page
 	
 	if [ "${path_url}" == "/" ]; then 
 		full_path=$local_page
