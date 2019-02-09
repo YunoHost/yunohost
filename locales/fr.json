@@ -308,6 +308,7 @@
     "global_settings_setting_example_int": "Exemple d’option de type entier",
     "global_settings_setting_example_string": "Exemple d’option de type chaîne",
     "global_settings_setting_example_enum": "Exemple d’option de type énumération",
+    "global_settings_setting_security_ciphers_compatibility": "Stratégie de compatibilité des ciphers",
     "global_settings_unknown_type": "Situation inattendue, la configuration {setting:s} semble avoir le type {unknown_type:s} mais ce n’est pas un type pris en charge par le système.",
     "global_settings_unknown_setting_from_settings_file": "Clef inconnue dans les configurations : {setting_key:s}, rejet de cette clef et sauvegarde de celle-ci dans /etc/yunohost/unkown_settings.json",
     "service_conf_new_managed_file": "Le fichier de configuration « {conf} » est désormais géré par le service {service}.",
