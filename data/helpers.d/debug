@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Debugger for app packagers
+#
+# usage: ynh_debug [--message=message] [--trace=1/0]
+# | arg: -m, --message= - The text to print
+# | arg: -t, --trace=   - Turn on or off the trace of the script. Usefull to trace nonly a small part of a script.
+ynh_debug () {
+	# Disable set xtrace for the helper itself, to not pollute the debug log
+	set +x
+	# Declare an array to define the options of this helper.
+	local legacy_args=mt
+	declare -Ar args_array=( [m]=message= [t]=trace= )
+	local message
+	local trace
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	# Redisable xtrace, ynh_handle_getopts_args set it back
+	set +x
+	message=${message:-}
+	trace=${trace:-}
+
+	if [ -n "$message" ]
+	then
+		ynh_print_log "\e[34m\e[1m[DEBUG]\e[0m ${message}" >&2
+	fi
+
+	if [ "$trace" == "1" ]
+	then
+		ynh_debug --message="Enable debugging"
+		set +x
+		# Get the current file descriptor of xtrace
+		old_bash_xtracefd=$BASH_XTRACEFD
+		# Add the current file name and the line number of any command currently running while tracing.
+		PS4='$(basename ${BASH_SOURCE[0]})-L${LINENO}: '
+		# Force xtrace to stderr
+		BASH_XTRACEFD=2
+	fi
+	if [ "$trace" == "0" ]
+	then
+		ynh_debug --message="Disable debugging"
+		set +x
+		# Put xtrace back to its original fild descriptor
+		BASH_XTRACEFD=$old_bash_xtracefd
+	fi
+	# Renable set xtrace
+	set -x
+}
+
+# Execute a command and print the result as debug
+#
+# usage: ynh_debug_exec command to execute
+# usage: ynh_debug_exec "command to execute | following command"
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+#
+# | arg: command - command to execute
+ynh_debug_exec () {
+	ynh_debug --message="$(eval $@)"
+}
