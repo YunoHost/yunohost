@@ -121,7 +121,7 @@ ynh_add_systemd_config () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 	local service="${service:-$app}"
-	local template="${nonappend:-systemd.service}"
+	local template="${template:-systemd.service}"
 
 	finalsystemdconf="/etc/systemd/system/$service.service"
 	ynh_backup_if_checksum_is_different --file="$finalsystemdconf"
