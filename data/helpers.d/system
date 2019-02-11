@@ -67,7 +67,7 @@ ynh_read_manifest () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	python3 -c "import sys, json;print(json.load(open('$manifest', encoding='utf-8'))['$manifest_key'])"
+	jq ".$manifest_key" "$manifest" --raw-output
 }
 
 # Read the upstream version from the manifest
