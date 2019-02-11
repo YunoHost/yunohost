@@ -206,16 +206,16 @@ def domain_dns_conf(domain, ttl=None):
     result += "; Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
-    result += "\n\n
+    result += "\n\n"
 
     result += "; Extra"
     for record in dns_conf["extra"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     for name, record_list in dns_conf.items():
-        if name not in ("basic", "xmpp", "mail"):
+        if name not in ("basic", "xmpp", "mail", "extra") and record_list:
             result += "\n\n"
-            result += "; " + name + "\n"
+            result += "; " + name
             for record in record_list:
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
@@ -418,8 +418,10 @@ def _build_dns_conf(domain, ttl=3600):
 
     # Custom record
     hookres = hook_callback('custom_dns_rules', args=[domain])
-    for n,v in hookres.items() :
-        res[n] = v['stdreturn']
+    for n, val in hookres.items() :
+        res[n] = []
+        for v in [v['stdreturn'] for p, v in val.items() if v and v['stdreturn']]:
+            res[n].extend(v)
 
     return res
 
