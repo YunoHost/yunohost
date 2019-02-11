@@ -283,14 +283,16 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                           no_trace=no_trace, raise_on_error=True)[1]
             except YunohostError as e:
                 state = 'failed'
+                hook_return = {}
                 logger.error(e.strerror, exc_info=1)
                 post_callback(name=name, priority=priority, path=path,
                               succeed=False)
             else:
                 post_callback(name=name, priority=priority, path=path,
                               succeed=True)
-
-            result[name] = {'path' : path, 'state' : state, 'stdreturn' : hook_return }
+            if not name in result:
+                result[name] = {}
+            result[name][path] = {'state' : state, 'stdreturn' : hook_return }
     return result
 
 
@@ -389,7 +391,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
             raise YunohostError('hook_exec_not_terminated', path=path)
         else:
             logger.error(m18n.n('hook_exec_not_terminated', path=path))
-            return 1, ''
+            return 1, {}
     elif raise_on_error and returncode != 0:
         raise YunohostError('hook_exec_failed', path=path)
 
