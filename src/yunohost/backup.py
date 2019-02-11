@@ -593,8 +593,11 @@ class BackupManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        if ret["succeed"] != []:
-            self.system_return = ret["succeed"]
+        ret_succeed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "succeed"] for n, v in ret.items()}.items() if val}
+        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+
+        if ret_succeed != []:
+            self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
         # files to backup
@@ -610,7 +613,7 @@ class BackupManager():
 
         restore_hooks = hook_list("restore")["hooks"]
 
-        for part in ret['succeed'].keys():
+        for part in ret_succeed.keys():
             if part in restore_hooks:
                 part_restore_hooks = hook_info("restore", part)["hooks"]
                 for hook in part_restore_hooks:
@@ -620,7 +623,7 @@ class BackupManager():
                 logger.warning(m18n.n('restore_hook_unavailable', hook=part))
                 self.targets.set_result("system", part, "Warning")
 
-        for part in ret['failed'].keys():
+        for part in ret_failed.keys():
             logger.error(m18n.n('backup_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
 
@@ -1177,16 +1180,19 @@ class RestoreManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        for part in ret['succeed'].keys():
+        ret_succeed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "succeed"] for n, v in ret.items()}.items() if val}
+        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+
+        for part in ret_succeed.keys():
             self.targets.set_result("system", part, "Success")
 
         error_part = []
-        for part in ret['failed'].keys():
+        for part in ret_failed.keys():
             logger.error(m18n.n('restore_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
             error_part.append(part)
 
-        if ret['failed']:
+        if ret_failed:
             operation_logger.error(m18n.n('restore_system_part_failed', part=', '.join(error_part)))
         else:
             operation_logger.success()
@@ -1929,8 +1935,8 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('need_mount'))
-
-        self._need_mount = True if ret['succeed'] else False
+        ret_succeed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "succeed"] for n, v in ret.items()}.items() if val}
+        self._need_mount = True if ret_succeed else False
         return self._need_mount
 
     def backup(self):
@@ -1943,7 +1949,8 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
-        if ret['failed']:
+        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+        if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
     def mount(self, restore_manager):
@@ -1956,7 +1963,8 @@ class CustomBackupMethod(BackupMethod):
         super(CustomBackupMethod, self).mount(restore_manager)
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
-        if ret['failed']:
+        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+        if ret_failed:
             raise YunohostError('backup_custom_mount_error')
 
     def _get_args(self, action):

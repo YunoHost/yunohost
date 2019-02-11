@@ -494,11 +494,12 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Update the services name
-    names = pre_result['succeed'].keys()
+    names = {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in pre_result.items()}.keys()
 
     if not names:
+        ret_failed = {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in pre_result.items()}
         raise YunohostError('service_regenconf_failed',
-                            services=', '.join(pre_result['failed']))
+                            services=', '.join(ret_failed))
 
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
