@@ -257,7 +257,6 @@ ynh_setup_source () {
 # | arg: ...         - (Optionnal) More POST keys and values
 ynh_local_curl () {
 	# Define url of page to curl
-	path_url=$(ynh_normalize_url_path $path_url)
 	local local_page=$(ynh_normalize_url_path $1)
 	local full_path=$path_url$local_page
 	
