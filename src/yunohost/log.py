@@ -30,7 +30,6 @@ import collections
 
 from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
-from sys import exc_info
 
 from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError

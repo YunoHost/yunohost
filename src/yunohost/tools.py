@@ -27,7 +27,6 @@ import re
 import os
 import yaml
 import json
-import logging
 import subprocess
 import pwd
 import socket
@@ -151,7 +150,7 @@ def tools_adminpw(auth, new_password, check_strength=True):
             with open('/etc/shadow', 'w') as after_file:
                 after_file.write(before.replace("root:" + hash_root,
                                                 "root:" + new_hash.replace('{CRYPT}', '')))
-        except IOError as e:
+        except IOError:
             logger.warning(m18n.n('root_password_desynchronized'))
             return
 
@@ -207,7 +206,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
 
     # Regen configurations
     try:
-        with open('/etc/yunohost/installed', 'r') as f:
+        with open('/etc/yunohost/installed', 'r'):
             service_regen_conf()
     except IOError:
         pass
@@ -473,7 +472,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         cache = apt.Cache()
 
         # Update APT cache
-        logger.debug(m18n.n('updating_apt_cache'))
+        logger.info(m18n.n('updating_apt_cache'))
         if not cache.update():
             raise YunohostError('update_cache_failed')
 
@@ -531,6 +530,11 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
     is_api = True if msettings.get('interface') == 'api' else False
 
     if not ignore_packages:
+
+        apt.apt_pkg.init()
+        apt.apt_pkg.config.set("DPkg::Options::", "--force-confdef")
+        apt.apt_pkg.config.set("DPkg::Options::", "--force-confold")
+
         cache = apt.Cache()
         cache.open(None)
         cache.upgrade(True)
@@ -559,6 +563,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
 
             operation_logger.start()
             try:
+                os.environ["DEBIAN_FRONTEND"] = "noninteractive"
                 # Apply APT changes
                 # TODO: Logs output for the API
                 cache.commit(apt.progress.text.AcquireProgress(),
@@ -571,6 +576,8 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
             else:
                 logger.info(m18n.n('done'))
                 operation_logger.success()
+            finally:
+                del os.environ["DEBIAN_FRONTEND"]
         else:
             logger.info(m18n.n('packages_no_upgrade'))
 
@@ -718,9 +725,14 @@ def _check_if_vulnerable_to_meltdown():
         call = subprocess.Popen("bash %s --batch json --variant 3" %
                                 SCRIPT_PATH, shell=True,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.PIPE)
 
-        output, _ = call.communicate()
+        # TODO / FIXME : here we are ignoring error messages ...
+        # in particular on RPi2 and other hardware, the script complains about
+        # "missing some kernel info (see -v), accuracy might be reduced"
+        # Dunno what to do about that but we probably don't want to harass
+        # users with this warning ...
+        output, err = call.communicate()
         assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
         CVEs = json.loads(output)
@@ -861,7 +873,7 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
 
     # no new migrations to run
     if target == last_run_migration_number:
-        logger.warn(m18n.n('migrations_no_migrations_to_run'))
+        logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
     logger.debug(m18n.n('migrations_show_last_migration', last_run_migration_number))

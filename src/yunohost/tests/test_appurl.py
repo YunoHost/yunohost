@@ -51,18 +51,18 @@ def test_urlavailable():
 def test_registerurl():
 
     app_install(auth, "./tests/apps/register_url_app_ynh",
-                args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"))
+                args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"), force=True)
 
     assert not domain_url_available(auth, maindomain, "/urlregisterapp")
 
     # Try installing at same location
     with pytest.raises(YunohostError):
         app_install(auth, "./tests/apps/register_url_app_ynh",
-                    args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"))
+                    args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"), force=True)
 
 
 def test_registerurl_baddomain():
 
     with pytest.raises(YunohostError):
         app_install(auth, "./tests/apps/register_url_app_ynh",
-                    args="domain=%s&path=%s" % ("yolo.swag", "/urlregisterapp"))
+                    args="domain=%s&path=%s" % ("yolo.swag", "/urlregisterapp"), force=True)

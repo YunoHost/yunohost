@@ -148,6 +148,7 @@ user:
                     extra:
                         pattern: *pattern_username
                 --purge:
+                    help: Purge user's home and mail directories
                     action: store_true
 
         ### user_update()
@@ -605,14 +606,14 @@ app:
                     full: --domain
                     help: New app domain on which the application will be moved
                     extra:
-                        ask: ask_main_domain
+                        ask: ask_new_domain
                         pattern: *pattern_domain
                         required: True
                 -p:
                     full: --path
                     help: New path at which the application will be moved
                     extra:
-                        ask: ask_path
+                        ask: ask_new_path
                         required: True
 
         ### app_setting()
@@ -1148,6 +1149,14 @@ service:
                 -d:
                     full: --description
                     help: Description of the service
+                -t:
+                    full: --log_type
+                    help: Type of the log (file or systemd)
+                    nargs: "+"
+                    choices:
+                        - file
+                        - systemd
+                    default: file
 
         ### service_remove()
         remove:
@@ -1174,6 +1183,33 @@ service:
             arguments:
                 names:
                     help: Service name to stop
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_reload()
+        reload:
+            action_help: Reload one or more services
+            arguments:
+                names:
+                    help: Service name to reload
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_restart()
+        restart:
+            action_help: Restart one or more services. If the services are not running yet, they will be started.
+            arguments:
+                names:
+                    help: Service name to restart
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_reload_or_restart()
+        reload_or_restart:
+            action_help: Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
+            arguments:
+                names:
+                    help: Service name to reload or restart
                     nargs: "+"
                     metavar: NAME
 

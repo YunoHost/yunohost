@@ -316,7 +316,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if path[0] != '/':
         path = os.path.realpath(path)
     if not os.path.isfile(path):
-        raise YunohostError('file_not_exist', path=path)
+        raise YunohostError('file_does_not_exist', path=path)
 
     # Construct command variables
     cmd_args = ''

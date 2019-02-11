@@ -1,3 +1,94 @@
+yunohost (3.4.2.3) stable; urgency=low
+
+  - [fix] Admin password appearing in logs after logging in on webadmin
+  - [fix] Update friendly DNS resolver list
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Feb 2019 03:20:10 +0000
+
+yunohost (3.4.2.2) stable; urgency=low
+
+  - Silly bug in migraton 8 :|
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 21:17:00 +0000
+
+yunohost (3.4.2.1) stable; urgency=low
+
+  Small issues
+  - Fix parsing of the Meltdown vulnerability checker (ignore stderr :/)
+  - Mail autoconfig was broken, follow-up of #564
+  - Handle the fact that the archive folder might not exist, in migration 0008
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 16:37:00 +0000
+
+yunohost (3.4.2) stable; urgency=low
+
+  - [fix] Do not log stretch migration in /tmp/ (#632)
+  - [fix] Some issues with ynh_handle_getopts_args (#628)
+  - [fix] Revert some stuff about separates php-ini file (c.f. #548) (#627)
+  - [fix] App conflicted with itself during change_url (#626)
+  - [fix] Improve `ynh_package_install_from_equivs` debuggability (#625)
+  - [enh] Add systemd log handling (#624)
+  - [enh] Update spectre meltdown checker (#620)
+  - [fix] Propagate HTTP2, more_set_headers and ecdh_curve changes to webadmin (#618)
+  - [enh] Control the login shell when creating users in ynh_system_user_create (#455, #629)
+  - [fix] Postgresql-9.4 was being detected as installed whereas it was in fact not (969577b)
+  - [fix] Restoring system failed because of temporary dumb password being refused (51712f9)
+
+ Thanks to all contributors (Aleks, frju365, JimboJoe, kay0u, Maniack, opi) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Jan 2019 16:42:00 +0000
+
+yunohost (3.4.1) testing; urgency=low
+
+  * [fix] `_run_service_command` not properly returning False if command fails (#616)
+  * [enh] Change git clone for gitlab working with branch (#615)
+  * [fix] Set owner of archives folder to 'admin' (#613)
+  * [enh] Add reload and restart actions to 'yunohost service' (#611)
+  * [fix] propagate --no-checks cert-install option to renew crontab (#610)
+  * [fix] Several issues with bootprompt (#609)
+  * [fix] Fix the way change_url updates the domain/path (#608)
+  * [fix] Repair tests (#607)
+  * [fix] Explicit dependance to iptables (1667ba1)
+  * [i18n] Tiny typographic changes (#612)
+  * [i18n] Improve translations for Hungarian, Esperanto, German
+  * Misc minor fixes and improvements.
+
+ Thanks to all contributors (Aleks, Bram, J. Meggyeshazi, Jibec, Josué, M. Martin, P. Bourré, anubis) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 22:16:00 +0000
+
+yunohost (3.4.0) testing; urgency=low
+
+  * Misc fixes (#601, #600, #593)
+  * [fix] DEBUG-level messages not appearing in actions performed via the API (#603)
+  * [enh] Also remove /var/mail/<username> directory on user delete (with --purge option) (#602)
+  * [enh] Ask confirmation before installing low-quality, experimental or third party apps (#598)
+  * [fix] Repair tests (#595)
+  * [enh] Clean + harden sshd config using Mozilla recommendation (#590
+  * [fix] Add libpam-ldapd as dependency to be able to login through SSH with LDAP? (#587)
+  * [enh] Add post_cert_update hook each time certificate is updated (#586)
+  * [enh] Enable HTTP2 (#580)
+  * [enh] Update ECDH curves recommended by Mozilla, now that we are on stretch (#579)
+  * [enh] Allow to not fail on backup and restore for non-mandatory files (#576)
+  * [enh] Simplify error management (#574)
+  * [enh] Use more_set_headers in nginx config + fixes for path traversal issues (#564)
+  * [enh] Display human readable date and clarify timezone handling (#552)
+  * [fix] Do not use separate ini file for php pools anymore (#548)
+  * [enh] Improve UPnP support (#542)
+  * [fix] Standardize sshd configuration (#518)
+  * [fix] DKIM keys for new domains werent generated (0445aed)
+  * [i18n] Improve translations for Arabic, Italian and Spanish
+
+ Thanks to all contributors (Aleks, A. Pierré, ButterflyOfFire, Bram, irina11y, Josué, Maniack Crudelis, Sylkevicious, T. Hill, chateau, frju365, gdayon, liberodark, ljf, nqb, wilPoly) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Dec 2018 22:13:00 +0000
+
+yunohost (3.3.4) stable; urgency=low
+
+  * [fix] Use --force-confold and noninteractive debian frontend during core upgrade (#614)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 02:00:00 +0000
+
 yunohost (3.3.3) stable; urgency=low
 
   * [fix] ynh_wait_dpkg_free displaying a warning despite everything being okay (#593)
