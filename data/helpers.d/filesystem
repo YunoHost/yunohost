@@ -323,6 +323,12 @@ ynh_store_file_checksum () {
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
+
+	if [ -n "${backup_file_checksum-}" ]
+	then
+		ynh_print_info "$(diff --report-identical-files --unified --color=always $backup_file_checksum $file)"
+	fi
+	unset backup_file_checksum
 }
 
 # Verify the checksum and backup the file if it's different
@@ -345,16 +351,16 @@ ynh_backup_if_checksum_is_different () {
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+	backup_file_checksum=""
 	if [ -n "$checksum_value" ]
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
 		then	# If the checksum is now different
-			local backup_file="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
-			sudo mkdir -p "$(dirname "$backup_file")"
-			sudo cp -a "$file" "$backup_file"	# Backup the current file
-			ynh_print_info "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file"
-			ynh_print_info "$(git diff --no-index --patch-with-stat $backup_file $file)"
-			echo "$backup_file"	# Return the name of the backup file
+			backup_file_checksum="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+			sudo mkdir -p "$(dirname "$backup_file_checksum")"
+			sudo cp -a "$file" "$backup_file_checksum"	# Backup the current file
+			ynh_print_info "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
+			echo "$backup_file_checksum"	# Return the name of the backup file
 		fi
 	fi
 }
