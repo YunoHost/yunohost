@@ -324,10 +324,14 @@ ynh_store_file_checksum () {
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
 
+	# If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup
 	if [ -n "${backup_file_checksum-}" ]
 	then
-		ynh_print_info "$(diff --report-identical-files --unified --color=always $backup_file_checksum $file)"
+		# Print the diff between the previous file and the new one.
+		# diff return 1 if the files are different, so the || true
+		diff --report-identical-files --unified --color=always $backup_file_checksum $file >&2 || true
 	fi
+	# Unset the variable, so it wouldn't trig a ynh_store_file_checksum without a ynh_backup_if_checksum_is_different before it.
 	unset backup_file_checksum
 }
 
@@ -351,6 +355,7 @@ ynh_backup_if_checksum_is_different () {
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+	# backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
 	backup_file_checksum=""
 	if [ -n "$checksum_value" ]
 	then	# Proceed only if a value was stored into the app settings
