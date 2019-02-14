@@ -64,7 +64,7 @@ do_pre_regen() {
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
 
   done
-  ynh_render_template "plain/yunohost_admin.conf" "${nginx_conf_dir}/yunohost-admin.conf"
+  ynh_render_template "plain/yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/nginx/conf.d \
