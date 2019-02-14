@@ -24,13 +24,13 @@ do_pre_regen() {
     fi
 
     # Support different strategy for security configurations
-    if [[ -n "$(yunohost settings get 'security.ciphers.compatibility')" ]]; then
-        security_ciphers_compatibility="$(yunohost settings get 'security.ciphers.compatibility')"
+    if [[ -n "$(yunohost settings get 'service.ssh.ciphers.compatibility')" ]]; then
+        ssh_ciphers_compatibility="$(yunohost settings get 'service.ssh.ciphers.compatibility')"
     fi
 
     export ssh_keys
     export ipv6_enabled
-    export security_ciphers_compatibility
+    export ssh_ciphers_compatibility
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
 }
 
