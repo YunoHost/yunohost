@@ -39,8 +39,10 @@ DEFAULTS = OrderedDict([
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
-    ("service.ssh.ciphers.compatibility", {"type": "enum", "choices": "intermediate", "modern"}),
-    ("security.ciphers.compatibility", {"type": "enum", "choices": "intermediate", "modern"}),
+    ("service.ssh.ciphers.compatibility", {"type": "enum", "default": "modern",
+        "choices": ["intermediate", "modern"]}),
+    ("security.ciphers.compatibility", {"type": "enum", "default": "intermediate",
+        "choices": ["intermediate", "modern"]}),
 ])
 
 
