@@ -41,6 +41,8 @@ do_pre_regen() {
       security_ciphers_compatibility="$(yunohost settings get 'security.ciphers.compatibility')"
   fi
 
+  export security_ciphers_compatibility
+
   # add domain conf files
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
@@ -49,8 +51,6 @@ do_pre_regen() {
     mkdir -p "$mail_autoconfig_dir"
 
     # NGINX server configuration
-    echo "RDS Using security_ciphers_compatibility=$security_ciphers_compatibility"
-    export security_ciphers_compatibility
     export domain
     export domain_cert_ca=$(yunohost domain cert-status $domain --json \
                             | jq ".certificates.\"$domain\".CA_type" \
@@ -64,6 +64,7 @@ do_pre_regen() {
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
 
   done
+  ynh_render_template "plain/yunohost_admin.conf" "${nginx_conf_dir}/yunohost-admin.conf"
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/nginx/conf.d \
