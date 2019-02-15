@@ -185,11 +185,18 @@ ynh_remove_fpm_config () {
 }
 
 # Create a dedicated fail2ban config (jail and filter conf files)
+# usage 1: ynh_add_fail2ban_config log_file filter [max_retry [ports]]
+# | arg: -l, --logpath=   - Log file to be checked by fail2ban
+# | arg: -r, --failregex= - Failregex to be looked for by fail2ban
+# | arg: -m, --max_retry= - Maximum number of retries allowed before banning IP address - default: 3
+# | arg: -p, --ports= - Ports blocked for a banned IP address - default: http,https
 #
-# usage: ynh_add_fail2ban_config "list of others variables to replace"
+# -----------------------------------------------------------------------------
 #
-# | arg: list of others variables to replace separeted by a space
-# |      for example : 'var_1 var_2 ...'
+# usage 2: ynh_add_fail2ban_config -t [-v "list of others variables to replace"]
+# | arg: -t, --use_template - Use this helper in template mode
+# | arg: -v, --others_var=  - List of others variables to replace separeted by a space
+# |                           for example : 'var_1 var_2 ...'
 #
 # This will use a template in ../conf/f2b_jail.conf and ../conf/f2b_filter.conf
 #   __APP__      by  $app
@@ -235,7 +242,16 @@ ynh_remove_fpm_config () {
 # To validate your regex you can test with this command:
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 ynh_add_fail2ban_config () {
-  local others_var=${1:-}
+  # Declare an array to define the options of this helper.
+  declare -Ar args_array=( [l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template [v]=others_var=)
+  local logpath
+  local failregex
+  local max_retry
+  local ports
+  local others_var
+  local use_template
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
 
   finalfail2banjailconf="/etc/fail2ban/jail.d/$app.conf"
   finalfail2banfilterconf="/etc/fail2ban/filter.d/$app.conf"
@@ -245,18 +261,42 @@ ynh_add_fail2ban_config () {
   cp ../conf/f2b_jail.conf $finalfail2banjailconf
   cp ../conf/f2b_filter.conf $finalfail2banfilterconf
 
-  if test -n "${app:-}"; then
-    ynh_replace_string "__APP__" "$app" "$finalfail2banjailconf"
-    ynh_replace_string "__APP__" "$app" "$finalfail2banfilterconf"
-  fi
+  if [[ ${use_template:-0} == 1 ]]; then
+    if test -n "${app:-}"; then
+      ynh_replace_string "__APP__" "$app" "$finalfail2banjailconf"
+      ynh_replace_string "__APP__" "$app" "$finalfail2banfilterconf"
+    fi
 
-  # Replace all other variable given as arguments
-  for var_to_replace in $others_var; do
-    # ${var_to_replace^^} make the content of the variable on upper-cases
-    # ${!var_to_replace} get the content of the variable named $var_to_replace
-    ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banjailconf"
-    ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banfilterconf"
-  done
+    # Replace all other variable given as arguments
+    for var_to_replace in ${others_var:-}; do
+      # ${var_to_replace^^} make the content of the variable on upper-cases
+      # ${!var_to_replace} get the content of the variable named $var_to_replace
+      ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banjailconf"
+      ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banfilterconf"
+    done
+  else
+    max_retry=${max_retry:-3}
+    ports=${ports:-http,https}
+    test -n "$logpath" || ynh_die "ynh_add_fail2ban_config expects a logfile path as first argument and received nothing."
+    test -n "$failregex" || ynh_die "ynh_add_fail2ban_config expects a failure regex as second argument and received nothing."
+
+    tee $finalfail2banjailconf <<EOF
+[$app]
+enabled = true
+port = $ports
+filter = $app
+logpath = $logpath
+maxretry = $max_retry
+EOF
+
+    tee $finalfail2banfilterconf <<EOF
+[INCLUDES]
+before = common.conf
+[Definition]
+failregex = $failregex
+ignoreregex =
+EOF
+  fi
 
   ynh_store_file_checksum "$finalfail2banjailconf"
   ynh_store_file_checksum "$finalfail2banfilterconf"
