@@ -364,7 +364,7 @@ ynh_backup_if_checksum_is_different () {
 			backup_file_checksum="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
 			sudo mkdir -p "$(dirname "$backup_file_checksum")"
 			sudo cp -a "$file" "$backup_file_checksum"	# Backup the current file
-			ynh_print_info "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
+			ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
 			echo "$backup_file_checksum"	# Return the name of the backup file
 		fi
 	fi
