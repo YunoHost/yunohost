@@ -185,6 +185,7 @@ ynh_remove_fpm_config () {
 }
 
 # Create a dedicated fail2ban config (jail and filter conf files)
+#
 # usage 1: ynh_add_fail2ban_config --logpath=log_file --failregex=filter [--max_retry=max_retry] [--ports=ports]
 # | arg: -l, --logpath=   - Log file to be checked by fail2ban
 # | arg: -r, --failregex= - Failregex to be looked for by fail2ban
@@ -204,17 +205,6 @@ ynh_remove_fpm_config () {
 #  You can dynamically replace others variables by example :
 #   __VAR_1__    by $var_1
 #   __VAR_2__    by $var_2
-#
-# Note about the "failregex" option:
-#          regex to match the password failure messages in the logfile. The
-#          host must be matched by a group named "host". The tag "<HOST>" can
-#          be used for standard IP/hostname matching and is only an alias for
-#          (?:::f{4,6}:)?(?P<host>[\w\-.^_]+)
-#
-#          You can find some more explainations about how to make a regex here :
-#          https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
-#
-# Note that the logfile need to exist before to call this helper !!
 #
 # Generally your template will look like that by example (for synapse):
 #
@@ -239,8 +229,22 @@ ynh_remove_fpm_config () {
 #
 #     ignoreregex =
 #
+# -----------------------------------------------------------------------------
+#
+# Note about the "failregex" option:
+#          regex to match the password failure messages in the logfile. The
+#          host must be matched by a group named "host". The tag "<HOST>" can
+#          be used for standard IP/hostname matching and is only an alias for
+#          (?:::f{4,6}:)?(?P<host>[\w\-.^_]+)
+#
+#          You can find some more explainations about how to make a regex here :
+#          https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
+#
+# Note that the logfile need to exist before to call this helper !!
+#
 # To validate your regex you can test with this command:
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
+#
 ynh_add_fail2ban_config () {
   # Declare an array to define the options of this helper.
   declare -Ar args_array=( [l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template [v]=others_var=)
