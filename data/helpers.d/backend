@@ -185,15 +185,15 @@ ynh_remove_fpm_config () {
 }
 
 # Create a dedicated fail2ban config (jail and filter conf files)
-# usage 1: ynh_add_fail2ban_config log_file filter [max_retry [ports]]
+# usage 1: ynh_add_fail2ban_config --logpath=log_file --failregex=filter [--max_retry=max_retry] [--ports=ports]
 # | arg: -l, --logpath=   - Log file to be checked by fail2ban
 # | arg: -r, --failregex= - Failregex to be looked for by fail2ban
 # | arg: -m, --max_retry= - Maximum number of retries allowed before banning IP address - default: 3
-# | arg: -p, --ports= - Ports blocked for a banned IP address - default: http,https
+# | arg: -p, --ports=     - Ports blocked for a banned IP address - default: http,https
 #
 # -----------------------------------------------------------------------------
 #
-# usage 2: ynh_add_fail2ban_config -t [-v "list of others variables to replace"]
+# usage 2: ynh_add_fail2ban_config --use_template [--others_var="list of others variables to replace"]
 # | arg: -t, --use_template - Use this helper in template mode
 # | arg: -v, --others_var=  - List of others variables to replace separeted by a space
 # |                           for example : 'var_1 var_2 ...'
