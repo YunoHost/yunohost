@@ -256,17 +256,23 @@ ynh_add_fail2ban_config () {
   local use_template
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
+  use_template="${use_template:-0}"
+  max_retry=${max_retry:-3}
+  ports=${ports:-http,https}
 
   finalfail2banjailconf="/etc/fail2ban/jail.d/$app.conf"
   finalfail2banfilterconf="/etc/fail2ban/filter.d/$app.conf"
   ynh_backup_if_checksum_is_different "$finalfail2banjailconf"
   ynh_backup_if_checksum_is_different "$finalfail2banfilterconf"
 
-  cp ../conf/f2b_jail.conf $finalfail2banjailconf
-  cp ../conf/f2b_filter.conf $finalfail2banfilterconf
+  if [ $use_template -eq 1 ]
+  then
+    # Usage 2, templates
+    cp ../conf/f2b_jail.conf $finalfail2banjailconf
+    cp ../conf/f2b_filter.conf $finalfail2banfilterconf
 
-  if [[ ${use_template:-0} == 1 ]]; then
-    if test -n "${app:-}"; then
+    if [ -n "${app:-}" ]
+    then
       ynh_replace_string "__APP__" "$app" "$finalfail2banjailconf"
       ynh_replace_string "__APP__" "$app" "$finalfail2banfilterconf"
     fi
@@ -278,9 +284,9 @@ ynh_add_fail2ban_config () {
       ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banjailconf"
       ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banfilterconf"
     done
+
   else
-    max_retry=${max_retry:-3}
-    ports=${ports:-http,https}
+    # Usage 1, no template. Build a config file from scratch.
     test -n "$logpath" || ynh_die "ynh_add_fail2ban_config expects a logfile path as first argument and received nothing."
     test -n "$failregex" || ynh_die "ynh_add_fail2ban_config expects a failure regex as second argument and received nothing."
 
@@ -302,6 +308,7 @@ ignoreregex =
 EOF
   fi
 
+  # Common to usage 1 and 2.
   ynh_store_file_checksum "$finalfail2banjailconf"
   ynh_store_file_checksum "$finalfail2banfilterconf"
 
@@ -309,8 +316,8 @@ EOF
 
   local fail2ban_error="$(journalctl -u fail2ban | tail -n50 | grep "WARNING.*$app.*")"
   if [[ -n "$fail2ban_error" ]]; then
-    echo "[ERR] Fail2ban failed to load the jail for $app" >&2
-    echo "WARNING${fail2ban_error#*WARNING}" >&2
+    ynh_print_err --message="Fail2ban failed to load the jail for $app"
+    ynh_print_warn --message="${fail2ban_error#*WARNING}"
   fi
 }
 
