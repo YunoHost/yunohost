@@ -67,6 +67,11 @@ ynh_read_manifest () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
+	if [ ! -e "$manifest" ]; then
+		# If the manifest isn't found, try the common place for backup and restore script.
+		manifest="../settings/manifest.json"
+	fi
+
 	jq ".$manifest_key" "$manifest" --raw-output
 }
 
@@ -85,9 +90,6 @@ ynh_app_upstream_version () {
     ynh_handle_getopts_args "$@"
 
     manifest="${manifest:-../manifest.json}"
-    if [ ! -e "$manifest" ]; then
-        manifest="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
-    fi
     version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
     echo "${version_key/~ynh*/}"
 }
@@ -107,9 +109,6 @@ ynh_app_package_version () {
     ynh_handle_getopts_args "$@"
 
     manifest="${manifest:-../manifest.json}"
-    if [ ! -e "$manifest" ]; then
-        manifest="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
-    fi
     version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
     echo "${version_key/*~ynh/}"
 }
