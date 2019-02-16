@@ -575,6 +575,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         raise YunohostError('app_no_upgrade')
 
     upgraded_apps = []
+    not_upgraded_apps = []
 
     apps = app
     user_specified_list = True
@@ -651,6 +652,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
                      args=args_list, env=env_dict) != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
+            not_upgraded_apps.append(app_instance_name)
             logger.error(msg)
             operation_logger.error(msg)
         else:
@@ -684,8 +686,8 @@ def app_upgrade(auth, app=[], url=None, file=None):
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
             operation_logger.success()
 
-    if not upgraded_apps:
-        raise YunohostError('app_no_upgrade')
+    if not_upgraded_apps:
+        raise YunohostError('app_not_upgraded', apps=', '.join(not_upgraded_apps))
 
     app_ssowatconf(auth)
 
