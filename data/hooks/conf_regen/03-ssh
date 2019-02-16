@@ -2,7 +2,7 @@
 
 set -e
 
-. /usr/share/yunohost/helpers.d/utils
+. /usr/share/yunohost/helpers
 
 do_pre_regen() {
     pending_dir=$1
