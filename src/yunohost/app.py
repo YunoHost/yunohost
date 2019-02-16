@@ -574,7 +574,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
     except YunohostError:
         raise YunohostError('app_no_upgrade')
 
-    upgraded_apps = []
     not_upgraded_apps = []
 
     apps = app
@@ -587,6 +586,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
     elif not isinstance(app, list):
         apps = [app]
 
+    # Remove possible duplicates
+    apps = [app for i,app in enumerate(apps) if apps not in L[:i]]
+
     if len(apps) == 0:
         raise YunohostError('app_no_upgrade')
     if len(apps) > 1:
@@ -597,9 +599,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
         installed = _is_installed(app_instance_name)
         if not installed:
             raise YunohostError('app_not_installed', app=app_instance_name)
-
-        if app_instance_name in upgraded_apps:
-            continue
 
         app_dict = app_info(app_instance_name, raw=True)
 
@@ -680,7 +679,6 @@ def app_upgrade(auth, app=[], url=None, file=None):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
             # So much win
-            upgraded_apps.append(app_instance_name)
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
