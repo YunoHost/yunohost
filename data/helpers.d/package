@@ -71,7 +71,7 @@ ynh_package_version() {
 # usage: ynh_apt update
 ynh_apt() {
     ynh_wait_dpkg_free
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y $@
+    DEBIAN_FRONTEND=noninteractive apt-get -y $@
 }
 
 # Update package index files
@@ -150,7 +150,7 @@ ynh_package_install_from_equivs () {
     cp "$controlfile" "${TMPDIR}/control"
     (cd "$TMPDIR"
     equivs-build ./control 1> /dev/null
-    DEBIAN_FRONTEND=noninteractive dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
+    dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
     ynh_package_install -f || ynh_die --message="Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
