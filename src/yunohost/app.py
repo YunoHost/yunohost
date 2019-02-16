@@ -586,7 +586,10 @@ def app_upgrade(auth, app=[], url=None, file=None):
     elif not isinstance(app, list):
         apps = [app]
 
-    logger.info("Upgrading apps %s", ", ".join(app))
+    if len(apps) == 0:
+        raise YunohostError('app_no_upgrade')
+    if len(apps) > 1:
+        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(app)))
 
     for app_instance_name in apps:
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
