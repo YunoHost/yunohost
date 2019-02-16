@@ -801,6 +801,8 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
 
+    logger.info(m18n.n("app_start_install", app=app_id))
+
     # Create app directory
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
     if os.path.exists(app_setting_path):
@@ -920,6 +922,8 @@ def app_remove(operation_logger, auth, app):
         raise YunohostError('app_not_installed', app=app)
 
     operation_logger.start()
+
+    logger.info(m18n.n("app_start_remove", app=app))
 
     app_setting_path = APPS_SETTING_PATH + app
 
