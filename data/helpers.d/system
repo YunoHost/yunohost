@@ -96,12 +96,14 @@ ynh_systemd_action() {
         if [ "$log_path" == "systemd" ] ; then
             # Read the systemd journal
             journalctl --unit=$service_name --follow --since=-0 --quiet > "$templog" &
+            # Get the PID of the journalctl command
+            local pid_tail=$!
         else
             # Read the specified log file
             tail -F -n0 "$log_path" > "$templog" &
+            # Get the PID of the tail command
+            local pid_tail=$!
         fi
-        # Get the PID of the tail command
-        local pid_tail=$!
     fi
 
     echo "${action^} the service $service_name" >&2
