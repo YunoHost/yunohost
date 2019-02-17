@@ -106,7 +106,7 @@ ynh_systemd_action() {
 
     echo "${action^} the service $service_name" >&2
     systemctl $action $service_name \
-        || ( journalctl --lines=$length -u $service_name >&2 \
+        || ( journalctl --no-pager --lines=$length -u $service_name >&2 \
         ; test -e "$log_path" && echo "--" && tail --lines=$length "$log_path" >&2 \
         ; false )
 
@@ -129,7 +129,7 @@ ynh_systemd_action() {
         then
             echo "The service $service_name didn't fully started before the timeout." >&2
             echo "Please find here an extract of the end of the log of the service $service_name:"
-            journalctl --lines=$length -u $service_name >&2
+            journalctl --no-pager --lines=$length -u $service_name >&2
             test -e "$log_path" && echo "--" && tail --lines=$length "$log_path" >&2
         fi
 
