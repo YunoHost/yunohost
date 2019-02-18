@@ -15,9 +15,7 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        if os.path.exists(dhparams_file):
-            service_regen_conf(['nginx'])
-        else:
+        if os.path.exists(dhparams_file) is False:
             with open(cron_job_file, "w") as f:
                         f.write("#!/bin/bash\n")
                         f.write(command)
