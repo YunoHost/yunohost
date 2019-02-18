@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Create a master password and set up global settings
 # Please always call this script in install and restore scripts
 #
