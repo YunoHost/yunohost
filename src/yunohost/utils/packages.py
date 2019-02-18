@@ -19,6 +19,7 @@
 
 """
 import re
+import os
 import logging
 from collections import OrderedDict
 
@@ -470,3 +471,11 @@ def ynh_packages_version(*args, **kwargs):
         'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
         with_repo=True
     )
+
+
+def dpkg_is_broken():
+    # If dpkg is broken, /var/lib/dpkg/updates
+    # will contains files like 0001, 0002, ...
+    # ref: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
+    return any(re.match("^[0-9]+$", f)
+               for f in os.listdir("/var/lib/dpkg/updates/"))
