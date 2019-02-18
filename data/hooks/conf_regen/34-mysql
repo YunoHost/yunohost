@@ -2,6 +2,7 @@
 
 set -e
 MYSQL_PKG="mariadb-server-10.1"
+. /usr/share/yunohost/helpers
 
 do_pre_regen() {
   pending_dir=$1
@@ -15,7 +16,6 @@ do_post_regen() {
   regen_conf_files=$1
 
   if [ ! -f /etc/yunohost/mysql ]; then
-      . /usr/share/yunohost/helpers.d/string
 
       # ensure that mysql is running
       sudo systemctl -q is-active mysql.service \
@@ -25,8 +25,6 @@ do_post_regen() {
       mysql_password=$(ynh_string_random 10)
       sudo mysqladmin -s -u root -pyunohost password "$mysql_password" || {
         if [ $FORCE -eq 1 ]; then
-            . /usr/share/yunohost/helpers.d/package
-
             echo "It seems that you have already configured MySQL." \
               "YunoHost needs to have a root access to MySQL to runs its" \
               "applications, and is going to reset the MySQL root password." \
