@@ -19,14 +19,15 @@ class MyMigration(Migration):
 
         try:
             file_open = open(dhparams_file)
+            service_regen_conf(['nginx'], force=True)
+            
+        except:
             with open(cron_job_file, "w") as f:
                         f.write("#!/bin/bash\n")
                         f.write(command)
 
                     _set_permissions(cron_job_file, "root", "root", 0o755)
                     service_regen_conf(['nginx'], force=True)
-        except:
-            service_regen_conf(['nginx'], force=True)
 
 
     def backward(self):
