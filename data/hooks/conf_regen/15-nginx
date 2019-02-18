@@ -53,10 +53,10 @@ do_pre_regen() {
       export dh_params=true
     else
       export dh_params=false
-    fi                  
+    fi
 
     ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
-    ynh_render_template "plain/yunohost_admin.conf" "${nginx_conf_dir}/yunohost-admin.conf"
+    ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost-admin.conf"
     ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
 
     [[ $main_domain != $domain ]] \
