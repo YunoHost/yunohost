@@ -31,6 +31,7 @@ from datetime import datetime
 
 from moulinette import m18n
 from moulinette.utils import log, filesystem
+from moulinette.utils.filesystem import read_file
 
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation
@@ -60,6 +61,17 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         list_pending -- List pending configuration files and exit
 
     """
+
+    # Legacy code to automatically run the migration
+    # This is required because regen_conf is called before the migration call
+    # in debian's postinst script
+    if os.path.exists("/etc/yunohost/installed") \
+       and ("conffiles" in read_file("/etc/yunohost/services.yml") \
+            or not os.path.exists("/etc/yunohost/regenconf.yml")):
+        from yunohost.tools import _get_migration_by_name
+        migration = _get_migration_by_name("decouple_regenconf_from_services")
+        migration.migrate()
+
     result = {}
 
     # Return the list of pending conf
