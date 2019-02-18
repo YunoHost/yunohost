@@ -414,12 +414,20 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
 
     services = _get_services()
+
+    if isinstance(names, str):
+        names = [names]
+
     for name in names:
-        if name not in services:
-            raise YunohostError('service_unknown', service=service)
+        if name not in services.keys():
+            raise YunohostError('service_unknown', service=name)
+
+    if names is []:
+        names = services.keys()
 
     logger.warning(m18n.n("service_regen_conf_is_deprecated"))
 
+    from yunohost.regenconf import regen_conf
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
