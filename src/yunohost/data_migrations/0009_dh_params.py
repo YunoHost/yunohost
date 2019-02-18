@@ -26,8 +26,8 @@ class MyMigration(Migration):
                         f.write("#!/bin/bash\n")
                         f.write(command)
 
-                    _set_permissions(cron_job_file, "root", "root", 0o755)
-                    service_regen_conf(['nginx'], force=True)
+            _set_permissions(cron_job_file, "root", "root", 0o755)
+            service_regen_conf(['nginx'], force=True)
 
 
     def backward(self):
