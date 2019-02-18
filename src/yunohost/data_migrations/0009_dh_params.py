@@ -17,7 +17,7 @@ class MyMigration(Migration):
 
         try:
             file_open = open(dhparams_file)
-            service_regen_conf(['nginx'], force=True)
+            service_regen_conf(['nginx'])
             
         except:
             with open(cron_job_file, "w") as f:
