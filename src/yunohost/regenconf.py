@@ -39,6 +39,7 @@ from yunohost.hook import hook_callback, hook_list
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, 'pending')
+REGEN_CONF_FILE = '/etc/yunohost/regenconf.yml'
 
 logger = log.getActionLogger('yunohost.regenconf')
 
@@ -290,39 +291,28 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
     return result
 
 
-def _get_services():
+def _get_regenconf_infos():
     """
-    Get a dict of managed services with their parameters
-
+    Get a dict of regen conf informations
     """
     try:
-        with open('/etc/yunohost/services.yml', 'r') as f:
-            services = yaml.load(f)
+        with open(REGEN_CONF_FILE, 'r') as f:
+            return yaml.load(f)
     except:
         return {}
-    else:
-        # some services are marked as None to remove them from YunoHost
-        # filter this
-        for key, value in services.items():
-            if value is None:
-                del services[key]
-
-        return services
 
 
-def _save_services(services):
+def _save_regenconf_infos(infos):
     """
-    Save managed services to files
-
+    Save the regen conf informations
     Keyword argument:
-        services -- A dict of managed services with their parameters
-
+        categories -- A dict containing the regenconf infos
     """
     try:
-        with open('/etc/yunohost/services.yml', 'w') as f:
-            yaml.safe_dump(services, f, default_flow_style=False)
+        with open(REGEN_CONF_FILE, 'w') as f:
+            yaml.safe_dump(infos, f, default_flow_style=False)
     except Exception as e:
-        logger.warning('Error while saving services, exception: %s', e, exc_info=1)
+        logger.warning('Error while saving regenconf infos, exception: %s', e, exc_info=1)
         raise
 
 
@@ -426,7 +416,7 @@ def _get_pending_conf(categories=[]):
 def _get_conf_hashes(category):
     """Get the registered conf hashes for a category"""
 
-    categories = _get_categories()
+    categories = _get_regenconf_infos()
 
     if category not in categories:
         logger.debug("category %s is not in categories.yml yet.", category)
@@ -444,7 +434,8 @@ def _update_conf_hashes(category, hashes):
     """Update the registered conf hashes for a category"""
     logger.debug("updating conf hashes for '%s' with: %s",
                  category, hashes)
-    categories = _get_categories()
+
+    categories = _get_regenconf_infos()
     category_conf = categories.get(category, {})
 
     # Handle the case where categories[category] is set to null in the yaml
@@ -453,7 +444,7 @@ def _update_conf_hashes(category, hashes):
 
     category_conf['conffiles'] = hashes
     categories[category] = category_conf
-    _save_categories(categories)
+    _save_regenconf_infos(categories)
 
 
 def _process_regen_conf(system_conf, new_conf=None, save=True):
