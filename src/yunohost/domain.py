@@ -34,7 +34,7 @@ from moulinette.utils.log import getActionLogger
 
 import yunohost.certificate
 
-from yunohost.service import service_regen_conf
+from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 
@@ -111,7 +111,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
+            regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
             app_ssowatconf(auth)
 
     except Exception:
@@ -164,7 +164,7 @@ def domain_remove(operation_logger, auth, domain, force=False):
     else:
         raise YunohostError('domain_deletion_failed')
 
-    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
+    regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf(auth)
 
     hook_callback('post_domain_remove', args=[domain])

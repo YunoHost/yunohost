@@ -410,6 +410,19 @@ def service_log(name, number=50):
     return result
 
 
+def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+                       list_pending=False):
+
+    services = _get_services()
+    for name in names:
+        if name not in services:
+            raise YunohostError('service_unknown', service=service)
+
+    logger.warning(m18n.n("service_regen_conf_is_deprecated"))
+
+    return regen_conf(names, with_diff, force, dry_run, list_pending)
+
+
 def _run_service_command(action, service):
     """
     Run services management command (start, stop, enable, disable, restart, reload)

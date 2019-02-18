@@ -443,6 +443,7 @@
     "service_enable_failed": "Unable to enable service '{service:s}'\n\nRecent service logs:{logs:s}",
     "service_enabled": "The service '{service:s}' has been enabled",
     "service_no_log": "No log to display for service '{service:s}'",
+    "service_regen_conf_is_deprecated": "'yunohost service regen-conf' is depracted! Please use 'yunohost tools regen-conf' instead.",
     "service_remove_failed": "Unable to remove service '{service:s}'",
     "service_removed": "The service '{service:s}' has been removed",
     "service_reload_failed": "Unable to reload service '{service:s}'\n\nRecent service logs:{logs:s}",

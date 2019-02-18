@@ -50,7 +50,7 @@ from yunohost.hook import (
 )
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
-from yunohost.service import service_regen_conf
+from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 from functools import reduce
 
@@ -1191,7 +1191,7 @@ class RestoreManager():
         else:
             operation_logger.success()
 
-        service_regen_conf()
+        regen_conf()
 
     def _restore_apps(self):
         """Restore all apps targeted"""
