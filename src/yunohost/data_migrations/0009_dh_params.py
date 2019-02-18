@@ -15,11 +15,9 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        try:
-            file_open = open(dhparams_file)
+        if os.path.exists(dhparams_file):
             service_regen_conf(['nginx'])
-            
-        except:
+        else:
             with open(cron_job_file, "w") as f:
                         f.write("#!/bin/bash\n")
                         f.write(command)
@@ -28,8 +26,5 @@ class MyMigration(Migration):
 
 
     def backward(self):
-        try:
-            file_open = open(dhparams_file)
+        if os.path.exists(dhparams_file):
             os.remove(dhparams_file)
-        except:
-            pass
