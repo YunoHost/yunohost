@@ -146,6 +146,7 @@
     "diagnosis_monitor_network_error": "Can't monitor network: {error}",
     "diagnosis_monitor_system_error": "Can't monitor system: {error}",
     "diagnosis_no_apps": "No installed application",
+    "dpkg_is_broken": "You cannot do this right now because dpkg/apt (the system package managers) seems to be in a broken state... You can try to solve this issue by connecting through SSH and running `sudo dpkg --configure -a`.",
     "dnsmasq_isnt_installed": "dnsmasq does not seem to be installed, please run 'apt-get remove bind9 && apt-get install dnsmasq'",
     "domain_cannot_remove_main": "Cannot remove main domain. Set a new main domain first",
     "domain_cert_gen_failed": "Unable to generate certificate",

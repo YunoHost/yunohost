@@ -722,6 +722,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         },
     }
 
+    if packages.dpkg_is_broken():
+        raise YunohostError(m18n.n("dpkg_is_broken"))
+
     def confirm_install(confirm):
 
         # Ignore if there's nothing for confirm (good quality app), if --force is used
