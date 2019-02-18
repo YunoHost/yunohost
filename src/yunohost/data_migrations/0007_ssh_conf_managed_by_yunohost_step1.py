@@ -3,15 +3,12 @@ import re
 
 from shutil import copyfile
 
-from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, rm
 
 from yunohost.tools import Migration
-from yunohost.service import _get_conf_hashes, \
-                             _calculate_hash, \
-                             _run_service_command
-from yunohost.regen_conf import regen_conf
+from yunohost.service import _run_service_command
+from yunohost.regenconf import regen_conf
 from yunohost.settings import settings_set
 from yunohost.utils.error import YunohostError
 
