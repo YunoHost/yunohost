@@ -462,8 +462,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         # We need to explicitly ask the regen conf to regen ssh
         # (by default, i.e. first argument = None, it won't because it's too touchy)
         service_regen_conf(names=["ssh"], force=True)
-
-    service_regen_conf(['nginx'], force=True)     
+    
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))
