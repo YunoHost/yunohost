@@ -1803,7 +1803,7 @@ class TarBackupMethod(BackupMethod):
                 # "dest"
                 tar.add(path['source'], arcname=path['dest'])
         except IOError:
-            logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
+            logger.error(m18n.n('backup_archive_writing_error', source=path['source'], archive=self._archive_file, dest=path['dest']), exc_info=1)
             raise YunohostError('backup_creation_failed')
         finally:
             tar.close()
