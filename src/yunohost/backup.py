@@ -1802,10 +1802,11 @@ class TarBackupMethod(BackupMethod):
                 # Add the "source" into the archive and transform the path into
                 # "dest"
                 tar.add(path['source'], arcname=path['dest'])
-            tar.close()
         except IOError:
             logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
             raise YunohostError('backup_creation_failed')
+        finally:
+            tar.close()
 
         # Move info file
         shutil.copy(os.path.join(self.work_dir, 'info.json'),
