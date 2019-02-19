@@ -724,7 +724,6 @@ def _check_if_vulnerable_to_meltdown():
     # (e.g. from yunohost)
     cache_file = "/tmp/yunohost-meltdown-diagnosis"
     dpkg_log = "/var/log/dpkg.log"
-    print(os.path.exists(cache_file))
     if os.path.exists(cache_file):
         if not os.path.exists(dpkg_log) or os.path.getmtime(cache_file) > os.path.getmtime(dpkg_log):
             logger.debug("Using cached results for meltdown checker, from %s" % cache_file)
