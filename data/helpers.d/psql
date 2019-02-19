@@ -120,7 +120,7 @@ ynh_psql_dump_db() {
 ynh_psql_create_user() {
 	local user=$1
 	local psql=$2
-	ynh_psql_execute_as_root "CREATE USER $user WITH PASSWORD '$pwd'"
+	ynh_psql_execute_as_root --sql="CREATE USER $user WITH PASSWORD '$pwd'"
 }
 
 # Check if a psql user exists
@@ -136,7 +136,7 @@ ynh_psql_user_exists()
    # Manage arguments with getopts
    ynh_handle_getopts_args "$@"
 
-   if [[ -z $(ynh_psql_execute_as_root --sql="SELECT 1 FROM pg_roles WHERE rolename='$user';") ]]
+   if [[ -n $(sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';") ]]
    then
       return 1
    else
