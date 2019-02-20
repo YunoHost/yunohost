@@ -125,8 +125,8 @@ ynh_psql_dump_db() {
 # | arg: pwd - the password to identify user by
 ynh_psql_create_user() {
 	local user=$1
-	local psql=$2
-	ynh_psql_execute_as_root --sql="CREATE USER $user WITH PASSWORD $pwd"
+	local pwd=$2
+	ynh_psql_execute_as_root --sql="CREATE USER $user WITH ENCRYPTED PASSWORD '$pwd'"
 }
 
 # Check if a psql user exists
