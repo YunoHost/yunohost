@@ -200,8 +200,8 @@ ynh_psql_setup_db() {
 	# If $db_pwd is not given, use new_db_pwd instead for db_pwd
 	db_pwd="${db_pwd:-$new_db_pwd}"
 
-	if [ $(ynh_psql_user_exists --user=$db_user) ]; then
-		ynh_psql_create_user "$db_name" "$db_user" "$db_pwd"
+	if ! ynh_psql_user_exists --user=$db_user; then
+		ynh_psql_create_user "$db_user" "$db_pwd"
 	fi
 
 	ynh_psql_create_db "$db_name" "$db_user" "$db_pwd"           # Create the database
@@ -223,7 +223,7 @@ ynh_psql_remove_db() {
 	ynh_handle_getopts_args "$@"
 
 	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
-	if $(ynh_psql_database_exists "$db_name"); then # Check if the database exists
+	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
 		echo "Removing database $db_name" >&2
 		ynh_psql_drop_db $db_name # Remove the database
 	else
@@ -231,7 +231,7 @@ ynh_psql_remove_db() {
 	fi
 
 	# Remove psql user if it exists
-	if $(ynh_psql_user_exists --user=$db_user); then
+	if ynh_psql_user_exists --user=$db_user; then
 		echo "Removing user $db_user" >&2
 		ynh_psql_drop_user $db_user
 	else
