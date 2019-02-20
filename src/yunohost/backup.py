@@ -919,11 +919,6 @@ class RestoreManager():
 
         successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
-        if successfull_apps != []:
-            # Quickfix: the old app_ssowatconf(auth) instruction failed due to
-            # ldap restore hooks
-            os.system('sudo yunohost app ssowatconf')
-
         permission_sync_to_user(auth, force=True)
 
         if os.path.ismount(self.work_dir):
