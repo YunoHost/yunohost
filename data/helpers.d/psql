@@ -221,7 +221,7 @@ ynh_psql_remove_db() {
 	ynh_handle_getopts_args "$@"
 
 	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
-	if ynh_psql_database_exists "$db_name"; then # Check if the database exists
+	if $(ynh_psql_database_exists "$db_name"); then # Check if the database exists
 		echo "Removing database $db_name" >&2
 		ynh_psql_drop_db $db_name # Remove the database
 	else
