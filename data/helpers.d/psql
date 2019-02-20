@@ -78,11 +78,9 @@ ynh_psql_create_db() {
 
     # grant all privilegies to user
 	if [[ $# -gt 1 ]]; then
-		#ynh_psql_create_user "$user" "$pwd"
 		sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${2} WITH GRANT OPTION;"
 	fi
 
-	#sudo --login --user=postgres createdb --owner="$user" "$db"
 	ynh_psql_execute_as_root --sql="$sql"
 }
 
@@ -128,7 +126,7 @@ ynh_psql_dump_db() {
 ynh_psql_create_user() {
 	local user=$1
 	local psql=$2
-	ynh_psql_execute_as_root --sql="CREATE USER $user WITH PASSWORD '$pwd'"
+	ynh_psql_execute_as_root --sql="CREATE USER $user WITH PASSWORD $pwd"
 }
 
 # Check if a psql user exists
@@ -176,7 +174,7 @@ ynh_psql_database_exists() {
 # usage: ynh_psql_drop_user user
 # | arg: user - the user name to drop
 ynh_psql_drop_user() {
-	ynh_psql_execute_as_root --sql="DROP USER '${1}';"
+	ynh_psql_execute_as_root --sql="DROP USER ${1};"
 }
 
 # Create a database, an user and its password. Then store the password in the app's config
@@ -201,6 +199,10 @@ ynh_psql_setup_db() {
 	local new_db_pwd=$(ynh_string_random) # Generate a random password
 	# If $db_pwd is not given, use new_db_pwd instead for db_pwd
 	db_pwd="${db_pwd:-$new_db_pwd}"
+
+	if [ $(ynh_psql_user_exists --user=$db_user) ]; then
+		ynh_psql_create_user "$db_name" "$db_user" "$db_pwd"
+	fi
 
 	ynh_psql_create_db "$db_name" "$db_user" "$db_pwd"           # Create the database
 	ynh_app_setting_set --app=$app --key=psqlpwd --value=$db_pwd # Store the password in the app's config
@@ -230,7 +232,10 @@ ynh_psql_remove_db() {
 
 	# Remove psql user if it exists
 	if $(ynh_psql_user_exists --user=$db_user); then
+		echo "Removing user $db_user" >&2
 		ynh_psql_drop_user $db_user
+	else
+		echo "User $db_user not found" >&2
 	fi
 }
 
