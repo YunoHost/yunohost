@@ -79,7 +79,7 @@ ynh_psql_create_db() {
     # grant all privilegies to user
 	if [[ $# -gt 1 ]]; then
 		#ynh_psql_create_user "$user" "$pwd"
-		sql+=" GRANT ALL PRIVILEGES ON ${db} TO ${2}  WITH GRANT OPTION;"
+		sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${2} WITH GRANT OPTION;"
 	fi
 
 	#sudo --login --user=postgres createdb --owner="$user" "$db"
