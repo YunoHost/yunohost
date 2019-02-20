@@ -1034,7 +1034,7 @@ def app_clearaccess(operation_logger, auth, apps):
     """
     from yunohost.permission import user_permission_clear
 
-    user_permission_clear(operation_logger, auth, app=apps, permission="main")
+    permission = user_permission_clear(operation_logger, auth, app=apps, permission="main")
 
     result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
 
