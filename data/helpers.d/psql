@@ -154,8 +154,8 @@ ynh_psql_user_exists() {
 # | arg: -d, --database - the database for which to check existence
 ynh_psql_database_exists() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=u
-	declare -Ar args_array=([u]=database=)
+	local legacy_args=d
+	declare -Ar args_array=([d]=database=)
 	local database
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
