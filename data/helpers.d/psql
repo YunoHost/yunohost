@@ -72,7 +72,7 @@ ynh_psql_execute_file_as_root() {
 # | arg: user - the user to grant privilegies
 ynh_psql_create_db() {
 	local db=$1
-	local user=$2
+	local user=${2:-}
 
     local sql="CREATE DATABASE ${db};"
 
