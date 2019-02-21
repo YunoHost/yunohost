@@ -54,6 +54,24 @@ ynh_print_log () {
   echo -e "${1}"
 }
 
+# Check if the current terminal supports colors
+#
+# [internal]
+#
+are_colors_supported () {
+	# Check if colors are available with this terminal
+	local colors=""
+	if colors=$(tput colors 2> /dev/null)
+	then
+		# And if there's at least 256 colors.
+		if [ $colors -ge 256 ]
+		then
+			return 0
+		fi
+	fi
+	return 1
+}
+
 # Print a warning on stderr
 #
 # usage: ynh_print_warn --message="Text to print"
@@ -66,7 +84,12 @@ ynh_print_warn () {
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
 
-  ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${message}" >&2
+  if are_colors_supported
+  then
+    ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${message}" >&2
+  else
+    ynh_print_log "[WARN] ${message}" >&2
+  fi
 }
 
 # Print an error on stderr
@@ -81,7 +104,12 @@ ynh_print_err () {
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
 
-  ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${message}" >&2
+  if are_colors_supported
+  then
+    ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${message}" >&2
+  else
+    ynh_print_log "[ERR] ${message}" >&2
+  fi
 }
 
 # Execute a command and print the result as an error
