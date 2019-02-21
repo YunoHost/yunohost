@@ -120,7 +120,7 @@ ynh_psql_dump_db() {
 #
 # [internal]
 #
-# usage: ynh_psql_create_user user pwd [host]
+# usage: ynh_psql_create_user user pwd
 # | arg: user - the user name to create
 # | arg: pwd - the password to identify user by
 ynh_psql_create_user() {
