@@ -239,3 +239,14 @@ def _save_settings(settings, location=SETTINGS_PATH):
             settings_fd.write(result)
     except Exception as e:
         raise YunohostError('global_settings_cant_write_settings', reason=e)
+
+@post_change_hook("security.ciphers.compatibility")
+def reconfigure_nginx(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf("nginx")
+
+@post_change_hook("service.ssh.ciphers.compatibility")
+def reconfigure_ssh(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf("ssh")
+
