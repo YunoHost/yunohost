@@ -264,7 +264,7 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
         return
 
     f = post_change_hooks[setting_name]
-    f(old_value, new_value)
+    f(setting_name, old_value, new_value)
 
 
 # ===========================================
@@ -273,14 +273,15 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 # You can define such an action with :
 #
 # @post_change_hook("your.setting.name")
-# def some_function_name(old_value, new_value):
+# def some_function_name(setting_name, old_value, new_value):
 #     # Do some stuff
 #
 # ===========================================
 
 
 #@post_change_hook("example.int")
-#def myfunc(old_value, new_value):
+#def myfunc(setting_name, old_value, new_value):
 #    print("In hook")
+#    print(setting_name)
 #    print(old_value)
 #    print(new_value)
