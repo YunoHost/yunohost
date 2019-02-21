@@ -7,6 +7,7 @@ from collections import OrderedDict
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from yunohost.service import service_regen_conf
 
 logger = getActionLogger('yunohost.settings')
 
@@ -243,10 +244,10 @@ def _save_settings(settings, location=SETTINGS_PATH):
 @post_change_hook("security.ciphers.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf("nginx")
+        service_regen_conf(names=['nginx'], force=True)
 
 @post_change_hook("service.ssh.ciphers.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf("ssh")
+        service_regen_conf(names=['ssh'], force=True)
 
