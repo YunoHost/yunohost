@@ -67,18 +67,18 @@ ynh_psql_execute_file_as_root() {
 #
 # [internal]
 #
-# usage: ynh_psql_create_db db [user [pwd]]
+# usage: ynh_psql_create_db db [user]
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
-# | arg: pwd - the password to identify user by
 ynh_psql_create_db() {
 	local db=$1
+	local user=$2
 
     local sql="CREATE DATABASE ${db};"
 
     # grant all privilegies to user
-	if [[ $# -gt 1 ]]; then
-		sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${2} WITH GRANT OPTION;"
+	if [ $# -gt 1 ]; then
+		sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user} WITH GRANT OPTION;"
 	fi
 
 	ynh_psql_execute_as_root --sql="$sql"
