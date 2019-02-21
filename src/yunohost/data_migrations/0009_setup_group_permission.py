@@ -56,7 +56,7 @@ def migrate_LDAP_db(auth):
                     {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
         user_group_add(auth, username, gid=user_info['uidNumber'][0], sync_perm=False)
         user_group_update(auth, groupname=username, add_user=username, force=True, sync_perm=False)
-        user_group_update(auth, 'all_users', add_user=username, force=True, sync_perm=False)
+        user_group_update(auth, groupname='all_users', add_user=username, force=True, sync_perm=False)
 
 
 def migrate_app_permission(auth, app=None):
@@ -79,7 +79,7 @@ def migrate_app_permission(auth, app=None):
         permission_add(auth, app, 'main', urls=[url], default_allow=True, sync_perm=False)
         if permission:
             allowed_group = permission.split(',')
-            user_permission_add(auth, [app], 'main', group=allowed_group, sync_perm=False)
+            user_permission_add(auth, [app], permission='main', group=allowed_group, sync_perm=False)
         app_setting(app, 'allowed_users', delete=True)
 
 
