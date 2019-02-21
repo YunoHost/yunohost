@@ -2345,6 +2345,7 @@ def _parse_app_instance_name(app_instance_name):
     True
     """
     match = re_app_instance_name.match(app_instance_name)
+    assert match, "Could not parse app instance name : %s" % app_instance_name
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
