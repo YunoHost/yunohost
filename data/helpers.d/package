@@ -86,7 +86,7 @@ ynh_package_version() {
 # usage: ynh_apt update
 ynh_apt() {
     ynh_wait_dpkg_free
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y $@
+    DEBIAN_FRONTEND=noninteractive apt-get -y $@
 }
 
 # Update package index files
