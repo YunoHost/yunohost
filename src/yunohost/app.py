@@ -564,6 +564,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
+    if packages.dpkg_is_broken():
+        raise YunohostError(m18n.n("dpkg_is_broken"))
+
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
 
     # Retrieve interface
