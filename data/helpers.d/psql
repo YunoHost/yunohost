@@ -252,8 +252,10 @@ ynh_psql_test_if_first_run() {
 
 		if [ -e /etc/postgresql/9.4/ ]; then
 			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
+			local logfile=/var/log/postgresql/postgresql-9.4-main.log
 		elif [ -e /etc/postgresql/9.6/ ]; then
 			local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
+			local logfile=/var/log/postgresql/postgresql-9.6-main.log
 		else
 			ynh_die "postgresql shoud be 9.4 or 9.6"
 		fi
@@ -265,8 +267,11 @@ ynh_psql_test_if_first_run() {
 		# https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
 		# Note: we can't use peer since YunoHost create users with nologin
 		#  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
-		sed -i '/local\s*all\s*all\s*peer/i \
-			local all all password' "$pg_hba"
+		ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3password" --target_file="$pg_hba"
+
+		# Advertise service in admin panel
+		yunohost service add postgresql --log "$logfile"
+
 		systemctl enable postgresql
 		systemctl reload postgresql
 	fi
