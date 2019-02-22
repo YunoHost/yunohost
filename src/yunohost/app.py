@@ -565,7 +565,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
     """
     if packages.dpkg_is_broken():
-        raise YunohostError(m18n.n("dpkg_is_broken"))
+        raise YunohostError("dpkg_is_broken")
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
 
@@ -709,7 +709,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
     if packages.dpkg_is_broken():
-        raise YunohostError(m18n.n("dpkg_is_broken"))
+        raise YunohostError("dpkg_is_broken")
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
@@ -966,7 +966,7 @@ def app_remove(operation_logger, auth, app):
     app_ssowatconf(auth)
 
     if packages.dpkg_is_broken():
-        raise YunohostError(m18n.n("this_action_broke_dpkg"))
+        raise YunohostError("this_action_broke_dpkg")
 
 
 def app_addaccess(auth, apps, users=[]):
