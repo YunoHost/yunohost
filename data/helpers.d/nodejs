@@ -69,6 +69,7 @@ ynh_install_nodejs () {
 	local arch
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+	arch=${arch:-}
 
 	# Create $n_install_dir
 	mkdir -p "$n_install_dir"
