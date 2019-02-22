@@ -64,12 +64,10 @@ ynh_install_nodejs () {
 
 	# Declare an array to define the options of this helper.
 	local legacy_args=n
-	declare -Ar args_array=( [n]=nodejs_version= [a]=arch=)
+	declare -Ar args_array=( [n]=nodejs_version= )
 	local nodejs_version
-	local arch
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
-	arch=${arch:-}
 
 	# Create $n_install_dir
 	mkdir -p "$n_install_dir"
@@ -100,11 +98,11 @@ ynh_install_nodejs () {
 	test -x /usr/bin/npm_n && mv /usr/bin/npm_n /usr/bin/npm
 
 	# Install the requested version of nodejs
-	if [ -z "$arch" ]
+	if [[ $uname =~ aarch64 ||  $uname =~ arm64]]
 	then
-		n $nodejs_version
+		n $nodejs_version --arch=arm64
 	else
-		n $nodejs_version --arch=$arch
+		n $nodejs_version
 	fi
 
 	# Find the last "real" version for this major version of node.
