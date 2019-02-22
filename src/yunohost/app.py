@@ -880,6 +880,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
             app_ssowatconf(auth)
 
+            if packages.dpkg_is_broken():
+                logger.error(m18n.n("this_action_broke_dpkg"))
+
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
                 raise YunohostError(msg, raw_msg=True)
@@ -961,6 +964,9 @@ def app_remove(operation_logger, auth, app):
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
     app_ssowatconf(auth)
+
+    if packages.dpkg_is_broken():
+        raise YunohostError(m18n.n("this_action_broke_dpkg"))
 
 
 def app_addaccess(auth, apps, users=[]):
