@@ -150,6 +150,9 @@ ynh_handle_getopts_args () {
 									# If there's already another value for this option, add a ; before adding the new value
 									eval ${option_var}+="\;"
 								fi
+								# Escape double quote to prevent any interpretation during the eval
+								all_args[$i]="${all_args[$i]//\"/\\\"}"
+
 								eval ${option_var}+=\"${all_args[$i]}\"
 								shift_value=$(( shift_value + 1 ))
 							fi
@@ -187,6 +190,9 @@ ynh_handle_getopts_args () {
 				# Also, remove '=' at the end of the long option
 				# The variable name will be stored in 'option_var'
 				local option_var="${args_array[$option_flag]%=}"
+
+				# Escape double quote to prevent any interpretation during the eval
+				arguments[$i]="${arguments[$i]//\"/\\\"}"
 
 				# Store each value given as argument in the corresponding variable
 				# The values will be stored in the same order than $args_array

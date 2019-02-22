@@ -735,6 +735,14 @@ def _check_if_vulnerable_to_meltdown():
         output, err = call.communicate()
         assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
+        # If there are multiple lines, sounds like there was some messages
+        # in stdout that are not json >.> ... Try to get the actual json
+        # stuff which should be the last line
+        output = output.strip()
+        if "\n" in output:
+            logger.debug("Original meltdown checker output : %s" % output)
+            output = output.split("\n")[-1]
+
         CVEs = json.loads(output)
         assert len(CVEs) == 1
         assert CVEs[0]["NAME"] == "MELTDOWN"

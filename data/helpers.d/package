@@ -17,6 +17,21 @@ ynh_wait_dpkg_free() {
             # Sleep an exponential time at each round
             sleep $(( try * try ))
         else
+            # Check if dpkg hasn't been interrupted and is fully available.
+            # See this for more information: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
+            local dpkg_dir="/var/lib/dpkg/updates/"
+
+            # For each file in $dpkg_dir
+            while read dpkg_file <&9
+            do
+                # Check if the name of this file contains only numbers.
+                if echo "$dpkg_file" | grep -Pq "^[[:digit:]]*$"
+                then
+                    # If so, that a remaining of dpkg.
+                    ynh_print_err "E: dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
+                    return 1
+                fi
+            done 9<<< "$(ls -1 $dpkg_dir)"
             return 0
         fi
     done
@@ -71,7 +86,7 @@ ynh_package_version() {
 # usage: ynh_apt update
 ynh_apt() {
     ynh_wait_dpkg_free
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y $@
+    DEBIAN_FRONTEND=noninteractive apt-get -y $@
 }
 
 # Update package index files

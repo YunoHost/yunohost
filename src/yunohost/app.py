@@ -97,6 +97,9 @@ def app_fetchlist(url=None, name=None):
         name -- Name of the list
         url -- URL of remote JSON list
     """
+    if not url.endswith(".json"):
+        raise YunohostError("This is not a valid application list url. It should end with .json.")
+
     # If needed, create folder where actual appslists are stored
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
@@ -2345,6 +2348,7 @@ def _parse_app_instance_name(app_instance_name):
     True
     """
     match = re_app_instance_name.match(app_instance_name)
+    assert match, "Could not parse app instance name : %s" % app_instance_name
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
