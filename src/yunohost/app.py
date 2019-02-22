@@ -708,6 +708,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
+    if packages.dpkg_is_broken():
+        raise YunohostError(m18n.n("dpkg_is_broken"))
+
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
 
@@ -724,9 +727,6 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
             'type': None,
         },
     }
-
-    if packages.dpkg_is_broken():
-        raise YunohostError(m18n.n("dpkg_is_broken"))
 
     def confirm_install(confirm):
 
