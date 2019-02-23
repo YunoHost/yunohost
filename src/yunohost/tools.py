@@ -713,6 +713,22 @@ def tools_diagnosis(auth, private=False):
 def _check_if_vulnerable_to_meltdown():
     # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
 
+    # We use a cache file to avoid re-running the script so many times,
+    # which can be expensive (up to around 5 seconds on ARM)
+    # and make the admin appear to be slow (c.f. the calls to diagnosis
+    # from the webadmin)
+    #
+    # The cache is in /tmp and shall disappear upon reboot
+    # *or* we compare it to dpkg.log modification time
+    # such that it's re-ran if there was package upgrades
+    # (e.g. from yunohost)
+    cache_file = "/tmp/yunohost-meltdown-diagnosis"
+    dpkg_log = "/var/log/dpkg.log"
+    if os.path.exists(cache_file):
+        if not os.path.exists(dpkg_log) or os.path.getmtime(cache_file) > os.path.getmtime(dpkg_log):
+            logger.debug("Using cached results for meltdown checker, from %s" % cache_file)
+            return read_json(cache_file)[0]["VULNERABLE"]
+
     # script taken from https://github.com/speed47/spectre-meltdown-checker
     # script commit id is store directly in the script
     file_dir = os.path.split(__file__)[0]
@@ -722,6 +738,7 @@ def _check_if_vulnerable_to_meltdown():
     # example output from the script:
     # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
     try:
+        logger.debug("Running meltdown vulnerability checker")
         call = subprocess.Popen("bash %s --batch json --variant 3" %
                                 SCRIPT_PATH, shell=True,
                                 stdout=subprocess.PIPE,
@@ -752,6 +769,8 @@ def _check_if_vulnerable_to_meltdown():
         logger.warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
         raise Exception("Command output for failed meltdown check: '%s'" % output)
 
+    logger.debug("Writing results from meltdown checker to cache file, %s" % cache_file)
+    write_to_json(cache_file, CVEs)
     return CVEs[0]["VULNERABLE"]
 
 
