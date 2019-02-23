@@ -98,6 +98,7 @@ ynh_install_nodejs () {
 	test -x /usr/bin/npm_n && mv /usr/bin/npm_n /usr/bin/npm
 
 	# Install the requested version of nodejs
+	uname=$(uname -m)
 	if [[ $uname =~ aarch64 ||  $uname =~ arm64]]
 	then
 		n $nodejs_version --arch=arm64
