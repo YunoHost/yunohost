@@ -144,7 +144,8 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
                       'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
-        key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]
+        private_file = glob.glob('/etc/yunohost/dyndns/*%s*.private' % domain)[0]
+        key_file = glob.glob('/etc/yunohost/dyndns/*%s*.key' % domain)[0]
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
@@ -153,8 +154,12 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
     except requests.ConnectionError:
+        os.system("rm %s" % private_file)
+        os.system("rm %s" % key_file)
         raise YunohostError('no_internet_connection')
     if r.status_code != 201:
+        os.system("rm %s" % private_file)
+        os.system("rm %s" % key_file)
         try:
             error = json.loads(r.text)['error']
         except:
