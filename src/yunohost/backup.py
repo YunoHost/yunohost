@@ -668,7 +668,7 @@ class BackupManager():
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
         settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
-        logger.debug(m18n.n('backup_running_app_script', app=app))
+        logger.info(m18n.n("app_start_backup", app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0o750, True, uid='admin')
@@ -1241,6 +1241,8 @@ class RestoreManager():
         related_to = [('app', app_instance_name)]
         operation_logger = OperationLogger('backup_restore_app', related_to)
         operation_logger.start()
+
+        logger.info(m18n.n("app_start_restore", app=app_instance_name))
 
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
@@ -2060,6 +2062,7 @@ def backup_create(name=None, description=None, methods=[],
     backup_manager.collect_files()
 
     # Apply backup methods on prepared files
+    logger.info(m18n.n("backup_actually_backuping"))
     backup_manager.backup()
 
     logger.success(m18n.n('backup_created'))
@@ -2128,6 +2131,7 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
     # Mount the archive then call the restore for each system part / app    #
     #
 
+    logger.info(m18n.n("backup_mount_archive_for_restore"))
     restore_manager.mount()
     restore_manager.restore()
 

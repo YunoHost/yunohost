@@ -577,7 +577,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     except YunohostError:
         raise YunohostError('app_no_upgrade')
 
-    upgraded_apps = []
+    not_upgraded_apps = []
 
     apps = app
     user_specified_list = True
@@ -589,16 +589,19 @@ def app_upgrade(auth, app=[], url=None, file=None):
     elif not isinstance(app, list):
         apps = [app]
 
-    logger.info("Upgrading apps %s", ", ".join(app))
+    # Remove possible duplicates
+    apps = [app for i,app in enumerate(apps) if apps not in L[:i]]
+
+    if len(apps) == 0:
+        raise YunohostError('app_no_upgrade')
+    if len(apps) > 1:
+        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(app)))
 
     for app_instance_name in apps:
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise YunohostError('app_not_installed', app=app_instance_name)
-
-        if app_instance_name in upgraded_apps:
-            continue
 
         app_dict = app_info(app_instance_name, raw=True)
 
@@ -651,6 +654,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
                      args=args_list, env=env_dict) != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
+            not_upgraded_apps.append(app_instance_name)
             logger.error(msg)
             operation_logger.error(msg)
         else:
@@ -678,14 +682,13 @@ def app_upgrade(auth, app=[], url=None, file=None):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
             # So much win
-            upgraded_apps.append(app_instance_name)
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
             operation_logger.success()
 
-    if not upgraded_apps:
-        raise YunohostError('app_no_upgrade')
+    if not_upgraded_apps:
+        raise YunohostError('app_not_upgraded', apps=', '.join(not_upgraded_apps))
 
     app_ssowatconf(auth)
 
@@ -800,6 +803,8 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
+
+    logger.info(m18n.n("app_start_install", app=app_id))
 
     # Create app directory
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
@@ -920,6 +925,8 @@ def app_remove(operation_logger, auth, app):
         raise YunohostError('app_not_installed', app=app)
 
     operation_logger.start()
+
+    logger.info(m18n.n("app_start_remove", app=app))
 
     app_setting_path = APPS_SETTING_PATH + app
 
