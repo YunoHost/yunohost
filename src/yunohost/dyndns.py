@@ -333,7 +333,8 @@ def _guess_current_dyndns_domain(dyn_host):
     """
 
     # Retrieve the first registered domain
-    for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+    paths = list(glob.iglob('/etc/yunohost/dyndns/K*.private'))
+    for path in paths:
         match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
         if not match:
             match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
@@ -343,7 +344,9 @@ def _guess_current_dyndns_domain(dyn_host):
 
         # Verify if domain is registered (i.e., if it's available, skip
         # current domain beause that's not the one we want to update..)
-        if _dyndns_available(dyn_host, _domain):
+        # If there's only 1 such key found, then avoid doing the request
+        # for nothing (that's very probably the one we want to find ...)
+        if len(paths) > 1 and _dyndns_available(dyn_host, _domain):
             continue
         else:
             return (_domain, path)
