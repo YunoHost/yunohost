@@ -323,6 +323,16 @@ ynh_store_file_checksum () {
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
+
+	# If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup
+	if [ -n "${backup_file_checksum-}" ]
+	then
+		# Print the diff between the previous file and the new one.
+		# diff return 1 if the files are different, so the || true
+		diff --report-identical-files --unified --color=always $backup_file_checksum $file >&2 || true
+	fi
+	# Unset the variable, so it wouldn't trig a ynh_store_file_checksum without a ynh_backup_if_checksum_is_different before it.
+	unset backup_file_checksum
 }
 
 # Verify the checksum and backup the file if it's different
@@ -345,15 +355,17 @@ ynh_backup_if_checksum_is_different () {
 
 	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
 	local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+	# backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
+	backup_file_checksum=""
 	if [ -n "$checksum_value" ]
 	then	# Proceed only if a value was stored into the app settings
 		if ! echo "$checksum_value $file" | sudo md5sum -c --status
 		then	# If the checksum is now different
-			local backup_file="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
-			sudo mkdir -p "$(dirname "$backup_file")"
-			sudo cp -a "$file" "$backup_file"	# Backup the current file
-			echo "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file" >&2
-			echo "$backup_file"	# Return the name of the backup file
+			backup_file_checksum="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+			sudo mkdir -p "$(dirname "$backup_file_checksum")"
+			sudo cp -a "$file" "$backup_file_checksum"	# Backup the current file
+			ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
+			echo "$backup_file_checksum"	# Return the name of the backup file
 		fi
 	fi
 }
