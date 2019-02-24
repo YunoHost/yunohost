@@ -119,6 +119,9 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
         subscribe_host -- Dynette HTTP API to subscribe to
 
     """
+    if len(glob.glob('/etc/yunohost/dyndns/*.key')) != 0 or os.path.exists('/etc/cron.d/yunohost-dyndns'):
+        raise YunohostError('domain_dyndns_already_subscribed')
+
     if domain is None:
         domain = _get_maindomain()
         operation_logger.related_to.append(('domain', domain))
