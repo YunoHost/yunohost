@@ -97,6 +97,9 @@ def app_fetchlist(url=None, name=None):
         name -- Name of the list
         url -- URL of remote JSON list
     """
+    if not url.endswith(".json"):
+        raise YunohostError("This is not a valid application list url. It should end with .json.")
+
     # If needed, create folder where actual appslists are stored
     if not os.path.exists(REPO_PATH):
         os.makedirs(REPO_PATH)
@@ -564,6 +567,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
+    if packages.dpkg_is_broken():
+        raise YunohostError("dpkg_is_broken")
+
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
 
     # Retrieve interface
@@ -574,7 +580,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
     except YunohostError:
         raise YunohostError('app_no_upgrade')
 
-    upgraded_apps = []
+    not_upgraded_apps = []
 
     apps = app
     user_specified_list = True
@@ -586,16 +592,19 @@ def app_upgrade(auth, app=[], url=None, file=None):
     elif not isinstance(app, list):
         apps = [app]
 
-    logger.info("Upgrading apps %s", ", ".join(app))
+    # Remove possible duplicates
+    apps = [app for i,app in enumerate(apps) if apps not in L[:i]]
+
+    if len(apps) == 0:
+        raise YunohostError('app_no_upgrade')
+    if len(apps) > 1:
+        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(app)))
 
     for app_instance_name in apps:
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
         installed = _is_installed(app_instance_name)
         if not installed:
             raise YunohostError('app_not_installed', app=app_instance_name)
-
-        if app_instance_name in upgraded_apps:
-            continue
 
         app_dict = app_info(app_instance_name, raw=True)
 
@@ -648,6 +657,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
                      args=args_list, env=env_dict) != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
+            not_upgraded_apps.append(app_instance_name)
             logger.error(msg)
             operation_logger.error(msg)
         else:
@@ -675,14 +685,13 @@ def app_upgrade(auth, app=[], url=None, file=None):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
             # So much win
-            upgraded_apps.append(app_instance_name)
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
             operation_logger.success()
 
-    if not upgraded_apps:
-        raise YunohostError('app_no_upgrade')
+    if not_upgraded_apps:
+        raise YunohostError('app_not_upgraded', apps=', '.join(not_upgraded_apps))
 
     app_ssowatconf(auth)
 
@@ -705,6 +714,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
+    if packages.dpkg_is_broken():
+        raise YunohostError("dpkg_is_broken")
+
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
 
@@ -734,8 +746,8 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         if answer.upper() != "Y":
             raise YunohostError("aborting")
 
-
     raw_app_list = app_list(raw=True)
+
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
         if app in raw_app_list:
             state = raw_app_list[app].get("state", "notworking")
@@ -797,6 +809,8 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
+
+    logger.info(m18n.n("app_start_install", app=app_id))
 
     # Create app directory
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
@@ -874,6 +888,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
             app_ssowatconf(auth)
 
+            if packages.dpkg_is_broken():
+                logger.error(m18n.n("this_action_broke_dpkg"))
+
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
                 raise YunohostError(msg, raw_msg=True)
@@ -918,6 +935,8 @@ def app_remove(operation_logger, auth, app):
 
     operation_logger.start()
 
+    logger.info(m18n.n("app_start_remove", app=app))
+
     app_setting_path = APPS_SETTING_PATH + app
 
     # TODO: display fail messages from script
@@ -955,6 +974,9 @@ def app_remove(operation_logger, auth, app):
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
     app_ssowatconf(auth)
+
+    if packages.dpkg_is_broken():
+        raise YunohostError("this_action_broke_dpkg")
 
 
 def app_addaccess(auth, apps, users=[]):
@@ -1173,7 +1195,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent') as json_conf:
             ssowat_conf = json.loads(str(json_conf.read()))
     except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=e.strerror)
+        raise YunohostError('ssowat_persistent_conf_read_error', error=e)
     except IOError:
         ssowat_conf = {}
 
@@ -1186,7 +1208,7 @@ def app_makedefault(operation_logger, auth, app, domain=None):
         with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
             json.dump(ssowat_conf, f, sort_keys=True, indent=4)
     except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
+        raise YunohostError('ssowat_persistent_conf_write_error', error=e)
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -1209,8 +1231,8 @@ def app_setting(app, key, value=None, delete=False):
     if value is None and not delete:
         try:
             return app_settings[key]
-        except:
-            logger.debug("cannot get app setting '%s' for '%s'", key, app)
+        except Exception as e:
+            logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
             return None
     else:
         if delete and key in app_settings:
@@ -1394,7 +1416,8 @@ def app_ssowatconf(auth):
 
     try:
         apps_list = app_list(installed=True)['apps']
-    except:
+    except Exception as e:
+        logger.debug("cannot get installed app list because %s", e)
         apps_list = []
 
     def _get_setting(settings, name):
@@ -1824,7 +1847,7 @@ def _extract_app_from_file(path, remove=False):
     except IOError:
         raise YunohostError('app_install_files_invalid')
     except ValueError as e:
-        raise YunohostError('app_manifest_invalid', error=e.strerror)
+        raise YunohostError('app_manifest_invalid', error=e)
 
     logger.debug(m18n.n('done'))
 
@@ -1907,7 +1930,7 @@ def _fetch_app_from_git(app):
                 # we will be able to use it. Without this option all the history
                 # of the submodules repo is downloaded.
                 subprocess.check_call([
-                    'git', 'clone', '-b',  branch, '--single-branch', '--recursive', '--depth=1', url,
+                    'git', 'clone', '-b', branch, '--single-branch', '--recursive', '--depth=1', url,
                     extracted_app_folder])
                 subprocess.check_call([
                     'git', 'reset', '--hard', branch
@@ -1917,7 +1940,7 @@ def _fetch_app_from_git(app):
             except subprocess.CalledProcessError:
                 raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e.strerror)
+                raise YunohostError('app_manifest_invalid', error=e)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -1925,8 +1948,8 @@ def _fetch_app_from_git(app):
         manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
         try:
             revision = _get_git_last_commit_hash(url, branch)
-        except:
-            pass
+        except Exception as e:
+            logger.debug("cannot get last commit hash because: %s ", e)
         else:
             manifest['remote']['revision'] = revision
     else:
@@ -1970,7 +1993,7 @@ def _fetch_app_from_git(app):
             except subprocess.CalledProcessError:
                 raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e.strerror)
+                raise YunohostError('app_manifest_invalid', error=e)
             else:
                 logger.debug(m18n.n('done'))
 
@@ -2250,7 +2273,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
             try:
                 user_info(auth, arg_value)
             except YunohostError as e:
-                raise YunohostError('app_argument_invalid', name=arg_name, error=e.strerror)
+                raise YunohostError('app_argument_invalid', name=arg_name, error=e)
         elif arg_type == 'app':
             if not _is_installed(arg_value):
                 raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))
@@ -2344,6 +2367,7 @@ def _parse_app_instance_name(app_instance_name):
     True
     """
     match = re_app_instance_name.match(app_instance_name)
+    assert match, "Could not parse app instance name : %s" % app_instance_name
     appid = match.groupdict().get('appid')
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)

@@ -1,23 +1,40 @@
+#!/bin/bash
+
 # Check if a YunoHost user exists
 #
 # example: ynh_user_exists 'toto' || exit 1
 #
-# usage: ynh_user_exists username
-# | arg: username - the username to check
+# usage: ynh_user_exists --username=username
+# | arg: -u, --username - the username to check
 ynh_user_exists() {
-    sudo yunohost user list --output-as json | grep -q "\"username\": \"${1}\""
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
+    declare -Ar args_array=( [u]=username= )
+    local username
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    sudo yunohost user list --output-as json | grep -q "\"username\": \"${username}\""
 }
 
 # Retrieve a YunoHost user information
 #
 # example: mail=$(ynh_user_get_info 'toto' 'mail')
 #
-# usage: ynh_user_get_info username key
-# | arg: username - the username to retrieve info from
-# | arg: key - the key to retrieve
+# usage: ynh_user_get_info --username=username --key=key
+# | arg: -u, --username - the username to retrieve info from
+# | arg: -k, --key - the key to retrieve
 # | ret: string - the key's value
 ynh_user_get_info() {
-    sudo yunohost user info "$1" --output-as plain | ynh_get_plain_key "$2"
+    # Declare an array to define the options of this helper.
+    local legacy_args=uk
+    declare -Ar args_array=( [u]=username= [k]=key= )
+    local username
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    sudo yunohost user info "$username" --output-as plain | ynh_get_plain_key "$key"
 }
 
 # Get the list of YunoHost users
@@ -33,10 +50,17 @@ ynh_user_list() {
 
 # Check if a user exists on the system
 #
-# usage: ynh_system_user_exists username
-# | arg: username - the username to check
+# usage: ynh_system_user_exists --username=username
+# | arg: -u, --username - the username to check
 ynh_system_user_exists() {
-    getent passwd "$1" &>/dev/null
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
+    declare -Ar args_array=( [u]=username= )
+    local username
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    getent passwd "$username" &>/dev/null
 }
 
 # Create a system user
@@ -54,7 +78,7 @@ ynh_system_user_exists() {
 # If this argument is omitted, the user will be created with /usr/sbin/nologin shell
 ynh_system_user_create () {
 	# Declare an array to define the options of this helper.
-	local legacy_args=uh
+	local legacy_args=uhs
 	declare -Ar args_array=( [u]=username= [h]=home_dir= [s]=use_shell )
 	local username
 	local home_dir
@@ -82,14 +106,21 @@ ynh_system_user_create () {
 
 # Delete a system user
 #
-# usage: ynh_system_user_delete user_name
-# | arg: user_name - Name of the system user that will be create
+# usage: ynh_system_user_delete --username=user_name
+# | arg: -u, --username - Name of the system user that will be create
 ynh_system_user_delete () {
-    if ynh_system_user_exists "$1"	# Check if the user exists on the system
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
+    declare -Ar args_array=( [u]=username= )
+    local username
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if ynh_system_user_exists "$username"	# Check if the user exists on the system
     then
-		echo "Remove the user $1" >&2
-		sudo userdel $1
+		echo "Remove the user $username" >&2
+		sudo userdel $username
 	else
-		echo "The user $1 was not found" >&2
+		echo "The user $username was not found" >&2
     fi
 }
