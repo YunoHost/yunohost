@@ -567,6 +567,9 @@ def app_upgrade(auth, app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
+    if packages.dpkg_is_broken():
+        raise YunohostError("dpkg_is_broken")
+
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
 
     # Retrieve interface
@@ -711,6 +714,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
+    if packages.dpkg_is_broken():
+        raise YunohostError("dpkg_is_broken")
+
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
 
@@ -882,6 +888,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
             app_ssowatconf(auth)
 
+            if packages.dpkg_is_broken():
+                logger.error(m18n.n("this_action_broke_dpkg"))
+
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
                 raise YunohostError(msg, raw_msg=True)
@@ -965,6 +974,9 @@ def app_remove(operation_logger, auth, app):
     shutil.rmtree('/tmp/yunohost_remove')
     hook_remove(app)
     app_ssowatconf(auth)
+
+    if packages.dpkg_is_broken():
+        raise YunohostError("this_action_broke_dpkg")
 
 
 def app_addaccess(auth, apps, users=[]):

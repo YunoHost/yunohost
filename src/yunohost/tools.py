@@ -524,6 +524,10 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
         ignore_packages -- Ignore APT packages upgrade
 
     """
+    from yunohost.utils import packages
+    if packages.dpkg_is_broken():
+        raise YunohostError("dpkg_is_broken")
+
     failure = False
 
     # Retrieve interface
