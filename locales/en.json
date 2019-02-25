@@ -211,7 +211,7 @@
     "good_practices_about_user_password": "You are now about to define a new user password. The password should be at least 8 characters - though it is good practice to use longer password (i.e. a passphrase) and/or to use various kind of characters (uppercase, lowercase, digits and special characters).",
     "hook_exec_failed": "Script execution failed: {path:s}",
     "hook_exec_not_terminated": "Script execution hasn\u2019t terminated: {path:s}",
-    "hook_json_return_error": "Faild to read return from hook {path:s}. Error: {msg:s}",
+    "hook_json_return_error": "Failed to read return from hook {path:s}. Error: {msg:s}",
     "hook_list_by_invalid": "Invalid property to list hook by",
     "hook_name_unknown": "Unknown hook name '{name:s}'",
     "installation_complete": "Installation complete",
