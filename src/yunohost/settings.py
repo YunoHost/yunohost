@@ -286,9 +286,9 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 @post_change_hook("security.ciphers.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf(names=['nginx'], force=True)
+        service_regen_conf(names=['nginx'])
 
 @post_change_hook("service.ssh.ciphers.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf(names=['ssh'], force=True)
+        service_regen_conf(names=['ssh'])
