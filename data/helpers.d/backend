@@ -14,6 +14,8 @@
 #
 # It's possible to use this helper several times, each config will be added to the same logrotate config file.
 # Unless you use the option --non-append
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_use_logrotate () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=lnuya
@@ -92,6 +94,8 @@ EOF
 # Remove the app's logrotate config.
 #
 # usage: ynh_remove_logrotate
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_remove_logrotate () {
 	if [ -e "/etc/logrotate.d/$app" ]; then
 		sudo rm "/etc/logrotate.d/$app"
@@ -112,6 +116,7 @@ ynh_remove_logrotate () {
 #   __APP__       by  $app
 #   __FINALPATH__ by  $final_path
 #
+# Requires YunoHost version 2.7.2 or higher.
 ynh_add_systemd_config () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=st
@@ -147,6 +152,7 @@ ynh_add_systemd_config () {
 # usage: ynh_remove_systemd_config [--service=service]
 # | arg: -s, --service - Service name (optionnal, $app by default)
 #
+# Requires YunoHost version 2.7.2 or higher.
 ynh_remove_systemd_config () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=s
@@ -183,6 +189,7 @@ ynh_remove_systemd_config () {
 #   __PATH_2__    by $path_2
 #   __PORT_2__    by $port_2
 #
+# Requires YunoHost version 2.7.2 or higher.
 ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 	local others_var=${1:-}
@@ -233,6 +240,8 @@ ynh_add_nginx_config () {
 # Remove the dedicated nginx config
 #
 # usage: ynh_remove_nginx_config
+#
+# Requires YunoHost version 2.7.2 or higher.
 ynh_remove_nginx_config () {
 	ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
 	sudo systemctl reload nginx
@@ -241,6 +250,8 @@ ynh_remove_nginx_config () {
 # Create a dedicated php-fpm config
 #
 # usage: ynh_add_fpm_config
+#
+# Requires YunoHost version 2.7.2 or higher.
 ynh_add_fpm_config () {
 	# Configure PHP-FPM 7.0 by default
 	local fpm_config_dir="/etc/php/7.0/fpm"
@@ -276,6 +287,8 @@ ynh_add_fpm_config () {
 # Remove the dedicated php-fpm config
 #
 # usage: ynh_remove_fpm_config
+#
+# Requires YunoHost version 2.7.2 or higher.
 ynh_remove_fpm_config () {
 	local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
 	local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
@@ -350,6 +363,7 @@ ynh_remove_fpm_config () {
 # To validate your regex you can test with this command:
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 #
+# Requires YunoHost version 3.?.? or higher.
 ynh_add_fail2ban_config () {
   # Declare an array to define the options of this helper.
   declare -Ar args_array=( [l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template [v]=others_var=)
@@ -429,6 +443,8 @@ EOF
 # Remove the dedicated fail2ban config (jail and filter conf files)
 #
 # usage: ynh_remove_fail2ban_config
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_remove_fail2ban_config () {
   ynh_secure_remove "/etc/fail2ban/jail.d/$app.conf"
   ynh_secure_remove "/etc/fail2ban/filter.d/$app.conf"

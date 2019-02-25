@@ -5,6 +5,8 @@
 # [internal]
 #
 # usage: ynh_wait_dpkg_free
+#
+# Requires YunoHost version 3.3.1 or higher.
 ynh_wait_dpkg_free() {
     local try
     # With seq 1 17, timeout will be almost 30 minutes
@@ -44,6 +46,8 @@ ynh_wait_dpkg_free() {
 #
 # usage: ynh_package_is_installed --package=name
 # | arg: -p, --package - the package name to check
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
@@ -64,6 +68,8 @@ ynh_package_is_installed() {
 # usage: ynh_package_version --package=name
 # | arg: -p, --package - the package name to get version
 # | ret: the version or an empty string
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_version() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
@@ -84,6 +90,8 @@ ynh_package_version() {
 # [internal]
 #
 # usage: ynh_apt update
+#
+# Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
     DEBIAN_FRONTEND=noninteractive apt-get -y $@
@@ -92,6 +100,8 @@ ynh_apt() {
 # Update package index files
 #
 # usage: ynh_package_update
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_update() {
     ynh_apt update
 }
@@ -100,6 +110,8 @@ ynh_package_update() {
 #
 # usage: ynh_package_install name [name [...]]
 # | arg: name - the package name to install
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_install() {
     ynh_apt --no-remove -o Dpkg::Options::=--force-confdef \
             -o Dpkg::Options::=--force-confold install $@
@@ -109,6 +121,8 @@ ynh_package_install() {
 #
 # usage: ynh_package_remove name [name [...]]
 # | arg: name - the package name to remove
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_remove() {
     ynh_apt remove $@
 }
@@ -117,6 +131,8 @@ ynh_package_remove() {
 #
 # usage: ynh_package_autoremove name [name [...]]
 # | arg: name - the package name to remove
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_autoremove() {
     ynh_apt autoremove $@
 }
@@ -125,6 +141,8 @@ ynh_package_autoremove() {
 #
 # usage: ynh_package_autopurge name [name [...]]
 # | arg: name - the package name to autoremove and purge
+#
+# Requires YunoHost version 2.7.2 or higher.
 ynh_package_autopurge() {
     ynh_apt autoremove --purge $@
 }
@@ -139,6 +157,8 @@ ynh_package_autopurge() {
 #
 # usage: ynh_package_install_from_equivs controlfile
 # | arg: controlfile - path of the equivs control file
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_install_from_equivs () {
     local controlfile=$1
 
@@ -181,6 +201,8 @@ ynh_package_install_from_equivs () {
 #   You can give a choice between some package with this syntax : "dep1|dep2"
 #   Example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
 #   This mean in the dependence tree : dep1 & dep2 & (dep3 | dep4 | dep5)
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_install_app_dependencies () {
     local dependencies=$@
     local dependencies=${dependencies// /, }
@@ -217,6 +239,8 @@ EOF
 # Dependencies will removed only if no other package need them.
 #
 # usage: ynh_remove_app_dependencies
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_remove_app_dependencies () {
     local dep_app=${app//_/-}	# Replace all '_' by '-'
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.

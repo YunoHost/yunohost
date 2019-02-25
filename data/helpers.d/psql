@@ -2,6 +2,8 @@
 # Please always call this script in install and restore scripts
 #
 # usage: ynh_psql_test_if_first_run
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_test_if_first_run() {
 	if [ -f /etc/yunohost/psql ];
 	then
@@ -43,6 +45,8 @@ ynh_psql_test_if_first_run() {
 # | arg: user - the user name to connect as
 # | arg: pwd - the user password
 # | arg: db - the database to connect to
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_connect_as() {
 	local user="$1"
 	local pwd="$2"
@@ -54,6 +58,8 @@ ynh_psql_connect_as() {
 #
 # usage: ynh_psql_execute_as_root sql [db]
 # | arg: sql - the SQL command to execute
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_execute_as_root () {
 	local sql="$1"
 	sudo --login --user=postgres psql <<< "$sql"
@@ -64,6 +70,8 @@ ynh_psql_execute_as_root () {
 # usage: ynh_psql_execute_file_as_root file [db]
 # | arg: file - the file containing SQL commands
 # | arg: db - the database to connect to
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_execute_file_as_root() {
 	local file="$1"
 	local db="$2"
@@ -79,6 +87,8 @@ ynh_psql_execute_file_as_root() {
 # | arg: user - Owner of the database
 # | arg: name - Name of the database
 # | arg: pwd - Password of the database. If not given, a password will be generated
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_setup_db () {
 	local db_user="$1"
 	local db_name="$2"
@@ -95,6 +105,8 @@ ynh_psql_setup_db () {
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
 # | arg: pwd  - the user password
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_create_db() {
 	local db="$1"
 	local user="$2"
@@ -108,6 +120,8 @@ ynh_psql_create_db() {
 # usage: ynh_psql_drop_db db
 # | arg: db - the database name to drop
 # | arg: user - the user to drop
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_remove_db() {
 	local db="$1"
 	local user="$2"
@@ -122,6 +136,8 @@ ynh_psql_remove_db() {
 # usage: ynh_psql_dump_db db
 # | arg: db - the database name to dump
 # | ret: the psqldump output
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_dump_db() {
 	local db="$1"
 	sudo --login --user=postgres pg_dump "$db"
@@ -132,6 +148,8 @@ ynh_psql_dump_db() {
 #
 # usage: ynh_psql_create_user user pwd [host]
 # | arg: user - the user name to create
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_create_user() {
 	local user="$1"
 	local pwd="$2"
@@ -142,6 +160,8 @@ ynh_psql_create_user() {
 #
 # usage: ynh_psql_drop_user user
 # | arg: user - the user name to drop
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_drop_user() {
 	local user="$1"
 	sudo --login --user=postgres dropuser "$user"

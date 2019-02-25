@@ -2,6 +2,8 @@
 
 # Print a message to stderr and exit
 # usage: ynh_die --message=MSG [--ret_code=RETCODE]
+#
+# Requires YunoHost version 2.4.0 or higher.
 ynh_die() {
   # Declare an array to define the options of this helper.
   local legacy_args=mc
@@ -18,6 +20,8 @@ ynh_die() {
 # Display a message in the 'INFO' logging category
 #
 # usage: ynh_print_info --message="Some message"
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_info() {
     # Declare an array to define the options of this helper.
     local legacy_args=m
@@ -37,6 +41,8 @@ ynh_print_info() {
 #
 # Simply duplicate the log, execute the yunohost command and replace the log without the result of this command
 # It's a very badly hack...
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_no_log() {
   local ynh_cli_log=/var/log/yunohost/yunohost-cli.log
   sudo cp -a ${ynh_cli_log} ${ynh_cli_log}-move
@@ -50,6 +56,7 @@ ynh_no_log() {
 #
 # [internal]
 #
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_log () {
   echo -e "${1}"
 }
@@ -58,6 +65,8 @@ ynh_print_log () {
 #
 # usage: ynh_print_warn --message="Text to print"
 # | arg: -m, --message - The text to print
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_warn () {
   # Declare an array to define the options of this helper.
   local legacy_args=m
@@ -73,6 +82,8 @@ ynh_print_warn () {
 #
 # usage: ynh_print_err --message="Text to print"
 # | arg: -m, --message - The text to print
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_err () {
   # Declare an array to define the options of this helper.
   local legacy_args=m
@@ -91,6 +102,8 @@ ynh_print_err () {
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_err () {
 	ynh_print_err "$(eval $@)"
 }
@@ -102,6 +115,8 @@ ynh_exec_err () {
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn () {
 	ynh_print_warn "$(eval $@)"
 }
@@ -113,6 +128,8 @@ ynh_exec_warn () {
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn_less () {
 	eval $@ 2>&1
 }
@@ -124,6 +141,8 @@ ynh_exec_warn_less () {
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_quiet () {
 	eval $@ > /dev/null
 }
@@ -135,6 +154,8 @@ ynh_exec_quiet () {
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_fully_quiet () {
 	eval $@ > /dev/null 2>&1
 }
@@ -143,6 +164,8 @@ ynh_exec_fully_quiet () {
 #
 # usage: ynh_print_OFF
 # WARNING: You should be careful with this helper, and never forget to use ynh_print_ON as soon as possible to restore the logging.
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_OFF () {
 	set +x
 }
@@ -150,6 +173,8 @@ ynh_print_OFF () {
 # Restore the logging after ynh_print_OFF
 #
 # usage: ynh_print_ON
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_ON () {
 	set -x
 	# Print an echo only for the log, to be able to know that ynh_print_ON has been called.
@@ -163,6 +188,8 @@ ynh_print_ON () {
 # | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
 # | arg: -t, --time=    - Print the execution time since the last call to this helper. Especially usefull to define weights.
 # | arg: -l, --last=    - Use for the last call of the helper, to fill te progression bar.
+#
+# Requires YunoHost version 3.?.? or higher.
 increment_progression=0
 previous_weight=0
 # Define base_time when the file is sourced
