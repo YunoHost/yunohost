@@ -352,6 +352,7 @@ ynh_remove_fpm_config () {
 #
 ynh_add_fail2ban_config () {
   # Declare an array to define the options of this helper.
+  local legacy_args=lrmptv
   declare -Ar args_array=( [l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template [v]=others_var=)
   local logpath
   local failregex
