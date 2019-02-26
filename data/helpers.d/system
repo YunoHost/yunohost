@@ -148,6 +148,7 @@ ynh_clean_check_starting () {
 	# Stop the execution of tail.
 	kill -s 15 $pid_tail 2>&1
 	ynh_secure_remove "$templog" 2>&1
+}
 
 # Read the value of a key in a ynh manifest file
 #
