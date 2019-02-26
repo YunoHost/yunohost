@@ -2189,10 +2189,13 @@ def backup_info(name, with_details=False, human_readable=False):
 
     """
     archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
-
+    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
         raise YunohostError('backup_archive_name_unknown', name=name)
+
+    if not (os.path.lexists(archive_file) and os.path.exists(info_file)):
+        raise YunohostError('backup_archive_missing', name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2202,8 +2205,6 @@ def backup_info(name, with_details=False, human_readable=False):
         if not os.path.exists(archive_file):
             raise YunohostError('backup_archive_broken_link',
                                 path=archive_file)
-
-    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
     if not os.path.exists(info_file):
         tar = tarfile.open(archive_file, "r:gz")
