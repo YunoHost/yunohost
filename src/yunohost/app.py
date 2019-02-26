@@ -583,12 +583,11 @@ def app_upgrade(auth, app=[], url=None, file=None):
     not_upgraded_apps = []
 
     apps = app
-    user_specified_list = True
     # If no app is specified, upgrade all apps
     if not apps:
+        # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
         if not url and not file:
             apps = [app["id"] for app in app_list(installed=True)["apps"]]
-            user_specified_list = False
     elif not isinstance(app, list):
         apps = [app]
 
@@ -618,8 +617,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         elif app_dict["upgradable"] == "yes":
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
-            if user_specified_list:
-                logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
+            logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
             continue
 
         # Check requirements
