@@ -593,12 +593,12 @@ def app_upgrade(auth, app=[], url=None, file=None):
         apps = [app]
 
     # Remove possible duplicates
-    apps = [app for i,app in enumerate(apps) if apps not in L[:i]]
+    apps = [app for i,app in enumerate(apps) if apps not in apps[:i]]
 
     if len(apps) == 0:
         raise YunohostError('app_no_upgrade')
     if len(apps) > 1:
-        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(app)))
+        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
     for app_instance_name in apps:
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
