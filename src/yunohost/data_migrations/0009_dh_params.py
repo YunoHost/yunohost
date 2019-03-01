@@ -15,7 +15,7 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        if os.path.exists(dhparams_file) is False:
+        if not os.path.exists(dhparams_file):
             with open(cron_job_file, "w") as f:
                         f.write("#!/bin/bash\n")
                         f.write(command)
