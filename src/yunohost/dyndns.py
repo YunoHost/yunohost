@@ -157,12 +157,12 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
     except requests.ConnectionError:
-        os.system("rm %s" % private_file)
-        os.system("rm %s" % key_file)
+        os.system("rm -f %s" % private_file)
+        os.system("rm -f %s" % key_file)
         raise YunohostError('no_internet_connection')
     if r.status_code != 201:
-        os.system("rm %s" % private_file)
-        os.system("rm %s" % key_file)
+        os.system("rm -f %s" % private_file)
+        os.system("rm -f %s" % key_file)
         try:
             error = json.loads(r.text)['error']
         except:
