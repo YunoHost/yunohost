@@ -16,7 +16,7 @@ do_pre_regen() {
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
 
-    ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2>/dev/null || true)
+    ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa}_key 2>/dev/null || true)
 
     # Support legacy setting (this setting might be disabled by a user during a migration)
     if [[ "$(yunohost settings get 'service.ssh.allow_deprecated_dsa_hostkey')" == "True" ]]; then
