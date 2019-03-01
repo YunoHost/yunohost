@@ -7,6 +7,7 @@ from moulinette.utils.filesystem import chown
 from yunohost.tools import Migration
 from yunohost.service import service_regen_conf
 
+cron_job_file = "/etc/cron.hourly/yunohost-generate-dh-params"
 command = "nice -n 19 openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam 2> /var/log/yunohost/dhparam_generation.log && chown root:ssl-cert /etc/ssl/private/dh2048.pem && yunohost service regen-conf >> /var/log/yunohost/dhparam_generation.log && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
 dhparams_file = "/etc/ssl/private/dh2048.pem"
 
