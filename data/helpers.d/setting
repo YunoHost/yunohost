@@ -75,12 +75,12 @@ else:
     if action == "delete":
         if key in settings:
             del settings[key]
-    elif action == "get":
+    elif action == "set":
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
+        settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
-    settings[key] = value
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
