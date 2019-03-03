@@ -100,7 +100,7 @@ ynh_systemd_action() {
             local pid_tail=$!
         else
             # Read the specified log file
-            tail -F -n0 "$log_path" > "$templog" &
+            tail -F -n0 "$log_path" > "$templog" 2>&1 &
             # Get the PID of the tail command
             local pid_tail=$!
         fi
