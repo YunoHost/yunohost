@@ -124,10 +124,17 @@ ynh_systemd_action() {
                 ynh_print_info --message="The service $service_name has correctly started."
                 break
             fi
-            echo -n "." >&2
+            if [ $i -eq 3 ]; then
+                echo -n "Please wait, the service $service_name is ${action}ing" >&2
+            fi
+            if [ $i -ge 3 ]; then
+                echo -n "." >&2
+            fi
             sleep 1
         done
-        echo "" >&2
+        if [ $i -ge 3 ]; then
+            echo "" >&2
+        fi
         if [ $i -eq $timeout ]
         then
             ynh_print_warn --message="The service $service_name didn't fully started before the timeout."
