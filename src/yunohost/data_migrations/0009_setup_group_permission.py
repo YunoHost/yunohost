@@ -124,7 +124,7 @@ class MyMigration(Migration):
 
             permission_sync_to_user(auth)
         except Exception as e:
-            logger.warn(m18n.n("migration_0009_migration_failed_try_rollback", error=e))
+            logger.warn(m18n.n("migration_0009_migration_failed_trying_to_rollback"))
             os.system("systemctl stop slapd")
             os.system("rm -r /etc/ldap/slapd.d") # To be sure that we don't keep some part of the old config
             os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
@@ -133,7 +133,7 @@ class MyMigration(Migration):
             os.system("systemctl start slapd")
             os.system("rm -r " + backup_folder)
             logger.info(m18n.n("migration_0009_rollback_success"))
-            raise YunohostError("migration_0009_failed")
+            raise
 
         os.system("rm -r " + backup_folder)
 
