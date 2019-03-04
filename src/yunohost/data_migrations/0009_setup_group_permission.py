@@ -104,18 +104,18 @@ class MyMigration(Migration):
         except Exception as e:
             raise YunohostError("migration_0009_can_not_backup_before_migration", error=e)
 
-        # Update LDAP schema restart slapd
-        logger.info(m18n.n("migration_0009_update_LDAP_schema"))
-        service_regen_conf(names=['slapd'], force=True)
-
-        # Do the authentication to LDAP after LDAP as been updated
-        AUTH_IDENTIFIER = ('ldap', 'as-root')
-        AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
-                           'base_dn': 'dc=yunohost,dc=org',
-                           'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
-        auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
-
         try:
+            # Update LDAP schema restart slapd
+            logger.info(m18n.n("migration_0009_update_LDAP_schema"))
+            service_regen_conf(names=['slapd'], force=True)
+
+            # Do the authentication to LDAP after LDAP as been updated
+            AUTH_IDENTIFIER = ('ldap', 'as-root')
+            AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
+                               'base_dn': 'dc=yunohost,dc=org',
+                               'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
+            auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+
             #Update LDAP database
             migrate_LDAP_db(auth)
 
@@ -134,7 +134,7 @@ class MyMigration(Migration):
             os.system("rm -r " + backup_folder)
             logger.info(m18n.n("migration_0009_rollback_success"))
             raise
+        else:
+            os.system("rm -r " + backup_folder)
 
-        os.system("rm -r " + backup_folder)
-
-        logger.info(m18n.n("migration_0009_done"))
+            logger.info(m18n.n("migration_0009_done"))
