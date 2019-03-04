@@ -2202,6 +2202,11 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
         if arg_type == 'boolean':
             arg_default = 1 if arg_default else 0
 
+        # do not print for webadmin
+        if arg_type == 'display_text' and msettings.get('interface') != 'api':
+            print(arg["text"])
+            continue
+
         # Attempt to retrieve argument value
         if arg_name in args:
             arg_value = args[arg_name]
