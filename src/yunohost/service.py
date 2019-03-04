@@ -493,11 +493,14 @@ def service_regen_conf(operation_logger, names=[], with_diff=False, force=False,
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
-    # Update the services name
-    names = {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in pre_result.items()}.keys()
+    # Keep only the hook names with at least one success
+    names = [hook for hook, infos in pre_result.items()
+             if any(result["state"] == "succeed" for result in infos.values())]
 
+    # FIXME : what do in case of partial success/failure ...
     if not names:
-        ret_failed = {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in pre_result.items()}
+        ret_failed = [hook for hook, infos in pre_result.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
         raise YunohostError('service_regenconf_failed',
                             services=', '.join(ret_failed))
 
