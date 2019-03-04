@@ -156,10 +156,10 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
-    except requests.ConnectionError:
+    except Exception as e:
         os.system("rm -f %s" % private_file)
         os.system("rm -f %s" % key_file)
-        raise YunohostError('no_internet_connection')
+        raise YunohostError('dyndns_registration_failed', error=str(e))
     if r.status_code != 201:
         os.system("rm -f %s" % private_file)
         os.system("rm -f %s" % key_file)
