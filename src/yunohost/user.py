@@ -575,12 +575,12 @@ def user_group_add(operation_logger, auth, groupname,gid=None, sync_perm=True):
     }
 
     if auth.add('cn=%s,ou=groups' % groupname, attr_dict):
-        logger.success(m18n.n('group_created'))
+        logger.success(m18n.n('group_created', group=groupname))
         if sync_perm:
             permission_sync_to_user(auth)
         return {'name': groupname}
 
-    raise YunohostError('group_creation_failed')
+    raise YunohostError('group_creation_failed', group=groupname)
 
 
 @is_unit_operation([('groupname', 'user')])
@@ -599,9 +599,9 @@ def user_group_delete(operation_logger, auth, groupname, force=False, sync_perm=
 
     operation_logger.start()
     if not auth.remove('cn=%s,ou=groups' % groupname):
-        raise YunohostError('group_deletion_failed')
+        raise YunohostError('group_deletion_failed', group=groupname)
 
-    logger.success(m18n.n('group_deleted'))
+    logger.success(m18n.n('group_deleted', group=groupname))
     if sync_perm:
         permission_sync_to_user(auth)
 
@@ -677,9 +677,9 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
 
     if new_group_list['member'] != set(group['member']):
         if not auth.update('cn=%s,ou=groups' % groupname, new_group_list):
-            raise YunohostError('group_update_failed')
+            raise YunohostError('group_update_failed', group=groupname)
 
-    logger.success(m18n.n('group_updated'))
+    logger.success(m18n.n('group_updated', group=groupname))
     if sync_perm:
         permission_sync_to_user(auth)
     return user_group_info(auth, groupname)
