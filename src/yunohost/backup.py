@@ -593,10 +593,14 @@ class BackupManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        ret_succeed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "succeed"] for n, v in ret.items()}.items() if val}
-        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+        ret_succeed = {hook: {path:result["state"] for path, result in infos.items()}
+                       for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())}
+        ret_failed = {hook: {path:result["state"] for path, result in infos.items.items()}
+                      for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())}
 
-        if ret_succeed != []:
+        if ret_succeed.keys() != []:
             self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
@@ -1180,14 +1184,16 @@ class RestoreManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        ret_succeed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "succeed"] for n, v in ret.items()}.items() if val}
-        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
 
-        for part in ret_succeed.keys():
+        for part in ret_succeed:
             self.targets.set_result("system", part, "Success")
 
         error_part = []
-        for part in ret_failed.keys():
+        for part in ret_failed:
             logger.error(m18n.n('restore_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
             error_part.append(part)
