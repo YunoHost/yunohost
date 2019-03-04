@@ -395,15 +395,17 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     elif raise_on_error and returncode != 0:
         raise YunohostError('hook_exec_failed', path=path)
 
+    raw_content = None
     try:
-
-      with open(stdreturn, 'r') as f:
-            if f.read() != '':
-                returnjson = read_json(stdreturn)
-            else:
-                returnjson = {}
+        with open(stdreturn, 'r') as f:
+            raw_content = f.read()
+        if raw_content != '':
+            returnjson = read_json(stdreturn)
+        else:
+            returnjson = {}
     except Exception as e:
-        raise YunohostError('hook_json_return_error', path=path, msg=str(e))
+        raise YunohostError('hook_json_return_error', path=path, msg=str(e),
+                            raw_content=raw_content)
     finally:
         stdreturndir = os.path.split(stdreturn)[0]
         os.remove(stdreturn)
