@@ -1941,7 +1941,8 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('need_mount'))
-        ret_succeed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "succeed"] for n, v in ret.items()}.items() if val}
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
         self._need_mount = True if ret_succeed else False
         return self._need_mount
 
@@ -1955,7 +1956,9 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
-        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
         if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
@@ -1969,7 +1972,9 @@ class CustomBackupMethod(BackupMethod):
         super(CustomBackupMethod, self).mount(restore_manager)
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
-        ret_failed = {k: val for k, val in {n: [p for p, c in v.items() if c['state'] == "failed"] for n, v in ret.items()}.items() if val}
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
         if ret_failed:
             raise YunohostError('backup_custom_mount_error')
 
