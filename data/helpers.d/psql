@@ -244,7 +244,7 @@ ynh_psql_remove_db() {
 #
 # usage: ynh_psql_test_if_first_run
 ynh_psql_test_if_first_run() {
-	if [ -f /etc/yunohost/psql ]; then
+	if [ -f "$PSQL_ROOT_PWD_FILE" ]; then
 		echo "PostgreSQL is already installed, no need to create master password"
 	else
 		local pgsql="$(ynh_string_random)"
