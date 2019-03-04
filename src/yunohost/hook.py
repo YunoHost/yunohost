@@ -403,13 +403,11 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
             else:
                 returnjson = {}
     except Exception as e:
+        raise YunohostError('hook_json_return_error', path=path, msg=str(e))
+    finally:
+        stdreturndir = os.path.split(stdreturn)[0]
         os.remove(stdreturn)
         os.rmdir(stdreturndir)
-        raise YunohostError('hook_json_return_error', path=path, msg=str(e))
-
-    stdreturndir = os.path.split(stdreturn)[0]
-    os.remove(stdreturn)
-    os.rmdir(stdreturndir)
 
     return returncode, returnjson
 
