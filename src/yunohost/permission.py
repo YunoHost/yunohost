@@ -445,11 +445,14 @@ def permission_remove(operation_logger, auth, app, permission, force=False, sync
 
 def permission_sync_to_user(auth, force=False):
     """
-    Sychronise the inheritPermission attribut in the permission object from the user<->group link and the group<->permission link
+    Sychronise the inheritPermission attribut in the permission object from the
+    user<->group link and the group<->permission link
 
     Keyword argument:
-        force    -- Force to recreate all attributes. Used generally with the backup which wich use "slapadd" which don't use the memberOf overlay.
-                    Note that by removing all value and adding a new time, we force the overlay to update all attributes
+        force    -- Force to recreate all attributes. Used generally with the
+        backup which uses "slapadd" which doesnt' use the memberOf overlay.
+        Note that by removing all value and adding a new time, we force the
+        overlay to update all attributes
     """
     # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
     # So we need to check before each ldap operation that we really change something in LDAP
@@ -505,6 +508,6 @@ def permission_sync_to_user(auth, force=False):
 
     app_ssowatconf(auth)
 
-    # Reload unscd because if not the group is not updated in the system from LDAP
+    # Reload unscd, otherwise the group ain't propagated to the LDAP database
     os.system('nscd --invalidate=passwd')
     os.system('nscd --invalidate=group')
