@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Extract a key from a plain command output
 #
 # example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
@@ -48,8 +50,8 @@ ynh_restore_upgradebackup () {
 			# Remove the application then restore it
 			sudo yunohost app remove $app
 			# Restore the backup
-			sudo yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force
-			ynh_die "The app was restored to the way it was before the failed upgrade."
+			sudo yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force --debug
+			ynh_die --message="The app was restored to the way it was before the failed upgrade."
 		fi
 	else
       		echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
@@ -87,7 +89,7 @@ ynh_backup_before_upgrade () {
 		fi
 
 		# Create backup
-		sudo BACKUP_CORE_ONLY=1 yunohost backup create --apps $app --name $app_bck-pre-upgrade$backup_number
+		sudo BACKUP_CORE_ONLY=1 yunohost backup create --apps $app --name $app_bck-pre-upgrade$backup_number --debug
 		if [ "$?" -eq 0 ]
 		then
 			# If the backup succeeded, remove the previous backup
@@ -97,7 +99,7 @@ ynh_backup_before_upgrade () {
 				sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
 			fi
 		else
-			ynh_die "Backup failed, the upgrade process was aborted."
+			ynh_die --message="Backup failed, the upgrade process was aborted."
 		fi
         else
                 echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
@@ -118,6 +120,8 @@ ynh_backup_before_upgrade () {
 # SOURCE_FORMAT=tar.gz
 # # (Optional) Put false if sources are directly in the archive root
 # # default: true
+# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories
+# # to remove.
 # SOURCE_IN_SUBDIR=false
 # # (Optionnal) Name of the local archive (offline setup support)
 # # default: ${src_id}.${src_format}
@@ -136,27 +140,35 @@ ynh_backup_before_upgrade () {
 # If it's ok, the source archive will be uncompressed in $dest_dir. If the
 # SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
 # removed.
+# If SOURCE_IN_SUBDIR is a numeric value, 2 for example, the 2 first level
+# directories will be removed
 #
 # Finally, patches named sources/patches/${src_id}-*.patch and extra files in
 # sources/extra_files/$src_id will be applied to dest_dir
 #
 #
-# usage: ynh_setup_source dest_dir [source_id]
-# | arg: dest_dir  - Directory where to setup sources
-# | arg: source_id - Name of the app, if the package contains more than one app
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
+# | arg: -d, --dest_dir  - Directory where to setup sources
+# | arg: -s, --source_id - Name of the app, if the package contains more than one app
 ynh_setup_source () {
-    local dest_dir=$1
-    local src_id=${2:-app} # If the argument is not given, source_id equals "app"
+    # Declare an array to define the options of this helper.
+    local legacy_args=ds
+    declare -Ar args_array=( [d]=dest_dir= [s]=source_id= )
+    local dest_dir
+    local source_id
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
 
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    local src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_extract=$(grep 'SOURCE_EXTRACT=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -165,7 +177,7 @@ ynh_setup_source () {
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
     if [ "$src_filename" = "" ] ; then
-        src_filename="${src_id}.${src_format}"
+        src_filename="${source_id}.${src_format}"
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
 
@@ -173,16 +185,16 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
-        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err $out
+        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err --message="$out"
     fi
 
     # Check the control sum
     echo "${src_sum} ${src_filename}" | ${src_sumprg} -c --status \
-        || ynh_die "Corrupt source"
+        || ynh_die --message="Corrupt source"
 
     # Extract source into the app dir
     mkdir -p "$dest_dir"
-    
+
     if ! "$src_extract"
     then
         mv $src_filename $dest_dir
@@ -194,35 +206,41 @@ ynh_setup_source () {
             local tmp_dir=$(mktemp -d)
             unzip -quo $src_filename -d "$tmp_dir"
             cp -a $tmp_dir/*/. "$dest_dir"
-            ynh_secure_remove "$tmp_dir"
+            ynh_secure_remove --file="$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
         fi
     else
         local strip=""
-        if $src_in_subdir ; then
-            strip="--strip-components 1"
+        if [ "$src_in_subdir" != "false" ]
+        then
+            if [ "$src_in_subdir" == "true" ]; then
+                local sub_dirs=1
+            else
+                local sub_dirs="$src_in_subdir"
+            fi
+            strip="--strip-components $sub_dirs"
         fi
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
             tar -xf $src_filename -C "$dest_dir" $strip
         else
-            ynh_die "Archive format unrecognized."
+            ynh_die --message="Archive format unrecognized."
         fi
     fi
 
     # Apply patches
-    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
+    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${source_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
         local old_dir=$(pwd)
         (cd "$dest_dir" \
-            && for p in $YNH_CWD/../sources/patches/${src_id}-*.patch; do \
+            && for p in $YNH_CWD/../sources/patches/${source_id}-*.patch; do \
                 patch -p1 < $p; done) \
-            || ynh_die "Unable to apply patches"
+            || ynh_die --message="Unable to apply patches"
         cd $old_dir
     fi
 
     # Add supplementary files
-    if test -e "$YNH_CWD/../sources/extra_files/${src_id}"; then
-        cp -a $YNH_CWD/../sources/extra_files/$src_id/. "$dest_dir"
+    if test -e "$YNH_CWD/../sources/extra_files/${source_id}"; then
+        cp -a $YNH_CWD/../sources/extra_files/$source_id/. "$dest_dir"
     fi
 }
 
@@ -239,7 +257,14 @@ ynh_setup_source () {
 # | arg: ...         - (Optionnal) More POST keys and values
 ynh_local_curl () {
 	# Define url of page to curl
-	local full_page_url=https://localhost$path_url$1
+	local local_page=$(ynh_normalize_url_path $1)
+	local full_path=$path_url$local_page
+	
+	if [ "${path_url}" == "/" ]; then 
+		full_path=$local_page
+	fi
+	
+	local full_page_url=https://localhost$full_path
 
 	# Concatenate all other arguments with '&' to prepare POST data
 	local POST_data=""

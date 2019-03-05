@@ -1,29 +1,56 @@
+#!/bin/bash
+
 # Get an application setting
 #
-# usage: ynh_app_setting_get app key
-# | arg: app - the application id
-# | arg: key - the setting to get
+# usage: ynh_app_setting_get --app=app --key=key
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting to get
 ynh_app_setting_get() {
-    sudo yunohost app setting "$1" "$2" --output-as plain --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    declare -Ar args_array=( [a]=app= [k]=key= )
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    sudo yunohost app setting "$app" "$key" --output-as plain --quiet
 }
 
 # Set an application setting
 #
-# usage: ynh_app_setting_set app key value
-# | arg: app - the application id
-# | arg: key - the setting name to set
-# | arg: value - the setting value to set
+# usage: ynh_app_setting_set --app=app --key=key --value=value
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting name to set
+# | arg: -v, --value - the setting value to set
 ynh_app_setting_set() {
-    sudo yunohost app setting "$1" "$2" --value="$3" --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=akv
+    declare -Ar args_array=( [a]=app= [k]=key= [v]=value= )
+    local app
+    local key
+    local value
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    sudo yunohost app setting "$app" "$key" --value="$value" --quiet
 }
 
 # Delete an application setting
 #
-# usage: ynh_app_setting_delete app key
-# | arg: app - the application id
-# | arg: key - the setting to delete
+# usage: ynh_app_setting_delete --app=app --key=key
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting to delete
 ynh_app_setting_delete() {
-    sudo yunohost app setting -d "$1" "$2" --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    declare -Ar args_array=( [a]=app= [k]=key= )
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    sudo yunohost app setting -d "$app" "$key" --quiet
 }
 
 # Create a new permission for the app

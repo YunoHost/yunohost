@@ -2,7 +2,7 @@
 
 set -e
 
-. /usr/share/yunohost/helpers.d/utils
+. /usr/share/yunohost/helpers
 
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then

@@ -1,3 +1,4 @@
+import os
 import re
 
 from moulinette import m18n
@@ -39,7 +40,8 @@ class MyMigration(Migration):
 
         # Update local archives folder permissions, so that
         # admin can scp archives out of the server
-        chown(ARCHIVES_PATH, uid="admin", gid="root")
+        if os.path.isdir(ARCHIVES_PATH):
+            chown(ARCHIVES_PATH, uid="admin", gid="root")
 
     def backward(self):
 

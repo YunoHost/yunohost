@@ -668,7 +668,7 @@ class BackupManager():
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
         settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
-        logger.debug(m18n.n('backup_running_app_script', app=app))
+        logger.info(m18n.n("app_start_backup", app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0o750, True, uid='admin')
@@ -891,7 +891,7 @@ class RestoreManager():
                 raise YunohostError('backup_invalid_archive')
 
             logger.debug("executing the post-install...")
-            tools_postinstall(domain, 'yunohost', True)
+            tools_postinstall(domain, 'Yunohost', True)
 
     def _migrate_system_if_needed(self, auth):
         """
@@ -1263,6 +1263,8 @@ class RestoreManager():
         related_to = [('app', app_instance_name)]
         operation_logger = OperationLogger('backup_restore_app', related_to)
         operation_logger.start()
+
+        logger.info(m18n.n("app_start_restore", app=app_instance_name))
 
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
@@ -1832,10 +1834,11 @@ class TarBackupMethod(BackupMethod):
                 # Add the "source" into the archive and transform the path into
                 # "dest"
                 tar.add(path['source'], arcname=path['dest'])
-            tar.close()
         except IOError:
-            logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
+            logger.error(m18n.n('backup_archive_writing_error', source=path['source'], archive=self._archive_file, dest=path['dest']), exc_info=1)
             raise YunohostError('backup_creation_failed')
+        finally:
+            tar.close()
 
         # Move info file
         shutil.copy(os.path.join(self.work_dir, 'info.json'),
@@ -2089,6 +2092,7 @@ def backup_create(name=None, description=None, methods=[],
     backup_manager.collect_files()
 
     # Apply backup methods on prepared files
+    logger.info(m18n.n("backup_actually_backuping"))
     backup_manager.backup()
 
     logger.success(m18n.n('backup_created'))
@@ -2157,6 +2161,7 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
     # Mount the archive then call the restore for each system part / app    #
     #
 
+    logger.info(m18n.n("backup_mount_archive_for_restore"))
     restore_manager.mount()
     restore_manager.restore(auth)
 
