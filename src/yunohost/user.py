@@ -594,11 +594,9 @@ def user_group_delete(operation_logger, auth, groupname, force=False, sync_perm=
     """
     from yunohost.permission import permission_sync_to_user
 
-    if not force \
-       and (groupname == 'all_users' or
-            groupname == 'admins' or
-            groupname in user_list(auth, fields=['uid'])['users']):
-        raise YunohostError('group_deletion_not_allowed', user=groupname)
+    forbidden_groups = ["all_users", "admins"] + user_list(auth, fields=['uid'])['users'].keys()
+    if not force and groupname in forbidden_groups:
+        raise YunohostError('group_deletion_not_allowed', group=groupname)
 
     operation_logger.start()
     if not auth.remove('cn=%s,ou=groups' % groupname):
@@ -640,7 +638,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
     else:
         group['member'] = []
 
-    existing_users = user_list(auth, fields=['uid'])['users']
+    existing_users = user_list(auth, fields=['uid'])['users'].keys()
 
     if add_user:
         if not isinstance(add_user, list):

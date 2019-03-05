@@ -218,7 +218,7 @@
     "group_creation_failed": "Group creation failed for group '{group}'",
     "group_deleted": "Group '{group}' deleted",
     "group_deletion_failed": "Group '{group} 'deletion failed",
-    "group_deletion_not_allowed": "You are not allowed to remove the main group of the user {user:s}",
+    "group_deletion_not_allowed": "The group {group:s} cannot be deleted manually.",
     "group_info_failed": "Group info failed",
     "group_unknown": "Group {group:s} unknown",
     "group_updated": "Group '{group}' updated",
