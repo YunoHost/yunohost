@@ -209,7 +209,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         except subprocess.CalledProcessError:
             if not os.path.isdir('/home/{0}'.format(username)):
                 logger.warning(m18n.n('user_home_creation_failed'),
-                                exc_info=1)
+                               exc_info=1)
 
         # Create group for user and add to group 'all_users'
         user_group_add(auth, groupname=username, gid=uid, sync_perm=False)
@@ -220,7 +220,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         logger.success(m18n.n('user_created'))
 
         hook_callback('post_user_create',
-                        args=[username, mail, password, firstname, lastname])
+                      args=[username, mail, password, firstname, lastname])
 
         return {'fullname': fullname, 'username': username, 'mail': mail}
 
@@ -469,9 +469,9 @@ def user_info(auth, username):
     else:
         raise YunohostError('user_info_failed')
 
+
 #
 # Group subcategory
-#
 #
 def user_group_list(auth, fields=None):
     """
@@ -485,9 +485,9 @@ def user_group_list(auth, fields=None):
 
     """
     group_attr = {
-        'cn' : 'groupname',
-        'member' : 'members',
-        'permission' : 'permission'
+        'cn': 'groupname',
+        'member': 'members',
+        'permission': 'permission'
     }
     attrs = ['cn']
     groups = {}
@@ -531,11 +531,12 @@ def user_group_list(auth, fields=None):
 
         groupname = entry[group_attr['cn']]
         groups[groupname] = entry
-    return {'groups' : groups}
+
+    return {'groups': groups}
 
 
 @is_unit_operation([('groupname', 'user')])
-def user_group_add(operation_logger, auth, groupname,gid=None, sync_perm=True):
+def user_group_add(operation_logger, auth, groupname, gid=None, sync_perm=True):
     """
     Create group
 
@@ -645,7 +646,7 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
             add_user = [add_user]
 
         for user in add_user:
-            if not user in existing_users:
+            if user not in existing_users:
                 raise YunohostError('user_unknown', user=user)
 
         for user in add_user:
@@ -717,37 +718,43 @@ def user_group_info(auth, groupname):
         result_dict['member'] = {m.split("=")[1].split(",")[0] for m in group['member']}
     return result_dict
 
+
 #
 # Permission subcategory
 #
-#
-import yunohost.permission
 
 def user_permission_list(auth, app=None, permission=None, username=None, group=None, sync_perm=True):
+    import yunohost.permission
     return yunohost.permission.user_permission_list(auth, app, permission, username, group)
+
 
 @is_unit_operation([('app', 'user')])
 def user_permission_add(operation_logger, auth, app, permission="main", username=None, group=None, sync_perm=True):
+    import yunohost.permission
     return yunohost.permission.user_permission_update(operation_logger, auth, app, permission=permission,
-                                                       add_username=username, add_group=group,
-                                                       del_username=None, del_group=None,
-                                                       sync_perm=sync_perm)
+                                                      add_username=username, add_group=group,
+                                                      del_username=None, del_group=None,
+                                                      sync_perm=sync_perm)
+
 
 @is_unit_operation([('app', 'user')])
 def user_permission_remove(operation_logger, auth, app, permission="main", username=None, group=None, sync_perm=True):
+    import yunohost.permission
     return yunohost.permission.user_permission_update(operation_logger, auth, app, permission=permission,
                                                       add_username=None, add_group=None,
                                                       del_username=username, del_group=group,
                                                       sync_perm=sync_perm)
 
+
 @is_unit_operation([('app', 'user')])
 def user_permission_clear(operation_logger, auth, app, permission=None, sync_perm=True):
+    import yunohost.permission
     return yunohost.permission.user_permission_clear(operation_logger, auth, app, permission,
                                                      sync_perm=sync_perm)
 
+
 #
 # SSH subcategory
-#
 #
 import yunohost.ssh
 

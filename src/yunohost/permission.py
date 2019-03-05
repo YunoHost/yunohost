@@ -30,10 +30,11 @@ import random
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError
-from yunohost.user import user_list, user_group_list
+from yunohost.user import user_list
 from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
+
 
 def user_permission_list(auth, app=None, permission=None, username=None, group=None):
     """
@@ -46,8 +47,6 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
         group      -- Groupname to get informations
 
     """
-
-    user_l = user_list(auth, ['uid'])['users']
 
     permission_attrs = [
         'cn',
@@ -86,20 +85,20 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
             for u in res['inheritPermission']:
                 user_name.append(u.split("=")[1].split(",")[0])
 
-        # Don't show the result if the user diffined a specific permission, user or group
-        if app and not app_name in app:
+        # Don't show the result if the user defined a specific permission, user or group
+        if app and app_name not in app:
             continue
-        if permission and not permission_name in permission:
+        if permission and permission_name not in permission:
             continue
         if username[0] and not set(username) & set(user_name):
             continue
         if group[0] and not set(group) & set(group_name):
             continue
 
-        if not app_name in permissions:
+        if app_name not in permissions:
             permissions[app_name] = {}
 
-        permissions[app_name][permission_name] = {'allowed_users':[], 'allowed_groups':[]}
+        permissions[app_name][permission_name] = {'allowed_users': [], 'allowed_groups': []}
         for g in group_name:
             permissions[app_name][permission_name]['allowed_groups'].append(g)
         for u in user_name:
@@ -160,16 +159,16 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
 
     # Validate that the group exist
     for g in add_group:
-        if not g in user_group_list(auth, ['cn'])['groups']:
+        if g not in user_group_list(auth, ['cn'])['groups']:
             raise YunohostError('group_unknown', group=g)
     for u in add_username:
-        if not u in user_list(auth, ['uid'])['users']:
+        if u not in user_list(auth, ['uid'])['users']:
             raise YunohostError('user_unknown', user=u)
     for g in del_group:
-        if not g in user_group_list(auth, ['cn'])['groups']:
+        if g not in user_group_list(auth, ['cn'])['groups']:
             raise YunohostError('group_unknown', group=g)
     for u in del_username:
-        if not u in user_list(auth, ['uid'])['users']:
+        if u not in user_list(auth, ['uid'])['users']:
             raise YunohostError('user_unknown', user=u)
 
     # Merge user and group (note that we consider all user as a group)
@@ -193,7 +192,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
     for a in app:
         for per in permission:
             permission_name = per + '.' + a
-            if not permission_name in result:
+            if permission_name not in result:
                 raise YunohostError('permission_not_found', permission=per, app=a)
             new_per_dict[permission_name] = set()
             if 'groupPermission' in result[permission_name]:
@@ -203,7 +202,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
                 if 'cn=all_users,ou=groups,dc=yunohost,dc=org' in new_per_dict[permission_name]:
                     raise YunohostError('need_define_permission_before')
                 group_name = 'cn=' + g + ',ou=groups,dc=yunohost,dc=org'
-                if not group_name in new_per_dict[permission_name]:
+                if group_name not in new_per_dict[permission_name]:
                     logger.warning(m18n.n('group_already_disallowed', permission=per, app=a, group=g))
                 else:
                     new_per_dict[permission_name].remove(group_name)
@@ -287,11 +286,11 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
     for a in app:
         for per in permission:
             permission_name = per + '.' + a
-            if not permission_name in result:
+            if permission_name not in result:
                 raise YunohostError('permission_not_found', permission=per, app=a)
             if 'groupPermission' in result[permission_name] and 'cn=all_users,ou=groups,dc=yunohost,dc=org' in result[permission_name]['groupPermission']:
-                 logger.warning(m18n.n('permission_already_clear', permission=per, app=a))
-                 continue
+                logger.warning(m18n.n('permission_already_clear', permission=per, app=a))
+                continue
             if auth.update('cn=%s,ou=permission' % permission_name, default_permission):
                 logger.success(m18n.n('permission_updated', permission=per, app=a))
             else:
@@ -311,7 +310,7 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
     return user_permission_list(auth, app, permission)
 
 
-@is_unit_operation(['permission','app'])
+@is_unit_operation(['permission', 'app'])
 def permission_add(operation_logger, auth, app, permission, urls=None, default_allow=True, sync_perm=True):
     """
     Create a new permission for a specific application
@@ -325,7 +324,7 @@ def permission_add(operation_logger, auth, app, permission, urls=None, default_a
     from yunohost.domain import _normalize_domain_path
 
     # Validate uniqueness of permission in LDAP
-    permission_name = str(permission + '.' + app) # str(...) Fix encoding issue
+    permission_name = str(permission + '.' + app)  # str(...) Fix encoding issue
     conflict = auth.get_conflict({
         'cn': permission_name
     }, base_dn='ou=permission,dc=yunohost,dc=org')
@@ -366,7 +365,7 @@ def permission_add(operation_logger, auth, app, permission, urls=None, default_a
     raise YunohostError('permission_creation_failed')
 
 
-@is_unit_operation(['permission','app'])
+@is_unit_operation(['permission', 'app'])
 def permission_update(operation_logger, auth, app, permission, add_url=None, remove_url=None, sync_perm=True):
     """
     Update a permission for a specific application
@@ -380,7 +379,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
     """
     from yunohost.domain import _normalize_domain_path
 
-    permission_name = str(permission + '.' + app) # str(...) Fix encoding issue
+    permission_name = str(permission + '.' + app)  # str(...) Fix encoding issue
 
     # Populate permission informations
     result = auth.search(base='ou=permission,dc=yunohost,dc=org',
@@ -389,7 +388,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
         raise YunohostError('permission_not_found', permission=permission, app=app)
     permission_obj = result[0]
 
-    if not 'URL' in permission_obj:
+    if 'URL' not in permission_obj:
         permission_obj['URL'] = []
 
     url = set(permission_obj['URL'])
@@ -412,7 +411,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
         return user_permission_list(auth, app, permission)
 
     operation_logger.start()
-    if auth.update('cn=%s,ou=permission' % permission_name, {'cn':permission_name, 'URL': url}):
+    if auth.update('cn=%s,ou=permission' % permission_name, {'cn': permission_name, 'URL': url}):
         if sync_perm:
             permission_sync_to_user(auth)
         logger.success(m18n.n('permission_updated', permission=permission, app=app))
@@ -421,7 +420,7 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
     raise YunohostError('premission_update_failed')
 
 
-@is_unit_operation(['permission','app'])
+@is_unit_operation(['permission', 'app'])
 def permission_remove(operation_logger, auth, app, permission, force=False, sync_perm=True):
     """
     Remove a permission for a specific application

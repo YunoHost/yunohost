@@ -1,7 +1,6 @@
 import yaml
 import time
 import os
-import shutil
 
 from moulinette import m18n
 from moulinette.core import init_authenticator
@@ -9,8 +8,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.utils.filesystem import free_space_in_directory, space_used_by_directory
-from yunohost.user import user_list, user_group_add, user_group_update
+from yunohost.user import user_group_add, user_group_update
 from yunohost.app import app_setting, app_list
 from yunohost.service import service_regen_conf
 from yunohost.permission import permission_add, permission_sync_to_user
@@ -21,6 +19,7 @@ logger = getActionLogger('yunohost.migration')
 ###################################################
 # Tools used also for restoration
 ###################################################
+
 
 def migrate_LDAP_db(auth):
     logger.info(m18n.n("migration_0009_update_LDAP_database"))
@@ -46,7 +45,7 @@ def migrate_LDAP_db(auth):
 
     logger.info(m18n.n("migration_0009_create_group"))
 
-    #Create a group for each yunohost user
+    # Create a group for each yunohost user
     user_list = auth.search('ou=users,dc=yunohost,dc=org',
                             '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
                             ['uid', 'uidNumber'])
@@ -116,7 +115,7 @@ class MyMigration(Migration):
                                'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
             auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
-            #Update LDAP database
+            # Update LDAP database
             migrate_LDAP_db(auth)
 
             # Migrate permission
@@ -126,7 +125,7 @@ class MyMigration(Migration):
         except Exception as e:
             logger.warn(m18n.n("migration_0009_migration_failed_trying_to_rollback"))
             os.system("systemctl stop slapd")
-            os.system("rm -r /etc/ldap/slapd.d") # To be sure that we don't keep some part of the old config
+            os.system("rm -r /etc/ldap/slapd.d")  # To be sure that we don't keep some part of the old config
             os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
             os.system("cp -r --preserve %s/ldap_db/. /var/lib/ldap/" % backup_folder)
             os.system("cp -r --preserve %s/apps_settings/. /etc/yunohost/apps/" % backup_folder)
