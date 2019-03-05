@@ -911,7 +911,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
     # Add path in permission if it's defined in the app install script
     app_settings = _get_app_settings(app_instance_name)
-    domain = app_settings['domain']
+    domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
     if domain and path:
         permission_update(auth, app_instance_name, permission="main", add_url=[domain+path], sync_perm=False)
