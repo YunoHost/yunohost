@@ -903,12 +903,12 @@ class RestoreManager():
                              '(&(objectclass=groupOfNamesYnh)(cn=all_users))',
                              ['cn'])
         if not result:
-            from importlib import import_module
-            migration_0009 = import_module('yunohost.data_migrations.0009_setup_group_permission')
+            from yunohost.tools import _get_migration_by_name
+            setup_group_permission = _get_migration_by_name("setup_group_permission")
             # Update LDAP schema restart slapd
             logger.info(m18n.n("migration_0009_update_LDAP_schema"))
             service_regen_conf(names=['slapd'], force=True)
-            migration_0009.migrate_LDAP_db(auth)
+            setup_group_permission.migrate_LDAP_db(auth)
 
     def clean(self, auth):
         """
@@ -1305,9 +1305,9 @@ class RestoreManager():
             if os.path.isfile(app_restore_script_in_archive):
                 os.system("slapadd -l '%s/permission.ldif'" % app_settings_in_archive)
             else:
-                from importlib import import_module
-                migration_0009 = import_module('yunohost.data_migrations.0009_setup_group_permission')
-                migration_0009.migrate_app_permission(auth, app=app_instance_name)
+                from yunohost.tools import _get_migration_by_name
+                setup_group_permission = _get_migration_by_name("setup_group_permission")
+                setup_group_permission.migrate_app_permission(auth, app=app_instance_name)
 
             # Copy the app scripts to a writable temporary folder
             # FIXME : use 'install -Dm555' or something similar to what's done
