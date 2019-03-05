@@ -645,9 +645,12 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
     if add_user:
         if not isinstance(add_user, list):
             add_user = [add_user]
+
         for user in add_user:
             if not user in existing_users:
                 raise YunohostError('user_unknown', user=user)
+
+        for user in add_user:
             userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if userDN in group['member']:
                 logger.warning(m18n.n('user_already_in_group', user=user, group=groupname))
@@ -656,10 +659,13 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
     if remove_user:
         if not isinstance(remove_user, list):
             remove_user = [remove_user]
+
         for user in remove_user:
-            userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if user == groupname:
                 raise YunohostError('remove_user_of_group_not_allowed', user=user, group=groupname)
+
+        for user in remove_user:
+            userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if 'member' in group and userDN in group['member']:
                 new_group_list['member'].remove(userDN)
             else:
