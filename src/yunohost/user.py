@@ -214,7 +214,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         # Create group for user and add to group 'all_users'
         user_group_add(auth, groupname=username, gid=uid, sync_perm=False)
         user_group_update(auth, groupname=username, add_user=username, force=True, sync_perm=False)
-        user_group_update(auth, 'all_users', add_user=username, force=True, sync_perm=True)
+        user_group_update(auth, groupname='all_users', add_user=username, force=True, sync_perm=True)
 
         # TODO: Send a welcome mail to user
         logger.success(m18n.n('user_created'))
@@ -290,17 +290,17 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import assert_password_is_strong_enough
 
-    attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
-    new_attr_dict = {}
     domains = domain_list(auth)['domains']
 
     # Populate user informations
+    attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     result = auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=' + username, attrs=attrs_to_fetch)
     if not result:
         raise YunohostError('user_unknown', user=username)
     user = result[0]
 
     # Get modifications from arguments
+    new_attr_dict = {}
     if firstname:
         new_attr_dict['givenName'] = firstname  # TODO: Validate
         new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + user['sn'][0]
@@ -594,7 +594,10 @@ def user_group_delete(operation_logger, auth, groupname, force=False, sync_perm=
     """
     from yunohost.permission import permission_sync_to_user
 
-    if not force and (groupname == 'all_users' or groupname == 'admins' or groupname in user_list(auth, ['uid'])['users']):
+    if not force \
+       and (groupname == 'all_users' or
+            groupname == 'admins' or
+            groupname in user_list(auth, fields=['uid'])['users']):
         raise YunohostError('group_deletion_not_allowed', user=groupname)
 
     operation_logger.start()
@@ -620,12 +623,11 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
 
     from yunohost.permission import permission_sync_to_user
 
-    attrs_to_fetch = ['member']
-
     if (groupname == 'all_users' or groupname == 'admins') and not force:
         raise YunohostError('edit_group_not_allowed', group=groupname)
 
     # Populate group informations
+    attrs_to_fetch = ['member']
     result = auth.search(base='ou=groups,dc=yunohost,dc=org',
                          filter='cn=' + groupname, attrs=attrs_to_fetch)
     if not result:
@@ -638,13 +640,13 @@ def user_group_update(operation_logger, auth, groupname, add_user=None, remove_u
     else:
         group['member'] = []
 
-    user_l = user_list(auth, ['uid'])['users']
+    existing_users = user_list(auth, fields=['uid'])['users']
 
     if add_user:
         if not isinstance(add_user, list):
             add_user = [add_user]
         for user in add_user:
-            if not user in user_l:
+            if not user in existing_users:
                 raise YunohostError('user_unknown', user=user)
             userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
             if userDN in group['member']:
@@ -700,16 +702,16 @@ def user_group_info(auth, groupname):
 
     if not result:
         raise YunohostError('group_unknown', group=groupname)
-    else:
-        group = result[0]
 
-        result_dict = {
-            'groupname': group['cn'][0],
-            'member': None
-        }
-        if 'member' in group:
-            result_dict['member'] = {m.split("=")[1].split(",")[0] for m in group['member']}
-        return result_dict
+    group = result[0]
+
+    result_dict = {
+        'groupname': group['cn'][0],
+        'member': None
+    }
+    if 'member' in group:
+        result_dict['member'] = {m.split("=")[1].split(",")[0] for m in group['member']}
+    return result_dict
 
 #
 # Permission subcategory
