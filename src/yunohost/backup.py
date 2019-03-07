@@ -337,7 +337,7 @@ class BackupManager():
                 # If umount succeeded, remove the directory (we checked that
                 # we're in /home/yunohost.backup/tmp so that should be okay...
                 # c.f. method clean() which also does this)
-                filesystem.rm(self.work_dir, True, True)
+                filesystem.rm(self.work_dir, recursive=True, force=True)
                 filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
 
     #
@@ -913,7 +913,7 @@ class RestoreManager():
             ret = subprocess.call(["umount", self.work_dir])
             if ret != 0:
                 logger.warning(m18n.n('restore_cleaning_failed'))
-        filesystem.rm(self.work_dir, True, True)
+        filesystem.rm(self.work_dir, recursive=True, force=True)
 
     #
     # Restore target manangement                                            #
