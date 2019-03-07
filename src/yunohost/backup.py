@@ -593,8 +593,15 @@ class BackupManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        if ret["succeed"] != []:
-            self.system_return = ret["succeed"]
+        ret_succeed = {hook: {path:result["state"] for path, result in infos.items()}
+                       for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())}
+        ret_failed = {hook: {path:result["state"] for path, result in infos.items.items()}
+                      for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())}
+
+        if ret_succeed.keys() != []:
+            self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
         # files to backup
@@ -610,7 +617,7 @@ class BackupManager():
 
         restore_hooks = hook_list("restore")["hooks"]
 
-        for part in ret['succeed'].keys():
+        for part in ret_succeed.keys():
             if part in restore_hooks:
                 part_restore_hooks = hook_info("restore", part)["hooks"]
                 for hook in part_restore_hooks:
@@ -620,7 +627,7 @@ class BackupManager():
                 logger.warning(m18n.n('restore_hook_unavailable', hook=part))
                 self.targets.set_result("system", part, "Warning")
 
-        for part in ret['failed'].keys():
+        for part in ret_failed.keys():
             logger.error(m18n.n('backup_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
 
@@ -682,7 +689,7 @@ class BackupManager():
             subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
             hook_exec(tmp_script, args=[tmp_app_bkp_dir, app],
-                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)[0]
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
         except:
@@ -1177,16 +1184,21 @@ class RestoreManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        for part in ret['succeed'].keys():
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+
+        for part in ret_succeed:
             self.targets.set_result("system", part, "Success")
 
         error_part = []
-        for part in ret['failed'].keys():
+        for part in ret_failed:
             logger.error(m18n.n('restore_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
             error_part.append(part)
 
-        if ret['failed']:
+        if ret_failed:
             operation_logger.error(m18n.n('restore_system_part_failed', part=', '.join(error_part)))
         else:
             operation_logger.success()
@@ -1301,7 +1313,7 @@ class RestoreManager():
                       args=[app_backup_in_archive, app_instance_name],
                       chdir=app_backup_in_archive,
                       raise_on_error=True,
-                      env=env_dict)
+                      env=env_dict)[0]
         except:
             msg = m18n.n('restore_app_failed', app=app_instance_name)
             logger.exception(msg)
@@ -1326,7 +1338,7 @@ class RestoreManager():
             # Execute remove script
             # TODO: call app_remove instead
             if hook_exec(remove_script, args=[app_instance_name],
-                         env=env_dict_remove) != 0:
+                         env=env_dict_remove)[0] != 0:
                 msg = m18n.n('app_not_properly_removed', app=app_instance_name)
                 logger.warning(msg)
                 operation_logger.error(msg)
@@ -1932,8 +1944,9 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('need_mount'))
-
-        self._need_mount = True if ret['succeed'] else False
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        self._need_mount = True if ret_succeed else False
         return self._need_mount
 
     def backup(self):
@@ -1946,7 +1959,10 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
-        if ret['failed']:
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
     def mount(self, restore_manager):
@@ -1959,7 +1975,10 @@ class CustomBackupMethod(BackupMethod):
         super(CustomBackupMethod, self).mount(restore_manager)
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
-        if ret['failed']:
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        if ret_failed:
             raise YunohostError('backup_custom_mount_error')
 
     def _get_args(self, action):

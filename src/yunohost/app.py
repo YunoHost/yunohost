@@ -523,7 +523,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
     if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'),
-                 args=args_list, env=env_dict) != 0:
+                 args=args_list, env=env_dict)[0] != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
         operation_logger.error(msg)
@@ -654,7 +654,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
-                     args=args_list, env=env_dict) != 0:
+                     args=args_list, env=env_dict)[0] != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
             not_upgraded_apps.append(app_instance_name)
             logger.error(msg)
@@ -847,7 +847,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
             args=args_list, env=env_dict
-        )
+        )[0]
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
     except Exception:
@@ -872,7 +872,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
-                )
+                )[0]
                 if remove_retcode != 0:
                     msg = m18n.n('app_not_properly_removed',
                                  app=app_instance_name)
@@ -963,7 +963,7 @@ def app_remove(operation_logger, auth, app):
     operation_logger.flush()
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
-                 env=env_dict) == 0:
+                 env=env_dict)[0] == 0:
         logger.success(m18n.n('app_removed', app=app))
 
         hook_callback('post_app_remove', args=args_list, env=env_dict)
@@ -1562,7 +1562,7 @@ def app_action_run(app, action, args=None):
         env=env_dict,
         chdir=cwd,
         user=action_declaration.get("user", "root"),
-    )
+    )[0]
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
         raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), raw_msg=True)
