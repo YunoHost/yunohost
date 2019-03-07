@@ -18,7 +18,7 @@ class MyMigration(Migration):
 
         if not os.path.exists(dhparams_file):
             with open(cron_job_file, "w") as f:
-                        f.write("#!/bin/bash\n")
+                        f.write("#!/bin/bash\nset -eux\n")
                         f.write(command)
 
             _set_permissions(cron_job_file, "root", "root", 0o755)
