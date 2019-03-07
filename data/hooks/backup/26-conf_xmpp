@@ -4,7 +4,7 @@
 set -eu
 
 # Source YNH helpers
-source /usr/share/yunohost/helpers.d/filesystem
+source /usr/share/yunohost/helpers
 
 # Backup destination
 backup_dir="${1}/conf/xmpp"
