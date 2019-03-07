@@ -74,9 +74,9 @@ ynh_psql_create_db() {
 	local db=$1
 	local user=${2:-}
 
-    local sql="CREATE DATABASE ${db};"
+	local sql="CREATE DATABASE ${db};"
 
-    # grant all privilegies to user
+	# grant all privilegies to user
 	if [ -n "$user" ]; then
 		sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user} WITH GRANT OPTION;"
 	fi
