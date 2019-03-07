@@ -380,6 +380,7 @@
     "pattern_port_or_range": "Must be a valid port number (i.e. 0-65535) or range of ports (e.g. 100:200)",
     "pattern_positive_number": "Must be a positive number",
     "pattern_username": "Must be lower-case alphanumeric and underscore characters only",
+    "pattern_password_app": "Sorry, passwords should not contain the following characters: {forbidden_chars}",
     "port_already_closed": "Port {port:d} is already closed for {ip_version:s} connections",
     "port_already_opened": "Port {port:d} is already opened for {ip_version:s} connections",
     "port_available": "Port {port:d} is available",
