@@ -571,7 +571,7 @@ def test_backup_binds_are_readonly(monkeypatch):
 
         assert "Read-only file system" in output
 
-        if self._recursive_umount(self.work_dir) > 0:
+        if not _recursive_umount(self.work_dir):
             raise Exception("Backup cleaning failed !")
 
         self.clean()

@@ -331,7 +331,7 @@ class BackupManager():
                          self.work_dir)
 
             # Try to recursively unmount stuff (from a previously failed backup ?)
-            if _recursive_umount(self.work_dir) > 0:
+            if not _recursive_umount(self.work_dir):
                 raise YunohostError('backup_output_directory_not_empty')
             else:
                 # If umount succeeded, remove the directory (we checked that
@@ -1523,7 +1523,7 @@ class BackupMethod(object):
                                   directories of the working directories
         """
         if self.need_mount():
-            if _recursive_umount(self.work_dir) > 0:
+            if not _recursive_umount(self.work_dir):
                 raise YunohostError('backup_cleaning_failed')
 
         if self.manager.is_tmp_work_dir:
@@ -2316,15 +2316,15 @@ def _recursive_umount(directory):
                         for line in mount_lines
                         if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
 
-    ret = 0
+    everything_went_fine = True
     for point in reversed(points_to_umount):
         ret = subprocess.call(["umount", point])
         if ret != 0:
-            ret = 1
+            everything_went_fine = False
             logger.warning(m18n.n('backup_cleaning_failed', point))
             continue
 
-    return ret
+    return everything_went_fine
 
 
 def free_space_in_directory(dirpath):
