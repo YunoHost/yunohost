@@ -97,7 +97,7 @@ def app_fetchlist(url=None, name=None):
         name -- Name of the list
         url -- URL of remote JSON list
     """
-    if not url.endswith(".json"):
+    if url and not url.endswith(".json"):
         raise YunohostError("This is not a valid application list url. It should end with .json.")
 
     # If needed, create folder where actual appslists are stored
