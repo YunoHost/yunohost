@@ -1633,9 +1633,18 @@ class BackupMethod(object):
                     # 'NUMBER OF HARD LINKS > 1' see #1043
                     cron_path = os.path.abspath('/etc/cron') + '.'
                     if not os.path.abspath(src).startswith(cron_path):
-                        os.link(src, dest)
-                        # Success, go to next file to organize
-                        continue
+                        try:
+                            os.link(src, dest)
+                        except Exception as e:
+                            # This kind of situation may happen when src and dest are on different
+                            # logical volume ... even though the st_dev check previously match...
+                            # E.g. this happens when running an encrypted hard drive
+                            # where everything is mapped to /dev/mapper/some-stuff
+                            # yet there are different devices behind it or idk ...
+                            logger.warning("Could not link %s to %s (%s) ... falling back to regular copy." % (src, dest, str(e)))
+                        else:
+                            # Success, go to next file to organize
+                            continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
