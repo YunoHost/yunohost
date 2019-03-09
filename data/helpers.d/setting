@@ -14,7 +14,7 @@ ynh_app_setting_get() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    sudo yunohost app setting "$app" "$key" --output-as plain --quiet
+    ynh_app_setting "get" "$app" "$key"
 }
 
 # Set an application setting
@@ -33,7 +33,7 @@ ynh_app_setting_set() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    sudo yunohost app setting "$app" "$key" --value="$value" --quiet
+    ynh_app_setting "set" "$app" "$key" "$value"
 }
 
 # Delete an application setting
@@ -50,5 +50,38 @@ ynh_app_setting_delete() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    sudo yunohost app setting -d "$app" "$key" --quiet
+    ynh_app_setting "delete" "$app" "$key"
+}
+
+# Small "hard-coded" interface to avoid calling "yunohost app" directly each
+# time dealing with a setting is needed (which may be so slow on ARM boards)
+#
+# [internal]
+#
+ynh_app_setting()
+{
+    ACTION="$1" APP="$2" KEY="$3" VALUE="$4" python - <<EOF
+import os, yaml
+app, action = os.environ['APP'], os.environ['ACTION'].lower()
+key, value = os.environ['KEY'], os.environ.get('VALUE', None)
+setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
+assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
+with open(setting_file) as f:
+    settings = yaml.load(f)
+if action == "get":
+    if key in settings:
+        print(settings[key])
+else:
+    if action == "delete":
+        if key in settings:
+            del settings[key]
+    elif action == "set":
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.load(value)
+        settings[key] = value
+    else:
+        raise ValueError("action should either be get, set or delete")
+    with open(setting_file, "w") as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
+EOF
 }
