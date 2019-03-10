@@ -60,7 +60,7 @@ ynh_app_setting_delete() {
 #
 ynh_app_setting()
 {
-    ACTION="$1" APP="$2" KEY="$3" VALUE="$4" python - <<EOF
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python - <<EOF
 import os, yaml
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)
