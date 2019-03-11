@@ -1,0 +1,74 @@
+#
+# completion for yunohost
+# automatically generated from the actionsmap
+#
+
+_yunohost_completion()
+{
+	local cur prev opts narg
+	COMPREPLY=()
+
+	# the number of words already typed
+	narg=${#COMP_WORDS[@]}
+
+	# the current word being typed
+	cur="${COMP_WORDS[COMP_CWORD]}"
+
+	# the last typed word
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	# If one is currently typing a domain,
+	# match with domains
+	if [[ $narg == 2 ]]; then
+		opts="domain monitor service settings firewall backup app hook dyndns tools user"
+	fi
+
+	# If one already typed a domain,
+	# match the actions of that domain
+	if [[ $narg == 3 ]]; then
+		if [[ $prev == "domain" ]]; then
+			opts="cert-install cert-status list remove url-available add dns-conf cert-renew"
+		fi
+		if [[ $prev == "monitor" ]]; then
+			opts="enable network show-stats update-stats disk system disable"
+		fi
+		if [[ $prev == "service" ]]; then
+			opts="status enable regen-conf log stop remove start add disable"
+		fi
+		if [[ $prev == "settings" ]]; then
+			opts="reset set list reset-all get"
+		fi
+		if [[ $prev == "firewall" ]]; then
+			opts="reload allow stop list upnp disallow"
+		fi
+		if [[ $prev == "backup" ]]; then
+			opts="info restore create list delete"
+		fi
+		if [[ $prev == "app" ]]; then
+			opts="map checkurl install makedefault checkport listlists change-url removelist info change-label upgrade fetchlist clearaccess ssowatconf list remove register-url removeaccess setting initdb debug addaccess"
+		fi
+		if [[ $prev == "hook" ]]; then
+			opts="info callback add exec list remove"
+		fi
+		if [[ $prev == "dyndns" ]]; then
+			opts="subscribe update installcron removecron"
+		fi
+		if [[ $prev == "tools" ]]; then
+			opts="upgrade ldapinit postinstall maindomain update reboot shell adminpw shutdown diagnosis port-available"
+		fi
+		if [[ $prev == "user" ]]; then
+			opts="info create list update delete"
+		fi
+	fi
+
+	# If no options were found propose --help
+	if [ -z "$opts" ]; then
+		if [[ $prev != "--help" ]]; then
+			opts=( --help )
+		fi
+	fi
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+	return 0
+}
+
+complete -F _yunohost_completion yunohost
