@@ -42,7 +42,7 @@ def setup_function(function):
 
     assert len(backup_list()["archives"]) == 0
 
-    markers = function.__dict__.keys()
+    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
 
     if "with_wordpress_archive_from_2p4" in markers:
         add_archive_wordpress_from_2p4()
@@ -82,7 +82,7 @@ def teardown_function(function):
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
-    markers = function.__dict__.keys()
+    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
 
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
