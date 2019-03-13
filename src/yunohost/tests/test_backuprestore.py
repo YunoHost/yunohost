@@ -10,7 +10,7 @@ from moulinette import m18n
 from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
-from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
+from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete, _recursive_umount
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 
@@ -571,7 +571,7 @@ def test_backup_binds_are_readonly(monkeypatch):
 
         assert "Read-only file system" in output
 
-        if self._recursive_umount(self.work_dir) > 0:
+        if not _recursive_umount(self.work_dir):
             raise Exception("Backup cleaning failed !")
 
         self.clean()
