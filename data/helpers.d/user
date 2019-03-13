@@ -145,7 +145,5 @@ ynh_system_user_delete () {
     then
 		echo "Remove the group $username" >&2
 		delgroup $username
-	else
-		echo "The group $username was not found" >&2
     fi
 }
