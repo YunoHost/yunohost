@@ -1,3 +1,9 @@
+yunohost (3.5.0.1) testing; urgency=low
+
+  - [fix] #675 introduced a bug in nginx conf ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 13 Mar 2019 19:23:00  +0000
+
 yunohost (3.5.0) testing; urgency=low
 
   Core
