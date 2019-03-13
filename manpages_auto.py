@@ -1,5 +1,3 @@
-  GNU nano 2.7.4                     Fichier : manpages_auto.py                               
-
 """
 Inspired by yunohost_completion.py (author: Christophe Vuillot)
 =======
@@ -38,6 +36,6 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
         ACTIONS_DICT[domain] = ACTIONS_STR
         for action in ACTIONS:
             #print("yunohost", domain, action)
-            cmd = "sudo help2man \" yunohost " + domain + "  "  + action + " --help \" -o " +$
+            cmd = "sudo help2man \" yunohost " + domain + "  "  + action + " --help \" -o " +  OUTPUT_DIR + "yunohost_" + domain+ "_" + action 
             print(cmd)
             os.system(cmd) 
