@@ -59,7 +59,7 @@ ynh_get_debian_release () {
 # Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
 #
 # usage: ynh_systemd_action [-n service_name] [-a action] [ [-l "line to match"] [-p log_path] [-t timeout] [-e length] ]
-# | arg: -n, --service_name= - Name of the service to reload. Default : $app
+# | arg: -n, --service_name= - Name of the service to start. Default : $app
 # | arg: -a, --action=       - Action to perform with systemctl. Default: start
 # | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot.
 #                              If not defined it don't wait until the service is completely started.
@@ -107,6 +107,12 @@ ynh_systemd_action() {
     fi
 
     ynh_print_info --message="${action^} the service $service_name"
+
+    # Use reload-or-restart instead of reload. So it wouldn't fail if the service isn't running.
+    if [ "$action" == "reload" ]; then
+        action="reload-or-restart"
+    fi
+
     systemctl $action $service_name \
         || ( journalctl --no-pager --lines=$length -u $service_name >&2 \
         ; test -e "$log_path" && echo "--" >&2 && tail --lines=$length "$log_path" >&2 \
