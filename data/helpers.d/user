@@ -63,6 +63,21 @@ ynh_system_user_exists() {
     getent passwd "$username" &>/dev/null
 }
 
+# Check if a group exists on the system
+#
+# usage: ynh_system_group_exists --group=group
+# | arg: -g, --group - the group to check
+ynh_system_group_exists() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=g
+    declare -Ar args_array=( [g]=group= )
+    local group
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    getent group "$group" &>/dev/null
+}
+
 # Create a system user
 #
 # examples:
@@ -116,11 +131,19 @@ ynh_system_user_delete () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ynh_system_user_exists "$username"	# Check if the user exists on the system
+    # Check if the user exists on the system
+    if ynh_system_user_exists "$username"
     then
 		echo "Remove the user $username" >&2
-		sudo userdel $username
+		deluser $username
 	else
 		echo "The user $username was not found" >&2
+    fi
+
+    # Check if the group exists on the system
+    if ynh_system_group_exists "$username"
+    then
+		echo "Remove the group $username" >&2
+		delgroup $username
     fi
 }
