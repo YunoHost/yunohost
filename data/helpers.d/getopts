@@ -203,7 +203,7 @@ ynh_handle_getopts_args () {
 				# Escape double quote to prevent any interpretation during the eval
 				arguments[$i]="${arguments[$i]//\"/\\\"}"
 				# Escape $ as well to prevent the string following it to be seen as a variable.
-				all_args[$i]="${all_args[$i]//$/\\\$}"
+				arguments[$i]="${arguments[$i]//$/\\\$}"
 
 				# Store each value given as argument in the corresponding variable
 				# The values will be stored in the same order than $args_array
