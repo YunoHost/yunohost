@@ -155,6 +155,13 @@ ynh_handle_getopts_args () {
 								# Escape $ as well to prevent the string following it to be seen as a variable.
 								all_args[$i]="${all_args[$i]//$/\\\$}"
 
+								# For the record.
+								# We're using eval here to get the content of the variable stored itself as simple text in $option_var...
+								# Other ways to get that content would be to use either ${!option_var} or declare -g ${option_var}
+								# But... ${!option_var} can't be used as left part of an assignation.
+								# declare -g ${option_var} will create a local variable (despite -g !) and will not be available for the helper itself.
+								# So... Stop fucking arguing each time that eval is evil... Go find an other working solution if you can find one!
+
 								eval ${option_var}+=\"${all_args[$i]}\"
 								shift_value=$(( shift_value + 1 ))
 							fi
