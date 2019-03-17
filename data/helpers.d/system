@@ -27,6 +27,32 @@ ynh_exit_properly () {
 
 	echo -e "!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!" >&2
 
+	# Unset xtrace to not spoil the log
+	set +x
+	local ynh_log="/var/log/yunohost/yunohost-cli.log"
+	# Wait for the log to be fill with the data until the crash.
+	local timeout=0
+	while ! tail --lines=20 "$ynh_log" | grep --quiet "ynh_exit_properly"
+	do
+		((timeout++))
+		if [ $timeout -eq 500 ]; then
+			break
+		fi
+	done
+	set -x
+
+	echo -e "\e[34m\e[1mLog extract:\e[0m" >&2
+	# Tail the last 30 lines of log of YunoHost
+	# But remove all lines after "ynh_exit_properly"
+	# Remove the timestamp at the beginning of the line
+	# Remove "yunohost.hook..."
+	# Add DEBUG and color it at the beginning of each log line.
+	echo -e "$(tail --lines=30 "$ynh_log" \
+		| sed '1,/ynh_exit_properly/!d' \
+		| sed 's/^[[:digit:]: ,-]*//g' \
+		| sed 's/ *yunohost.hook.*\]//g' \
+		| sed 's/^/\\e[34m\\e[1m[DEBUG]\\e[0m: /g')" >&2
+
 	if type -t ynh_clean_setup > /dev/null; then	# Check if the function exist in the app script.
 		ynh_clean_setup	# Call the function to do specific cleaning for the app.
 	fi
