@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Determine whether the scripts is executed from a terminal or the admin JS.
+#
+# [internal]
+ynh_is_term () {
+	# Return true if $TERM return xterm-XXXcolor
+	# Which means the script is executed from a terminal, not from the admin JS
+	[[ "$TERM" =~ "xterm" ]]
+}
+
 # Manage a fail of the script
 #
 # [internal]
@@ -29,7 +38,13 @@ ynh_exit_properly () {
 
 	# Unset xtrace to not spoil the log
 	set +x
-	local ynh_log="/var/log/yunohost/yunohost-cli.log"
+
+	if ynh_is_term
+	then
+		local ynh_log="/var/log/yunohost/yunohost-cli.log"
+	else
+		local ynh_log="/var/log/yunohost/yunohost-api.log"
+	fi
 	# Wait for the log to be fill with the data until the crash.
 	local timeout=0
 	while ! tail --lines=20 "$ynh_log" | grep --quiet "ynh_exit_properly"
