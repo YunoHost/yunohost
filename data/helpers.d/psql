@@ -134,6 +134,7 @@ ynh_psql_dump_db() {
 #
 # usage: ynh_psql_create_user user pwd
 # | arg: user - the user name to create
+# | arg: pwd - the password to identify user by
 #
 # Requires YunoHost version 3.?.? or higher.
 ynh_psql_create_user() {
