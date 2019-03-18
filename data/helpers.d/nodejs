@@ -105,7 +105,7 @@ ynh_install_nodejs () {
 
 	# Install the requested version of nodejs
 	uname=$(uname -m)
-	if [[ $uname =~ aarch64 ||  $uname =~ arm64]]
+	if [[ $uname =~ aarch64 || $uname =~ arm64 ]]
 	then
 		n $nodejs_version --arch=arm64
 	else

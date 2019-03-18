@@ -164,10 +164,10 @@ ynh_remove_systemd_config () {
 
 	local finalsystemdconf="/etc/systemd/system/$service.service"
 	if [ -e "$finalsystemdconf" ]; then
-		sudo systemctl stop $service
-		sudo systemctl disable $service
+		ynh_systemd_action --service_name=$service --action=stop
+		systemctl disable $service
 		ynh_secure_remove --file="$finalsystemdconf"
-		sudo systemctl daemon-reload
+		systemctl daemon-reload
 	fi
 }
 
@@ -234,7 +234,7 @@ ynh_add_nginx_config () {
 
 	ynh_store_file_checksum --file="$finalnginxconf"
 
-	sudo systemctl reload nginx
+	ynh_systemd_action --service_name=nginx --action=reload
 }
 
 # Remove the dedicated nginx config
@@ -244,7 +244,7 @@ ynh_add_nginx_config () {
 # Requires YunoHost version 2.7.2 or higher.
 ynh_remove_nginx_config () {
 	ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
-	sudo systemctl reload nginx
+	ynh_systemd_action --service_name=nginx --action=reload
 }
 
 # Create a dedicated php-fpm config
@@ -281,7 +281,7 @@ ynh_add_fpm_config () {
 		sudo chown root: "$finalphpini"
 		ynh_store_file_checksum "$finalphpini"
 	fi
-	sudo systemctl reload $fpm_service
+	ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 
 # Remove the dedicated php-fpm config
@@ -299,7 +299,7 @@ ynh_remove_fpm_config () {
 	fi
 	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini" 2>&1
-	sudo systemctl reload $fpm_service
+	ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 
 # Create a dedicated fail2ban config (jail and filter conf files)
@@ -366,6 +366,7 @@ ynh_remove_fpm_config () {
 # Requires YunoHost version 3.?.? or higher.
 ynh_add_fail2ban_config () {
   # Declare an array to define the options of this helper.
+  local legacy_args=lrmptv
   declare -Ar args_array=( [l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template [v]=others_var=)
   local logpath
   local failregex

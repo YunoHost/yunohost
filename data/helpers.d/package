@@ -27,7 +27,7 @@ ynh_wait_dpkg_free() {
             while read dpkg_file <&9
             do
                 # Check if the name of this file contains only numbers.
-                if echo "$dpkg_file" | grep -Pq "^[[:digit:]]*$"
+                if echo "$dpkg_file" | grep -Pq "^[[:digit:]]+$"
                 then
                     # If so, that a remaining of dpkg.
                     ynh_print_err "E: dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."

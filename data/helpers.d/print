@@ -100,6 +100,7 @@ ynh_print_err () {
 # usage: ynh_exec_err command to execute
 # usage: ynh_exec_err "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
 #
@@ -113,6 +114,7 @@ ynh_exec_err () {
 # usage: ynh_exec_warn command to execute
 # usage: ynh_exec_warn "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
 #
@@ -126,6 +128,7 @@ ynh_exec_warn () {
 # usage: ynh_exec_warn_less command to execute
 # usage: ynh_exec_warn_less "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
 #
@@ -139,6 +142,7 @@ ynh_exec_warn_less () {
 # usage: ynh_exec_quiet command to execute
 # usage: ynh_exec_quiet "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
 #
@@ -152,6 +156,7 @@ ynh_exec_quiet () {
 # usage: ynh_exec_fully_quiet command to execute
 # usage: ynh_exec_fully_quiet "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
 #
