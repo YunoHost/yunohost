@@ -11,6 +11,8 @@ MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
 # | arg: -u, --user - the user name to connect as
 # | arg: -p, --password - the user password
 # | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_connect_as() {
     # Declare an array to define the options of this helper.
     local legacy_args=upd
@@ -30,6 +32,8 @@ ynh_mysql_connect_as() {
 # usage: ynh_mysql_execute_as_root --sql=sql [--database=database]
 # | arg: -s, --sql - the SQL command to execute
 # | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_as_root() {
     # Declare an array to define the options of this helper.
     local legacy_args=sd
@@ -49,6 +53,8 @@ ynh_mysql_execute_as_root() {
 # usage: ynh_mysql_execute_file_as_root --file=file [--database=database]
 # | arg: -f, --file - the file containing SQL commands
 # | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_file_as_root() {
     # Declare an array to define the options of this helper.
     local legacy_args=fd
@@ -71,6 +77,8 @@ ynh_mysql_execute_file_as_root() {
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
 # | arg: pwd - the password to identify user by
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_create_db() {
     local db=$1
 
@@ -95,6 +103,8 @@ ynh_mysql_create_db() {
 #
 # usage: ynh_mysql_drop_db db
 # | arg: db - the database name to drop
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_drop_db() {
     ynh_mysql_execute_as_root --sql="DROP DATABASE ${1};"
 }
@@ -106,6 +116,8 @@ ynh_mysql_drop_db() {
 # usage: ynh_mysql_dump_db --database=database
 # | arg: -d, --database - the database name to dump
 # | ret: the mysqldump output
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_dump_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=d
@@ -124,6 +136,8 @@ ynh_mysql_dump_db() {
 # usage: ynh_mysql_create_user user pwd [host]
 # | arg: user - the user name to create
 # | arg: pwd - the password to identify user by
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_create_user() {
     ynh_mysql_execute_as_root \
         --sql="CREATE USER '${1}'@'localhost' IDENTIFIED BY '${2}';"
@@ -133,6 +147,8 @@ ynh_mysql_create_user() {
 #
 # usage: ynh_mysql_user_exists --user=user
 # | arg: -u, --user - the user for which to check existence
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_user_exists()
 {
    # Declare an array to define the options of this helper.
@@ -156,6 +172,8 @@ ynh_mysql_user_exists()
 #
 # usage: ynh_mysql_drop_user user
 # | arg: user - the user name to drop
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_drop_user() {
     ynh_mysql_execute_as_root --sql="DROP USER '${1}'@'localhost';"
 }
@@ -169,6 +187,8 @@ ynh_mysql_drop_user() {
 # | arg: -u, --db_user - Owner of the database
 # | arg: -n, --db_name - Name of the database
 # | arg: -p, --db_pwd - Password of the database. If not given, a password will be generated
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_setup_db () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=unp
@@ -192,6 +212,8 @@ ynh_mysql_setup_db () {
 # usage: ynh_mysql_remove_db --db_user=user --db_name=name
 # | arg: -u, --db_user - Owner of the database
 # | arg: -n, --db_name - Name of the database
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_remove_db () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=un
@@ -223,6 +245,8 @@ ynh_mysql_remove_db () {
 # usage: ynh_sanitize_dbid --db_name=name
 # | arg: -n, --db_name - name to correct/sanitize
 # | ret: the corrected name
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_sanitize_dbid () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=n
