@@ -5,6 +5,8 @@
 # usage: ynh_debug [--message=message] [--trace=1/0]
 # | arg: -m, --message= - The text to print
 # | arg: -t, --trace=   - Turn on or off the trace of the script. Usefull to trace nonly a small part of a script.
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_debug () {
 	# Disable set xtrace for the helper itself, to not pollute the debug log
 	set +x
@@ -54,6 +56,8 @@ ynh_debug () {
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_debug_exec () {
 	ynh_debug --message="$(eval $@)"
 }

@@ -7,6 +7,7 @@
 #
 # example: ynh_validate_ip 4 111.222.333.444
 #
+# Requires YunoHost version 2.2.4 or higher.
 ynh_validate_ip()
 {
   # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
@@ -40,6 +41,7 @@ EOF
 # usage: ynh_validate_ip4 --ip_address=ip_address
 # | ret: 0 for valid ipv4 addresses, 1 otherwise
 #
+# Requires YunoHost version 2.2.4 or higher.
 ynh_validate_ip4()
 {
   # Declare an array to define the options of this helper.
@@ -60,6 +62,7 @@ ynh_validate_ip4()
 # usage: ynh_validate_ip6 --ip_address=ip_address
 # | ret: 0 for valid ipv6 addresses, 1 otherwise
 #
+# Requires YunoHost version 2.2.4 or higher.
 ynh_validate_ip6()
 {
   # Declare an array to define the options of this helper.

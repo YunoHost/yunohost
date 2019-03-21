@@ -326,10 +326,19 @@ class BackupManager():
         if not os.path.isdir(self.work_dir):
             filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
         elif self.is_tmp_work_dir:
-            logger.debug("temporary directory for backup '%s' already exists",
+
+            logger.debug("temporary directory for backup '%s' already exists... attempting to clean it",
                          self.work_dir)
-            # FIXME May be we should clean the workdir here
-            raise YunohostError('backup_output_directory_not_empty')
+
+            # Try to recursively unmount stuff (from a previously failed backup ?)
+            if not _recursive_umount(self.work_dir):
+                raise YunohostError('backup_output_directory_not_empty')
+            else:
+                # If umount succeeded, remove the directory (we checked that
+                # we're in /home/yunohost.backup/tmp so that should be okay...
+                # c.f. method clean() which also does this)
+                filesystem.rm(self.work_dir, recursive=True, force=True)
+                filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
 
     #
     # Backup target management                                              #
@@ -911,7 +920,7 @@ class RestoreManager():
             ret = subprocess.call(["umount", self.work_dir])
             if ret != 0:
                 logger.warning(m18n.n('restore_cleaning_failed'))
-        filesystem.rm(self.work_dir, True, True)
+        filesystem.rm(self.work_dir, recursive=True, force=True)
 
     #
     # Restore target manangement                                            #
@@ -1526,33 +1535,11 @@ class BackupMethod(object):
                                   directories of the working directories
         """
         if self.need_mount():
-            if self._recursive_umount(self.work_dir) > 0:
+            if not _recursive_umount(self.work_dir):
                 raise YunohostError('backup_cleaning_failed')
 
         if self.manager.is_tmp_work_dir:
             filesystem.rm(self.work_dir, True, True)
-
-    def _recursive_umount(self, directory):
-        """
-        Recursively umount sub directories of a directory
-
-        Args:
-            directory -- a directory path
-        """
-        mount_lines = subprocess.check_output("mount").split("\n")
-
-        points_to_umount = [line.split(" ")[2]
-                            for line in mount_lines
-                            if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
-        ret = 0
-        for point in reversed(points_to_umount):
-            ret = subprocess.call(["umount", point])
-            if ret != 0:
-                ret = 1
-                logger.warning(m18n.n('backup_cleaning_failed', point))
-                continue
-
-        return ret
 
     def _check_is_enough_free_space(self):
         """
@@ -1633,9 +1620,18 @@ class BackupMethod(object):
                     # 'NUMBER OF HARD LINKS > 1' see #1043
                     cron_path = os.path.abspath('/etc/cron') + '.'
                     if not os.path.abspath(src).startswith(cron_path):
-                        os.link(src, dest)
-                        # Success, go to next file to organize
-                        continue
+                        try:
+                            os.link(src, dest)
+                        except Exception as e:
+                            # This kind of situation may happen when src and dest are on different
+                            # logical volume ... even though the st_dev check previously match...
+                            # E.g. this happens when running an encrypted hard drive
+                            # where everything is mapped to /dev/mapper/some-stuff
+                            # yet there are different devices behind it or idk ...
+                            logger.warning("Could not link %s to %s (%s) ... falling back to regular copy." % (src, dest, str(e)))
+                        else:
+                            # Success, go to next file to organize
+                            continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
@@ -2030,6 +2026,7 @@ def backup_create(name=None, description=None, methods=[],
         # Check that output directory is empty
         if os.path.isdir(output_directory) and no_compress and \
                 os.listdir(output_directory):
+
             raise YunohostError('backup_output_directory_not_empty')
     elif no_compress:
         raise YunohostError('backup_output_directory_required')
@@ -2332,6 +2329,30 @@ def _call_for_each_path(self, callback, csv_path=None):
         backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
         for row in backup_csv:
             callback(self, row['source'], row['dest'])
+
+
+def _recursive_umount(directory):
+    """
+    Recursively umount sub directories of a directory
+
+    Args:
+        directory -- a directory path
+    """
+    mount_lines = subprocess.check_output("mount").split("\n")
+
+    points_to_umount = [line.split(" ")[2]
+                        for line in mount_lines
+                        if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
+
+    everything_went_fine = True
+    for point in reversed(points_to_umount):
+        ret = subprocess.call(["umount", point])
+        if ret != 0:
+            everything_went_fine = False
+            logger.warning(m18n.n('backup_cleaning_failed', point))
+            continue
+
+    return everything_went_fine
 
 
 def free_space_in_directory(dirpath):
