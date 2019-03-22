@@ -33,6 +33,7 @@ import socket
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
+from datetime import datetime
 
 import apt
 import apt.progress
@@ -567,60 +568,126 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
 
     failure = False
 
-    # Retrieve interface
-    is_api = True if msettings.get('interface') == 'api' else False
-
     if not ignore_packages:
 
-        apt.apt_pkg.init()
-        apt.apt_pkg.config.set("DPkg::Options::", "--force-confdef")
-        apt.apt_pkg.config.set("DPkg::Options::", "--force-confold")
-
-        cache = apt.Cache()
-        cache.open(None)
-        cache.upgrade(True)
-
-        # If API call
-        if is_api:
-            critical_packages = ("moulinette", "yunohost",
-                                 "yunohost-admin", "ssowat", "python")
-            critical_upgrades = set()
-
-            for pkg in cache.get_changes():
-                if pkg.name in critical_packages:
-                    critical_upgrades.add(pkg.name)
-                    # Temporarily keep package ...
-                    pkg.mark_keep()
-
-            # ... and set a hourly cron up to upgrade critical packages
-            if critical_upgrades:
-                logger.info(m18n.n('packages_upgrade_critical_later',
-                                   packages=', '.join(critical_upgrades)))
-                with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
-                    f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade\n' % ' '.join(critical_upgrades))
-
-        if cache.get_changes():
-            logger.info(m18n.n('upgrading_packages'))
-
-            operation_logger.start()
-            try:
-                os.environ["DEBIAN_FRONTEND"] = "noninteractive"
-                # Apply APT changes
-                # TODO: Logs output for the API
-                cache.commit(apt.progress.text.AcquireProgress(),
-                             apt.progress.base.InstallProgress())
-            except Exception as e:
-                failure = True
-                logger.warning('unable to upgrade packages: %s' % str(e))
-                logger.error(m18n.n('packages_upgrade_failed'))
-                operation_logger.error(m18n.n('packages_upgrade_failed'))
-            else:
-                logger.info(m18n.n('done'))
-                operation_logger.success()
-            finally:
-                del os.environ["DEBIAN_FRONTEND"]
-        else:
+        # Check that there's indeed some packages to upgrade
+        upgradables = list(_list_upgradable_apt_packages())
+        if not upgradables:
             logger.info(m18n.n('packages_no_upgrade'))
+
+        logger.info(m18n.n('upgrading_packages'))
+        operation_logger.start()
+
+        # Critical packages are packages that we can't just upgrade
+        # randomly from yunohost itself... upgrading them is likely to
+        critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
+
+        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+
+        # Prepare dist-upgrade command
+        dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
+        dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
+        dist_upgrade += " apt-get"
+        dist_upgrade += " --fix-broken --show-upgraded --assume-yes"
+        for conf_flag in ["old", "miss", "def"]:
+            dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
+        dist_upgrade += " dist-upgrade"
+
+        #
+        # "Regular" packages upgrade
+        #
+        if not failure and noncritical_packages_upgradable:
+
+            # TODO : i18n
+            logger.info("Upgrading 'regular' (non-yunohost-related) packages ...")
+
+            # TODO : factorize this in utils/packages.py ?
+            # Mark all critical packages as held
+            for package in critical_packages:
+                check_output("apt-mark hold %s" % package)
+            # Doublecheck with apt-mark showhold that packages are indeed held ...
+            held_packages = check_output("apt-mark showhold").split("\n")
+            if any(p not in held_packages for p in critical_packages):
+                failure = True
+                logger.warning('Unable to hold critical packages ...')
+                logger.error(m18n.n('packages_upgrade_failed'))
+                # FIXME : watdo here, should this be an exception or just an
+                # error
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
+
+            if not failure:
+                logger.debug("Running apt command :\n{}".format(dist_upgrade))
+
+                callbacks = (
+                    lambda l: logger.info(l.rstrip()),
+                    lambda l: logger.warning(l.rstrip()),
+                )
+                returncode = call_async_output(dist_upgrade, callbacks, shell=True)
+                if returncode != 0:
+                    failure = True
+                    logger.warning('unable to upgrade packages: %s' % ', '.join(noncritical_packages_upgradable))
+                    logger.error(m18n.n('packages_upgrade_failed'))
+                    operation_logger.error(m18n.n('packages_upgrade_failed'))
+
+        #
+        # Critical packages upgrade
+        #
+        if not failure and critical_packages_upgradable:
+
+            # TODO : i18n
+            logger.info("Upgrading 'special' (yunohost-related) packages ...")
+
+            # TODO : factorize this in utils/packages.py ?
+            # Mark all critical packages as unheld
+            for package in critical_packages:
+                check_output("apt-mark unhold %s" % package)
+            # Doublecheck with apt-mark showhold that packages are indeed unheld ...
+            unheld_packages = check_output("apt-mark showhold").split("\n")
+            if any(p in unheld_packages for p in critical_packages):
+                failure = True
+                logger.warning('Unable to unhold critical packages ...')
+                logger.error(m18n.n('packages_upgrade_failed'))
+                # FIXME : watdo here, should this be an exception or just an
+                # error
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
+
+            #
+            # Here we use a dirty hack to run a command after the current
+            # "yunohost tools upgrade", because the upgrade of yunohost
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # (also the upgrade of the package, if executed from the webadmin, is
+            # likely to kill/restart the api which is in turn likely to kill this
+            # command before it ends...)
+            #
+
+            logfile = "/var/log/yunohost/special_upgrade_%s.log" % datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            command = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
+
+            MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
+            wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
+
+            # TODO : i18n
+            upgrade_completed = "YunoHost package upgrade completed ! Press [enter] to get the command line back"
+            command = "({} && {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
+                                                       command,
+                                                       upgrade_completed)
+
+            logger.debug("Running command :\n{}".format(command))
+            os.system(command)
+
+            # TODO / FIXME : return from this function immediately,
+            # otherwise the apps upgrade might happen and it's gonna be a mess
+
+            # FIXME / open question : what about "permanently" mark yunohost
+            # as "hold" to avoid accidental deletion of it...
+            # (so, only unhold it during the upgrade)
+
+        if not failure:
+
+            logger.info(m18n.n('done'))
+            operation_logger.success()
+
 
     if not ignore_apps:
         try:
@@ -634,6 +701,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
         logger.success(m18n.n('system_upgraded'))
 
     # Return API logs if it is an API call
+    is_api = True if msettings.get('interface') == 'api' else False
     if is_api:
         return {"log": service_log('yunohost-api', number="100").values()[0]}
 
