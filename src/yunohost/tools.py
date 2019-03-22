@@ -665,15 +665,17 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
 
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
             wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
+            mark_success = "(echo 'success: true' | tee -a {})".format(operation_logger.md_path)
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
             # TODO : i18n
             upgrade_completed = "YunoHost package upgrade completed ! Press [enter] to get the command line back"
-            command = "({} && {} && {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
-                                                             command,
-                                                             update_log_metadata,
-                                                             upgrade_completed)
+            command = "({} && {} && {}; {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
+                                                                 command,
+                                                                 mark_success,
+                                                                 update_log_metadata,
+                                                                 upgrade_completed)
 
             logger.debug("Running command :\n{}".format(command))
             os.system(command)
@@ -685,7 +687,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
             # as "hold" to avoid accidental deletion of it...
             # (so, only unhold it during the upgrade)
 
-        if not failure:
+        elif not failure:
 
             logger.info(m18n.n('done'))
             operation_logger.success()
