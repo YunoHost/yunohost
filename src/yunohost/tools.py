@@ -495,28 +495,7 @@ def tools_update(ignore_apps=False, ignore_packages=False):
 
             raise YunohostError('update_cache_failed')
 
-        # List upgradable packages
-        # LC_ALL=C is here to make sure the results are in english
-        upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
-
-        # Dirty parsing of the output
-        upgradable_raw = [l.strip() for l in upgradable_raw.split("\n") if l.strip()]
-        for line in upgradable_raw:
-            # Remove stupid warning and verbose messages >.>
-            if "apt does not have a stable CLI interface" in line or "Listing..." in line:
-                continue
-            # line should look like :
-            # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
-            line = line.split()
-            if len(line) != 6:
-                logger.warning("Failed to parse this line : %s" % ' '.join(line))
-                continue
-            packages.append({
-                "name": line[0].split("/")[0],
-                "new_version": line[1],
-                "current_version": line[5].strip("]"),
-            })
-
+        packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n('done'))
 
     # "apps" will list upgradable packages
@@ -543,6 +522,33 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         logger.info(m18n.n('packages_no_upgrade'))
 
     return {'packages': packages, 'apps': apps}
+
+
+# TODO : move this to utils/packages.py ?
+def _list_upgradable_apt_packages():
+
+    # List upgradable packages
+    # LC_ALL=C is here to make sure the results are in english
+    upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
+
+    # Dirty parsing of the output
+    upgradable_raw = [l.strip() for l in upgradable_raw.split("\n") if l.strip()]
+    for line in upgradable_raw:
+        # Remove stupid warning and verbose messages >.>
+        if "apt does not have a stable CLI interface" in line or "Listing..." in line:
+            continue
+        # line should look like :
+        # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
+        line = line.split()
+        if len(line) != 6:
+            logger.warning("Failed to parse this line : %s" % ' '.join(line))
+            continue
+
+        yield {
+            "name": line[0].split("/")[0],
+            "new_version": line[1],
+            "current_version": line[5].strip("]"),
+        }
 
 
 @is_unit_operation()
