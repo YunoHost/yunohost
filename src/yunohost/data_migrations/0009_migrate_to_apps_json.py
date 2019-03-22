@@ -1,14 +1,24 @@
+import os
+
 from moulinette.utils.log import getActionLogger
-from yunohost.app import app_fetchlist, app_removelist, _read_appslist_list
+from yunohost.app import app_fetchlist, app_removelist, _read_appslist_list, APPSLISTS_JSON
 from yunohost.tools import Migration
 
 logger = getActionLogger('yunohost.migration')
+
+BASE_CONF_PATH = '/home/yunohost.conf'
+BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
+APPSLISTS_BACKUP = os.path.join(BACKUP_CONF_DIR, "appslist_before_migration_0009.json")
+
 
 class MyMigration(Migration):
 
     "Migrate from official.json to apps.json"
 
     def migrate(self):
+
+        # Backup current app list json
+        os.system("cp %s %s") % (APPSLISTS_JSON, APPSLISTS_BACKUP)
 
         # Remove all the deprecated lists
         lists_to_remove = [
@@ -28,9 +38,5 @@ class MyMigration(Migration):
 
     def backward(self):
 
-        # Remove apps.json list
-        app_removelist(name="yunohost")
-
-        # Replace by official.json list
-        app_fetchlist(name="yunohost",
-            url="https://app.yunohost.org/official.json")
+        if os.path.exists(APPSLISTS_BACKUP):
+            os.system("cp %s %s") % (APPSLISTS_BACKUP, APPSLISTS_JSON)
