@@ -109,8 +109,8 @@ def settings_set(key, value):
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
             raise YunohostError('global_settings_bad_choice_for_enum', setting=key,
-                                received_type=type(value).__name__,
-                                expected_type=", ".join(settings[key]["choices"]))
+                                choice=value,
+                                available_choices=", ".join(settings[key]["choices"]))
     else:
         raise YunohostError('global_settings_unknown_type', setting=key,
                             unknown_type=key_type)
