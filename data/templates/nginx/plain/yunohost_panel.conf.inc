@@ -4,5 +4,5 @@ sub_filter_once on;
 # Apply to other mime types than text/html
 sub_filter_types application/xhtml+xml;
 # Prevent YunoHost panel files from being blocked by specific app rules
-location ~ (ynh_portal.js|ynh_overlay.css) {
+location ~ (ynh_portal.js|ynh_overlay.css|userinfo.json) {
 }
