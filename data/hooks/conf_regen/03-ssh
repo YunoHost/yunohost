@@ -24,7 +24,7 @@ do_pre_regen() {
     fi
 
     # Support different strategy for security configurations
-    export compatibility="$(yunohost settings get 'service.ssh.compatibility')"
+    export compatibility="$(yunohost settings get 'security.ssh.compatibility')"
 
     export ssh_keys
     export ipv6_enabled
