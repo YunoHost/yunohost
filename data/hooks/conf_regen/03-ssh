@@ -24,8 +24,8 @@ do_pre_regen() {
     fi
 
     # Support different strategy for security configurations
-    if [[ -n "$(yunohost settings get 'service.ssh.ciphers.compatibility')" ]]; then
-        ssh_ciphers_compatibility="$(yunohost settings get 'service.ssh.ciphers.compatibility')"
+    if [[ -n "$(yunohost settings get 'service.ssh.compatibility')" ]]; then
+        ssh_ciphers_compatibility="$(yunohost settings get 'service.ssh.compatibility')"
     fi
 
     export ssh_keys

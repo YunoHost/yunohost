@@ -40,9 +40,9 @@ DEFAULTS = OrderedDict([
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
-    ("service.ssh.ciphers.compatibility", {"type": "enum", "default": "modern",
+    ("security.ssh.compatibility", {"type": "enum", "default": "modern",
         "choices": ["intermediate", "modern"]}),
-    ("security.ciphers.compatibility", {"type": "enum", "default": "intermediate",
+    ("security.nginx.compatibility", {"type": "enum", "default": "intermediate",
         "choices": ["intermediate", "modern"]}),
 ])
 
@@ -283,12 +283,12 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
-@post_change_hook("security.ciphers.compatibility")
+@post_change_hook("security.nginx.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['nginx'])
 
-@post_change_hook("service.ssh.ciphers.compatibility")
+@post_change_hook("security.ssh.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['ssh'])
