@@ -37,11 +37,7 @@ do_pre_regen() {
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
   # Support different strategy for security configurations
-  if [[ -n "$(yunohost settings get 'security.nginx.compatibility')" ]]; then
-      security_ciphers_compatibility="$(yunohost settings get 'security.nginx.compatibility')"
-  fi
-
-  export security_ciphers_compatibility
+  export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
 
   # add domain conf files
   for domain in $domain_list; do

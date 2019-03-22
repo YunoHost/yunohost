@@ -15,7 +15,7 @@ HostKey {{ key }}{% endfor %}
 # https://infosec.mozilla.org/guidelines/openssh
 # ##############################################
 
-{% if ssh_ciphers_compatibility == "intermediate" %}
+{% if compatibility == "intermediate" %}
   KexAlgorithms diffie-hellman-group-exchange-sha256
   Ciphers aes256-ctr,aes192-ctr,aes128-ctr
   MACs hmac-sha2-512,hmac-sha2-256
