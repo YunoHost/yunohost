@@ -18,7 +18,7 @@ class MyMigration(Migration):
     def migrate(self):
 
         # Backup current app list json
-        os.system("cp %s %s") % (APPSLISTS_JSON, APPSLISTS_BACKUP)
+        os.system("cp %s %s" % (APPSLISTS_JSON, APPSLISTS_BACKUP))
 
         # Remove all the deprecated lists
         lists_to_remove = [
@@ -39,4 +39,4 @@ class MyMigration(Migration):
     def backward(self):
 
         if os.path.exists(APPSLISTS_BACKUP):
-            os.system("cp %s %s") % (APPSLISTS_BACKUP, APPSLISTS_JSON)
+            os.system("cp %s %s" % (APPSLISTS_BACKUP, APPSLISTS_JSON))
