@@ -660,18 +660,20 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
             # likely to kill/restart the api which is in turn likely to kill this
             # command before it ends...)
             #
-
-            logfile = "/var/log/yunohost/special_upgrade_%s.log" % datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            logfile = operation_logger.log_path
             command = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
 
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
             wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
+            update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
+            update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
             # TODO : i18n
             upgrade_completed = "YunoHost package upgrade completed ! Press [enter] to get the command line back"
-            command = "({} && {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
-                                                       command,
-                                                       upgrade_completed)
+            command = "({} && {} && {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
+                                                             command,
+                                                             update_log_metadata,
+                                                             upgrade_completed)
 
             logger.debug("Running command :\n{}".format(command))
             os.system(command)
