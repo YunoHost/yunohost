@@ -97,7 +97,7 @@ def app_fetchlist(url=None, name=None):
         name -- Name of the list
         url -- URL of remote JSON list
     """
-    if not url.endswith(".json"):
+    if url and not url.endswith(".json"):
         raise YunohostError("This is not a valid application list url. It should end with .json.")
 
     # If needed, create folder where actual appslists are stored
@@ -523,7 +523,7 @@ def app_change_url(operation_logger, auth, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
     if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'),
-                 args=args_list, env=env_dict) != 0:
+                 args=args_list, env=env_dict)[0] != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
         operation_logger.error(msg)
@@ -583,28 +583,28 @@ def app_upgrade(auth, app=[], url=None, file=None):
     not_upgraded_apps = []
 
     apps = app
-    user_specified_list = True
     # If no app is specified, upgrade all apps
     if not apps:
+        # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
         if not url and not file:
             apps = [app["id"] for app in app_list(installed=True)["apps"]]
-            user_specified_list = False
     elif not isinstance(app, list):
         apps = [app]
 
     # Remove possible duplicates
-    apps = [app for i,app in enumerate(apps) if apps not in L[:i]]
+    apps = [app for i,app in enumerate(apps) if apps not in apps[:i]]
+
+    # Abort if any of those app is in fact not installed..
+    for app in [app for app in apps if not _is_installed(app)]:
+        raise YunohostError('app_not_installed', app=app)
 
     if len(apps) == 0:
         raise YunohostError('app_no_upgrade')
     if len(apps) > 1:
-        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(app)))
+        logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
     for app_instance_name in apps:
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
-        installed = _is_installed(app_instance_name)
-        if not installed:
-            raise YunohostError('app_not_installed', app=app_instance_name)
 
         app_dict = app_info(app_instance_name, raw=True)
 
@@ -618,8 +618,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         elif app_dict["upgradable"] == "yes":
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
-            if user_specified_list:
-                logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
+            logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
             continue
 
         # Check requirements
@@ -655,7 +654,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
-                     args=args_list, env=env_dict) != 0:
+                     args=args_list, env=env_dict)[0] != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
             not_upgraded_apps.append(app_instance_name)
             logger.error(msg)
@@ -848,7 +847,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
             args=args_list, env=env_dict
-        )
+        )[0]
     except (KeyboardInterrupt, EOFError):
         install_retcode = -1
     except Exception:
@@ -873,7 +872,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
-                )
+                )[0]
                 if remove_retcode != 0:
                     msg = m18n.n('app_not_properly_removed',
                                  app=app_instance_name)
@@ -964,7 +963,7 @@ def app_remove(operation_logger, auth, app):
     operation_logger.flush()
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
-                 env=env_dict) == 0:
+                 env=env_dict)[0] == 0:
         logger.success(m18n.n('app_removed', app=app))
 
         hook_callback('post_app_remove', args=args_list, env=env_dict)
@@ -1563,7 +1562,7 @@ def app_action_run(app, action, args=None):
         env=env_dict,
         chdir=cwd,
         user=action_declaration.get("user", "root"),
-    )
+    )[0]
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
         raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), raw_msg=True)
@@ -2203,6 +2202,11 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
         if arg_type == 'boolean':
             arg_default = 1 if arg_default else 0
 
+        # do not print for webadmin
+        if arg_type == 'display_text' and msettings.get('interface') != 'api':
+            print(arg["text"])
+            continue
+
         # Attempt to retrieve argument value
         if arg_name in args:
             arg_value = args[arg_name]
@@ -2288,6 +2292,9 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
                 else:
                     raise YunohostError('app_argument_choice_invalid', name=arg_name, choices='yes, no, y, n, 1, 0')
         elif arg_type == 'password':
+            forbidden_chars = "{}"
+            if any(char in arg_value for char in forbidden_chars):
+                raise YunohostError('pattern_password_app', forbidden_chars=forbidden_chars)
             from yunohost.utils.password import assert_password_is_strong_enough
             assert_password_is_strong_enough('user', arg_value)
         args_dict[arg_name] = arg_value
