@@ -437,6 +437,15 @@ def _build_dns_conf(domain, ttl=3600):
 
         records[hook_name] = []
         for record_list in custom_records:
+            # Check that record_list is indeed a list of dict
+            # with the required keys
+            if not isinstance(record_list, list) \
+               or any(not isinstance(record, dict) for record in record_list) \
+               or any(key not in record for record in record_list for key in ["name", "ttl", "type", "value"]):
+                # Display an error, mainly for app packagers trying to implement a hook
+                logger.warning("Ignored custom record from hook '%s' because the data is not a *list* of dict with keys name, ttl, type and value. Raw data : %s" % (hook_name, record_list))
+                continue
+
             records[hook_name].extend(record_list)
 
     return records
