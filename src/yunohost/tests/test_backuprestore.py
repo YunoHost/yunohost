@@ -10,7 +10,7 @@ from moulinette import m18n
 from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
-from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
+from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete, _recursive_umount
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 
@@ -42,7 +42,7 @@ def setup_function(function):
 
     assert len(backup_list()["archives"]) == 0
 
-    markers = function.__dict__.keys()
+    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
 
     if "with_wordpress_archive_from_2p4" in markers:
         add_archive_wordpress_from_2p4()
@@ -82,7 +82,7 @@ def teardown_function(function):
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
-    markers = function.__dict__.keys()
+    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
 
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
@@ -171,7 +171,7 @@ def install_app(app, path, additionnal_args=""):
 
     app_install(auth, "./tests/apps/%s" % app,
                 args="domain=%s&path=%s%s" % (maindomain, path,
-                                              additionnal_args))
+                                              additionnal_args), force=True)
 
 
 def add_archive_wordpress_from_2p4():
@@ -571,7 +571,7 @@ def test_backup_binds_are_readonly(monkeypatch):
 
         assert "Read-only file system" in output
 
-        if self._recursive_umount(self.work_dir) > 0:
+        if not _recursive_umount(self.work_dir):
             raise Exception("Backup cleaning failed !")
 
         self.clean()

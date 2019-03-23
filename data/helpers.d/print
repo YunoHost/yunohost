@@ -1,15 +1,36 @@
+#!/bin/bash
+
 # Print a message to stderr and exit
-# usage: ynh_die MSG [RETCODE]
+# usage: ynh_die --message=MSG [--ret_code=RETCODE]
+#
+# Requires YunoHost version 2.4.0 or higher.
 ynh_die() {
-  echo "$1" 1>&2
-  exit "${2:-1}"
+  # Declare an array to define the options of this helper.
+  local legacy_args=mc
+  declare -Ar args_array=( [m]=message= [c]=ret_code= )
+  local message
+  local ret_code
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  echo "$message" 1>&2
+  exit "${ret_code:-1}"
 }
 
 # Display a message in the 'INFO' logging category
 #
-# usage: ynh_print_info "Some message"
+# usage: ynh_print_info --message="Some message"
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_info() {
-    echo "$1" >> "$YNH_STDINFO"
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
+    declare -Ar args_array=( [m]=message= )
+    local message
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    echo "$message" >> "$YNH_STDINFO"
 }
 
 # Ignore the yunohost-cli log to prevent errors with conditional commands
@@ -20,6 +41,8 @@ ynh_print_info() {
 #
 # Simply duplicate the log, execute the yunohost command and replace the log without the result of this command
 # It's a very badly hack...
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_no_log() {
   local ynh_cli_log=/var/log/yunohost/yunohost-cli.log
   sudo cp -a ${ynh_cli_log} ${ynh_cli_log}-move
@@ -33,24 +56,43 @@ ynh_no_log() {
 #
 # [internal]
 #
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_log () {
   echo -e "${1}"
 }
 
 # Print a warning on stderr
 #
-# usage: ynh_print_warn "Text to print"
-# | arg: text - The text to print
+# usage: ynh_print_warn --message="Text to print"
+# | arg: -m, --message - The text to print
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_warn () {
-  ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${1}" >&2
+  # Declare an array to define the options of this helper.
+  local legacy_args=m
+  declare -Ar args_array=( [m]=message= )
+  local message
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${message}" >&2
 }
 
 # Print an error on stderr
 #
-# usage: ynh_print_err "Text to print"
-# | arg: text - The text to print
+# usage: ynh_print_err --message="Text to print"
+# | arg: -m, --message - The text to print
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_err () {
-  ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${1}" >&2
+  # Declare an array to define the options of this helper.
+  local legacy_args=m
+  declare -Ar args_array=( [m]=message= )
+  local message
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${message}" >&2
 }
 
 # Execute a command and print the result as an error
@@ -58,8 +100,11 @@ ynh_print_err () {
 # usage: ynh_exec_err command to execute
 # usage: ynh_exec_err "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_err () {
 	ynh_print_err "$(eval $@)"
 }
@@ -69,8 +114,11 @@ ynh_exec_err () {
 # usage: ynh_exec_warn command to execute
 # usage: ynh_exec_warn "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn () {
 	ynh_print_warn "$(eval $@)"
 }
@@ -80,8 +128,11 @@ ynh_exec_warn () {
 # usage: ynh_exec_warn_less command to execute
 # usage: ynh_exec_warn_less "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn_less () {
 	eval $@ 2>&1
 }
@@ -91,8 +142,11 @@ ynh_exec_warn_less () {
 # usage: ynh_exec_quiet command to execute
 # usage: ynh_exec_quiet "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_quiet () {
 	eval $@ > /dev/null
 }
@@ -102,8 +156,11 @@ ynh_exec_quiet () {
 # usage: ynh_exec_fully_quiet command to execute
 # usage: ynh_exec_fully_quiet "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_fully_quiet () {
 	eval $@ > /dev/null 2>&1
 }
@@ -112,6 +169,8 @@ ynh_exec_fully_quiet () {
 #
 # usage: ynh_print_OFF
 # WARNING: You should be careful with this helper, and never forget to use ynh_print_ON as soon as possible to restore the logging.
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_OFF () {
 	set +x
 }
@@ -119,8 +178,90 @@ ynh_print_OFF () {
 # Restore the logging after ynh_print_OFF
 #
 # usage: ynh_print_ON
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_ON () {
 	set -x
 	# Print an echo only for the log, to be able to know that ynh_print_ON has been called.
 	echo ynh_print_ON > /dev/null
+}
+
+# Print a message as INFO and show progression during an app script
+#
+# usage: ynh_script_progression --message=message [--weight=weight] [--time]
+# | arg: -m, --message= - The text to print
+# | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
+# | arg: -t, --time=    - Print the execution time since the last call to this helper. Especially usefull to define weights.
+# | arg: -l, --last=    - Use for the last call of the helper, to fill te progression bar.
+#
+# Requires YunoHost version 3.?.? or higher.
+increment_progression=0
+previous_weight=0
+# Define base_time when the file is sourced
+base_time=$(date +%s)
+ynh_script_progression () {
+	# Declare an array to define the options of this helper.
+	declare -Ar args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
+	local message
+	local weight
+	local time
+	local last
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	weight=${weight:-1}
+	time=${time:-0}
+	last=${last:-0}
+
+	# Get execution time since the last $base_time
+	local exec_time=$(( $(date +%s) - $base_time ))
+	base_time=$(date +%s)
+
+	# Get the number of occurrences of 'ynh_script_progression' in the script. Except those are commented.
+	local helper_calls="$(grep --count "^[^#]*ynh_script_progression" $0)"
+	# Get the number of call with a weight value
+	local weight_calls=$(grep --perl-regexp --count "^[^#]*ynh_script_progression.*(--weight|-w )" $0)
+
+	# Get the weight of each occurrences of 'ynh_script_progression' in the script using --weight
+	local weight_valuesA="$(grep --perl-regexp "^[^#]*ynh_script_progression.*--weight" $0 | sed 's/.*--weight[= ]\([[:digit:]].*\)/\1/g')"
+	# Get the weight of each occurrences of 'ynh_script_progression' in the script using -w
+	local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]].*\)/\1/g')"
+	# Each value will be on a different line.
+	# Remove each 'end of line' and replace it by a '+' to sum the values.
+	local weight_values=$(( $(echo "$weight_valuesA" | tr '\n' '+') + $(echo "$weight_valuesB" | tr '\n' '+') 0 ))
+
+	# max_progression is a total number of calls to this helper.
+	#    Less the number of calls with a weight value.
+	#    Plus the total of weight values
+	local max_progression=$(( $helper_calls - $weight_calls + $weight_values ))
+
+	# Increment each execution of ynh_script_progression in this script by the weight of the previous call.
+	increment_progression=$(( $increment_progression + $previous_weight ))
+	# Store the weight of the current call in $previous_weight for next call
+	previous_weight=$weight
+
+	# Set the scale of the progression bar
+	local scale=20
+	# progress_string(1,2) should have the size of the scale.
+	local progress_string1="####################"
+	local progress_string0="...................."
+
+	# Reduce $increment_progression to the size of the scale
+	if [ $last -eq 0 ]
+	then
+		local effective_progression=$(( $increment_progression * $scale / $max_progression ))
+	# If last is specified, fill immediately the progression_bar
+	else
+		local effective_progression=$scale
+	fi
+
+	# Build $progression_bar from progress_string(1,2) according to $effective_progression
+	local progression_bar="${progress_string1:0:$effective_progression}${progress_string0:0:$(( $scale - $effective_progression ))}"
+
+	local print_exec_time=""
+	if [ $time -eq 1 ]
+	then
+		print_exec_time=" [$(date +%Hh%Mm,%Ss --date="0 + $exec_time sec")]"
+	fi
+
+	ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
 }

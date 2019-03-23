@@ -1,6 +1,8 @@
 backup_dir="$1/conf/ynh/mysql"
 MYSQL_PKG="mariadb-server-10.1"
 
+. /usr/share/yunohost/helpers
+
 # ensure that mysql is running
 service mysql status >/dev/null 2>&1 \
   || service mysql start
@@ -11,13 +13,11 @@ service mysql status >/dev/null 2>&1 \
 new_pwd=$(sudo cat "${backup_dir}/root_pwd" || sudo cat "${backup_dir}/mysql")
 [ -z "$curr_pwd" ] && curr_pwd="yunohost"
 [ -z "$new_pwd" ] && {
-    . /usr/share/yunohost/helpers.d/string
     new_pwd=$(ynh_string_random 10)
 }
 
 # attempt to change it
 sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
-  . /usr/share/yunohost/helpers.d/package
 
   echo "It seems that you have already configured MySQL." \
     "YunoHost needs to have a root access to MySQL to runs its" \

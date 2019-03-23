@@ -13,14 +13,14 @@ Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 2.7.1), ssowat (>= 2.7.1)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc, python-dbus, python-jinja2
- , glances
+ , glances, apt-transport-https
  , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
  , ca-certificates, netcat-openbsd, iproute
  , mariadb-server, php-mysql | php-mysqlnd
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
  , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
- , dovecot-antispam, fail2ban
+ , dovecot-antispam, fail2ban, iptables
  , nginx-extras (>=1.6.2), php-fpm, php-ldap, php-intl
  , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , metronome

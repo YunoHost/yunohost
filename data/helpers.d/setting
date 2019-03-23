@@ -1,27 +1,93 @@
+#!/bin/bash
+
 # Get an application setting
 #
-# usage: ynh_app_setting_get app key
-# | arg: app - the application id
-# | arg: key - the setting to get
+# usage: ynh_app_setting_get --app=app --key=key
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting to get
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_get() {
-    sudo yunohost app setting "$1" "$2" --output-as plain --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    declare -Ar args_array=( [a]=app= [k]=key= )
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_app_setting "get" "$app" "$key"
 }
 
 # Set an application setting
 #
-# usage: ynh_app_setting_set app key value
-# | arg: app - the application id
-# | arg: key - the setting name to set
-# | arg: value - the setting value to set
+# usage: ynh_app_setting_set --app=app --key=key --value=value
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting name to set
+# | arg: -v, --value - the setting value to set
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_set() {
-    sudo yunohost app setting "$1" "$2" --value="$3" --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=akv
+    declare -Ar args_array=( [a]=app= [k]=key= [v]=value= )
+    local app
+    local key
+    local value
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_app_setting "set" "$app" "$key" "$value"
 }
 
 # Delete an application setting
 #
-# usage: ynh_app_setting_delete app key
-# | arg: app - the application id
-# | arg: key - the setting to delete
+# usage: ynh_app_setting_delete --app=app --key=key
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting to delete
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_delete() {
-    sudo yunohost app setting -d "$1" "$2" --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    declare -Ar args_array=( [a]=app= [k]=key= )
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_app_setting "delete" "$app" "$key"
+}
+
+# Small "hard-coded" interface to avoid calling "yunohost app" directly each
+# time dealing with a setting is needed (which may be so slow on ARM boards)
+#
+# [internal]
+#
+ynh_app_setting()
+{
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python - <<EOF
+import os, yaml
+app, action = os.environ['APP'], os.environ['ACTION'].lower()
+key, value = os.environ['KEY'], os.environ.get('VALUE', None)
+setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
+assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
+with open(setting_file) as f:
+    settings = yaml.load(f)
+if action == "get":
+    if key in settings:
+        print(settings[key])
+else:
+    if action == "delete":
+        if key in settings:
+            del settings[key]
+    elif action == "set":
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.load(value)
+        settings[key] = value
+    else:
+        raise ValueError("action should either be get, set or delete")
+    with open(setting_file, "w") as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
+EOF
 }

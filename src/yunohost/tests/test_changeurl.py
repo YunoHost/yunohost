@@ -28,15 +28,15 @@ def teardown_function(function):
 
 def install_changeurl_app(path):
     app_install(auth, "./tests/apps/change_url_app_ynh",
-                args="domain=%s&path=%s" % (maindomain, path))
+                args="domain=%s&path=%s" % (maindomain, path), force=True)
 
 
 def check_changeurl_app(path):
     appmap = app_map(raw=True)
 
-    assert path + "/" in appmap[maindomain].keys()
+    assert path in appmap[maindomain].keys()
 
-    assert appmap[maindomain][path + "/"]["id"] == "change_url_app"
+    assert appmap[maindomain][path]["id"] == "change_url_app"
 
     r = requests.get("https://127.0.0.1%s/" % path, headers={"domain": maindomain}, verify=False)
     assert r.status_code == 200

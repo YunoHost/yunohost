@@ -1,7 +1,15 @@
 Spectre & Meltdown Checker
 ==========================
 
-A shell script to tell if your system is vulnerable against the 3 "speculative execution" CVEs that were made public early 2018.
+A shell script to tell if your system is vulnerable against the several "speculative execution" CVEs that were made public in 2018.
+- CVE-2017-5753 [bounds check bypass] aka 'Spectre Variant 1'
+- CVE-2017-5715 [branch target injection] aka 'Spectre Variant 2'
+- CVE-2017-5754 [rogue data cache load] aka 'Meltdown' aka 'Variant 3'
+- CVE-2018-3640 [rogue system register read] aka 'Variant 3a'
+- CVE-2018-3639 [speculative store bypass] aka 'Variant 4'
+- CVE-2018-3615 [L1 terminal fault] aka 'Foreshadow (SGX)'
+- CVE-2018-3620 [L1 terminal fault] aka 'Foreshadow-NG (OS)'
+- CVE-2018-3646 [L1 terminal fault] aka 'Foreshadow-NG (VMM)'
 
 Supported operating systems:
 - Linux (all versions, flavors and distros)
@@ -39,6 +47,22 @@ chmod +x spectre-meltdown-checker.sh
 sudo ./spectre-meltdown-checker.sh
 ```
 
+### Run the script in a docker container
+
+#### With docker-compose
+
+```shell
+docker-compose build
+docker-compose run --rm spectre-meltdown-checker
+```
+
+#### Without docker-compose
+
+```shell
+docker build -t spectre-meltdown-checker .
+docker run --rm --privileged -v /boot:/boot:ro -v /dev/cpu:/dev/cpu:ro -v /lib/modules:/lib/modules:ro spectre-meltdown-checker
+```
+
 ## Example of script output
 
 - Intel Haswell CPU running under Ubuntu 16.04 LTS
@@ -74,7 +98,38 @@ sudo ./spectre-meltdown-checker.sh
    - Mitigation: updated kernel (with PTI/KPTI patches), updating the kernel is enough
    - Performance impact of the mitigation: low to medium
 
-## Disclaimer
+**CVE-2018-3640** rogue system register read (Variant 3a)
+
+   - Impact: TBC
+   - Mitigation: microcode update only
+   - Performance impact of the mitigation: negligible
+
+**CVE-2018-3639** speculative store bypass (Variant 4)
+
+   - Impact: software using JIT (no known exploitation against kernel)
+   - Mitigation: microcode update + kernel update making possible for affected software to protect itself
+   - Performance impact of the mitigation: low to medium
+
+**CVE-2018-3615** l1 terminal fault (Foreshadow-NG SGX)
+
+   - Impact: Kernel & all software (any physical memory address in the system)
+   - Mitigation: microcode update
+   - Performance impact of the mitigation: negligible
+
+**CVE-2018-3620** l1 terminal fault (Foreshadow-NG SMM)
+
+   - Impact: Kernel & System management mode
+   - Mitigation: updated kernel (with PTE inversion)
+   - Performance impact of the mitigation: negligible
+   
+**CVE-2018-3646** l1 terminal fault (Foreshadow-NG VMM)
+
+   - Impact: Virtualization software and Virtual Machine Monitors
+   - Mitigation: disable ept (extended page tables), disable hyper-threading (SMT), or
+                 updated kernel (with L1d flush)
+   - Performance impact of the mitigation: low to significant
+
+## Understanding what this script does and doesn't
 
 This tool does its best to determine whether your system is immune (or has proper mitigations in place) for the collectively named "speculative execution" vulnerabilities. It doesn't attempt to run any kind of exploit, and can't guarantee that your system is secure, but rather helps you verifying whether your system has the known correct mitigations in place.
 However, some mitigations could also exist in your kernel that this script doesn't know (yet) how to detect, or it might falsely detect mitigations that in the end don't work as expected (for example, on backported or modified kernels).

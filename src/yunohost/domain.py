@@ -25,7 +25,6 @@
 """
 import os
 import re
-import json
 import yaml
 
 from moulinette import m18n, msettings
@@ -113,19 +112,16 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
+            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
             app_ssowatconf(auth)
 
-    except Exception as e:
-        from sys import exc_info
-        t, v, tb = exc_info()
-
+    except Exception:
         # Force domain removal silently
         try:
             domain_remove(auth, domain, True)
         except:
             pass
-        raise t, v, tb
+        raise
 
     hook_callback('post_domain_add', args=[domain])
 
@@ -238,13 +234,14 @@ def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
 
 
-def _get_conflicting_apps(auth, domain, path):
+def _get_conflicting_apps(auth, domain, path, ignore_app=None):
     """
     Return a list of all conflicting apps with a domain/path (it can be empty)
 
     Keyword argument:
         domain -- The domain for the web path (e.g. your.domain.tld)
         path -- The path to check (e.g. /coffee)
+        ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
     """
 
     domain, path = _normalize_domain_path(domain, path)
@@ -265,6 +262,8 @@ def _get_conflicting_apps(auth, domain, path):
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
+            if a["id"] == ignore_app:
+                continue
             if path == p:
                 conflicts.append((p, a["id"], a["label"]))
             # We also don't want conflicts with other apps starting with
@@ -310,7 +309,7 @@ def _normalize_domain_path(domain, path):
         domain = domain[len("http://"):]
 
     # Remove trailing slashes
-    domain = domain.rstrip("/")
+    domain = domain.rstrip("/").lower()
     path = "/" + path.strip("/")
 
     return domain, path

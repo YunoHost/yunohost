@@ -1,3 +1,166 @@
+yunohost (3.5.0.2) testing; urgency=low
+
+  - [fix] Make sure that `ynh_system_user_delete` also deletes the group (#680)
+  - [enh] `ynh_systemd_action` : reload-or-restart instead of just reload (#681)
+
+  Last minute fixes by Maniack ;)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 14 Mar 2019 03:45:00  +0000
+
+yunohost (3.5.0.1) testing; urgency=low
+
+  - [fix] #675 introduced a bug in nginx conf ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 13 Mar 2019 19:23:00  +0000
+
+yunohost (3.5.0) testing; urgency=low
+
+  Core
+  ----
+
+  - [fix] Disable gzip entirely to avoid BREACH attacks (#675)
+  - [fix] Backup tests were broken (#673)
+  - [fix] Backup fails because output directory not empty (#672)
+  - [fix] Reject app password if they contains { or } (#671)
+  - [enh] Allow `display_text` 'fake' argument in manifest.json (#669)
+  - [fix] Optimize dyndns requests (#662)
+  - [enh] Don't add Strict-Transport-Security header in nginx conf if using a selfsigned cert (#661)
+  - [enh] Add apt-transport-https to dependencies (#658)
+  - [enh] Cache results from meltdown vulnerability checker (#656)
+  - [enh] Ensure the tar file is closed during the backup (#655)
+  - [enh] Be able to define hook to trigger when changing a setting (#654)
+  - [enh] Assert dpkg is not broken before app install (#652)
+  - [fix] Loading only one helper file leads to errors because missing getopts (#651)
+  - [enh] Improve / add some messages to improve UX (#650)
+  - [enh] Reload fail2ban instead of restart (#649)
+  - [enh] Add IPv6 resolvers from diyisp.org to resolv.dnsmasq.conf (#639)
+  - [fix] Remove old SMTP port (465) from fail2ban jail.conf (#637)
+  - [enh] Improve protection against indexation from the robots. (#622)
+  - [enh] Allow hooks to return data (#526)
+  - [fix] Do not make version number available from web API to unauthenticated users (#291)
+  - [i18n] Improve Russian and Chinese (Mandarin) translations
+
+  App helpers
+  -----------
+
+  - [enh] Optimize app setting helpers (#663, #676)
+  - [enh] Handle `ynh_install_nodejs` for arm64 / aarch64 (#660)
+  - [enh] Update postgresql helpers (#657)
+  - [enh] Print diff of files when backup by `ynh_backup_if_checksum_is_different` (#648)
+  - [enh] Add app debugger helper (#647)
+  - [fix] Escape double quote before eval in getopts (#646)
+  - [fix] `ynh_local_curl` not using the right url in some cases (#644)
+  - [fix] Get rid of annoying 'unable to initialize frontend' messages (#643)
+  - [enh] Check if dpkg is not broken when calling `ynh_wait_dpkg_free` (#638)
+  - [enh] Warn the packager that `ynh_secure_remove` should be used with only one arg… (#635, #642)
+  - [enh] Add `ynh_script_progression` helper (#634)
+  - [enh] Add `ynh_systemd_action` helper (#633)
+  - [enh] Allow to dig deeper into an archive with `ynh_setup_source` (#630)
+  - [enh] Use getops (#561)
+  - [enh] Add `ynh_check_app_version_changed` helper (#521)
+  - [enh] Add fail2ban helpers (#364)
+
+  Contributors: Alexandre Aubin, Jimmy Monin, Josué Tille, Kayou, Laurent Peuch, Lukas Fülling, Maniack Crudelis, Taekiro, frju365, ljf, opi, yalh76, Алексей
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 13 Mar 2019 16:10:00  +0000
+
+yunohost (3.4.2.4) stable; urgency=low
+
+  - [fix] Meltdown vulnerability checker something outputing trash instead of pure json
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Feb 2019 19:11:38  +0000
+
+yunohost (3.4.2.3) stable; urgency=low
+
+  - [fix] Admin password appearing in logs after logging in on webadmin
+  - [fix] Update friendly DNS resolver list
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Feb 2019 03:20:10 +0000
+
+yunohost (3.4.2.2) stable; urgency=low
+
+  - Silly bug in migraton 8 :|
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 21:17:00 +0000
+
+yunohost (3.4.2.1) stable; urgency=low
+
+  Small issues
+  - Fix parsing of the Meltdown vulnerability checker (ignore stderr :/)
+  - Mail autoconfig was broken, follow-up of #564
+  - Handle the fact that the archive folder might not exist, in migration 0008
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 30 Jan 2019 16:37:00 +0000
+
+yunohost (3.4.2) stable; urgency=low
+
+  - [fix] Do not log stretch migration in /tmp/ (#632)
+  - [fix] Some issues with ynh_handle_getopts_args (#628)
+  - [fix] Revert some stuff about separates php-ini file (c.f. #548) (#627)
+  - [fix] App conflicted with itself during change_url (#626)
+  - [fix] Improve `ynh_package_install_from_equivs` debuggability (#625)
+  - [enh] Add systemd log handling (#624)
+  - [enh] Update spectre meltdown checker (#620)
+  - [fix] Propagate HTTP2, more_set_headers and ecdh_curve changes to webadmin (#618)
+  - [enh] Control the login shell when creating users in ynh_system_user_create (#455, #629)
+  - [fix] Postgresql-9.4 was being detected as installed whereas it was in fact not (969577b)
+  - [fix] Restoring system failed because of temporary dumb password being refused (51712f9)
+
+ Thanks to all contributors (Aleks, frju365, JimboJoe, kay0u, Maniack, opi) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Jan 2019 16:42:00 +0000
+
+yunohost (3.4.1) testing; urgency=low
+
+  * [fix] `_run_service_command` not properly returning False if command fails (#616)
+  * [enh] Change git clone for gitlab working with branch (#615)
+  * [fix] Set owner of archives folder to 'admin' (#613)
+  * [enh] Add reload and restart actions to 'yunohost service' (#611)
+  * [fix] propagate --no-checks cert-install option to renew crontab (#610)
+  * [fix] Several issues with bootprompt (#609)
+  * [fix] Fix the way change_url updates the domain/path (#608)
+  * [fix] Repair tests (#607)
+  * [fix] Explicit dependance to iptables (1667ba1)
+  * [i18n] Tiny typographic changes (#612)
+  * [i18n] Improve translations for Hungarian, Esperanto, German
+  * Misc minor fixes and improvements.
+
+ Thanks to all contributors (Aleks, Bram, J. Meggyeshazi, Jibec, Josué, M. Martin, P. Bourré, anubis) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 22:16:00 +0000
+
+yunohost (3.4.0) testing; urgency=low
+
+  * Misc fixes (#601, #600, #593)
+  * [fix] DEBUG-level messages not appearing in actions performed via the API (#603)
+  * [enh] Also remove /var/mail/<username> directory on user delete (with --purge option) (#602)
+  * [enh] Ask confirmation before installing low-quality, experimental or third party apps (#598)
+  * [fix] Repair tests (#595)
+  * [enh] Clean + harden sshd config using Mozilla recommendation (#590
+  * [fix] Add libpam-ldapd as dependency to be able to login through SSH with LDAP? (#587)
+  * [enh] Add post_cert_update hook each time certificate is updated (#586)
+  * [enh] Enable HTTP2 (#580)
+  * [enh] Update ECDH curves recommended by Mozilla, now that we are on stretch (#579)
+  * [enh] Allow to not fail on backup and restore for non-mandatory files (#576)
+  * [enh] Simplify error management (#574)
+  * [enh] Use more_set_headers in nginx config + fixes for path traversal issues (#564)
+  * [enh] Display human readable date and clarify timezone handling (#552)
+  * [fix] Do not use separate ini file for php pools anymore (#548)
+  * [enh] Improve UPnP support (#542)
+  * [fix] Standardize sshd configuration (#518)
+  * [fix] DKIM keys for new domains werent generated (0445aed)
+  * [i18n] Improve translations for Arabic, Italian and Spanish
+
+ Thanks to all contributors (Aleks, A. Pierré, ButterflyOfFire, Bram, irina11y, Josué, Maniack Crudelis, Sylkevicious, T. Hill, chateau, frju365, gdayon, liberodark, ljf, nqb, wilPoly) ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Dec 2018 22:13:00 +0000
+
+yunohost (3.3.4) stable; urgency=low
+
+  * [fix] Use --force-confold and noninteractive debian frontend during core upgrade (#614)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 17 Jan 2019 02:00:00 +0000
+
 yunohost (3.3.3) stable; urgency=low
 
   * [fix] ynh_wait_dpkg_free displaying a warning despite everything being okay (#593)
