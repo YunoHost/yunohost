@@ -408,21 +408,38 @@ def _build_dns_conf(domain, ttl=3600):
     ]
 
     # Official record
-    res = {
+    records = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
         "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
 
-    # Custom record
-    hookres = hook_callback('custom_dns_rules', args=[domain])
-    for n, val in hookres.items() :
-        res[n] = []
-        for v in [v['stdreturn'] for p, v in val.items() if v and v['stdreturn']]:
-            res[n].extend(v)
+    # Custom records
+    hook_results = hook_callback('custom_dns_rules', args=[domain])
+    for hook_name, results in hook_results.items():
+        #
+        # There can be multiple results per hook name, so results look like
+        # {'/some/path/to/hook1':
+        #       { 'state': 'succeed',
+        #         'stdreturn': [{'type': 'SRV',
+        #                        'name': 'stuff.foo.bar.',
+        #                        'value': 'yoloswag',
+        #                        'ttl': 3600}]
+        #       },
+        #  '/some/path/to/hook2':
+        #       { ... },
+        #  [...]
+        #
+        # Loop over the sub-results
+        custom_records = [v['stdreturn'] for v in results.values()
+                          if v and v['stdreturn']]
 
-    return res
+        records[hook_name] = []
+        for record_list in custom_records:
+            records[hook_name].extend(record_list)
+
+    return records
 
 
 def _get_DKIM(domain):
