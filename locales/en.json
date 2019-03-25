@@ -4,6 +4,7 @@
     "admin_password": "Administration password",
     "admin_password_change_failed": "Unable to change password",
     "admin_password_changed": "The administration password has been changed",
+    "admin_password_too_long": "Please choose a password shorter than 127 characters",
     "app_already_installed": "{app:s} is already installed",
     "app_already_installed_cant_change_url": "This app is already installed. The url cannot be changed just by this function. Look into `app changeurl` if it's available.",
     "app_already_up_to_date": "{app:s} is already up to date",

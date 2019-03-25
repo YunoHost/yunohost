@@ -132,6 +132,11 @@ def tools_adminpw(auth, new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
+    # UNIX seems to not like password longer than 127 chars ...
+    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
+    if len(new_password) >= 127:
+        raise YunohostError('admin_password_too_long')
+
     new_hash = _hash_user_password(new_password)
 
     try:
