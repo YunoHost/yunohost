@@ -7,6 +7,7 @@ from collections import OrderedDict
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from yunohost.service import service_regen_conf
 
 logger = getActionLogger('yunohost.settings')
 
@@ -39,6 +40,10 @@ DEFAULTS = OrderedDict([
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
+    ("security.ssh.compatibility", {"type": "enum", "default": "modern",
+        "choices": ["intermediate", "modern"]}),
+    ("security.nginx.compatibility", {"type": "enum", "default": "intermediate",
+        "choices": ["intermediate", "modern"]}),
 ])
 
 
@@ -278,10 +283,12 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
+@post_change_hook("security.nginx.compatibility")
+def reconfigure_nginx(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf(names=['nginx'])
 
-#@post_change_hook("example.int")
-#def myfunc(setting_name, old_value, new_value):
-#    print("In hook")
-#    print(setting_name)
-#    print(old_value)
-#    print(new_value)
+@post_change_hook("security.ssh.compatibility")
+def reconfigure_ssh(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf(names=['ssh'])
