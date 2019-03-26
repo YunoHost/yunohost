@@ -480,12 +480,21 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         command = "LC_ALL=C apt update"
         # TODO : add @is_unit_operation to tools_update so that the
         # debug output can be fetched when there's an issue...
+
+        # Filter boring message about "apt not having a stable CLI interface"
+        # Also keep track of wether or not we encountered a warning...
+        warnings = []
+        def is_legit_warning(m):
+            legit_warning = m.rstrip() and "apt does not have a stable CLI interface" not in m.rstrip()
+            if legit_warning:
+                warnings.append(m)
+            return legit_warning
+
         callbacks = (
             # stdout goes to debug
             lambda l: logger.debug(l.rstrip()),
-            # stderr goes to warning
-            # FIXME : filter the damn "CLI interface not stable" from apt >.>
-            lambda l: logger.warning(l.rstrip()),
+            # stderr goes to warning except for the boring apt messages
+            lambda l: logger.warning(l.rstrip()) if is_legit_warning(l) else logger.debug(l.rstrip())
         )
 
         logger.info(m18n.n('updating_apt_cache'))
@@ -499,6 +508,8 @@ def tools_update(ignore_apps=False, ignore_packages=False):
             # and append it to the error message to improve debugging
 
             raise YunohostError('update_cache_failed')
+        elif warnings:
+            logger.error(m18n.n('update_cache_warning'))
 
         packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n('done'))

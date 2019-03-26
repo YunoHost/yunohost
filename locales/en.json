@@ -483,6 +483,7 @@
     "unlimit": "No quota",
     "unrestore_app": "App '{app:s}' will not be restored",
     "update_cache_failed": "Unable to update APT cache",
+    "update_cache_warning": "Some errors happened while updating APT cache",
     "updating_apt_cache": "Fetching available upgrades for system packages…",
     "upgrade_complete": "Upgrade complete",
     "upgrading_packages": "Upgrading packages…",
