@@ -1,6 +1,7 @@
 Source: yunohost
 Section: utils
 Priority: extra
+Essential: yes
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
 Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7)
 Standards-Version: 3.9.6
