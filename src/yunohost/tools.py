@@ -30,6 +30,7 @@ import json
 import subprocess
 import pwd
 import socket
+from glob import glob
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
@@ -502,14 +503,9 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         returncode = call_async_output(command, callbacks, shell=True)
 
         if returncode != 0:
-
-            # TODO : here, we should run something like a
-            # `cat /etc/apt/sources.list /etc/apt/sources.list.d/*`
-            # and append it to the error message to improve debugging
-
-            raise YunohostError('update_cache_failed')
+            raise YunohostError('update_apt_cache_failed', sourceslist='\n'.join(_dump_sources_list()))
         elif warnings:
-            logger.error(m18n.n('update_cache_warning'))
+            logger.error(m18n.n('update_apt_cache_warning', sourceslist='\n'.join(_dump_sources_list())))
 
         packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n('done'))
@@ -565,6 +561,17 @@ def _list_upgradable_apt_packages():
             "new_version": line[1],
             "current_version": line[5].strip("]"),
         }
+
+
+def _dump_sources_list():
+
+    filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")
+    for filename in filenames:
+        with open(filename, "r") as f:
+            for line in f.readlines():
+                if line.startswith("#") or not line.strip():
+                    continue
+                yield filename.replace("/etc/apt/", "") + ":" + line.strip()
 
 
 @is_unit_operation()
