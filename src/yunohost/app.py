@@ -2257,13 +2257,17 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
             elif arg_default is not None:
                 arg_value = arg_default
 
-        # Validate argument value
-        if (arg_value is None or arg_value == '') \
-                and not arg.get('optional', False):
-            raise YunohostError('app_argument_required', name=arg_name)
-        elif arg_value is None:
-            args_dict[arg_name] = ''
-            continue
+        # If the value is empty (none or '')
+        # then check if arg is optional or not
+        if arg_value is None or arg_value == '':
+            if arg.get("optional", False):
+                # Argument is optional, keep an empty value
+                # and that's all for this arg !
+                args_dict[arg_name] = ''
+                continue
+            else:
+                # The argument is required !
+                raise YunohostError('app_argument_required', name=arg_name)
 
         # Validate argument choice
         if arg_choices and arg_value not in arg_choices:
