@@ -158,5 +158,15 @@
     "diagnosis_monitor_disk_error": "No es poden monitorar els discs: {error}",
     "diagnosis_monitor_network_error": "No es pot monitorar la xarxa: {error}",
     "diagnosis_monitor_system_error": "No es pot monitorar el sistema: {error}",
-    "diagnosis_no_apps": "No hi ha cap aplicació instal·lada"
+    "diagnosis_no_apps": "No hi ha cap aplicació instal·lada",
+    "admin_password_too_long": "Trieu una contrasenya de menys de 127 caràcters",
+    "dpkg_is_broken": "No es pot fer això en aquest instant perquè dpkg/apt (els gestors de paquets del sistema) sembla estar mal configurat... Podeu intentar solucionar-ho connectant-vos per ssh i executant \"sudo dpkg --configure -a\".",
+    "dnsmasq_isnt_installed": "sembla que dnsmasq no està instal·lat, executeu \"apt-get remove bind9 && apt-get install dnsmasq\"",
+    "domain_cannot_remove_main": "No es pot eliminar el domini principal. S'ha d'establir un nou domini primer",
+    "domain_cert_gen_failed": "No s'ha pogut generar el certificat",
+    "domain_created": "S'ha creat el domini",
+    "domain_creation_failed": "No s'ha pogut crear el domini",
+    "domain_deleted": "S'ha eliminat el domini",
+    "domain_deletion_failed": "No s'ha pogut eliminar el domini",
+    "domain_exists": "El domini ja existeix"
 }
