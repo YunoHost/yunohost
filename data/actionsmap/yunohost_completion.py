@@ -8,10 +8,12 @@ adds `--help` at the end if one presses [tab] again.
 
 author: Christophe Vuillot
 """
+import os
 import yaml
 
-ACTIONSMAP_FILE = 'yunohost.yml'
-BASH_COMPLETION_FILE = '../bash-completion.d/yunohost_completion'
+THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/yunohost.yml'
+BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + '/../bash-completion.d/yunohost_completion'
 
 with open(ACTIONSMAP_FILE, 'r') as stream:
 
