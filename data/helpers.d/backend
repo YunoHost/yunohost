@@ -249,13 +249,23 @@ ynh_remove_nginx_config () {
 
 # Create a dedicated php-fpm config
 #
-# usage: ynh_add_fpm_config
+# usage: ynh_add_fpm_config [--phpversion=7.X]
+# | arg: -v, --phpversion - Version of php to use.
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_add_fpm_config () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=v
+	declare -Ar args_array=( [v]=phpversion= )
+	local phpversion
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
 	# Configure PHP-FPM 7.0 by default
-	local fpm_config_dir="/etc/php/7.0/fpm"
-	local fpm_service="php7.0-fpm"
+	phpversion="${phpversion:-7.0}"
+
+	local fpm_config_dir="/etc/php/$phpversion/fpm"
+	local fpm_service="php${phpversion}-fpm"
 	# Configure PHP-FPM 5 on Debian Jessie
 	if [ "$(ynh_get_debian_release)" == "jessie" ]; then
 		fpm_config_dir="/etc/php5/fpm"
@@ -269,6 +279,7 @@ ynh_add_fpm_config () {
 	ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
 	ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
 	ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
+	ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
 	sudo chown root: "$finalphpconf"
 	ynh_store_file_checksum --file="$finalphpconf"
 
