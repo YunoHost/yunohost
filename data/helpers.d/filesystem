@@ -46,6 +46,7 @@ CAN_BIND=${CAN_BIND:-1}
 # ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "/conf/"
 # # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
 #
+# Requires YunoHost version 2.4.0 or higher.
 ynh_backup() {
     # TODO find a way to avoid injection by file strange naming !
 
@@ -158,6 +159,7 @@ ynh_backup() {
 #
 # usage: ynh_restore
 #
+# Requires YunoHost version 2.6.4 or higher.
 ynh_restore () {
     # Deduce the relative path of $YNH_CWD
     local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
@@ -219,6 +221,7 @@ with open(sys.argv[1], 'r') as backup_file:
 # # DON'T GIVE THE ARCHIVE PATH:
 # ynh_restore_file "conf/nginx.conf"
 #
+# Requires YunoHost version 2.6.4 or higher.
 ynh_restore_file () {
     # Declare an array to define the options of this helper.
     local legacy_args=odm
@@ -313,6 +316,8 @@ properly with chmod/chown." >&2
 #
 # usage: ynh_store_file_checksum --file=file
 # | arg: -f, --file - The file on which the checksum will performed, then stored.
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_store_file_checksum () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=f
@@ -345,6 +350,8 @@ ynh_store_file_checksum () {
 # | arg: -f, --file - The file on which the checksum test will be perfomed.
 #
 # | ret: Return the name a the backup file, or nothing
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_backup_if_checksum_is_different () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=f
@@ -376,6 +383,8 @@ ynh_backup_if_checksum_is_different () {
 #
 # usage: ynh_remove_file_checksum file
 # | arg: -f, --file= - The file for which the checksum will be deleted
+#
+# Requires YunoHost version 3.3.1 or higher.
 ynh_delete_file_checksum () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=f
@@ -392,6 +401,8 @@ ynh_delete_file_checksum () {
 #
 # usage: ynh_secure_remove --file=path_to_remove
 # | arg: -f, --file - File or directory to remove
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_secure_remove () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=f

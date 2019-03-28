@@ -36,6 +36,9 @@ do_pre_regen() {
   main_domain=$(cat /etc/yunohost/current_host)
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
+  # Support different strategy for security configurations
+  export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
+
   # add domain conf files
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
@@ -57,6 +60,7 @@ do_pre_regen() {
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
 
   done
+  ynh_render_template "plain/yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/nginx/conf.d \
