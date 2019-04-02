@@ -201,6 +201,7 @@ previous_weight=0
 base_time=$(date +%s)
 ynh_script_progression () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=mwtl
 	declare -Ar args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
 	local message
 	local weight
