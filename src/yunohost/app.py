@@ -1773,12 +1773,18 @@ def _get_app_status(app_id, format_date=False):
         raise YunohostError('app_unknown')
     status = {}
 
+    regen_status = True
     try:
         with open(app_setting_path + '/status.json') as f:
             status = json.loads(str(f.read()))
+        regen_status = False
     except IOError:
         logger.debug("status file not found for '%s'", app_id,
                      exc_info=1)
+    except Exception as e:
+        logger.warning("could not open or decode %s : %s ... regenerating.", app_setting_path + '/status.json', str(e))
+
+    if regen_status:
         # Create app status
         status = {
             'installed_at': app_setting(app_id, 'install_time'),
