@@ -2206,7 +2206,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
 
         # do not print for webadmin
         if arg_type == 'display_text' and msettings.get('interface') != 'api':
-            print(arg["text"])
+            print(_value_for_locale(arg['ask']))
             continue
 
         # Attempt to retrieve argument value
