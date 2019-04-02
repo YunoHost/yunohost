@@ -2272,6 +2272,14 @@ def backup_info(name, with_details=False, human_readable=False):
         if "hooks" in info.keys():
             system_key = "hooks"
 
+        
+        if "size_details" in info.keys():
+            for name, key_info in info["apps"].items():
+                if name in info["size_details"]["apps"].keys():
+                    key_info["size"] = info["size_details"]["apps"][name]
+                else:
+                    key_info["size"] = 0
+
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
     return result
