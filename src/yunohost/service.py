@@ -31,6 +31,7 @@ import subprocess
 import shutil
 import hashlib
 
+from glob import glob
 from difflib import unified_diff
 from datetime import datetime
 
@@ -330,6 +331,12 @@ def service_status(names=[]):
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
             }
+
+            # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
+            # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
+            if result[name]["loaded"] == "generated":
+                result[name]["loaded"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+
             if "ActiveEnterTimestamp" in status:
                 result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
             else:
