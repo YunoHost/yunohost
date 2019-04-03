@@ -720,12 +720,13 @@ def tools_diagnosis(auth, private=False):
         }
 
     # nginx -t
-    try:
-        diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Unable to check 'nginx -t', exception: %s" % e)
+    p = subprocess.Popen("nginx -t".split(),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    out, _ = p.communicate()
+    diagnosis["nginx"] = out.strip().split("\n")
+    if p.returncode != 0:
+        logger.error(out)
 
     # Services status
     services = service_status()
