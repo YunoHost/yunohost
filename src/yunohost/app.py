@@ -2610,10 +2610,10 @@ def _check_services_status_for_app(services):
     # (added by apps) and because those are the most popular
     # services
     service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
-    services = [s for s in services if s in service_filter]
+    services = [str(s) for s in services if s in service_filter]
 
     # List services currently down and raise an exception if any are found
-    faulty_services = [s for s, infos in service_status(services).items() if infos["active"] != "active"]
+    faulty_services = [s for s in services if service_status(s)["active"] != "active"]
     if faulty_services:
         raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
                             services=', '.join(faulty_services))
