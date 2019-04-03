@@ -1,3 +1,12 @@
+yunohost (3.5.1.1) testing; urgency=low
+
+  - [fix] enabled/disabled status for sysv services
+  - [fix] Nodejs helpers : use YNH_APP_INSTANCE_NAME instead of YNH_APP_ID (#700)
+  - [fix] nginx diagnosis when there's an error throwing a huge useless traceback. Use Popen instead to display the real error
+  - [fix] service_status returns different type of data if you ask for one or multiple services
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Apr 2019 17:28:00  +0000
+
 yunohost (3.5.1) testing; urgency=low
 
   - [fix] Fix the dbus interface to get info for services (#698)
