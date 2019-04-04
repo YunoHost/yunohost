@@ -168,5 +168,19 @@
     "domain_creation_failed": "No s'ha pogut crear el domini",
     "domain_deleted": "S'ha eliminat el domini",
     "domain_deletion_failed": "No s'ha pogut eliminar el domini",
-    "domain_exists": "El domini ja existeix"
+    "domain_exists": "El domini ja existeix",
+    "app_action_cannot_be_ran_because_required_services_down": "Aquesta aplicació necessita serveis que estan aturats. Abans de continuar, hauríeu d'intentar arrancar de nou els serveis següents (i també investigar perquè estan aturats) : {services}",
+    "domain_dns_conf_is_just_a_recommendation": "Aquesta ordre mostra la configuració *recomanada*. En cap cas fa la configuració del DNS. És la vostra responsabilitat configurar la zona DNS en el vostre registrar en acord amb aquesta recomanació.",
+    "domain_dyndns_already_subscribed": "Ja us heu subscrit a un domini DynDNS",
+    "domain_dyndns_dynette_is_unreachable": "No s'ha pogut abastar la dynette YunoHost, o bé YunoHost no està connectat a internet correctament o bé el servidor dynette està caigut. Error: {error}",
+    "domain_dyndns_invalid": "Domini no vàlid per utilitzar amb DynDNS",
+    "domain_dyndns_root_unknown": "Domini DynDNS principal desconegut",
+    "domain_hostname_failed": "No s'ha pogut establir un nou nom d'amfitrió",
+    "domain_uninstall_app_first": "Hi ha una o més aplicacions instal·lades en aquest domini. Desinstal·leu les abans d'eliminar el domini",
+    "domain_unknown": "Domini desconegut",
+    "domain_zone_exists": "El fitxer de zona DNS ja existeix",
+    "domain_zone_not_found": "No s'ha trobat el fitxer de zona DNS pel domini {:s}",
+    "domains_available": "Dominis disponibles:",
+    "done": "Fet",
+    "downloading": "Descarregant…"
 }
