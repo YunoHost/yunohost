@@ -196,5 +196,18 @@
     "dyndns_unavailable": "El domini {domain:s} no està disponible.",
     "executing_command": "Execució de l'ordre « {command:s} »…",
     "executing_script": "Execució de l'script « {script:s} »…",
-    "extracting": "Extracció en curs…"
+    "extracting": "Extracció en curs…",
+    "dyndns_cron_installed": "S'ha instal·lat la tasca cron pel DynDNS",
+    "dyndns_cron_remove_failed": "No s'ha pogut eliminar la tasca cron pel DynDNS",
+    "dyndns_cron_removed": "S'ha eliminat la tasca cron pel DynDNS",
+    "experimental_feature": "Atenció: aquesta funcionalitat és experimental i no es considera estable, no s'ha d'utilitzar a excepció de saber el que esteu fent.",
+    "field_invalid": "Camp incorrecte « {:s} »",
+    "file_does_not_exist": "El camí {path:s} no existeix.",
+    "firewall_reload_failed": "No s'ha pogut tornar a carregar el tallafoc",
+    "firewall_reloaded": "S'ha tornat a carregar el tallafoc",
+    "firewall_rules_cmd_failed": "No s'han pogut aplicar algunes regles del tallafoc. Mireu el registre per a més informació.",
+    "format_datetime_short": "%d/%m/%Y %H:%M",
+    "global_settings_bad_choice_for_enum": "Opció pel paràmetre {setting:s} incorrecta, s'ha rebut «{choice:s}» però les opcions disponibles són: {available_choices:s}",
+    "global_settings_bad_type_for_setting": "El tipus del paràmetre {setting:s} és incorrecte. S'ha rebut {received_type:s}, però s'esperava {expected_type:s}",
+    "global_settings_cant_open_settings": "No s'ha pogut obrir el fitxer de configuració, raó:  {reason:s}"
 }
