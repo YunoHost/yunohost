@@ -182,5 +182,19 @@
     "domain_zone_not_found": "No s'ha trobat el fitxer de zona DNS pel domini {:s}",
     "domains_available": "Dominis disponibles:",
     "done": "Fet",
-    "downloading": "Descarregant…"
+    "downloading": "Descarregant…",
+    "dyndns_could_not_check_provide": "No s'ha pogut verificar si {provider:s} pot oferir {domain:s}.",
+    "dyndns_could_not_check_available": "No s'ha pogut verificar la disponibilitat de {domain:s} a {provider:s}.",
+    "dyndns_ip_update_failed": "No s'ha pogut actualitzar l'adreça IP al DynDNS",
+    "dyndns_ip_updated": "S'ha actualitzat l'adreça IP al DynDNS",
+    "dyndns_key_generating": "S'està generant la clau DNS, això pot trigar una estona…",
+    "dyndns_key_not_found": "No s'ha trobat la clau DNS pel domini",
+    "dyndns_no_domain_registered": "No hi ha cap domini registrat amb DynDNS",
+    "dyndns_registered": "S'ha registrat el domini DynDNS",
+    "dyndns_registration_failed": "No s'ha pogut registrar el domini DynDNS: {error:s}",
+    "dyndns_domain_not_provided": "El proveïdor {provider:s} no pot oferir el domini {domain:s}.",
+    "dyndns_unavailable": "El domini {domain:s} no està disponible.",
+    "executing_command": "Execució de l'ordre « {command:s} »…",
+    "executing_script": "Execució de l'script « {script:s} »…",
+    "extracting": "Extracció en curs…"
 }
