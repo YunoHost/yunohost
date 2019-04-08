@@ -241,7 +241,7 @@ ynh_app_package_version () {
 # - UPGRADE_APP if the upstream app version has changed
 # - UPGRADE_PACKAGE if only the YunoHost package has changed
 #
-## It stops the current script without error if the package is up-to-date
+# It stops the current script without error if the package is up-to-date
 #
 # This helper should be used to avoid an upgrade of an app, or the upstream part
 # of it, when it's not needed

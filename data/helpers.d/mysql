@@ -186,7 +186,7 @@ ynh_mysql_drop_user() {
 # usage: ynh_mysql_setup_db --db_user=user --db_name=name [--db_pwd=pwd]
 # | arg: -u, --db_user - Owner of the database
 # | arg: -n, --db_name - Name of the database
-# | arg: -p, --db_pwd - Password of the database. If not given, a password will be generated
+# | arg: -p, --db_pwd - Password of the database. If not provided, a password will be generated
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_setup_db () {
@@ -200,7 +200,7 @@ ynh_mysql_setup_db () {
 	ynh_handle_getopts_args "$@"
 
 	local new_db_pwd=$(ynh_string_random)	# Generate a random password
-	# If $db_pwd is not given, use new_db_pwd instead for db_pwd
+	# If $db_pwd is not provided, use new_db_pwd instead for db_pwd
 	db_pwd="${db_pwd:-$new_db_pwd}"
 
 	ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database

@@ -1,14 +1,16 @@
 #!/bin/bash
 
 # Normalize the url path syntax
+#
 # Handle the slash at the beginning of path and its absence at ending
 # Return a normalized url path
 #
-# example: url_path=$(ynh_normalize_url_path $url_path)
-#          ynh_normalize_url_path example -> /example
-#          ynh_normalize_url_path /example -> /example
-#          ynh_normalize_url_path /example/ -> /example
-#          ynh_normalize_url_path / -> /
+# examples:
+#     url_path=$(ynh_normalize_url_path $url_path)
+#     ynh_normalize_url_path example    # -> /example
+#     ynh_normalize_url_path /example   # -> /example
+#     ynh_normalize_url_path /example/  # -> /example
+#     ynh_normalize_url_path /          # -> /
 #
 # usage: ynh_normalize_url_path --path_url=path_to_normalize
 # | arg: -p, --path_url - URL path to normalize before using it

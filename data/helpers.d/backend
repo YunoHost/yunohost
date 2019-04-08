@@ -3,17 +3,17 @@
 # Use logrotate to manage the logfile
 #
 # usage: ynh_use_logrotate [--logfile=/log/file] [--nonappend] [--specific_user=user/group]
-# | arg: -l, --logfile= - absolute path of logfile
-# | arg: -n, --nonappend - (Option) Replace the config file instead of appending this new config.
+# | arg: -l, --logfile - absolute path of logfile
+# | arg: -n, --nonappend - (optional) Replace the config file instead of appending this new config.
 # | arg: -u, --specific_user : run logrotate as the specified user and group. If not specified logrotate is runned as root.
 #
-# If no argument provided, a standard directory will be use. /var/log/${app}
-# You can provide a path with the directory only or with the logfile.
+# If no --logfile is provided, /var/log/${app} will be used as default.
+# logfile can be just a directory, or a full path to a logfile :
 # /parentdir/logdir
 # /parentdir/logdir/logfile.log
 #
-# It's possible to use this helper several times, each config will be added to the same logrotate config file.
-# Unless you use the option --non-append
+# It's possible to use this helper multiple times, each config will be added to
+# the same logrotate config file.  Unless you use the option --non-append
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_use_logrotate () {
@@ -175,8 +175,7 @@ ynh_remove_systemd_config () {
 #
 # usage: ynh_add_nginx_config "list of others variables to replace"
 #
-# | arg: list of others variables to replace separeted by a space
-# |      for example : 'path_2 port_2 ...'
+# | arg: list - (Optional) list of others variables to replace separated by spaces. For example : 'path_2 port_2 ...'
 #
 # This will use a template in ../conf/nginx.conf
 #   __PATH__      by  $path_url
