@@ -1,3 +1,13 @@
+yunohost (3.5.2) stable; urgency=low
+
+  - Release as stable !
+  - [doc] Update script to automatically generate helper doc
+  - [i18n] Update translations for Catalan, Arabic, Italian
+
+  Thanks to all contributors: Aleks, xaloc, BoF, silkevicious ! <3
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Apr 2019 01:53:00  +0000
+
 yunohost (3.5.1.1) testing; urgency=low
 
   - [fix] enabled/disabled status for sysv services
