@@ -169,7 +169,7 @@ ynh_setup_source () {
     local src_file_path="$YNH_CWD/../conf/${source_id}.src"
     # In case of restore script the src file is in an other path.
     # So try to use the restore path if the general path point to no file.
-    if [[ ! -e "$src_file_path" ]]; then
+    if [ ! -e "$src_file_path" ]; then
         src_file_path="$YNH_CWD/../settings/conf/${source_id}.src"
     fi
 
