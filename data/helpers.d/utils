@@ -166,11 +166,11 @@ ynh_setup_source () {
     ynh_handle_getopts_args "$@"
     source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
 
-    local src_file_path="$YNH_CWD/../conf/${src_id}.src"
+    local src_file_path="$YNH_CWD/../conf/${source_id}.src"
     # In case of restore script the src file is in an other path.
     # So try to use the restore path if the general path point to no file.
     if [[ ! -e "$src_file_path" ]]; then
-        src_file_path="$YNH_CWD/../settings/conf/${src_id}.src"
+        src_file_path="$YNH_CWD/../settings/conf/${source_id}.src"
     fi
 
     # Load value from configuration file (see above for a small doc about this file
