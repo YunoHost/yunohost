@@ -1,3 +1,9 @@
+yunohost (3.5.2.1) stable; urgency=low
+
+  - [fix] Fresh install was broken because of yunohost_admin.conf initialization
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Apr 2019 14:38:00  +0000
+
 yunohost (3.5.2) stable; urgency=low
 
   - Release as stable !
