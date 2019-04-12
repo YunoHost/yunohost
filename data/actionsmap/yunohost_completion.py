@@ -13,7 +13,7 @@ import yaml
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/yunohost.yml'
-BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + '/../bash-completion.d/yunohost_completion'
+BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + '/../bash-completion.d/yunohost'
 
 with open(ACTIONSMAP_FILE, 'r') as stream:
 
@@ -37,7 +37,7 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
         generated_file.write('#\n\n')
 
         # Start of the completion function
-        generated_file.write('_yunohost_completion()\n')
+        generated_file.write('_yunohost()\n')
         generated_file.write('{\n')
 
         # Defining local variable for previously and currently typed words
@@ -83,4 +83,4 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
         generated_file.write('}\n\n')
 
         # Add the function to bash completion
-        generated_file.write('complete -F _yunohost_completion yunohost')
+        generated_file.write('complete -F _yunohost yunohost')
