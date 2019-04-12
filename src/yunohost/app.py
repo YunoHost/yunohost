@@ -1629,7 +1629,7 @@ def app_config_show_panel(app):
                             args=["show"],
                             env=env,
                             stdout_callback=parse_stdout,
-                            )
+                            )[0]
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
@@ -1715,7 +1715,7 @@ def app_config_apply(app, args):
     return_code = hook_exec(config_script,
                             args=["apply"],
                             env=env,
-                            )
+                            )[0]
 
     if return_code != 0:
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
