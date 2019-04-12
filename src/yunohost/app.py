@@ -1512,6 +1512,7 @@ def app_action_list(app):
     actions = os.path.join(APPS_SETTING_PATH, app, 'actions.json')
 
     return {
+        "app_id": app,
         "app": app,
         "app_name": app_info_dict["name"],
         "actions": read_json(actions) if os.path.exists(actions) else [],
