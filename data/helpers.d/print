@@ -223,9 +223,9 @@ ynh_script_progression () {
 	local weight_calls=$(grep --perl-regexp --count "^[^#]*ynh_script_progression.*(--weight|-w )" $0)
 
 	# Get the weight of each occurrences of 'ynh_script_progression' in the script using --weight
-	local weight_valuesA="$(grep --perl-regexp "^[^#]*ynh_script_progression.*--weight" $0 | sed 's/.*--weight[= ]\([[:digit:]].*\)/\1/g')"
-	# Get the weight of each occurrences of 'ynh_script_progression' in the script using -w
-	local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]].*\)/\1/g')"
+        local weight_valuesA="$(grep --perl-regexp "^[^#]*ynh_script_progression.*--weight" $0 | sed 's/.*--weight[= ]\([[:digit:]]*\).*/\1/g')"
+        # Get the weight of each occurrences of 'ynh_script_progression' in the script using -w
+        local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]]*\).*/\1/g')"
 	# Each value will be on a different line.
 	# Remove each 'end of line' and replace it by a '+' to sum the values.
 	local weight_values=$(( $(echo "$weight_valuesA" | tr '\n' '+') + $(echo "$weight_valuesB" | tr '\n' '+') 0 ))
