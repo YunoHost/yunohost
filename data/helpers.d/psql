@@ -276,7 +276,8 @@ ynh_psql_test_if_first_run() {
 			ynh_die "postgresql shoud be 9.4 or 9.6"
 		fi
 
-		systemctl start postgresql
+		ynh_systemd_action --service_name=postgresql --action=start
+
 		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$pgsql'" postgres
 
 		# force all user to connect to local database using passwords
@@ -289,6 +290,6 @@ ynh_psql_test_if_first_run() {
 		yunohost service add postgresql --log "$logfile"
 
 		systemctl enable postgresql
-		systemctl reload postgresql
+		ynh_systemd_action --service_name=postgresql --action=reload
 	fi
 }
