@@ -240,18 +240,18 @@ ynh_psql_remove_db() {
 
 	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
 	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
-		echo "Removing database $db_name" >&2
+		ynh_print_info --message="Removing database $db_name"
 		ynh_psql_drop_db $db_name # Remove the database
 	else
-		echo "Database $db_name not found" >&2
+		ynh_print_warn --message="Database $db_name not found"
 	fi
 
 	# Remove psql user if it exists
 	if ynh_psql_user_exists --user=$db_user; then
-		echo "Removing user $db_user" >&2
+		ynh_print_info --message="Removing user $db_user"
 		ynh_psql_drop_user $db_user
 	else
-		echo "User $db_user not found" >&2
+		ynh_print_warn --message="User $db_user not found"
 	fi
 }
 
@@ -277,6 +277,7 @@ ynh_psql_test_if_first_run() {
 		fi
 
 		systemctl start postgresql
+
 		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$pgsql'" postgres
 
 		# force all user to connect to local database using passwords

@@ -65,25 +65,24 @@ ynh_backup() {
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
     if [ "$is_big" == "1" ] && [ "$BACKUP_CORE_ONLY" == "1" ] ; then
-      echo "$src_path will not be saved, because backup_core_only is set." >&2
+      ynh_print_info --message="$src_path will not be saved, because backup_core_only is set."
       return 0
     fi
-    
+
     # ==============================================================================
     # Format correctly source and destination paths
     # ==============================================================================
     # Be sure the source path is not empty
     [[ -e "${src_path}" ]] || {
-        echo "Source path '${src_path}' does not exist" >&2
+        ynh_print_warn --message="Source path '${src_path}' does not exist"
         if [ "$not_mandatory" == "0" ]
         then
-		echo "Source path '${SRC_PATH}' does not exist" >&2
 
                 # This is a temporary fix for fail2ban config files missing after the migration to stretch.
                 if echo "${src_path}" | grep --quiet "/etc/fail2ban"
                 then
                         touch "${src_path}"
-                        echo "The missing file will be replaced by a dummy one for the backup !!!" >&2
+                        ynh_print_info --message="The missing file will be replaced by a dummy one for the backup !!!"
                 else
                         return 1
                 fi
@@ -127,7 +126,7 @@ ynh_backup() {
 
     # Check if dest_path already exists in tmp archive
     [[ ! -e "${dest_path}" ]] || {
-        echo "Destination path '${dest_path}' already exist" >&2
+        ynh_print_err --message="Destination path '${dest_path}' already exist"
         return 1
     }
 
@@ -280,7 +279,7 @@ ynh_bind_or_cp() {
     local AS_ROOT=${3:-0}
     local NO_ROOT=0
     [[ "${AS_ROOT}" = "1" ]] || NO_ROOT=1
-    echo "This helper is deprecated, you should use ynh_backup instead" >&2
+    ynh_print_warn --message="This helper is deprecated, you should use ynh_backup instead"
     ynh_backup "$1" "$2" 1
 }
 
@@ -293,9 +292,9 @@ ynh_bind_or_cp() {
 # usage: ynh_mkdir_tmp
 # | ret: the created directory path
 ynh_mkdir_tmp() {
-    echo "The helper ynh_mkdir_tmp is deprecated." >&2
-    echo "You should use 'mktemp -d' instead and manage permissions \
-properly with chmod/chown." >&2
+    ynh_print_warn --message="The helper ynh_mkdir_tmp is deprecated."
+    ynh_print_warn --message="You should use 'mktemp -d' instead and manage permissions \
+properly with chmod/chown."
     local TMP_DIR=$(mktemp -d)
 
     # Give rights to other users could be a security risk.
@@ -410,7 +409,7 @@ ynh_secure_remove () {
 
 	if [ $# -ge 2 ]
 	then
-		echo "/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time." >&2
+		ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
 	fi
 
 	if [[ "$forbidden_path" =~ "$file" \
@@ -420,13 +419,13 @@ ynh_secure_remove () {
 		|| "${file:${#file}-1}" = "/" ]]
 		# Match if the path finishes by /. Because it seems there is an empty variable
 	then
-		echo "Avoid deleting $file." >&2
+		ynh_print_warn --message="Avoid deleting $file."
 	else
 		if [ -e "$file" ]
 		then
 			sudo rm -R "$file"
 		else
-			echo "$file wasn't deleted because it doesn't exist." >&2
+			ynh_print_info --message="$file wasn't deleted because it doesn't exist."
 		fi
 	fi
 }
