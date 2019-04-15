@@ -105,6 +105,7 @@ ynh_psql_create_db() {
 # Requires YunoHost version 3.?.? or higher.
 ynh_psql_drop_db() {
 	local db=$1
+	ynh_psql_execute_as_root --sql="SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db';" --database="$db"
 	sudo --login --user=postgres dropdb $db
 }
 
