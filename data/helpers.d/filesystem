@@ -77,7 +77,6 @@ ynh_backup() {
         ynh_print_warn --message="Source path '${src_path}' does not exist"
         if [ "$not_mandatory" == "0" ]
         then
-
                 # This is a temporary fix for fail2ban config files missing after the migration to stretch.
                 if echo "${src_path}" | grep --quiet "/etc/fail2ban"
                 then
