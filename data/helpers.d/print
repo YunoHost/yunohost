@@ -243,8 +243,9 @@ ynh_script_progression () {
 
 	# Set the scale of the progression bar
 	local scale=20
-	# progress_string(1,2) should have the size of the scale.
-	local progress_string1="####################"
+	# progress_string(0,1,2) should have the size of the scale.
+	local progress_string2="####################"
+	local progress_string1="++++++++++++++++++++"
 	local progress_string0="...................."
 
 	# Reduce $increment_progression to the size of the scale
@@ -256,8 +257,13 @@ ynh_script_progression () {
 		local effective_progression=$scale
 	fi
 
-	# Build $progression_bar from progress_string(1,2) according to $effective_progression
-	local progression_bar="${progress_string1:0:$effective_progression}${progress_string0:0:$(( $scale - $effective_progression ))}"
+	# Build $progression_bar from progress_string(0,1,2) according to $effective_progression and the weight of the current task
+	# expected_progression is the progression expected after the current task
+	local expected_progression="$(( ( $increment_progression + $weight ) * $scale / $max_progression - $effective_progression ))"
+	# left_progression is the progression not yet done
+	local left_progression="$(( $scale - $effective_progression - $expected_progression ))"
+	# Build the progression bar with $effective_progression, work done, $expected_progression, current work and $left_progression, work to be done.
+	local progression_bar="${progress_string2:0:$effective_progression}${progress_string1:0:$expected_progression}${progress_string0:0:$left_progression}"
 
 	local print_exec_time=""
 	if [ $time -eq 1 ]
