@@ -260,6 +260,10 @@ ynh_script_progression () {
 	# Build $progression_bar from progress_string(0,1,2) according to $effective_progression and the weight of the current task
 	# expected_progression is the progression expected after the current task
 	local expected_progression="$(( ( $increment_progression + $weight ) * $scale / $max_progression - $effective_progression ))"
+	if [ $last -eq 1 ]
+	then
+		expected_progression=0
+	fi
 	# left_progression is the progression not yet done
 	local left_progression="$(( $scale - $effective_progression - $expected_progression ))"
 	# Build the progression bar with $effective_progression, work done, $expected_progression, current work and $left_progression, work to be done.
