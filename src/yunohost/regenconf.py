@@ -144,13 +144,6 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         raise YunohostError('regenconf_failed',
                             categories=', '.join(ret_failed))
 
-    # Update the categorys name
-    names = pre_result['succeed'].keys()
-
-    if not names:
-        raise YunohostError('regenconf_failed',
-                            categories=', '.join(pre_result['failed']))
-
     # Set the processing method
     _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
 
