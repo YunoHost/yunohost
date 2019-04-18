@@ -2,6 +2,8 @@
 
 # Print a message to stderr and exit
 # usage: ynh_die --message=MSG [--ret_code=RETCODE]
+#
+# Requires YunoHost version 2.4.0 or higher.
 ynh_die() {
   # Declare an array to define the options of this helper.
   local legacy_args=mc
@@ -18,6 +20,8 @@ ynh_die() {
 # Display a message in the 'INFO' logging category
 #
 # usage: ynh_print_info --message="Some message"
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_info() {
     # Declare an array to define the options of this helper.
     local legacy_args=m
@@ -37,6 +41,8 @@ ynh_print_info() {
 #
 # Simply duplicate the log, execute the yunohost command and replace the log without the result of this command
 # It's a very badly hack...
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_no_log() {
   local ynh_cli_log=/var/log/yunohost/yunohost-cli.log
   sudo cp -a ${ynh_cli_log} ${ynh_cli_log}-move
@@ -50,6 +56,7 @@ ynh_no_log() {
 #
 # [internal]
 #
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_log () {
   echo -e "${1}"
 }
@@ -58,6 +65,8 @@ ynh_print_log () {
 #
 # usage: ynh_print_warn --message="Text to print"
 # | arg: -m, --message - The text to print
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_warn () {
   # Declare an array to define the options of this helper.
   local legacy_args=m
@@ -73,6 +82,8 @@ ynh_print_warn () {
 #
 # usage: ynh_print_err --message="Text to print"
 # | arg: -m, --message - The text to print
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_err () {
   # Declare an array to define the options of this helper.
   local legacy_args=m
@@ -89,8 +100,11 @@ ynh_print_err () {
 # usage: ynh_exec_err command to execute
 # usage: ynh_exec_err "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_err () {
 	ynh_print_err "$(eval $@)"
 }
@@ -100,8 +114,11 @@ ynh_exec_err () {
 # usage: ynh_exec_warn command to execute
 # usage: ynh_exec_warn "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn () {
 	ynh_print_warn "$(eval $@)"
 }
@@ -111,8 +128,11 @@ ynh_exec_warn () {
 # usage: ynh_exec_warn_less command to execute
 # usage: ynh_exec_warn_less "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn_less () {
 	eval $@ 2>&1
 }
@@ -122,8 +142,11 @@ ynh_exec_warn_less () {
 # usage: ynh_exec_quiet command to execute
 # usage: ynh_exec_quiet "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_quiet () {
 	eval $@ > /dev/null
 }
@@ -133,8 +156,11 @@ ynh_exec_quiet () {
 # usage: ynh_exec_fully_quiet command to execute
 # usage: ynh_exec_fully_quiet "command to execute | following command"
 # In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_exec_fully_quiet () {
 	eval $@ > /dev/null 2>&1
 }
@@ -143,6 +169,8 @@ ynh_exec_fully_quiet () {
 #
 # usage: ynh_print_OFF
 # WARNING: You should be careful with this helper, and never forget to use ynh_print_ON as soon as possible to restore the logging.
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_OFF () {
 	set +x
 }
@@ -150,6 +178,8 @@ ynh_print_OFF () {
 # Restore the logging after ynh_print_OFF
 #
 # usage: ynh_print_ON
+#
+# Requires YunoHost version 3.2.0 or higher.
 ynh_print_ON () {
 	set -x
 	# Print an echo only for the log, to be able to know that ynh_print_ON has been called.
@@ -162,13 +192,17 @@ ynh_print_ON () {
 # | arg: -m, --message= - The text to print
 # | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
 # | arg: -t, --time=    - Print the execution time since the last call to this helper. Especially usefull to define weights.
+# The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
 # | arg: -l, --last=    - Use for the last call of the helper, to fill te progression bar.
+#
+# Requires YunoHost version 3.?.? or higher.
 increment_progression=0
 previous_weight=0
 # Define base_time when the file is sourced
 base_time=$(date +%s)
 ynh_script_progression () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=mwtl
 	declare -Ar args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
 	local message
 	local weight
@@ -190,9 +224,9 @@ ynh_script_progression () {
 	local weight_calls=$(grep --perl-regexp --count "^[^#]*ynh_script_progression.*(--weight|-w )" $0)
 
 	# Get the weight of each occurrences of 'ynh_script_progression' in the script using --weight
-	local weight_valuesA="$(grep --perl-regexp "^[^#]*ynh_script_progression.*--weight" $0 | sed 's/.*--weight[= ]\([[:digit:]].*\)/\1/g')"
-	# Get the weight of each occurrences of 'ynh_script_progression' in the script using -w
-	local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]].*\)/\1/g')"
+        local weight_valuesA="$(grep --perl-regexp "^[^#]*ynh_script_progression.*--weight" $0 | sed 's/.*--weight[= ]\([[:digit:]]*\).*/\1/g')"
+        # Get the weight of each occurrences of 'ynh_script_progression' in the script using -w
+        local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]]*\).*/\1/g')"
 	# Each value will be on a different line.
 	# Remove each 'end of line' and replace it by a '+' to sum the values.
 	local weight_values=$(( $(echo "$weight_valuesA" | tr '\n' '+') + $(echo "$weight_valuesB" | tr '\n' '+') 0 ))

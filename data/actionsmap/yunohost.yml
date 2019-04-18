@@ -1623,6 +1623,32 @@ tools:
                     full: --force
                     action: store_true
 
+        ### tools_regen_conf()
+        regen-conf:
+            action_help: Regenerate the configuration file(s)
+            api: PUT /tools/regenconf
+            arguments:
+                names:
+                    help: Categories to regenerate configuration of (all by default)
+                    nargs: "*"
+                    metavar: NAME
+                -d:
+                    full: --with-diff
+                    help: Show differences in case of configuration changes
+                    action: store_true
+                -f:
+                    full: --force
+                    help: Override all manual modifications in configuration files
+                    action: store_true
+                -n:
+                    full: --dry-run
+                    help: Show what would have been regenerated
+                    action: store_true
+                -p:
+                    full: --list-pending
+                    help: List pending configuration files and exit
+                    action: store_true
+
     subcategories:
 
       migrations:

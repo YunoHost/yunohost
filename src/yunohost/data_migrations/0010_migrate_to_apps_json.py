@@ -8,7 +8,7 @@ logger = getActionLogger('yunohost.migration')
 
 BASE_CONF_PATH = '/home/yunohost.conf'
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
-APPSLISTS_BACKUP = os.path.join(BACKUP_CONF_DIR, "appslist_before_migration_0009.json")
+APPSLISTS_BACKUP = os.path.join(BACKUP_CONF_DIR, "appslist_before_migration_to_unified_list.json")
 
 
 class MyMigration(Migration):

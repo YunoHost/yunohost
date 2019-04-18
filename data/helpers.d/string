@@ -6,6 +6,8 @@
 #
 # usage: ynh_string_random [--length=string_length]
 # | arg: -l, --length - the string length to generate (default: 24)
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_string_random() {
     # Declare an array to define the options of this helper.
     local legacy_args=l
@@ -30,6 +32,8 @@ ynh_string_random() {
 # As this helper is based on sed command, regular expressions and
 # references to sub-expressions can be used
 # (see sed manual page for more information)
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_replace_string () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=mrf
@@ -57,6 +61,8 @@ ynh_replace_string () {
 #
 # This helper will use ynh_replace_string, but as you can use special
 # characters, you can't use some regular expressions and sub-expressions.
+#
+# Requires YunoHost version 2.7.7 or higher.
 ynh_replace_special_string () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=mrf
