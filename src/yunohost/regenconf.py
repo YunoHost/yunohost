@@ -47,7 +47,7 @@ logger = log.getActionLogger('yunohost.regenconf')
 
 # FIXME : those ain't just services anymore ... what are we supposed to do with this ...
 # FIXME : check for all reference of 'service' close to operation_logger stuff
-@is_unit_operation([('names', 'service')])
+@is_unit_operation([('names', 'configuration')])
 def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
     """
@@ -93,11 +93,11 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         return pending_conf
 
     if not dry_run:
-        operation_logger.related_to = [('service', x) for x in names]
+        operation_logger.related_to = [('configuration', x) for x in names]
         if not names:
             operation_logger.name_parameter_override = 'all'
         elif len(names) != 1:
-            operation_logger.name_parameter_override = str(len(operation_logger.related_to)) + '_services'
+            operation_logger.name_parameter_override = str(len(operation_logger.related_to)) + '_categories'
         operation_logger.start()
 
     # Clean pending conf directory
@@ -149,10 +149,10 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
 
     operation_logger.related_to = []
 
-    # Iterate over categorys and process pending conf
+    # Iterate over categories and process pending conf
     for category, conf_files in _get_pending_conf(names).items():
         if not dry_run:
-            operation_logger.related_to.append(('service', category))
+            operation_logger.related_to.append(('configuration', category))
 
         logger.debug(m18n.n(
             'regenconf_pending_applying' if not dry_run else
