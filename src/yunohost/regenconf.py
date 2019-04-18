@@ -133,6 +133,17 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
+    # Keep only the hook names with at least one success
+    names = [hook for hook, infos in pre_result.items()
+             if any(result["state"] == "succeed" for result in infos.values())]
+
+    # FIXME : what do in case of partial success/failure ...
+    if not names:
+        ret_failed = [hook for hook, infos in pre_result.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        raise YunohostError('regenconf_failed',
+                            categories=', '.join(ret_failed))
+
     # Update the categorys name
     names = pre_result['succeed'].keys()
 

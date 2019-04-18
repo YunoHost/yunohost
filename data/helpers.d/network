@@ -1,17 +1,21 @@
 #!/bin/bash
 
 # Normalize the url path syntax
+#
 # Handle the slash at the beginning of path and its absence at ending
 # Return a normalized url path
 #
-# example: url_path=$(ynh_normalize_url_path $url_path)
-#          ynh_normalize_url_path example -> /example
-#          ynh_normalize_url_path /example -> /example
-#          ynh_normalize_url_path /example/ -> /example
-#          ynh_normalize_url_path / -> /
+# examples:
+#     url_path=$(ynh_normalize_url_path $url_path)
+#     ynh_normalize_url_path example    # -> /example
+#     ynh_normalize_url_path /example   # -> /example
+#     ynh_normalize_url_path /example/  # -> /example
+#     ynh_normalize_url_path /          # -> /
 #
 # usage: ynh_normalize_url_path --path_url=path_to_normalize
 # | arg: -p, --path_url - URL path to normalize before using it
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_normalize_url_path () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
@@ -36,6 +40,8 @@ ynh_normalize_url_path () {
 #
 # usage: ynh_find_port --port=begin_port
 # | arg: -p, --port - port to start to search
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_find_port () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
@@ -59,6 +65,8 @@ ynh_find_port () {
 # usage: ynh_webpath_available --domain=domain --path_url=path
 # | arg: -d, --domain - the domain/host of the url
 # | arg: -p, --path_url - the web path to check the availability of
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_available () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=dp
@@ -79,6 +87,8 @@ ynh_webpath_available () {
 # | arg: -a, --app - the app for which the domain should be registered
 # | arg: -d, --domain - the domain/host of the web path
 # | arg: -p, --path_url - the web path to be registered
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_register () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=adp

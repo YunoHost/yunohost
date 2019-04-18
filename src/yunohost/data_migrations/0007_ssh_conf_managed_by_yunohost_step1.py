@@ -46,10 +46,6 @@ class MyMigration(Migration):
         if dsa:
             settings_set("service.ssh.allow_deprecated_dsa_hostkey", True)
 
-        # Create sshd_config.d dir
-        if not os.path.exists(SSHD_CONF + '.d'):
-            mkdir(SSHD_CONF + '.d', 0o755, uid='root', gid='root')
-
         # Here, we make it so that /etc/ssh/sshd_config is managed
         # by the regen conf (in particular in the case where the
         # from_script flag is present - in which case it was *not*

@@ -37,6 +37,7 @@ import yunohost.certificate
 from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
+from yunohost.hook import hook_callback
 
 logger = getActionLogger('yunohost.domain')
 
@@ -201,11 +202,18 @@ def domain_dns_conf(domain, ttl=None):
     result += "; Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
-
     result += "\n\n"
+
     result += "; Extra"
     for record in dns_conf["extra"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
+
+    for name, record_list in dns_conf.items():
+        if name not in ("basic", "xmpp", "mail", "extra") and record_list:
+            result += "\n\n"
+            result += "; " + name
+            for record in record_list:
+                result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
@@ -338,6 +346,9 @@ def _build_dns_conf(domain, ttl=3600):
         "extra": [
             {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
+        "example_of_a_custom_rule": [
+            {"type": "SRV", "name": "_matrix", "value": "domain.tld.", "ttl": 3600}
+        ],
     }
     """
 
@@ -396,12 +407,48 @@ def _build_dns_conf(domain, ttl=3600):
         ["@", ttl, "CAA", '128 issue "letsencrypt.org"']
     ]
 
-    return {
+    # Official record
+    records = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
         "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
+
+    # Custom records
+    hook_results = hook_callback('custom_dns_rules', args=[domain])
+    for hook_name, results in hook_results.items():
+        #
+        # There can be multiple results per hook name, so results look like
+        # {'/some/path/to/hook1':
+        #       { 'state': 'succeed',
+        #         'stdreturn': [{'type': 'SRV',
+        #                        'name': 'stuff.foo.bar.',
+        #                        'value': 'yoloswag',
+        #                        'ttl': 3600}]
+        #       },
+        #  '/some/path/to/hook2':
+        #       { ... },
+        #  [...]
+        #
+        # Loop over the sub-results
+        custom_records = [v['stdreturn'] for v in results.values()
+                          if v and v['stdreturn']]
+
+        records[hook_name] = []
+        for record_list in custom_records:
+            # Check that record_list is indeed a list of dict
+            # with the required keys
+            if not isinstance(record_list, list) \
+               or any(not isinstance(record, dict) for record in record_list) \
+               or any(key not in record for record in record_list for key in ["name", "ttl", "type", "value"]):
+                # Display an error, mainly for app packagers trying to implement a hook
+                logger.warning("Ignored custom record from hook '%s' because the data is not a *list* of dict with keys name, ttl, type and value. Raw data : %s" % (hook_name, record_list))
+                continue
+
+            records[hook_name].extend(record_list)
+
+    return records
 
 
 def _get_DKIM(domain):

@@ -28,6 +28,7 @@ import time
 import yaml
 import subprocess
 
+from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
@@ -317,11 +318,17 @@ def service_status(names=[]):
 
             result[name] = {
                 'status': str(status.get("SubState", "unknown")),
-                'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
+                'loaded': str(status.get("UnitFileState", "unknown")),
                 'active': str(status.get("ActiveState", "unknown")),
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
             }
+
+            # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
+            # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
+            if result[name]["loaded"] == "generated":
+                result[name]["loaded"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+
             if "ActiveEnterTimestamp" in status:
                 result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
             else:
@@ -335,26 +342,25 @@ def service_status(names=[]):
 def _get_service_information_from_systemd(service):
     "this is the equivalent of 'systemctl status $service'"
     import dbus
-    from dbus.exceptions import DBusException
 
     d = dbus.SystemBus()
 
     systemd = d.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
     manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
 
-    try:
-        service_path = manager.GetUnit(service + ".service")
-    except DBusException as exception:
-        if exception.get_dbus_name() == 'org.freedesktop.systemd1.NoSuchUnit':
-            return None
-        raise
-
-    service_proxy = d.get_object('org.freedesktop.systemd1', service_path)
-
-    # unit_proxy = dbus.Interface(service_proxy, 'org.freedesktop.systemd1.Unit',)
+    # c.f. https://zignar.net/2014/09/08/getting-started-with-dbus-python-systemd/
+    # Very interface, much intuitive, wow
+    service_unit = manager.LoadUnit(service + '.service')
+    service_proxy = d.get_object('org.freedesktop.systemd1', str(service_unit))
     properties_interface = dbus.Interface(service_proxy, 'org.freedesktop.DBus.Properties')
 
-    return properties_interface.GetAll('org.freedesktop.systemd1.Unit')
+    properties = properties_interface.GetAll('org.freedesktop.systemd1.Unit')
+
+    if properties.get("LoadState", "not-found") == "not-found":
+        # Service doesn't really exist
+        return None
+    else:
+        return properties
 
 
 def service_log(name, number=50):

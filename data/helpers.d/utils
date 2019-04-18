@@ -6,6 +6,8 @@
 #
 # usage: ynh_get_plain_key key [subkey [subsubkey ...]]
 # | ret: string - the key's value
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_get_plain_key() {
     local prefix="#"
     local founded=0
@@ -36,6 +38,7 @@ ynh_get_plain_key() {
 # }
 # ynh_abort_if_errors
 #
+# Requires YunoHost version 2.7.2 or higher.
 ynh_restore_upgradebackup () {
 	echo "Upgrade failed." >&2
 	local app_bck=${app//_/-}	# Replace all '_' by '-'
@@ -67,6 +70,7 @@ ynh_restore_upgradebackup () {
 # }
 # ynh_abort_if_errors
 #
+# Requires YunoHost version 2.7.2 or higher.
 ynh_backup_before_upgrade () {
 	if [ ! -e "/etc/yunohost/apps/$app/scripts/backup" ]
 	then
@@ -150,6 +154,8 @@ ynh_backup_before_upgrade () {
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
 # | arg: -d, --dest_dir  - Directory where to setup sources
 # | arg: -s, --source_id - Name of the app, if the package contains more than one app
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source () {
     # Declare an array to define the options of this helper.
     local legacy_args=ds
@@ -255,6 +261,8 @@ ynh_setup_source () {
 # | arg: key1=value1 - (Optionnal) POST key and corresponding value
 # | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
 # | arg: ...         - (Optionnal) More POST keys and values
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_local_curl () {
 	# Define url of page to curl
 	local local_page=$(ynh_normalize_url_path $1)

@@ -119,6 +119,9 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
         subscribe_host -- Dynette HTTP API to subscribe to
 
     """
+    if len(glob.glob('/etc/yunohost/dyndns/*.key')) != 0 or os.path.exists('/etc/cron.d/yunohost-dyndns'):
+        raise YunohostError('domain_dyndns_already_subscribed')
+
     if domain is None:
         domain = _get_maindomain()
         operation_logger.related_to.append(('domain', domain))
@@ -144,7 +147,8 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
                       'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
-        key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]
+        private_file = glob.glob('/etc/yunohost/dyndns/*%s*.private' % domain)[0]
+        key_file = glob.glob('/etc/yunohost/dyndns/*%s*.key' % domain)[0]
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
@@ -152,9 +156,13 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
-    except requests.ConnectionError:
-        raise YunohostError('no_internet_connection')
+    except Exception as e:
+        os.system("rm -f %s" % private_file)
+        os.system("rm -f %s" % key_file)
+        raise YunohostError('dyndns_registration_failed', error=str(e))
     if r.status_code != 201:
+        os.system("rm -f %s" % private_file)
+        os.system("rm -f %s" % key_file)
         try:
             error = json.loads(r.text)['error']
         except:
@@ -333,7 +341,8 @@ def _guess_current_dyndns_domain(dyn_host):
     """
 
     # Retrieve the first registered domain
-    for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+    paths = list(glob.iglob('/etc/yunohost/dyndns/K*.private'))
+    for path in paths:
         match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
         if not match:
             match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
@@ -343,7 +352,9 @@ def _guess_current_dyndns_domain(dyn_host):
 
         # Verify if domain is registered (i.e., if it's available, skip
         # current domain beause that's not the one we want to update..)
-        if _dyndns_available(dyn_host, _domain):
+        # If there's only 1 such key found, then avoid doing the request
+        # for nothing (that's very probably the one we want to find ...)
+        if len(paths) > 1 and _dyndns_available(dyn_host, _domain):
             continue
         else:
             return (_domain, path)
