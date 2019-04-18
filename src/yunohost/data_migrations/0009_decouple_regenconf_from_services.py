@@ -5,7 +5,7 @@ from moulinette.utils.log import getActionLogger
 
 from moulinette.utils.filesystem import read_file
 from yunohost.service import _get_services, _save_services
-from yunohost.regenconf import _update_conf_hashes
+from yunohost.regenconf import _update_conf_hashes, REGEN_CONF_FILE
 
 from yunohost.tools import Migration
 
@@ -20,7 +20,7 @@ class MyMigration(Migration):
     def migrate(self):
 
         if "conffiles" not in read_file("/etc/yunohost/services.yml") \
-           or os.path.exists("/etc/yunohost/regenconf.yml"):
+           or os.path.exists(REGEN_CONF_FILE):
             logger.warning(m18n.n("migration_0009_not_needed"))
             return
 
