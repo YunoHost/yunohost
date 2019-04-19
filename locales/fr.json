@@ -522,5 +522,18 @@
     "service_restarted": "Le service '{service:s}' a été redémarré",
     "service_reload_or_restart_failed": "Impossible de recharger ou de redémarrer le service '{service:s}'\n\nJournaux historisés récents de ce service : {logs:s}",
     "service_reloaded_or_restarted": "Le service '{service:s}' a été rechargé ou redémarré",
-    "this_action_broke_dpkg": "Cette action a laissé des paquets non configurés par dpkg/apt (les gestionnaires de paquets système). Vous pouvez essayer de résoudre ce problème en vous connectant via SSH et en exécutant `sudo dpkg --configure -a`."
+    "this_action_broke_dpkg": "Cette action a laissé des paquets non configurés par dpkg/apt (les gestionnaires de paquets système). Vous pouvez essayer de résoudre ce problème en vous connectant via SSH et en exécutant `sudo dpkg --configure -a`.",
+    "app_action_cannot_be_ran_because_required_services_down": "Cette application requiert certains services qui sont actuellement en pannes. Avant de continuer, vous devriez essayer de redémarrer les services suivant (et éventuellement rechercher pourquoi ils sont en panne) : {services}",
+    "admin_password_too_long": "Choisisez un mot de passe de maximum 127 caractères.",
+    "log_regen_conf": "Régénérer les configurations du système '{}'",
+    "migration_0009_not_needed": "Cette migration semble avoir déjà été jouée ? On l'ignore.",
+    "regenconf_file_backed_up": "Le fichier de configuration '{conf}' a été sauvegardé sous '{backup}'",
+    "regenconf_file_copy_failed": "Impossible de copier le nouveau fichier de configuration '{new}' vers '{conf}'",
+    "regenconf_file_manually_modified": "Le fichier de configuration '{conf}' a été modifié manuellement et ne sera pas mis à jour",
+    "regenconf_file_manually_removed": "Le fichier de configuration '{conf}' a été supprimé manuellement et ne sera pas créé",
+    "regenconf_file_remove_failed": "Impossible de supprimer le fichier de configuration '{conf}'",
+    "regenconf_file_removed": "Le fichier de configuration '{conf}' a été supprimé",
+    "regenconf_file_updated": "Le fichier de configuration '{conf}' a été mis à jour",
+    "regenconf_now_managed_by_yunohost": "Le fichier de configuration '{conf}' est maintenant géré par YunoHost (catégorie {category}).",
+    "regenconf_up_to_date": "La configuration est déjà à jour pour la catégorie '{category}'"
 }
