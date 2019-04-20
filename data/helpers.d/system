@@ -75,6 +75,7 @@ ynh_get_debian_release () {
 # | arg: -e, --length=       - Length of the error log : Default : 20
 ynh_systemd_action() {
     # Declare an array to define the options of this helper.
+    local legacy_args=nalpte
     declare -Ar args_array=( [n]=service_name= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length= )
     local service_name
     local action
@@ -175,6 +176,7 @@ ynh_clean_check_starting () {
 # Requires YunoHost version 3.?.? or higher.
 ynh_read_manifest () {
 	# Declare an array to define the options of this helper.
+        local legacy_args=mk
         declare -Ar args_array=( [m]=manifest= [k]=manifest_key= )
         local manifest
         local manifest_key
@@ -200,6 +202,8 @@ ynh_read_manifest () {
 #
 # Requires YunoHost version 3.?.? or higher.
 ynh_app_upstream_version () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
     declare -Ar args_array=( [m]=manifest= )
     local manifest
     # Manage arguments with getopts
@@ -221,6 +225,8 @@ ynh_app_upstream_version () {
 #
 # Requires YunoHost version 3.?.? or higher.
 ynh_app_package_version () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
     declare -Ar args_array=( [m]=manifest= )
     local manifest
     # Manage arguments with getopts
@@ -235,7 +241,7 @@ ynh_app_package_version () {
 # - UPGRADE_APP if the upstream app version has changed
 # - UPGRADE_PACKAGE if only the YunoHost package has changed
 #
-## It stops the current script without error if the package is up-to-date
+# It stops the current script without error if the package is up-to-date
 #
 # This helper should be used to avoid an upgrade of an app, or the upstream part
 # of it, when it's not needed

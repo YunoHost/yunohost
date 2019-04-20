@@ -37,6 +37,8 @@ ynh_debug () {
 		PS4='$(basename ${BASH_SOURCE[0]})-L${LINENO}: '
 		# Force xtrace to stderr
 		BASH_XTRACEFD=2
+		# Force stdout to stderr
+		exec 1>&2
 	fi
 	if [ "$trace" == "0" ]
 	then
@@ -44,6 +46,8 @@ ynh_debug () {
 		set +x
 		# Put xtrace back to its original fild descriptor
 		BASH_XTRACEFD=$old_bash_xtracefd
+		# Restore stdout
+		exec 1>&1
 	fi
 	# Renable set xtrace
 	set -x

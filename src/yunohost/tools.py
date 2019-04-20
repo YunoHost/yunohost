@@ -30,6 +30,7 @@ import json
 import subprocess
 import pwd
 import socket
+from glob import glob
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
@@ -48,7 +49,8 @@ from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, a
 from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
+from yunohost.service import service_status, service_log, service_start, service_enable
+from yunohost.regenconf import regen_conf
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
@@ -133,6 +135,11 @@ def tools_adminpw(auth, new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
+    # UNIX seems to not like password longer than 127 chars ...
+    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
+    if len(new_password) >= 127:
+        raise YunohostError('admin_password_too_long')
+
     new_hash = _hash_user_password(new_password)
 
     try:
@@ -208,7 +215,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r'):
-            service_regen_conf()
+            regen_conf()
     except IOError:
         pass
 
@@ -326,7 +333,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
-    service_regen_conf(['nslcd', 'nsswitch'], force=True)
+    regen_conf(['nslcd', 'nsswitch'], force=True)
 
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
@@ -377,7 +384,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
-    service_regen_conf(['ssl'], force=True)
+    regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     # (Update the serial so that it's specific to this very instance)
     os.system("openssl rand -hex 19 > %s/serial" % ssl_dir)
@@ -406,7 +413,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     logger.success(m18n.n('yunohost_ca_creation_success'))
 
     # New domain config
-    service_regen_conf(['nsswitch'], force=True)
+    regen_conf(['nsswitch'], force=True)
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
 
@@ -416,10 +423,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
-    # Setup the default official app list with cron job
+    # Setup the default apps list with cron job
     try:
         app_fetchlist(name="yunohost",
-                      url="https://app.yunohost.org/official.json")
+                      url="https://app.yunohost.org/apps.json")
     except Exception as e:
         logger.warning(str(e))
 
@@ -434,7 +441,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    service_regen_conf(force=True)
+    regen_conf(force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -451,11 +458,16 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     else:
         # We need to explicitly ask the regen conf to regen ssh
         # (by default, i.e. first argument = None, it won't because it's too touchy)
-        service_regen_conf(names=["ssh"], force=True)
+        regen_conf(names=["ssh"], force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))
+
+
+def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+                     list_pending=False):
+    return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
 def tools_update(ignore_apps=False, ignore_packages=False):
@@ -476,12 +488,21 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         command = "LC_ALL=C apt update"
         # TODO : add @is_unit_operation to tools_update so that the
         # debug output can be fetched when there's an issue...
+
+        # Filter boring message about "apt not having a stable CLI interface"
+        # Also keep track of wether or not we encountered a warning...
+        warnings = []
+        def is_legit_warning(m):
+            legit_warning = m.rstrip() and "apt does not have a stable CLI interface" not in m.rstrip()
+            if legit_warning:
+                warnings.append(m)
+            return legit_warning
+
         callbacks = (
             # stdout goes to debug
             lambda l: logger.debug(l.rstrip()),
-            # stderr goes to warning
-            # FIXME : filter the damn "CLI interface not stable" from apt >.>
-            lambda l: logger.warning(l.rstrip()),
+            # stderr goes to warning except for the boring apt messages
+            lambda l: logger.warning(l.rstrip()) if is_legit_warning(l) else logger.debug(l.rstrip())
         )
 
         logger.info(m18n.n('updating_apt_cache'))
@@ -489,12 +510,9 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         returncode = call_async_output(command, callbacks, shell=True)
 
         if returncode != 0:
-
-            # TODO : here, we should run something like a
-            # `cat /etc/apt/sources.list /etc/apt/sources.list.d/*`
-            # and append it to the error message to improve debugging
-
-            raise YunohostError('update_cache_failed')
+            raise YunohostError('update_apt_cache_failed', sourceslist='\n'.join(_dump_sources_list()))
+        elif warnings:
+            logger.error(m18n.n('update_apt_cache_warning', sourceslist='\n'.join(_dump_sources_list())))
 
         packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n('done'))
@@ -550,6 +568,17 @@ def _list_upgradable_apt_packages():
             "new_version": line[1],
             "current_version": line[5].strip("]"),
         }
+
+
+def _dump_sources_list():
+
+    filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")
+    for filename in filenames:
+        with open(filename, "r") as f:
+            for line in f.readlines():
+                if line.startswith("#") or not line.strip():
+                    continue
+                yield filename.replace("/etc/apt/", "") + ":" + line.strip()
 
 
 @is_unit_operation()
@@ -769,12 +798,13 @@ def tools_diagnosis(auth, private=False):
         }
 
     # nginx -t
-    try:
-        diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Unable to check 'nginx -t', exception: %s" % e)
+    p = subprocess.Popen("nginx -t".split(),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    out, _ = p.communicate()
+    diagnosis["nginx"] = out.strip().split("\n")
+    if p.returncode != 0:
+        logger.error(out)
 
     # Services status
     services = service_status()
@@ -806,7 +836,7 @@ def tools_diagnosis(auth, private=False):
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
-        diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
+        diagnosis['private']['regen_conf'] = regen_conf(with_diff=True, dry_run=True)
 
     try:
         diagnosis['security'] = {
