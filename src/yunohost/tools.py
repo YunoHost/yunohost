@@ -422,10 +422,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
-    # Setup the default official app list with cron job
+    # Setup the default apps list with cron job
     try:
         app_fetchlist(name="yunohost",
-                      url="https://app.yunohost.org/official.json")
+                      url="https://app.yunohost.org/apps.json")
     except Exception as e:
         logger.warning(str(e))
 
