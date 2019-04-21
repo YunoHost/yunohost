@@ -1563,11 +1563,11 @@ tools:
                 authenticate: all
                 authenticator: ldap-anonymous
             arguments:
-                --ignore-apps:
-                    help: Ignore apps upgrade
-                    action: store_true
-                --ignore-packages:
-                    help: Ignore APT packages upgrade
+                --apps:
+                    help: List of apps to upgrade (all by default)
+                    nargs: "*"
+                --system:
+                    help: Upgrade only the system packages
                     action: store_true
 
         ### tools_diagnosis()

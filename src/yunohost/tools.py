@@ -582,22 +582,29 @@ def _dump_sources_list():
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=False):
+def tools_upgrade(operation_logger, auth, apps=None, system=False):
     """
     Update apps & package cache, then display changelog
 
     Keyword arguments:
-        ignore_apps -- Ignore apps upgrade
-        ignore_packages -- Ignore APT packages upgrade
-
+       apps -- List of apps to upgrade (or [] to update all apps)
+       system -- True to upgrade system
     """
     from yunohost.utils import packages
     if packages.dpkg_is_broken():
         raise YunohostError("dpkg_is_broken")
 
+    if system is not False and apps is not None:
+        # TODO : i18n
+        raise YunohostError("Cannot upgrade both system and apps at the same time")
+
+    if system is False and apps is None:
+        # TODO : i18n
+        raise YunohostError("Please specify --apps OR --system")
+
     failure = False
 
-    if not ignore_packages:
+    if system is True:
 
         # Check that there's indeed some packages to upgrade
         upgradables = list(_list_upgradable_apt_packages())
@@ -722,7 +729,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
             operation_logger.success()
 
 
-    if not ignore_apps:
+    if apps is not None:
         try:
             app_upgrade(auth)
         except Exception as e:
