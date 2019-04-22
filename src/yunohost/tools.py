@@ -602,8 +602,6 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         # TODO : i18n
         raise YunohostError("Please specify --apps OR --system")
 
-    failure = False
-
     if system is True:
 
         # Check that there's indeed some packages to upgrade
@@ -633,7 +631,7 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         #
         # "Regular" packages upgrade
         #
-        if not failure and noncritical_packages_upgradable:
+        if noncritical_packages_upgradable:
 
             # TODO : i18n
             logger.info("Upgrading 'regular' (non-yunohost-related) packages ...")
@@ -645,31 +643,26 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             # Doublecheck with apt-mark showhold that packages are indeed held ...
             held_packages = check_output("apt-mark showhold").split("\n")
             if any(p not in held_packages for p in critical_packages):
-                failure = True
                 logger.warning('Unable to hold critical packages ...')
-                logger.error(m18n.n('packages_upgrade_failed'))
-                # FIXME : watdo here, should this be an exception or just an
-                # error
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
+                raise YunohostError(m18n.n('packages_upgrade_failed'))
 
-            if not failure:
-                logger.debug("Running apt command :\n{}".format(dist_upgrade))
+            logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
-                callbacks = (
-                    lambda l: logger.info(l.rstrip()),
-                    lambda l: logger.warning(l.rstrip()),
-                )
-                returncode = call_async_output(dist_upgrade, callbacks, shell=True)
-                if returncode != 0:
-                    failure = True
-                    logger.warning('unable to upgrade packages: %s' % ', '.join(noncritical_packages_upgradable))
-                    logger.error(m18n.n('packages_upgrade_failed'))
-                    operation_logger.error(m18n.n('packages_upgrade_failed'))
+            callbacks = (
+                lambda l: logger.info(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            returncode = call_async_output(dist_upgrade, callbacks, shell=True)
+            if returncode != 0:
+                logger.warning('unable to upgrade packages: %s' % ', '.join(noncritical_packages_upgradable))
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
+                raise YunohostError(m18n.n('packages_upgrade_failed'))
 
         #
         # Critical packages upgrade
         #
-        if not failure and critical_packages_upgradable:
+        if critical_packages_upgradable:
 
             # TODO : i18n
             logger.info("Upgrading 'special' (yunohost-related) packages ...")
@@ -681,12 +674,9 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             # Doublecheck with apt-mark showhold that packages are indeed unheld ...
             unheld_packages = check_output("apt-mark showhold").split("\n")
             if any(p in unheld_packages for p in critical_packages):
-                failure = True
                 logger.warning('Unable to unhold critical packages ...')
-                logger.error(m18n.n('packages_upgrade_failed'))
-                # FIXME : watdo here, should this be an exception or just an
-                # error
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
+                raise YunohostError(m18n.n('packages_upgrade_failed'))
 
             #
             # Here we use a dirty hack to run a command after the current
@@ -715,17 +705,14 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
 
             logger.debug("Running command :\n{}".format(command))
             os.system(command)
-
-            # TODO / FIXME : return from this function immediately,
-            # otherwise the apps upgrade might happen and it's gonna be a mess
+            return
 
             # FIXME / open question : what about "permanently" mark yunohost
             # as "hold" to avoid accidental deletion of it...
             # (so, only unhold it during the upgrade)
 
-        elif not failure:
-
-            logger.info(m18n.n('done'))
+        else:
+            logger.success(m18n.n('system_upgraded'))
             operation_logger.success()
 
 
@@ -733,12 +720,8 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         try:
             app_upgrade(auth, app=apps)
         except Exception as e:
-            failure = True
             logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_some_app_failed'))
-
-    if not failure:
-        logger.success(m18n.n('system_upgraded'))
 
     # Return API logs if it is an API call
     is_api = True if msettings.get('interface') == 'api' else False
