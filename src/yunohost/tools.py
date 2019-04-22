@@ -731,7 +731,7 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
 
     if apps is not None:
         try:
-            app_upgrade(auth)
+            app_upgrade(auth, app=apps)
         except Exception as e:
             failure = True
             logger.warning('unable to upgrade apps: %s' % str(e))
