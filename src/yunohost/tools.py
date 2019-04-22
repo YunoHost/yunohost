@@ -595,12 +595,10 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         raise YunohostError("dpkg_is_broken")
 
     if system is not False and apps is not None:
-        # TODO : i18n
-        raise YunohostError("Cannot upgrade both system and apps at the same time")
+        raise YunohostError("tools_upgrade_cant_both")
 
     if system is False and apps is None:
-        # TODO : i18n
-        raise YunohostError("Please specify --apps OR --system")
+        raise YunohostError("tools_upgrade_at_least_one")
 
     #
     # Apps
@@ -650,17 +648,17 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         #
         if noncritical_packages_upgradable:
 
-            # TODO : i18n
-            logger.info("Upgrading 'regular' (non-yunohost-related) packages ...")
+            logger.info(m18n.n("tools_upgrade_regular_packages"))
 
             # TODO : factorize this in utils/packages.py ?
             # Mark all critical packages as held
             for package in critical_packages:
                 check_output("apt-mark hold %s" % package)
+
             # Doublecheck with apt-mark showhold that packages are indeed held ...
             held_packages = check_output("apt-mark showhold").split("\n")
             if any(p not in held_packages for p in critical_packages):
-                logger.warning('Unable to hold critical packages ...')
+                logger.warning(m18n.n("tools_upgrade_cant_hold_critical_packages"))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
 
@@ -672,7 +670,8 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
-                logger.warning('unable to upgrade packages: %s' % ', '.join(noncritical_packages_upgradable))
+                logger.warning('tools_upgrade_regular_packages_failed',
+                               packages_list=', '.join(noncritical_packages_upgradable))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
 
@@ -681,8 +680,7 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         #
         if critical_packages_upgradable:
 
-            # TODO : i18n
-            logger.info("Upgrading 'special' (yunohost-related) packages ...")
+            logger.info(m18n.n("tools_upgrade_special_packages"))
 
             # TODO : factorize this in utils/packages.py ?
             # Mark all critical packages as unheld
@@ -690,9 +688,9 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
                 check_output("apt-mark unhold %s" % package)
 
             # Doublecheck with apt-mark showhold that packages are indeed unheld ...
-            unheld_packages = check_output("apt-mark showhold").split("\n")
-            if any(p in unheld_packages for p in critical_packages):
-                logger.warning('Unable to unhold critical packages ...')
+            held_packages = check_output("apt-mark showhold").split("\n")
+            if any(p in held_packages for p in critical_packages):
+                logger.warning(m18n.n("tools_upgrade_cant_unhold_critical_packages"))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
 
@@ -713,21 +711,17 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
-            # TODO : i18n
-            upgrade_completed = "\nYunoHost package upgrade completed !\nPress [Enter] to get the command line back"
+            upgrade_completed = "\n"+m18n.n("tools_upgrade_special_packages_completed")
             command = "({} && {} && {}; {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
                                                                  command,
                                                                  mark_success,
                                                                  update_log_metadata,
                                                                  upgrade_completed)
 
+            logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
             logger.debug("Running command :\n{}".format(command))
             os.system(command)
             return
-
-            # FIXME / open question : what about "permanently" mark yunohost
-            # as "hold" to avoid accidental deletion of it...
-            # (so, only unhold it during the upgrade)
 
         else:
             logger.success(m18n.n('system_upgraded'))
