@@ -691,12 +691,12 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
 
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
             wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
-            mark_success = "(echo 'success: true' | tee -a {})".format(operation_logger.md_path)
+            mark_success = "(echo 'success: true' > {})".format(operation_logger.md_path)
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
             # TODO : i18n
-            upgrade_completed = "YunoHost package upgrade completed ! Press [enter] to get the command line back"
+            upgrade_completed = "\nYunoHost package upgrade completed !\nPress [Enter] to get the command line back"
             command = "({} && {} && {}; {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
                                                                  command,
                                                                  mark_success,
