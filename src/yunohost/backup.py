@@ -2279,7 +2279,7 @@ def backup_info(name, with_details=False, human_readable=False):
                     if human_readable:
                         key_info["size"] = binary_to_human(key_info["size"]) + 'B'
                 else:
-                    key_info["size"] = 0
+                    key_info["size"] = -1
                     if human_readable:
                         key_info["size"] = "?"
 
