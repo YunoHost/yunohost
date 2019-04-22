@@ -270,7 +270,7 @@
     "log_tools_migrations_migrate_forward": "Migrate forward",
     "log_tools_migrations_migrate_backward": "Migrate backward",
     "log_tools_postinstall": "Postinstall your YunoHost server",
-    "log_tools_upgrade": "Upgrade debian packages",
+    "log_tools_upgrade": "Upgrade system packages",
     "log_tools_shutdown": "Shutdown your server",
     "log_tools_reboot": "Reboot your server",
     "ldap_init_failed_to_create_admin": "LDAP initialization failed to create admin user",
