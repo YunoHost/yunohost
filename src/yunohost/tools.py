@@ -602,6 +602,23 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         # TODO : i18n
         raise YunohostError("Please specify --apps OR --system")
 
+    #
+    # Apps
+    # This is basically just an alias to yunohost app upgrade ...
+    #
+
+    if apps is not None:
+        try:
+            app_upgrade(auth, app=apps)
+        except Exception as e:
+            logger.warning('unable to upgrade apps: %s' % str(e))
+            logger.error(m18n.n('app_upgrade_some_app_failed'))
+
+
+    #
+    # System
+    #
+
     if system is True:
 
         # Check that there's indeed some packages to upgrade
@@ -671,6 +688,7 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             # Mark all critical packages as unheld
             for package in critical_packages:
                 check_output("apt-mark unhold %s" % package)
+
             # Doublecheck with apt-mark showhold that packages are indeed unheld ...
             unheld_packages = check_output("apt-mark showhold").split("\n")
             if any(p in unheld_packages for p in critical_packages):
@@ -714,14 +732,6 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         else:
             logger.success(m18n.n('system_upgraded'))
             operation_logger.success()
-
-
-    if apps is not None:
-        try:
-            app_upgrade(auth, app=apps)
-        except Exception as e:
-            logger.warning('unable to upgrade apps: %s' % str(e))
-            logger.error(m18n.n('app_upgrade_some_app_failed'))
 
 
 def tools_diagnosis(auth, private=False):
