@@ -105,6 +105,9 @@ ynh_psql_create_db() {
 # Requires YunoHost version 3.?.? or higher.
 ynh_psql_drop_db() {
 	local db=$1
+	# First, force disconnection of all clients connected to the database
+	# https://stackoverflow.com/questions/5408156/how-to-drop-a-postgresql-database-if-there-are-active-connections-to-it
+	# https://dba.stackexchange.com/questions/16426/how-to-drop-all-connections-to-a-specific-database-without-stopping-the-server
 	ynh_psql_execute_as_root --sql="SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db';" --database="$db"
 	sudo --login --user=postgres dropdb $db
 }
