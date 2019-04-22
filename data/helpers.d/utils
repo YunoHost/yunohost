@@ -166,15 +166,22 @@ ynh_setup_source () {
     ynh_handle_getopts_args "$@"
     source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
 
+    local src_file_path="$YNH_CWD/../conf/${source_id}.src"
+    # In case of restore script the src file is in an other path.
+    # So try to use the restore path if the general path point to no file.
+    if [ ! -e "$src_file_path" ]; then
+        src_file_path="$YNH_CWD/../settings/conf/${source_id}.src"
+    fi
+
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    local src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${source_id}.src" | cut -d= -f2-)
+    local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut -d= -f2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut -d= -f2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut -d= -f2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut -d= -f2-)
+    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut -d= -f2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut -d= -f2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut -d= -f2-)
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
