@@ -9,7 +9,9 @@ Pages are stored in OUTPUT_DIR
 import yaml
 import os
 
-ACTIONSMAP_FILE = '/usr/share/moulinette/actionsmap/yunohost.yml'
+
+THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/../data/actionsmap/yunohost.yml'
 OUTPUT_DIR ="output/"
 
 # creates output directory
@@ -17,7 +19,7 @@ os.system("mkdir "+ OUTPUT_DIR )
 
 
 # man page of yunohost
-cmd = "sudo help2man \" yunohost \" -o " + OUTPUT_DIR + "yunohost" 
+cmd = "sudo help2man \" yunohost \" -o " + OUTPUT_DIR + "yunohost"
 print(cmd)
 os.system(cmd)
 
@@ -36,6 +38,6 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
         ACTIONS_DICT[domain] = ACTIONS_STR
         for action in ACTIONS:
             #print("yunohost", domain, action)
-            cmd = "sudo help2man \" yunohost " + domain + "  "  + action + " --help \" -o " +  OUTPUT_DIR + "yunohost_" + domain+ "_" + action 
+            cmd = "sudo help2man \" yunohost " + domain + "  "  + action + " --help \" -o " +  OUTPUT_DIR + "yunohost_" + domain+ "_" + action
             print(cmd)
-            os.system(cmd) 
+            os.system(cmd)
