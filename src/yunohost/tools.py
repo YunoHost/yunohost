@@ -723,11 +723,6 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_some_app_failed'))
 
-    # Return API logs if it is an API call
-    is_api = True if msettings.get('interface') == 'api' else False
-    if is_api:
-        return {"log": service_log('yunohost-api', number="100").values()[0]}
-
 
 def tools_diagnosis(auth, private=False):
     """
