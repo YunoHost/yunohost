@@ -370,7 +370,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     # Define output callbacks and call command
     callbacks = (
-        stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()),
+        stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()+"\r"),
         stderr_callback if stderr_callback else lambda l: logger.warning(l.rstrip()),
     )
 
