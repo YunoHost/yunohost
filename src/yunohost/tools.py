@@ -530,21 +530,26 @@ def tools_update(apps=False, system=False):
             # FIXME : silent exception !?
             pass
 
-        app_list_installed = os.listdir(APPS_SETTING_PATH)
-        for app_id in app_list_installed:
-
-            app_dict = app_info(app_id, raw=True)
-
-            if app_dict["upgradable"] == "yes":
-                upgradable_apps.append({
-                    'id': app_id,
-                    'label': app_dict['settings']['label']
-                })
+        upgradable_apps = list(_list_upgradable_apps())
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n('already_up_to_date'))
 
     return {'system': upgradable_system_packages, 'apps': upgradable_apps}
+
+
+def _list_upgradable_apps():
+
+    app_list_installed = os.listdir(APPS_SETTING_PATH)
+    for app_id in app_list_installed:
+
+        app_dict = app_info(app_id, raw=True)
+
+        if app_dict["upgradable"] == "yes":
+            yield {
+                'id': app_id,
+                'label': app_dict['settings']['label']
+            }
 
 
 # TODO : move this to utils/packages.py ?
@@ -610,12 +615,27 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
     #
 
     if apps is not None:
+
+        # Make sure there's actually something to upgrade
+
+        upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
+
+        if not upgradable_apps:
+            logger.info(m18n.n("app_no_upgrade"))
+            return
+        elif len(apps) and all(app not in upgradable_apps for app in apps):
+            logger.info(m18n.n("apps_already_up_to_date"))
+            return
+
+        # Actually start the upgrades
+
         try:
             app_upgrade(auth, app=apps)
         except Exception as e:
             logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_some_app_failed'))
 
+        return
 
     #
     # System
