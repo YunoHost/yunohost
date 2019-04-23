@@ -1548,11 +1548,11 @@ tools:
             action_help: YunoHost update
             api: PUT /update
             arguments:
-                --ignore-apps:
-                    help: Ignore apps cache update and changelog
+                --apps:
+                    help: Fetch the application list to check which apps can be upgraded
                     action: store_true
-                --ignore-packages:
-                    help: Ignore APT cache update and changelog
+                --system:
+                    help: Fetch available system packages upgrades (equivalent to apt update)
                     action: store_true
 
         ### tools_upgrade()

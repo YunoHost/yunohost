@@ -470,18 +470,22 @@ def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
-def tools_update(ignore_apps=False, ignore_packages=False):
+def tools_update(apps=False, system=False):
     """
-    Update apps & package cache, then display changelog
+    Update apps & system package cache
 
     Keyword arguments:
-        ignore_apps -- Ignore app list update and changelog
-        ignore_packages -- Ignore apt cache update and changelog
-
+        system -- Fetch available system packages upgrades (equivalent to apt update)
+        apps -- Fetch the application list to check which apps can be upgraded
     """
-    # "packages" will list upgradable packages
-    packages = []
-    if not ignore_packages:
+
+    # If neither --apps nor --system specified, do both
+    if not apps and not system:
+        apps = True
+        system = True
+
+    upgradable_system_packages = []
+    if system:
 
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
@@ -514,12 +518,12 @@ def tools_update(ignore_apps=False, ignore_packages=False):
         elif warnings:
             logger.error(m18n.n('update_apt_cache_warning', sourceslist='\n'.join(_dump_sources_list())))
 
-        packages = list(_list_upgradable_apt_packages())
+        upgradable_system_packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n('done'))
 
-    # "apps" will list upgradable packages
-    apps = []
-    if not ignore_apps:
+    upgradable_apps = []
+    if apps:
+        logger.info(m18n.n('updating_app_lists'))
         try:
             app_fetchlist()
         except YunohostError:
@@ -532,15 +536,15 @@ def tools_update(ignore_apps=False, ignore_packages=False):
             app_dict = app_info(app_id, raw=True)
 
             if app_dict["upgradable"] == "yes":
-                apps.append({
+                upgradable_apps.append({
                     'id': app_id,
                     'label': app_dict['settings']['label']
                 })
 
-    if len(apps) == 0 and len(packages) == 0:
-        logger.info(m18n.n('packages_no_upgrade'))
+    if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
+        logger.info(m18n.n('already_up_to_date'))
 
-    return {'packages': packages, 'apps': apps}
+    return {'system': upgradable_system_packages, 'apps': upgradable_apps}
 
 
 # TODO : move this to utils/packages.py ?
@@ -622,7 +626,7 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
         # Check that there's indeed some packages to upgrade
         upgradables = list(_list_upgradable_apt_packages())
         if not upgradables:
-            logger.info(m18n.n('packages_no_upgrade'))
+            logger.info(m18n.n('already_up_to_date'))
 
         logger.info(m18n.n('upgrading_packages'))
         operation_logger.start()
