@@ -30,7 +30,6 @@ import json
 import subprocess
 import pwd
 import socket
-from glob import glob
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
@@ -48,7 +47,7 @@ from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_start, service_enable
 from yunohost.regenconf import regen_conf
 from yunohost.monitor import monitor_disk, monitor_system
-from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.packages import ynh_packages_version, _dump_sources_list, _list_upgradable_apt_packages
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation, OperationLogger
 
@@ -486,8 +485,6 @@ def tools_update(apps=False, system=False):
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
         command = "LC_ALL=C apt update"
-        # TODO : add @is_unit_operation to tools_update so that the
-        # debug output can be fetched when there's an issue...
 
         # Filter boring message about "apt not having a stable CLI interface"
         # Also keep track of wether or not we encountered a warning...
@@ -547,44 +544,6 @@ def _list_upgradable_apps():
                 'id': app_id,
                 'label': app_dict['settings']['label']
             }
-
-
-# TODO : move this to utils/packages.py ?
-def _list_upgradable_apt_packages():
-
-    # List upgradable packages
-    # LC_ALL=C is here to make sure the results are in english
-    upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
-
-    # Dirty parsing of the output
-    upgradable_raw = [l.strip() for l in upgradable_raw.split("\n") if l.strip()]
-    for line in upgradable_raw:
-        # Remove stupid warning and verbose messages >.>
-        if "apt does not have a stable CLI interface" in line or "Listing..." in line:
-            continue
-        # line should look like :
-        # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
-        line = line.split()
-        if len(line) != 6:
-            logger.warning("Failed to parse this line : %s" % ' '.join(line))
-            continue
-
-        yield {
-            "name": line[0].split("/")[0],
-            "new_version": line[1],
-            "current_version": line[5].strip("]"),
-        }
-
-
-def _dump_sources_list():
-
-    filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")
-    for filename in filenames:
-        with open(filename, "r") as f:
-            for line in f.readlines():
-                if line.startswith("#") or not line.strip():
-                    continue
-                yield filename.replace("/etc/apt/", "") + ":" + line.strip()
 
 
 @is_unit_operation()
@@ -671,7 +630,6 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
 
             logger.info(m18n.n("tools_upgrade_regular_packages"))
 
-            # TODO : factorize this in utils/packages.py ?
             # Mark all critical packages as held
             for package in critical_packages:
                 check_output("apt-mark hold %s" % package)
@@ -703,7 +661,6 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
 
             logger.info(m18n.n("tools_upgrade_special_packages"))
 
-            # TODO : factorize this in utils/packages.py ?
             # Mark all critical packages as unheld
             for package in critical_packages:
                 check_output("apt-mark unhold %s" % package)
