@@ -34,12 +34,8 @@ from glob import glob
 from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
-from datetime import datetime
 
-import apt
-import apt.progress
-
-from moulinette import msettings, msignals, m18n
+from moulinette import msignals, m18n
 from moulinette.core import init_authenticator
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
@@ -49,7 +45,7 @@ from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, a
 from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_log, service_start, service_enable
+from yunohost.service import service_status, service_start, service_enable
 from yunohost.regenconf import regen_conf
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
@@ -496,6 +492,7 @@ def tools_update(apps=False, system=False):
         # Filter boring message about "apt not having a stable CLI interface"
         # Also keep track of wether or not we encountered a warning...
         warnings = []
+
         def is_legit_warning(m):
             legit_warning = m.rstrip() and "apt does not have a stable CLI interface" not in m.rstrip()
             if legit_warning:
@@ -735,7 +732,7 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
-            upgrade_completed = "\n"+m18n.n("tools_upgrade_special_packages_completed")
+            upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
             command = "({} && {} && {}; {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
                                                                  command,
                                                                  mark_success,
