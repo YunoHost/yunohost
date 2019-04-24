@@ -272,5 +272,10 @@
     "log_user_delete": "Elimina l'usuari « {} »",
     "log_user_update": "Actualitza la informació de l'usuari « {} »",
     "log_tools_maindomain": "Fes de « {} » el domini principal",
-    "log_tools_migrations_migrate_forward": "Migrar"
+    "log_tools_migrations_migrate_forward": "Migrar",
+    "log_tools_migrations_migrate_backward": "Migrar endarrera",
+    "log_tools_postinstall": "Fer la post instal·lació del servidor YunoHost",
+    "log_tools_upgrade": "Actualitza els paquets Debian",
+    "log_tools_shutdown": "Apaga el servidor",
+    "log_tools_reboot": "Reinicia el servidor"
 }
