@@ -686,15 +686,18 @@ def tools_upgrade(operation_logger, auth, apps=None, system=False):
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
             wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
             mark_success = "(echo 'Done!' | tee -a {} && echo 'success: true' >> {})".format(logfile, operation_logger.md_path)
+            mark_failure = "(echo 'Failed :(' | tee -a {} && echo 'success: false' >> {})".format(logfile, operation_logger.md_path)
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
             upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
-            command = "({} && {} && {}; {}; echo '{}') &".format(wait_until_end_of_yunohost_command,
-                                                                 command,
-                                                                 mark_success,
-                                                                 update_log_metadata,
-                                                                 upgrade_completed)
+            command = "(({wait} && {cmd}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}') &".format(
+                      wait=wait_until_end_of_yunohost_command,
+                      cmd=command,
+                      mark_success=mark_success,
+                      mark_failure=mark_failure,
+                      update_metadata=update_log_metadata,
+                      done=upgrade_completed)
 
             logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
             logger.debug("Running command :\n{}".format(command))
