@@ -1477,13 +1477,6 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_ldapinit()
-        ldapinit:
-            action_help: YunoHost LDAP initialization
-            api: POST /ldap
-            configuration:
-                authenticate: all
-
         ### tools_adminpw()
         adminpw:
             action_help: Change password of admin and root users
