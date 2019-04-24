@@ -2273,15 +2273,16 @@ def backup_info(name, with_details=False, human_readable=False):
             system_key = "hooks"
 
         if "size_details" in info.keys():
-            for name, key_info in info["apps"].items():
-                if name in info["size_details"]["apps"].keys():
-                    key_info["size"] = info["size_details"]["apps"][name]
-                    if human_readable:
-                        key_info["size"] = binary_to_human(key_info["size"]) + 'B'
-                else:
-                    key_info["size"] = -1
-                    if human_readable:
-                        key_info["size"] = "?"
+            for category in ["apps", "system"]:
+                for name, key_info in info[category].items():
+                    if name in info["size_details"][category].keys():
+                        key_info["size"] = info["size_details"][category][name]
+                        if human_readable:
+                            key_info["size"] = binary_to_human(key_info["size"]) + 'B'
+                    else:
+                        key_info["size"] = -1
+                        if human_readable:
+                            key_info["size"] = "?"
 
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
