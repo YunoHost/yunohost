@@ -258,5 +258,19 @@
     "log_backup_restore_system": "Restaura el sistema a partir d'una còpia de seguretat",
     "log_backup_restore_app": "Restaura « {} » a partir d'una còpia de seguretat",
     "log_remove_on_failed_restore": "Elimina « {} » després de que la restauració a partir de la còpia de seguretat hagi fallat",
-    "log_remove_on_failed_install": "Elimina « {} » després de que la instal·lació hagi fallat"
+    "log_remove_on_failed_install": "Elimina « {} » després de que la instal·lació hagi fallat",
+    "log_domain_add": "Afegir el domini « {} » a la configuració del sistema",
+    "log_domain_remove": "Elimina el domini « {} » de la configuració del sistema",
+    "log_dyndns_subscribe": "Subscriure's a un subdomini YunoHost « {} »",
+    "log_dyndns_update": "Actualitza la IP associada al subdomini YunoHost « {} »",
+    "log_letsencrypt_cert_install": "Instal·la el certificat Let's Encrypt al domini « {} »",
+    "log_selfsigned_cert_install": "Instal·la el certificat autosignat al domini « {} »",
+    "log_letsencrypt_cert_renew": "Renova el certificat Let's Encrypt de « {} »",
+    "log_service_enable": "Activa el servei « {} »",
+    "log_regen_conf": "Regenera la configuració del sistema « {} »",
+    "log_user_create": "Afegeix l'usuari « {} »",
+    "log_user_delete": "Elimina l'usuari « {} »",
+    "log_user_update": "Actualitza la informació de l'usuari « {} »",
+    "log_tools_maindomain": "Fes de « {} » el domini principal",
+    "log_tools_migrations_migrate_forward": "Migrar"
 }
