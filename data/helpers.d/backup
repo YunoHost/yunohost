@@ -5,17 +5,17 @@ source /usr/share/yunohost/helpers.d/getopts
 CAN_BIND=${CAN_BIND:-1}
 
 # Add a file or a directory to the list of paths to backup
-# 
+#
 # Note: this helper could be used in backup hook or in backup script inside an
 # app package
 #
 # Details: ynh_backup writes SRC and the relative DEST into a CSV file. And it
-# creates the parent destination directory 
-# 
+# creates the parent destination directory
+#
 # If DEST is ended by a slash it complete this path with the basename of SRC.
 #
 # usage: ynh_backup --src_path=src_path [--dest_path=dest_path] [--is_big] [--not_mandatory]
-# | arg: -s, --src_path - file or directory to bind or symlink or copy. it shouldn't be in the backup dir. 
+# | arg: -s, --src_path - file or directory to bind or symlink or copy. it shouldn't be in the backup dir.
 # | arg: -d, --dest_path - destination file or directory inside the backup dir
 # | arg: -b, --is_big - Indicate data are big (mail, video, image ...)
 # | arg: -m, --not_mandatory - Indicate that if the file is missing, the backup can ignore it.
@@ -32,7 +32,7 @@ CAN_BIND=${CAN_BIND:-1}
 #
 # ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf/"
 # # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
-# 
+#
 # ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "conf"
 # # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf"
 #
@@ -190,7 +190,7 @@ with open(sys.argv[1], 'r') as backup_file:
     return $?
 }
 
-# Restore a file or a directory 
+# Restore a file or a directory
 #
 # Use the registered path in backup_list by ynh_backup to restore the file at
 # the right place.
@@ -205,7 +205,7 @@ with open(sys.argv[1], 'r') as backup_file:
 #     # You can also use relative paths:
 #     ynh_restore_file "conf/nginx.conf"
 #
-# If DEST_PATH already exists and is lighter than 500 Mo, a backup will be made in 
+# If DEST_PATH already exists and is lighter than 500 Mo, a backup will be made in
 # /home/yunohost.conf/backup/. Otherwise, the existing file is removed.
 #
 # if apps/wordpress/etc/nginx/conf.d/$domain.d/$app.conf exists, restore it into
@@ -248,7 +248,7 @@ ynh_restore_file () {
         then
             local backup_file="/home/yunohost.conf/backup/${dest_path}.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir -p "$(dirname "$backup_file")"
-            mv "${dest_path}" "$backup_file"	# Move the current file or directory
+            mv "${dest_path}" "$backup_file"    # Move the current file or directory
         else
             ynh_secure_remove --file=${dest_path}
         fi
@@ -282,26 +282,6 @@ ynh_bind_or_cp() {
     ynh_backup "$1" "$2" 1
 }
 
-# Create a directory under /tmp
-#
-# [internal]
-#
-# Deprecated helper
-#
-# usage: ynh_mkdir_tmp
-# | ret: the created directory path
-ynh_mkdir_tmp() {
-    ynh_print_warn --message="The helper ynh_mkdir_tmp is deprecated."
-    ynh_print_warn --message="You should use 'mktemp -d' instead and manage permissions \
-properly with chmod/chown."
-    local TMP_DIR=$(mktemp -d)
-
-    # Give rights to other users could be a security risk.
-    # But for retrocompatibility we need it. (This helpers is deprecated)
-    chmod 755 $TMP_DIR
-    echo $TMP_DIR
-}
-
 # Calculate and store a file checksum into the app settings
 #
 # $app should be defined when calling this helper
@@ -311,29 +291,29 @@ properly with chmod/chown."
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_store_file_checksum () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=f
-	declare -Ar args_array=( [f]=file= )
-	local file
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=f
+    declare -Ar args_array=( [f]=file= )
+    local file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
+    local checksum_setting_name=checksum_${file//[\/ ]/_}    # Replace all '/' and ' ' by '_'
+    ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(sudo md5sum "$file" | cut -d' ' -f1)
 
-	# If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup
-	if [ -n "${backup_file_checksum-}" ]
-	then
-		# Print the diff between the previous file and the new one.
-		# diff return 1 if the files are different, so the || true
-		diff --report-identical-files --unified --color=always $backup_file_checksum $file >&2 || true
-	fi
-	# Unset the variable, so it wouldn't trig a ynh_store_file_checksum without a ynh_backup_if_checksum_is_different before it.
-	unset backup_file_checksum
+    # If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup
+    if [ -n "${backup_file_checksum-}" ]
+    then
+        # Print the diff between the previous file and the new one.
+        # diff return 1 if the files are different, so the || true
+        diff --report-identical-files --unified --color=always $backup_file_checksum $file >&2 || true
+    fi
+    # Unset the variable, so it wouldn't trig a ynh_store_file_checksum without a ynh_backup_if_checksum_is_different before it.
+    unset backup_file_checksum
 }
 
 # Verify the checksum and backup the file if it's different
-# This helper is primarily meant to allow to easily backup personalised/manually 
+# This helper is primarily meant to allow to easily backup personalised/manually
 # modified config files.
 #
 # $app should be defined when calling this helper
@@ -344,28 +324,28 @@ ynh_store_file_checksum () {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_backup_if_checksum_is_different () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=f
-	declare -Ar args_array=( [f]=file= )
-	local file
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=f
+    declare -Ar args_array=( [f]=file= )
+    local file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
-	# backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
-	backup_file_checksum=""
-	if [ -n "$checksum_value" ]
-	then	# Proceed only if a value was stored into the app settings
-		if ! echo "$checksum_value $file" | sudo md5sum -c --status
-		then	# If the checksum is now different
-			backup_file_checksum="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
-			sudo mkdir -p "$(dirname "$backup_file_checksum")"
-			sudo cp -a "$file" "$backup_file_checksum"	# Backup the current file
-			ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
-			echo "$backup_file_checksum"	# Return the name of the backup file
-		fi
-	fi
+    local checksum_setting_name=checksum_${file//[\/ ]/_}    # Replace all '/' and ' ' by '_'
+    local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+    # backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
+    backup_file_checksum=""
+    if [ -n "$checksum_value" ]
+    then    # Proceed only if a value was stored into the app settings
+        if ! echo "$checksum_value $file" | sudo md5sum -c --status
+        then    # If the checksum is now different
+            backup_file_checksum="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+            sudo mkdir -p "$(dirname "$backup_file_checksum")"
+            sudo cp -a "$file" "$backup_file_checksum"    # Backup the current file
+            ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
+            echo "$backup_file_checksum"    # Return the name of the backup file
+        fi
+    fi
 }
 
 # Delete a file checksum from the app settings
@@ -377,54 +357,94 @@ ynh_backup_if_checksum_is_different () {
 #
 # Requires YunoHost version 3.3.1 or higher.
 ynh_delete_file_checksum () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=f
-	declare -Ar args_array=( [f]=file= )
-	local file
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=f
+    declare -Ar args_array=( [f]=file= )
+    local file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	local checksum_setting_name=checksum_${file//[\/ ]/_}	# Replace all '/' and ' ' by '_'
-	ynh_app_setting_delete --app=$app --key=$checksum_setting_name
+    local checksum_setting_name=checksum_${file//[\/ ]/_}    # Replace all '/' and ' ' by '_'
+    ynh_app_setting_delete --app=$app --key=$checksum_setting_name
 }
 
-# Remove a file or a directory securely
+# Make a backup in case of failed upgrade
 #
-# usage: ynh_secure_remove --file=path_to_remove
-# | arg: -f, --file - File or directory to remove
+# usage:
+# ynh_backup_before_upgrade
+# ynh_clean_setup () {
+#     ynh_restore_upgradebackup
+# }
+# ynh_abort_if_errors
 #
-# Requires YunoHost version 2.6.4 or higher.
-ynh_secure_remove () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=f
-	declare -Ar args_array=( [f]=file= )
-	local file
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+# Requires YunoHost version 2.7.2 or higher.
+ynh_backup_before_upgrade () {
+    if [ ! -e "/etc/yunohost/apps/$app/scripts/backup" ]
+    then
+        ynh_print_warn --message="This app doesn't have any backup script."
+        return
+    fi
+    backup_number=1
+    local old_backup_number=2
+    local app_bck=${app//_/-}    # Replace all '_' by '-'
+    NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
 
-	local forbidden_path=" \
-	/var/www \
-	/home/yunohost.app"
+    if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
+    then
+        # Check if a backup already exists with the prefix 1
+        if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
+        then
+            # Prefix becomes 2 to preserve the previous backup
+            backup_number=2
+            old_backup_number=1
+        fi
 
-	if [ $# -ge 2 ]
-	then
-		ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
-	fi
+        # Create backup
+        sudo BACKUP_CORE_ONLY=1 yunohost backup create --apps $app --name $app_bck-pre-upgrade$backup_number --debug
+        if [ "$?" -eq 0 ]
+        then
+            # If the backup succeeded, remove the previous backup
+            if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$old_backup_number
+            then
+                # Remove the previous backup only if it exists
+                sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
+            fi
+        else
+            ynh_die --message="Backup failed, the upgrade process was aborted."
+        fi
+    else
+        ynh_print_warn --message="\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
+    fi
+}
 
-	if [[ "$forbidden_path" =~ "$file" \
-		# Match all paths or subpaths in $forbidden_path
-		|| "$file" =~ ^/[[:alnum:]]+$ \
-		# Match all first level paths from / (Like /var, /root, etc...)
-		|| "${file:${#file}-1}" = "/" ]]
-		# Match if the path finishes by /. Because it seems there is an empty variable
-	then
-		ynh_print_warn --message="Avoid deleting $file."
-	else
-		if [ -e "$file" ]
-		then
-			sudo rm -R "$file"
-		else
-			ynh_print_info --message="$file wasn't deleted because it doesn't exist."
-		fi
-	fi
+# Restore a previous backup if the upgrade process failed
+#
+# usage:
+# ynh_backup_before_upgrade
+# ynh_clean_setup () {
+#     ynh_restore_upgradebackup
+# }
+# ynh_abort_if_errors
+#
+# Requires YunoHost version 2.7.2 or higher.
+ynh_restore_upgradebackup () {
+    ynh_print_err --message="Upgrade failed."
+    local app_bck=${app//_/-}    # Replace all '_' by '-'
+
+    NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
+
+    if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
+    then
+        # Check if an existing backup can be found before removing and restoring the application.
+        if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
+        then
+            # Remove the application then restore it
+            sudo yunohost app remove $app
+            # Restore the backup
+            sudo yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force --debug
+            ynh_die --message="The app was restored to the way it was before the failed upgrade."
+        fi
+    else
+        ynh_print_warn --message="\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !"
+    fi
 }
