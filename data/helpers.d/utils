@@ -40,7 +40,7 @@ ynh_get_plain_key() {
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_restore_upgradebackup () {
-	echo "Upgrade failed." >&2
+	ynh_print_err --message="Upgrade failed."
 	local app_bck=${app//_/-}	# Replace all '_' by '-'
 
   	NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
@@ -57,7 +57,7 @@ ynh_restore_upgradebackup () {
 			ynh_die --message="The app was restored to the way it was before the failed upgrade."
 		fi
 	else
-      		echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
+		ynh_print_warn --message="\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !"
   	fi
 }
 
@@ -74,7 +74,7 @@ ynh_restore_upgradebackup () {
 ynh_backup_before_upgrade () {
 	if [ ! -e "/etc/yunohost/apps/$app/scripts/backup" ]
 	then
-		echo "This app doesn't have any backup script." >&2
+		ynh_print_warn --message="This app doesn't have any backup script."
 		return
 	fi
 	backup_number=1
@@ -106,7 +106,7 @@ ynh_backup_before_upgrade () {
 			ynh_die --message="Backup failed, the upgrade process was aborted."
 		fi
         else
-                echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
+                ynh_print_warn --message="\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
         fi
 }
 
