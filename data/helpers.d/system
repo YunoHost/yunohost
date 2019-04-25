@@ -26,7 +26,7 @@ ynh_exit_properly () {
 	trap '' EXIT	# Ignore new exit signals
 	set +eu	# Do not exit anymore if a command fail or if a variable is empty
 
-	echo -e "!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!" >&2
+	ynh_print_err --message="!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!"
 
 	if type -t ynh_clean_setup > /dev/null; then	# Check if the function exist in the app script.
 		ynh_clean_setup	# Call the function to do specific cleaning for the app.
@@ -269,11 +269,11 @@ ynh_check_app_version_changed () {
       # Complete versions are the same
       if [ "$force_upgrade" != "0" ]
       then
-        echo "Upgrade forced by YNH_FORCE_UPGRADE." >&2
+        ynh_print_info --message="Upgrade forced by YNH_FORCE_UPGRADE."
         unset YNH_FORCE_UPGRADE
       elif [ "$package_check" != "0" ]
       then
-        echo "Upgrade forced for package check." >&2
+        ynh_print_info --message="Upgrade forced for package check."
       else
         ynh_die "Up-to-date, nothing to do" 0
       fi

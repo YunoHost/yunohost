@@ -1,3 +1,9 @@
+yunohost (3.5.2.2) stable; urgency=low
+
+  - Hotfix for ynh_psql_remove_db (from ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Apr 2019 17:32:00  +0000
+
 yunohost (3.5.2.1) stable; urgency=low
 
   - [fix] Fresh install was broken because of yunohost_admin.conf initialization

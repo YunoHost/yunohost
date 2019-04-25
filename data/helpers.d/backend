@@ -55,7 +55,7 @@ ynh_use_logrotate () {
 	if [ -n "$logfile" ]
 	then
 		if [ "$(echo ${logfile##*.})" != "log" ]; then	# Keep only the extension to check if it's a logfile
-			local logfile="$1/*.log"	# Else, uses the directory and all logfile into it.
+			local logfile="$logfile/*.log"	# Else, uses the directory and all logfile into it.
 		fi
 	else
 		logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
