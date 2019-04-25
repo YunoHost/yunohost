@@ -91,3 +91,47 @@ else:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
 }
+
+# Check availability of a web path
+#
+# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
+#
+# usage: ynh_webpath_available --domain=domain --path_url=path
+# | arg: -d, --domain - the domain/host of the url
+# | arg: -p, --path_url - the web path to check the availability of
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_webpath_available () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=dp
+	declare -Ar args_array=( [d]=domain= [p]=path_url= )
+	local domain
+	local path_url
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	sudo yunohost domain url-available $domain $path_url
+}
+
+# Register/book a web path for an app
+#
+# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
+#
+# usage: ynh_webpath_register --app=app --domain=domain --path_url=path
+# | arg: -a, --app - the app for which the domain should be registered
+# | arg: -d, --domain - the domain/host of the web path
+# | arg: -p, --path_url - the web path to be registered
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_webpath_register () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=adp
+	declare -Ar args_array=( [a]=app= [d]=domain= [p]=path_url= )
+	local app
+	local domain
+	local path_url
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	sudo yunohost app register-url $app $domain $path_url
+}
