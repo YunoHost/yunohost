@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source /usr/share/yunohost/helpers.d/getopts
-
 CAN_BIND=${CAN_BIND:-1}
 
 # Add a file or a directory to the list of paths to backup
