@@ -30,6 +30,7 @@ import yaml
 import time
 import re
 import urlparse
+import warnings
 import subprocess
 import glob
 import pwd
@@ -40,7 +41,7 @@ from datetime import datetime
 from moulinette import msignals, m18n, msettings
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json
+from moulinette.utils.filesystem import read_json, read_yaml
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -1585,20 +1586,17 @@ def app_config_show_panel(app):
     # this will take care of checking if the app is installed
     app_info_dict = app_info(app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
-    config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
+    config_panel, config_script = _get_config_panel_and_script(app)
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
-    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+    if not config_panel or not config_script:
         return {
             "app_id": app_id,
             "app": app,
             "app_name": app_info_dict["name"],
             "config_panel": [],
         }
-
-    config_panel = read_json(config_panel)
 
     env = {
         "YNH_APP_ID": app_id,
@@ -1676,14 +1674,11 @@ def app_config_apply(app, args):
     if not installed:
         raise YunohostError('app_not_installed', app=app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
-    config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
+    config_panel, config_script = _get_config_panel_and_script(app)
 
-    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+    if not config_panel or not config_script:
         # XXX real exception
         raise Exception("Not config-panel.json nor scripts/config")
-
-    config_panel = read_json(config_panel)
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env = {
@@ -1721,6 +1716,30 @@ def app_config_apply(app, args):
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
 
     logger.success("Config updated as expected")
+
+
+def _get_config_panel_and_script(app):
+    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.yaml')
+    config_panel_legay = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+
+    config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
+
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+
+    if not (os.path.exists(config_panel) or os.path.exists(config_panel_legay)) or not os.path.exists(config_script):
+        return None, None
+
+    if os.path.exists(config_panel_legay) and not os.path.exists(config_panel):
+        logger.warning("config panel in json format is deprecated, please "
+                       "migrate to yaml using a tool like "
+                       "https://www.json2yaml.com/ and save your config panel "
+                       "file under config_panel.yaml instead")
+
+        config_panel = read_json(config_panel_legay)
+    else:
+        config_panel = read_yaml(config_panel)
+
+    return config_panel, config_script
 
 
 def _get_app_settings(app_id):
