@@ -225,7 +225,7 @@
     "unit_unknown": "Unità '{unit:s}' sconosciuta",
     "unlimit": "Nessuna quota",
     "update_cache_failed": "Impossibile aggiornare la cache APT",
-    "updating_apt_cache": "Recupero degli aggiornamenti disponibili per i pacchietti di sistema…",
+    "updating_apt_cache": "Recupero degli aggiornamenti disponibili per i pacchetti di sistema…",
     "upgrade_complete": "Aggiornamento completo",
     "upnp_dev_not_found": "Nessuno supporto UPnP trovato",
     "upnp_disabled": "UPnP è stato disattivato",
