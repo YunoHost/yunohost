@@ -15,7 +15,8 @@ ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, '../data/actionsmap/yunohost.yml
 OUTPUT_DIR = "output/"
 
 # creates output directory
-os.system("mkdir " + OUTPUT_DIR)
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
 
 
 # man page of yunohost
