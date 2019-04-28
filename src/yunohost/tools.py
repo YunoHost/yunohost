@@ -347,7 +347,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         '/home/yunohost.app'
     ]
 
-    for folder in filter(not os.path.exists, folders_to_create):
+    for folder in filter(lambda x: not os.path.exists(x), folders_to_create):
         os.makedirs(folder)
 
     # Change folders permissions
