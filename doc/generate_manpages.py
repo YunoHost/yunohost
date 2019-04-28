@@ -29,7 +29,7 @@ subprocess.check_call(cmd, shell=True)
 with open(ACTIONSMAP_FILE, 'r') as stream:
 
     # Getting the dictionary containning what actions are possible per domain
-    OPTION_TREE = yaml.load(stream)
+    OPTION_TREE = yaml.safe_load(stream)
     DOMAINS = [str for str in OPTION_TREE.keys() if not str.startswith('_')]
     DOMAINS_STR = '"{}"'.format(' '.join(DOMAINS))
     ACTIONS_DICT = {}
