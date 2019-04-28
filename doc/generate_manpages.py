@@ -8,6 +8,7 @@ Pages are stored in OUTPUT_DIR
 
 import os
 import yaml
+import subprocess
 
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +23,7 @@ if not os.path.exists(OUTPUT_DIR):
 # man page of yunohost
 cmd = "sudo help2man \" yunohost \" -o " + OUTPUT_DIR + "yunohost"
 print(cmd)
-os.system(cmd)
+subprocess.check_call(cmd, shell=True)
 
 # man pages of "yunohost *"
 with open(ACTIONSMAP_FILE, 'r') as stream:
@@ -41,4 +42,4 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
             # print("yunohost", domain, action)
             cmd = "sudo help2man \" yunohost " + domain + "  " + action + " --help \" -o " + OUTPUT_DIR + "yunohost_" + domain + "_" + action
             print(cmd)
-            os.system(cmd)
+            subprocess.check_call(cmd, shell=True)
