@@ -6,12 +6,12 @@ This script generates man pages for yunohost.
 Pages are stored in OUTPUT_DIR
 """
 
-import yaml
 import os
+import yaml
 
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/../data/actionsmap/yunohost.yml'
+ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, '../data/actionsmap/yunohost.yml')
 OUTPUT_DIR = "output/"
 
 # creates output directory
