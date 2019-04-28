@@ -30,7 +30,7 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
 
     # Getting the dictionary containning what actions are possible per domain
     OPTION_TREE = yaml.safe_load(stream)
-    DOMAINS = [str for str in OPTION_TREE.keys() if not str.startswith('_')]
+    DOMAINS = [x for x in OPTION_TREE.keys() if not x.startswith('_')]
     DOMAINS_STR = '"{}"'.format(' '.join(DOMAINS))
     ACTIONS_DICT = {}
     for domain in DOMAINS:
