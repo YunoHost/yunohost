@@ -24,15 +24,14 @@
     Look for possible issues on the server
 """
 
-import errno
 import os
 import time
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_json, write_to_json
 
+from yunohost.utils.error import YunohostError
 from yunohost.hook import hook_list, hook_exec
 
 logger = log.getActionLogger('yunohost.diagnosis')
@@ -55,7 +54,7 @@ def diagnosis_show(categories=[], full=False):
     else:
         unknown_categories = [ c for c in categories if c not in all_categories_names ]
         if unknown_categories:
-            raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(categories)))
+            raise YunohostError('unknown_categories', categories=", ".join(categories))
 
     # Fetch all reports
     all_reports = []
@@ -88,7 +87,7 @@ def diagnosis_run(categories=[], force=False, args=None):
     else:
         unknown_categories = [ c for c in categories if c not in all_categories_names ]
         if unknown_categories:
-            raise MoulinetteError(m18n.n('unknown_categories', categories=", ".join(unknown_categories)))
+            raise YunohostError('unknown_categories', categories=", ".join(unknown_categories))
 
     # Transform "arg1=val1&arg2=val2" to { "arg1": "val1", "arg2": "val2" }
     if args is not None:
@@ -108,7 +107,7 @@ def diagnosis_run(categories=[], force=False, args=None):
             successes.append(category)
         except Exception as e:
             # FIXME / TODO : add stacktrace here ?
-            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e))) # FIXME : i18n 
+            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e))) # FIXME : i18n
 
     return diagnosis_show(successes)
 

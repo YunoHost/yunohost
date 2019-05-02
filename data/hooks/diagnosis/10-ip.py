@@ -4,6 +4,7 @@ import os
 
 from moulinette import m18n
 from moulinette.utils.network import download_text
+
 from yunohost.diagnosis import Diagnoser
 
 class IPDiagnoser(Diagnoser):
@@ -16,8 +17,7 @@ class IPDiagnoser(Diagnoser):
         if "version" not in args.keys():
             return { "versions" : [4, 6] }
         else:
-            if str(args["version"]) not in ["4", "6"]:
-                raise MoulinetteError(1, "Invalid version, should be 4 or 6.")
+            assert str(args["version"]) in ["4", "6"], "Invalid version, should be 4 or 6."
             return { "versions" : [int(args["version"])] }
 
     def run(self):
@@ -30,7 +30,7 @@ class IPDiagnoser(Diagnoser):
                        result = ipv4,
                        report = ("SUCCESS", "diagnosis_network_connected_ipv4", {}) if ipv4 \
                            else ("ERROR",   "diagnosis_network_no_ipv4", {}))
-       
+
         if 6 in versions:
             ipv6 = self.get_public_ip(6)
             yield dict(meta = {"version": 6},

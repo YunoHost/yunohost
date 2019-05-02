@@ -2,9 +2,8 @@
 
 import os
 
-from moulinette import m18n
 from moulinette.utils.network import download_text
-from moulinette.core import MoulinetteError, init_authenticator
+from moulinette.core import init_authenticator
 from moulinette.utils.process import check_output
 
 from yunohost.diagnosis import Diagnoser
@@ -26,8 +25,7 @@ class DNSDiagnoser(Diagnoser):
         if "domain" not in args.keys():
             return { "domains" : all_domains }
         else:
-            if args["domain"] not in all_domains:
-                raise MoulinetteError(errno.EINVAL, m18n.n('domain_unknown'))
+            assert args["domain"] in all_domains, "Unknown domain"
             return { "domains" : [ args["domain"] ] }
 
     def run(self):
