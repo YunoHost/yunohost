@@ -237,24 +237,3 @@ ynh_mysql_remove_db () {
 	fi
 }
 
-# Sanitize a string intended to be the name of a database
-# (More specifically : replace - and . by _)
-#
-# example: dbname=$(ynh_sanitize_dbid $app)
-#
-# usage: ynh_sanitize_dbid --db_name=name
-# | arg: -n, --db_name - name to correct/sanitize
-# | ret: the corrected name
-#
-# Requires YunoHost version 2.2.4 or higher.
-ynh_sanitize_dbid () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=n
-	declare -Ar args_array=( [n]=db_name= )
-	local db_name
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-
-	# We should avoid having - and . in the name of databases. They are replaced by _
-	echo ${db_name//[-.]/_}
-}
