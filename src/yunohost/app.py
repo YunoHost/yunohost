@@ -260,18 +260,11 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
     # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
-        if app not in app_dict:
-            # Handle multi-instance case like wordpress__2
-            if '__' in app:
-                original_app = app[:app.index('__')]
-                if original_app in app_dict:
-                    app_dict[app] = app_dict[original_app]
-                    continue
-                # FIXME : What if it's not !?!?
+        with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+            app_dict[app]['manifest'] = json.load(json_manifest)
 
-            with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
-                app_dict[app] = {"manifest": json.load(json_manifest)}
-
+        app_status = _get_app_status(app)
+        if app_status['remote']['type'] is "file":
             app_dict[app]['repository'] = None
 
     # Sort app list
