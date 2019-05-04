@@ -260,6 +260,12 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
     # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
+        if app not in app_dict:
+            app_id, app_instance_nb = _parse_app_instance_name(app)
+            # Handle multi-instance case
+            if app_instance_nb > 1:
+                app_dict[app] = app_dict[app_id]
+
         with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
             app_dict[app]['manifest'] = json.load(json_manifest)
 
