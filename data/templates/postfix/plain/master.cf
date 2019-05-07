@@ -122,6 +122,6 @@ mailman   unix  -       n       n       -       -       pipe
   flags=FR user=list argv=/usr/lib/mailman/bin/postfix-to-mailman.py
   ${nexthop} ${user}
 
-# Dovecot LDA 
-dovecot    unix  -       n       n       -       -       pipe 
-    flags=DRhu user=vmail:mail argv=/usr/lib/dovecot/deliver -f ${sender} -d ${user}@${nexthop} -m ${extension}
+# Dovecot LDA
+dovecot    unix  -       n       n       -       -       pipe
+    flags=DRhu user=vmail:mail argv=/usr/lib/dovecot/deliver -f ${sender} -d ${user}@${nexthop} -m ${extension} -a ${recipient}

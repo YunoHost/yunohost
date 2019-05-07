@@ -42,7 +42,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json
 
-from yunohost.service import service_log, _run_service_command
+from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.log import is_unit_operation, OperationLogger
 
@@ -623,6 +623,7 @@ def app_upgrade(auth, app=[], url=None, file=None):
 
         # Check requirements
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
+        _check_services_status_for_app(manifest.get("services", []))
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
@@ -778,6 +779,7 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
 
     # Check requirements
     _check_manifest_requirements(manifest, app_id)
+    _check_services_status_for_app(manifest.get("services", []))
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -1627,7 +1629,7 @@ def app_config_show_panel(app):
                             args=["show"],
                             env=env,
                             stdout_callback=parse_stdout,
-                            )
+                            )[0]
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
@@ -1713,7 +1715,7 @@ def app_config_apply(app, args):
     return_code = hook_exec(config_script,
                             args=["apply"],
                             env=env,
-                            )
+                            )[0]
 
     if return_code != 0:
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
@@ -1771,12 +1773,18 @@ def _get_app_status(app_id, format_date=False):
         raise YunohostError('app_unknown')
     status = {}
 
+    regen_status = True
     try:
         with open(app_setting_path + '/status.json') as f:
             status = json.loads(str(f.read()))
+        regen_status = False
     except IOError:
         logger.debug("status file not found for '%s'", app_id,
                      exc_info=1)
+    except Exception as e:
+        logger.warning("could not open or decode %s : %s ... regenerating.", app_setting_path + '/status.json', str(e))
+
+    if regen_status:
         # Create app status
         status = {
             'installed_at': app_setting(app_id, 'install_time'),
@@ -2204,7 +2212,7 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
 
         # do not print for webadmin
         if arg_type == 'display_text' and msettings.get('interface') != 'api':
-            print(arg["text"])
+            print(_value_for_locale(arg['ask']))
             continue
 
         # Attempt to retrieve argument value
@@ -2257,13 +2265,17 @@ def _parse_action_args_in_yunohost_format(args, action_args, auth=None):
             elif arg_default is not None:
                 arg_value = arg_default
 
-        # Validate argument value
-        if (arg_value is None or arg_value == '') \
-                and not arg.get('optional', False):
-            raise YunohostError('app_argument_required', name=arg_name)
-        elif arg_value is None:
-            args_dict[arg_name] = ''
-            continue
+        # If the value is empty (none or '')
+        # then check if arg is optional or not
+        if arg_value is None or arg_value == '':
+            if arg.get("optional", False):
+                # Argument is optional, keep an empty value
+                # and that's all for this arg !
+                args_dict[arg_name] = ''
+                continue
+            else:
+                # The argument is required !
+                raise YunohostError('app_argument_required', name=arg_name)
 
         # Validate argument choice
         if arg_choices and arg_value not in arg_choices:
@@ -2580,6 +2592,31 @@ def unstable_apps():
             output.append(app)
 
     return output
+
+
+def _check_services_status_for_app(services):
+
+    logger.debug("Checking that required services are up and running...")
+
+    # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
+    def replace_alias(service):
+        if service in ["php-fpm", "php5-fpm"]:
+            return "php7.0-fpm"
+        else:
+            return service
+    services = [replace_alias(s) for s in services]
+
+    # We only check those, mostly to ignore "custom" services
+    # (added by apps) and because those are the most popular
+    # services
+    service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
+    services = [str(s) for s in services if s in service_filter]
+
+    # List services currently down and raise an exception if any are found
+    faulty_services = [s for s in services if service_status(s)["active"] != "active"]
+    if faulty_services:
+        raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
+                            services=', '.join(faulty_services))
 
 
 def _patch_php5(app_folder):

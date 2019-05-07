@@ -11,6 +11,8 @@ PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
 # | arg: -u, --user - the user name to connect as
 # | arg: -p, --password - the user password
 # | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_connect_as() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=upd
@@ -30,6 +32,8 @@ ynh_psql_connect_as() {
 # usage: ynh_psql_execute_as_root --sql=sql [--database=database]
 # | arg: -s, --sql - the SQL command to execute
 # | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_execute_as_root() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=sd
@@ -49,6 +53,8 @@ ynh_psql_execute_as_root() {
 # usage: ynh_psql_execute_file_as_root --file=file [--database=database]
 # | arg: -f, --file - the file containing SQL commands
 # | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_execute_file_as_root() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=fd
@@ -70,6 +76,8 @@ ynh_psql_execute_file_as_root() {
 # usage: ynh_psql_create_db db [user]
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_create_db() {
 	local db=$1
 	local user=${2:-}
@@ -93,8 +101,14 @@ ynh_psql_create_db() {
 #
 # usage: ynh_psql_drop_db db
 # | arg: db - the database name to drop
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_drop_db() {
 	local db=$1
+	# First, force disconnection of all clients connected to the database
+	# https://stackoverflow.com/questions/5408156/how-to-drop-a-postgresql-database-if-there-are-active-connections-to-it
+	# https://dba.stackexchange.com/questions/16426/how-to-drop-all-connections-to-a-specific-database-without-stopping-the-server
+	ynh_psql_execute_as_root --sql="SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db';" --database="$db"
 	sudo --login --user=postgres dropdb $db
 }
 
@@ -105,6 +119,8 @@ ynh_psql_drop_db() {
 # usage: ynh_psql_dump_db --database=database
 # | arg: -d, --database - the database name to dump
 # | ret: the psqldump output
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_dump_db() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=d
@@ -123,6 +139,8 @@ ynh_psql_dump_db() {
 # usage: ynh_psql_create_user user pwd
 # | arg: user - the user name to create
 # | arg: pwd - the password to identify user by
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_create_user() {
 	local user=$1
 	local pwd=$2
@@ -160,7 +178,7 @@ ynh_psql_database_exists() {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$user"; then
+	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
 		return 1
 	else
 		return 0
@@ -173,6 +191,8 @@ ynh_psql_database_exists() {
 #
 # usage: ynh_psql_drop_user user
 # | arg: user - the user name to drop
+#
+# Requires YunoHost version 3.?.? or higher.
 ynh_psql_drop_user() {
 	ynh_psql_execute_as_root --sql="DROP USER ${1};"
 }
@@ -224,18 +244,18 @@ ynh_psql_remove_db() {
 
 	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
 	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
-		echo "Removing database $db_name" >&2
+		ynh_print_info --message="Removing database $db_name"
 		ynh_psql_drop_db $db_name # Remove the database
 	else
-		echo "Database $db_name not found" >&2
+		ynh_print_warn --message="Database $db_name not found"
 	fi
 
 	# Remove psql user if it exists
 	if ynh_psql_user_exists --user=$db_user; then
-		echo "Removing user $db_user" >&2
+		ynh_print_info --message="Removing user $db_user"
 		ynh_psql_drop_user $db_user
 	else
-		echo "User $db_user not found" >&2
+		ynh_print_warn --message="User $db_user not found"
 	fi
 }
 
@@ -260,7 +280,8 @@ ynh_psql_test_if_first_run() {
 			ynh_die "postgresql shoud be 9.4 or 9.6"
 		fi
 
-		systemctl start postgresql
+		ynh_systemd_action --service_name=postgresql --action=start
+
 		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$pgsql'" postgres
 
 		# force all user to connect to local database using passwords
@@ -273,6 +294,6 @@ ynh_psql_test_if_first_run() {
 		yunohost service add postgresql --log "$logfile"
 
 		systemctl enable postgresql
-		systemctl reload postgresql
+		ynh_systemd_action --service_name=postgresql --action=reload
 	fi
 }
