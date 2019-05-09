@@ -39,8 +39,6 @@ import apt
 import apt.progress
 
 from moulinette import msettings, msignals, m18n
-from moulinette.core import init_authenticator
-from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json
@@ -53,6 +51,7 @@ from yunohost.regenconf import regen_conf
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.network import get_public_ip
+from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
 
 # FIXME this is a duplicate from apps.py
@@ -69,25 +68,21 @@ def tools_ldapinit():
 
     """
 
-    # Instantiate LDAP Authenticator
-    AUTH_IDENTIFIER = ('ldap', 'as-root')
-    AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
-                       'base_dn': 'dc=yunohost,dc=org',
-                       'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
-    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
-
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
         ldap_map = yaml.load(f)
 
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+
     for rdn, attr_dict in ldap_map['parents'].items():
         try:
-            auth.add(rdn, attr_dict)
+            ldap.add(rdn, attr_dict)
         except Exception as e:
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     for rdn, attr_dict in ldap_map['children'].items():
         try:
-            auth.add(rdn, attr_dict)
+            ldap.add(rdn, attr_dict)
         except Exception as e:
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
@@ -103,7 +98,7 @@ def tools_ldapinit():
         'userPassword': 'yunohost'
     }
 
-    auth.update('cn=admin', admin_dict)
+    ldap.update('cn=admin', admin_dict)
 
     # Force nscd to refresh cache to take admin creation into account
     subprocess.call(['nscd', '-i', 'passwd'])
