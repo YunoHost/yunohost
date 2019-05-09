@@ -166,7 +166,7 @@ ynh_package_install_from_equivs () {
     local pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
     local pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number
     [[ -z "$pkgname" || -z "$pkgversion" ]] \
-        && echo "Invalid control file" && exit 1	# Check if this 2 variables aren't empty.
+        && ynh_die --message="Invalid control file"	# Check if this 2 variables aren't empty.
 
     # Update packages cache
     ynh_package_update

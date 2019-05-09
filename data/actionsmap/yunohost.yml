@@ -1477,13 +1477,6 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_ldapinit()
-        ldapinit:
-            action_help: YunoHost LDAP initialization
-            api: POST /ldap
-            configuration:
-                authenticate: all
-
         ### tools_adminpw()
         adminpw:
             action_help: Change password of admin and root users
@@ -1809,6 +1802,10 @@ log:
                     full: --limit
                     help: Maximum number of logs
                     type: int
+                -d:
+                    full: --with-details
+                    help: Show additional infos (e.g. operation success) but may significantly increase command time. Consider using --limit in combination with this.
+                    action: store_true
 
         ### log_display()
         display:

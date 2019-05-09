@@ -225,10 +225,10 @@ ynh_mysql_remove_db () {
 
 	local mysql_root_password=$(sudo cat $MYSQL_ROOT_PWD_FILE)
 	if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"; then	# Check if the database exists
-		echo "Removing database $db_name" >&2
+		ynh_print_info --message="Removing database $db_name"
 		ynh_mysql_drop_db $db_name	# Remove the database	
 	else
-		echo "Database $db_name not found" >&2
+		ynh_print_warn --message="Database $db_name not found"
 	fi
 
 	# Remove mysql user if it exists
@@ -237,24 +237,3 @@ ynh_mysql_remove_db () {
 	fi
 }
 
-# Sanitize a string intended to be the name of a database
-# (More specifically : replace - and . by _)
-#
-# example: dbname=$(ynh_sanitize_dbid $app)
-#
-# usage: ynh_sanitize_dbid --db_name=name
-# | arg: -n, --db_name - name to correct/sanitize
-# | ret: the corrected name
-#
-# Requires YunoHost version 2.2.4 or higher.
-ynh_sanitize_dbid () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=n
-	declare -Ar args_array=( [n]=db_name= )
-	local db_name
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-
-	# We should avoid having - and . in the name of databases. They are replaced by _
-	echo ${db_name//[-.]/_}
-}

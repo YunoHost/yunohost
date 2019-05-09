@@ -243,8 +243,9 @@ ynh_script_progression () {
 
 	# Set the scale of the progression bar
 	local scale=20
-	# progress_string(1,2) should have the size of the scale.
-	local progress_string1="####################"
+	# progress_string(0,1,2) should have the size of the scale.
+	local progress_string2="####################"
+	local progress_string1="++++++++++++++++++++"
 	local progress_string0="...................."
 
 	# Reduce $increment_progression to the size of the scale
@@ -256,8 +257,17 @@ ynh_script_progression () {
 		local effective_progression=$scale
 	fi
 
-	# Build $progression_bar from progress_string(1,2) according to $effective_progression
-	local progression_bar="${progress_string1:0:$effective_progression}${progress_string0:0:$(( $scale - $effective_progression ))}"
+	# Build $progression_bar from progress_string(0,1,2) according to $effective_progression and the weight of the current task
+	# expected_progression is the progression expected after the current task
+	local expected_progression="$(( ( $increment_progression + $weight ) * $scale / $max_progression - $effective_progression ))"
+	if [ $last -eq 1 ]
+	then
+		expected_progression=0
+	fi
+	# left_progression is the progression not yet done
+	local left_progression="$(( $scale - $effective_progression - $expected_progression ))"
+	# Build the progression bar with $effective_progression, work done, $expected_progression, current work and $left_progression, work to be done.
+	local progression_bar="${progress_string2:0:$effective_progression}${progress_string1:0:$expected_progression}${progress_string0:0:$left_progression}"
 
 	local print_exec_time=""
 	if [ $time -eq 1 ]
@@ -266,4 +276,70 @@ ynh_script_progression () {
 	fi
 
 	ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
+}
+
+# Debugger for app packagers
+#
+# usage: ynh_debug [--message=message] [--trace=1/0]
+# | arg: -m, --message= - The text to print
+# | arg: -t, --trace=   - Turn on or off the trace of the script. Usefull to trace nonly a small part of a script.
+#
+# Requires YunoHost version 3.?.? or higher.
+ynh_debug () {
+	# Disable set xtrace for the helper itself, to not pollute the debug log
+	set +x
+	# Declare an array to define the options of this helper.
+	local legacy_args=mt
+	declare -Ar args_array=( [m]=message= [t]=trace= )
+	local message
+	local trace
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	# Redisable xtrace, ynh_handle_getopts_args set it back
+	set +x
+	message=${message:-}
+	trace=${trace:-}
+
+	if [ -n "$message" ]
+	then
+		ynh_print_log "\e[34m\e[1m[DEBUG]\e[0m ${message}" >&2
+	fi
+
+	if [ "$trace" == "1" ]
+	then
+		ynh_debug --message="Enable debugging"
+		set +x
+		# Get the current file descriptor of xtrace
+		old_bash_xtracefd=$BASH_XTRACEFD
+		# Add the current file name and the line number of any command currently running while tracing.
+		PS4='$(basename ${BASH_SOURCE[0]})-L${LINENO}: '
+		# Force xtrace to stderr
+		BASH_XTRACEFD=2
+		# Force stdout to stderr
+		exec 1>&2
+	fi
+	if [ "$trace" == "0" ]
+	then
+		ynh_debug --message="Disable debugging"
+		set +x
+		# Put xtrace back to its original fild descriptor
+		BASH_XTRACEFD=$old_bash_xtracefd
+		# Restore stdout
+		exec 1>&1
+	fi
+	# Renable set xtrace
+	set -x
+}
+
+# Execute a command and print the result as debug
+#
+# usage: ynh_debug_exec command to execute
+# usage: ynh_debug_exec "command to execute | following command"
+# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+#
+# | arg: command - command to execute
+#
+# Requires YunoHost version 3.?.? or higher.
+ynh_debug_exec () {
+	ynh_debug --message="$(eval $@)"
 }
