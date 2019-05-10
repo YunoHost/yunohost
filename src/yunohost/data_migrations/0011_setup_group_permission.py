@@ -22,7 +22,7 @@ logger = getActionLogger('yunohost.migration')
 
 
 def migrate_LDAP_db(auth):
-    logger.info(m18n.n("migration_0009_update_LDAP_database"))
+    logger.info(m18n.n("migration_0011_update_LDAP_database"))
     try:
         auth.remove('cn=sftpusers,ou=groups')
     except:
@@ -41,9 +41,9 @@ def migrate_LDAP_db(auth):
         for rdn, attr_dict in ldap_map['depends_children'].items():
             auth.add(rdn, attr_dict)
     except Exception as e:
-        raise YunohostError("migration_0009_LDAP_update_failed", error=e)
+        raise YunohostError("migration_0011_LDAP_update_failed", error=e)
 
-    logger.info(m18n.n("migration_0009_create_group"))
+    logger.info(m18n.n("migration_0011_create_group"))
 
     # Create a group for each yunohost user
     user_list = auth.search('ou=users,dc=yunohost,dc=org',
@@ -59,7 +59,7 @@ def migrate_LDAP_db(auth):
 
 
 def migrate_app_permission(auth, app=None):
-    logger.info(m18n.n("migration_0009_migrate_permission"))
+    logger.info(m18n.n("migration_0011_migrate_permission"))
 
     if app:
         apps = app_list(installed=True, filter=app)['apps']
@@ -91,7 +91,7 @@ class MyMigration(Migration):
 
     def migrate(self):
         # Backup LDAP and the apps settings before to do the migration
-        logger.info(m18n.n("migration_0009_backup_before_migration"))
+        logger.info(m18n.n("migration_0011_backup_before_migration"))
         try:
             backup_folder = "/home/yunohost.backup/premigration/" + time.strftime('%Y%m%d-%H%M%S', time.gmtime())
             os.makedirs(backup_folder, 0o750)
@@ -100,13 +100,13 @@ class MyMigration(Migration):
             os.system("cp -r --preserve /var/lib/ldap %s/ldap_db" % backup_folder)
             os.system("cp -r --preserve /etc/yunohost/apps %s/apps_settings" % backup_folder)
         except Exception as e:
-            raise YunohostError("migration_0009_can_not_backup_before_migration", error=e)
+            raise YunohostError("migration_0011_can_not_backup_before_migration", error=e)
         finally:
             os.system("systemctl start slapd")
 
         try:
             # Update LDAP schema restart slapd
-            logger.info(m18n.n("migration_0009_update_LDAP_schema"))
+            logger.info(m18n.n("migration_0011_update_LDAP_schema"))
             service_regen_conf(names=['slapd'], force=True)
 
             # Do the authentication to LDAP after LDAP as been updated
@@ -124,7 +124,7 @@ class MyMigration(Migration):
 
             permission_sync_to_user(auth)
         except Exception as e:
-            logger.warn(m18n.n("migration_0009_migration_failed_trying_to_rollback"))
+            logger.warn(m18n.n("migration_0011_migration_failed_trying_to_rollback"))
             os.system("systemctl stop slapd")
             os.system("rm -r /etc/ldap/slapd.d")  # To be sure that we don't keep some part of the old config
             os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
@@ -132,9 +132,9 @@ class MyMigration(Migration):
             os.system("cp -r --preserve %s/apps_settings/. /etc/yunohost/apps/" % backup_folder)
             os.system("systemctl start slapd")
             os.system("rm -r " + backup_folder)
-            logger.info(m18n.n("migration_0009_rollback_success"))
+            logger.info(m18n.n("migration_0011_rollback_success"))
             raise
         else:
             os.system("rm -r " + backup_folder)
 
-            logger.info(m18n.n("migration_0009_done"))
+            logger.info(m18n.n("migration_0011_done"))

@@ -1840,6 +1840,32 @@ tools:
                     full: --force
                     action: store_true
 
+        ### tools_regen_conf()
+        regen-conf:
+            action_help: Regenerate the configuration file(s)
+            api: PUT /tools/regenconf
+            arguments:
+                names:
+                    help: Categories to regenerate configuration of (all by default)
+                    nargs: "*"
+                    metavar: NAME
+                -d:
+                    full: --with-diff
+                    help: Show differences in case of configuration changes
+                    action: store_true
+                -f:
+                    full: --force
+                    help: Override all manual modifications in configuration files
+                    action: store_true
+                -n:
+                    full: --dry-run
+                    help: Show what would have been regenerated
+                    action: store_true
+                -p:
+                    full: --list-pending
+                    help: List pending configuration files and exit
+                    action: store_true
+
     subcategories:
 
       migrations:
@@ -2000,6 +2026,10 @@ log:
                     full: --limit
                     help: Maximum number of logs
                     type: int
+                -d:
+                    full: --with-details
+                    help: Show additional infos (e.g. operation success) but may significantly increase command time. Consider using --limit in combination with this.
+                    action: store_true
 
         ### log_display()
         display:

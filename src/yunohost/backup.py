@@ -50,7 +50,7 @@ from yunohost.hook import (
 )
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
-from yunohost.service import service_regen_conf
+from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 from functools import reduce
 
@@ -326,10 +326,19 @@ class BackupManager():
         if not os.path.isdir(self.work_dir):
             filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
         elif self.is_tmp_work_dir:
-            logger.debug("temporary directory for backup '%s' already exists",
+
+            logger.debug("temporary directory for backup '%s' already exists... attempting to clean it",
                          self.work_dir)
-            # FIXME May be we should clean the workdir here
-            raise YunohostError('backup_output_directory_not_empty')
+
+            # Try to recursively unmount stuff (from a previously failed backup ?)
+            if not _recursive_umount(self.work_dir):
+                raise YunohostError('backup_output_directory_not_empty')
+            else:
+                # If umount succeeded, remove the directory (we checked that
+                # we're in /home/yunohost.backup/tmp so that should be okay...
+                # c.f. method clean() which also does this)
+                filesystem.rm(self.work_dir, recursive=True, force=True)
+                filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
 
     #
     # Backup target management                                              #
@@ -593,8 +602,15 @@ class BackupManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        if ret["succeed"] != []:
-            self.system_return = ret["succeed"]
+        ret_succeed = {hook: {path:result["state"] for path, result in infos.items()}
+                       for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())}
+        ret_failed = {hook: {path:result["state"] for path, result in infos.items.items()}
+                      for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())}
+
+        if ret_succeed.keys() != []:
+            self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
         # files to backup
@@ -610,7 +626,7 @@ class BackupManager():
 
         restore_hooks = hook_list("restore")["hooks"]
 
-        for part in ret['succeed'].keys():
+        for part in ret_succeed.keys():
             if part in restore_hooks:
                 part_restore_hooks = hook_info("restore", part)["hooks"]
                 for hook in part_restore_hooks:
@@ -620,7 +636,7 @@ class BackupManager():
                 logger.warning(m18n.n('restore_hook_unavailable', hook=part))
                 self.targets.set_result("system", part, "Warning")
 
-        for part in ret['failed'].keys():
+        for part in ret_failed.keys():
             logger.error(m18n.n('backup_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
 
@@ -682,7 +698,7 @@ class BackupManager():
             subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
             hook_exec(tmp_script, args=[tmp_app_bkp_dir, app],
-                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)[0]
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
 
@@ -909,7 +925,7 @@ class RestoreManager():
             ret = subprocess.call(["umount", self.work_dir])
             if ret != 0:
                 logger.warning(m18n.n('restore_cleaning_failed'))
-        filesystem.rm(self.work_dir, True, True)
+        filesystem.rm(self.work_dir, recursive=True, force=True)
 
     #
     # Restore target manangement                                            #
@@ -1182,21 +1198,26 @@ class RestoreManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        for part in ret['succeed'].keys():
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+
+        for part in ret_succeed:
             self.targets.set_result("system", part, "Success")
 
         error_part = []
-        for part in ret['failed'].keys():
+        for part in ret_failed:
             logger.error(m18n.n('restore_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
             error_part.append(part)
 
-        if ret['failed']:
+        if ret_failed:
             operation_logger.error(m18n.n('restore_system_part_failed', part=', '.join(error_part)))
         else:
             operation_logger.success()
 
-        service_regen_conf()
+        regen_conf()
 
         # Check if we need to do the migration 0009 : setup group and permission
         # Legacy code
@@ -1328,7 +1349,7 @@ class RestoreManager():
                       args=[app_backup_in_archive, app_instance_name],
                       chdir=app_backup_in_archive,
                       raise_on_error=True,
-                      env=env_dict)
+                      env=env_dict)[0]
         except:
             msg = m18n.n('restore_app_failed', app=app_instance_name)
             logger.exception(msg)
@@ -1353,7 +1374,7 @@ class RestoreManager():
             # Execute remove script
             # TODO: call app_remove instead
             if hook_exec(remove_script, args=[app_instance_name],
-                         env=env_dict_remove) != 0:
+                         env=env_dict_remove)[0] != 0:
                 msg = m18n.n('app_not_properly_removed', app=app_instance_name)
                 logger.warning(msg)
                 operation_logger.error(msg)
@@ -1541,33 +1562,11 @@ class BackupMethod(object):
                                   directories of the working directories
         """
         if self.need_mount():
-            if self._recursive_umount(self.work_dir) > 0:
+            if not _recursive_umount(self.work_dir):
                 raise YunohostError('backup_cleaning_failed')
 
         if self.manager.is_tmp_work_dir:
             filesystem.rm(self.work_dir, True, True)
-
-    def _recursive_umount(self, directory):
-        """
-        Recursively umount sub directories of a directory
-
-        Args:
-            directory -- a directory path
-        """
-        mount_lines = subprocess.check_output("mount").split("\n")
-
-        points_to_umount = [line.split(" ")[2]
-                            for line in mount_lines
-                            if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
-        ret = 0
-        for point in reversed(points_to_umount):
-            ret = subprocess.call(["umount", point])
-            if ret != 0:
-                ret = 1
-                logger.warning(m18n.n('backup_cleaning_failed', point))
-                continue
-
-        return ret
 
     def _check_is_enough_free_space(self):
         """
@@ -1648,9 +1647,18 @@ class BackupMethod(object):
                     # 'NUMBER OF HARD LINKS > 1' see #1043
                     cron_path = os.path.abspath('/etc/cron') + '.'
                     if not os.path.abspath(src).startswith(cron_path):
-                        os.link(src, dest)
-                        # Success, go to next file to organize
-                        continue
+                        try:
+                            os.link(src, dest)
+                        except Exception as e:
+                            # This kind of situation may happen when src and dest are on different
+                            # logical volume ... even though the st_dev check previously match...
+                            # E.g. this happens when running an encrypted hard drive
+                            # where everything is mapped to /dev/mapper/some-stuff
+                            # yet there are different devices behind it or idk ...
+                            logger.warning("Could not link %s to %s (%s) ... falling back to regular copy." % (src, dest, str(e)))
+                        else:
+                            # Success, go to next file to organize
+                            continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
@@ -1959,8 +1967,9 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('need_mount'))
-
-        self._need_mount = True if ret['succeed'] else False
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        self._need_mount = True if ret_succeed else False
         return self._need_mount
 
     def backup(self):
@@ -1973,7 +1982,10 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
-        if ret['failed']:
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
     def mount(self, restore_manager):
@@ -1986,7 +1998,10 @@ class CustomBackupMethod(BackupMethod):
         super(CustomBackupMethod, self).mount(restore_manager)
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
-        if ret['failed']:
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        if ret_failed:
             raise YunohostError('backup_custom_mount_error')
 
     def _get_args(self, action):
@@ -2038,6 +2053,7 @@ def backup_create(name=None, description=None, methods=[],
         # Check that output directory is empty
         if os.path.isdir(output_directory) and no_compress and \
                 os.listdir(output_directory):
+
             raise YunohostError('backup_output_directory_not_empty')
     elif no_compress:
         raise YunohostError('backup_output_directory_required')
@@ -2283,6 +2299,18 @@ def backup_info(name, with_details=False, human_readable=False):
         if "hooks" in info.keys():
             system_key = "hooks"
 
+        if "size_details" in info.keys():
+            for category in ["apps", "system"]:
+                for name, key_info in info[category].items():
+                    if name in info["size_details"][category].keys():
+                        key_info["size"] = info["size_details"][category][name]
+                        if human_readable:
+                            key_info["size"] = binary_to_human(key_info["size"]) + 'B'
+                    else:
+                        key_info["size"] = -1
+                        if human_readable:
+                            key_info["size"] = "?"
+
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
     return result
@@ -2340,6 +2368,30 @@ def _call_for_each_path(self, callback, csv_path=None):
         backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
         for row in backup_csv:
             callback(self, row['source'], row['dest'])
+
+
+def _recursive_umount(directory):
+    """
+    Recursively umount sub directories of a directory
+
+    Args:
+        directory -- a directory path
+    """
+    mount_lines = subprocess.check_output("mount").split("\n")
+
+    points_to_umount = [line.split(" ")[2]
+                        for line in mount_lines
+                        if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
+
+    everything_went_fine = True
+    for point in reversed(points_to_umount):
+        ret = subprocess.call(["umount", point])
+        if ret != 0:
+            everything_went_fine = False
+            logger.warning(m18n.n('backup_cleaning_failed', point))
+            continue
+
+    return everything_went_fine
 
 
 def free_space_in_directory(dirpath):

@@ -43,7 +43,8 @@ from yunohost.utils.network import get_public_ip
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
-from yunohost.service import _run_service_command, service_regen_conf
+from yunohost.service import _run_service_command
+from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 
 logger = getActionLogger('yunohost.certmanager')
@@ -806,7 +807,7 @@ def _enable_certificate(domain, new_cert_folder):
     if os.path.isfile('/etc/yunohost/installed'):
         # regen nginx conf to be sure it integrates OCSP Stapling
         # (We don't do this yet if postinstall is not finished yet)
-        service_regen_conf(names=['nginx'])
+        regen_conf(names=['nginx'])
 
     _run_service_command("reload", "nginx")
 
@@ -924,7 +925,7 @@ def _regen_dnsmasq_if_needed():
             break
 
     if do_regen:
-        service_regen_conf(["dnsmasq"])
+        regen_conf(["dnsmasq"])
 
 
 def _name_self_CA():
