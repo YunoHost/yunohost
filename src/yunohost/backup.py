@@ -893,22 +893,6 @@ class RestoreManager():
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'Yunohost', True)
 
-    def _migrate_system_if_needed(self, auth):
-        """
-        Do some migration if needed
-        """
-
-        # Check if we need to do the migration 0009 : setup group and permission
-        result = auth.search('ou=groups,dc=yunohost,dc=org',
-                             '(&(objectclass=groupOfNamesYnh)(cn=all_users))',
-                             ['cn'])
-        if not result:
-            from yunohost.tools import _get_migration_by_name
-            setup_group_permission = _get_migration_by_name("setup_group_permission")
-            # Update LDAP schema restart slapd
-            logger.info(m18n.n("migration_0009_update_LDAP_schema"))
-            service_regen_conf(names=['slapd'], force=True)
-            setup_group_permission.migrate_LDAP_db(auth)
 
     def clean(self, auth):
         """
@@ -1130,7 +1114,6 @@ class RestoreManager():
             self._patch_backup_csv_file()
 
             self._restore_system(auth)
-            self._migrate_system_if_needed(auth)
             self._restore_apps(auth)
         finally:
             self.clean(auth)
@@ -1214,6 +1197,20 @@ class RestoreManager():
             operation_logger.success()
 
         service_regen_conf()
+
+        # Check if we need to do the migration 0009 : setup group and permission
+        # Legacy code
+        result = auth.search('ou=groups,dc=yunohost,dc=org',
+                             '(&(objectclass=groupOfNamesYnh)(cn=all_users))',
+                             ['cn'])
+        if not result:
+            from yunohost.tools import _get_migration_by_name
+            setup_group_permission = _get_migration_by_name("setup_group_permission")
+            # Update LDAP schema restart slapd
+            logger.info(m18n.n("migration_0009_update_LDAP_schema"))
+            service_regen_conf(names=['slapd'], force=True)
+            setup_group_permission.migrate_LDAP_db(auth)
+
 
     def _restore_apps(self, auth):
         """Restore all apps targeted"""
