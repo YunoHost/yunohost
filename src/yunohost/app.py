@@ -845,7 +845,9 @@ def app_install(operation_logger, auth, app, label=None, args=None, no_remove_on
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
     # Create permission before the install (useful if the install script redefine the permission)
-    permission_add(auth, app=app_instance_name, permission="main")
+    # Note that sync_perm is disabled to avoid triggering a whole bunch of code and messages
+    # can't be sure that we don't have one case when it's needed
+    permission_add(auth, app=app_instance_name, permission="main", sync_perm=False)
 
     # Execute the app install script
     install_retcode = 1
