@@ -71,11 +71,10 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
                          '(objectclass=permissionYnh)', permission_attrs)
 
     for res in result:
-        permission_name = res['cn'][0].split('.')[0]
         try:
-            app_name = res['cn'][0].split('.')[1]
+            permission_name, app_name = res['cn'][0].split('.')
         except:
-            logger.warning(m18n.n('permission_name_not_valid', permission=per))
+            logger.warning(m18n.n('permission_name_not_valid', permission=res['cn'][0]))
         group_name = []
         if 'groupPermission' in res:
             for g in res['groupPermission']:
