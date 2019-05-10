@@ -99,9 +99,10 @@ class MyMigration(Migration):
             os.system("cp -r --preserve /etc/ldap %s/ldap_config" % backup_folder)
             os.system("cp -r --preserve /var/lib/ldap %s/ldap_db" % backup_folder)
             os.system("cp -r --preserve /etc/yunohost/apps %s/apps_settings" % backup_folder)
-            os.system("systemctl start slapd")
         except Exception as e:
             raise YunohostError("migration_0009_can_not_backup_before_migration", error=e)
+        finally:
+            os.system("systemctl start slapd")
 
         try:
             # Update LDAP schema restart slapd
