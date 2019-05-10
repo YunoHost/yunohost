@@ -208,7 +208,7 @@ def log_display(path, number=50, share=False):
 
 
 def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
-                      exclude=['auth', 'password'], operation_key=None):
+                      exclude=['password'], operation_key=None):
     """
     Configure quickly a unit operation
 
@@ -222,9 +222,8 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
     (argname, entity_type) instead of just put the entity type.
 
     exclude    Remove some arguments from the context. By default, arguments
-    called 'password' and 'auth' are removed. If an argument is an object, you
-    need to exclude it or create manually the unit operation without this
-    decorator.
+    called 'password' are removed. If an argument is an object, you need to
+    exclude it or create manually the unit operation without this decorator.
 
     operation_key   A key to describe the unit operation log used to create the
     filename and search a translation. Please ensure that this key prefixed by

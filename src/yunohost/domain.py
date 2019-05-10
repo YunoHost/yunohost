@@ -42,7 +42,7 @@ from yunohost.hook import hook_callback
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list(auth):
+def domain_list():
     """
     List domains
 
@@ -52,10 +52,12 @@ def domain_list(auth):
         limit -- Maximum number of domain fetched
 
     """
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    ldap = _get_ldap_interface()
+    result = ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
+
     result_list = []
-
-    result = auth.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
-
     for domain in result:
         result_list.append(domain['virtualdomain'][0])
 
@@ -63,7 +65,7 @@ def domain_list(auth):
 
 
 @is_unit_operation()
-def domain_add(operation_logger, auth, domain, dyndns=False):
+def domain_add(operation_logger, domain, dyndns=False):
     """
     Create a custom domain
 
@@ -74,9 +76,12 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    ldap = _get_ldap_interface()
 
     try:
-        auth.validate_uniqueness({'virtualdomain': domain})
+        ldap.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
         raise YunohostError('domain_exists')
 
@@ -107,18 +112,18 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
             'virtualdomain': domain,
         }
 
-        if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
+        if not ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise YunohostError('domain_creation_failed')
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
             regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
-            app_ssowatconf(auth)
+            app_ssowatconf()
 
     except Exception:
         # Force domain removal silently
         try:
-            domain_remove(auth, domain, True)
+            domain_remove(domain, True)
         except:
             pass
         raise
@@ -129,7 +134,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, auth, domain, force=False):
+def domain_remove(operation_logger, domain, force=False):
     """
     Delete domains
 
@@ -140,8 +145,9 @@ def domain_remove(operation_logger, auth, domain, force=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.ldap import _get_ldap_interface
 
-    if not force and domain not in domain_list(auth)['domains']:
+    if not force and domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
     # Check domain is not the main domain
@@ -160,13 +166,14 @@ def domain_remove(operation_logger, auth, domain, force=False):
                     raise YunohostError('domain_uninstall_app_first')
 
     operation_logger.start()
-    if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
+    ldap = _get_ldap_interface()
+    if ldap.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
         raise YunohostError('domain_deletion_failed')
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
-    app_ssowatconf(auth)
+    app_ssowatconf()
 
     hook_callback('post_domain_remove', args=[domain])
 
@@ -222,19 +229,19 @@ def domain_dns_conf(domain, ttl=None):
     return result
 
 
-def domain_cert_status(auth, domain_list, full=False):
-    return yunohost.certificate.certificate_status(auth, domain_list, full)
+def domain_cert_status(domain_list, full=False):
+    return yunohost.certificate.certificate_status(domain_list, full)
 
 
-def domain_cert_install(auth, domain_list, force=False, no_checks=False, self_signed=False, staging=False):
-    return yunohost.certificate.certificate_install(auth, domain_list, force, no_checks, self_signed, staging)
+def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
-def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
-    return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
+def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+    return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
-def _get_conflicting_apps(auth, domain, path, ignore_app=None):
+def _get_conflicting_apps(domain, path, ignore_app=None):
     """
     Return a list of all conflicting apps with a domain/path (it can be empty)
 
@@ -247,7 +254,7 @@ def _get_conflicting_apps(auth, domain, path, ignore_app=None):
     domain, path = _normalize_domain_path(domain, path)
 
     # Abort if domain is unknown
-    if domain not in domain_list(auth)['domains']:
+    if domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
     # This import cannot be put on top of file because it would create a
@@ -274,7 +281,7 @@ def _get_conflicting_apps(auth, domain, path, ignore_app=None):
     return conflicts
 
 
-def domain_url_available(auth, domain, path):
+def domain_url_available(domain, path):
     """
     Check availability of a web path
 
@@ -283,7 +290,7 @@ def domain_url_available(auth, domain, path):
         path -- The path to check (e.g. /coffee)
     """
 
-    return len(_get_conflicting_apps(auth, domain, path)) == 0
+    return len(_get_conflicting_apps(domain, path)) == 0
 
 
 def _get_maindomain():

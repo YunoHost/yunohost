@@ -11,7 +11,7 @@ from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 
 
-def user_ssh_allow(auth, username):
+def user_ssh_allow(username):
     """
     Allow YunoHost user connect as ssh.
 
@@ -20,17 +20,19 @@ def user_ssh_allow(auth, username):
     """
     # TODO it would be good to support different kind of shells
 
-    if not _get_user_for_ssh(auth, username):
+    if not _get_user_for_ssh(username):
         raise YunohostError('user_unknown', user=username)
 
-    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+    ldap.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
 
     # Somehow this is needed otherwise the PAM thing doesn't forget about the
     # old loginShell value ?
     subprocess.call(['nscd', '-i', 'passwd'])
 
 
-def user_ssh_disallow(auth, username):
+def user_ssh_disallow(username):
     """
     Disallow YunoHost user connect as ssh.
 
@@ -39,18 +41,20 @@ def user_ssh_disallow(auth, username):
     """
     # TODO it would be good to support different kind of shells
 
-    if not _get_user_for_ssh(auth, username):
+    if not _get_user_for_ssh(username):
         raise YunohostError('user_unknown', user=username)
 
-    auth.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+    ldap.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
 
     # Somehow this is needed otherwise the PAM thing doesn't forget about the
     # old loginShell value ?
     subprocess.call(['nscd', '-i', 'passwd'])
 
 
-def user_ssh_list_keys(auth, username):
-    user = _get_user_for_ssh(auth, username, ["homeDirectory"])
+def user_ssh_list_keys(username):
+    user = _get_user_for_ssh(username, ["homeDirectory"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
@@ -82,8 +86,8 @@ def user_ssh_list_keys(auth, username):
     return {"keys": keys}
 
 
-def user_ssh_add_key(auth, username, key, comment):
-    user = _get_user_for_ssh(auth, username, ["homeDirectory", "uid"])
+def user_ssh_add_key(username, key, comment):
+    user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
@@ -116,8 +120,8 @@ def user_ssh_add_key(auth, username, key, comment):
     write_to_file(authorized_keys_file, authorized_keys_content)
 
 
-def user_ssh_remove_key(auth, username, key):
-    user = _get_user_for_ssh(auth, username, ["homeDirectory", "uid"])
+def user_ssh_remove_key(username, key):
+    user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
@@ -148,8 +152,8 @@ def user_ssh_remove_key(auth, username, key):
 #
 
 
-def _get_user_for_ssh(auth, username, attrs=None):
-    def ssh_root_login_status(auth):
+def _get_user_for_ssh(username, attrs=None):
+    def ssh_root_login_status():
         # XXX temporary placed here for when the ssh_root commands are integrated
         # extracted from https://github.com/YunoHost/yunohost/pull/345
         # XXX should we support all the options?
@@ -172,7 +176,7 @@ def _get_user_for_ssh(auth, username, attrs=None):
             'username': 'root',
             'fullname': '',
             'mail': '',
-            'ssh_allowed': ssh_root_login_status(auth)["PermitRootLogin"],
+            'ssh_allowed': ssh_root_login_status()["PermitRootLogin"],
             'shell': root_unix.pw_shell,
             'home_path': root_unix.pw_dir,
         }
@@ -189,7 +193,9 @@ def _get_user_for_ssh(auth, username, attrs=None):
         }
 
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
-    user = auth.search('ou=users,dc=yunohost,dc=org',
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+    user = ldap.search('ou=users,dc=yunohost,dc=org',
                        '(&(objectclass=person)(uid=%s))' % username,
                        attrs)
 

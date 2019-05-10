@@ -2090,7 +2090,7 @@ def backup_create(name=None, description=None, methods=[],
     }
 
 
-def backup_restore(auth, name, system=[], apps=[], force=False):
+def backup_restore(name, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 

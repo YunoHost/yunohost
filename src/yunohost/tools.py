@@ -111,10 +111,9 @@ def tools_ldapinit():
         raise YunohostError('installation_failed')
 
     logger.success(m18n.n('ldap_initialized'))
-    return auth
 
 
-def tools_adminpw(auth, new_password, check_strength=True):
+def tools_adminpw(new_password, check_strength=True):
     """
     Change admin password
 
@@ -136,8 +135,11 @@ def tools_adminpw(auth, new_password, check_strength=True):
 
     new_hash = _hash_user_password(new_password)
 
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+
     try:
-        auth.update("cn=admin", {"userPassword": new_hash, })
+        ldap.update("cn=admin", {"userPassword": new_hash, })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
@@ -161,7 +163,7 @@ def tools_adminpw(auth, new_password, check_strength=True):
 
 
 @is_unit_operation()
-def tools_maindomain(operation_logger, auth, new_domain=None):
+def tools_maindomain(operation_logger, new_domain=None):
     """
     Check the current main domain, or change it
 
@@ -175,7 +177,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
         return {'current_main_domain': _get_maindomain()}
 
     # Check domain exists
-    if new_domain not in domain_list(auth)['domains']:
+    if new_domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
     operation_logger.related_to.append(('domain', new_domain))
@@ -204,7 +206,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
     _set_hostname(new_domain)
 
     # Generate SSOwat configuration file
-    app_ssowatconf(auth)
+    app_ssowatconf()
 
     # Regen configurations
     try:
@@ -331,7 +333,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
-    auth = tools_ldapinit()
+    tools_ldapinit()
 
     # Create required folders
     folders_to_create = [
@@ -405,11 +407,11 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     # New domain config
     regen_conf(['nsswitch'], force=True)
-    domain_add(auth, domain, dyndns)
-    tools_maindomain(auth, domain)
+    domain_add(domain, dyndns)
+    tools_maindomain(domain)
 
     # Change LDAP admin password
-    tools_adminpw(auth, password, check_strength=not force_password)
+    tools_adminpw(password, check_strength=not force_password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
@@ -573,7 +575,7 @@ def _dump_sources_list():
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=False):
+def tools_upgrade(operation_logger, ignore_apps=False, ignore_packages=False):
     """
     Update apps & package cache, then display changelog
 
@@ -645,7 +647,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
 
     if not ignore_apps:
         try:
-            app_upgrade(auth)
+            app_upgrade()
         except Exception as e:
             failure = True
             logger.warning('unable to upgrade apps: %s' % str(e))
@@ -659,7 +661,7 @@ def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=Fal
         return {"log": service_log('yunohost-api', number="100").values()[0]}
 
 
-def tools_diagnosis(auth, private=False):
+def tools_diagnosis(private=False):
     """
     Return global info about current yunohost instance to help debugging
 
@@ -754,7 +756,7 @@ def tools_diagnosis(auth, private=False):
         diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
 
         # Domains
-        diagnosis['private']['domains'] = domain_list(auth)['domains']
+        diagnosis['private']['domains'] = domain_list()['domains']
 
         diagnosis['private']['regen_conf'] = regen_conf(with_diff=True, dry_run=True)
 
@@ -1078,18 +1080,21 @@ def tools_migrations_state():
     return read_json(MIGRATIONS_STATE_PATH)
 
 
-def tools_shell(auth, command=None):
+def tools_shell(command=None):
     """
     Launch an (i)python shell in the YunoHost context.
 
     This is entirely aim for development.
     """
 
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+
     if command:
         exec(command)
         return
 
-    logger.warn("The \033[1;34mauth\033[0m is available in this context")
+    logger.warn("The \033[1;34mldap\033[0m interface is available in this context")
     try:
         from IPython import embed
         embed()

@@ -41,7 +41,7 @@ from yunohost.log import is_unit_operation
 logger = getActionLogger('yunohost.user')
 
 
-def user_list(auth, fields=None):
+def user_list(fields=None):
     """
     List users
 
@@ -52,6 +52,8 @@ def user_list(auth, fields=None):
         fields -- fields to fetch
 
     """
+    from yunohost.utils.ldap import _get_ldap_interface
+
     user_attrs = {
         'uid': 'username',
         'cn': 'fullname',
@@ -75,7 +77,8 @@ def user_list(auth, fields=None):
     else:
         attrs = ['uid', 'cn', 'mail', 'mailuserquota', 'loginShell']
 
-    result = auth.search('ou=users,dc=yunohost,dc=org',
+    ldap = _get_ldap_interface()
+    result = ldap.search('ou=users,dc=yunohost,dc=org',
                          '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
                          attrs)
 
@@ -98,7 +101,7 @@ def user_list(auth, fields=None):
 
 
 @is_unit_operation([('username', 'user')])
-def user_create(operation_logger, auth, username, firstname, lastname, mail, password,
+def user_create(operation_logger, username, firstname, lastname, mail, password,
                 mailbox_quota="0"):
     """
     Create user
@@ -116,12 +119,15 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.ldap import _get_ldap_interface
 
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
 
+    ldap = _get_ldap_interface()
+
     # Validate uniqueness of username and mail in LDAP
-    auth.validate_uniqueness({
+    ldap.validate_uniqueness({
         'uid': username,
         'mail': mail
     })
@@ -143,7 +149,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
         raise YunohostError('mail_unavailable')
 
     # Check that the mail domain exists
-    if mail.split("@")[1] not in domain_list(auth)['domains']:
+    if mail.split("@")[1] not in domain_list()['domains']:
         raise YunohostError('mail_domain_unknown', domain=mail.split("@")[1])
 
     operation_logger.start()
@@ -177,7 +183,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
     }
 
     # If it is the first user, add some aliases
-    if not auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
+    if not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
         attr_dict['mail'] = [attr_dict['mail']] + aliases
 
         # If exists, remove the redirection from the SSO
@@ -197,14 +203,14 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
             except IOError as e:
                 raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
 
-    if auth.add('uid=%s,ou=users' % username, attr_dict):
+    if ldap.add('uid=%s,ou=users' % username, attr_dict):
         # Invalidate passwd to take user creation into account
         subprocess.call(['nscd', '-i', 'passwd'])
 
         # Update SFTP user group
-        memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
+        memberlist = ldap.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
         memberlist.append(username)
-        if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
+        if ldap.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
             try:
                 # Attempt to create user home folder
                 subprocess.check_call(
@@ -213,7 +219,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
                 if not os.path.isdir('/home/{0}'.format(username)):
                     logger.warning(m18n.n('user_home_creation_failed'),
                                    exc_info=1)
-            app_ssowatconf(auth)
+            app_ssowatconf()
             # TODO: Send a welcome mail to user
             logger.success(m18n.n('user_created'))
             hook_callback('post_user_create',
@@ -225,7 +231,7 @@ def user_create(operation_logger, auth, username, firstname, lastname, mail, pas
 
 
 @is_unit_operation([('username', 'user')])
-def user_delete(operation_logger, auth, username, purge=False):
+def user_delete(operation_logger, username, purge=False):
     """
     Delete user
 
@@ -236,34 +242,37 @@ def user_delete(operation_logger, auth, username, purge=False):
     """
     from yunohost.app import app_ssowatconf
     from yunohost.hook import hook_callback
+    from yunohost.utils.ldap import _get_ldap_interface
 
     operation_logger.start()
-    if auth.remove('uid=%s,ou=users' % username):
+
+    ldap = _get_ldap_interface()
+    if ldap.remove('uid=%s,ou=users' % username):
         # Invalidate passwd to take user deletion into account
         subprocess.call(['nscd', '-i', 'passwd'])
 
         # Update SFTP user group
-        memberlist = auth.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
+        memberlist = ldap.search(filter='cn=sftpusers', attrs=['memberUid'])[0]['memberUid']
         try:
             memberlist.remove(username)
         except:
             pass
-        if auth.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
+        if ldap.update('cn=sftpusers,ou=groups', {'memberUid': memberlist}):
             if purge:
                 subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
                 subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
     else:
         raise YunohostError('user_deletion_failed')
 
-    app_ssowatconf(auth)
+    app_ssowatconf()
 
     hook_callback('post_user_delete', args=[username, purge])
 
     logger.success(m18n.n('user_deleted'))
 
 
-@is_unit_operation([('username', 'user')], exclude=['auth', 'change_password'])
-def user_update(operation_logger, auth, username, firstname=None, lastname=None, mail=None,
+@is_unit_operation([('username', 'user')], exclude=['change_password'])
+def user_update(operation_logger, username, firstname=None, lastname=None, mail=None,
                 change_password=None, add_mailforward=None, remove_mailforward=None,
                 add_mailalias=None, remove_mailalias=None, mailbox_quota=None):
     """
@@ -284,13 +293,15 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.ldap import _get_ldap_interface
 
+    ldap = _get_ldap_interface()
     attrs_to_fetch = ['givenName', 'sn', 'mail', 'maildrop']
     new_attr_dict = {}
-    domains = domain_list(auth)['domains']
+    domains = domain_list()['domains']
 
     # Populate user informations
-    result = auth.search(base='ou=users,dc=yunohost,dc=org', filter='uid=' + username, attrs=attrs_to_fetch)
+    result = ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=' + username, attrs=attrs_to_fetch)
     if not result:
         raise YunohostError('user_unknown', user=username)
     user = result[0]
@@ -321,7 +332,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
             'webmaster@' + main_domain,
             'postmaster@' + main_domain,
         ]
-        auth.validate_uniqueness({'mail': mail})
+        ldap.validate_uniqueness({'mail': mail})
         if mail[mail.find('@') + 1:] not in domains:
             raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
         if mail in aliases:
@@ -334,7 +345,7 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
         for mail in add_mailalias:
-            auth.validate_uniqueness({'mail': mail})
+            ldap.validate_uniqueness({'mail': mail})
             if mail[mail.find('@') + 1:] not in domains:
                 raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
             user['mail'].append(mail)
@@ -374,15 +385,15 @@ def user_update(operation_logger, auth, username, firstname=None, lastname=None,
 
     operation_logger.start()
 
-    if auth.update('uid=%s,ou=users' % username, new_attr_dict):
+    if ldap.update('uid=%s,ou=users' % username, new_attr_dict):
         logger.success(m18n.n('user_updated'))
-        app_ssowatconf(auth)
-        return user_info(auth, username)
+        app_ssowatconf()
+        return user_info(username)
     else:
         raise YunohostError('user_update_failed')
 
 
-def user_info(auth, username):
+def user_info(username):
     """
     Get user informations
 
@@ -390,6 +401,10 @@ def user_info(auth, username):
         username -- Username or mail to get informations
 
     """
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    ldap = _get_ldap_interface()
+
     user_attrs = [
         'cn', 'mail', 'uid', 'maildrop', 'givenName', 'sn', 'mailuserquota'
     ]
@@ -399,7 +414,7 @@ def user_info(auth, username):
     else:
         filter = 'uid=' + username
 
-    result = auth.search('ou=users,dc=yunohost,dc=org', filter, user_attrs)
+    result = ldap.search('ou=users,dc=yunohost,dc=org', filter, user_attrs)
 
     if result:
         user = result[0]
@@ -469,24 +484,24 @@ def user_info(auth, username):
 import yunohost.ssh
 
 
-def user_ssh_allow(auth, username):
-    return yunohost.ssh.user_ssh_allow(auth, username)
+def user_ssh_allow(username):
+    return yunohost.ssh.user_ssh_allow(username)
 
 
-def user_ssh_disallow(auth, username):
-    return yunohost.ssh.user_ssh_disallow(auth, username)
+def user_ssh_disallow(username):
+    return yunohost.ssh.user_ssh_disallow(username)
 
 
-def user_ssh_list_keys(auth, username):
-    return yunohost.ssh.user_ssh_list_keys(auth, username)
+def user_ssh_list_keys(username):
+    return yunohost.ssh.user_ssh_list_keys(username)
 
 
-def user_ssh_add_key(auth, username, key, comment):
-    return yunohost.ssh.user_ssh_add_key(auth, username, key, comment)
+def user_ssh_add_key(username, key, comment):
+    return yunohost.ssh.user_ssh_add_key(username, key, comment)
 
 
-def user_ssh_remove_key(auth, username, key):
-    return yunohost.ssh.user_ssh_remove_key(auth, username, key)
+def user_ssh_remove_key(username, key):
+    return yunohost.ssh.user_ssh_remove_key(username, key)
 
 #
 # End SSH subcategory
