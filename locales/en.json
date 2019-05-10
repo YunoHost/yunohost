@@ -357,6 +357,7 @@
     "migration_0011_can_not_backup_before_migration": "The backup of the system before the migration failed. Migration failed. Error: {error:s}",
     "migration_0011_create_group": "Create group for each user.",
     "migration_0011_done": "Migration sucess. You are now able to use groups of user.",
+    "migration_0011_LDAP_config_dirty": "It look like that you customized your LDAP configuration. For this migration the LDAP configuration need to be updated.\nYou need to save your actual configuration, reintialize the original configuration by the command 'yunohost tools regen-conf -f' and after retry the migration",
     "migration_0011_LDAP_update_failed": "LDAP update failed. Error: {error:s}",
     "migration_0011_migrate_permission": "Migrate permission from apps settings to LDAP",
     "migration_0011_migration_failed_trying_to_rollback": "Migration failed ... trying to rollback the system.",
@@ -460,7 +461,6 @@
     "regenconf_dry_pending_applying": "Checking pending configuration which would have been applied for category '{category}'…",
     "regenconf_failed": "Unable to regenerate the configuration for category(s): {categories}",
     "regenconf_pending_applying": "Applying pending configuration for category '{category}'…",
->>>>>>> upstream/stretch-unstable
     "restore_action_required": "You must specify something to restore",
     "restore_already_installed_app": "An app is already installed with the id '{app:s}'",
     "restore_app_failed": "Unable to restore the app '{app:s}'",
