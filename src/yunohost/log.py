@@ -347,8 +347,7 @@ class OperationLogger(object):
         """
 
         # TODO add a way to not save password on app installation
-        filename = os.path.join(self.path, self.name + LOG_FILE_EXT)
-        self.file_handler = FileHandler(filename)
+        self.file_handler = FileHandler(self.log_path)
         self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
 
         # Listen to the root logger
@@ -360,8 +359,7 @@ class OperationLogger(object):
         Write or rewrite the metadata file with all metadata known
         """
 
-        filename = os.path.join(self.path, self.name + METADATA_FILE_EXT)
-        with open(filename, 'w') as outfile:
+        with open(self.md_path, 'w') as outfile:
             yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
 
     @property
