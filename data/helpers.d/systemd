@@ -120,8 +120,6 @@ ynh_systemd_action() {
         fi
     fi
 
-    ynh_print_info --message="${action^} the service $service_name"
-
     # Use reload-or-restart instead of reload. So it wouldn't fail if the service isn't running.
     if [ "$action" == "reload" ]; then
         action="reload-or-restart"

@@ -244,7 +244,6 @@ ynh_psql_remove_db() {
 
 	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
 	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
-		ynh_print_info --message="Removing database $db_name"
 		ynh_psql_drop_db $db_name # Remove the database
 	else
 		ynh_print_warn --message="Database $db_name not found"
@@ -252,7 +251,6 @@ ynh_psql_remove_db() {
 
 	# Remove psql user if it exists
 	if ynh_psql_user_exists --user=$db_user; then
-		ynh_print_info --message="Removing user $db_user"
 		ynh_psql_drop_user $db_user
 	else
 		ynh_print_warn --message="User $db_user not found"

@@ -225,7 +225,6 @@ ynh_mysql_remove_db () {
 
 	local mysql_root_password=$(sudo cat $MYSQL_ROOT_PWD_FILE)
 	if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"; then	# Check if the database exists
-		ynh_print_info --message="Removing database $db_name"
 		ynh_mysql_drop_db $db_name	# Remove the database	
 	else
 		ynh_print_warn --message="Database $db_name not found"

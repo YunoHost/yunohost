@@ -145,7 +145,6 @@ ynh_system_user_delete () {
     # Check if the user exists on the system
     if ynh_system_user_exists "$username"
     then
-		ynh_print_info --message="Remove the user $username"
 		deluser $username
 	else
 		ynh_print_warn --message="The user $username was not found"
@@ -154,7 +153,6 @@ ynh_system_user_delete () {
     # Check if the group exists on the system
     if ynh_system_group_exists "$username"
     then
-		ynh_print_info --message="Remove the group $username"
 		delgroup $username
     fi
 }
