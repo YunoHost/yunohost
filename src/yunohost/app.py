@@ -697,10 +697,6 @@ def app_upgrade(app=[], url=None, file=None):
 
     logger.success(m18n.n('upgrade_complete'))
 
-    # Return API logs if it is an API call
-    if is_api:
-        return {"log": service_log('yunohost-api', number="100").values()[0]}
-
 
 @is_unit_operation()
 def app_install(operation_logger, app, label=None, args=None, no_remove_on_failure=False, force=False):
