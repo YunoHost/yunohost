@@ -158,3 +158,9 @@ smtpd_milters = inet:localhost:11332
 
 # Skip email without checking if milter has died
 milter_default_action = accept
+
+# Avoid email adress scanning
+# By default it's possible to detect if the email adress exist
+# So it's easly possible to scan a server to know which email adress is valid
+# and after to send spam
+disable_vrfy_command = yes
