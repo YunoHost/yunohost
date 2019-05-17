@@ -6,6 +6,8 @@
 #
 # usage: ynh_user_exists --username=username
 # | arg: -u, --username - the username to check
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_user_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=u
@@ -25,6 +27,8 @@ ynh_user_exists() {
 # | arg: -u, --username - the username to retrieve info from
 # | arg: -k, --key - the key to retrieve
 # | ret: string - the key's value
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_user_get_info() {
     # Declare an array to define the options of this helper.
     local legacy_args=uk
@@ -43,6 +47,8 @@ ynh_user_get_info() {
 #
 # usage: ynh_user_list
 # | ret: string - one username per line
+#
+# Requires YunoHost version 2.4.0 or higher.
 ynh_user_list() {
     sudo yunohost user list --output-as plain --quiet \
       | awk '/^##username$/{getline; print}'
@@ -52,6 +58,8 @@ ynh_user_list() {
 #
 # usage: ynh_system_user_exists --username=username
 # | arg: -u, --username - the username to check
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_system_user_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=u
@@ -81,16 +89,17 @@ ynh_system_group_exists() {
 # Create a system user
 #
 # examples:
-#   - ynh_system_user_create --username=nextcloud -> creates a nextcloud user with
-#    no home directory and /usr/sbin/nologin login shell (hence no login capability)
-#   - ynh_system_user_create --username=discourse --home_dir=/var/www/discourse --use_shell --> creates a
-#    discourse user using /var/www/discourse as home directory and the default login shell
+#   # Create a nextcloud user with no home directory and /usr/sbin/nologin login shell (hence no login capability)
+#   ynh_system_user_create --username=nextcloud
+#   # Create a discourse user using /var/www/discourse as home directory and the default login shell
+#   ynh_system_user_create --username=discourse --home_dir=/var/www/discourse --use_shell 
 #
 # usage: ynh_system_user_create --username=user_name [--home_dir=home_dir] [--use_shell]
 # | arg: -u, --username - Name of the system user that will be create
 # | arg: -h, --home_dir - Path of the home dir for the user. Usually the final path of the app. If this argument is omitted, the user will be created without home
-# | arg: -s, --use_shell - Create a user using the default login shell if present.
-# If this argument is omitted, the user will be created with /usr/sbin/nologin shell
+# | arg: -s, --use_shell - Create a user using the default login shell if present. If this argument is omitted, the user will be created with /usr/sbin/nologin shell
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_create () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=uhs
@@ -123,6 +132,8 @@ ynh_system_user_create () {
 #
 # usage: ynh_system_user_delete --username=user_name
 # | arg: -u, --username - Name of the system user that will be create
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_delete () {
     # Declare an array to define the options of this helper.
     local legacy_args=u
@@ -134,16 +145,16 @@ ynh_system_user_delete () {
     # Check if the user exists on the system
     if ynh_system_user_exists "$username"
     then
-		echo "Remove the user $username" >&2
+		ynh_print_info --message="Remove the user $username"
 		deluser $username
 	else
-		echo "The user $username was not found" >&2
+		ynh_print_warn --message="The user $username was not found"
     fi
 
     # Check if the group exists on the system
     if ynh_system_group_exists "$username"
     then
-		echo "Remove the group $username" >&2
+		ynh_print_info --message="Remove the group $username"
 		delgroup $username
     fi
 }

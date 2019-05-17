@@ -34,22 +34,20 @@ from xmlrpclib import Fault
 from importlib import import_module
 from collections import OrderedDict
 
-import apt
-import apt.progress
-
-from moulinette import msettings, msignals, m18n
+from moulinette import msignals, m18n
 from moulinette.core import init_authenticator
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.process import check_output
+from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_regen_conf, service_log, service_start, service_enable
+from yunohost.service import service_status, service_start, service_enable
+from yunohost.regenconf import regen_conf
 from yunohost.monitor import monitor_disk, monitor_system
-from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.packages import ynh_packages_version, _dump_sources_list, _list_upgradable_apt_packages
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation, OperationLogger
 
@@ -132,6 +130,11 @@ def tools_adminpw(auth, new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
+    # UNIX seems to not like password longer than 127 chars ...
+    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
+    if len(new_password) >= 127:
+        raise YunohostError('admin_password_too_long')
+
     new_hash = _hash_user_password(new_password)
 
     try:
@@ -207,7 +210,7 @@ def tools_maindomain(operation_logger, auth, new_domain=None):
     # Regen configurations
     try:
         with open('/etc/yunohost/installed', 'r'):
-            service_regen_conf()
+            regen_conf()
     except IOError:
         pass
 
@@ -325,7 +328,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
-    service_regen_conf(['nslcd', 'nsswitch'], force=True)
+    regen_conf(['nslcd', 'nsswitch'], force=True)
 
     # Initialize LDAP for YunoHost
     # TODO: Improve this part by integrate ldapinit into conf_regen hook
@@ -340,11 +343,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         '/home/yunohost.app'
     ]
 
-    for folder in folders_to_create:
-        try:
-            os.listdir(folder)
-        except OSError:
-            os.makedirs(folder)
+    for folder in filter(lambda x: not os.path.exists(x), folders_to_create):
+        os.makedirs(folder)
 
     # Change folders permissions
     os.system('chmod 755 /home/yunohost.app')
@@ -376,7 +376,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
-    service_regen_conf(['ssl'], force=True)
+    regen_conf(['ssl'], force=True)
     ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
     # (Update the serial so that it's specific to this very instance)
     os.system("openssl rand -hex 19 > %s/serial" % ssl_dir)
@@ -405,7 +405,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     logger.success(m18n.n('yunohost_ca_creation_success'))
 
     # New domain config
-    service_regen_conf(['nsswitch'], force=True)
+    regen_conf(['nsswitch'], force=True)
     domain_add(auth, domain, dyndns)
     tools_maindomain(auth, domain)
 
@@ -415,10 +415,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
-    # Setup the default official app list with cron job
+    # Setup the default apps list with cron job
     try:
         app_fetchlist(name="yunohost",
-                      url="https://app.yunohost.org/official.json")
+                      url="https://app.yunohost.org/apps.json")
     except Exception as e:
         logger.warning(str(e))
 
@@ -433,7 +433,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    service_regen_conf(force=True)
+    regen_conf(force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -450,155 +450,260 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     else:
         # We need to explicitly ask the regen conf to regen ssh
         # (by default, i.e. first argument = None, it won't because it's too touchy)
-        service_regen_conf(names=["ssh"], force=True)
+        regen_conf(names=["ssh"], force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 
     logger.warning(m18n.n('recommend_to_add_first_user'))
 
 
-def tools_update(ignore_apps=False, ignore_packages=False):
+def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
+                     list_pending=False):
+    return regen_conf(names, with_diff, force, dry_run, list_pending)
+
+
+def tools_update(apps=False, system=False):
     """
-    Update apps & package cache, then display changelog
+    Update apps & system package cache
 
     Keyword arguments:
-        ignore_apps -- Ignore app list update and changelog
-        ignore_packages -- Ignore apt cache update and changelog
-
+        system -- Fetch available system packages upgrades (equivalent to apt update)
+        apps -- Fetch the application list to check which apps can be upgraded
     """
-    # "packages" will list upgradable packages
-    packages = []
-    if not ignore_packages:
-        cache = apt.Cache()
+
+    # If neither --apps nor --system specified, do both
+    if not apps and not system:
+        apps = True
+        system = True
+
+    upgradable_system_packages = []
+    if system:
 
         # Update APT cache
+        # LC_ALL=C is here to make sure the results are in english
+        command = "LC_ALL=C apt update"
+
+        # Filter boring message about "apt not having a stable CLI interface"
+        # Also keep track of wether or not we encountered a warning...
+        warnings = []
+
+        def is_legit_warning(m):
+            legit_warning = m.rstrip() and "apt does not have a stable CLI interface" not in m.rstrip()
+            if legit_warning:
+                warnings.append(m)
+            return legit_warning
+
+        callbacks = (
+            # stdout goes to debug
+            lambda l: logger.debug(l.rstrip()),
+            # stderr goes to warning except for the boring apt messages
+            lambda l: logger.warning(l.rstrip()) if is_legit_warning(l) else logger.debug(l.rstrip())
+        )
+
         logger.info(m18n.n('updating_apt_cache'))
-        if not cache.update():
-            raise YunohostError('update_cache_failed')
 
-        cache.open(None)
-        cache.upgrade(True)
+        returncode = call_async_output(command, callbacks, shell=True)
 
-        # Add changelogs to the result
-        for pkg in cache.get_changes():
-            packages.append({
-                'name': pkg.name,
-                'fullname': pkg.fullname,
-                'changelog': pkg.get_changelog()
-            })
+        if returncode != 0:
+            raise YunohostError('update_apt_cache_failed', sourceslist='\n'.join(_dump_sources_list()))
+        elif warnings:
+            logger.error(m18n.n('update_apt_cache_warning', sourceslist='\n'.join(_dump_sources_list())))
+
+        upgradable_system_packages = list(_list_upgradable_apt_packages())
         logger.debug(m18n.n('done'))
 
-    # "apps" will list upgradable packages
-    apps = []
-    if not ignore_apps:
+    upgradable_apps = []
+    if apps:
+        logger.info(m18n.n('updating_app_lists'))
         try:
             app_fetchlist()
         except YunohostError:
             # FIXME : silent exception !?
             pass
 
-        app_list_installed = os.listdir(APPS_SETTING_PATH)
-        for app_id in app_list_installed:
+        upgradable_apps = list(_list_upgradable_apps())
 
-            app_dict = app_info(app_id, raw=True)
+    if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
+        logger.info(m18n.n('already_up_to_date'))
 
-            if app_dict["upgradable"] == "yes":
-                apps.append({
-                    'id': app_id,
-                    'label': app_dict['settings']['label']
-                })
+    return {'system': upgradable_system_packages, 'apps': upgradable_apps}
 
-    if len(apps) == 0 and len(packages) == 0:
-        logger.info(m18n.n('packages_no_upgrade'))
 
-    return {'packages': packages, 'apps': apps}
+def _list_upgradable_apps():
+
+    app_list_installed = os.listdir(APPS_SETTING_PATH)
+    for app_id in app_list_installed:
+
+        app_dict = app_info(app_id, raw=True)
+
+        if app_dict["upgradable"] == "yes":
+            yield {
+                'id': app_id,
+                'label': app_dict['settings']['label']
+            }
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, auth, ignore_apps=False, ignore_packages=False):
+def tools_upgrade(operation_logger, auth, apps=None, system=False):
     """
     Update apps & package cache, then display changelog
 
     Keyword arguments:
-        ignore_apps -- Ignore apps upgrade
-        ignore_packages -- Ignore APT packages upgrade
-
+       apps -- List of apps to upgrade (or [] to update all apps)
+       system -- True to upgrade system
     """
     from yunohost.utils import packages
     if packages.dpkg_is_broken():
         raise YunohostError("dpkg_is_broken")
 
-    failure = False
+    if system is not False and apps is not None:
+        raise YunohostError("tools_upgrade_cant_both")
 
-    # Retrieve interface
-    is_api = True if msettings.get('interface') == 'api' else False
+    if system is False and apps is None:
+        raise YunohostError("tools_upgrade_at_least_one")
 
-    if not ignore_packages:
+    #
+    # Apps
+    # This is basically just an alias to yunohost app upgrade ...
+    #
 
-        apt.apt_pkg.init()
-        apt.apt_pkg.config.set("DPkg::Options::", "--force-confdef")
-        apt.apt_pkg.config.set("DPkg::Options::", "--force-confold")
+    if apps is not None:
 
-        cache = apt.Cache()
-        cache.open(None)
-        cache.upgrade(True)
+        # Make sure there's actually something to upgrade
 
-        # If API call
-        if is_api:
-            critical_packages = ("moulinette", "yunohost",
-                                 "yunohost-admin", "ssowat", "python")
-            critical_upgrades = set()
+        upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
 
-            for pkg in cache.get_changes():
-                if pkg.name in critical_packages:
-                    critical_upgrades.add(pkg.name)
-                    # Temporarily keep package ...
-                    pkg.mark_keep()
+        if not upgradable_apps:
+            logger.info(m18n.n("app_no_upgrade"))
+            return
+        elif len(apps) and all(app not in upgradable_apps for app in apps):
+            logger.info(m18n.n("apps_already_up_to_date"))
+            return
 
-            # ... and set a hourly cron up to upgrade critical packages
-            if critical_upgrades:
-                logger.info(m18n.n('packages_upgrade_critical_later',
-                                   packages=', '.join(critical_upgrades)))
-                with open('/etc/cron.d/yunohost-upgrade', 'w+') as f:
-                    f.write('00 * * * * root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin apt-get install %s -y && rm -f /etc/cron.d/yunohost-upgrade\n' % ' '.join(critical_upgrades))
+        # Actually start the upgrades
 
-        if cache.get_changes():
-            logger.info(m18n.n('upgrading_packages'))
-
-            operation_logger.start()
-            try:
-                os.environ["DEBIAN_FRONTEND"] = "noninteractive"
-                # Apply APT changes
-                # TODO: Logs output for the API
-                cache.commit(apt.progress.text.AcquireProgress(),
-                             apt.progress.base.InstallProgress())
-            except Exception as e:
-                failure = True
-                logger.warning('unable to upgrade packages: %s' % str(e))
-                logger.error(m18n.n('packages_upgrade_failed'))
-                operation_logger.error(m18n.n('packages_upgrade_failed'))
-            else:
-                logger.info(m18n.n('done'))
-                operation_logger.success()
-            finally:
-                del os.environ["DEBIAN_FRONTEND"]
-        else:
-            logger.info(m18n.n('packages_no_upgrade'))
-
-    if not ignore_apps:
         try:
-            app_upgrade(auth)
+            app_upgrade(auth, app=apps)
         except Exception as e:
-            failure = True
             logger.warning('unable to upgrade apps: %s' % str(e))
             logger.error(m18n.n('app_upgrade_some_app_failed'))
 
-    if not failure:
-        logger.success(m18n.n('system_upgraded'))
+        return
 
-    # Return API logs if it is an API call
-    if is_api:
-        return {"log": service_log('yunohost-api', number="100").values()[0]}
+    #
+    # System
+    #
+
+    if system is True:
+
+        # Check that there's indeed some packages to upgrade
+        upgradables = list(_list_upgradable_apt_packages())
+        if not upgradables:
+            logger.info(m18n.n('already_up_to_date'))
+
+        logger.info(m18n.n('upgrading_packages'))
+        operation_logger.start()
+
+        # Critical packages are packages that we can't just upgrade
+        # randomly from yunohost itself... upgrading them is likely to
+        critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
+
+        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+
+        # Prepare dist-upgrade command
+        dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
+        dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
+        dist_upgrade += " apt-get"
+        dist_upgrade += " --fix-broken --show-upgraded --assume-yes"
+        for conf_flag in ["old", "miss", "def"]:
+            dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
+        dist_upgrade += " dist-upgrade"
+
+        #
+        # "Regular" packages upgrade
+        #
+        if noncritical_packages_upgradable:
+
+            logger.info(m18n.n("tools_upgrade_regular_packages"))
+
+            # Mark all critical packages as held
+            for package in critical_packages:
+                check_output("apt-mark hold %s" % package)
+
+            # Doublecheck with apt-mark showhold that packages are indeed held ...
+            held_packages = check_output("apt-mark showhold").split("\n")
+            if any(p not in held_packages for p in critical_packages):
+                logger.warning(m18n.n("tools_upgrade_cant_hold_critical_packages"))
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
+                raise YunohostError(m18n.n('packages_upgrade_failed'))
+
+            logger.debug("Running apt command :\n{}".format(dist_upgrade))
+
+            callbacks = (
+                lambda l: logger.info(l.rstrip() + "\r"),
+                lambda l: logger.warning(l.rstrip()),
+            )
+            returncode = call_async_output(dist_upgrade, callbacks, shell=True)
+            if returncode != 0:
+                logger.warning('tools_upgrade_regular_packages_failed',
+                               packages_list=', '.join(noncritical_packages_upgradable))
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
+                raise YunohostError(m18n.n('packages_upgrade_failed'))
+
+        #
+        # Critical packages upgrade
+        #
+        if critical_packages_upgradable:
+
+            logger.info(m18n.n("tools_upgrade_special_packages"))
+
+            # Mark all critical packages as unheld
+            for package in critical_packages:
+                check_output("apt-mark unhold %s" % package)
+
+            # Doublecheck with apt-mark showhold that packages are indeed unheld ...
+            held_packages = check_output("apt-mark showhold").split("\n")
+            if any(p in held_packages for p in critical_packages):
+                logger.warning(m18n.n("tools_upgrade_cant_unhold_critical_packages"))
+                operation_logger.error(m18n.n('packages_upgrade_failed'))
+                raise YunohostError(m18n.n('packages_upgrade_failed'))
+
+            #
+            # Here we use a dirty hack to run a command after the current
+            # "yunohost tools upgrade", because the upgrade of yunohost
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # (also the upgrade of the package, if executed from the webadmin, is
+            # likely to kill/restart the api which is in turn likely to kill this
+            # command before it ends...)
+            #
+            logfile = operation_logger.log_path
+            command = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
+
+            MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
+            wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
+            mark_success = "(echo 'Done!' | tee -a {} && echo 'success: true' >> {})".format(logfile, operation_logger.md_path)
+            mark_failure = "(echo 'Failed :(' | tee -a {} && echo 'success: false' >> {})".format(logfile, operation_logger.md_path)
+            update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
+            update_log_metadata = update_log_metadata.format(operation_logger.md_path)
+
+            upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
+            command = "(({wait} && {cmd}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}') &".format(
+                      wait=wait_until_end_of_yunohost_command,
+                      cmd=command,
+                      mark_success=mark_success,
+                      mark_failure=mark_failure,
+                      update_metadata=update_log_metadata,
+                      done=upgrade_completed)
+
+            logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
+            logger.debug("Running command :\n{}".format(command))
+            os.system(command)
+            return
+
+        else:
+            logger.success(m18n.n('system_upgraded'))
+            operation_logger.success()
 
 
 def tools_diagnosis(auth, private=False):
@@ -660,12 +765,13 @@ def tools_diagnosis(auth, private=False):
         }
 
     # nginx -t
-    try:
-        diagnosis['nginx'] = check_output("nginx -t").strip().split("\n")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Unable to check 'nginx -t', exception: %s" % e)
+    p = subprocess.Popen("nginx -t".split(),
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    out, _ = p.communicate()
+    diagnosis["nginx"] = out.strip().split("\n")
+    if p.returncode != 0:
+        logger.error(out)
 
     # Services status
     services = service_status()
@@ -697,7 +803,7 @@ def tools_diagnosis(auth, private=False):
         # Domains
         diagnosis['private']['domains'] = domain_list(auth)['domains']
 
-        diagnosis['private']['regen_conf'] = service_regen_conf(with_diff=True, dry_run=True)
+        diagnosis['private']['regen_conf'] = regen_conf(with_diff=True, dry_run=True)
 
     try:
         diagnosis['security'] = {

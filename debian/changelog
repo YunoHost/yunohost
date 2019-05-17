@@ -1,3 +1,53 @@
+yunohost (3.5.2.2) stable; urgency=low
+
+  - Hotfix for ynh_psql_remove_db (from ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Apr 2019 17:32:00  +0000
+
+yunohost (3.5.2.1) stable; urgency=low
+
+  - [fix] Fresh install was broken because of yunohost_admin.conf initialization
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Apr 2019 14:38:00  +0000
+
+yunohost (3.5.2) stable; urgency=low
+
+  - Release as stable !
+  - [doc] Update script to automatically generate helper doc
+  - [i18n] Update translations for Catalan, Arabic, Italian
+
+  Thanks to all contributors: Aleks, xaloc, BoF, silkevicious ! <3
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Apr 2019 01:53:00  +0000
+
+yunohost (3.5.1.1) testing; urgency=low
+
+  - [fix] enabled/disabled status for sysv services
+  - [fix] Nodejs helpers : use YNH_APP_INSTANCE_NAME instead of YNH_APP_ID (#700)
+  - [fix] nginx diagnosis when there's an error throwing a huge useless traceback. Use Popen instead to display the real error
+  - [fix] service_status returns different type of data if you ask for one or multiple services
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Apr 2019 17:28:00  +0000
+
+yunohost (3.5.1) testing; urgency=low
+
+  - [fix] Fix the dbus interface to get info for services (#698)
+  - [mod] Use ask key for display_text instead and support i18n (#697)
+  - [fix] Rework tools update (#695)
+  - [enh] Nginx conf tweaks for theme (#689)
+  - [fix] Fix argument escaping in getopts (#685, #683)
+  - [enh] Support php versions in ynh_add_fpm_config (#674)
+  - [enh] Check that required services are up before running app install and upgrade (#670)
+  - [doc] Add min version for all helpers (#664)
+  - [enh] Add a setting to control compatibility/security tradeoff for nginx and ssh configurations (#640)
+  - [enh] Hooks to allow apps to extend the recommended DNS configuration (#517)
+  - Misc technical fixes / improvements (0bd781b, fad3edf, 1268872, 847ceca, 26e77b7, b6cff68)
+  - [i18n] Update translation for French, Catalan, Esperanto, Occitan
+
+  Thanks to all contributors: Aleks, Bram, Gabriel Corona, Jibec, Josue, Maniack C, Mélanie C., Quentí, Romuald du Song, ljf, ppr, Xaloc ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Apr 2019 02:13:00  +0000
+
 yunohost (3.5.0.2) testing; urgency=low
 
   - [fix] Make sure that `ynh_system_user_delete` also deletes the group (#680)

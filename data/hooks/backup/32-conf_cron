@@ -10,6 +10,6 @@ source /usr/share/yunohost/helpers
 backup_dir="${1}/conf/cron"
 
 # Backup the configuration
-for f in $(ls -1B /etc/cron.d/yunohost*); do
+for f in $(ls -1B /etc/cron.d/yunohost* 2> /dev/null); do
   ynh_backup "$f" "${backup_dir}/${f##*/}"
 done

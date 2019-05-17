@@ -47,12 +47,13 @@ RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 logger = getActionLogger('yunohost.log')
 
 
-def log_list(category=[], limit=None):
+def log_list(category=[], limit=None, with_details=False):
     """
     List available logs
 
     Keyword argument:
         limit -- Maximum number of logs
+        with_details -- Include details (e.g. if the operation was a success). Likely to increase the command time as it needs to open and parse the metadata file for each log... So try to use this in combination with --limit.
     """
 
     categories = category
@@ -69,12 +70,11 @@ def log_list(category=[], limit=None):
         category_path = os.path.join(CATEGORIES_PATH, category)
         if not os.path.exists(category_path):
             logger.debug(m18n.n('log_category_404', category=category))
-
             continue
 
         logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
                       os.listdir(category_path))
-        logs = reversed(sorted(logs))
+        logs = list(reversed(sorted(logs)))
 
         if limit is not None:
             logs = logs[:limit]
@@ -99,6 +99,15 @@ def log_list(category=[], limit=None):
                 pass
             else:
                 entry["started_at"] = log_datetime
+
+            if with_details:
+                with open(md_path, "r") as md_file:
+                    try:
+                        metadata = yaml.safe_load(md_file)
+                    except yaml.YAMLError:
+                        logger.warning(m18n.n('log_corrupted_md_file', file=md_path))
+
+                    entry["success"] = metadata.get("success", "?")
 
             result[category].append(entry)
 
@@ -318,14 +327,27 @@ class OperationLogger(object):
             self.flush()
             self._register_log()
 
+    @property
+    def md_path(self):
+        """
+        Metadata path file
+        """
+        return os.path.join(self.path, self.name + METADATA_FILE_EXT)
+
+    @property
+    def log_path(self):
+        """
+        Log path file
+        """
+        return os.path.join(self.path, self.name + LOG_FILE_EXT)
+
     def _register_log(self):
         """
         Register log with a handler connected on log system
         """
 
         # TODO add a way to not save password on app installation
-        filename = os.path.join(self.path, self.name + LOG_FILE_EXT)
-        self.file_handler = FileHandler(filename)
+        self.file_handler = FileHandler(self.log_path)
         self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
 
         # Listen to the root logger
@@ -337,8 +359,7 @@ class OperationLogger(object):
         Write or rewrite the metadata file with all metadata known
         """
 
-        filename = os.path.join(self.path, self.name + METADATA_FILE_EXT)
-        with open(filename, 'w') as outfile:
+        with open(self.md_path, 'w') as outfile:
             yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
 
     @property

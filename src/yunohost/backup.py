@@ -50,7 +50,7 @@ from yunohost.hook import (
 )
 from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
-from yunohost.service import service_regen_conf
+from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 from functools import reduce
 
@@ -1212,7 +1212,7 @@ class RestoreManager():
         else:
             operation_logger.success()
 
-        service_regen_conf()
+        regen_conf()
 
     def _restore_apps(self):
         """Restore all apps targeted"""
@@ -2271,6 +2271,18 @@ def backup_info(name, with_details=False, human_readable=False):
         # Historically 'system' was 'hooks'
         if "hooks" in info.keys():
             system_key = "hooks"
+
+        if "size_details" in info.keys():
+            for category in ["apps", "system"]:
+                for name, key_info in info[category].items():
+                    if name in info["size_details"][category].keys():
+                        key_info["size"] = info["size_details"][category][name]
+                        if human_readable:
+                            key_info["size"] = binary_to_human(key_info["size"]) + 'B'
+                    else:
+                        key_info["size"] = -1
+                        if human_readable:
+                            key_info["size"] = "?"
 
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
