@@ -370,5 +370,22 @@
     "log_corrupted_md_file": "Il file dei metadati yaml associato con i registri è corrotto: '{md_file}'",
     "log_category_404": "La categoria di registrazione '{category}' non esiste",
     "log_link_to_log": "Registro completo di questa operazione: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
-    "log_help_to_get_log": "Per vedere il registro dell'operazione '{desc}', usa il comando 'yunohost log display {name}'"
+    "log_help_to_get_log": "Per vedere il registro dell'operazione '{desc}', usa il comando 'yunohost log display {name}'",
+    "global_settings_setting_security_postfix_compatibility": "Bilanciamento tra compatibilità e sicurezza per il server Postfix. Riguarda gli algoritmi di cifratura (e altri aspetti legati alla sicurezza)",
+    "log_link_to_failed_log": "L'operazione '{desc}' è fallita! Per ottenere aiuto, per favore <a href=\"#/tools/logs/{name}\">fornisci il registro completo dell'operazione cliccando qui</a>",
+    "log_help_to_get_failed_log": "L'operazione '{desc}' è fallita! Per ottenere aiuto, per favore condividi il registro completo dell'operazione utilizzando il comando 'yunohost log display {name} --share'",
+    "log_does_exists": "Non esiste nessun registro delle operazioni chiamato '{log}', usa 'yunohost log list' per vedere tutti i registri delle operazioni disponibili",
+    "log_app_addaccess": "Aggiungi accesso a '{}'",
+    "log_app_removeaccess": "Rimuovi accesso a '{}'",
+    "log_app_clearaccess": "Rimuovi tutti gli accessi a '{}'",
+    "log_app_fetchlist": "Aggiungi un elenco di applicazioni",
+    "log_app_removelist": "Rimuovi un elenco di applicazioni",
+    "log_app_change_url": "Cambia l'url dell'applicazione '{}'",
+    "log_app_install": "Installa l'applicazione '{}'",
+    "log_app_remove": "Rimuovi l'applicazione '{}'",
+    "log_app_upgrade": "Aggiorna l'applicazione '{}'",
+    "log_app_makedefault": "Rendi predefinita l'applicazione '{}'",
+    "log_available_on_yunopaste": "Questo registro è ora disponibile via {url}",
+    "log_backup_restore_system": "Ripristina sistema da un archivio di backup",
+    "log_backup_restore_app": "Ripristina '{}' da un archivio di backup"
 }
