@@ -159,6 +159,10 @@ smtpd_milters = inet:localhost:11332
 # Skip email without checking if milter has died
 milter_default_action = accept
 
+# Avoid to send simultaneously too many emails
+smtp_destination_concurrency_limit = 1
+default_destination_rate_delay = 5s
+
 # Avoid email adress scanning
 # By default it's possible to detect if the email adress exist
 # So it's easly possible to scan a server to know which email adress is valid
