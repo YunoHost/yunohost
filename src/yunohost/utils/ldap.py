@@ -19,6 +19,7 @@
 
 """
 
+import atexit
 from moulinette.core import init_authenticator
 
 # We use a global variable to do some caching
@@ -38,3 +39,14 @@ def _get_ldap_interface():
         _ldap_interface = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
     return _ldap_interface
+
+# Add this to properly close / delete the ldap interface / authenticator
+# when Python exits ...
+# Otherwise there's a risk that some funky error appears at the very end
+# of the command due to Python stuff being unallocated in wrong order.
+def _destroy_ldap_interface():
+    global _ldap_interface
+    if _ldap_interface is not None:
+        del _ldap_interface
+
+atexit.register(_destroy_ldap_interface)
