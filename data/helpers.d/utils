@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# Determine whether the scripts is executed from a terminal or the admin JS.
-#
-# [internal]
-ynh_is_term () {
-	# Return true if $TERM return xterm
-	# Which means the script is executed from a terminal, not from the admin JS
-	[[ "$TERM" =~ "xterm" ]]
-}
-
 # Manage a fail of the script
 #
 # [internal]
@@ -36,8 +27,8 @@ ynh_exit_properly () {
 
 	ynh_print_err --message="!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!"
 
-	# If the script is executed from a terminal, dump the end of the log that precedes the crash.
-	if ynh_is_term
+	# If the script is executed from the CLI, dump the end of the log that precedes the crash.
+	if [ "$YNH_INTERFACE" == "cli" ]
 	then
 		# Unset xtrace to not spoil the log
 		set +x
