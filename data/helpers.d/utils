@@ -25,6 +25,9 @@ ynh_exit_properly () {
 	trap '' EXIT	# Ignore new exit signals
 	set +eu	# Do not exit anymore if a command fail or if a variable is empty
 
+	# Small tempo to avoid the next message being mixed up with other DEBUG messages
+	sleep 0.5
+
 	ynh_print_err --message="!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!"
 
 	# If the script is executed from the CLI, dump the end of the log that precedes the crash.
