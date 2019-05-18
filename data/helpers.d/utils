@@ -37,7 +37,7 @@ ynh_exit_properly () {
 
 		# Wait for the log to be fill with the data until the crash.
 		local timeout=0
-		while ! tail --lines=20 "$ynh_log" | grep --quiet "ynh_exit_properly"
+		while ! tail --lines=20 "$ynh_log" | grep --quiet "+ ynh_exit_properly"
 		do
 			((timeout++))
 			if [ $timeout -eq 500 ]; then
@@ -52,7 +52,7 @@ ynh_exit_properly () {
 		# Remove "yunohost.hook..."
 		# Add DEBUG and color it at the beginning of each log line.
 		echo -e "$(tail --lines=30 "$ynh_log" \
-			| sed '1,/ynh_exit_properly/!d' \
+			| sed '1,/+ ynh_exit_properly/!d' \
 			| sed 's/^[[:digit:]: ,-]*//g' \
 			| sed 's/ *yunohost.hook.*\]/ -/g' \
 			| sed 's/^WARNING /&/g' \
