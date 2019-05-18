@@ -12,7 +12,7 @@ PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
 # | arg: -p, --password - the user password
 # | arg: -d, --database - the database to connect to
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_connect_as() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=upd
@@ -33,7 +33,7 @@ ynh_psql_connect_as() {
 # | arg: -s, --sql - the SQL command to execute
 # | arg: -d, --database - the database to connect to
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_execute_as_root() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=sd
@@ -54,7 +54,7 @@ ynh_psql_execute_as_root() {
 # | arg: -f, --file - the file containing SQL commands
 # | arg: -d, --database - the database to connect to
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_execute_file_as_root() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=fd
@@ -77,7 +77,7 @@ ynh_psql_execute_file_as_root() {
 # | arg: db - the database name to create
 # | arg: user - the user to grant privilegies
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_create_db() {
 	local db=$1
 	local user=${2:-}
@@ -102,7 +102,7 @@ ynh_psql_create_db() {
 # usage: ynh_psql_drop_db db
 # | arg: db - the database name to drop
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_drop_db() {
 	local db=$1
 	# First, force disconnection of all clients connected to the database
@@ -120,7 +120,7 @@ ynh_psql_drop_db() {
 # | arg: -d, --database - the database name to dump
 # | ret: the psqldump output
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_dump_db() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=d
@@ -140,7 +140,7 @@ ynh_psql_dump_db() {
 # | arg: user - the user name to create
 # | arg: pwd - the password to identify user by
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_create_user() {
 	local user=$1
 	local pwd=$2
@@ -192,7 +192,7 @@ ynh_psql_database_exists() {
 # usage: ynh_psql_drop_user user
 # | arg: user - the user name to drop
 #
-# Requires YunoHost version 3.?.? or higher.
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_drop_user() {
 	ynh_psql_execute_as_root --sql="DROP USER ${1};"
 }
