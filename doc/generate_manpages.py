@@ -110,29 +110,33 @@ def ordered_yaml_load(stream):
     return yaml.load(stream, OrderedLoader)
 
 
-# creates output directory
-if not os.path.exists(OUTPUT_DIR):
-    os.makedirs(OUTPUT_DIR)
+def main():
+    # creates output directory
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
+    # man pages of "yunohost *"
+    with open(ACTIONSMAP_FILE, 'r') as actionsmap:
+
+        # Getting the dictionary containning what actions are possible per domain
+        actionsmap = ordered_yaml_load(actionsmap)
+
+        for i in actionsmap.keys():
+            if i.startswith("_"):
+                del actionsmap[i]
+
+        today = date.today()
+
+        result = template.render(
+            month=today.strftime("%B"),
+            year=today.year,
+            categories=actionsmap,
+            str=str,
+        )
+
+    with open(os.path.join(OUTPUT_DIR, "yunohost"), "w") as output:
+        output.write(result)
 
 
-# man pages of "yunohost *"
-with open(ACTIONSMAP_FILE, 'r') as actionsmap:
-
-    # Getting the dictionary containning what actions are possible per domain
-    actionsmap = ordered_yaml_load(actionsmap)
-
-    for i in actionsmap.keys():
-        if i.startswith("_"):
-            del actionsmap[i]
-
-    today = date.today()
-
-    result = template.render(
-        month=today.strftime("%B"),
-        year=today.year,
-        categories=actionsmap,
-        str=str,
-    )
-
-with open(os.path.join(OUTPUT_DIR, "yunohost"), "w") as output:
-    output.write(result)
+if __name__ == '__main__':
+    main()
