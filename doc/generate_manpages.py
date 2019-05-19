@@ -8,7 +8,6 @@ Pages are stored in OUTPUT_DIR
 
 import os
 import yaml
-import subprocess
 
 from datetime import date
 from collections import OrderedDict
