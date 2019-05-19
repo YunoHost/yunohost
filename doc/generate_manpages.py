@@ -8,6 +8,7 @@ Pages are stored in OUTPUT_DIR
 
 import os
 import yaml
+import argparse
 
 from datetime import date
 from collections import OrderedDict
@@ -98,7 +99,6 @@ usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, '../data/actionsmap/yunohost.yml')
-OUTPUT_DIR = "output/"
 
 
 def ordered_yaml_load(stream):
@@ -111,9 +111,23 @@ def ordered_yaml_load(stream):
 
 
 def main():
-    # creates output directory
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
+    parser = argparse.ArgumentParser(description="generate yunohost manpage based on actionsmap.yml")
+    parser.add_argument("-o", "--output", default="output/yunohost")
+
+    args = parser.parse_args()
+
+    if os.path.isdir(args.output):
+        if not os.path.exists(args.output):
+            os.makedirs(args.output)
+
+        output_path = os.path.join(args.output, "yunohost")
+    else:
+        output_dir = os.path.split(args.output)[0]
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        output_path = args.output
 
     # man pages of "yunohost *"
     with open(ACTIONSMAP_FILE, 'r') as actionsmap:
@@ -134,7 +148,7 @@ def main():
             str=str,
         )
 
-    with open(os.path.join(OUTPUT_DIR, "yunohost"), "w") as output:
+    with open(output_path, "w") as output:
         output.write(result)
 
 
