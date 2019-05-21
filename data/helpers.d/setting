@@ -69,7 +69,7 @@ ynh_app_setting_delete() {
 # An URL set with 'skipped_uris' key will be totally ignored by the SSO,
 # which means that the access will be public and the logged-in user information will not be passed to the app.
 #
-# Requires YunoHost version ?.?.? or higher.
+# Requires YunoHost version 3.6.0 or higher.
 ynh_add_skipped_uris() {
     # Declare an array to define the options of this helper.
     local legacy_args=aur
@@ -100,7 +100,7 @@ ynh_add_skipped_uris() {
 # An URL set with unprotected_uris key will be accessible publicly, but if an user is logged in,
 # his information will be accessible (through HTTP headers) to the app.
 #
-# Requires YunoHost version ?.?.? or higher.
+# Requires YunoHost version 3.6.0 or higher.
 ynh_add_unprotected_uris() {
     # Declare an array to define the options of this helper.
     local legacy_args=aur
@@ -130,7 +130,7 @@ ynh_add_unprotected_uris() {
 #
 # An URL set with protected_uris will be blocked by the SSO and accessible only to authenticated and authorized users.
 #
-# Requires YunoHost version ?.?.? or higher.
+# Requires YunoHost version 3.6.0 or higher.
 ynh_add_protected_uris() {
     # Declare an array to define the options of this helper.
     local legacy_args=aur
