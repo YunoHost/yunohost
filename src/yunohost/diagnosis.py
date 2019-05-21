@@ -73,6 +73,9 @@ def diagnosis_show(categories=[], full=False):
             type_, message_key, message_args = r["report"]
             r["report"] = (type_, m18n.n(message_key, **message_args))
 
+            if "details" in r:
+                r["details"] = [ m18n.n(key, *values) for key, values in r["details"] ]
+
     return {"reports": all_reports}
 
 def diagnosis_run(categories=[], force=False, args=None):

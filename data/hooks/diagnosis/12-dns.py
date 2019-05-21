@@ -54,8 +54,10 @@ class DNSDiagnoser(Diagnoser):
                 current_value = self.get_current_record(domain, r["name"], r["type"]) or "None"
                 expected_value = r["value"] if r["value"] != "@" else domain+"."
 
-                if current_value != expected_value:
-                    discrepancies.append((r, expected_value, current_value))
+                if current_value == "None":
+                    discrepancies.append(("diagnosis_dns_missing_record", (r["type"], r["name"], expected_value)))
+                elif current_value != expected_value:
+                    discrepancies.append(("diagnosis_dns_discrepancy", (r["type"], r["name"], expected_value, current_value)))
 
             if discrepancies:
                 if category == "basic" or is_main_domain:
@@ -66,11 +68,16 @@ class DNSDiagnoser(Diagnoser):
             else:
                 level = "SUCCESS"
                 report = ("SUCCESS", "diagnosis_dns_good_conf", {"domain": domain, "category": category})
+                details = None
 
-            # FIXME : add management of details of what's wrong if there are discrepancies
-            yield dict(meta = {"domain": domain, "category": category},
-                       result = level, report = report )
+            output = dict(meta = {"domain": domain, "category": category},
+                          result = level,
+                          report = report )
 
+            if discrepancies:
+                output["details"] = discrepancies
+
+            yield output
 
 
     def get_current_record(self, domain, name, type_):
