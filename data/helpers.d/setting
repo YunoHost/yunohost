@@ -59,6 +59,98 @@ ynh_app_setting_delete() {
     ynh_app_setting "delete" "$app" "$key"
 }
 
+# Add skipped_uris urls into the config
+#
+# usage: ynh_add_skipped_uris [--appid=app] --url=url1,url2 [--regex]
+# | arg: -a, --appid - the application id
+# | arg: -u, --url - the urls to add to the sso for this app
+# | arg: -r, --regex - Use the key 'skipped_regex' instead of 'skipped_uris'
+#
+# An URL set with 'skipped_uris' key will be totally ignored by the SSO,
+# which means that the access will be public and the logged-in user information will not be passed to the app.
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_add_skipped_uris() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=aur
+    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
+    local appid
+    local url
+    local regex
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    appid={appid:-$app}
+    regex={regex:-0}
+
+    local key=skipped_uris
+    if [ $regex -eq 1 ]; then
+        key=skipped_regex
+    fi
+
+    ynh_app_setting_set --app=$appid --key=$key --value="$url"
+}
+
+# Add unprotected_uris urls into the config
+#
+# usage: ynh_add_unprotected_uris [--appid=app] --url=url1,url2 [--regex]
+# | arg: -a, --appid - the application id
+# | arg: -u, --url - the urls to add to the sso for this app
+# | arg: -r, --regex - Use the key 'unprotected_regex' instead of 'unprotected_uris'
+#
+# An URL set with unprotected_uris key will be accessible publicly, but if an user is logged in,
+# his information will be accessible (through HTTP headers) to the app.
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_add_unprotected_uris() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=aur
+    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
+    local appid
+    local url
+    local regex
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    appid={appid:-$app}
+    regex={regex:-0}
+
+    local key=unprotected_uris
+    if [ $regex -eq 1 ]; then
+        key=unprotected_regex
+    fi
+
+    ynh_app_setting_set --app=$appid --key=$key --value="$url"
+}
+
+# Add protected_uris urls into the config
+#
+# usage: ynh_add_protected_uris [--appid=app] --url=url1,url2 [--regex]
+# | arg: -a, --appid - the application id
+# | arg: -u, --url - the urls to add to the sso for this app
+# | arg: -r, --regex - Use the key 'protected_regex' instead of 'protected_uris'
+#
+# An URL set with protected_uris will be blocked by the SSO and accessible only to authenticated and authorized users.
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_add_protected_uris() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=aur
+    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
+    local appid
+    local url
+    local regex
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    appid={appid:-$app}
+    regex={regex:-0}
+
+    local key=protected_uris
+    if [ $regex -eq 1 ]; then
+        key=protected_regex
+    fi
+
+    ynh_app_setting_set --app=$appid --key=$key --value="$url"
+}
+
 # Small "hard-coded" interface to avoid calling "yunohost app" directly each
 # time dealing with a setting is needed (which may be so slow on ARM boards)
 #
