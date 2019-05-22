@@ -1322,7 +1322,7 @@ class RestoreManager():
             filesystem.chown(app_scripts_new_path, 'admin', None, True)
 
             # Restore permissions
-            if os.path.isfile(app_restore_script_in_archive):
+            if os.path.isfile(app_settings_in_archive + '/permission.ldif'):
                 os.system("slapadd -l '%s/permission.ldif'" % app_settings_in_archive)
             else:
                 from yunohost.tools import _get_migration_by_name
