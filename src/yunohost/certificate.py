@@ -86,7 +86,7 @@ DNS_RESOLVERS = [
 #
 
 
-def certificate_status(auth, domain_list, full=False):
+def certificate_status(domain_list, full=False):
     """
     Print the status of certificate for given domains (all by default)
 
@@ -99,10 +99,10 @@ def certificate_status(auth, domain_list, full=False):
 
     # If no domains given, consider all yunohost domains
     if domain_list == []:
-        domain_list = yunohost.domain.domain_list(auth)['domains']
+        domain_list = yunohost.domain.domain_list()['domains']
     # Else, validate that yunohost knows the domains given
     else:
-        yunohost_domains_list = yunohost.domain.domain_list(auth)['domains']
+        yunohost_domains_list = yunohost.domain.domain_list()['domains']
         for domain in domain_list:
             # Is it in Yunohost domain list?
             if domain not in yunohost_domains_list:
@@ -126,7 +126,7 @@ def certificate_status(auth, domain_list, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(auth, domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+def certificate_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -142,7 +142,7 @@ def certificate_install(auth, domain_list, force=False, no_checks=False, self_si
         _certificate_install_selfsigned(domain_list, force)
     else:
         _certificate_install_letsencrypt(
-            auth, domain_list, force, no_checks, staging)
+            domain_list, force, no_checks, staging)
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
@@ -237,7 +237,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
             operation_logger.error(msg)
 
 
-def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=False, staging=False):
+def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, staging=False):
     import yunohost.domain
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
@@ -246,7 +246,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # If no domains given, consider all yunohost domains with self-signed
     # certificates
     if domain_list == []:
-        for domain in yunohost.domain.domain_list(auth)['domains']:
+        for domain in yunohost.domain.domain_list()['domains']:
 
             status = _get_status(domain)
             if status["CA_type"]["code"] != "self-signed":
@@ -257,7 +257,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domain_list:
-            yunohost_domains_list = yunohost.domain.domain_list(auth)['domains']
+            yunohost_domains_list = yunohost.domain.domain_list()['domains']
             if domain not in yunohost_domains_list:
                 raise YunohostError('certmanager_domain_unknown', domain=domain)
 
@@ -285,7 +285,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
 
             operation_logger.start()
 
-            _configure_for_acme_challenge(auth, domain)
+            _configure_for_acme_challenge(domain)
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
             _install_cron(no_checks=no_checks)
 
@@ -300,7 +300,7 @@ def _certificate_install_letsencrypt(auth, domain_list, force=False, no_checks=F
             operation_logger.error(msg)
 
 
-def certificate_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
+def certificate_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
@@ -317,7 +317,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
     if domain_list == []:
-        for domain in yunohost.domain.domain_list(auth)['domains']:
+        for domain in yunohost.domain.domain_list()['domains']:
 
             # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
@@ -344,7 +344,7 @@ def certificate_renew(auth, domain_list, force=False, no_checks=False, email=Fal
         for domain in domain_list:
 
             # Is it in Yunohost dmomain list?
-            if domain not in yunohost.domain.domain_list(auth)['domains']:
+            if domain not in yunohost.domain.domain_list()['domains']:
                 raise YunohostError('certmanager_domain_unknown', domain=domain)
 
             status = _get_status(domain)
@@ -468,7 +468,7 @@ Subject: %s
     smtp.quit()
 
 
-def _configure_for_acme_challenge(auth, domain):
+def _configure_for_acme_challenge(domain):
 
     nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
     nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
@@ -511,7 +511,7 @@ location ^~ '/.well-known/acme-challenge/'
     # any clean function already implemented in yunohost to do this though)
     _run_service_command("reload", "nginx")
 
-    app_ssowatconf(auth)
+    app_ssowatconf()
 
 
 def _check_acme_challenge_configuration(domain):
