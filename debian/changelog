@@ -1,3 +1,48 @@
+yunohost (3.6.0) testing; urgency=low
+
+  ## Major changes
+
+  - [enh] Simplify the whole LDAP interface thing (#721)
+  - [enh] Rework how system upgrade is handled (#692)
+  - [enh] Properly reimplement bash completion for yunohost cli (#678)
+  - [enh] Migrate to apps.json / use it as default list (#666, #665)
+  - [enh] Decouple the regen-conf mechanism from services (#653)
+  - [i18n] Update translations for Catalan, Occitan, French, Italian, Spanish, Arabic
+
+  ## App helpers
+
+  - [mod] Set min version to 3.5.0 for helpers (#725)
+  - [enh] Add helpers for sso config (#720)
+  - [enh] Reorganize helpers (#717)
+  - [enh] Add the ongoing part to the progression bar when using ynh_script_progression (#715)
+  - [fix] postgresql helpers : force disconnection of all clients connected to the database (#713)
+  - [enh] Use printers in helpers (#712)
+  - [enh] Use ynh_systemd_action in helpers (#711)
+  - [fix] Fix extraction of weight value for ynh_script_progression (#710)
+  - [enh] Add support for ynh_setup_source in restore script (#703)
+
+  # Other changes
+
+  - [fix] Update censurfridns ipv6 (#727)
+  - [enh] Optimize ynh_script_progression (#723)
+  - [enh] Disable VRFY command in Postfix command (#722)
+  - [enh] Add a --with-details option for log list (#716)
+  - [enh] Specify -a parameter on dovecot lda for Sieve (#709)
+  - [fix] Fix an issue with config panels following changes in hook_exec (#707)
+  - [enh] Don't expose LDAP server to the outside world (#706)
+  - [fix] Remove backup hook warning about cron file (#704)
+  - [enh] Update nginx conf to handle WebSocket proxying (#701)
+  - [enh] Add size of apps in backup_info result (#699)
+  - [enh] Add a setting to remove support for TLSv1 and TLSv1.1 in Postfix (#696)
+  - [enh] Mark YunoHost as essential to avoid removing it inadvertenly (#694)
+  - [enh] Avoid to send simultaneously too many emails (#691)
+  - [enh] Dump log when an app script fails in CLI to help with debugging (#687)
+  - [fix] Many small technical fixes (ec48edf,251a338,d11d31d,3668bf7,c7eb5bb,9b08afc,cecaee4,95fdfb3,2bc0deb)
+
+  Thanks to all contributors : Aleks, Benoît, Bram, ButterflyOfFire, C. Vuillot, Josue, J. Maulny, Kayou, L. Noferini, Maniack, M. Thiel, Quentí, R. du Song, Sylkevicious, ljf, xaloc33, yalh76 ! <3
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 22 May 2019 19:10:00  +0000
+
 yunohost (3.5.2.2) stable; urgency=low
 
   - Hotfix for ynh_psql_remove_db (from ljf)
@@ -17,7 +62,7 @@ yunohost (3.5.2) stable; urgency=low
   - [i18n] Update translations for Catalan, Arabic, Italian
 
   Thanks to all contributors: Aleks, xaloc, BoF, silkevicious ! <3
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 10 Apr 2019 01:53:00  +0000
 
 yunohost (3.5.1.1) testing; urgency=low
