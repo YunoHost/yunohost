@@ -20,66 +20,6 @@ logger = getActionLogger('yunohost.migration')
 # Tools used also for restoration
 ###################################################
 
-
-def migrate_LDAP_db(auth):
-    logger.info(m18n.n("migration_0011_update_LDAP_database"))
-    try:
-        auth.remove('cn=sftpusers,ou=groups')
-    except:
-        logger.warn(m18n.n("error_when_removing_sftpuser_group"))
-
-    with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
-        ldap_map = yaml.load(f)
-
-    try:
-        attr_dict = ldap_map['parents']['ou=permission']
-        auth.add('ou=permission', attr_dict)
-
-        attr_dict = ldap_map['children']['cn=all_users,ou=groups']
-        auth.add('cn=all_users,ou=groups', attr_dict)
-
-        for rdn, attr_dict in ldap_map['depends_children'].items():
-            auth.add(rdn, attr_dict)
-    except Exception as e:
-        raise YunohostError("migration_0011_LDAP_update_failed", error=e)
-
-    logger.info(m18n.n("migration_0011_create_group"))
-
-    # Create a group for each yunohost user
-    user_list = auth.search('ou=users,dc=yunohost,dc=org',
-                            '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
-                            ['uid', 'uidNumber'])
-    for user_info in user_list:
-        username = user_info['uid'][0]
-        auth.update('uid=%s,ou=users' % username,
-                    {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
-        user_group_add(auth, username, gid=user_info['uidNumber'][0], sync_perm=False)
-        user_group_update(auth, groupname=username, add_user=username, force=True, sync_perm=False)
-        user_group_update(auth, groupname='all_users', add_user=username, force=True, sync_perm=False)
-
-
-def migrate_app_permission(auth, app=None):
-    logger.info(m18n.n("migration_0011_migrate_permission"))
-
-    if app:
-        apps = app_list(installed=True, filter=app)['apps']
-    else:
-        apps = app_list(installed=True)['apps']
-
-    for app_info in apps:
-        app = app_info['id']
-        permission = app_setting(app, 'allowed_users')
-        path = app_setting(app, 'path')
-        domain = app_setting(app, 'domain')
-
-        urls = [domain + path] if domain and path else None
-        permission_add(auth, app, permission='main', urls=urls, default_allow=True, sync_perm=False)
-        if permission:
-            allowed_group = permission.split(',')
-            user_permission_add(auth, [app], permission='main', group=allowed_group, sync_perm=False)
-        app_setting(app, 'allowed_users', delete=True)
-
-
 class MyMigration(Migration):
     """
         Update the LDAP DB to be able to store the permission
@@ -88,6 +28,66 @@ class MyMigration(Migration):
     """
 
     required = True
+
+    def migrate_LDAP_db(self, auth):
+        print("asdfadsf")
+        logger.info(m18n.n("migration_0011_update_LDAP_database"))
+        try:
+            auth.remove('cn=sftpusers,ou=groups')
+        except:
+            logger.warn(m18n.n("error_when_removing_sftpuser_group"))
+
+        with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
+            ldap_map = yaml.load(f)
+
+        try:
+            attr_dict = ldap_map['parents']['ou=permission']
+            auth.add('ou=permission', attr_dict)
+
+            attr_dict = ldap_map['children']['cn=all_users,ou=groups']
+            auth.add('cn=all_users,ou=groups', attr_dict)
+
+            for rdn, attr_dict in ldap_map['depends_children'].items():
+                auth.add(rdn, attr_dict)
+        except Exception as e:
+            raise YunohostError("migration_0011_LDAP_update_failed", error=e)
+
+        logger.info(m18n.n("migration_0011_create_group"))
+
+        # Create a group for each yunohost user
+        user_list = auth.search('ou=users,dc=yunohost,dc=org',
+                                '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
+                                ['uid', 'uidNumber'])
+        for user_info in user_list:
+            username = user_info['uid'][0]
+            auth.update('uid=%s,ou=users' % username,
+                        {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
+            user_group_add(auth, username, gid=user_info['uidNumber'][0], sync_perm=False)
+            user_group_update(auth, groupname=username, add_user=username, force=True, sync_perm=False)
+            user_group_update(auth, groupname='all_users', add_user=username, force=True, sync_perm=False)
+
+
+    def migrate_app_permission(self, auth, app=None):
+        logger.info(m18n.n("migration_0011_migrate_permission"))
+
+        if app:
+            apps = app_list(installed=True, filter=app)['apps']
+        else:
+            apps = app_list(installed=True)['apps']
+
+        for app_info in apps:
+            app = app_info['id']
+            permission = app_setting(app, 'allowed_users')
+            path = app_setting(app, 'path')
+            domain = app_setting(app, 'domain')
+
+            urls = [domain + path] if domain and path else None
+            permission_add(auth, app, permission='main', urls=urls, default_allow=True, sync_perm=False)
+            if permission:
+                allowed_group = permission.split(',')
+                user_permission_add(auth, [app], permission='main', group=allowed_group, sync_perm=False)
+            app_setting(app, 'allowed_users', delete=True)
+
 
     def migrate(self):
         # Check if the migration can be processed
@@ -123,10 +123,10 @@ class MyMigration(Migration):
             auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
             # Update LDAP database
-            migrate_LDAP_db(auth)
+            self.migrate_LDAP_db(auth)
 
             # Migrate permission
-            migrate_app_permission(auth)
+            self.migrate_app_permission(auth)
 
             permission_sync_to_user(auth)
         except Exception as e:
