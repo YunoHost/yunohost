@@ -919,7 +919,7 @@ class RestoreManager():
 
         successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
-        permission_sync_to_user(auth, force=True)
+        permission_sync_to_user(auth, force=False)
 
         if os.path.ismount(self.work_dir):
             ret = subprocess.call(["umount", self.work_dir])
@@ -1183,6 +1183,16 @@ class RestoreManager():
         if system_targets == []:
             return
 
+        # Backup old permission for apps
+        # We need to do that because in case of an app is installed we can't remove the permission for this app
+        old_apps_permission = []
+        try:
+            old_apps_permission = auth.search('ou=permission,dc=yunohost,dc=org',
+                                              '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
+                                              ['cn', 'objectClass', 'groupPermission', 'URL', 'gidNumber'])
+        except:
+            logger.info(m18n.n('apps_permission_not_found'))
+
         # Start register change on system
         operation_logger = OperationLogger('backup_restore_system')
         operation_logger.start()
@@ -1228,9 +1238,26 @@ class RestoreManager():
             from yunohost.tools import _get_migration_by_name
             setup_group_permission = _get_migration_by_name("setup_group_permission")
             # Update LDAP schema restart slapd
-            logger.info(m18n.n("migration_0009_update_LDAP_schema"))
-            service_regen_conf(names=['slapd'], force=True)
+            logger.info(m18n.n("migration_0011_update_LDAP_schema"))
+            regen_conf(names=['slapd'], force=True)
             setup_group_permission.migrate_LDAP_db(auth)
+
+        # Remove all permission for all app which sill in the LDAP
+        for per in auth.search('ou=permission,dc=yunohost,dc=org',
+                               '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
+                               ['cn']):
+            if not auth.remove('cn=%s,ou=permission' % per['cn'][0]):
+                raise YunohostError('permission_deletion_failed', permission=permission, app=app)
+
+        # Restore permission for the app which is installed
+        for per in old_apps_permission:
+            try:
+                permission_name, app_name = per['cn'][0].split('.')
+            except:
+                logger.warning(m18n.n('permission_name_not_valid', permission=per['cn'][0]))
+            if _is_installed(app_name):
+                if not auth.add('cn=%s,ou=permission' % per['cn'][0], per):
+                    raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
 
 
     def _restore_apps(self, auth):
@@ -1239,6 +1266,7 @@ class RestoreManager():
         apps_targets = self.targets.list("apps", exclude=["Skipped"])
 
         for app in apps_targets:
+            print(app)
             self._restore_app(auth, app)
 
     def _restore_app(self, auth, app_instance_name):
@@ -1268,6 +1296,9 @@ class RestoreManager():
                                         name already exists
         restore_app_failed -- Raised if the restore bash script failed
         """
+        from moulinette.utils.filesystem import read_ldif
+        from yunohost.user import user_group_list
+
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
                 s = os.path.join(src, item)
@@ -1321,14 +1352,6 @@ class RestoreManager():
             filesystem.chmod(app_settings_new_path, 0o400, 0o400, True)
             filesystem.chown(app_scripts_new_path, 'admin', None, True)
 
-            # Restore permissions
-            if os.path.isfile(app_settings_in_archive + '/permission.ldif'):
-                os.system("slapadd -l '%s/permission.ldif'" % app_settings_in_archive)
-            else:
-                from yunohost.tools import _get_migration_by_name
-                setup_group_permission = _get_migration_by_name("setup_group_permission")
-                setup_group_permission.migrate_app_permission(auth, app=app_instance_name)
-
             # Copy the app scripts to a writable temporary folder
             # FIXME : use 'install -Dm555' or something similar to what's done
             # in the backup method ?
@@ -1337,6 +1360,26 @@ class RestoreManager():
             filesystem.chmod(tmp_folder_for_app_restore, 0o550, 0o550, True)
             filesystem.chown(tmp_folder_for_app_restore, 'admin', None, True)
             restore_script = os.path.join(tmp_folder_for_app_restore, 'restore')
+
+            # Restore permissions
+            if os.path.isfile(app_settings_in_archive + '/permission.ldif'):
+                filtred_entries =  ['entryUUID', 'creatorsName', 'createTimestamp', 'entryCSN', 'structuralObjectClass',
+                                   'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
+                entries = read_ldif('%s/permission.ldif' % app_settings_in_archive, filtred_entries)
+                group_list = user_group_list(auth, ['cn'])['groups']
+                for dn, entry in entries:
+                    # Remove the group which has been removed
+                    for group in entry['groupPermission']:
+                        group_name = group.split(',')[0].split('=')[1]
+                        if group_name not in group_list:
+                            entry['groupPermission'].remove(group)
+                    print(entry)
+                    if not auth.add('cn=%s,ou=permission' % entry['cn'][0], entry):
+                        raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
+            else:
+                from yunohost.tools import _get_migration_by_name
+                setup_group_permission = _get_migration_by_name("setup_group_permission")
+                setup_group_permission.migrate_app_permission(auth, app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
