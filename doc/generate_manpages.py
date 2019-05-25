@@ -24,7 +24,7 @@ yunohost \\fI\\,CATEGORY\\/\\fR \\fI\\,COMMAND\\/\\fR [\\fI\\,SUBCOMMAND\\/\\fR]
 .SH DESCRIPTION
 usage: yunohost
 {{ '{' }}{{ ",".join(categories) }}{{ '}' }}
-\&...
+\\&...
 [\\-h|\\-\\-help] [\\-\\-no\\-cache] [\\-\\-output\\-as {json,plain,none}] [\\-\\-debug]
 [\\-\\-quiet] [\\-\\-timeout ==SUPPRESS==] [\\-\\-admin\\-password PASSWORD]
 [\\-v|\\-\\-version]
