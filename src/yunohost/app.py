@@ -362,6 +362,12 @@ def app_info(app, show_status=False, raw=False):
 
         ret['upgradable'] = upgradable
         ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
+        
+        with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+            manifest = json.load(json_manifest)
+        
+        if 'version' in manifest:
+            ret['version'] = manifest.get('version', '-')
 
         return ret
 
