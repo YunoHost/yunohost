@@ -102,7 +102,7 @@ usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}
 {% for argument_name, argument_value in action_value["arguments"].items() %}
 .TP
 \\fB{{ argument_name }}\\fR{% if argument_value.get("full") %}, \\fB{{ argument_value["full"] }}\\fR{% endif %}\
-{% if str(argument_name).startswith("-") and not argument_value.get("action") == "store_true" %} \\fI\\,{{ (argument_value.get("full", argument_name)).lstrip("-") }}\\fR{% endif %}
+{% if str(argument_name).startswith("-") and not argument_value.get("action") == "store_true" %} \\fI\\,{{ (argument_value.get("full", argument_name)).lstrip("-") }}\\fR {% if "default" in argument_value %}(default: {{ argument_value["default"] }}){% endif %}{% endif %}
 {{ argument_value.get("help", "")}}
 {% endfor %}
 
