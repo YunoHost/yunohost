@@ -126,7 +126,7 @@ def main():
     else:
         output_dir = os.path.split(args.output)[0]
 
-        if not os.path.exists(output_dir):
+        if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
         output_path = args.output
