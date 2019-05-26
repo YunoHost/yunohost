@@ -41,7 +41,6 @@ show this help message and exit
 {{ name }}
 {{ value["category_help"] }}
 {% endfor %}
-Manage debug logs
 .SS "global arguments:"
 .TP
 \\fB\\-\\-no\\-cache\\fR
