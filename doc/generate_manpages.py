@@ -8,6 +8,7 @@ Pages are stored in OUTPUT_DIR
 
 import os
 import yaml
+import gzip
 import argparse
 
 from datetime import date
@@ -113,6 +114,7 @@ def ordered_yaml_load(stream):
 def main():
     parser = argparse.ArgumentParser(description="generate yunohost manpage based on actionsmap.yml")
     parser.add_argument("-o", "--output", default="output/yunohost")
+    parser.add_argument("-z", "--gzip", action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -148,8 +150,12 @@ def main():
             str=str,
         )
 
-    with open(output_path, "w") as output:
-        output.write(result)
+        if not args.gzip:
+            with open(output_path, "w") as output:
+                output.write(result)
+        else:
+            with gzip.open(output_path, mode="w", compresslevel=9) as output:
+                output.write(result)
 
 
 if __name__ == '__main__':
