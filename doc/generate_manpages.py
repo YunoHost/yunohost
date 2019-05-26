@@ -20,8 +20,11 @@ template = Template('''\
 .TH YunoHost "1" "{{ month }} {{ year }}" "YunoHost Collectif"
 .SH NAME
 YunoHost \\- yunohost server administration command
+
 .SH SYNOPSIS
 yunohost \\fI\\,CATEGORY\\/\\fR \\fI\\,COMMAND\\/\\fR [\\fI\\,SUBCOMMAND\\/\\fR] [\\fI\\,ARGUMENTS\\/\\fR]... [\\fI\\,OPTIONS\\/\\fR]...
+
+{# generale command format #}
 .SH DESCRIPTION
 usage: yunohost
 {{ '{' }}{{ ",".join(categories) }}{{ '}' }}
@@ -29,10 +32,12 @@ usage: yunohost
 [\\-h|\\-\\-help] [\\-\\-no\\-cache] [\\-\\-output\\-as {json,plain,none}] [\\-\\-debug]
 [\\-\\-quiet] [\\-\\-timeout ==SUPPRESS==] [\\-\\-admin\\-password PASSWORD]
 [\\-v|\\-\\-version]
+
 .SS "optional arguments:"
 .TP
 \\fB\\-h\\fR, \\fB\\-\\-help\\fR
 show this help message and exit
+
 .SS "categories:"
 .IP
 {{ '{' }}{{ ",".join(categories) }}{{ '}' }}
@@ -41,6 +46,7 @@ show this help message and exit
 {{ name }}
 {{ value["category_help"] }}
 {% endfor %}
+
 .SS "global arguments:"
 .TP
 \\fB\\-\\-no\\-cache\\fR
@@ -67,6 +73,8 @@ The admin password to use to authenticate
 .TP
 \\fB\\-v\\fR, \\fB\\-\\-version\\fR
 Display YunoHost packages versions
+
+{# each categories #}
 {% for name, value in categories.items() %}
 .SH YUNOHOST {{ name.upper() }}
 usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}' }}
@@ -74,6 +82,8 @@ usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}
 .SS "description:"
 .IP
 {{ value["category_help"] }}
+
+{# each command of each category #}
 {% for action, action_value in value["actions"].items() %}
 .SS "yunohost {{ name }} {{ action }} \
 {% for argument_name, argument_value in action_value.get("arguments", {}).items() %}\
@@ -83,7 +93,11 @@ usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}
 {% if str(argument_name).startswith("-") and not argument_value.get("action") == "store_true" %} {{ (argument_value.get("full", argument_name)).lstrip("-") }}{% endif %}\
 {% if not required %}]{% endif %} \
 {% endfor %}"
+
+{# help of the command #}
 {{ action_value["action_help"] }}
+
+{# arguments of the command #}
 {% if "arguments" in action_value %}
 {% for argument_name, argument_value in action_value["arguments"].items() %}
 .TP
@@ -91,6 +105,7 @@ usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}
 {% if str(argument_name).startswith("-") and not argument_value.get("action") == "store_true" %} \\fI\\,{{ (argument_value.get("full", argument_name)).lstrip("-") }}\\fR{% endif %}
 {{ argument_value.get("help", "")}}
 {% endfor %}
+
 {% endif %}
 {% endfor %}
 {% endfor %}
