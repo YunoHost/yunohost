@@ -1,7 +1,7 @@
 import pytest
 
 from moulinette.core import init_authenticator, MoulinetteError
-from yunohost.app import app_install, app_remove, app_change_url
+from yunohost.app import app_install, app_remove, app_change_url, app_list
 from yunohost.user import user_list, user_create, user_permission_list, user_delete, user_group_list, user_group_delete, user_permission_add, user_permission_remove, user_permission_clear
 from yunohost.permission import permission_add, permission_update, permission_remove
 from yunohost.domain import _get_maindomain
@@ -135,6 +135,26 @@ def check_LDAP_db_integrity():
             if 'inheritPermission' in permission_map:
                 allowed_user_list = [m.split("=")[1].split(",")[0] for m in permission_map[permission]['inheritPermission']]
                 assert set(user_list) <= set(allowed_user_list)
+
+
+def check_permission_for_apps():
+    # We check that the for each installed apps we have at last the "main" permission
+    # and we don't have any permission linked to no apps. The only exception who is not liked to an app
+    # is mail, metronome, and sftp
+    permission_search = auth.search('ou=permission,dc=yunohost,dc=org',
+                                    '(objectclass=permissionYnh)',
+                                    ['cn', 'groupPermission', 'inheritPermission', 'memberUid'])
+    app_l = app_list(installed=True)['apps']
+    apps_list_set = set()
+    permission_list_set = set()
+    for permission in permission_search:
+        permission_list_set.add(permission['cn'][0].split(".")[1])
+    for app in app_l:
+        apps_list_set.add(app['id'])
+    extra_service_permission = set(['mail', 'metronome'])
+    if 'sftp' in permission_list_set:
+        extra_service_permission.add('sftp')
+    assert apps_list_set == permission_list_set - extra_service_permission
 
 #
 # List functions

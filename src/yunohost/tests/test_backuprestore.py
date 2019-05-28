@@ -14,7 +14,7 @@ from yunohost.backup import backup_create, backup_restore, backup_list, backup_i
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 from yunohost.user import user_permission_list
-from yunohost.tests.test_permission import check_LDAP_db_integrity
+from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
 # Get main domain
 maindomain = ""
@@ -97,6 +97,12 @@ def check_LDAP_db_integrity_call():
     check_LDAP_db_integrity()
     yield
     check_LDAP_db_integrity()
+
+@pytest.fixture(autouse=True)
+def check_permission_for_apps_call():
+    check_permission_for_apps()
+    yield
+    check_permission_for_apps()
 
 #
 # Helpers                                                                    #
