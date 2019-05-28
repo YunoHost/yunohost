@@ -366,8 +366,7 @@ def app_info(app, show_status=False, raw=False):
         with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
             manifest = json.load(json_manifest)
         
-        if 'version' in manifest:
-            ret['version'] = manifest.get('version', '-')
+        ret['version'] = manifest.get('version', '-')
 
         return ret
 
