@@ -22,6 +22,7 @@ class MyMigration(Migration):
 
         # Remove all the deprecated lists
         lists_to_remove = [
+            "http://app.yunohost.org/list.json",       # Old list on old installs, alias to official.json
             "https://app.yunohost.org/official.json",
             "https://app.yunohost.org/community.json",
             "https://labriqueinter.net/apps/labriqueinternet.json"
