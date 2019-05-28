@@ -37,7 +37,7 @@
     "app_requirements_checking": "Checking required packages for {app}…",
     "app_requirements_failed": "Unable to meet requirements for {app}: {error}",
     "app_requirements_unmeet": "Requirements are not met for {app}, the package {pkgname} ({version}) must be {spec}",
-    "app_sources_fetch_failed": "Unable to fetch sources files",
+    "app_sources_fetch_failed": "Unable to fetch sources files, is the url correct?",
     "app_start_install": "Installing application {app}…",
     "app_start_remove": "Removing application {app}…",
     "app_start_backup": "Collecting files to be backuped for {app}…",
