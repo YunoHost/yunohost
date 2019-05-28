@@ -22,15 +22,15 @@ class MyMigration(Migration):
 
         # Remove all the deprecated lists
         lists_to_remove = [
-            "http://app.yunohost.org/list.json",       # Old list on old installs, alias to official.json
-            "https://app.yunohost.org/official.json",
-            "https://app.yunohost.org/community.json",
-            "https://labriqueinter.net/apps/labriqueinternet.json"
+            "app.yunohost.org/list.json",       # Old list on old installs, alias to official.json
+            "app.yunohost.org/official.json",
+            "app.yunohost.org/community.json",
+            "labriqueinter.net/apps/labriqueinternet.json"
         ]
 
         appslists = _read_appslist_list()
         for appslist, infos in appslists.items():
-            if infos["url"] in lists_to_remove:
+            if infos["url"].split("//")[-1] in lists_to_remove:
                 app_removelist(name=appslist)
 
         # Replace by apps.json list
