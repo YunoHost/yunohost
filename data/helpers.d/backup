@@ -59,12 +59,18 @@ ynh_backup() {
     local not_mandatory="${not_mandatory:-0}"
 
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
+    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get $app do_not_backup_data)
 
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
-    if [ "$is_big" == "1" ] && [ "$BACKUP_CORE_ONLY" == "1" ] ; then
-      ynh_print_info --message="$src_path will not be saved, because backup_core_only is set."
-      return 0
+    if [ $is_big -eq 1 ] && ( [ ${do_not_backup_data:-0} -eq 1 ] || [ $BACKUP_CORE_ONLY -eq 1 ] ) 
+    then
+        if [ $BACKUP_CORE_ONLY -eq 1 ]; then
+            ynh_print_warn --message="$src_path will not be saved, because 'BACKUP_CORE_ONLY' is set."
+        else
+            ynh_print_warn --message="$src_path will not be saved, because 'do_not_backup_data' is set."
+        fi
+        return 0
     fi
 
     # ==============================================================================
