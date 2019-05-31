@@ -1422,7 +1422,7 @@ def app_ssowatconf():
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
-    logger.success(m18n.n('ssowat_conf_generated'))
+    logger.debug(m18n.n('ssowat_conf_generated'))
 
 
 def app_change_label(app, new_label):

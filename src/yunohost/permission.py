@@ -228,7 +228,7 @@ def user_permission_update(operation_logger, app=[], permission=None, add_userna
             continue
         if ldap.update('cn=%s,ou=permission' % per, {'groupPermission': val}):
             p = per.split('.')
-            logger.success(m18n.n('permission_updated', permission=p[0], app=p[1]))
+            logger.debug(m18n.n('permission_updated', permission=p[0], app=p[1]))
         else:
             raise YunohostError('permission_update_failed')
 
@@ -298,7 +298,7 @@ def user_permission_clear(operation_logger, app=[], permission=None, sync_perm=T
                 logger.warning(m18n.n('permission_already_clear', permission=per, app=a))
                 continue
             if ldap.update('cn=%s,ou=permission' % permission_name, default_permission):
-                logger.success(m18n.n('permission_updated', permission=per, app=a))
+                logger.debug(m18n.n('permission_updated', permission=per, app=a))
             else:
                 raise YunohostError('permission_update_failed')
 
@@ -367,7 +367,7 @@ def permission_add(operation_logger, app, permission, urls=None, default_allow=T
     if ldap.add('cn=%s,ou=permission' % permission_name, attr_dict):
         if sync_perm:
             permission_sync_to_user()
-        logger.success(m18n.n('permission_created', permission=permission, app=app))
+        logger.debug(m18n.n('permission_created', permission=permission, app=app))
         return user_permission_list(app, permission)
 
     raise YunohostError('permission_creation_failed')
@@ -424,7 +424,7 @@ def permission_update(operation_logger, app, permission, add_url=None, remove_ur
     if ldap.update('cn=%s,ou=permission' % permission_name, {'cn': permission_name, 'URL': url}):
         if sync_perm:
             permission_sync_to_user()
-        logger.success(m18n.n('permission_updated', permission=permission, app=app))
+        logger.debug(m18n.n('permission_updated', permission=permission, app=app))
         return user_permission_list(app, permission)
 
     raise YunohostError('premission_update_failed')
@@ -452,7 +452,7 @@ def permission_remove(operation_logger, app, permission, force=False, sync_perm=
         raise YunohostError('permission_deletion_failed', permission=permission, app=app)
     if sync_perm:
         permission_sync_to_user()
-    logger.success(m18n.n('permission_deleted', permission=permission, app=app))
+    logger.debug(m18n.n('permission_deleted', permission=permission, app=app))
 
 
 def permission_sync_to_user(force=False):
@@ -518,7 +518,7 @@ def permission_sync_to_user(force=False):
         else:
             if not ldap.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
                 raise YunohostError('permission_update_failed')
-    logger.success(m18n.n('permission_generated'))
+    logger.debug(m18n.n('permission_generated'))
 
     app_ssowatconf()
 
