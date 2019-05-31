@@ -208,7 +208,7 @@ def log_display(path, number=50, share=False):
 
 
 def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
-                      exclude=['auth', 'password'], operation_key=None):
+                      exclude=['password'], operation_key=None):
     """
     Configure quickly a unit operation
 
@@ -222,9 +222,8 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
     (argname, entity_type) instead of just put the entity type.
 
     exclude    Remove some arguments from the context. By default, arguments
-    called 'password' and 'auth' are removed. If an argument is an object, you
-    need to exclude it or create manually the unit operation without this
-    decorator.
+    called 'password' are removed. If an argument is an object, you need to
+    exclude it or create manually the unit operation without this decorator.
 
     operation_key   A key to describe the unit operation log used to create the
     filename and search a translation. Please ensure that this key prefixed by
@@ -347,8 +346,7 @@ class OperationLogger(object):
         """
 
         # TODO add a way to not save password on app installation
-        filename = os.path.join(self.path, self.name + LOG_FILE_EXT)
-        self.file_handler = FileHandler(filename)
+        self.file_handler = FileHandler(self.log_path)
         self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
 
         # Listen to the root logger
@@ -360,8 +358,7 @@ class OperationLogger(object):
         Write or rewrite the metadata file with all metadata known
         """
 
-        filename = os.path.join(self.path, self.name + METADATA_FILE_EXT)
-        with open(filename, 'w') as outfile:
+        with open(self.md_path, 'w') as outfile:
             yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
 
     @property

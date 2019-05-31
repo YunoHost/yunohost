@@ -44,19 +44,7 @@ _global:
                     uri: ldap://localhost:389
                     base_dn: dc=yunohost,dc=org
                     user_rdn: cn=admin,dc=yunohost,dc=org
-            ldap-anonymous:
-                vendor: ldap
-                parameters:
-                    uri: ldap://localhost:389
-                    base_dn: dc=yunohost,dc=org
-            as-root:
-                vendor: ldap
-                parameters:
-                    # We can get this uri by (urllib.quote_plus('/var/run/slapd/ldapi')
-                    uri: ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi
-                    base_dn: dc=yunohost,dc=org
-                    user_rdn: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
-        argument_auth: true
+        argument_auth: false
     arguments:
         -v:
             full: --version
@@ -77,9 +65,6 @@ user:
         list:
             action_help: List users
             api: GET /users
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                --fields:
                     help: fields to fetch
@@ -89,9 +74,6 @@ user:
         create:
             action_help: Create user
             api: POST /users
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 username:
                     help: The unique username to create
@@ -148,9 +130,6 @@ user:
         delete:
             action_help: Delete user
             api: DELETE /users/<username>
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 username:
                     help: Username to delete
@@ -164,9 +143,6 @@ user:
         update:
             action_help: Update user informations
             api: PUT /users/<username>
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 username:
                     help: Username to update
@@ -219,9 +195,6 @@ user:
         info:
             action_help: Get user information
             api: GET /users/<username>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 username:
                     help: Username or email to get information
@@ -234,9 +207,6 @@ user:
                 list:
                     action_help: List group
                     api: GET /users/groups
-                    configuration:
-                        authenticate: all
-                        authenticator: ldap-anonymous
                     arguments:
                         --fields:
                             help: fields to fetch
@@ -246,9 +216,6 @@ user:
                 add:
                     action_help: Create group
                     api: POST /users/groups
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         groupname:
                             help: The unique group name to add
@@ -261,9 +228,6 @@ user:
                 delete:
                     action_help: Delete group
                     api: DELETE /users/groups/<groupname>
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         groupname:
                             help: Username to delete
@@ -274,9 +238,6 @@ user:
                 update:
                     action_help: Update group
                     api: PUT /users/groups/<groupname>
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         groupname:
                             help: Username to update
@@ -301,9 +262,6 @@ user:
                 info:
                     action_help: Get group information
                     api: GET /users/groups/<groupname>
-                    configuration:
-                        authenticate: all
-                        authenticator: ldap-anonymous
                     arguments:
                         groupname:
                             help: Groupname to get information
@@ -317,9 +275,6 @@ user:
                 list:
                     action_help: List access to user and group
                     api: GET /users/permission/<app>
-                    configuration:
-                        authenticate: all
-                        authenticator: ldap-anonymous
                     arguments:
                         -a:
                             full: --app
@@ -346,9 +301,6 @@ user:
                 add:
                     action_help: Grant access right to users and group
                     api: POST /users/permission/<app>
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         app:
                             help: Application to manage the permission
@@ -377,9 +329,6 @@ user:
                 remove:
                     action_help: Revoke access right to users and group
                     api: PUT /users/permission/<app>
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         app:
                             help: Application to manage the permission
@@ -408,9 +357,6 @@ user:
                 clear:
                     action_help: Reset access rights for the app
                     api: DELETE /users/permission/<app>
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         app:
                             help: Application to manage the permission
@@ -428,9 +374,6 @@ user:
                 allow:
                     action_help: Allow the user to uses ssh
                     api: POST /users/ssh/enable
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         username:
                             help: Username of the user
@@ -441,9 +384,6 @@ user:
                 disallow:
                     action_help: Disallow the user to uses ssh
                     api: POST /users/ssh/disable
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         username:
                             help: Username of the user
@@ -454,9 +394,6 @@ user:
                 list-keys:
                     action_help: Show user's authorized ssh keys
                     api: GET /users/ssh/keys
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         username:
                             help: Username of the user
@@ -467,9 +404,6 @@ user:
                 add-key:
                     action_help: Add a new authorized ssh key for this user
                     api: POST /users/ssh/key
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         username:
                             help: Username of the user
@@ -485,9 +419,6 @@ user:
                 remove-key:
                     action_help: Remove an authorized ssh key for this user
                     api: DELETE /users/ssh/key
-                    configuration:
-                        authenticate: all
-                        authenticator: as-root
                     arguments:
                         username:
                             help: Username of the user
@@ -508,17 +439,11 @@ domain:
         list:
             action_help: List domains
             api: GET /domains
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
 
         ### domain_add()
         add:
             action_help: Create a custom domain
             api: POST /domains
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 domain:
                     help: Domain name to add
@@ -535,9 +460,6 @@ domain:
         remove:
             action_help: Delete domains
             api: DELETE /domains/<domain>
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 domain:
                     help: Domain to delete
@@ -548,9 +470,6 @@ domain:
         dns-conf:
             action_help: Generate DNS configuration for a domain
             api: GET /domains/<domain>/dns
-            configuration:
-                authenticate:
-                    - api
             arguments:
                 domain:
                     help: Target domain
@@ -566,9 +485,6 @@ domain:
         cert-status:
             action_help: List status of current certificates (all by default).
             api: GET /domains/cert-status/<domain_list>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain_list:
                     help: Domains to check
@@ -581,9 +497,6 @@ domain:
         cert-install:
             action_help: Install Let's Encrypt certificates for given domains (all by default).
             api: POST /domains/cert-install/<domain_list>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain_list:
                     help: Domains for which to install the certificates
@@ -605,9 +518,6 @@ domain:
         cert-renew:
             action_help: Renew the Let's Encrypt certificates for given domains (all by default).
             api: POST /domains/cert-renew/<domain_list>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain_list:
                     help: Domains for which to renew the certificates
@@ -629,9 +539,6 @@ domain:
         url-available:
             action_help: Check availability of a web path
             api: GET /domain/urlavailable
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain:
                     help: The domain for the web path (e.g. your.domain.tld)
@@ -734,9 +641,6 @@ app:
         map:
             action_help: List apps by domain
             api: GET /appsmap
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 -a:
                     full: --app
@@ -755,9 +659,6 @@ app:
         install:
             action_help: Install apps
             api: POST /apps
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 app:
                     help: Name, local path or git URL of the app to install
@@ -780,9 +681,6 @@ app:
         remove:
             action_help: Remove app
             api: DELETE /apps/<app>
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 app:
                     help: App(s) to delete
@@ -791,9 +689,6 @@ app:
         upgrade:
             action_help: Upgrade app
             api: PUT /upgrade/apps
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 app:
                     help: App(s) to upgrade (default all)
@@ -809,9 +704,6 @@ app:
         change-url:
             action_help: Change app's URL
             api: PUT /apps/<app>/changeurl
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 app:
                     help: Target app instance name
@@ -864,9 +756,6 @@ app:
             action_help: Check availability of a web path
             api: GET /tools/checkurl
             deprecated: True
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 url:
                     help: Url to check
@@ -878,9 +767,6 @@ app:
         register-url:
             action_help: Book/register a web path for a given app
             api: PUT /tools/registerurl
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 app:
                     help: App which will use the web path
@@ -920,9 +806,6 @@ app:
         makedefault:
             action_help: Redirect domain root to an app
             api: PUT /apps/<app>/default
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 app:
                     help: App name to put on domain root
@@ -934,17 +817,11 @@ app:
         ssowatconf:
             action_help: Regenerate SSOwat configuration file
             api: PUT /ssowatconf
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
 
         ### app_change_label()
         change-label:
             action_help: Change app label
             api: PUT /apps/<app>/label
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 app:
                     help: App ID
@@ -955,9 +832,6 @@ app:
         addaccess:
             action_help: Grant access right to users (everyone by default)
             api: PUT /access
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 apps:
                     nargs: "+"
@@ -969,9 +843,6 @@ app:
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
             api: DELETE /access
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 apps:
                     nargs: "+"
@@ -983,9 +854,6 @@ app:
         clearaccess:
             action_help: Reset access rights for the app
             api: POST /access
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 apps:
                     nargs: "+"
@@ -1083,9 +951,6 @@ backup:
         restore:
             action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: POST /backup/restore/<name>
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -1690,21 +1555,10 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_ldapinit()
-        ldapinit:
-            action_help: YunoHost LDAP initialization
-            api: POST /ldap
-            configuration:
-                authenticate: all
-                authenticator: as-root
-
         ### tools_adminpw()
         adminpw:
             action_help: Change password of admin and root users
             api: PUT /adminpw
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 -n:
                     full: --new-password
@@ -1720,9 +1574,6 @@ tools:
             api:
                 - GET /domains/main
                 - PUT /domains/main
-            configuration:
-                authenticate: all
-                authenticator: as-root
             arguments:
                 -n:
                     full: --new-domain
@@ -1734,8 +1585,6 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
-            configuration:
-                authenticate: false
             arguments:
                 -d:
                     full: --domain
@@ -1764,35 +1613,29 @@ tools:
             action_help: YunoHost update
             api: PUT /update
             arguments:
-                --ignore-apps:
-                    help: Ignore apps cache update and changelog
+                --apps:
+                    help: Fetch the application list to check which apps can be upgraded
                     action: store_true
-                --ignore-packages:
-                    help: Ignore APT cache update and changelog
+                --system:
+                    help: Fetch available system packages upgrades (equivalent to apt update)
                     action: store_true
 
         ### tools_upgrade()
         upgrade:
             action_help: YunoHost upgrade
             api: PUT /upgrade
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
-                --ignore-apps:
-                    help: Ignore apps upgrade
-                    action: store_true
-                --ignore-packages:
-                    help: Ignore APT packages upgrade
+                --apps:
+                    help: List of apps to upgrade (all by default)
+                    nargs: "*"
+                --system:
+                    help: Upgrade only the system packages
                     action: store_true
 
         ### tools_diagnosis()
         diagnosis:
             action_help: YunoHost diagnosis
             api: GET /diagnosis
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 -p:
                     full: --private
@@ -1811,9 +1654,6 @@ tools:
 
         ### tools_shell()
         shell:
-            configuration:
-                authenticate: all
-                authenticator: as-root
             action_help: Launch a development shell
             arguments:
                 -c:

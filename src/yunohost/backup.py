@@ -816,14 +816,14 @@ class RestoreManager():
 
     Public methods:
         set_targets(self, system_parts=[], apps=[])
-        restore(self, auth)
+        restore(self)
 
     Usage:
         restore_manager = RestoreManager(name)
 
         restore_manager.set_targets(None, ['wordpress__3'])
 
-        restore_manager.restore(auth)
+        restore_manager.restore()
 
         if restore_manager.success:
             logger.success(m18n.n('restore_complete'))
@@ -910,7 +910,7 @@ class RestoreManager():
             tools_postinstall(domain, 'Yunohost', True)
 
 
-    def clean(self, auth):
+    def clean(self):
         """
         End a restore operations by cleaning the working directory and
         regenerate ssowat conf (if some apps were restored)
@@ -919,7 +919,7 @@ class RestoreManager():
 
         successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
-        permission_sync_to_user(auth, force=False)
+        permission_sync_to_user(force=False)
 
         if os.path.ismount(self.work_dir):
             ret = subprocess.call(["umount", self.work_dir])
@@ -1115,7 +1115,7 @@ class RestoreManager():
     # "Actual restore" (reverse step of the backup collect part)            #
     #
 
-    def restore(self, auth):
+    def restore(self):
         """
         Restore the archive
 
@@ -1129,10 +1129,10 @@ class RestoreManager():
             # Apply dirty patch to redirect php5 file on php7
             self._patch_backup_csv_file()
 
-            self._restore_system(auth)
-            self._restore_apps(auth)
+            self._restore_system()
+            self._restore_apps()
         finally:
-            self.clean(auth)
+            self.clean()
 
     def _patch_backup_csv_file(self):
         """
@@ -1174,7 +1174,7 @@ class RestoreManager():
             logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
                                   error=str(e)))
 
-    def _restore_system(self, auth):
+    def _restore_system(self):
         """ Restore user and system parts """
 
         system_targets = self.targets.list("system", exclude=["Skipped"])
@@ -1183,11 +1183,14 @@ class RestoreManager():
         if system_targets == []:
             return
 
+        from yunohost.utils.ldap import _get_ldap_interface
+        ldap = _get_ldap_interface()
+
         # Backup old permission for apps
         # We need to do that because in case of an app is installed we can't remove the permission for this app
         old_apps_permission = []
         try:
-            old_apps_permission = auth.search('ou=permission,dc=yunohost,dc=org',
+            old_apps_permission = ldap.search('ou=permission,dc=yunohost,dc=org',
                                               '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
                                               ['cn', 'objectClass', 'groupPermission', 'URL', 'gidNumber'])
         except:
@@ -1231,7 +1234,7 @@ class RestoreManager():
 
         # Check if we need to do the migration 0009 : setup group and permission
         # Legacy code
-        result = auth.search('ou=groups,dc=yunohost,dc=org',
+        result = ldap.search('ou=groups,dc=yunohost,dc=org',
                              '(&(objectclass=groupOfNamesYnh)(cn=all_users))',
                              ['cn'])
         if not result:
@@ -1240,13 +1243,13 @@ class RestoreManager():
             # Update LDAP schema restart slapd
             logger.info(m18n.n("migration_0011_update_LDAP_schema"))
             regen_conf(names=['slapd'], force=True)
-            setup_group_permission.migrate_LDAP_db(auth)
+            setup_group_permission.migrate_LDAP_db()
 
         # Remove all permission for all app which sill in the LDAP
-        for per in auth.search('ou=permission,dc=yunohost,dc=org',
+        for per in ldap.search('ou=permission,dc=yunohost,dc=org',
                                '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
                                ['cn']):
-            if not auth.remove('cn=%s,ou=permission' % per['cn'][0]):
+            if not ldap.remove('cn=%s,ou=permission' % per['cn'][0]):
                 raise YunohostError('permission_deletion_failed', permission=permission, app=app)
 
         # Restore permission for the app which is installed
@@ -1256,20 +1259,20 @@ class RestoreManager():
             except:
                 logger.warning(m18n.n('permission_name_not_valid', permission=per['cn'][0]))
             if _is_installed(app_name):
-                if not auth.add('cn=%s,ou=permission' % per['cn'][0], per):
+                if not ldap.add('cn=%s,ou=permission' % per['cn'][0], per):
                     raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
 
 
-    def _restore_apps(self, auth):
+    def _restore_apps(self):
         """Restore all apps targeted"""
 
         apps_targets = self.targets.list("apps", exclude=["Skipped"])
 
         for app in apps_targets:
             print(app)
-            self._restore_app(auth, app)
+            self._restore_app(app)
 
-    def _restore_app(self, auth, app_instance_name):
+    def _restore_app(self, app_instance_name):
         """
         Restore an app
 
@@ -1299,6 +1302,8 @@ class RestoreManager():
         from moulinette.utils.filesystem import read_ldif
         from yunohost.user import user_group_list
         from yunohost.permission import permission_remove
+        from yunohost.utils.ldap import _get_ldap_interface
+        ldap = _get_ldap_interface()
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1367,7 +1372,7 @@ class RestoreManager():
                 filtred_entries =  ['entryUUID', 'creatorsName', 'createTimestamp', 'entryCSN', 'structuralObjectClass',
                                    'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
                 entries = read_ldif('%s/permission.ldif' % app_settings_in_archive, filtred_entries)
-                group_list = user_group_list(auth, ['cn'])['groups']
+                group_list = user_group_list(['cn'])['groups']
                 for dn, entry in entries:
                     # Remove the group which has been removed
                     for group in entry['groupPermission']:
@@ -1375,12 +1380,12 @@ class RestoreManager():
                         if group_name not in group_list:
                             entry['groupPermission'].remove(group)
                     print(entry)
-                    if not auth.add('cn=%s,ou=permission' % entry['cn'][0], entry):
+                    if not ldap.add('cn=%s,ou=permission' % entry['cn'][0], entry):
                         raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
             else:
                 from yunohost.tools import _get_migration_by_name
                 setup_group_permission = _get_migration_by_name("setup_group_permission")
-                setup_group_permission.migrate_app_permission(auth, app=app_instance_name)
+                setup_group_permission.migrate_app_permission(app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
@@ -1429,11 +1434,11 @@ class RestoreManager():
             shutil.rmtree(app_settings_new_path, ignore_errors=True)
 
             # Remove all permission in LDAP
-            result = auth.search(base='ou=permission,dc=yunohost,dc=org',
+            result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
                                 filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
             permission_list = [p['cn'][0] for p in result]
             for l in permission_list:
-                permission_remove(auth, app_instance_name, l.split('.')[0], force=True)
+                permission_remove(app_instance_name, l.split('.')[0], force=True)
 
             # TODO Cleaning app hooks
         else:
@@ -2168,7 +2173,7 @@ def backup_create(name=None, description=None, methods=[],
     }
 
 
-def backup_restore(auth, name, system=[], apps=[], force=False):
+def backup_restore(name, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -2227,7 +2232,7 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
 
     logger.info(m18n.n("backup_mount_archive_for_restore"))
     restore_manager.mount()
-    restore_manager.restore(auth)
+    restore_manager.restore()
 
     # Check if something has been restored
     if restore_manager.success:

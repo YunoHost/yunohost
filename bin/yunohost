@@ -195,7 +195,8 @@ if __name__ == '__main__':
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
        (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
-                          args[0] +' '+ args[1] != 'backup restore')):
+                          args[0] +' '+ args[1] != 'backup restore' and \
+                          args[0] +' '+ args[1] != 'log display')):
 
         from moulinette import m18n
         # Init i18n

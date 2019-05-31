@@ -36,7 +36,7 @@ from yunohost.log import is_unit_operation
 logger = getActionLogger('yunohost.user')
 
 
-def user_permission_list(auth, app=None, permission=None, username=None, group=None):
+def user_permission_list(app=None, permission=None, username=None, group=None):
     """
     List permission for specific application
 
@@ -47,6 +47,9 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
         group      -- Groupname to get informations
 
     """
+
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
 
     permission_attrs = [
         'cn',
@@ -67,7 +70,7 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
 
     permissions = {}
 
-    result = auth.search('ou=permission,dc=yunohost,dc=org',
+    result = ldap.search('ou=permission,dc=yunohost,dc=org',
                          '(objectclass=permissionYnh)', permission_attrs)
 
     for res in result:
@@ -110,7 +113,7 @@ def user_permission_list(auth, app=None, permission=None, username=None, group=N
     return {'permissions': permissions}
 
 
-def user_permission_update(operation_logger, auth, app=[], permission=None, add_username=None, add_group=None, del_username=None, del_group=None, sync_perm=True):
+def user_permission_update(operation_logger, app=[], permission=None, add_username=None, add_group=None, del_username=None, del_group=None, sync_perm=True):
     """
     Allow or Disallow a user or group to a permission for a specific application
 
@@ -125,6 +128,8 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
     """
     from yunohost.hook import hook_callback
     from yunohost.user import user_group_list
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
 
     if permission:
         if not isinstance(permission, list):
@@ -158,16 +163,16 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
 
     # Validate that the group exist
     for g in add_group:
-        if g not in user_group_list(auth, ['cn'])['groups']:
+        if g not in user_group_list(['cn'])['groups']:
             raise YunohostError('group_unknown', group=g)
     for u in add_username:
-        if u not in user_list(auth, ['uid'])['users']:
+        if u not in user_list(['uid'])['users']:
             raise YunohostError('user_unknown', user=u)
     for g in del_group:
-        if g not in user_group_list(auth, ['cn'])['groups']:
+        if g not in user_group_list(['cn'])['groups']:
             raise YunohostError('group_unknown', group=g)
     for u in del_username:
-        if u not in user_list(auth, ['uid'])['users']:
+        if u not in user_list(['uid'])['users']:
             raise YunohostError('user_unknown', user=u)
 
     # Merge user and group (note that we consider all user as a group)
@@ -182,7 +187,7 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         'cn',
         'groupPermission',
     ]
-    result = auth.search('ou=permission,dc=yunohost,dc=org',
+    result = ldap.search('ou=permission,dc=yunohost,dc=org',
                          '(objectclass=permissionYnh)', permission_attrs)
     result = {p['cn'][0]: p for p in result}
 
@@ -221,19 +226,19 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         # Don't update LDAP if we update exactly the same values
         if val == set(result[per]['groupPermission'] if 'groupPermission' in result[per] else []):
             continue
-        if auth.update('cn=%s,ou=permission' % per, {'groupPermission': val}):
+        if ldap.update('cn=%s,ou=permission' % per, {'groupPermission': val}):
             p = per.split('.')
             logger.success(m18n.n('permission_updated', permission=p[0], app=p[1]))
         else:
             raise YunohostError('permission_update_failed')
 
     if sync_perm:
-        permission_sync_to_user(auth)
+        permission_sync_to_user()
 
     for a in app:
         allowed_users = set()
         disallowed_users = set()
-        group_list = user_group_list(auth, ['member'])['groups']
+        group_list = user_group_list(['member'])['groups']
 
         for g in add_group:
             if 'members' in group_list[g]:
@@ -249,10 +254,10 @@ def user_permission_update(operation_logger, auth, app=[], permission=None, add_
         if del_group:
             hook_callback('post_app_removeaccess', args=[app, disallowed_users])
 
-    return user_permission_list(auth, app, permission)
+    return user_permission_list(app, permission)
 
 
-def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_perm=True):
+def user_permission_clear(operation_logger, app=[], permission=None, sync_perm=True):
     """
     Reset the permission for a specific application
 
@@ -264,6 +269,8 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
 
     if permission:
         if not isinstance(permission, list):
@@ -278,7 +285,7 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
         'cn',
         'groupPermission',
     ]
-    result = auth.search('ou=permission,dc=yunohost,dc=org',
+    result = ldap.search('ou=permission,dc=yunohost,dc=org',
                          '(objectclass=permissionYnh)', permission_attrs)
     result = {p['cn'][0]: p for p in result}
 
@@ -290,27 +297,27 @@ def user_permission_clear(operation_logger, auth, app=[], permission=None, sync_
             if 'groupPermission' in result[permission_name] and 'cn=all_users,ou=groups,dc=yunohost,dc=org' in result[permission_name]['groupPermission']:
                 logger.warning(m18n.n('permission_already_clear', permission=per, app=a))
                 continue
-            if auth.update('cn=%s,ou=permission' % permission_name, default_permission):
+            if ldap.update('cn=%s,ou=permission' % permission_name, default_permission):
                 logger.success(m18n.n('permission_updated', permission=per, app=a))
             else:
                 raise YunohostError('permission_update_failed')
 
-    permission_sync_to_user(auth)
+    permission_sync_to_user()
 
     for a in app:
         permission_name = 'main.' + a
-        result = auth.search('ou=permission,dc=yunohost,dc=org',
+        result = ldap.search('ou=permission,dc=yunohost,dc=org',
                              filter='cn=' + permission_name, attrs=['inheritPermission'])
         if result:
             allowed_users = result[0]['inheritPermission']
             new_user_list = ','.join(allowed_users)
             hook_callback('post_app_removeaccess', args=[app, new_user_list])
 
-    return user_permission_list(auth, app, permission)
+    return user_permission_list(app, permission)
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_add(operation_logger, auth, app, permission, urls=None, default_allow=True, sync_perm=True):
+def permission_add(operation_logger, app, permission, urls=None, default_allow=True, sync_perm=True):
     """
     Create a new permission for a specific application
 
@@ -321,10 +328,12 @@ def permission_add(operation_logger, auth, app, permission, urls=None, default_a
 
     """
     from yunohost.domain import _normalize_domain_path
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
 
     # Validate uniqueness of permission in LDAP
     permission_name = str(permission + '.' + app)  # str(...) Fix encoding issue
-    conflict = auth.get_conflict({
+    conflict = ldap.get_conflict({
         'cn': permission_name
     }, base_dn='ou=permission,dc=yunohost,dc=org')
     if conflict:
@@ -355,17 +364,17 @@ def permission_add(operation_logger, auth, app, permission, urls=None, default_a
             attr_dict['URL'].append(domain + path)
 
     operation_logger.start()
-    if auth.add('cn=%s,ou=permission' % permission_name, attr_dict):
+    if ldap.add('cn=%s,ou=permission' % permission_name, attr_dict):
         if sync_perm:
-            permission_sync_to_user(auth)
+            permission_sync_to_user()
         logger.success(m18n.n('permission_created', permission=permission, app=app))
-        return user_permission_list(auth, app, permission)
+        return user_permission_list(app, permission)
 
     raise YunohostError('permission_creation_failed')
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_update(operation_logger, auth, app, permission, add_url=None, remove_url=None, sync_perm=True):
+def permission_update(operation_logger, app, permission, add_url=None, remove_url=None, sync_perm=True):
     """
     Update a permission for a specific application
 
@@ -377,11 +386,13 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
 
     """
     from yunohost.domain import _normalize_domain_path
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
 
     permission_name = str(permission + '.' + app)  # str(...) Fix encoding issue
 
     # Populate permission informations
-    result = auth.search(base='ou=permission,dc=yunohost,dc=org',
+    result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
                          filter='cn=' + permission_name, attrs=['URL'])
     if not result:
         raise YunohostError('permission_not_found', permission=permission, app=app)
@@ -407,20 +418,20 @@ def permission_update(operation_logger, auth, app, permission, add_url=None, rem
 
     if url == set(permission_obj['URL']):
         logger.warning(m18n.n('permission_update_nothing_to_do'))
-        return user_permission_list(auth, app, permission)
+        return user_permission_list(app, permission)
 
     operation_logger.start()
-    if auth.update('cn=%s,ou=permission' % permission_name, {'cn': permission_name, 'URL': url}):
+    if ldap.update('cn=%s,ou=permission' % permission_name, {'cn': permission_name, 'URL': url}):
         if sync_perm:
-            permission_sync_to_user(auth)
+            permission_sync_to_user()
         logger.success(m18n.n('permission_updated', permission=permission, app=app))
-        return user_permission_list(auth, app, permission)
+        return user_permission_list(app, permission)
 
     raise YunohostError('premission_update_failed')
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_remove(operation_logger, auth, app, permission, force=False, sync_perm=True):
+def permission_remove(operation_logger, app, permission, force=False, sync_perm=True):
     """
     Remove a permission for a specific application
 
@@ -433,15 +444,18 @@ def permission_remove(operation_logger, auth, app, permission, force=False, sync
     if permission == "main" and not force:
         raise YunohostError('remove_main_permission_not_allowed')
 
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+
     operation_logger.start()
-    if not auth.remove('cn=%s,ou=permission' % str(permission + '.' + app)):
+    if not ldap.remove('cn=%s,ou=permission' % str(permission + '.' + app)):
         raise YunohostError('permission_deletion_failed', permission=permission, app=app)
     if sync_perm:
-        permission_sync_to_user(auth)
+        permission_sync_to_user()
     logger.success(m18n.n('permission_deleted', permission=permission, app=app))
 
 
-def permission_sync_to_user(auth, force=False):
+def permission_sync_to_user(force=False):
     """
     Sychronise the inheritPermission attribut in the permission object from the
     user<->group link and the group<->permission link
@@ -456,16 +470,18 @@ def permission_sync_to_user(auth, force=False):
     # So we need to check before each ldap operation that we really change something in LDAP
     import os
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
 
     permission_attrs = [
         'cn',
         'member',
     ]
-    group_info = auth.search('ou=groups,dc=yunohost,dc=org',
+    group_info = ldap.search('ou=groups,dc=yunohost,dc=org',
                              '(objectclass=groupOfNamesYnh)', permission_attrs)
     group_info = {g['cn'][0]: g for g in group_info}
 
-    for per in auth.search('ou=permission,dc=yunohost,dc=org',
+    for per in ldap.search('ou=permission,dc=yunohost,dc=org',
                            '(objectclass=permissionYnh)',
                            ['cn', 'inheritPermission', 'groupPermission', 'memberUid']):
         if 'groupPermission' not in per:
@@ -489,22 +505,22 @@ def permission_sync_to_user(auth, force=False):
         inheritPermission = {'inheritPermission': user_permission, 'memberUid': uid_val}
         if force:
             if per['groupPermission']:
-                if not auth.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': []}):
+                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': []}):
                     raise YunohostError('permission_update_failed_clear')
-                if not auth.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': per['groupPermission']}):
+                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': per['groupPermission']}):
                     raise YunohostError('permission_update_failed_populate')
             if per['inheritPermission']:
-                if not auth.update('cn=%s,ou=permission' % per['cn'][0], {'inheritPermission': []}):
+                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], {'inheritPermission': []}):
                     raise YunohostError('permission_update_failed_clear')
             if user_permission:
-                if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
+                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
                     raise YunohostError('permission_update_failed')
         else:
-            if not auth.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
+            if not ldap.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
                 raise YunohostError('permission_update_failed')
     logger.success(m18n.n('permission_generated'))
 
-    app_ssowatconf(auth)
+    app_ssowatconf()
 
     # Reload unscd, otherwise the group ain't propagated to the LDAP database
     os.system('nscd --invalidate=passwd')

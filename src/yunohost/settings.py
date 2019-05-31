@@ -44,6 +44,8 @@ DEFAULTS = OrderedDict([
         "choices": ["intermediate", "modern"]}),
     ("security.nginx.compatibility", {"type": "enum", "default": "intermediate",
         "choices": ["intermediate", "modern"]}),
+    ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
+        "choices": ["intermediate", "modern"]}),
 ])
 
 
@@ -114,7 +116,7 @@ def settings_set(key, value):
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
             raise YunohostError('global_settings_bad_choice_for_enum', setting=key,
-                                choice=value,
+                                choice=str(value),
                                 available_choices=", ".join(settings[key]["choices"]))
     else:
         raise YunohostError('global_settings_unknown_type', setting=key,
@@ -292,3 +294,8 @@ def reconfigure_nginx(setting_name, old_value, new_value):
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['ssh'])
+
+@post_change_hook("security.postfix.compatibility")
+def reconfigure_ssh(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf(names=['postfix'])

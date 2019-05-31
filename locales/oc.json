@@ -247,7 +247,7 @@
     "firewall_reload_failed": "Impossible de recargar lo parafuòc",
     "firewall_reloaded": "Lo parafuòc es estat recargat",
     "firewall_rules_cmd_failed": "Unas règlas del parafuòc an fracassat. Per mai informacions, consultatz lo jornal.",
-    "global_settings_bad_choice_for_enum": "La valor del paramètre {setting:s} es incorrècta. Recebut : {received_type:s}, esperat {expected_type:s}",
+    "global_settings_bad_choice_for_enum": "La valor del paramètre {setting:s} es incorrècta. Recebut : {received_type:s}, mas las opcions esperadas son : {expected_type:s}",
     "global_settings_bad_type_for_setting": "Lo tipe del paramètre {setting:s} es incorrècte. Recebut : {received_type:s}, esperat {expected_type:s}",
     "global_settings_cant_write_settings": "Fracàs de l’escritura del fichièr de configuracion, rason : {reason:s}",
     "global_settings_setting_example_enum": "Exemple d’opcion de tipe enumeracion",
@@ -486,5 +486,10 @@
     "migration_description_0008_ssh_conf_managed_by_yunohost_step2": "Daissar YunoHost gerir la configuracion SSH (etapa 2, manuala)",
     "migration_0007_cancelled": "YunoHost a pas reüssit a melhorar lo biais de gerir la configuracion SSH.",
     "root_password_replaced_by_admin_password": "Lo senhal root es estat remplaçat pel senhal administrator.",
-    "service_restarted": "Lo servici '{service:s}' es estat reaviat"
+    "service_restarted": "Lo servici '{service:s}' es estat reaviat",
+    "admin_password_too_long": "Causissètz un senhal d’almens 127 caractèrs",
+    "migration_0007_cannot_restart": "SSH pòt pas èsser reavit aprèp aver ensajat d’anullar la migracion numèro 6.",
+    "migrations_success": "Migracion {number} {name} reüssida !",
+    "service_conf_now_managed_by_yunohost": "Lo fichièr de configuracion « {conf} » es ara gerit per YunoHost.",
+    "service_reloaded": "Lo servici « {servici:s} » es estat tornat cargar"
 }

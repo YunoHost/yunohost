@@ -2,19 +2,10 @@ import pytest
 import time
 import requests
 
-from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
 
 from yunohost.utils.error import YunohostError
-
-# Instantiate LDAP Authenticator
-AUTH_IDENTIFIER = ('ldap', 'as-root')
-AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
-                   'base_dn': 'dc=yunohost,dc=org',
-                   'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
-
-auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -25,16 +16,16 @@ def setup_function(function):
 
 
 def teardown_function(function):
-    app_remove(auth, "change_url_app")
+    app_remove("change_url_app")
 
 
 def install_changeurl_app(path):
-    app_install(auth, "./tests/apps/change_url_app_ynh",
+    app_install("./tests/apps/change_url_app_ynh",
                 args="domain=%s&path=%s" % (maindomain, path), force=True)
 
 
 def check_changeurl_app(path):
-    appmap = app_map(auth, raw=True)
+    appmap = app_map(raw=True)
 
     assert path in appmap[maindomain].keys()
 
@@ -48,7 +39,7 @@ def test_appchangeurl():
     install_changeurl_app("/changeurl")
     check_changeurl_app("/changeurl")
 
-    app_change_url(auth, "change_url_app", maindomain, "/newchangeurl")
+    app_change_url("change_url_app", maindomain, "/newchangeurl")
 
     # For some reason the nginx reload can take some time to propagate ...?
     time.sleep(2)
@@ -61,4 +52,4 @@ def test_appchangeurl_sameurl():
     check_changeurl_app("/changeurl")
 
     with pytest.raises(YunohostError):
-        app_change_url(auth, "change_url_app", maindomain, "changeurl")
+        app_change_url("change_url_app", maindomain, "changeurl")

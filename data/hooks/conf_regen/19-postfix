@@ -2,6 +2,8 @@
 
 set -e
 
+. /usr/share/yunohost/helpers
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -20,9 +22,12 @@ do_pre_regen() {
   main_domain=$(cat /etc/yunohost/current_host)
   domain_list=$(sudo yunohost domain list --output-as plain --quiet | tr '\n' ' ')
 
-  cat main.cf \
-    | sed "s/{{ main_domain }}/${main_domain}/g" \
-    > "${postfix_dir}/main.cf"
+  # Support different strategy for security configurations
+  export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
+
+  export main_domain
+  export domain_list
+  ynh_render_template "main.cf" "${postfix_dir}/main.cf"
 
   cat postsrsd \
     | sed "s/{{ main_domain }}/${main_domain}/g" \

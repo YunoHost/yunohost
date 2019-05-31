@@ -28,7 +28,7 @@ import re
 import tempfile
 from glob import iglob
 
-from moulinette import m18n
+from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_json
@@ -336,6 +336,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if env is None:
         env = {}
     env['YNH_CWD'] = chdir
+
+    env['YNH_INTERFACE'] = msettings.get('interface')
 
     stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
     env['YNH_STDINFO'] = stdinfo
