@@ -553,6 +553,10 @@ def tools_upgrade(operation_logger, apps=None, system=False):
     if packages.dpkg_is_broken():
         raise YunohostError("dpkg_is_broken")
 
+    # Check for obvious conflict with other dpkg/apt commands already running in parallel
+    if not packages.dpkg_lock_available():
+        raise YunohostError("dpkg_lock_not_available")
+
     if system is not False and apps is not None:
         raise YunohostError("tools_upgrade_cant_both")
 

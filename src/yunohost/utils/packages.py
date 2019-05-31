@@ -482,6 +482,8 @@ def dpkg_is_broken():
     return any(re.match("^[0-9]+$", f)
                for f in os.listdir("/var/lib/dpkg/updates/"))
 
+def dpkg_lock_available():
+    return os.system("lsof /var/lib/dpkg/lock >/dev/null") != 0
 
 def _list_upgradable_apt_packages():
 
