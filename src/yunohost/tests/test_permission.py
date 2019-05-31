@@ -142,17 +142,14 @@ def check_permission_for_apps():
     permission_search = ldap.search('ou=permission,dc=yunohost,dc=org',
                                     '(objectclass=permissionYnh)',
                                     ['cn', 'groupPermission', 'inheritPermission', 'memberUid'])
-    app_l = app_list(installed=True)['apps']
-    apps_list_set = set()
-    permission_list_set = set()
-    for permission in permission_search:
-        permission_list_set.add(permission['cn'][0].split(".")[1])
-    for app in app_l:
-        apps_list_set.add(app['id'])
+
+    installed_apps = {app['id'] for app in app_list(installed=True)['apps']}
+    permission_list_set = {permission['cn'][0].split(".")[1] for permission in permission_search}
+
     extra_service_permission = set(['mail', 'metronome'])
     if 'sftp' in permission_list_set:
         extra_service_permission.add('sftp')
-    assert apps_list_set == permission_list_set - extra_service_permission
+    assert installed_apps == permission_list_set - extra_service_permission
 
 #
 # List functions
