@@ -172,7 +172,7 @@ ynh_exec_fully_quiet () {
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_print_OFF () {
-	set +x
+	exec {BASH_XTRACEFD}>/dev/null
 }
 
 # Restore the logging after ynh_print_OFF
@@ -181,7 +181,7 @@ ynh_print_OFF () {
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_print_ON () {
-	set -x
+	exec {BASH_XTRACEFD}>&1
 	# Print an echo only for the log, to be able to know that ynh_print_ON has been called.
 	echo ynh_print_ON > /dev/null
 }
