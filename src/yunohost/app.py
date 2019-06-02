@@ -2278,7 +2278,7 @@ def _parse_args_from_manifest(manifest, action, args={}):
         return OrderedDict()
 
     action_args = manifest['arguments'][action]
-    return _parse_action_args_in_yunohost_format(args, action_args)
+    return _parse_args_in_yunohost_format(args, action_args)
 
 
 def _parse_args_for_action(action, args={}):
@@ -2302,10 +2302,10 @@ def _parse_args_for_action(action, args={}):
 
     action_args = action['arguments']
 
-    return _parse_action_args_in_yunohost_format(args, action_args)
+    return _parse_args_in_yunohost_format(args, action_args)
 
 
-def _parse_action_args_in_yunohost_format(args, action_args):
+def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
     from yunohost.domain import (domain_list, _get_maindomain,
