@@ -1,3 +1,9 @@
+yunohost (3.6.1.1) testing; urgency=low
+
+  - [fix] Weird issue in slapd triggered by indexing uidNumber / gidNumber
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2019 15:10:00  +0000
+
 yunohost (3.6.1) testing; urgency=low
 
   - [fix] current version in app_info (#730)
