@@ -1,3 +1,16 @@
+yunohost (3.6.1) testing; urgency=low
+
+  - [fix] current version in app_info (#730)
+  - [fix] Add indexes for fields listed by slapd in the logs (#729)
+  - [fix] Allow to display logs when postinstall fails (#728)
+  - [fix] Stupid issue with files inside tar : foo is not the same as ./foo (#726)
+  - [enh] Remove unecessary log messages (#724)
+  - [enh] Check for obvious conflict with already running apt/dpkg commands when running yunohost upgrade (d0c982a)
+
+  Thanks to all contributors <3 ! (Aleks, Kay0u, Bram, L. Murphy, MCMic)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2019 13:20:00  +0000
+
 yunohost (3.6.0) testing; urgency=low
 
   ## Major changes
