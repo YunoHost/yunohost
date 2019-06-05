@@ -688,6 +688,13 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
+            # Dirty hack such that the operation_logger does not add ended_at
+            # and success keys in the log metadata.  (c.f. the code of the
+            # is_unit_operation + operation_logger.close()) We take care of
+            # this ourselves (c.f. the mark_success and updated_log_metadata in
+            # the huge command launched by os.system)
+            operation_logger.ended_at = "notyet"
+
             upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
             command = "(({wait} && {cmd}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}') &".format(
                       wait=wait_until_end_of_yunohost_command,
