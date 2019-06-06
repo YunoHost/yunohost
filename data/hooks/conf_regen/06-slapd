@@ -101,6 +101,8 @@ do_post_regen() {
       sudo chown -R openldap:openldap /etc/ldap/slapd.d/
   fi
 
+  sudo -u openldap slapindex
+
   sudo service slapd force-reload
 
   # on slow hardware/vm this regen conf would exit before the admin user that
