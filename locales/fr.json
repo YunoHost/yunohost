@@ -254,7 +254,7 @@
     "certmanager_domain_cert_not_selfsigned": "Le certificat du domaine {domain:s} n’est pas auto-signé. Voulez-vous vraiment le remplacer ? (Utilisez --force pour cela)",
     "certmanager_certificate_fetching_or_enabling_failed": "Il semble que l’activation du nouveau certificat pour {domain:s} a échoué …",
     "certmanager_attempt_to_renew_nonLE_cert": "Le certificat pour le domaine {domain:s} n’est pas émis par Let’s Encrypt. Impossible de le renouveler automatiquement !",
-    "certmanager_attempt_to_renew_valid_cert": "Le certificat pour le domaine {domain:s} est sur le point d’expirer ! Utilisez --force pour contourner cela",
+    "certmanager_attempt_to_renew_valid_cert": "Le certificat pour le domaine {domain:s} n'est pas sur le point d’expirer ! (Vous pouvez utiliser --force si vous savez ce que vous faites)",
     "certmanager_domain_http_not_working": "Il semble que le domaine {domain:s} ne soit pas accessible via HTTP. Veuillez vérifier que vos configuration DNS et Nginx sont correctes",
     "certmanager_error_no_A_record": "Aucun enregistrement DNS 'A' n’a été trouvé pour {domain:s}. Vous devez faire pointer votre nom de domaine vers votre machine pour être en mesure d’installer un certificat Let’s Encrypt ! (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces contrôles)",
     "certmanager_domain_dns_ip_differs_from_public_ip": "L’enregistrement DNS 'A' du domaine {domain:s} est différent de l’adresse IP de ce serveur. Si vous avez récemment modifié votre enregistrement 'A', veuillez attendre sa propagation (quelques vérificateur de propagation DNS sont disponibles en ligne). (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces contrôles)",

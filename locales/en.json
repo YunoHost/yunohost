@@ -124,7 +124,7 @@
     "backup_with_no_restore_script_for_app": "App {app:s} has no restore script, you won't be able to automatically restore the backup of this app.",
     "certmanager_acme_not_configured_for_domain": "Certificate for domain {domain:s} does not appear to be correctly installed. Please run cert-install for this domain first.",
     "certmanager_attempt_to_renew_nonLE_cert": "The certificate for domain {domain:s} is not issued by Let's Encrypt. Cannot renew it automatically!",
-    "certmanager_attempt_to_renew_valid_cert": "The certificate for domain {domain:s} is not about to expire! Use --force to bypass",
+    "certmanager_attempt_to_renew_valid_cert": "The certificate for domain {domain:s} is not about to expire! (You may use --force if you know what you're doing)",
     "certmanager_attempt_to_replace_valid_cert": "You are attempting to overwrite a good and valid certificate for domain {domain:s}! (Use --force to bypass)",
     "certmanager_cannot_read_cert": "Something wrong happened when trying to open current certificate for domain {domain:s} (file: {file:s}), reason: {reason:s}",
     "certmanager_cert_install_success": "Successfully installed Let's Encrypt certificate for domain {domain:s}!",
