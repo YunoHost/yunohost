@@ -534,9 +534,21 @@ def _list_upgradable_apps():
         app_dict = app_info(app_id, raw=True)
 
         if app_dict["upgradable"] == "yes":
+
+            current_version = app_dict.get("version", "?")
+            current_commit = app_dict.get("status", {}).get("remote", {}).get("revision", "?")[:7]
+            new_version = app_dict.get("manifest",{}).get("version","?")
+            new_commit = app_dict.get("git", {}).get("revision", "?")[:7]
+
+            if current_version == new_version:
+                current_version += " (" + current_commit + ")"
+                new_version += " (" + new_commit + ")"
+
             yield {
                 'id': app_id,
-                'label': app_dict['settings']['label']
+                'label': app_dict['settings']['label'],
+                'current_version': current_version,
+                'new_version': new_version
             }
 
 
