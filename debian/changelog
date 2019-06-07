@@ -1,3 +1,10 @@
+yunohost (3.6.1.3) testing; urgency=low
+
+  - [fix] Missing quotes led to an issue during when upgrading postsrsd
+  - [fix] Running slapindex seems to fix the previous issues about LDAP indexing stuff
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 07 Jun 2019 06:38:00  +0000
+
 yunohost (3.6.1.2) testing; urgency=low
 
   - [fix] More weird issues with slapd indexation ...
