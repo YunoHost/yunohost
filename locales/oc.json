@@ -502,5 +502,8 @@
     "service_reloaded_or_restarted": "Lo servici « {service:s} » es estat recargat o reaviat",
     "tools_upgrade_regular_packages_failed": "Actualizacion impossibla dels paquets seguents : {packages_list}",
     "tools_upgrade_special_packages_completed": "L’actualizacion dels paquets de YunoHost es acabada !\nQuichatz [Entrada] per tornar a la linha de comanda",
-    "updating_app_lists": "Recuperacion de las mesas a jorn disponiblas per las aplicacions…"
+    "updating_app_lists": "Recuperacion de las mesas a jorn disponiblas per las aplicacions…",
+    "dpkg_is_broken": "Podètz pas far aquò pel moment perque dpkg/apt (los gestionaris de paquets del sistèma) sembla èsser mal configurat... Podètz ensajar de solucionar aquò en vos connectar via SSH e en executar « sudo dpkg --configure -a ».",
+    "global_settings_setting_service_ssh_allow_deprecated_dsa_hostkey": "Autorizar l’utilizacion de la clau òst DSA (obsolèta) per la configuracion del servici SSH",
+    "migration_0008_general_disclaimer": "Per melhorar la seguretat del servidor, es recomandat de daissar YunoHost gerir la configuracion SSH. Vòstra configuracion actuala es diferenta de la configuracion recomandada. Se daissatz YunoHost la reconfigurar, lo biais de vos connectar al servidor via SSH cambiarà coma aquò :"
 }
