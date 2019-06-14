@@ -59,7 +59,7 @@ ynh_backup() {
     local not_mandatory="${not_mandatory:-0}"
 
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
-    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get $app do_not_backup_data)
+    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get --app=$app --key=do_not_backup_data)
 
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
