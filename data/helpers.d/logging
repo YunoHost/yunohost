@@ -282,6 +282,16 @@ ynh_script_progression () {
 	ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
 }
 
+# Return data to the Yunohost core for later processing
+# (to be used by special hooks like app config panel and core diagnosis)
+#
+# usage: ynh_return somedata
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_return () {
+    echo "$1" >> "$YNH_STDRETURN"
+}
+
 # Debugger for app packagers
 #
 # usage: ynh_debug [--message=message] [--trace=1/0]
