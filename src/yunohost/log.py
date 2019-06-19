@@ -289,6 +289,19 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
     return decorate
 
 
+class RedactingFormatter(Formatter):
+
+    def __init__(self, format_string, data_to_redact):
+        super(RedactingFormatter, self).__init__(format_string)
+        self.data_to_redact = data_to_redact
+
+    def format(self, record):
+        msg = super(RedactingFormatter, self).format(record)
+        for data in self.data_to_redact:
+            msg = msg.replace(data, "**********")
+        return msg
+
+
 class OperationLogger(object):
 
     """
@@ -309,6 +322,7 @@ class OperationLogger(object):
         self.ended_at = None
         self.logger = None
         self._name = None
+        self.data_to_redact = []
 
         self.path = OPERATIONS_PATH
 
@@ -345,9 +359,12 @@ class OperationLogger(object):
         Register log with a handler connected on log system
         """
 
-        # TODO add a way to not save password on app installation
         self.file_handler = FileHandler(self.log_path)
-        self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
+        # We use a custom formatter that's able to redact all stuff in self.data_to_redact
+        # N.B. : the stubtle thing here is that the class will remember a pointer to the list,
+        # so we can directly append stuff to self.data_to_redact and that'll be automatically
+        # propagated to the RedactingFormatter
+        self.file_handler.formatter = RedactingFormatter('%(asctime)s: %(levelname)s - %(message)s', self.data_to_redact)
 
         # Listen to the root logger
         self.logger = getLogger('yunohost')
