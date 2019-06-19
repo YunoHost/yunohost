@@ -25,6 +25,7 @@
 """
 
 import os
+import re
 import yaml
 import collections
 
@@ -297,9 +298,21 @@ class RedactingFormatter(Formatter):
 
     def format(self, record):
         msg = super(RedactingFormatter, self).format(record)
+        self.identify_data_to_redact(msg)
         for data in self.data_to_redact:
             msg = msg.replace(data, "**********")
         return msg
+
+    def identify_data_to_redact(self, record):
+
+        # Wrapping this in a try/except because we don't want this to
+        # break everything in case it fails miserably for some reason :s
+        try:
+            match = re.search(r'(db_pwd|password)=(\S{3,})$', record.strip())
+            if match and match.group(2) not in self.data_to_redact:
+                self.data_to_redact.append(match.group(2))
+        except Exception as e:
+            logger.warning("Failed to parse line to try to identify data to redact ... : %s" % e)
 
 
 class OperationLogger(object):
