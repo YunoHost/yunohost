@@ -323,6 +323,7 @@ class OperationLogger(object):
         self.logger = None
         self._name = None
         self.data_to_redact = []
+        self.data_to_redact.append(open("/etc/yunohost/mysql", "r").read().strip())
 
         self.path = OPERATIONS_PATH
 
