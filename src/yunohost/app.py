@@ -362,10 +362,10 @@ def app_info(app, show_status=False, raw=False):
 
         ret['upgradable'] = upgradable
         ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
-        
+
         with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
             manifest = json.load(json_manifest)
-        
+
         ret['version'] = manifest.get('version', '-')
 
         return ret
@@ -490,7 +490,7 @@ def app_change_url(operation_logger, app, domain, path):
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, 'change_url')
-    args_list = args_odict.values()
+    args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app)
 
     # Prepare env. var. to pass to script
@@ -639,7 +639,7 @@ def app_upgrade(app=[], url=None, file=None):
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade')
-        args_list = args_odict.values()
+        args_list = [ value[0] for value in args_odict.values() ]
         args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
@@ -797,7 +797,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = args_odict.values()
+    args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app_instance_name)
 
     # Prepare env. var. to pass to script
@@ -1537,7 +1537,7 @@ def app_action_run(app, action, args=None):
     # Retrieve arguments list for install script
     args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
-    args_list = args_odict.values()
+    args_list = [ value[0] for value in args_odict.values() ]
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
@@ -2272,7 +2272,7 @@ def _parse_action_args_in_yunohost_format(args, action_args):
             if arg.get("optional", False):
                 # Argument is optional, keep an empty value
                 # and that's all for this arg !
-                args_dict[arg_name] = ''
+                args_dict[arg_name] = ('', arg_type)
                 continue
             else:
                 # The argument is required !
@@ -2310,22 +2310,20 @@ def _parse_action_args_in_yunohost_format(args, action_args):
                 raise YunohostError('pattern_password_app', forbidden_chars=forbidden_chars)
             from yunohost.utils.password import assert_password_is_strong_enough
             assert_password_is_strong_enough('user', arg_value)
-        args_dict[arg_name] = arg_value
+        args_dict[arg_name] = (arg_value, arg_type)
 
     # END loop over action_args...
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [arg["name"] for arg in action_args
-                   if arg.get("type", "string") == "domain"]
-    path_args = [arg["name"] for arg in action_args
-                 if arg.get("type", "string") == "path"]
+    domain_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "domain" ]
+    path_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "path" ]
 
     if len(domain_args) == 1 and len(path_args) == 1:
 
-        domain = args_dict[domain_args[0]]
-        path = args_dict[path_args[0]]
+        domain = domain_args[0][1]
+        path = path_args[0][1]
         domain, path = _normalize_domain_path(domain, path)
 
         # Check the url is available
@@ -2344,7 +2342,7 @@ def _parse_action_args_in_yunohost_format(args, action_args):
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
-        args_dict[path_args[0]] = path
+        args_dict[path_args[0][0]] = (path, "path")
 
     return args_dict
 
@@ -2359,8 +2357,8 @@ def _make_environment_dict(args_dict, prefix="APP_ARG_"):
 
     """
     env_dict = {}
-    for arg_name, arg_value in args_dict.items():
-        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value
+    for arg_name, arg_value_and_type in args_dict.items():
+        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value_and_type[0]
     return env_dict
 
 
