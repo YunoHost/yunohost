@@ -691,7 +691,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             # command before it ends...)
             #
             logfile = operation_logger.log_path
-            command = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
+            dist_upgrade = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
 
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
             wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
@@ -708,9 +708,9 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             operation_logger.ended_at = "notyet"
 
             upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
-            command = "(({wait} && {cmd}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}') &".format(
+            command = "({wait} && {dist_upgrade}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}'".format(
                       wait=wait_until_end_of_yunohost_command,
-                      cmd=command,
+                      dist_upgrade=dist_upgrade,
                       mark_success=mark_success,
                       mark_failure=mark_failure,
                       update_metadata=update_log_metadata,
@@ -718,7 +718,12 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
             logger.debug("Running command :\n{}".format(command))
-            os.system(command)
+            open("/tmp/yunohost-selfupgrade", "w").write("rm /tmp/yunohost-selfupgrade; " + command)
+            # Using systemd-run --scope is like nohup/disown and &, but more robust somehow
+            # (despite using nohup/disown and &, the self-upgrade process was still getting killed...)
+            # ref: https://unix.stackexchange.com/questions/420594/why-process-killed-with-nohup
+            # (though I still don't understand it 100%...)
+            os.system("systemd-run --scope bash /tmp/yunohost-selfupgrade &")
             return
 
         else:
