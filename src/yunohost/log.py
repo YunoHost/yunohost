@@ -375,8 +375,11 @@ class OperationLogger(object):
         Write or rewrite the metadata file with all metadata known
         """
 
+        dump = yaml.safe_dump(self.metadata, default_flow_style=False)
+        for data in self.data_to_redact:
+            dump = dump.replace(data, "**********")
         with open(self.md_path, 'w') as outfile:
-            yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
+            outfile.write(dump)
 
     @property
     def name(self):
