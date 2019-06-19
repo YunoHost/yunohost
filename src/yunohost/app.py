@@ -808,6 +808,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
+    # Tell the operation_logger to redact all password-type args
+    data_to_redact = [ value[0] for value in args_odict.values() if value[1] == "password" ]
+    operation_logger.data_to_redact.extend(data_to_redact)
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
