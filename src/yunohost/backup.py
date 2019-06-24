@@ -2319,7 +2319,14 @@ def backup_delete(name):
     archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
-    for backup_file in [archive_file, info_file]:
+    files_to_delete = [archive_file, info_file]
+
+    # To handle the case where archive_file is in fact a symlink
+    if os.islink(archive_file):
+        actual_archive = os.path.realpath(archive_file)
+        files_to_delete.append(actual_archive)
+
+    for backup_file in files_to_delete:
         try:
             os.remove(backup_file)
         except:
