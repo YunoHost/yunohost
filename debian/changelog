@@ -1,3 +1,17 @@
+yunohost (3.6.2) testing; urgency=low
+
+  - [fix] Use systemd-run for more robust self-upgrade mechanism (158aa08)
+  - [enh] Add a do_not_backup_data app setting to avoid backing up data (#731)
+  - [enh] support config_panel in TOML format (#732)
+  - [fix] ynh_print_OFF when set -x is used in other helpers (#733)
+  - [enh] Add current and new version for apps in tools_update output (#735)
+  - [fix] Backup delete should delete symlink target (#738)
+  - [i18n] Improve translation for Occitan, French
+
+  Thanks to all contributors <3 ! (Aleks, Bram, kay0u, locness3, Maniack, Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Jun 2019 18:00:00  +0000
+
 yunohost (3.6.1.3) testing; urgency=low
 
   - [fix] Missing quotes led to an issue during when upgrading postsrsd
