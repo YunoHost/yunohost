@@ -24,6 +24,7 @@
     Manage apps
 """
 import os
+import toml
 import json
 import shutil
 import yaml
@@ -685,7 +686,7 @@ def app_upgrade(app=[], url=None, file=None):
             os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+            for file_to_copy in ["actions.json", "config_panel.json", "config_panel.toml", "conf"]:
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -840,7 +841,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
-    for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+    for file_to_copy in ["actions.json", "config_panel.json", "config_panel.toml", "conf"]:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -1586,20 +1587,18 @@ def app_config_show_panel(app):
     # this will take care of checking if the app is installed
     app_info_dict = app_info(app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+    config_panel = _get_app_config_panel(app)
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
-    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+    if not config_panel or not os.path.exists(config_script):
         return {
             "app_id": app_id,
             "app": app,
             "app_name": app_info_dict["name"],
             "config_panel": [],
         }
-
-    config_panel = read_json(config_panel)
 
     env = {
         "YNH_APP_ID": app_id,
@@ -1677,14 +1676,12 @@ def app_config_apply(app, args):
     if not installed:
         raise YunohostError('app_not_installed', app=app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+    config_panel = _get_app_config_panel(app)
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
-    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+    if not config_panel or not os.path.exists(config_script):
         # XXX real exception
         raise Exception("Not config-panel.json nor scripts/config")
-
-    config_panel = read_json(config_panel)
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env = {
@@ -1722,6 +1719,129 @@ def app_config_apply(app, args):
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
 
     logger.success("Config updated as expected")
+
+
+def _get_app_config_panel(app_id):
+    "Get app config panel stored in json or in toml"
+    config_panel_toml_path = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.toml')
+    config_panel_json_path = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+
+    # sample data to get an idea of what is going on
+    # this toml extract:
+    #
+    # version = "0.1"
+    # name = "Unattended-upgrades configuration panel"
+    #
+    # [main]
+    # name = "Unattended-upgrades configuration"
+    #
+    #     [main.unattended_configuration]
+    #     name = "50unattended-upgrades configuration file"
+    #
+    #         [main.unattended_configuration.upgrade_level]
+    #         name = "Choose the sources of packages to automatically upgrade."
+    #         default = "Security only"
+    #         type = "text"
+    #         help = "We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates."
+    #         # choices = ["Security only", "Security and updates"]
+
+    #         [main.unattended_configuration.ynh_update]
+    #         name = "Would you like to update YunoHost packages automatically ?"
+    #         type = "bool"
+    #         default = true
+    #
+    # will be parsed into this:
+    #
+    # OrderedDict([(u'version', u'0.1'),
+    #              (u'name', u'Unattended-upgrades configuration panel'),
+    #              (u'main',
+    #               OrderedDict([(u'name', u'Unattended-upgrades configuration'),
+    #                            (u'unattended_configuration',
+    #                             OrderedDict([(u'name',
+    #                                           u'50unattended-upgrades configuration file'),
+    #                                          (u'upgrade_level',
+    #                                           OrderedDict([(u'name',
+    #                                                         u'Choose the sources of packages to automatically upgrade.'),
+    #                                                        (u'default',
+    #                                                         u'Security only'),
+    #                                                        (u'type', u'text'),
+    #                                                        (u'help',
+    #                                                         u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.")])),
+    #                                          (u'ynh_update',
+    #                                           OrderedDict([(u'name',
+    #                                                         u'Would you like to update YunoHost packages automatically ?'),
+    #                                                        (u'type', u'bool'),
+    #                                                        (u'default', True)])),
+    #
+    # and needs to be converted into this:
+    #
+    # {u'name': u'Unattended-upgrades configuration panel',
+    #  u'panel': [{u'id': u'main',
+    #    u'name': u'Unattended-upgrades configuration',
+    #    u'sections': [{u'id': u'unattended_configuration',
+    #      u'name': u'50unattended-upgrades configuration file',
+    #      u'options': [{u'//': u'"choices" : ["Security only", "Security and updates"]',
+    #        u'default': u'Security only',
+    #        u'help': u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.",
+    #        u'id': u'upgrade_level',
+    #        u'name': u'Choose the sources of packages to automatically upgrade.',
+    #        u'type': u'text'},
+    #       {u'default': True,
+    #        u'id': u'ynh_update',
+    #        u'name': u'Would you like to update YunoHost packages automatically ?',
+    #        u'type': u'bool'},
+
+    if os.path.exists(config_panel_toml_path):
+        toml_config_panel = toml.load(open(config_panel_toml_path, "r"), _dict=OrderedDict)
+
+        # transform toml format into json format
+        config_panel = {
+            "name": toml_config_panel["name"],
+            "version": toml_config_panel["version"],
+            "panel": [],
+        }
+
+        panels = filter(lambda (key, value): key not in ("name", "version")
+                                             and isinstance(value, OrderedDict),
+                        toml_config_panel.items())
+
+        for key, value in panels:
+            panel = {
+                "id": key,
+                "name": value["name"],
+                "sections": [],
+            }
+
+            sections = filter(lambda (k, v): k not in ("name",)
+                                             and isinstance(v, OrderedDict),
+                              value.items())
+
+            for section_key, section_value in sections:
+                section = {
+                    "id": section_key,
+                    "name": section_value["name"],
+                    "options": [],
+                }
+
+                options = filter(lambda (k, v): k not in ("name",)
+                                                and isinstance(v, OrderedDict),
+                                 section_value.items())
+
+                for option_key, option_value in options:
+                    option = dict(option_value)
+                    option["id"] = option_key
+                    section["options"].append(option)
+
+                panel["sections"].append(section)
+
+            config_panel["panel"].append(panel)
+
+        return config_panel
+
+    elif os.path.exists(config_panel_json_path):
+        return json.load(open(config_panel_json_path))
+
+    return None
 
 
 def _get_app_settings(app_id):
