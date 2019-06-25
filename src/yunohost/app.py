@@ -1647,6 +1647,8 @@ def app_config_show_panel(app):
                             option["default"] = parsed_values[generated_name]
                         else:
                             del option["default"]
+                    else:
+                        option["default"] = parsed_values[generated_name]
 
                     args_dict = _parse_args_in_yunohost_format(
                         [{option["name"]: parsed_values[generated_name]}],
