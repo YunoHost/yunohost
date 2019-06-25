@@ -1658,7 +1658,7 @@ def app_config_show_panel(app):
                     option["default"] = args_dict[option["name"]]
                 else:
                     logger.debug("Variable '%s' is not declared by config script, using default", generated_name)
-                    option["default"] = option["default"]
+                    # do nothing, we'll use the default if present
 
     return {
         "app_id": app_id,
