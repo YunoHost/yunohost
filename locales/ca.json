@@ -307,7 +307,7 @@
     "migration_description_0006_sync_admin_and_root_passwords": "Sincronitzar les contrasenyes admin i root",
     "migration_description_0007_ssh_conf_managed_by_yunohost_step1": "La configuració SSH serà gestionada per YunoHost (pas 1, automàtic)",
     "migration_description_0008_ssh_conf_managed_by_yunohost_step2": "La configuració SSH serà gestionada per YunoHost (pas 2, manual)",
-    "migration_description_0009_decouple_regenconf_from_services": "Desvincula el mecansime regen-conf dels serveis",
+    "migration_description_0009_decouple_regenconf_from_services": "Desvincula el mecanisme regen-conf dels serveis",
     "migration_description_0010_migrate_to_apps_json": "Elimina la appslists (desfasat) i utilitza la nova llista unificada «apps.json» en el seu lloc",
     "migration_0003_backward_impossible": "La migració Stretch no és reversible.",
     "migration_0003_start": "Ha començat la migració a Stretch. Els registres estaran disponibles a {logfile}.",
