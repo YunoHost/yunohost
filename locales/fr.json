@@ -556,5 +556,6 @@
     "tools_upgrade_regular_packages_failed": "Impossible de mettre à jour les paquets suivants : {packages_list}",
     "tools_upgrade_special_packages": "Mise à jour des paquets « spéciaux » (liés a YunoHost) ...",
     "tools_upgrade_special_packages_completed": "La mise à jour des paquets de YunoHost est finie!\nPressez [Entrée] pour revenir à la ligne de commande",
-    "updating_app_lists": "Récupération des mises à jour des applications disponibles…"
+    "updating_app_lists": "Récupération des mises à jour des applications disponibles…",
+    "dpkg_lock_not_available": "Cette commande ne peut être lancée maintenant car il semblerai qu'un autre programme utilise le verrou de dpkg (le gestionnaire de paquets du système)"
 }
