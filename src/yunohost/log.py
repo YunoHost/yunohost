@@ -377,7 +377,7 @@ class OperationLogger(object):
 
         self.file_handler = FileHandler(self.log_path)
         # We use a custom formatter that's able to redact all stuff in self.data_to_redact
-        # N.B. : the stubtle thing here is that the class will remember a pointer to the list,
+        # N.B. : the subtle thing here is that the class will remember a pointer to the list,
         # so we can directly append stuff to self.data_to_redact and that'll be automatically
         # propagated to the RedactingFormatter
         self.file_handler.formatter = RedactingFormatter('%(asctime)s: %(levelname)s - %(message)s', self.data_to_redact)
