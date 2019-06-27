@@ -266,7 +266,7 @@ ynh_psql_test_if_first_run() {
 		echo "PostgreSQL is already installed, no need to create master password"
 	else
 		local pgsql="$(ynh_string_random)"
-		echo "$pgsql" >/etc/yunohost/psql
+		echo "$pgsql" >$PSQL_ROOT_PWD_FILE
 
 		if [ -e /etc/postgresql/9.4/ ]; then
 			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
