@@ -16,7 +16,9 @@ from collections import OrderedDict
 
 from jinja2 import Template
 
-template = Template(open("./manpage.template").read())
+base_path = os.path.split(os.path.realpath(__file__))[0]
+
+template = Template(open(os.path.join(base_path, "manpage.template")).read())
 
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
