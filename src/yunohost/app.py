@@ -1654,7 +1654,6 @@ def app_config_show_panel(app):
                         [{option["name"]: parsed_values[generated_name]}],
                         [option]
                     )
-                    print("%s ----> %s ----> %s" % (option["name"], repr(option.get("default", "[removed -> false]")), args_dict[option["name"]]))
                     option["default"] = args_dict[option["name"]]
                 else:
                     logger.debug("Variable '%s' is not declared by config script, using default", generated_name)
@@ -1691,8 +1690,6 @@ def app_config_apply(app, args):
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
     args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
-    print(json.dumps(args, sort_keys=True, indent=4))
-    print("------------------------------------------")
 
     for tab in config_panel.get("panel", []):
         tab_id = tab["id"]  # this makes things easier to debug on crash
@@ -1713,7 +1710,6 @@ def app_config_apply(app, args):
         if key not in env:
             logger.warning("Ignore key '%s' from arguments because it is not in the config", key)
 
-    print(json.dumps(env, sort_keys=True, indent=4))
     return_code = hook_exec(config_script,
                             args=["apply"],
                             env=env,
