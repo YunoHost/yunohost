@@ -208,6 +208,7 @@ progress_string0="...................."
 # Define base_time when the file is sourced
 base_time=$(date +%s)
 ynh_script_progression () {
+	set +x
 	# Declare an array to define the options of this helper.
 	local legacy_args=mwtl
 	declare -Ar args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
@@ -217,6 +218,7 @@ ynh_script_progression () {
 	local last
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+	set +x
 	weight=${weight:-1}
 	time=${time:-0}
 	last=${last:-0}
@@ -280,6 +282,7 @@ ynh_script_progression () {
 	fi
 
 	ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
+	set -x
 }
 
 # Debugger for app packagers
