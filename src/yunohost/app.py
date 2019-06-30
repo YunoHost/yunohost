@@ -363,10 +363,10 @@ def app_info(app, show_status=False, raw=False):
 
         ret['upgradable'] = upgradable
         ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
-        
+
         with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
             manifest = json.load(json_manifest)
-        
+
         ret['version'] = manifest.get('version', '-')
 
         return ret
@@ -686,7 +686,7 @@ def app_upgrade(app=[], url=None, file=None):
             os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            for file_to_copy in ["actions.json", "config_panel.json", "config_panel.toml", "conf"]:
+            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -841,7 +841,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
-    for file_to_copy in ["actions.json", "config_panel.json", "config_panel.toml", "conf"]:
+    for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -1511,12 +1511,10 @@ def app_action_list(app):
     # this will take care of checking if the app is installed
     app_info_dict = app_info(app)
 
-    actions = os.path.join(APPS_SETTING_PATH, app, 'actions.json')
-
     return {
         "app": app,
         "app_name": app_info_dict["name"],
-        "actions": read_json(actions) if os.path.exists(actions) else [],
+        "actions": _get_app_actions(app)
     }
 
 
@@ -1719,6 +1717,91 @@ def app_config_apply(app, args):
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
 
     logger.success("Config updated as expected")
+
+
+def _get_app_actions(app_id):
+    "Get app config panel stored in json or in toml"
+    actions_toml_path = os.path.join(APPS_SETTING_PATH, app_id, 'actions.toml')
+    actions_json_path = os.path.join(APPS_SETTING_PATH, app_id, 'actions.json')
+
+    # sample data to get an idea of what is going on
+    # this toml extract:
+    #
+
+    # [restart_service]
+    # name = "Restart service"
+    # command = "echo pouet $YNH_ACTION_SERVICE"
+    # user = "root"  # optional
+    # cwd = "/" # optional
+    # accepted_return_codes = [0, 1, 2, 3]  # optional
+    # description.en = "a dummy stupid exemple or restarting a service"
+    #
+    #     [restart_service.arguments.service]
+    #     type = "string",
+    #     ask.en = "service to restart"
+    #     example = "nginx"
+    #
+    # will be parsed into this:
+    #
+    # OrderedDict([(u'restart_service',
+    #               OrderedDict([(u'name', u'Restart service'),
+    #                            (u'command', u'echo pouet $YNH_ACTION_SERVICE'),
+    #                            (u'user', u'root'),
+    #                            (u'cwd', u'/'),
+    #                            (u'accepted_return_codes', [0, 1, 2, 3]),
+    #                            (u'description',
+    #                             OrderedDict([(u'en',
+    #                                           u'a dummy stupid exemple or restarting a service')])),
+    #                            (u'arguments',
+    #                             OrderedDict([(u'service',
+    #                                           OrderedDict([(u'type', u'string'),
+    #                                                        (u'ask',
+    #                                                         OrderedDict([(u'en',
+    #                                                                       u'service to restart')])),
+    #                                                        (u'example',
+    #                                                         u'nginx')]))]))])),
+    #
+    #
+    # and needs to be converted into this:
+    #
+    # [{u'accepted_return_codes': [0, 1, 2, 3],
+    #   u'arguments': [{u'ask': {u'en': u'service to restart'},
+    #     u'example': u'nginx',
+    #     u'name': u'service',
+    #     u'type': u'string'}],
+    #   u'command': u'echo pouet $YNH_ACTION_SERVICE',
+    #   u'cwd': u'/',
+    #   u'description': {u'en': u'a dummy stupid exemple or restarting a service'},
+    #   u'id': u'restart_service',
+    #   u'name': u'Restart service',
+    #   u'user': u'root'}]
+
+    if os.path.exists(actions_toml_path):
+        toml_actions = toml.load(open(actions_toml_path, "r"), _dict=OrderedDict)
+
+        # transform toml format into json format
+        actions = []
+
+        for key, value in toml_actions.items():
+            action = dict(**value)
+            action["id"] = key
+
+            arguments = []
+            for argument_name, argument in value.get("arguments", {}).items():
+                argument = dict(**argument)
+                argument["name"] = argument_name
+
+                arguments.append(argument)
+
+            action["arguments"] = arguments
+            actions.append(action)
+
+        return actions
+
+    elif os.path.exists(actions_json_path):
+        return json.load(open(actions_json_path))
+
+    return None
 
 
 def _get_app_config_panel(app_id):
