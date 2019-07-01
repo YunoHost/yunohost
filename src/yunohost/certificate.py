@@ -566,7 +566,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
                                               domain_csr_file,
                                               WEBROOT_FOLDER,
                                               log=logger,
-                                              no_checks=no_checks,
+                                              disable_check=no_checks,
                                               CA=certification_authority)
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
