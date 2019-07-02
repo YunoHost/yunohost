@@ -1603,31 +1603,12 @@ def app_config_show_panel(app):
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
-    parsed_values = {}
 
-    # I need to parse stdout to communicate between scripts because I can't
-    # read the child environment :( (that would simplify things so much)
-    # after hours of research this is apparently quite a standard way, another
-    # option would be to add an explicite pipe or a named pipe for that
-    # a third option would be to write in a temporary file but I don't like
-    # that because that could expose sensitive data
-    def parse_stdout(line):
-        line = line.rstrip()
-        logger.info(line)
-
-        if line.strip().startswith("YNH_CONFIG_") and "=" in line:
-            # XXX error handling?
-            # XXX this might not work for multilines stuff :( (but echo without
-            # formatting should do it no?)
-            key, value = line.strip().split("=", 1)
-            logger.debug("config script declared: %s -> %s", key, value)
-            parsed_values[key] = value
-
-    return_code = hook_exec(config_script,
-                            args=["show"],
-                            env=env,
-                            stdout_callback=parse_stdout,
-                            )[0]
+    return_code, parsed_values = hook_exec(config_script,
+                                args=["show"],
+                                env=env,
+                                return_format="plain_dict"
+                                )
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
