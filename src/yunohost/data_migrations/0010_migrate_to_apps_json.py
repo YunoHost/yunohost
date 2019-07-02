@@ -25,7 +25,8 @@ class MyMigration(Migration):
             "app.yunohost.org/list.json",       # Old list on old installs, alias to official.json
             "app.yunohost.org/official.json",
             "app.yunohost.org/community.json",
-            "labriqueinter.net/apps/labriqueinternet.json"
+            "labriqueinter.net/apps/labriqueinternet.json",
+            "labriqueinter.net/internetcube.json"
         ]
 
         appslists = _read_appslist_list()
