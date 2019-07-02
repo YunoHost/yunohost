@@ -338,7 +338,10 @@ class OperationLogger(object):
         self.logger = None
         self._name = None
         self.data_to_redact = []
-        self.data_to_redact.append(open("/etc/yunohost/mysql", "r").read().strip())
+
+        for filename in ["/etc/yunohost/mysql", "/etc/yunohost/psql"]:
+            if os.path.exists(filename):
+                self.data_to_redact.append(read_file(filename).strip())
 
         self.path = OPERATIONS_PATH
 
