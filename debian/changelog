@@ -1,3 +1,18 @@
+yunohost (3.6.3) testing; urgency=low
+
+  - [fix] Less logging madness due ynh_script_progression building progress bar (#741)
+  - [fix] Update acme-tiny to 4.0.4 (#740)
+  - [fix] Missing old internet cube list in migration to unified apps.json (#745)
+  - [enh] Add manpage for Yunohost ! (#682)
+  - [enh] Config panel : use manifest.json/actions.json args format for config_panel.toml (#734)
+  - [enh] Allow to describe actions through toml file instead of json (#744)
+  - [mod] Proper return interface for app config panel (#739)
+  - [fix] Add mechanism to automatically detect and redact passwords from operation logs (#742)
+
+  Thanks to all contributors <3 ! (Aleks, Bram, ljf, toitoinebzh)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 02 Jul 2019 11:10:00  +0000
+
 yunohost (3.6.2) testing; urgency=low
 
   - [fix] Use systemd-run for more robust self-upgrade mechanism (158aa08)
