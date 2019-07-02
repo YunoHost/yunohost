@@ -1640,24 +1640,29 @@ def app_config_show_panel(app):
         for section in tab.get("sections", []):
             section_id = section["id"]
             for option in section.get("options", []):
-                option_id = option["id"]
-                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
-                option["id"] = generated_id
-                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_id)
+                option_name = option["name"]
+                generated_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)).upper()
+                option["name"] = generated_name
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_name)
 
-                if generated_id in parsed_values:
-                    # XXX we should probably uses the one of install here but it's at a POC state right now
-                    option_type = option["type"]
-                    if option_type == "bool":
-                        assert parsed_values[generated_id].lower() in ("true", "false")
-                        option["value"] = True if parsed_values[generated_id].lower() == "true" else False
-                    elif option_type == "integer":
-                        option["value"] = int(parsed_values[generated_id])
-                    elif option_type == "text":
-                        option["value"] = parsed_values[generated_id]
+                if generated_name in parsed_values:
+                    # code is not adapted for that so we have to mock expected format :/
+                    if option.get("type") == "boolean":
+                        if parsed_values[generated_name].lower() in ("true", "1", "y"):
+                            option["default"] = parsed_values[generated_name]
+                        else:
+                            del option["default"]
+                    else:
+                        option["default"] = parsed_values[generated_name]
+
+                    args_dict = _parse_args_in_yunohost_format(
+                        [{option["name"]: parsed_values[generated_name]}],
+                        [option]
+                    )
+                    option["default"] = args_dict[option["name"]]
                 else:
-                    logger.debug("Variable '%s' is not declared by config script, using default", generated_id)
-                    option["value"] = option["default"]
+                    logger.debug("Variable '%s' is not declared by config script, using default", generated_name)
+                    # do nothing, we'll use the default if present
 
     return {
         "app_id": app_id,
@@ -1696,14 +1701,14 @@ def app_config_apply(app, args):
         for section in tab.get("sections", []):
             section_id = section["id"]
             for option in section.get("options", []):
-                option_id = option["id"]
-                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                option_name = option["name"]
+                generated_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)).upper()
 
-                if generated_id in args:
-                    logger.debug("include into env %s=%s", generated_id, args[generated_id])
-                    env[generated_id] = args[generated_id]
+                if generated_name in args:
+                    logger.debug("include into env %s=%s", generated_name, args[generated_name])
+                    env[generated_name] = args[generated_name]
                 else:
-                    logger.debug("no value for key id %s", generated_id)
+                    logger.debug("no value for key id %s", generated_name)
 
     # for debug purpose
     for key in args:
@@ -1829,7 +1834,10 @@ def _get_app_config_panel(app_id):
 
                 for option_key, option_value in options:
                     option = dict(option_value)
-                    option["id"] = option_key
+                    option["name"] = option_key
+                    option["ask"] = {"en": option["ask"]}
+                    if "help" in option:
+                        option["help"] = {"en": option["help"]}
                     section["options"].append(option)
 
                 panel["sections"].append(section)
@@ -2283,7 +2291,7 @@ def _parse_args_from_manifest(manifest, action, args={}):
         return OrderedDict()
 
     action_args = manifest['arguments'][action]
-    return _parse_action_args_in_yunohost_format(args, action_args)
+    return _parse_args_in_yunohost_format(args, action_args)
 
 
 def _parse_args_for_action(action, args={}):
@@ -2307,10 +2315,10 @@ def _parse_args_for_action(action, args={}):
 
     action_args = action['arguments']
 
-    return _parse_action_args_in_yunohost_format(args, action_args)
+    return _parse_args_in_yunohost_format(args, action_args)
 
 
-def _parse_action_args_in_yunohost_format(args, action_args):
+def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
     from yunohost.domain import (domain_list, _get_maindomain,
