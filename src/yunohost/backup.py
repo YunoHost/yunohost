@@ -2322,7 +2322,7 @@ def backup_delete(name):
     files_to_delete = [archive_file, info_file]
 
     # To handle the case where archive_file is in fact a symlink
-    if os.islink(archive_file):
+    if os.path.islink(archive_file):
         actual_archive = os.path.realpath(archive_file)
         files_to_delete.append(actual_archive)
 
