@@ -265,8 +265,8 @@ ynh_psql_test_if_first_run() {
 	if [ -f "$PSQL_ROOT_PWD_FILE" ]; then
 		echo "PostgreSQL is already installed, no need to create master password"
 	else
-		local pgsql="$(ynh_string_random)"
-		echo "$pgsql" >/etc/yunohost/psql
+		local psql_root_password="$(ynh_string_random)"
+		echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
 
 		if [ -e /etc/postgresql/9.4/ ]; then
 			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
@@ -280,7 +280,7 @@ ynh_psql_test_if_first_run() {
 
 		ynh_systemd_action --service_name=postgresql --action=start
 
-		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$pgsql'" postgres
+		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
 
 		# force all user to connect to local database using passwords
 		# https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF

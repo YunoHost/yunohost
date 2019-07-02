@@ -25,6 +25,7 @@
 """
 
 import os
+import re
 import yaml
 import collections
 
@@ -289,6 +290,33 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
     return decorate
 
 
+class RedactingFormatter(Formatter):
+
+    def __init__(self, format_string, data_to_redact):
+        super(RedactingFormatter, self).__init__(format_string)
+        self.data_to_redact = data_to_redact
+
+    def format(self, record):
+        msg = super(RedactingFormatter, self).format(record)
+        self.identify_data_to_redact(msg)
+        for data in self.data_to_redact:
+            msg = msg.replace(data, "**********")
+        return msg
+
+    def identify_data_to_redact(self, record):
+
+        # Wrapping this in a try/except because we don't want this to
+        # break everything in case it fails miserably for some reason :s
+        try:
+            # This matches stuff like db_pwd=the_secret or admin_password=other_secret
+            # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
+            match = re.search(r'(pwd|pass|password)=(\S{3,})$', record.strip())
+            if match and match.group(2) not in self.data_to_redact:
+                self.data_to_redact.append(match.group(2))
+        except Exception as e:
+            logger.warning("Failed to parse line to try to identify data to redact ... : %s" % e)
+
+
 class OperationLogger(object):
 
     """
@@ -309,6 +337,11 @@ class OperationLogger(object):
         self.ended_at = None
         self.logger = None
         self._name = None
+        self.data_to_redact = []
+
+        for filename in ["/etc/yunohost/mysql", "/etc/yunohost/psql"]:
+            if os.path.exists(filename):
+                self.data_to_redact.append(read_file(filename).strip())
 
         self.path = OPERATIONS_PATH
 
@@ -345,9 +378,12 @@ class OperationLogger(object):
         Register log with a handler connected on log system
         """
 
-        # TODO add a way to not save password on app installation
         self.file_handler = FileHandler(self.log_path)
-        self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
+        # We use a custom formatter that's able to redact all stuff in self.data_to_redact
+        # N.B. : the subtle thing here is that the class will remember a pointer to the list,
+        # so we can directly append stuff to self.data_to_redact and that'll be automatically
+        # propagated to the RedactingFormatter
+        self.file_handler.formatter = RedactingFormatter('%(asctime)s: %(levelname)s - %(message)s', self.data_to_redact)
 
         # Listen to the root logger
         self.logger = getLogger('yunohost')
@@ -358,8 +394,11 @@ class OperationLogger(object):
         Write or rewrite the metadata file with all metadata known
         """
 
+        dump = yaml.safe_dump(self.metadata, default_flow_style=False)
+        for data in self.data_to_redact:
+            dump = dump.replace(data, "**********")
         with open(self.md_path, 'w') as outfile:
-            yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
+            outfile.write(dump)
 
     @property
     def name(self):
