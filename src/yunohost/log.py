@@ -108,7 +108,7 @@ def log_list(category=[], limit=None, with_details=False):
                     except yaml.YAMLError:
                         logger.warning(m18n.n('log_corrupted_md_file', file=md_path))
 
-                    entry["success"] = metadata.get("success", "?")
+                    entry["success"] = metadata.get("success", "?") if metadata else "?"
 
             result[category].append(entry)
 
