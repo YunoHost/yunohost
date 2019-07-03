@@ -654,7 +654,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
             callbacks = (
-                lambda l: logger.info(l.rstrip() + "\r"),
+                lambda l: logger.info("+" + l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
