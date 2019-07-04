@@ -1,3 +1,9 @@
+yunohost (3.6.4) stable; urgency=low
+
+  Minor fixes + bumping version for stable release
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 Jul 2019 23:30:00  +0000
+
 yunohost (3.6.3) testing; urgency=low
 
   - [fix] Less logging madness due ynh_script_progression building progress bar (#741)
