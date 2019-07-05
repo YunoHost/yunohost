@@ -25,8 +25,10 @@
 """
 import os
 import re
+import sys
 import tempfile
 from glob import iglob
+from importlib import import_module
 
 from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError
@@ -179,7 +181,7 @@ def hook_list(action, list_by='name', show_info=False):
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder
         for f in os.listdir(folder + action):
-            if f[0] == '.' or f[-1] == '~':
+            if f[0] == '.' or f[-1] == '~' or f.endswith(".pyc"):
                 continue
             path = '%s%s/%s' % (folder, action, f)
             priority, name = _extract_filename_parts(f)
@@ -451,7 +453,16 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
 
 def _hook_exec_python(path, args, env, loggers):
 
-    pass
+    dir_ = os.path.dirname(path)
+    name = os.path.splitext(os.path.basename(path))[0]
+
+    if not dir_ in sys.path:
+        sys.path = [dir_] + sys.path
+    module = import_module(name)
+
+    # TODO : We might want to check here that it's a tuple
+    # containing an int + a dict ?
+    return module.main(args, env, loggers)
 
 
 def _extract_filename_parts(filename):
@@ -461,6 +472,9 @@ def _extract_filename_parts(filename):
     else:
         priority = '50'
         action = filename
+
+    # Remove extension if there's one
+    action = os.path.splitext(action)[0]
     return priority, action
 
 
