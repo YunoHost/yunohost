@@ -10,6 +10,8 @@ from yunohost.app import _is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete, _recursive_umount
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
+from yunohost.user import user_permission_list
+from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
 # Get main domain
 maindomain = ""
@@ -71,6 +73,18 @@ def teardown_function(function):
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
 
+
+@pytest.fixture(autouse=True)
+def check_LDAP_db_integrity_call():
+    check_LDAP_db_integrity()
+    yield
+    check_LDAP_db_integrity()
+
+@pytest.fixture(autouse=True)
+def check_permission_for_apps_call():
+    check_permission_for_apps()
+    yield
+    check_permission_for_apps()
 
 #
 # Helpers                                                                    #
@@ -517,12 +531,18 @@ def _test_backup_and_restore_app(app):
     # Uninstall the app
     app_remove(app)
     assert not app_is_installed(app)
+    assert app not in user_permission_list()['permissions']
 
     # Restore the app
     backup_restore(system=None, name=archives[0],
                    apps=[app])
 
     assert app_is_installed(app)
+
+    # Check permission
+    per_list = user_permission_list()['permissions']
+    assert app in per_list
+    assert "main" in per_list[app]
 
 #
 # Some edge cases                                                            #
