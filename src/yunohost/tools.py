@@ -540,9 +540,21 @@ def _list_upgradable_apps():
         app_dict = app_info(app_id, raw=True)
 
         if app_dict["upgradable"] == "yes":
+
+            current_version = app_dict.get("version", "?")
+            current_commit = app_dict.get("status", {}).get("remote", {}).get("revision", "?")[:7]
+            new_version = app_dict.get("manifest",{}).get("version","?")
+            new_commit = app_dict.get("git", {}).get("revision", "?")[:7]
+
+            if current_version == new_version:
+                current_version += " (" + current_commit + ")"
+                new_version += " (" + new_commit + ")"
+
             yield {
                 'id': app_id,
-                'label': app_dict['settings']['label']
+                'label': app_dict['settings']['label'],
+                'current_version': current_version,
+                'new_version': new_version
             }
 
 
@@ -648,7 +660,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
             callbacks = (
-                lambda l: logger.info(l.rstrip() + "\r"),
+                lambda l: logger.info("+" + l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
@@ -685,7 +697,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             # command before it ends...)
             #
             logfile = operation_logger.log_path
-            command = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
+            dist_upgrade = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
 
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
             wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
@@ -694,10 +706,17 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
+            # Dirty hack such that the operation_logger does not add ended_at
+            # and success keys in the log metadata.  (c.f. the code of the
+            # is_unit_operation + operation_logger.close()) We take care of
+            # this ourselves (c.f. the mark_success and updated_log_metadata in
+            # the huge command launched by os.system)
+            operation_logger.ended_at = "notyet"
+
             upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
-            command = "(({wait} && {cmd}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}') &".format(
+            command = "({wait} && {dist_upgrade}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}'".format(
                       wait=wait_until_end_of_yunohost_command,
-                      cmd=command,
+                      dist_upgrade=dist_upgrade,
                       mark_success=mark_success,
                       mark_failure=mark_failure,
                       update_metadata=update_log_metadata,
@@ -705,7 +724,12 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
             logger.debug("Running command :\n{}".format(command))
-            os.system(command)
+            open("/tmp/yunohost-selfupgrade", "w").write("rm /tmp/yunohost-selfupgrade; " + command)
+            # Using systemd-run --scope is like nohup/disown and &, but more robust somehow
+            # (despite using nohup/disown and &, the self-upgrade process was still getting killed...)
+            # ref: https://unix.stackexchange.com/questions/420594/why-process-killed-with-nohup
+            # (though I still don't understand it 100%...)
+            os.system("systemd-run --scope bash /tmp/yunohost-selfupgrade &")
             return
 
         else:

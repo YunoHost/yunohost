@@ -23,8 +23,10 @@ do_init_regen() {
   mkdir -p "${ssl_dir}/"{ca,certs,crl,newcerts}
 
   # initialize some files
+  # N.B. : the weird RANDFILE thing comes from:
+  # https://stackoverflow.com/questions/94445/using-openssl-what-does-unable-to-write-random-state-mean
   [[ -f "${ssl_dir}/serial" ]] \
-    || openssl rand -hex 19 > "${ssl_dir}/serial"
+    || RANDFILE=.rnd openssl rand -hex 19 > "${ssl_dir}/serial"
   [[ -f "${ssl_dir}/index.txt" ]] \
     || touch "${ssl_dir}/index.txt"
 

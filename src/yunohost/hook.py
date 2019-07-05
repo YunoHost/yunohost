@@ -297,8 +297,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="root", stdout_callback=None,
-              stderr_callback=None):
+              chdir=None, env=None, user="root", return_format="json"):
     """
     Execute hook from a file with arguments
 
@@ -372,8 +371,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     # Define output callbacks and call command
     callbacks = (
-        stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()+"\r"),
-        stderr_callback if stderr_callback else lambda l: logger.warning(l.rstrip()),
+        lambda l: logger.debug(l.rstrip()+"\r"),
+        lambda l: logger.warning(l.rstrip()),
     )
 
     if stdinfo:
@@ -401,19 +400,31 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     try:
         with open(stdreturn, 'r') as f:
             raw_content = f.read()
-        if raw_content != '':
-            returnjson = read_json(stdreturn)
+        returncontent = {}
+
+        if return_format == "json":
+            if raw_content != '':
+                try:
+                    returncontent = read_json(stdreturn)
+                except Exception as e:
+                    raise YunohostError('hook_json_return_error',
+                                        path=path, msg=str(e),
+                                        raw_content=raw_content)
+
+        elif return_format == "plain_dict":
+            for line in raw_content.split("\n"):
+                if "=" in line:
+                    key, value = line.strip().split("=", 1)
+                    returncontent[key] = value
+
         else:
-            returnjson = {}
-    except Exception as e:
-        raise YunohostError('hook_json_return_error', path=path, msg=str(e),
-                            raw_content=raw_content)
+            raise YunohostError("Excepted value for return_format is either 'json' or 'plain_dict', got '%s'" % return_format)
     finally:
         stdreturndir = os.path.split(stdreturn)[0]
         os.remove(stdreturn)
         os.rmdir(stdreturndir)
 
-    return returncode, returnjson
+    return returncode, returncontent
 
 
 def _extract_filename_parts(filename):

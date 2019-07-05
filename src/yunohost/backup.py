@@ -1933,11 +1933,19 @@ class TarBackupMethod(BackupMethod):
         # Mount the tarball
         logger.debug(m18n.n("restore_extracting"))
         tar = tarfile.open(self._archive_file, "r:gz")
-        tar.extract('info.json', path=self.work_dir)
 
-        try:
+        if "info.json" in tar.getnames():
+            leading_dot = ""
+            tar.extract('info.json', path=self.work_dir)
+        elif "./info.json" in tar.getnames():
+            leading_dot = "./"
+            tar.extract('./info.json', path=self.work_dir)
+
+        if "backup.csv" in tar.getnames():
             tar.extract('backup.csv', path=self.work_dir)
-        except KeyError:
+        elif "./backup.csv" in tar.getnames():
+            tar.extract('./backup.csv', path=self.work_dir)
+        else:
             # Old backup archive have no backup.csv file
             pass
 
@@ -1959,12 +1967,12 @@ class TarBackupMethod(BackupMethod):
                 system_part = system_part.replace("_", "/") + "/"
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith(system_part)
+                if tarinfo.name.startswith(leading_dot+system_part)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
         subdir_and_files = [
             tarinfo for tarinfo in tar.getmembers()
-            if tarinfo.name.startswith("hooks/restore/")
+            if tarinfo.name.startswith(leading_dot+"hooks/restore/")
         ]
         tar.extractall(members=subdir_and_files, path=self.work_dir)
 
@@ -1972,7 +1980,7 @@ class TarBackupMethod(BackupMethod):
         for app in apps_targets:
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith("apps/" + app)
+                if tarinfo.name.startswith(leading_dot+"apps/" + app)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
 
@@ -2313,7 +2321,12 @@ def backup_info(name, with_details=False, human_readable=False):
         tar = tarfile.open(archive_file, "r:gz")
         info_dir = info_file + '.d'
         try:
-            tar.extract('info.json', path=info_dir)
+            if "info.json" in tar.getnames():
+                tar.extract('info.json', path=info_dir)
+            elif "./info.json" in tar.getnames():
+                tar.extract('./info.json', path=info_dir)
+            else:
+                raise KeyError
         except KeyError:
             logger.debug("unable to retrieve '%s' inside the archive",
                          info_file, exc_info=1)
@@ -2389,7 +2402,14 @@ def backup_delete(name):
     archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
-    for backup_file in [archive_file, info_file]:
+    files_to_delete = [archive_file, info_file]
+
+    # To handle the case where archive_file is in fact a symlink
+    if os.path.islink(archive_file):
+        actual_archive = os.path.realpath(archive_file)
+        files_to_delete.append(actual_archive)
+
+    for backup_file in files_to_delete:
         try:
             os.remove(backup_file)
         except:

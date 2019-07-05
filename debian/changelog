@@ -1,3 +1,77 @@
+yunohost (3.6.4.1) stable; urgency=low
+
+  - [hotfix] Slapd not being able to start on ipv4-only instances
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Jul 2019 20:50:00  +0000
+
+yunohost (3.6.4) stable; urgency=low
+
+  Minor fixes + bumping version for stable release
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 Jul 2019 23:30:00  +0000
+
+yunohost (3.6.3) testing; urgency=low
+
+  - [fix] Less logging madness due ynh_script_progression building progress bar (#741)
+  - [fix] Update acme-tiny to 4.0.4 (#740)
+  - [fix] Missing old internet cube list in migration to unified apps.json (#745)
+  - [enh] Add manpage for Yunohost ! (#682)
+  - [enh] Config panel : use manifest.json/actions.json args format for config_panel.toml (#734)
+  - [enh] Allow to describe actions through toml file instead of json (#744)
+  - [mod] Proper return interface for app config panel (#739)
+  - [fix] Add mechanism to automatically detect and redact passwords from operation logs (#742)
+
+  Thanks to all contributors <3 ! (Aleks, Bram, ljf, toitoinebzh)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 02 Jul 2019 11:10:00  +0000
+
+yunohost (3.6.2) testing; urgency=low
+
+  - [fix] Use systemd-run for more robust self-upgrade mechanism (158aa08)
+  - [enh] Add a do_not_backup_data app setting to avoid backing up data (#731)
+  - [enh] support config_panel in TOML format (#732)
+  - [fix] ynh_print_OFF when set -x is used in other helpers (#733)
+  - [enh] Add current and new version for apps in tools_update output (#735)
+  - [fix] Backup delete should delete symlink target (#738)
+  - [i18n] Improve translation for Occitan, French
+
+  Thanks to all contributors <3 ! (Aleks, Bram, kay0u, locness3, Maniack, Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Jun 2019 18:00:00  +0000
+
+yunohost (3.6.1.3) testing; urgency=low
+
+  - [fix] Missing quotes led to an issue during when upgrading postsrsd
+  - [fix] Running slapindex seems to fix the previous issues about LDAP indexing stuff
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 07 Jun 2019 06:38:00  +0000
+
+yunohost (3.6.1.2) testing; urgency=low
+
+  - [fix] More weird issues with slapd indexation ...
+  - [fix] Small issue with operation logging during failed upgrade (success status set to true)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 05 Jun 2019 16:25:00  +0000
+
+yunohost (3.6.1.1) testing; urgency=low
+
+  - [fix] Weird issue in slapd triggered by indexing uidNumber / gidNumber
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2019 15:10:00  +0000
+
+yunohost (3.6.1) testing; urgency=low
+
+  - [fix] current version in app_info (#730)
+  - [fix] Add indexes for fields listed by slapd in the logs (#729)
+  - [fix] Allow to display logs when postinstall fails (#728)
+  - [fix] Stupid issue with files inside tar : foo is not the same as ./foo (#726)
+  - [enh] Remove unecessary log messages (#724)
+  - [enh] Check for obvious conflict with already running apt/dpkg commands when running yunohost upgrade (d0c982a)
+
+  Thanks to all contributors <3 ! (Aleks, Kay0u, Bram, L. Murphy, MCMic)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2019 13:20:00  +0000
+
 yunohost (3.6.0) testing; urgency=low
 
   ## Major changes

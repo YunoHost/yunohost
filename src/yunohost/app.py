@@ -24,6 +24,7 @@
     Manage apps
 """
 import os
+import toml
 import json
 import shutil
 import yaml
@@ -363,6 +364,11 @@ def app_info(app, show_status=False, raw=False):
         ret['upgradable'] = upgradable
         ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
 
+        with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+            manifest = json.load(json_manifest)
+
+        ret['version'] = manifest.get('version', '-')
+
         return ret
 
     # Retrieve manifest and status
@@ -488,7 +494,7 @@ def app_change_url(operation_logger, app, domain, path):
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, 'change_url')
-    args_list = args_odict.values()
+    args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app)
 
     # Prepare env. var. to pass to script
@@ -638,7 +644,7 @@ def app_upgrade(app=[], url=None, file=None):
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade')
-        args_list = args_odict.values()
+        args_list = [ value[0] for value in args_odict.values() ]
         args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
@@ -684,7 +690,7 @@ def app_upgrade(app=[], url=None, file=None):
             os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
             os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -799,7 +805,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = args_odict.values()
+    args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app_instance_name)
 
     # Prepare env. var. to pass to script
@@ -810,6 +816,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
+    # Tell the operation_logger to redact all password-type args
+    data_to_redact = [ value[0] for value in args_odict.values() if value[1] == "password" ]
+    operation_logger.data_to_redact.extend(data_to_redact)
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
     operation_logger.related_to.append(("app", app_id))
     operation_logger.start()
@@ -842,7 +851,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
-    for file_to_copy in ["actions.json", "config_panel.json", "conf"]:
+    for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -1444,12 +1453,10 @@ def app_action_list(app):
     # this will take care of checking if the app is installed
     app_info_dict = app_info(app)
 
-    actions = os.path.join(APPS_SETTING_PATH, app, 'actions.json')
-
     return {
         "app": app,
         "app_name": app_info_dict["name"],
-        "actions": read_json(actions) if os.path.exists(actions) else [],
+        "actions": _get_app_actions(app)
     }
 
 
@@ -1471,7 +1478,7 @@ def app_action_run(app, action, args=None):
     # Retrieve arguments list for install script
     args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
-    args_list = args_odict.values()
+    args_list = [ value[0] for value in args_odict.values() ]
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
@@ -1520,12 +1527,12 @@ def app_config_show_panel(app):
     # this will take care of checking if the app is installed
     app_info_dict = app_info(app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+    config_panel = _get_app_config_panel(app)
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
-    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+    if not config_panel or not os.path.exists(config_script):
         return {
             "app_id": app_id,
             "app": app,
@@ -1533,38 +1540,17 @@ def app_config_show_panel(app):
             "config_panel": [],
         }
 
-    config_panel = read_json(config_panel)
-
     env = {
         "YNH_APP_ID": app_id,
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
-    parsed_values = {}
 
-    # I need to parse stdout to communicate between scripts because I can't
-    # read the child environment :( (that would simplify things so much)
-    # after hours of research this is apparently quite a standard way, another
-    # option would be to add an explicite pipe or a named pipe for that
-    # a third option would be to write in a temporary file but I don't like
-    # that because that could expose sensitive data
-    def parse_stdout(line):
-        line = line.rstrip()
-        logger.info(line)
-
-        if line.strip().startswith("YNH_CONFIG_") and "=" in line:
-            # XXX error handling?
-            # XXX this might not work for multilines stuff :( (but echo without
-            # formatting should do it no?)
-            key, value = line.strip().split("=", 1)
-            logger.debug("config script declared: %s -> %s", key, value)
-            parsed_values[key] = value
-
-    return_code = hook_exec(config_script,
-                            args=["show"],
-                            env=env,
-                            stdout_callback=parse_stdout,
-                            )[0]
+    return_code, parsed_values = hook_exec(config_script,
+                                args=["show"],
+                                env=env,
+                                return_format="plain_dict"
+                                )
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
@@ -1575,24 +1561,29 @@ def app_config_show_panel(app):
         for section in tab.get("sections", []):
             section_id = section["id"]
             for option in section.get("options", []):
-                option_id = option["id"]
-                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
-                option["id"] = generated_id
-                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_id)
+                option_name = option["name"]
+                generated_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)).upper()
+                option["name"] = generated_name
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_name)
 
-                if generated_id in parsed_values:
-                    # XXX we should probably uses the one of install here but it's at a POC state right now
-                    option_type = option["type"]
-                    if option_type == "bool":
-                        assert parsed_values[generated_id].lower() in ("true", "false")
-                        option["value"] = True if parsed_values[generated_id].lower() == "true" else False
-                    elif option_type == "integer":
-                        option["value"] = int(parsed_values[generated_id])
-                    elif option_type == "text":
-                        option["value"] = parsed_values[generated_id]
+                if generated_name in parsed_values:
+                    # code is not adapted for that so we have to mock expected format :/
+                    if option.get("type") == "boolean":
+                        if parsed_values[generated_name].lower() in ("true", "1", "y"):
+                            option["default"] = parsed_values[generated_name]
+                        else:
+                            del option["default"]
+                    else:
+                        option["default"] = parsed_values[generated_name]
+
+                    args_dict = _parse_args_in_yunohost_format(
+                        [{option["name"]: parsed_values[generated_name]}],
+                        [option]
+                    )
+                    option["default"] = args_dict[option["name"]]
                 else:
-                    logger.debug("Variable '%s' is not declared by config script, using default", generated_id)
-                    option["value"] = option["default"]
+                    logger.debug("Variable '%s' is not declared by config script, using default", generated_name)
+                    # do nothing, we'll use the default if present
 
     return {
         "app_id": app_id,
@@ -1611,14 +1602,12 @@ def app_config_apply(app, args):
     if not installed:
         raise YunohostError('app_not_installed', app=app)
 
-    config_panel = os.path.join(APPS_SETTING_PATH, app, 'config_panel.json')
+    config_panel = _get_app_config_panel(app)
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
-    if not os.path.exists(config_panel) or not os.path.exists(config_script):
+    if not config_panel or not os.path.exists(config_script):
         # XXX real exception
         raise Exception("Not config-panel.json nor scripts/config")
-
-    config_panel = read_json(config_panel)
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env = {
@@ -1633,14 +1622,14 @@ def app_config_apply(app, args):
         for section in tab.get("sections", []):
             section_id = section["id"]
             for option in section.get("options", []):
-                option_id = option["id"]
-                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                option_name = option["name"]
+                generated_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)).upper()
 
-                if generated_id in args:
-                    logger.debug("include into env %s=%s", generated_id, args[generated_id])
-                    env[generated_id] = args[generated_id]
+                if generated_name in args:
+                    logger.debug("include into env %s=%s", generated_name, args[generated_name])
+                    env[generated_name] = args[generated_name]
                 else:
-                    logger.debug("no value for key id %s", generated_id)
+                    logger.debug("no value for key id %s", generated_name)
 
     # for debug purpose
     for key in args:
@@ -1656,6 +1645,217 @@ def app_config_apply(app, args):
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
 
     logger.success("Config updated as expected")
+
+
+def _get_app_actions(app_id):
+    "Get app config panel stored in json or in toml"
+    actions_toml_path = os.path.join(APPS_SETTING_PATH, app_id, 'actions.toml')
+    actions_json_path = os.path.join(APPS_SETTING_PATH, app_id, 'actions.json')
+
+    # sample data to get an idea of what is going on
+    # this toml extract:
+    #
+
+    # [restart_service]
+    # name = "Restart service"
+    # command = "echo pouet $YNH_ACTION_SERVICE"
+    # user = "root"  # optional
+    # cwd = "/" # optional
+    # accepted_return_codes = [0, 1, 2, 3]  # optional
+    # description.en = "a dummy stupid exemple or restarting a service"
+    #
+    #     [restart_service.arguments.service]
+    #     type = "string",
+    #     ask.en = "service to restart"
+    #     example = "nginx"
+    #
+    # will be parsed into this:
+    #
+    # OrderedDict([(u'restart_service',
+    #               OrderedDict([(u'name', u'Restart service'),
+    #                            (u'command', u'echo pouet $YNH_ACTION_SERVICE'),
+    #                            (u'user', u'root'),
+    #                            (u'cwd', u'/'),
+    #                            (u'accepted_return_codes', [0, 1, 2, 3]),
+    #                            (u'description',
+    #                             OrderedDict([(u'en',
+    #                                           u'a dummy stupid exemple or restarting a service')])),
+    #                            (u'arguments',
+    #                             OrderedDict([(u'service',
+    #                                           OrderedDict([(u'type', u'string'),
+    #                                                        (u'ask',
+    #                                                         OrderedDict([(u'en',
+    #                                                                       u'service to restart')])),
+    #                                                        (u'example',
+    #                                                         u'nginx')]))]))])),
+    #
+    #
+    # and needs to be converted into this:
+    #
+    # [{u'accepted_return_codes': [0, 1, 2, 3],
+    #   u'arguments': [{u'ask': {u'en': u'service to restart'},
+    #     u'example': u'nginx',
+    #     u'name': u'service',
+    #     u'type': u'string'}],
+    #   u'command': u'echo pouet $YNH_ACTION_SERVICE',
+    #   u'cwd': u'/',
+    #   u'description': {u'en': u'a dummy stupid exemple or restarting a service'},
+    #   u'id': u'restart_service',
+    #   u'name': u'Restart service',
+    #   u'user': u'root'}]
+
+    if os.path.exists(actions_toml_path):
+        toml_actions = toml.load(open(actions_toml_path, "r"), _dict=OrderedDict)
+
+        # transform toml format into json format
+        actions = []
+
+        for key, value in toml_actions.items():
+            action = dict(**value)
+            action["id"] = key
+
+            arguments = []
+            for argument_name, argument in value.get("arguments", {}).items():
+                argument = dict(**argument)
+                argument["name"] = argument_name
+
+                arguments.append(argument)
+
+            action["arguments"] = arguments
+            actions.append(action)
+
+        return actions
+
+    elif os.path.exists(actions_json_path):
+        return json.load(open(actions_json_path))
+
+    return None
+
+
+def _get_app_config_panel(app_id):
+    "Get app config panel stored in json or in toml"
+    config_panel_toml_path = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.toml')
+    config_panel_json_path = os.path.join(APPS_SETTING_PATH, app_id, 'config_panel.json')
+
+    # sample data to get an idea of what is going on
+    # this toml extract:
+    #
+    # version = "0.1"
+    # name = "Unattended-upgrades configuration panel"
+    #
+    # [main]
+    # name = "Unattended-upgrades configuration"
+    #
+    #     [main.unattended_configuration]
+    #     name = "50unattended-upgrades configuration file"
+    #
+    #         [main.unattended_configuration.upgrade_level]
+    #         name = "Choose the sources of packages to automatically upgrade."
+    #         default = "Security only"
+    #         type = "text"
+    #         help = "We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates."
+    #         # choices = ["Security only", "Security and updates"]
+
+    #         [main.unattended_configuration.ynh_update]
+    #         name = "Would you like to update YunoHost packages automatically ?"
+    #         type = "bool"
+    #         default = true
+    #
+    # will be parsed into this:
+    #
+    # OrderedDict([(u'version', u'0.1'),
+    #              (u'name', u'Unattended-upgrades configuration panel'),
+    #              (u'main',
+    #               OrderedDict([(u'name', u'Unattended-upgrades configuration'),
+    #                            (u'unattended_configuration',
+    #                             OrderedDict([(u'name',
+    #                                           u'50unattended-upgrades configuration file'),
+    #                                          (u'upgrade_level',
+    #                                           OrderedDict([(u'name',
+    #                                                         u'Choose the sources of packages to automatically upgrade.'),
+    #                                                        (u'default',
+    #                                                         u'Security only'),
+    #                                                        (u'type', u'text'),
+    #                                                        (u'help',
+    #                                                         u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.")])),
+    #                                          (u'ynh_update',
+    #                                           OrderedDict([(u'name',
+    #                                                         u'Would you like to update YunoHost packages automatically ?'),
+    #                                                        (u'type', u'bool'),
+    #                                                        (u'default', True)])),
+    #
+    # and needs to be converted into this:
+    #
+    # {u'name': u'Unattended-upgrades configuration panel',
+    #  u'panel': [{u'id': u'main',
+    #    u'name': u'Unattended-upgrades configuration',
+    #    u'sections': [{u'id': u'unattended_configuration',
+    #      u'name': u'50unattended-upgrades configuration file',
+    #      u'options': [{u'//': u'"choices" : ["Security only", "Security and updates"]',
+    #        u'default': u'Security only',
+    #        u'help': u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.",
+    #        u'id': u'upgrade_level',
+    #        u'name': u'Choose the sources of packages to automatically upgrade.',
+    #        u'type': u'text'},
+    #       {u'default': True,
+    #        u'id': u'ynh_update',
+    #        u'name': u'Would you like to update YunoHost packages automatically ?',
+    #        u'type': u'bool'},
+
+    if os.path.exists(config_panel_toml_path):
+        toml_config_panel = toml.load(open(config_panel_toml_path, "r"), _dict=OrderedDict)
+
+        # transform toml format into json format
+        config_panel = {
+            "name": toml_config_panel["name"],
+            "version": toml_config_panel["version"],
+            "panel": [],
+        }
+
+        panels = filter(lambda (key, value): key not in ("name", "version")
+                                             and isinstance(value, OrderedDict),
+                        toml_config_panel.items())
+
+        for key, value in panels:
+            panel = {
+                "id": key,
+                "name": value["name"],
+                "sections": [],
+            }
+
+            sections = filter(lambda (k, v): k not in ("name",)
+                                             and isinstance(v, OrderedDict),
+                              value.items())
+
+            for section_key, section_value in sections:
+                section = {
+                    "id": section_key,
+                    "name": section_value["name"],
+                    "options": [],
+                }
+
+                options = filter(lambda (k, v): k not in ("name",)
+                                                and isinstance(v, OrderedDict),
+                                 section_value.items())
+
+                for option_key, option_value in options:
+                    option = dict(option_value)
+                    option["name"] = option_key
+                    option["ask"] = {"en": option["ask"]}
+                    if "help" in option:
+                        option["help"] = {"en": option["help"]}
+                    section["options"].append(option)
+
+                panel["sections"].append(section)
+
+            config_panel["panel"].append(panel)
+
+        return config_panel
+
+    elif os.path.exists(config_panel_json_path):
+        return json.load(open(config_panel_json_path))
+
+    return None
 
 
 def _get_app_settings(app_id):
@@ -2097,7 +2297,7 @@ def _parse_args_from_manifest(manifest, action, args={}):
         return OrderedDict()
 
     action_args = manifest['arguments'][action]
-    return _parse_action_args_in_yunohost_format(args, action_args)
+    return _parse_args_in_yunohost_format(args, action_args)
 
 
 def _parse_args_for_action(action, args={}):
@@ -2121,10 +2321,10 @@ def _parse_args_for_action(action, args={}):
 
     action_args = action['arguments']
 
-    return _parse_action_args_in_yunohost_format(args, action_args)
+    return _parse_args_in_yunohost_format(args, action_args)
 
 
-def _parse_action_args_in_yunohost_format(args, action_args):
+def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
     from yunohost.domain import (domain_list, _get_maindomain,
@@ -2206,7 +2406,7 @@ def _parse_action_args_in_yunohost_format(args, action_args):
             if arg.get("optional", False):
                 # Argument is optional, keep an empty value
                 # and that's all for this arg !
-                args_dict[arg_name] = ''
+                args_dict[arg_name] = ('', arg_type)
                 continue
             else:
                 # The argument is required !
@@ -2244,22 +2444,20 @@ def _parse_action_args_in_yunohost_format(args, action_args):
                 raise YunohostError('pattern_password_app', forbidden_chars=forbidden_chars)
             from yunohost.utils.password import assert_password_is_strong_enough
             assert_password_is_strong_enough('user', arg_value)
-        args_dict[arg_name] = arg_value
+        args_dict[arg_name] = (arg_value, arg_type)
 
     # END loop over action_args...
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [arg["name"] for arg in action_args
-                   if arg.get("type", "string") == "domain"]
-    path_args = [arg["name"] for arg in action_args
-                 if arg.get("type", "string") == "path"]
+    domain_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "domain" ]
+    path_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "path" ]
 
     if len(domain_args) == 1 and len(path_args) == 1:
 
-        domain = args_dict[domain_args[0]]
-        path = args_dict[path_args[0]]
+        domain = domain_args[0][1]
+        path = path_args[0][1]
         domain, path = _normalize_domain_path(domain, path)
 
         # Check the url is available
@@ -2278,7 +2476,7 @@ def _parse_action_args_in_yunohost_format(args, action_args):
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
-        args_dict[path_args[0]] = path
+        args_dict[path_args[0][0]] = (path, "path")
 
     return args_dict
 
@@ -2293,8 +2491,8 @@ def _make_environment_dict(args_dict, prefix="APP_ARG_"):
 
     """
     env_dict = {}
-    for arg_name, arg_value in args_dict.items():
-        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value
+    for arg_name, arg_value_and_type in args_dict.items():
+        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value_and_type[0]
     return env_dict
 
 
