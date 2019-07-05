@@ -311,13 +311,55 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         user -- User with which to run the command
 
     """
-    from moulinette.utils.process import call_async_output
 
     # Validate hook path
     if path[0] != '/':
         path = os.path.realpath(path)
     if not os.path.isfile(path):
         raise YunohostError('file_does_not_exist', path=path)
+
+    # Check the type of the hook (bash by default)
+    hook_type = "bash"
+    # (non-bash hooks shall start with something like "#!/usr/bin/env language")
+    hook_ext = os.path.splitext(path)[1]
+    if hook_ext == ".py":
+        hook_type = "python"
+    else:
+        # TODO / FIXME : if needed in the future, implement support for other
+        # languages...
+        assert hook_ext == "", "hook_exec only supports bash and python hooks for now"
+
+    # Define output loggers and call command
+    loggers = (
+        lambda l: logger.debug(l.rstrip()+"\r"),
+        lambda l: logger.warning(l.rstrip()),
+        lambda l: logger.info(l.rstrip())
+    )
+
+    if hook_type == "bash":
+        returncode, returndata = _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, loggers)
+    elif hook_type == "python":
+        returncode, returndata = _hook_exec_python(path, args, env, loggers)
+    else:
+        # Doesn't happen ... c.f. previous assertion
+        returncode, returndata = None, {}
+
+    # Check and return process' return code
+    if returncode is None:
+        if raise_on_error:
+            raise YunohostError('hook_exec_not_terminated', path=path)
+        else:
+            logger.error(m18n.n('hook_exec_not_terminated', path=path))
+            return 1, {}
+    elif raise_on_error and returncode != 0:
+        raise YunohostError('hook_exec_failed', path=path)
+
+    return returncode, returndata
+
+
+def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, loggers):
+
+    from moulinette.utils.process import call_async_output
 
     # Construct command variables
     cmd_args = ''
@@ -369,32 +411,12 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         logger.debug(m18n.n('executing_script', script=path))
 
-    # Define output callbacks and call command
-    callbacks = (
-        lambda l: logger.debug(l.rstrip()+"\r"),
-        lambda l: logger.warning(l.rstrip()),
-    )
-
-    if stdinfo:
-        callbacks = (callbacks[0], callbacks[1],
-                     lambda l: logger.info(l.rstrip()))
-
     logger.debug("About to run the command '%s'" % command)
 
     returncode = call_async_output(
-        command, callbacks, shell=False, cwd=chdir,
+        command, loggers, shell=False, cwd=chdir,
         stdinfo=stdinfo
     )
-
-    # Check and return process' return code
-    if returncode is None:
-        if raise_on_error:
-            raise YunohostError('hook_exec_not_terminated', path=path)
-        else:
-            logger.error(m18n.n('hook_exec_not_terminated', path=path))
-            return 1, {}
-    elif raise_on_error and returncode != 0:
-        raise YunohostError('hook_exec_failed', path=path)
 
     raw_content = None
     try:
@@ -425,6 +447,11 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         os.rmdir(stdreturndir)
 
     return returncode, returncontent
+
+
+def _hook_exec_python(path, args, env, loggers):
+
+    pass
 
 
 def _extract_filename_parts(filename):
