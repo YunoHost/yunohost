@@ -1,3 +1,9 @@
+yunohost (3.6.4.1) stable; urgency=low
+
+  - [hotfix] Slapd not being able to start on ipv4-only instances
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Jul 2019 20:50:00  +0000
+
 yunohost (3.6.4) stable; urgency=low
 
   Minor fixes + bumping version for stable release
