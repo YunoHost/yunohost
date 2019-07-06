@@ -1,3 +1,9 @@
+yunohost (3.6.4.2) stable; urgency=low
+
+  - [hotfix] Use the acme-v02 API to fix the newAccount keyError in acme_tiny
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Set, 06 Jul 2019 18:40:00  +0000
+
 yunohost (3.6.4.1) stable; urgency=low
 
   - [hotfix] Slapd not being able to start on ipv4-only instances
