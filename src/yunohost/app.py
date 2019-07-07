@@ -730,10 +730,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.permission import permission_add, permission_update, permission_remove, permission_sync_to_user
     ldap = _get_ldap_interface()
 
-    # Fetch or extract sources
-    try:
-        os.listdir(INSTALL_TMP)
-    except OSError:
+    if not os.path.exists(INSTALL_TMP):
         os.makedirs(INSTALL_TMP)
 
     status = {
