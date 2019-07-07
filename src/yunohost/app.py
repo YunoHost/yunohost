@@ -1975,7 +1975,7 @@ def _extract_app_from_file(path, remove=False):
             os.remove(path)
     elif os.path.isdir(path):
         shutil.rmtree(APP_TMP_FOLDER)
-        if path[len(path) - 1:] != '/':
+        if path[-1] != '/':
             path = path + '/'
         extract_result = os.system('cp -a "%s" %s' % (path, APP_TMP_FOLDER))
     else:
