@@ -41,7 +41,7 @@ from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json
+from moulinette.utils.filesystem import read_json, read_toml
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -271,8 +271,8 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
                     continue
                 # FIXME : What if it's not !?!?
 
-            with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
-                app_dict[app] = {"manifest": json.load(json_manifest)}
+            manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+            app_dict[app] = {"manifest": manifest}
 
             app_dict[app]['repository'] = None
 
@@ -365,16 +365,14 @@ def app_info(app, show_status=False, raw=False):
         ret['upgradable'] = upgradable
         ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
 
-        with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
-            manifest = json.load(json_manifest)
+        manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
 
         ret['version'] = manifest.get('version', '-')
 
         return ret
 
     # Retrieve manifest and status
-    with open(app_setting_path + '/manifest.json') as f:
-        manifest = json.loads(str(f.read()))
+    manifest = _get_manifest_of_app(app_setting_path)
     status = _get_app_status(app, format_date=True)
 
     info = {
@@ -490,7 +488,7 @@ def app_change_url(operation_logger, app, domain, path):
             ))
         raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
-    manifest = json.load(open(os.path.join(APPS_SETTING_PATH, app, "manifest.json")))
+    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
 
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
@@ -688,8 +686,12 @@ def app_upgrade(app=[], url=None, file=None):
                 json.dump(status, f)
 
             # Replace scripts and manifest and conf (if exists)
-            os.system('rm -rf "%s/scripts" "%s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
-            os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+            os.system('rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path))
+
+            if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
+                os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+            if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
+                os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
             for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
@@ -730,6 +732,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.permission import permission_add, permission_update, permission_remove, permission_sync_to_user
     ldap = _get_ldap_interface()
 
+    # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
         os.makedirs(INSTALL_TMP)
 
@@ -742,7 +745,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     }
 
     def confirm_install(confirm):
-
         # Ignore if there's nothing for confirm (good quality app), if --force is used
         # or if request on the API (confirm already implemented on the API side)
         if confirm is None or force or msettings.get('interface') == 'api':
@@ -851,7 +853,10 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Execute App install script
     os.system('chown -hR admin: %s' % INSTALL_TMP)
     # Move scripts and manifest to the right place
-    os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
+    if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
+        os.system('cp %s/manifest.json %s' % (extracted_app_folder, app_setting_path))
+    if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
+        os.system('cp %s/manifest.toml %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
     for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
@@ -1087,8 +1092,7 @@ def app_debug(app):
     Keyword argument:
         app
     """
-    with open(APPS_SETTING_PATH + app + '/manifest.json') as f:
-        manifest = json.loads(f.read())
+    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
 
     return {
         'name': manifest['id'],
@@ -1986,9 +1990,8 @@ def _extract_app_from_file(path, remove=False):
         if len(os.listdir(extracted_app_folder)) == 1:
             for folder in os.listdir(extracted_app_folder):
                 extracted_app_folder = extracted_app_folder + '/' + folder
-        with open(extracted_app_folder + '/manifest.json') as json_manifest:
-            manifest = json.loads(str(json_manifest.read()))
-            manifest['lastUpdate'] = int(time.time())
+        manifest = _get_manifest_of_app(extracted_app_folder)
+        manifest['lastUpdate'] = int(time.time())
     except IOError:
         raise YunohostError('app_install_files_invalid')
     except ValueError as e:
@@ -1998,6 +2001,139 @@ def _extract_app_from_file(path, remove=False):
 
     manifest['remote'] = {'type': 'file', 'path': path}
     return manifest, extracted_app_folder
+
+
+def _get_manifest_of_app(path):
+    "Get app manifest stored in json or in toml"
+
+    # sample data to get an idea of what is going on
+    # this toml extract:
+    #
+    # license = "free"
+    # url = "https://example.com"
+    # multi_instance = true
+    # version = "1.0~ynh1"
+    # packaging_format = 1
+    # services = ["nginx", "php7.0-fpm", "mysql"]
+    # id = "ynhexample"
+    # name = "YunoHost example app"
+    #
+    # [requirements]
+    # yunohost = ">= 3.5"
+    #
+    # [maintainer]
+    # url = "http://example.com"
+    # name = "John doe"
+    # email = "john.doe@example.com"
+    #
+    # [description]
+    # fr = "Exemple de package d'application pour YunoHost."
+    # en = "Example package for YunoHost application."
+    #
+    # [arguments]
+    #     [arguments.install.domain]
+    #     type = "domain"
+    #     example = "example.com"
+    #         [arguments.install.domain.ask]
+    #         fr = "Choisissez un nom de domaine pour ynhexample"
+    #         en = "Choose a domain name for ynhexample"
+    #
+    # will be parsed into this:
+    #
+    # OrderedDict([(u'license', u'free'),
+    #              (u'url', u'https://example.com'),
+    #              (u'multi_instance', True),
+    #              (u'version', u'1.0~ynh1'),
+    #              (u'packaging_format', 1),
+    #              (u'services', [u'nginx', u'php7.0-fpm', u'mysql']),
+    #              (u'id', u'ynhexample'),
+    #              (u'name', u'YunoHost example app'),
+    #              (u'requirements', OrderedDict([(u'yunohost', u'>= 3.5')])),
+    #              (u'maintainer',
+    #               OrderedDict([(u'url', u'http://example.com'),
+    #                            (u'name', u'John doe'),
+    #                            (u'email', u'john.doe@example.com')])),
+    #              (u'description',
+    #               OrderedDict([(u'fr',
+    #                             u"Exemple de package d'application pour YunoHost."),
+    #                            (u'en',
+    #                             u'Example package for YunoHost application.')])),
+    #              (u'arguments',
+    #               OrderedDict([(u'install',
+    #                             OrderedDict([(u'domain',
+    #                                           OrderedDict([(u'type', u'domain'),
+    #                                                        (u'example',
+    #                                                         u'example.com'),
+    #                                                        (u'ask',
+    #                                                         OrderedDict([(u'fr',
+    #                                                                       u'Choisissez un nom de domaine pour ynhexample'),
+    #                                                                      (u'en',
+    #                                                                       u'Choose a domain name for ynhexample')]))])),
+    #
+    # and needs to be converted into this:
+    #
+    # {
+    #     "name": "YunoHost example app",
+    #     "id": "ynhexample",
+    #     "packaging_format": 1,
+    #     "description": {
+    #     ¦   "en": "Example package for YunoHost application.",
+    #     ¦   "fr": "Exemple de package d’application pour YunoHost."
+    #     },
+    #     "version": "1.0~ynh1",
+    #     "url": "https://example.com",
+    #     "license": "free",
+    #     "maintainer": {
+    #     ¦   "name": "John doe",
+    #     ¦   "email": "john.doe@example.com",
+    #     ¦   "url": "http://example.com"
+    #     },
+    #     "requirements": {
+    #     ¦   "yunohost": ">= 3.5"
+    #     },
+    #     "multi_instance": true,
+    #     "services": [
+    #     ¦   "nginx",
+    #     ¦   "php7.0-fpm",
+    #     ¦   "mysql"
+    #     ],
+    #     "arguments": {
+    #     ¦   "install" : [
+    #     ¦   ¦   {
+    #     ¦   ¦   ¦   "name": "domain",
+    #     ¦   ¦   ¦   "type": "domain",
+    #     ¦   ¦   ¦   "ask": {
+    #     ¦   ¦   ¦   ¦   "en": "Choose a domain name for ynhexample",
+    #     ¦   ¦   ¦   ¦   "fr": "Choisissez un nom de domaine pour ynhexample"
+    #     ¦   ¦   ¦   },
+    #     ¦   ¦   ¦   "example": "example.com"
+    #     ¦   ¦   },
+
+    if os.path.exists(os.path.join(path, "manifest.toml")):
+        manifest_toml = read_toml(os.path.join(path, "manifest.toml"))
+
+        manifest = manifest_toml.copy()
+
+        if "arguments" not in manifest:
+            return manifest
+
+        if "install" not in manifest["arguments"]:
+            return manifest
+
+        install_arguments = []
+        for name, values in manifest_toml.get("arguments", {}).get("install", {}).items():
+            args = values.copy()
+            args["name"] = name
+
+            install_arguments.append(args)
+
+        manifest["arguments"]["install"] = install_arguments
+
+        return manifest
+    elif os.path.exists(os.path.join(path, "manifest.json")):
+        return read_json(os.path.join(path, "manifest.json"))
+    else:
+        return None
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
@@ -2080,8 +2216,7 @@ def _fetch_app_from_git(app):
                 subprocess.check_call([
                     'git', 'reset', '--hard', branch
                 ], cwd=extracted_app_folder)
-                with open(extracted_app_folder + '/manifest.json') as f:
-                    manifest = json.loads(str(f.read()))
+                manifest = _get_manifest_of_app(extracted_app_folder)
             except subprocess.CalledProcessError:
                 raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
@@ -2133,8 +2268,7 @@ def _fetch_app_from_git(app):
                     'git', 'reset', '--hard',
                     str(app_info['git']['revision'])
                 ], cwd=extracted_app_folder)
-                with open(extracted_app_folder + '/manifest.json') as f:
-                    manifest = json.loads(str(f.read()))
+                manifest = _get_manifest_of_app(extracted_app_folder)
             except subprocess.CalledProcessError:
                 raise YunohostError('app_sources_fetch_failed')
             except ValueError as e:
@@ -2762,6 +2896,7 @@ def _patch_php5(app_folder):
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
     files_to_patch.append("%s/manifest.json" % app_folder)
+    files_to_patch.append("%s/manifest.toml" % app_folder)
 
     for filename in files_to_patch:
 
