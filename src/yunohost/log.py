@@ -25,6 +25,7 @@
 """
 
 import os
+import re
 import yaml
 import collections
 
@@ -47,12 +48,13 @@ RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
 logger = getActionLogger('yunohost.log')
 
 
-def log_list(category=[], limit=None):
+def log_list(category=[], limit=None, with_details=False):
     """
     List available logs
 
     Keyword argument:
         limit -- Maximum number of logs
+        with_details -- Include details (e.g. if the operation was a success). Likely to increase the command time as it needs to open and parse the metadata file for each log... So try to use this in combination with --limit.
     """
 
     categories = category
@@ -69,12 +71,11 @@ def log_list(category=[], limit=None):
         category_path = os.path.join(CATEGORIES_PATH, category)
         if not os.path.exists(category_path):
             logger.debug(m18n.n('log_category_404', category=category))
-
             continue
 
         logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
                       os.listdir(category_path))
-        logs = reversed(sorted(logs))
+        logs = list(reversed(sorted(logs)))
 
         if limit is not None:
             logs = logs[:limit]
@@ -99,6 +100,15 @@ def log_list(category=[], limit=None):
                 pass
             else:
                 entry["started_at"] = log_datetime
+
+            if with_details:
+                with open(md_path, "r") as md_file:
+                    try:
+                        metadata = yaml.safe_load(md_file)
+                    except yaml.YAMLError:
+                        logger.warning(m18n.n('log_corrupted_md_file', file=md_path))
+
+                    entry["success"] = metadata.get("success", "?") if metadata else "?"
 
             result[category].append(entry)
 
@@ -199,7 +209,7 @@ def log_display(path, number=50, share=False):
 
 
 def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
-                      exclude=['auth', 'password'], operation_key=None):
+                      exclude=['password'], operation_key=None):
     """
     Configure quickly a unit operation
 
@@ -213,9 +223,8 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
     (argname, entity_type) instead of just put the entity type.
 
     exclude    Remove some arguments from the context. By default, arguments
-    called 'password' and 'auth' are removed. If an argument is an object, you
-    need to exclude it or create manually the unit operation without this
-    decorator.
+    called 'password' are removed. If an argument is an object, you need to
+    exclude it or create manually the unit operation without this decorator.
 
     operation_key   A key to describe the unit operation log used to create the
     filename and search a translation. Please ensure that this key prefixed by
@@ -281,6 +290,33 @@ def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
     return decorate
 
 
+class RedactingFormatter(Formatter):
+
+    def __init__(self, format_string, data_to_redact):
+        super(RedactingFormatter, self).__init__(format_string)
+        self.data_to_redact = data_to_redact
+
+    def format(self, record):
+        msg = super(RedactingFormatter, self).format(record)
+        self.identify_data_to_redact(msg)
+        for data in self.data_to_redact:
+            msg = msg.replace(data, "**********")
+        return msg
+
+    def identify_data_to_redact(self, record):
+
+        # Wrapping this in a try/except because we don't want this to
+        # break everything in case it fails miserably for some reason :s
+        try:
+            # This matches stuff like db_pwd=the_secret or admin_password=other_secret
+            # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
+            match = re.search(r'(pwd|pass|password|secret|key)=(\S{3,})$', record.strip())
+            if match and match.group(2) not in self.data_to_redact:
+                self.data_to_redact.append(match.group(2))
+        except Exception as e:
+            logger.warning("Failed to parse line to try to identify data to redact ... : %s" % e)
+
+
 class OperationLogger(object):
 
     """
@@ -301,6 +337,11 @@ class OperationLogger(object):
         self.ended_at = None
         self.logger = None
         self._name = None
+        self.data_to_redact = []
+
+        for filename in ["/etc/yunohost/mysql", "/etc/yunohost/psql"]:
+            if os.path.exists(filename):
+                self.data_to_redact.append(read_file(filename).strip())
 
         self.path = OPERATIONS_PATH
 
@@ -318,15 +359,31 @@ class OperationLogger(object):
             self.flush()
             self._register_log()
 
+    @property
+    def md_path(self):
+        """
+        Metadata path file
+        """
+        return os.path.join(self.path, self.name + METADATA_FILE_EXT)
+
+    @property
+    def log_path(self):
+        """
+        Log path file
+        """
+        return os.path.join(self.path, self.name + LOG_FILE_EXT)
+
     def _register_log(self):
         """
         Register log with a handler connected on log system
         """
 
-        # TODO add a way to not save password on app installation
-        filename = os.path.join(self.path, self.name + LOG_FILE_EXT)
-        self.file_handler = FileHandler(filename)
-        self.file_handler.formatter = Formatter('%(asctime)s: %(levelname)s - %(message)s')
+        self.file_handler = FileHandler(self.log_path)
+        # We use a custom formatter that's able to redact all stuff in self.data_to_redact
+        # N.B. : the subtle thing here is that the class will remember a pointer to the list,
+        # so we can directly append stuff to self.data_to_redact and that'll be automatically
+        # propagated to the RedactingFormatter
+        self.file_handler.formatter = RedactingFormatter('%(asctime)s: %(levelname)s - %(message)s', self.data_to_redact)
 
         # Listen to the root logger
         self.logger = getLogger('yunohost')
@@ -337,9 +394,11 @@ class OperationLogger(object):
         Write or rewrite the metadata file with all metadata known
         """
 
-        filename = os.path.join(self.path, self.name + METADATA_FILE_EXT)
-        with open(filename, 'w') as outfile:
-            yaml.safe_dump(self.metadata, outfile, default_flow_style=False)
+        dump = yaml.safe_dump(self.metadata, default_flow_style=False)
+        for data in self.data_to_redact:
+            dump = dump.replace(data, "**********")
+        with open(self.md_path, 'w') as outfile:
+            outfile.write(dump)
 
     @property
     def name(self):

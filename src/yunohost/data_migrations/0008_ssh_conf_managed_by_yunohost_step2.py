@@ -1,3 +1,4 @@
+import os
 import re
 
 from moulinette import m18n
@@ -5,9 +6,8 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import chown
 
 from yunohost.tools import Migration
-from yunohost.service import service_regen_conf, \
-                             _get_conf_hashes, \
-                             _calculate_hash
+from yunohost.regenconf import _get_conf_hashes, _calculate_hash
+from yunohost.regenconf import regen_conf
 from yunohost.settings import settings_set, settings_get
 from yunohost.utils.error import YunohostError
 from yunohost.backup import ARCHIVES_PATH
@@ -35,11 +35,12 @@ class MyMigration(Migration):
 
     def migrate(self):
         settings_set("service.ssh.allow_deprecated_dsa_hostkey", False)
-        service_regen_conf(names=['ssh'], force=True)
+        regen_conf(names=['ssh'], force=True)
 
         # Update local archives folder permissions, so that
         # admin can scp archives out of the server
-        chown(ARCHIVES_PATH, uid="admin", gid="root")
+        if os.path.isdir(ARCHIVES_PATH):
+            chown(ARCHIVES_PATH, uid="admin", gid="root")
 
     def backward(self):
 

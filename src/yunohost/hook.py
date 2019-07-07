@@ -28,9 +28,10 @@ import re
 import tempfile
 from glob import iglob
 
-from moulinette import m18n
+from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError
 from moulinette.utils import log
+from moulinette.utils.filesystem import read_json
 
 HOOK_FOLDER = '/usr/share/yunohost/hooks/'
 CUSTOM_HOOK_FOLDER = '/etc/yunohost/hooks.d/'
@@ -228,7 +229,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             (name, priority, path, succeed) as arguments
 
     """
-    result = {'succeed': {}, 'failed': {}}
+    result = {}
     hooks_dict = {}
 
     # Retrieve hooks
@@ -278,26 +279,25 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             try:
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
-                hook_exec(path, args=hook_args, chdir=chdir, env=env,
-                          no_trace=no_trace, raise_on_error=True)
+                hook_return = hook_exec(path, args=hook_args, chdir=chdir, env=env,
+                          no_trace=no_trace, raise_on_error=True)[1]
             except YunohostError as e:
                 state = 'failed'
+                hook_return = {}
                 logger.error(e.strerror, exc_info=1)
                 post_callback(name=name, priority=priority, path=path,
                               succeed=False)
             else:
                 post_callback(name=name, priority=priority, path=path,
                               succeed=True)
-            try:
-                result[state][name].append(path)
-            except KeyError:
-                result[state][name] = [path]
+            if not name in result:
+                result[name] = {}
+            result[name][path] = {'state' : state, 'stdreturn' : hook_return }
     return result
 
 
 def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="root", stdout_callback=None,
-              stderr_callback=None):
+              chdir=None, env=None, user="root", return_format="json"):
     """
     Execute hook from a file with arguments
 
@@ -317,7 +317,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if path[0] != '/':
         path = os.path.realpath(path)
     if not os.path.isfile(path):
-        raise YunohostError('file_not_exist', path=path)
+        raise YunohostError('file_does_not_exist', path=path)
 
     # Construct command variables
     cmd_args = ''
@@ -336,8 +336,15 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         env = {}
     env['YNH_CWD'] = chdir
 
+    env['YNH_INTERFACE'] = msettings.get('interface')
+
     stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
     env['YNH_STDINFO'] = stdinfo
+
+    stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
+    with open(stdreturn, 'w') as f:
+        f.write('')
+    env['YNH_STDRETURN'] = stdreturn
 
     # Construct command to execute
     if user == "root":
@@ -364,8 +371,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     # Define output callbacks and call command
     callbacks = (
-        stdout_callback if stdout_callback else lambda l: logger.debug(l.rstrip()),
-        stderr_callback if stderr_callback else lambda l: logger.warning(l.rstrip()),
+        lambda l: logger.debug(l.rstrip()+"\r"),
+        lambda l: logger.warning(l.rstrip()),
     )
 
     if stdinfo:
@@ -385,10 +392,39 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
             raise YunohostError('hook_exec_not_terminated', path=path)
         else:
             logger.error(m18n.n('hook_exec_not_terminated', path=path))
-            return 1
+            return 1, {}
     elif raise_on_error and returncode != 0:
         raise YunohostError('hook_exec_failed', path=path)
-    return returncode
+
+    raw_content = None
+    try:
+        with open(stdreturn, 'r') as f:
+            raw_content = f.read()
+        returncontent = {}
+
+        if return_format == "json":
+            if raw_content != '':
+                try:
+                    returncontent = read_json(stdreturn)
+                except Exception as e:
+                    raise YunohostError('hook_json_return_error',
+                                        path=path, msg=str(e),
+                                        raw_content=raw_content)
+
+        elif return_format == "plain_dict":
+            for line in raw_content.split("\n"):
+                if "=" in line:
+                    key, value = line.strip().split("=", 1)
+                    returncontent[key] = value
+
+        else:
+            raise YunohostError("Excepted value for return_format is either 'json' or 'plain_dict', got '%s'" % return_format)
+    finally:
+        stdreturndir = os.path.split(stdreturn)[0]
+        os.remove(stdreturn)
+        os.rmdir(stdreturndir)
+
+    return returncode, returncontent
 
 
 def _extract_filename_parts(filename):

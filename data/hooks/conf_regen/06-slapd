@@ -60,7 +60,7 @@ do_pre_regen() {
 
   # copy configuration files
   cp -a ldap.conf slapd.conf "$ldap_dir"
-  cp -a sudo.schema mailserver.schema "$schema_dir"
+  cp -a sudo.schema mailserver.schema yunohost.schema "$schema_dir"
 
   install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
 }
@@ -100,6 +100,8 @@ do_post_regen() {
       sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
       sudo chown -R openldap:openldap /etc/ldap/slapd.d/
   fi
+
+  sudo -u openldap slapindex
 
   sudo service slapd force-reload
 

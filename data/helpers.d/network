@@ -1,36 +1,22 @@
-# Normalize the url path syntax
-# Handle the slash at the beginning of path and its absence at ending
-# Return a normalized url path
-#
-# example: url_path=$(ynh_normalize_url_path $url_path)
-#          ynh_normalize_url_path example -> /example
-#          ynh_normalize_url_path /example -> /example
-#          ynh_normalize_url_path /example/ -> /example
-#          ynh_normalize_url_path / -> /
-#
-# usage: ynh_normalize_url_path path_to_normalize
-# | arg: url_path_to_normalize - URL path to normalize before using it
-ynh_normalize_url_path () {
-	local path_url=$1
-	test -n "$path_url" || ynh_die "ynh_normalize_url_path expect a URL path as first argument and received nothing."
-	if [ "${path_url:0:1}" != "/" ]; then    # If the first character is not a /
-		path_url="/$path_url"    # Add / at begin of path variable
-	fi
-	if [ "${path_url:${#path_url}-1}" == "/" ] && [ ${#path_url} -gt 1 ]; then    # If the last character is a / and that not the only character.
-		path_url="${path_url:0:${#path_url}-1}"	# Delete the last character
-	fi
-	echo $path_url
-}
+#!/bin/bash
 
 # Find a free port and return it
 #
-# example: port=$(ynh_find_port 8080)
+# example: port=$(ynh_find_port --port=8080)
 #
-# usage: ynh_find_port begin_port
-# | arg: begin_port - port to start to search
+# usage: ynh_find_port --port=begin_port
+# | arg: -p, --port - port to start to search
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_find_port () {
-	local port=$1
-	test -n "$port" || ynh_die "The argument of ynh_find_port must be a valid port."
+	# Declare an array to define the options of this helper.
+	local legacy_args=p
+	declare -Ar args_array=( [p]=port= )
+	local port
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	test -n "$port" || ynh_die --message="The argument of ynh_find_port must be a valid port."
 	while netcat -z 127.0.0.1 $port       # Check if the port is free
 	do
 		port=$((port+1))	# Else, pass to next port
@@ -38,30 +24,77 @@ ynh_find_port () {
 	echo $port
 }
 
-# Check availability of a web path
+# Validate an IP address
 #
-# example: ynh_webpath_available some.domain.tld /coffee
+# usage: ynh_validate_ip --family=family --ip_address=ip_address
+# | ret: 0 for valid ip addresses, 1 otherwise
 #
-# usage: ynh_webpath_available domain path
-# | arg: domain - the domain/host of the url
-# | arg: path - the web path to check the availability of
-ynh_webpath_available () {
-	local domain=$1
-	local path=$2
-	sudo yunohost domain url-available $domain $path
+# example: ynh_validate_ip 4 111.222.333.444
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_validate_ip()
+{
+  # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
+
+  # Declare an array to define the options of this helper.
+  local legacy_args=fi
+  declare -Ar args_array=( [f]=family= [i]=ip_address= )
+  local family
+  local ip_address
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
+
+  python /dev/stdin << EOF
+import socket
+import sys
+family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }
+try:
+    socket.inet_pton(family["$family"], "$ip_address")
+except socket.error:
+    sys.exit(1)
+sys.exit(0)
+EOF
 }
 
-# Register/book a web path for an app
+# Validate an IPv4 address
 #
-# example: ynh_webpath_register wordpress some.domain.tld /coffee
+# example: ynh_validate_ip4 111.222.333.444
 #
-# usage: ynh_webpath_register app domain path
-# | arg: app - the app for which the domain should be registered
-# | arg: domain - the domain/host of the web path
-# | arg: path - the web path to be registered
-ynh_webpath_register () {
-	local app=$1
-	local domain=$2
-	local path=$3
-	sudo yunohost app register-url $app $domain $path
+# usage: ynh_validate_ip4 --ip_address=ip_address
+# | ret: 0 for valid ipv4 addresses, 1 otherwise
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_validate_ip4()
+{
+  # Declare an array to define the options of this helper.
+  local legacy_args=i
+  declare -Ar args_array=( [i]=ip_address= )
+  local ip_address
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_validate_ip 4 $ip_address
+}
+
+
+# Validate an IPv6 address
+#
+# example: ynh_validate_ip6 2000:dead:beef::1
+#
+# usage: ynh_validate_ip6 --ip_address=ip_address
+# | ret: 0 for valid ipv6 addresses, 1 otherwise
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_validate_ip6()
+{
+  # Declare an array to define the options of this helper.
+  local legacy_args=i
+  declare -Ar args_array=( [i]=ip_address= )
+  local ip_address
+  # Manage arguments with getopts
+  ynh_handle_getopts_args "$@"
+
+  ynh_validate_ip 6 $ip_address
 }

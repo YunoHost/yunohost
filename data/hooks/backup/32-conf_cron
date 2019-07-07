@@ -4,12 +4,12 @@
 set -eu
 
 # Source YNH helpers
-source /usr/share/yunohost/helpers.d/filesystem
+source /usr/share/yunohost/helpers
 
 # Backup destination
 backup_dir="${1}/conf/cron"
 
 # Backup the configuration
-for f in $(ls -1B /etc/cron.d/yunohost*); do
+for f in $(ls -1B /etc/cron.d/yunohost* 2> /dev/null); do
   ynh_backup "$f" "${backup_dir}/${f##*/}"
 done

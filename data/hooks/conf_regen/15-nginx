@@ -2,7 +2,7 @@
 
 set -e
 
-. /usr/share/yunohost/helpers.d/utils
+. /usr/share/yunohost/helpers
 
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
@@ -10,7 +10,25 @@ do_init_regen() {
     exit 1
   fi
 
-  do_pre_regen ""
+  cd /usr/share/yunohost/templates/nginx
+
+  nginx_dir="/etc/nginx"
+  nginx_conf_dir="${nginx_dir}/conf.d"
+  mkdir -p "$nginx_conf_dir"
+
+  # install plain conf files
+  cp plain/* "$nginx_conf_dir"
+
+  # probably run with init: just disable default site, restart NGINX and exit
+  rm -f "${nginx_dir}/sites-enabled/default"
+
+  export compatibility="intermediate"
+  ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
+
+  # Restart nginx if conf looks good, otherwise display error and exit unhappy
+  nginx -t 2>/dev/null && service nginx restart || (nginx -t && exit 1)
+
+  exit 0
 }
 
 do_pre_regen() {
@@ -22,19 +40,15 @@ do_pre_regen() {
   nginx_conf_dir="${nginx_dir}/conf.d"
   mkdir -p "$nginx_conf_dir"
 
-  # install plain conf files
+  # install / update plain conf files
   cp plain/* "$nginx_conf_dir"
-
-  # probably run with init: just disable default site, restart NGINX and exit
-  if [[ -z "$pending_dir" ]]; then
-    rm -f "${nginx_dir}/sites-enabled/default"
-    service nginx restart
-    exit 0
-  fi
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  # Support different strategy for security configurations
+  export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
 
   # add domain conf files
   for domain in $domain_list; do
@@ -57,6 +71,8 @@ do_pre_regen() {
       || cp yunohost_local.conf "${domain_conf_dir}/yunohost_local.conf"
 
   done
+
+  ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/nginx/conf.d \

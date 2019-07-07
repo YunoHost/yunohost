@@ -26,12 +26,9 @@
 import os
 import time
 import yaml
-import json
 import subprocess
-import shutil
-import hashlib
 
-from difflib import unified_diff
+from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
@@ -39,17 +36,13 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils import log, filesystem
 
 from yunohost.log import is_unit_operation
-from yunohost.hook import hook_callback, hook_list
 
-BASE_CONF_PATH = '/home/yunohost.conf'
-BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, 'backup')
-PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, 'pending')
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None):
+def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, log_type="file"):
     """
     Add a custom service
 
@@ -60,6 +53,7 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         runlevel -- Runlevel priority of the service
         need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
+        log_type -- Precise if the corresponding log is a file or a systemd log
     """
     services = _get_services()
 
@@ -69,7 +63,22 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         services[name] = {'status': status}
 
     if log is not None:
+        if not isinstance(log, list):
+            log = [log]
+
         services[name]['log'] = log
+
+        if not isinstance(log_type, list):
+            log_type = [log_type]
+
+        if len(log_type) < len(log):
+            log_type.extend([log_type[-1]] * (len(log) - len(log_type))) # extend list to have the same size as log
+
+        if len(log_type) == len(log):
+            services[name]['log_type'] = log_type
+        else:
+            raise YunohostError('service_add_failed', service=name)
+
 
     if runlevel is not None:
         services[name]['runlevel'] = runlevel
@@ -309,11 +318,17 @@ def service_status(names=[]):
 
             result[name] = {
                 'status': str(status.get("SubState", "unknown")),
-                'loaded': "enabled" if str(status.get("LoadState", "unknown")) == "loaded" else str(status.get("LoadState", "unknown")),
+                'loaded': str(status.get("UnitFileState", "unknown")),
                 'active': str(status.get("ActiveState", "unknown")),
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
             }
+
+            # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
+            # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
+            if result[name]["loaded"] == "generated":
+                result[name]["loaded"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+
             if "ActiveEnterTimestamp" in status:
                 result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
             else:
@@ -327,26 +342,25 @@ def service_status(names=[]):
 def _get_service_information_from_systemd(service):
     "this is the equivalent of 'systemctl status $service'"
     import dbus
-    from dbus.exceptions import DBusException
 
     d = dbus.SystemBus()
 
     systemd = d.get_object('org.freedesktop.systemd1', '/org/freedesktop/systemd1')
     manager = dbus.Interface(systemd, 'org.freedesktop.systemd1.Manager')
 
-    try:
-        service_path = manager.GetUnit(service + ".service")
-    except DBusException as exception:
-        if exception.get_dbus_name() == 'org.freedesktop.systemd1.NoSuchUnit':
-            return None
-        raise
-
-    service_proxy = d.get_object('org.freedesktop.systemd1', service_path)
-
-    # unit_proxy = dbus.Interface(service_proxy, 'org.freedesktop.systemd1.Unit',)
+    # c.f. https://zignar.net/2014/09/08/getting-started-with-dbus-python-systemd/
+    # Very interface, much intuitive, wow
+    service_unit = manager.LoadUnit(service + '.service')
+    service_proxy = d.get_object('org.freedesktop.systemd1', str(service_unit))
     properties_interface = dbus.Interface(service_proxy, 'org.freedesktop.DBus.Properties')
 
-    return properties_interface.GetAll('org.freedesktop.systemd1.Unit')
+    properties = properties_interface.GetAll('org.freedesktop.systemd1.Unit')
+
+    if properties.get("LoadState", "not-found") == "not-found":
+        # Service doesn't really exist
+        return None
+    else:
+        return properties
 
 
 def service_log(name, number=50):
@@ -367,275 +381,60 @@ def service_log(name, number=50):
         raise YunohostError('service_no_log', service=name)
 
     log_list = services[name]['log']
+    log_type_list = services[name].get('log_type', [])
 
     if not isinstance(log_list, list):
         log_list = [log_list]
+    if len(log_type_list) < len(log_list):
+        log_type_list.extend(["file"] * (len(log_list)-len(log_type_list)))
 
     result = {}
 
-    for log_path in log_list:
-        # log is a file, read it
-        if not os.path.isdir(log_path):
-            result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
-            continue
+    for index, log_path in enumerate(log_list):
+        log_type = log_type_list[index]
 
-        for log_file in os.listdir(log_path):
-            log_file_path = os.path.join(log_path, log_file)
-            # not a file : skip
-            if not os.path.isfile(log_file_path):
+        if log_type == "file":
+            # log is a file, read it
+            if not os.path.isdir(log_path):
+                result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
                 continue
 
-            if not log_file.endswith(".log"):
-                continue
+            for log_file in os.listdir(log_path):
+                log_file_path = os.path.join(log_path, log_file)
+                # not a file : skip
+                if not os.path.isfile(log_file_path):
+                    continue
 
-            result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+                if not log_file.endswith(".log"):
+                    continue
+
+                result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+        else:
+            # get log with journalctl
+            result[log_path] = _get_journalctl_logs(log_path, int(number)).splitlines()
 
     return result
 
 
-@is_unit_operation([('names', 'service')])
-def service_regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
+def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
                        list_pending=False):
-    """
-    Regenerate the configuration file(s) for a service
 
-    Keyword argument:
-        names -- Services name to regenerate configuration of
-        with_diff -- Show differences in case of configuration changes
-        force -- Override all manual modifications in configuration files
-        dry_run -- Show what would have been regenerated
-        list_pending -- List pending configuration files and exit
+    services = _get_services()
 
-    """
-    result = {}
+    if isinstance(names, str):
+        names = [names]
 
-    # Return the list of pending conf
-    if list_pending:
-        pending_conf = _get_pending_conf(names)
+    for name in names:
+        if name not in services.keys():
+            raise YunohostError('service_unknown', service=name)
 
-        if not with_diff:
-            return pending_conf
+    if names is []:
+        names = services.keys()
 
-        for service, conf_files in pending_conf.items():
-            for system_path, pending_path in conf_files.items():
+    logger.warning(m18n.n("service_regen_conf_is_deprecated"))
 
-                pending_conf[service][system_path] = {
-                    'pending_conf': pending_path,
-                    'diff': _get_files_diff(
-                        system_path, pending_path, True),
-                }
-
-        return pending_conf
-
-    if not dry_run:
-        operation_logger.related_to = [('service', x) for x in names]
-        if not names:
-            operation_logger.name_parameter_override = 'all'
-        elif len(names) != 1:
-            operation_logger.name_parameter_override = str(len(operation_logger.related_to)) + '_services'
-        operation_logger.start()
-
-    # Clean pending conf directory
-    if os.path.isdir(PENDING_CONF_DIR):
-        if not names:
-            shutil.rmtree(PENDING_CONF_DIR, ignore_errors=True)
-        else:
-            for name in names:
-                shutil.rmtree(os.path.join(PENDING_CONF_DIR, name),
-                              ignore_errors=True)
-    else:
-        filesystem.mkdir(PENDING_CONF_DIR, 0o755, True)
-
-    # Format common hooks arguments
-    common_args = [1 if force else 0, 1 if dry_run else 0]
-
-    # Execute hooks for pre-regen
-    pre_args = ['pre', ] + common_args
-
-    def _pre_call(name, priority, path, args):
-        # create the pending conf directory for the service
-        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(service_pending_path, 0o755, True, uid='root')
-
-        # return the arguments to pass to the script
-        return pre_args + [service_pending_path, ]
-
-    # Don't regen SSH if not specifically specified
-    if not names:
-        names = hook_list('conf_regen', list_by='name',
-                          show_info=False)['hooks']
-        names.remove('ssh')
-
-    pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
-
-    # Update the services name
-    names = pre_result['succeed'].keys()
-
-    if not names:
-        raise YunohostError('service_regenconf_failed',
-                            services=', '.join(pre_result['failed']))
-
-    # Set the processing method
-    _regen = _process_regen_conf if not dry_run else lambda *a, **k: True
-
-    operation_logger.related_to = []
-
-    # Iterate over services and process pending conf
-    for service, conf_files in _get_pending_conf(names).items():
-        if not dry_run:
-            operation_logger.related_to.append(('service', service))
-
-        logger.debug(m18n.n(
-            'service_regenconf_pending_applying' if not dry_run else
-            'service_regenconf_dry_pending_applying',
-            service=service))
-
-        conf_hashes = _get_conf_hashes(service)
-        succeed_regen = {}
-        failed_regen = {}
-
-        for system_path, pending_path in conf_files.items():
-            logger.debug("processing pending conf '%s' to system conf '%s'",
-                         pending_path, system_path)
-            conf_status = None
-            regenerated = False
-
-            # Get the diff between files
-            conf_diff = _get_files_diff(
-                system_path, pending_path, True) if with_diff else None
-
-            # Check if the conf must be removed
-            to_remove = True if os.path.getsize(pending_path) == 0 else False
-
-            # Retrieve and calculate hashes
-            system_hash = _calculate_hash(system_path)
-            saved_hash = conf_hashes.get(system_path, None)
-            new_hash = None if to_remove else _calculate_hash(pending_path)
-
-            # -> system conf does not exists
-            if not system_hash:
-                if to_remove:
-                    logger.debug("> system conf is already removed")
-                    os.remove(pending_path)
-                    continue
-                if not saved_hash or force:
-                    if force:
-                        logger.debug("> system conf has been manually removed")
-                        conf_status = 'force-created'
-                    else:
-                        logger.debug("> system conf does not exist yet")
-                        conf_status = 'created'
-                    regenerated = _regen(
-                        system_path, pending_path, save=False)
-                else:
-                    logger.info(m18n.n(
-                        'service_conf_file_manually_removed',
-                        conf=system_path))
-                    conf_status = 'removed'
-
-            # -> system conf is not managed yet
-            elif not saved_hash:
-                logger.debug("> system conf is not managed yet")
-                if system_hash == new_hash:
-                    logger.debug("> no changes to system conf has been made")
-                    conf_status = 'managed'
-                    regenerated = True
-                elif not to_remove:
-                    # If the conf exist but is not managed yet, and is not to be removed,
-                    # we assume that it is safe to regen it, since the file is backuped
-                    # anyway (by default in _regen), as long as we warn the user
-                    # appropriately.
-                    logger.info(m18n.n('service_conf_now_managed_by_yunohost',
-                                       conf=system_path))
-                    regenerated = _regen(system_path, pending_path)
-                    conf_status = 'new'
-                elif force:
-                    regenerated = _regen(system_path)
-                    conf_status = 'force-removed'
-                else:
-                    logger.info(m18n.n('service_conf_file_kept_back',
-                                       conf=system_path, service=service))
-                    conf_status = 'unmanaged'
-
-            # -> system conf has not been manually modified
-            elif system_hash == saved_hash:
-                if to_remove:
-                    regenerated = _regen(system_path)
-                    conf_status = 'removed'
-                elif system_hash != new_hash:
-                    regenerated = _regen(system_path, pending_path)
-                    conf_status = 'updated'
-                else:
-                    logger.debug("> system conf is already up-to-date")
-                    os.remove(pending_path)
-                    continue
-
-            else:
-                logger.debug("> system conf has been manually modified")
-                if system_hash == new_hash:
-                    logger.debug("> new conf is as current system conf")
-                    conf_status = 'managed'
-                    regenerated = True
-                elif force:
-                    regenerated = _regen(system_path, pending_path)
-                    conf_status = 'force-updated'
-                else:
-                    logger.warning(m18n.n(
-                        'service_conf_file_manually_modified',
-                        conf=system_path))
-                    conf_status = 'modified'
-
-            # Store the result
-            conf_result = {'status': conf_status}
-            if conf_diff is not None:
-                conf_result['diff'] = conf_diff
-            if regenerated:
-                succeed_regen[system_path] = conf_result
-                conf_hashes[system_path] = new_hash
-                if os.path.isfile(pending_path):
-                    os.remove(pending_path)
-            else:
-                failed_regen[system_path] = conf_result
-
-        # Check for service conf changes
-        if not succeed_regen and not failed_regen:
-            logger.debug(m18n.n('service_conf_up_to_date', service=service))
-            continue
-        elif not failed_regen:
-            logger.success(m18n.n(
-                'service_conf_updated' if not dry_run else
-                'service_conf_would_be_updated',
-                service=service))
-
-        if succeed_regen and not dry_run:
-            _update_conf_hashes(service, conf_hashes)
-
-        # Append the service results
-        result[service] = {
-            'applied': succeed_regen,
-            'pending': failed_regen
-        }
-
-    # Return in case of dry run
-    if dry_run:
-        return result
-
-    # Execute hooks for post-regen
-    post_args = ['post', ] + common_args
-
-    def _pre_call(name, priority, path, args):
-        # append coma-separated applied changes for the service
-        if name in result and result[name]['applied']:
-            regen_conf_files = ','.join(result[name]['applied'].keys())
-        else:
-            regen_conf_files = ''
-        return post_args + [regen_conf_files, ]
-
-    hook_callback('conf_regen', names, pre_callback=_pre_call)
-
-    operation_logger.success()
-
-    return result
+    from yunohost.regenconf import regen_conf
+    return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
 def _run_service_command(action, service):
@@ -835,231 +634,9 @@ def _find_previous_log_file(file):
     return None
 
 
-def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
-    """Compare two files and return the differences
-
-    Read and compare two files. The differences are returned either as a delta
-    in unified diff format or a formatted string if as_string is True. The
-    header can also be removed if skip_header is True.
-
-    """
-
-    if os.path.exists(orig_file):
-        with open(orig_file, 'r') as orig_file:
-            orig_file = orig_file.readlines()
-    else:
-        orig_file = []
-
-    if os.path.exists(new_file):
-        with open(new_file, 'r') as new_file:
-            new_file = new_file.readlines()
-    else:
-        new_file = []
-
-    # Compare files and format output
-    diff = unified_diff(orig_file, new_file)
-
-    if skip_header:
-        try:
-            next(diff)
-            next(diff)
-        except:
-            pass
-
-    if as_string:
-        return ''.join(diff).rstrip()
-
-    return diff
-
-
-def _calculate_hash(path):
-    """Calculate the MD5 hash of a file"""
-
-    if not os.path.exists(path):
-        return None
-
-    hasher = hashlib.md5()
-
+def _get_journalctl_logs(service, number="all"):
     try:
-        with open(path, 'rb') as f:
-            hasher.update(f.read())
-        return hasher.hexdigest()
-
-    except IOError as e:
-        logger.warning("Error while calculating file '%s' hash: %s", path, e, exc_info=1)
-        return None
-
-
-def _get_pending_conf(services=[]):
-    """Get pending configuration for service(s)
-
-    Iterate over the pending configuration directory for given service(s) - or
-    all if empty - and look for files inside. Each file is considered as a
-    pending configuration file and therefore must be in the same directory
-    tree than the system file that it replaces.
-    The result is returned as a dict of services with pending configuration as
-    key and a dict of `system_conf_path` => `pending_conf_path` as value.
-
-    """
-    result = {}
-
-    if not os.path.isdir(PENDING_CONF_DIR):
-        return result
-
-    if not services:
-        services = os.listdir(PENDING_CONF_DIR)
-
-    for name in services:
-        service_pending_path = os.path.join(PENDING_CONF_DIR, name)
-
-        if not os.path.isdir(service_pending_path):
-            continue
-
-        path_index = len(service_pending_path)
-        service_conf = {}
-
-        for root, dirs, files in os.walk(service_pending_path):
-            for filename in files:
-                pending_path = os.path.join(root, filename)
-                service_conf[pending_path[path_index:]] = pending_path
-
-        if service_conf:
-            result[name] = service_conf
-        else:
-            # remove empty directory
-            shutil.rmtree(service_pending_path, ignore_errors=True)
-
-    return result
-
-
-def _get_conf_hashes(service):
-    """Get the registered conf hashes for a service"""
-
-    services = _get_services()
-
-    if service not in services:
-        logger.debug("Service %s is not in services.yml yet.", service)
-        return {}
-
-    elif services[service] is None or 'conffiles' not in services[service]:
-        logger.debug("No configuration files for service %s.", service)
-        return {}
-
-    else:
-        return services[service]['conffiles']
-
-
-def _update_conf_hashes(service, hashes):
-    """Update the registered conf hashes for a service"""
-    logger.debug("updating conf hashes for '%s' with: %s",
-                 service, hashes)
-    services = _get_services()
-    service_conf = services.get(service, {})
-
-    # Handle the case where services[service] is set to null in the yaml
-    if service_conf is None:
-        service_conf = {}
-
-    service_conf['conffiles'] = hashes
-    services[service] = service_conf
-    _save_services(services)
-
-
-def _process_regen_conf(system_conf, new_conf=None, save=True):
-    """Regenerate a given system configuration file
-
-    Replace a given system configuration file by a new one or delete it if
-    new_conf is None. A backup of the file - keeping its directory tree - will
-    be done in the backup conf directory before any operation if save is True.
-
-    """
-    if save:
-        backup_path = os.path.join(BACKUP_CONF_DIR, '{0}-{1}'.format(
-            system_conf.lstrip('/'), datetime.utcnow().strftime("%Y%m%d.%H%M%S")))
-        backup_dir = os.path.dirname(backup_path)
-
-        if not os.path.isdir(backup_dir):
-            filesystem.mkdir(backup_dir, 0o755, True)
-
-        shutil.copy2(system_conf, backup_path)
-        logger.debug(m18n.n('service_conf_file_backed_up',
-                            conf=system_conf, backup=backup_path))
-
-    try:
-        if not new_conf:
-            os.remove(system_conf)
-            logger.debug(m18n.n('service_conf_file_removed',
-                                conf=system_conf))
-        else:
-            system_dir = os.path.dirname(system_conf)
-
-            if not os.path.isdir(system_dir):
-                filesystem.mkdir(system_dir, 0o755, True)
-
-            shutil.copyfile(new_conf, system_conf)
-            logger.debug(m18n.n('service_conf_file_updated',
-                                conf=system_conf))
-    except Exception as e:
-        logger.warning("Exception while trying to regenerate conf '%s': %s", system_conf, e, exc_info=1)
-        if not new_conf and os.path.exists(system_conf):
-            logger.warning(m18n.n('service_conf_file_remove_failed',
-                                  conf=system_conf),
-                           exc_info=1)
-            return False
-
-        elif new_conf:
-            try:
-                # From documentation:
-                # Raise an exception if an os.stat() call on either pathname fails.
-                # (os.stats returns a series of information from a file like type, size...)
-                copy_succeed = os.path.samefile(system_conf, new_conf)
-            except:
-                copy_succeed = False
-            finally:
-                if not copy_succeed:
-                    logger.warning(m18n.n('service_conf_file_copy_failed',
-                                          conf=system_conf, new=new_conf),
-                                   exc_info=1)
-                    return False
-
-    return True
-
-
-def manually_modified_files():
-
-    # We do this to have --quiet, i.e. don't throw a whole bunch of logs
-    # just to fetch this...
-    # Might be able to optimize this by looking at what service_regenconf does
-    # and only do the part that checks file hashes...
-    cmd = "yunohost service regen-conf --dry-run --output-as json --quiet"
-    j = json.loads(subprocess.check_output(cmd.split()))
-
-    # j is something like :
-    # {"postfix": {"applied": {}, "pending": {"/etc/postfix/main.cf": {"status": "modified"}}}
-
-    output = []
-    for app, actions in j.items():
-        for action, files in actions.items():
-            for filename, infos in files.items():
-                if infos["status"] == "modified":
-                    output.append(filename)
-
-    return output
-
-
-def _get_journalctl_logs(service):
-    try:
-        return subprocess.check_output("journalctl -xn -u %s" % service, shell=True)
+        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(service, number), shell=True)
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
-
-
-def manually_modified_files_compared_to_debian_default():
-
-    # from https://serverfault.com/a/90401
-    r = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
-                                | awk 'OFS=\"  \"{print $2,$1}' \
-                                | md5sum -c 2>/dev/null \
-                                | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
-    return r.strip().split("\n")

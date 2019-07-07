@@ -149,6 +149,11 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
                 'handlers': [],
                 'propagate': True,
             },
+            'gnupg': {
+                'level': 'INFO',
+                'handlers': [],
+                'propagate': False,
+            },
         },
         'root': {
             'level': level,
@@ -196,12 +201,10 @@ if __name__ == '__main__':
     _init_moulinette(opts.use_websocket, opts.debug, opts.verbose)
 
     # Run the server
-    from yunohost.utils.packages import ynh_packages_version
     ret = moulinette.api(
         _retrieve_namespaces(),
         host=opts.host, port=opts.port, routes={
             ('GET', '/installed'): is_installed,
-            ('GET', '/version'): ynh_packages_version,
         }, use_cache=opts.use_cache, use_websocket=opts.use_websocket
     )
     sys.exit(ret)

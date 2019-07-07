@@ -317,5 +317,11 @@
     "backup_with_no_restore_script_for_app": "La aplicación {app:s} no tiene script de restauración, no podrá restaurar automáticamente la copia de seguridad de esta aplicación.",
     "dyndns_could_not_check_provide": "No se pudo verificar si {provider:s} puede ofrecer {domain:s}.",
     "dyndns_domain_not_provided": "El proveedor Dyndns {provider:s} no puede proporcionar el dominio {domain:s}.",
-    "experimental_feature": "Cuidado : esta funcionalidad es experimental y no es considerada estable, no debería usarla excepto si sabe lo que hace."
+    "experimental_feature": "Cuidado : esta funcionalidad es experimental y no es considerada estable, no debería usarla excepto si sabe lo que hace.",
+    "good_practices_about_user_password": "Está a punto de establecer una nueva contraseña de usuario. La contraseña debería de ser de al menos 8 caracteres, aunque es una buena práctica usar una contraseña más larga (es decir, una frase de paso) y/o usar varias clases de caracteres (mayúsculas, minúsculas, dígitos y caracteres especiales).",
+    "password_listed": "Esta contraseña es una de las más usadas en el mundo. Elija algo un poco más único.",
+    "password_too_simple_1": "La contraseña debe tener al menos 8 caracteres de longitud",
+    "password_too_simple_2": "La contraseña debe tener al menos 8 caracteres de longitud y contiene dígitos, mayúsculas y minúsculas",
+    "password_too_simple_3": "La contraseña debe tener al menos 8 caracteres de longitud y contiene dígitos, mayúsculas, minúsculas y caracteres especiales",
+    "password_too_simple_4": "La contraseña debe tener al menos 12 caracteres de longitud y contiene dígitos, mayúsculas, minúsculas y caracteres especiales"
 }

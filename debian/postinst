@@ -12,7 +12,7 @@ do_configure() {
       bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
   else
       echo "Regenerating configuration, this might take a while..."
-      yunohost service regen-conf --output-as none
+      yunohost tools regen-conf --output-as none
 
       echo "Launching migrations.."
       yunohost tools migrations migrate --auto

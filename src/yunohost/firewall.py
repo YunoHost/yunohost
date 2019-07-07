@@ -195,6 +195,7 @@ def firewall_reload(skip_upnp=False):
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.service import _run_service_command
 
     reloaded = False
     errors = False
@@ -276,8 +277,7 @@ def firewall_reload(skip_upnp=False):
         # Refresh port forwarding with UPnP
         firewall_upnp(no_refresh=False)
 
-    # TODO: Use service_restart
-    os.system("service fail2ban restart")
+    _run_service_command("reload", "fail2ban")
 
     if errors:
         logger.warning(m18n.n('firewall_rules_cmd_failed'))

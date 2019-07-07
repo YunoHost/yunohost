@@ -16,7 +16,7 @@
     "yunohost_already_installed": "YunoHost estas jam instalita",
     "yunohost_ca_creation_failed": "Ne eblas krei atestan aŭtoritaton",
     "yunohost_ca_creation_success": "Loka atesta aŭtoritato estas kreita.",
-    "yunohost_installing": "Instalata YunoHost...",
+    "yunohost_installing": "Instalante YunoHost…",
     "service_description_glances": "monitoras sisteminformojn de via servilo",
     "service_description_metronome": "mastrumas XMPP tujmesaĝilon kontojn",
     "service_description_mysql": "stokas aplikaĵojn datojn (SQL datumbazo)",

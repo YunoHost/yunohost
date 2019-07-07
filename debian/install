@@ -1,6 +1,7 @@
 bin/* /usr/bin/
 sbin/* /usr/sbin/
 data/bash-completion.d/yunohost /etc/bash_completion.d/
+doc/yunohost.8.gz /usr/share/man/man8/
 data/actionsmap/* /usr/share/moulinette/actionsmap/
 data/hooks/* /usr/share/yunohost/hooks/
 data/other/yunoprompt.service /etc/systemd/system/
