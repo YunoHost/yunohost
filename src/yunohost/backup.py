@@ -2371,19 +2371,20 @@ def backup_info(name, with_details=False, human_readable=False):
         if "size_details" in info.keys():
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
+                    # Retrocompatibility with archives produced 
+                    # around january 2019
+                    if not isinstance(key_info, dict):
+                        key_info = {x: 'succeed' for x in key_info}
+                        info[category][name] = key_info
+                        
                     if name in info["size_details"][category].keys():
-                        size = info["size_details"][category][name]
+                        key_info['size'] = info["size_details"][category][name]
                         if human_readable:
-                            size = binary_to_human(size) + 'B'
+                            key_info['size'] = binary_to_human(key_info['size']) + 'B'
                     else:
-                        size = -1
+                        key_info['size'] = -1
                         if human_readable:
-                            size = "?"
-
-                    if category == "system":
-                        info[category][name] = {'hooks': info[category][name], 'size': size}
-                    else:
-                        key_info['size'] = size
+                            key_info['size'] = "?"
 
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
