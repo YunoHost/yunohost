@@ -959,12 +959,13 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app):
+def app_remove(operation_logger, app, args=None):
     """
     Remove app
 
     Keyword argument:
         app -- App(s) to delete
+        args -- Serialize arguments for app remove, if needed
 
     """
     from yunohost.utils.ldap import _get_ldap_interface
@@ -993,15 +994,40 @@ def app_remove(operation_logger, app):
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
 
-    args_list = [app]
+    with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json')) as json_manifest:
+        manifest = json.load(json_manifest)
 
-    env_dict = {}
+    args_dict = {} if not args else \
+        dict(urlparse.parse_qsl(args, keep_blank_values=True))
+
+    # Retrieve arguments list for remove script
+    if "remove" in manifest.get("arguments", {}) and manifest["arguments"]["remove"]:
+        args_odict = _parse_args_from_manifest(manifest, 'remove', args=args_dict)
+        args_list = [value[0] for value in args_odict.values()]
+        args_list.append(app)
+    else:
+        args_odict = {}
+        args_list = [app]
+
+    env_dict = _make_environment_dict(args_odict)
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
+
+    # Tell the operation_logger to redact all password-type args
+    # Also redact the % escaped version of the password that might appear in
+    # the 'args' section of metadata (relevant for password with non-alphanumeric char)
+    data_to_redact = [value[0] for value in args_odict.values() if value[1] == "password"]
+    data_to_redact += [urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data]
+    operation_logger.data_to_redact.extend(data_to_redact)
+
+    operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
+    operation_logger.related_to.append(("app", app_id))
+    operation_logger.start()
 
     if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
                  env=env_dict)[0] == 0:

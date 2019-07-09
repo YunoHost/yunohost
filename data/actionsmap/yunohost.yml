@@ -684,6 +684,9 @@ app:
             arguments:
                 app:
                     help: App(s) to delete
+                -a:
+                    full: --args
+                    help: Serialized arguments for app remove script (i.e. "domain=domain.tld&path=/path")
 
         ### app_upgrade()
         upgrade:
