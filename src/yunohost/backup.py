@@ -2372,7 +2372,7 @@ def backup_info(name, with_details=False, human_readable=False):
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
                     # Retrocompatibility with archives produced 
-                    # around january 2019
+                    # until 3.5.x
                     if not isinstance(key_info, dict):
                         key_info = {x: 'succeed' for x in key_info}
                         info[category][name] = key_info
