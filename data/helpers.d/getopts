@@ -76,6 +76,8 @@ ynh_handle_getopts_args () {
 			# ${#arguments[@]} is the size of the array
 			for arg in `seq 0 $(( ${#arguments[@]} - 1 ))`
 			do
+				# Escape options' values starting with -. Otherwise the - will be considered as another option.
+				arguments[arg]="${arguments[arg]//--${args_array[$option_flag]}-/--${args_array[$option_flag]}\\-}"
 				# And replace long option (value of the option_flag) by the short option, the option_flag itself
 				# (e.g. for [u]=user, --user will be -u)
 				# Replace long option with =
