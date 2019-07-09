@@ -2378,13 +2378,13 @@ def backup_info(name, with_details=False, human_readable=False):
                         info[category][name] = key_info
                         
                     if name in info["size_details"][category].keys():
-                        key_info['size'] = info["size_details"][category][name]
+                        key_info["size"] = info["size_details"][category][name]
                         if human_readable:
-                            key_info['size'] = binary_to_human(key_info['size']) + 'B'
+                            key_info["size"] = binary_to_human(key_info['size']) + 'B'
                     else:
-                        key_info['size'] = -1
+                        key_info["size"] = -1
                         if human_readable:
-                            key_info['size'] = "?"
+                            key_info["size"] = "?"
 
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
