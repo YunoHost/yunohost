@@ -16,8 +16,8 @@ ynh_install_n () {
 	ynh_print_info --message="Installation of N - Node.js version management"
 	# Build an app.src for n
 	mkdir -p "../conf"
-	echo "SOURCE_URL=https://github.com/tj/n/archive/v2.1.7.tar.gz
-SOURCE_SUM=2ba3c9d4dd3c7e38885b37e02337906a1ee91febe6d5c9159d89a9050f2eea8f" > "../conf/n.src"
+	echo "SOURCE_URL=https://github.com/tj/n/archive/v4.1.0.tar.gz
+SOURCE_SUM=3983fa3f00d4bf85ba8e21f1a590f6e28938093abe0bb950aeea52b1717471fc" > "../conf/n.src"
 	# Download and extract n
 	ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
 	# Install n
