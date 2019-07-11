@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Manage a fail of the script
+# Handle script crashes / failures
 #
 # [internal]
 #
@@ -421,6 +421,7 @@ ynh_read_manifest () {
 }
 
 # Read the upstream version from the manifest
+#
 # The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
 # For example : 4.3-2~ynh3
 # This include the number before ~ynh
@@ -444,6 +445,7 @@ ynh_app_upstream_version () {
 }
 
 # Read package version from the manifest
+#
 # The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
 # For example : 4.3-2~ynh3
 # This include the number after ~ynh
@@ -467,6 +469,7 @@ ynh_app_package_version () {
 }
 
 # Checks the app version to upgrade with the existing app version and returns:
+#
 # - UPGRADE_APP if the upstream app version has changed
 # - UPGRADE_PACKAGE if only the YunoHost package has changed
 #

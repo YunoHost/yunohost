@@ -4,8 +4,7 @@ CAN_BIND=${CAN_BIND:-1}
 
 # Add a file or a directory to the list of paths to backup
 #
-# Note: this helper could be used in backup hook or in backup script inside an
-# app package
+# This helper can be used both in a system backup hook, and in an app backup script
 #
 # Details: ynh_backup writes SRC and the relative DEST into a CSV file. And it
 # creates the parent destination directory
@@ -154,7 +153,7 @@ ynh_backup() {
     mkdir -p $(dirname "$YNH_BACKUP_DIR/${dest_path}")
 }
 
-# Restore all files linked to the restore hook or to the restore app script
+# Restore all files that were previously backuped in a core backup script or app backup script
 #
 # usage: ynh_restore
 #
@@ -317,10 +316,9 @@ ynh_store_file_checksum () {
 }
 
 # Verify the checksum and backup the file if it's different
+# 
 # This helper is primarily meant to allow to easily backup personalised/manually
 # modified config files.
-#
-# $app should be defined when calling this helper
 #
 # usage: ynh_backup_if_checksum_is_different --file=file
 # | arg: -f, --file - The file on which the checksum test will be perfomed.

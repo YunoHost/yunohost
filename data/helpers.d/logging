@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Print a message to stderr and exit
+#
 # usage: ynh_die --message=MSG [--ret_code=RETCODE]
 #
 # Requires YunoHost version 2.4.0 or higher.
@@ -97,9 +98,11 @@ ynh_print_err () {
 
 # Execute a command and print the result as an error
 #
-# usage: ynh_exec_err command to execute
-# usage: ynh_exec_err "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# usage: ynh_exec_err your_command
+# usage: ynh_exec_err "your_command | other_command"
+#
+# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
+#
 # If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
@@ -111,9 +114,11 @@ ynh_exec_err () {
 
 # Execute a command and print the result as a warning
 #
-# usage: ynh_exec_warn command to execute
-# usage: ynh_exec_warn "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# usage: ynh_exec_warn your_command
+# usage: ynh_exec_warn "your_command | other_command"
+#
+# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
+#
 # If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
@@ -125,9 +130,11 @@ ynh_exec_warn () {
 
 # Execute a command and force the result to be printed on stdout
 #
-# usage: ynh_exec_warn_less command to execute
-# usage: ynh_exec_warn_less "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# usage: ynh_exec_warn_less your_command
+# usage: ynh_exec_warn_less "your_command | other_command"
+#
+# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
+#
 # If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
@@ -139,9 +146,11 @@ ynh_exec_warn_less () {
 
 # Execute a command and redirect stdout in /dev/null
 #
-# usage: ynh_exec_quiet command to execute
-# usage: ynh_exec_quiet "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# usage: ynh_exec_quiet your_command
+# usage: ynh_exec_quiet "your_command | other_command"
+#
+# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
+#
 # If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
@@ -153,9 +162,11 @@ ynh_exec_quiet () {
 
 # Execute a command and redirect stdout and stderr in /dev/null
 #
-# usage: ynh_exec_fully_quiet command to execute
-# usage: ynh_exec_fully_quiet "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# usage: ynh_exec_fully_quiet your_command
+# usage: ynh_exec_fully_quiet "your_command | other_command"
+#
+# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
+#
 # If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
@@ -168,6 +179,7 @@ ynh_exec_fully_quiet () {
 # Remove any logs for all the following commands.
 #
 # usage: ynh_print_OFF
+#
 # WARNING: You should be careful with this helper, and never forget to use ynh_print_ON as soon as possible to restore the logging.
 #
 # Requires YunoHost version 3.2.0 or higher.
@@ -186,16 +198,7 @@ ynh_print_ON () {
 	echo ynh_print_ON > /dev/null
 }
 
-# Print a message as INFO and show progression during an app script
-#
-# usage: ynh_script_progression --message=message [--weight=weight] [--time]
-# | arg: -m, --message= - The text to print
-# | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
-# | arg: -t, --time=    - Print the execution time since the last call to this helper. Especially usefull to define weights.
-# The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
-# | arg: -l, --last=    - Use for the last call of the helper, to fill te progression bar.
-#
-# Requires YunoHost version 3.5.0 or higher.
+# Initial definitions for ynh_script_progression
 increment_progression=0
 previous_weight=0
 max_progression=-1
@@ -207,6 +210,16 @@ progress_string1="++++++++++++++++++++"
 progress_string0="...................."
 # Define base_time when the file is sourced
 base_time=$(date +%s)
+
+# Print a progress bar showing the progression of an app script
+#
+# usage: ynh_script_progression --message=message [--weight=weight] [--time]
+# | arg: -m, --message= - The text to print
+# | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
+# | arg: -t, --time=    - Print the execution time since the last call to this helper. Especially usefull to define weights. The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
+# | arg: -l, --last=    - Use for the last call of the helper, to fill te progression bar.
+#
+# Requires YunoHost version 3.5.0 or higher.
 ynh_script_progression () {
 	set +x
 	# Declare an array to define the options of this helper.
@@ -350,9 +363,12 @@ ynh_debug () {
 
 # Execute a command and print the result as debug
 #
-# usage: ynh_debug_exec command to execute
-# usage: ynh_debug_exec "command to execute | following command"
-# In case of use of pipes, you have to use double quotes. Otherwise, this helper will be executed with the first command, then be sent to the next pipe.
+# usage: ynh_debug_exec your_command
+# usage: ynh_debug_exec "your_command | other_command"
+#
+# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
+#
+# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
 #
 # | arg: command - command to execute
 #

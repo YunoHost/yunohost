@@ -70,6 +70,18 @@ class Parser():
                     # We're still in a comment bloc
                     assert line.startswith("# ") or line == "#", malformed_error(i)
                     current_block["comments"].append(line[2:])
+                elif line.strip() == "":
+                    # Well eh that was not an actual helper definition ... start over ?
+                    current_reading = "void"
+                    current_block = { "name": None,
+                                     "line": -1,
+                                     "comments": [],
+                                     "code": []
+                                     }
+                elif not (line.endswith("{") or line.endswith("()")):
+                    # Well we're not actually entering a function yet eh
+                    # (c.f. global vars)
+                    pass
                 else:
                     # We're getting out of a comment bloc, we should find
                     # the name of the function
@@ -78,8 +90,6 @@ class Parser():
                     current_block["name"] = line.split()[0].strip("(){")
                     # Then we expect to read the function
                     current_reading = "code"
-
-                continue
 
             elif current_reading == "code":
 
@@ -97,7 +107,6 @@ class Parser():
                                       "code": [] }
                 else:
                     current_block["code"].append(line)
-                    pass
 
                 continue
 

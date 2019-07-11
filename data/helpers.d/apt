@@ -194,13 +194,13 @@ ynh_package_install_from_equivs () {
 }
 
 # Define and install dependencies with a equivs control file
+#
 # This helper can/should only be called once per app
 #
+# example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
+#
 # usage: ynh_install_app_dependencies dep [dep [...]]
-# | arg: dep - the package name to install in dependence
-#   You can give a choice between some package with this syntax : "dep1|dep2"
-#   Example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
-#   This mean in the dependence tree : dep1 & dep2 & (dep3 | dep4 | dep5)
+# | arg: dep - the package name to install in dependence. Writing "dep3|dep4|dep5" can be used to specify alternatives. For example : dep1 dep2 "dep3|dep4|dep5" will require to install dep1 and dep 2 and (dep3 or dep4 or dep5).
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_install_app_dependencies () {

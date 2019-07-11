@@ -4,8 +4,9 @@ PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
 
 # Open a connection as a user
 #
-# example: ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
-# example: ynh_psql_connect_as 'user' 'pass' < /path/to/file.sql
+# examples: 
+#    ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
+#    ynh_psql_connect_as 'user' 'pass' < /path/to/file.sql
 #
 # usage: ynh_psql_connect_as --user=user --password=password [--database=database]
 # | arg: -u, --user - the user name to connect as
