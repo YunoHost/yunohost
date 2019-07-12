@@ -106,7 +106,7 @@ def log_list(category=[], limit=None, with_details=False):
                     try:
                         metadata = yaml.safe_load(md_file)
                     except yaml.YAMLError:
-                        logger.warning(m18n.n('log_corrupted_md_file', file=md_path))
+                        logger.warning(m18n.n('log_corrupted_md_file', md_file=md_path))
 
                     entry["success"] = metadata.get("success", "?") if metadata else "?"
 
@@ -192,7 +192,7 @@ def log_display(path, number=50, share=False):
                 if 'log_path' in metadata:
                     log_path = metadata['log_path']
             except yaml.YAMLError:
-                error = m18n.n('log_corrupted_md_file', file=md_path)
+                error = m18n.n('log_corrupted_md_file', md_file=md_path)
                 if os.path.exists(log_path):
                     logger.warning(error)
                 else:
