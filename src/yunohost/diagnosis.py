@@ -27,7 +27,7 @@
 import os
 import time
 
-from moulinette import m18n
+from moulinette import m18n, msettings
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_json, write_to_json
 
@@ -87,6 +87,7 @@ def diagnosis_run(categories=[], force=False, args=None):
         args = {}
     args["force"] = force
 
+    found_issues = False
     # Call the hook ...
     diagnosed_categories = []
     for category in categories:
@@ -94,13 +95,23 @@ def diagnosis_run(categories=[], force=False, args=None):
         path = [p for n, p in all_categories if n == category ][0]
 
         try:
-            hook_exec(path, args=args, env=None)
+            code, report = hook_exec(path, args=args, env=None)
         except Exception as e:
             logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True) # FIXME : i18n
         else:
             diagnosed_categories.append(category)
+            if report != {}:
+                issues = [r for r in report["reports"] if r["report"][0] in ["ERROR", "WARNING"]]
+                if issues:
+                    found_issues = True
 
-    return diagnosis_show(diagnosed_categories)
+    if found_issues:
+        if msettings.get("interface") == "api":
+            logger.info("You can go to the Diagnosis section (in the home screen) to see the issues found.")
+        else:
+            logger.info("You can run 'yunohost diagnosis show --issues' to display the issues found.")
+
+    return
 
 def diagnosis_ignore(category, args="", unignore=False):
     pass
@@ -140,8 +151,8 @@ class Diagnoser():
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Cache still valid : %s" % self.cache_file)
-            # FIXME uhoh that's not consistent with the other return later
-            return
+            logger.info("(Cache still valid for %s diagnosis. Not re-diagnosing yet!)" % self.description)
+            return 0, {}
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
@@ -154,6 +165,17 @@ class Diagnoser():
         self.logger_debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
         Diagnoser.i18n(new_report)
+
+        errors   = [r for r in new_report["reports"] if r["report"][0] == "ERROR"]
+        warnings = [r for r in new_report["reports"] if r["report"][0] == "WARNING"]
+
+        # FIXME : i18n
+        if errors:
+            logger.error("Found %s significant issue(s) related to %s!" % (len(errors), new_report["description"]))
+        elif warnings:
+            logger.warning("Found %s item(s) that could be improved for %s." % (len(warnings), new_report["description"]))
+        else:
+            logger.success("Everything looks good for %s!" % new_report["description"])
 
         return 0, new_report
 
