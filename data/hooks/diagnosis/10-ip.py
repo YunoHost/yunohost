@@ -28,16 +28,44 @@ class IPDiagnoser(Diagnoser):
 
         if 4 in versions:
 
+            # If we can't ping, there's not much else we can do
             if not self.can_ping_outside(4):
                 ipv4 = None
+            # If we do ping, check that we can resolv domain name
             else:
-                ipv4 = self.get_public_ip(4)
+                can_resolve_dns = self.can_resolve_dns()
+                # And if we do, then we can fetch the public ip
+                if can_resolve_dns:
+                    ipv4 = self.get_public_ip(4)
 
+            # In every case, we can check that resolvconf seems to be okay
+            # (symlink managed by resolvconf service + pointing to dnsmasq)
+            good_resolvconf = self.resolvconf_is_symlink() and self.resolvconf_points_to_localhost()
+
+            # If we can't resolve domain names at all, that's a pretty big issue ...
+            # If it turns out that at the same time, resolvconf is bad, that's probably
+            # the cause of this, so we use a different message in that case
+            if not can_resolve_dns:
+                yield dict(meta = {"name": "dnsresolution"},
+                           status = "ERROR",
+                           summary = ("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
+                                else ("diagnosis_ip_broken_resolvconf", {}))
+            # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
+            # still warn that we're using a weird resolv conf ...
+            elif not good_resolvconf:
+                yield dict(meta = {"name": "dnsresolution"},
+                           status = "WARNING",
+                           summary = ("diagnosis_ip_weird_resolvconf", {}))
+            else:
+                # Well, maybe we could report a "success", "dns resolution is working", idk if it's worth it
+                pass
+
+            # And finally, we actually report the ipv4 connectivity stuff
             yield dict(meta = {"version": 4},
                        data = ipv4,
                        status = "SUCCESS" if ipv4 else "ERROR",
-                       summary = ("diagnosis_network_connected_ipv4", {}) if ipv4 \
-                            else ("diagnosis_network_no_ipv4", {}))
+                       summary = ("diagnosis_ip_connected_ipv4", {}) if ipv4 \
+                            else ("diagnosis_ip_no_ipv4", {}))
 
         if 6 in versions:
 
@@ -49,8 +77,8 @@ class IPDiagnoser(Diagnoser):
             yield dict(meta = {"version": 6},
                        data = ipv6,
                        status = "SUCCESS" if ipv6 else "WARNING",
-                       summary = ("diagnosis_network_connected_ipv6", {}) if ipv6 \
-                            else ("diagnosis_network_no_ipv6", {}))
+                       summary = ("diagnosis_ip_connected_ipv6", {}) if ipv6 \
+                            else ("diagnosis_ip_no_ipv6", {}))
 
 
     def can_ping_outside(self, protocol=4):
@@ -84,6 +112,20 @@ class IPDiagnoser(Diagnoser):
 
         random.shuffle(resolvers)
         return any(ping(protocol, resolver) for resolver in resolvers[:5])
+
+
+    def can_resolve_dns(self):
+        return os.system("dig +short ip.yunohost.org >/dev/null 2>/dev/null") == 0
+
+
+    def resolvconf_is_symlink(self):
+        return os.path.realpath("/etc/resolv.conf") == "/run/resolvconf/resolv.conf"
+
+    def resolvconf_points_to_localhost(self):
+        file_ = "/etc/resolv.conf"
+        resolvers = [r.split(" ")[1] for r in read_file(file_).split("\n") if r.startswith("nameserver")]
+        return resolvers == ["127.0.0.1"]
+
 
     def get_public_ip(self, protocol=4):
 
