@@ -2,25 +2,25 @@
 
 import os
 
-from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
+
 class DNSRecordsDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 3600*24
+    cache_duration = 3600 * 24
 
     def validate_args(self, args):
         all_domains = domain_list()["domains"]
         if "domain" not in args.keys():
-            return { "domains" : all_domains }
+            return {"domains": all_domains}
         else:
             assert args["domain"] in all_domains, "Unknown domain"
-            return { "domains" : [ args["domain"] ] }
+            return {"domains": [args["domain"]]}
 
     def run(self):
 
@@ -34,7 +34,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         for domain in self.args["domains"]:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
-            for report in self.check_domain(domain, domain==main_domain):
+            for report in self.check_domain(domain, domain == main_domain):
                 yield report
 
     def check_domain(self, domain, is_main_domain):
@@ -44,13 +44,13 @@ class DNSRecordsDiagnoser(Diagnoser):
         # Here if there are no AAAA record, we should add something to expect "no" AAAA record
         # to properly diagnose situations where people have a AAAA record but no IPv6
 
-	for category, records in expected_configuration.items():
+        for category, records in expected_configuration.items():
 
             discrepancies = []
 
             for r in records:
                 current_value = self.get_current_record(domain, r["name"], r["type"]) or "None"
-                expected_value = r["value"] if r["value"] != "@" else domain+"."
+                expected_value = r["value"] if r["value"] != "@" else domain + "."
 
                 if current_value == "None":
                     discrepancies.append(("diagnosis_dns_missing_record", (r["type"], r["name"], expected_value)))
@@ -64,15 +64,14 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status = "SUCCESS"
                 summary = ("diagnosis_dns_good_conf", {"domain": domain, "category": category})
 
-            output = dict(meta = {"domain": domain, "category": category},
-                          status = status,
-                          summary = summary)
+            output = dict(meta={"domain": domain, "category": category},
+                          status=status,
+                          summary=summary)
 
             if discrepancies:
                 output["details"] = discrepancies
 
             yield output
-
 
     def get_current_record(self, domain, name, type_):
         if name == "@":
@@ -83,12 +82,10 @@ class DNSRecordsDiagnoser(Diagnoser):
         # e.g. no internet connectivity (dependency mechanism to good result from 'ip' diagosis ?)
         # or the resolver is unavailable for some reason
         output = check_output(command).strip()
-        output = output.replace("\;",";")
         if output.startswith('"') and output.endswith('"'):
-            output = '"' + ' '.join(output.replace('"',' ').split()) + '"'
+            output = '"' + ' '.join(output.replace('"', ' ').split()) + '"'
         return output
 
 
 def main(args, env, loggers):
     return DNSRecordsDiagnoser(args, env, loggers).diagnose()
-

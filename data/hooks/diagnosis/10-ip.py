@@ -3,12 +3,12 @@
 import os
 import random
 
-from moulinette import m18n
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
+
 
 class IPDiagnoser(Diagnoser):
 
@@ -17,10 +17,10 @@ class IPDiagnoser(Diagnoser):
 
     def validate_args(self, args):
         if "version" not in args.keys():
-            return { "versions" : [4, 6] }
+            return {"versions": [4, 6]}
         else:
             assert str(args["version"]) in ["4", "6"], "Invalid version, should be 4 or 6."
-            return { "versions" : [int(args["version"])] }
+            return {"versions": [int(args["version"])]}
 
     def run(self):
 
@@ -46,26 +46,26 @@ class IPDiagnoser(Diagnoser):
             # If it turns out that at the same time, resolvconf is bad, that's probably
             # the cause of this, so we use a different message in that case
             if not can_resolve_dns:
-                yield dict(meta = {"name": "dnsresolution"},
-                           status = "ERROR",
-                           summary = ("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
-                                else ("diagnosis_ip_broken_resolvconf", {}))
+                yield dict(meta={"name": "dnsresolution"},
+                           status="ERROR",
+                           summary=("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
+                              else ("diagnosis_ip_broken_resolvconf", {}))
             # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
             # still warn that we're using a weird resolv conf ...
             elif not good_resolvconf:
-                yield dict(meta = {"name": "dnsresolution"},
-                           status = "WARNING",
-                           summary = ("diagnosis_ip_weird_resolvconf", {}))
+                yield dict(meta={"name": "dnsresolution"},
+                           status="WARNING",
+                           summary=("diagnosis_ip_weird_resolvconf", {}))
             else:
                 # Well, maybe we could report a "success", "dns resolution is working", idk if it's worth it
                 pass
 
             # And finally, we actually report the ipv4 connectivity stuff
-            yield dict(meta = {"version": 4},
-                       data = ipv4,
-                       status = "SUCCESS" if ipv4 else "ERROR",
-                       summary = ("diagnosis_ip_connected_ipv4", {}) if ipv4 \
-                            else ("diagnosis_ip_no_ipv4", {}))
+            yield dict(meta={"version": 4},
+                       data=ipv4,
+                       status="SUCCESS" if ipv4 else "ERROR",
+                       summary=("diagnosis_ip_connected_ipv4", {}) if ipv4
+                          else ("diagnosis_ip_no_ipv4", {}))
 
         if 6 in versions:
 
@@ -74,12 +74,11 @@ class IPDiagnoser(Diagnoser):
             else:
                 ipv6 = self.get_public_ip(6)
 
-            yield dict(meta = {"version": 6},
-                       data = ipv6,
-                       status = "SUCCESS" if ipv6 else "WARNING",
-                       summary = ("diagnosis_ip_connected_ipv6", {}) if ipv6 \
-                            else ("diagnosis_ip_no_ipv6", {}))
-
+            yield dict(meta={"version": 6},
+                       data=ipv6,
+                       status="SUCCESS" if ipv6 else "WARNING",
+                       summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
+                          else ("diagnosis_ip_no_ipv6", {}))
 
     def can_ping_outside(self, protocol=4):
 
@@ -113,10 +112,8 @@ class IPDiagnoser(Diagnoser):
         random.shuffle(resolvers)
         return any(ping(protocol, resolver) for resolver in resolvers[:5])
 
-
     def can_resolve_dns(self):
         return os.system("dig +short ip.yunohost.org >/dev/null 2>/dev/null") == 0
-
 
     def resolvconf_is_symlink(self):
         return os.path.realpath("/etc/resolv.conf") == "/run/resolvconf/resolv.conf"
@@ -125,7 +122,6 @@ class IPDiagnoser(Diagnoser):
         file_ = "/etc/resolv.conf"
         resolvers = [r.split(" ")[1] for r in read_file(file_).split("\n") if r.startswith("nameserver")]
         return resolvers == ["127.0.0.1"]
-
 
     def get_public_ip(self, protocol=4):
 
@@ -149,4 +145,3 @@ class IPDiagnoser(Diagnoser):
 
 def main(args, env, loggers):
     return IPDiagnoser(args, env, loggers).diagnose()
-

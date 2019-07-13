@@ -38,21 +38,23 @@ logger = log.getActionLogger('yunohost.diagnosis')
 
 DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
 
+
 def diagnosis_list():
-    all_categories_names = [ h for h, _ in _list_diagnosis_categories() ]
-    return { "categories": all_categories_names }
+    all_categories_names = [h for h, _ in _list_diagnosis_categories()]
+    return {"categories": all_categories_names}
+
 
 def diagnosis_show(categories=[], issues=False, full=False):
 
     # Get all the categories
     all_categories = _list_diagnosis_categories()
-    all_categories_names = [ category for category, _ in all_categories ]
+    all_categories_names = [category for category, _ in all_categories]
 
     # Check the requested category makes sense
     if categories == []:
         categories = all_categories_names
     else:
-        unknown_categories = [ c for c in categories if c not in all_categories_names ]
+        unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
             raise YunohostError('unknown_categories', categories=", ".join(categories))
 
@@ -62,7 +64,7 @@ def diagnosis_show(categories=[], issues=False, full=False):
         try:
             report = Diagnoser.get_cached_report(category)
         except Exception as e:
-            logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e))) # FIXME : i18n
+            logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e)))  # FIXME : i18n
         else:
             if not full:
                 del report["timestamp"]
@@ -72,33 +74,33 @@ def diagnosis_show(categories=[], issues=False, full=False):
                     if "data" in item:
                         del item["data"]
             if issues:
-                report["items"] = [ item for item in report["items"] if item["status"] != "SUCCESS" ]
+                report["items"] = [item for item in report["items"] if item["status"] != "SUCCESS"]
                 # Ignore this category if no issue was found
                 if not report["items"]:
                     continue
 
             all_reports.append(report)
 
-
     return {"reports": all_reports}
+
 
 def diagnosis_run(categories=[], force=False, args=None):
 
     # Get all the categories
     all_categories = _list_diagnosis_categories()
-    all_categories_names = [ category for category, _ in all_categories ]
+    all_categories_names = [category for category, _ in all_categories]
 
     # Check the requested category makes sense
     if categories == []:
         categories = all_categories_names
     else:
-        unknown_categories = [ c for c in categories if c not in all_categories_names ]
+        unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
             raise YunohostError('unknown_categories', categories=", ".join(unknown_categories))
 
     # Transform "arg1=val1&arg2=val2" to { "arg1": "val1", "arg2": "val2" }
     if args is not None:
-        args = { arg.split("=")[0]: arg.split("=")[1] for arg in args.split("&") }
+        args = {arg.split("=")[0]: arg.split("=")[1] for arg in args.split("&")}
     else:
         args = {}
     args["force"] = force
@@ -108,12 +110,12 @@ def diagnosis_run(categories=[], force=False, args=None):
     diagnosed_categories = []
     for category in categories:
         logger.debug("Running diagnosis for %s ..." % category)
-        path = [p for n, p in all_categories if n == category ][0]
+        path = [p for n, p in all_categories if n == category][0]
 
         try:
             code, report = hook_exec(path, args=args, env=None)
         except Exception as e:
-            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True) # FIXME : i18n
+            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True)  # FIXME : i18n
         else:
             diagnosed_categories.append(category)
             if report != {}:
@@ -126,6 +128,7 @@ def diagnosis_run(categories=[], force=False, args=None):
             logger.info("You can run 'yunohost diagnosis show --issues' to display the issues found.")
 
     return
+
 
 def diagnosis_ignore(category, args="", unignore=False):
     pass
@@ -149,7 +152,6 @@ class Diagnoser():
         if self.description == descr_key:
             self.description = self.id_
 
-
     def cached_time_ago(self):
 
         if not os.path.exists(self.cache_file):
@@ -172,10 +174,9 @@ class Diagnoser():
 
         items = list(self.run())
 
-        new_report = { "id": self.id_,
-                       "cached_for": self.cache_duration,
-                       "items": items
-                     }
+        new_report = {"id": self.id_,
+                      "cached_for": self.cache_duration,
+                      "items": items}
 
         # TODO / FIXME : should handle the case where we only did a partial diagnosis
         self.logger_debug("Updating cache %s" % self.cache_file)
@@ -227,13 +228,13 @@ class Diagnoser():
             item["summary"] = m18n.n(summary_key, **summary_args)
 
             if "details" in item:
-                item["details"] = [ m18n.n(key, *values) for key, values in item["details"] ]
+                item["details"] = [m18n.n(key, *values) for key, values in item["details"]]
 
 
 def _list_diagnosis_categories():
     hooks_raw = hook_list("diagnosis", list_by="priority", show_info=True)["hooks"]
     hooks = []
-    for _, some_hooks in sorted(hooks_raw.items(), key=lambda h:int(h[0])):
+    for _, some_hooks in sorted(hooks_raw.items(), key=lambda h: int(h[0])):
         for name, info in some_hooks.items():
             hooks.append((name, info["path"]))
 
