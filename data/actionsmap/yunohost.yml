@@ -1884,6 +1884,9 @@ diagnosis:
                 --full:
                     help: Display additional information
                     action: store_true
+                --issues:
+                    help: Only display issues
+                    action: store_true
 
         run:
             action_help: Show most recents diagnosis results

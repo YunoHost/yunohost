@@ -42,7 +42,7 @@ def diagnosis_list():
     all_categories_names = [ h for h, _ in _list_diagnosis_categories() ]
     return { "categories": all_categories_names }
 
-def diagnosis_show(categories=[], full=False):
+def diagnosis_show(categories=[], issues=False, full=False):
 
     # Get all the categories
     all_categories = _list_diagnosis_categories()
@@ -60,9 +60,23 @@ def diagnosis_show(categories=[], full=False):
     all_reports = []
     for category in categories:
         try:
-            all_reports.append(Diagnoser.get_cached_report(category))
+            cat_report = Diagnoser.get_cached_report(category)
         except Exception as e:
             logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e))) # FIXME : i18n
+        else:
+            if not full:
+                del cat_report["timestamp"]
+                del cat_report["cached_for"]
+                for report in cat_report["reports"]:
+                    del report["meta"]
+                    del report["result"]
+            if issues:
+                cat_report["reports"] = [ r for r in cat_report["reports"] if r["report"][0] != "SUCCESS" ]
+                if not cat_report["reports"]:
+                    continue
+
+            all_reports.append(cat_report)
+
 
     return {"reports": all_reports}
 
