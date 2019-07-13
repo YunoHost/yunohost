@@ -79,6 +79,9 @@ class DNSRecordsDiagnoser(Diagnoser):
             command = "dig +short @%s %s %s" % (self.resolver, type_, domain)
         else:
             command = "dig +short @%s %s %s.%s" % (self.resolver, type_, name, domain)
+        # FIXME : gotta handle case where this command fails ...
+        # e.g. no internet connectivity (dependency mechanism to good result from 'ip' diagosis ?)
+        # or the resolver is unavailable for some reason
         output = check_output(command).strip()
         output = output.replace("\;",";")
         if output.startswith('"') and output.endswith('"'):
