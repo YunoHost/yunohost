@@ -60,22 +60,24 @@ def diagnosis_show(categories=[], issues=False, full=False):
     all_reports = []
     for category in categories:
         try:
-            cat_report = Diagnoser.get_cached_report(category)
+            report = Diagnoser.get_cached_report(category)
         except Exception as e:
             logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e))) # FIXME : i18n
         else:
             if not full:
-                del cat_report["timestamp"]
-                del cat_report["cached_for"]
-                for report in cat_report["reports"]:
-                    del report["meta"]
-                    del report["result"]
+                del report["timestamp"]
+                del report["cached_for"]
+                for item in report["items"]:
+                    del item["meta"]
+                    if "data" in item:
+                        del item["data"]
             if issues:
-                cat_report["reports"] = [ r for r in cat_report["reports"] if r["report"][0] != "SUCCESS" ]
-                if not cat_report["reports"]:
+                report["items"] = [ item for item in report["items"] if item["status"] != "SUCCESS" ]
+                # Ignore this category if no issue was found
+                if not report["items"]:
                     continue
 
-            all_reports.append(cat_report)
+            all_reports.append(report)
 
 
     return {"reports": all_reports}
@@ -101,7 +103,7 @@ def diagnosis_run(categories=[], force=False, args=None):
         args = {}
     args["force"] = force
 
-    found_issues = False
+    issues = []
     # Call the hook ...
     diagnosed_categories = []
     for category in categories:
@@ -115,11 +117,9 @@ def diagnosis_run(categories=[], force=False, args=None):
         else:
             diagnosed_categories.append(category)
             if report != {}:
-                issues = [r for r in report["reports"] if r["report"][0] in ["ERROR", "WARNING"]]
-                if issues:
-                    found_issues = True
+                issues.extend([item for item in report["items"] if item["status"] != "SUCCESS"])
 
-    if found_issues:
+    if issues:
         if msettings.get("interface") == "api":
             logger.info("You can go to the Diagnosis section (in the home screen) to see the issues found.")
         else:
@@ -147,7 +147,7 @@ class Diagnoser():
         self.description = m18n.n(descr_key)
         # If no description available, fallback to id
         if self.description == descr_key:
-            self.description = report["id"]
+            self.description = self.id_
 
 
     def cached_time_ago(self):
@@ -170,9 +170,11 @@ class Diagnoser():
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
+        items = list(self.run())
+
         new_report = { "id": self.id_,
                        "cached_for": self.cache_duration,
-                       "reports": list(self.run())
+                       "items": items
                      }
 
         # TODO / FIXME : should handle the case where we only did a partial diagnosis
@@ -180,8 +182,8 @@ class Diagnoser():
         self.write_cache(new_report)
         Diagnoser.i18n(new_report)
 
-        errors   = [r for r in new_report["reports"] if r["report"][0] == "ERROR"]
-        warnings = [r for r in new_report["reports"] if r["report"][0] == "WARNING"]
+        errors   = [item for item in new_report["items"] if item["status"] == "ERROR"]
+        warnings = [item for item in new_report["items"] if item["status"] == "WARNING"]
 
         # FIXME : i18n
         if errors:
@@ -220,12 +222,12 @@ class Diagnoser():
         if report["description"] == descr_key:
             report["description"] = report["id"]
 
-        for r in report["reports"]:
-            type_, message_key, message_args = r["report"]
-            r["report"] = (type_, m18n.n(message_key, **message_args))
+        for item in report["items"]:
+            summary_key, summary_args = item["summary"]
+            item["summary"] = m18n.n(summary_key, **summary_args)
 
-            if "details" in r:
-                r["details"] = [ m18n.n(key, *values) for key, values in r["details"] ]
+            if "details" in item:
+                item["details"] = [ m18n.n(key, *values) for key, values in item["details"] ]
 
 
 def _list_diagnosis_categories():
