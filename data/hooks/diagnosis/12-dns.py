@@ -3,16 +3,10 @@
 import os
 
 from moulinette.utils.network import download_text
-from moulinette.core import init_authenticator
 from moulinette.utils.process import check_output
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
-
-# Instantiate LDAP Authenticator
-auth_identifier = ('ldap', 'ldap-anonymous')
-auth_parameters = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
-auth = init_authenticator(auth_identifier, auth_parameters)
 
 class DNSDiagnoser(Diagnoser):
 
@@ -21,7 +15,7 @@ class DNSDiagnoser(Diagnoser):
     cache_duration = 3600*24
 
     def validate_args(self, args):
-        all_domains = domain_list(auth)["domains"]
+        all_domains = domain_list()["domains"]
         if "domain" not in args.keys():
             return { "domains" : all_domains }
         else:
