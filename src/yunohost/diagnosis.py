@@ -109,8 +109,7 @@ def diagnosis_run(categories=[], force=False, args=None):
             hook_exec(path, args=args, env=None)
             successes.append(category)
         except Exception as e:
-            # FIXME / TODO : add stacktrace here ?
-            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e))) # FIXME : i18n
+            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True) # FIXME : i18n
 
     return diagnosis_show(successes)
 
