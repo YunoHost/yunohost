@@ -9,10 +9,9 @@ from moulinette.utils.filesystem import read_file
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
-class DNSDiagnoser(Diagnoser):
+class DNSRecordsDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    description = "dns_configurations"
     cache_duration = 3600*24
 
     def validate_args(self, args):
@@ -34,7 +33,7 @@ class DNSDiagnoser(Diagnoser):
         main_domain = _get_maindomain()
 
         for domain in self.args["domains"]:
-            self.logger_info("Diagnosing DNS conf for %s" % domain)
+            self.logger_debug("Diagnosing DNS conf for %s" % domain)
             for report in self.check_domain(domain, domain==main_domain):
                 yield report
 
@@ -92,5 +91,5 @@ class DNSDiagnoser(Diagnoser):
 
 
 def main(args, env, loggers):
-    return DNSDiagnoser(args, env, loggers).diagnose()
+    return DNSRecordsDiagnoser(args, env, loggers).diagnose()
 

@@ -64,18 +64,6 @@ def diagnosis_show(categories=[], full=False):
         except Exception as e:
             logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e))) # FIXME : i18n
 
-    # "Render" the strings with m18n.n
-    for report in all_reports:
-
-        report["description"] = m18n.n(report["description"])
-
-        for r in report["reports"]:
-            type_, message_key, message_args = r["report"]
-            r["report"] = (type_, m18n.n(message_key, **message_args))
-
-            if "details" in r:
-                r["details"] = [ m18n.n(key, *values) for key, values in r["details"] ]
-
     return {"reports": all_reports}
 
 def diagnosis_run(categories=[], force=False, args=None):
@@ -130,6 +118,13 @@ class Diagnoser():
         self.args.update(self.validate_args(self.args))
         self.cache_file = Diagnoser.cache_file(self.id_)
 
+        descr_key = "diagnosis_description_" + self.id_
+        self.description = m18n.n(descr_key)
+        # If no description available, fallback to id
+        if self.description == descr_key:
+            self.description = report["id"]
+
+
     def cached_time_ago(self):
 
         if not os.path.exists(self.cache_file):
@@ -145,12 +140,12 @@ class Diagnoser():
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Cache still valid : %s" % self.cache_file)
+            # FIXME uhoh that's not consistent with the other return later
             return
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
         new_report = { "id": self.id_,
-                       "description": self.description,
                        "cached_for": self.cache_duration,
                        "reports": list(self.run())
                      }
@@ -158,6 +153,7 @@ class Diagnoser():
         # TODO / FIXME : should handle the case where we only did a partial diagnosis
         self.logger_debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
+        Diagnoser.i18n(new_report)
 
         return 0, new_report
 
@@ -170,8 +166,30 @@ class Diagnoser():
         filename = Diagnoser.cache_file(id_)
         report = read_json(filename)
         report["timestamp"] = int(os.path.getmtime(filename))
+        Diagnoser.i18n(report)
         return report
 
+    @staticmethod
+    def i18n(report):
+
+        # "Render" the strings with m18n.n
+        # N.B. : we do those m18n.n right now instead of saving the already-translated report
+        # because we can't be sure we'll redisplay the infos with the same locale as it
+        # was generated ... e.g. if the diagnosing happened inside a cron job with locale EN
+        # instead of FR used by the actual admin...
+
+        descr_key = "diagnosis_description_" + report["id"]
+        report["description"] = m18n.n(descr_key)
+        # If no description available, fallback to id
+        if report["description"] == descr_key:
+            report["description"] = report["id"]
+
+        for r in report["reports"]:
+            type_, message_key, message_args = r["report"]
+            r["report"] = (type_, m18n.n(message_key, **message_args))
+
+            if "details" in r:
+                r["details"] = [ m18n.n(key, *values) for key, values in r["details"] ]
 
 
 def _list_diagnosis_categories():
