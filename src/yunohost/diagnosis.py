@@ -100,18 +100,19 @@ def diagnosis_run(categories=[], force=False, args=None):
     args["force"] = force
 
     # Call the hook ...
-    successes = []
+    diagnosed_categories = []
     for category in categories:
         logger.debug("Running diagnosis for %s ..." % category)
         path = [p for n, p in all_categories if n == category ][0]
 
         try:
             hook_exec(path, args=args, env=None)
-            successes.append(category)
         except Exception as e:
             logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True) # FIXME : i18n
+        else:
+            diagnosed_categories.append(category)
 
-    return diagnosis_show(successes)
+    return diagnosis_show(diagnosed_categories)
 
 def diagnosis_ignore(category, args="", unignore=False):
     pass
@@ -125,8 +126,8 @@ class Diagnoser():
 
         self.logger_debug, self.logger_warning, self.logger_info = loggers
         self.env = env
-        self.args = args
-        self.args.update(self.validate_args(args))
+        self.args = args or {}
+        self.args.update(self.validate_args(self.args))
         self.cache_file = Diagnoser.cache_file(self.id_)
 
     def cached_time_ago(self):
@@ -157,6 +158,8 @@ class Diagnoser():
         # TODO / FIXME : should handle the case where we only did a partial diagnosis
         self.logger_debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
+
+        return 0, new_report
 
     @staticmethod
     def cache_file(id_):

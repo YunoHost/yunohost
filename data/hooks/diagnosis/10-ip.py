@@ -55,6 +55,5 @@ class IPDiagnoser(Diagnoser):
 
 
 def main(args, env, loggers):
-    IPDiagnoser(args, env, loggers).diagnose()
-    return 0
+    return IPDiagnoser(args, env, loggers).diagnose()
 

@@ -92,6 +92,5 @@ class DNSDiagnoser(Diagnoser):
 
 
 def main(args, env, loggers):
-    DNSDiagnoser(args, env, loggers).diagnose()
-    return 0
+    return DNSDiagnoser(args, env, loggers).diagnose()
 
