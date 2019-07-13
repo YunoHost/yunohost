@@ -4,6 +4,7 @@ import os
 
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
+from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
@@ -24,8 +25,12 @@ class DNSDiagnoser(Diagnoser):
 
     def run(self):
 
-        self.resolver = check_output('grep "$nameserver" /etc/resolv.dnsmasq.conf').split("\n")[0].split(" ")[1]
+        resolvers = read_file("/etc/resolv.dnsmasq.conf").split("\n")
+        ipv4_resolvers = [r.split(" ")[1] for r in resolvers if r.startswith("nameserver") and ":" not in r]
+        # FIXME some day ... handle ipv4-only and ipv6-only servers. For now we assume we have at least ipv4
+        assert ipv4_resolvers != [], "Uhoh, need at least one IPv4 DNS resolver ..."
 
+        self.resolver = ipv4_resolvers[0]
         main_domain = _get_maindomain()
 
         for domain in self.args["domains"]:
