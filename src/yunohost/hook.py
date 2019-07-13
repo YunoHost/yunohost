@@ -462,7 +462,13 @@ def _hook_exec_python(path, args, env, loggers):
 
     # TODO : We might want to check here that it's a tuple
     # containing an int + a dict ?
-    return module.main(args, env, loggers)
+    ret = module.main(args, env, loggers)
+    assert isinstance(ret, tuple) \
+            and len(ret) == 2 \
+            and isinstance(ret[0],int) \
+            and isinstance(ret[1],dict), \
+            "Module %s did not return a (int, dict) tuple !" % module
+    return ret
 
 
 def _extract_filename_parts(filename):
