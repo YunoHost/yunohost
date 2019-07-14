@@ -83,8 +83,12 @@ ynh_exit_properly () {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_abort_if_errors () {
-	set -eu	# Exit if a command fail, and if a variable is used unset.
-	trap ynh_exit_properly EXIT	# Capturing exit signals on shell script
+	# Exit if a command fail, and if a variable is used unset.
+	set -eu
+	# Communicate set -e to command substitutions and commands executed in a sub‐shell environment.
+	set -o errtrace
+	# Capturing exit signals on shell script
+	trap ynh_exit_properly EXIT
 }
 
 # Download, check integrity, uncompress and patch the source from app.src
@@ -507,7 +511,8 @@ ynh_check_app_version_changed () {
       then
         ynh_print_info --message="Upgrade forced for package check."
       else
-        ynh_die "Up-to-date, nothing to do" 0
+        ynh_print_info -m "Up-to-date, nothing to do"
+        return_value="UP_TO_DATE"
       fi
   elif [ "$current_upstream_version" == "$update_upstream_version" ] ; then
     # Upstream versions are the same, only YunoHost package versions differ
