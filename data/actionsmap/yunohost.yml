@@ -1898,9 +1898,6 @@ diagnosis:
                 --force:
                     help: Ignore the cached report even if it is still 'fresh'
                     action: store_true
-                -a:
-                    help: Serialized arguments for diagnosis scripts (e.g. "domain=domain.tld")
-                    full: --args
 
         ignore:
             action_help: Configure some diagnosis results to be ignored

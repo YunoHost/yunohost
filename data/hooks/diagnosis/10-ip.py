@@ -15,70 +15,65 @@ class IPDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 60
 
-    def validate_args(self, args):
-        if "version" not in args.keys():
-            return {"versions": [4, 6]}
-        else:
-            assert str(args["version"]) in ["4", "6"], "Invalid version, should be 4 or 6."
-            return {"versions": [int(args["version"])]}
-
     def run(self):
 
-        versions = self.args["versions"]
+        #
+        # IPv4 Diagnosis
+        #
 
-        if 4 in versions:
+        # If we can't ping, there's not much else we can do
+        if not self.can_ping_outside(4):
+            ipv4 = None
+        # If we do ping, check that we can resolv domain name
+        else:
+            can_resolve_dns = self.can_resolve_dns()
+            # And if we do, then we can fetch the public ip
+            if can_resolve_dns:
+                ipv4 = self.get_public_ip(4)
 
-            # If we can't ping, there's not much else we can do
-            if not self.can_ping_outside(4):
-                ipv4 = None
-            # If we do ping, check that we can resolv domain name
-            else:
-                can_resolve_dns = self.can_resolve_dns()
-                # And if we do, then we can fetch the public ip
-                if can_resolve_dns:
-                    ipv4 = self.get_public_ip(4)
+        # In every case, we can check that resolvconf seems to be okay
+        # (symlink managed by resolvconf service + pointing to dnsmasq)
+        good_resolvconf = self.resolvconf_is_symlink() and self.resolvconf_points_to_localhost()
 
-            # In every case, we can check that resolvconf seems to be okay
-            # (symlink managed by resolvconf service + pointing to dnsmasq)
-            good_resolvconf = self.resolvconf_is_symlink() and self.resolvconf_points_to_localhost()
+        # If we can't resolve domain names at all, that's a pretty big issue ...
+        # If it turns out that at the same time, resolvconf is bad, that's probably
+        # the cause of this, so we use a different message in that case
+        if not can_resolve_dns:
+            yield dict(meta={"name": "dnsresolution"},
+                       status="ERROR",
+                       summary=("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
+                          else ("diagnosis_ip_broken_resolvconf", {}))
+        # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
+        # still warn that we're using a weird resolv conf ...
+        elif not good_resolvconf:
+            yield dict(meta={"name": "dnsresolution"},
+                       status="WARNING",
+                       summary=("diagnosis_ip_weird_resolvconf", {}))
+        else:
+            # Well, maybe we could report a "success", "dns resolution is working", idk if it's worth it
+            pass
 
-            # If we can't resolve domain names at all, that's a pretty big issue ...
-            # If it turns out that at the same time, resolvconf is bad, that's probably
-            # the cause of this, so we use a different message in that case
-            if not can_resolve_dns:
-                yield dict(meta={"name": "dnsresolution"},
-                           status="ERROR",
-                           summary=("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
-                              else ("diagnosis_ip_broken_resolvconf", {}))
-            # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
-            # still warn that we're using a weird resolv conf ...
-            elif not good_resolvconf:
-                yield dict(meta={"name": "dnsresolution"},
-                           status="WARNING",
-                           summary=("diagnosis_ip_weird_resolvconf", {}))
-            else:
-                # Well, maybe we could report a "success", "dns resolution is working", idk if it's worth it
-                pass
+        # And finally, we actually report the ipv4 connectivity stuff
+        yield dict(meta={"version": 4},
+                   data=ipv4,
+                   status="SUCCESS" if ipv4 else "ERROR",
+                   summary=("diagnosis_ip_connected_ipv4", {}) if ipv4
+                      else ("diagnosis_ip_no_ipv4", {}))
 
-            # And finally, we actually report the ipv4 connectivity stuff
-            yield dict(meta={"version": 4},
-                       data=ipv4,
-                       status="SUCCESS" if ipv4 else "ERROR",
-                       summary=("diagnosis_ip_connected_ipv4", {}) if ipv4
-                          else ("diagnosis_ip_no_ipv4", {}))
+        #
+        # IPv6 Diagnosis
+        #
 
-        if 6 in versions:
+        if not self.can_ping_outside(4):
+            ipv6 = None
+        else:
+            ipv6 = self.get_public_ip(6)
 
-            if not self.can_ping_outside(4):
-                ipv6 = None
-            else:
-                ipv6 = self.get_public_ip(6)
-
-            yield dict(meta={"version": 6},
-                       data=ipv6,
-                       status="SUCCESS" if ipv6 else "WARNING",
-                       summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
-                          else ("diagnosis_ip_no_ipv6", {}))
+        yield dict(meta={"version": 6},
+                   data=ipv6,
+                   status="SUCCESS" if ipv6 else "WARNING",
+                   summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
+                      else ("diagnosis_ip_no_ipv6", {}))
 
     def can_ping_outside(self, protocol=4):
 

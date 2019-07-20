@@ -9,10 +9,6 @@ class DiskUsageDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600 * 24
 
-    def validate_args(self, args):
-        # TODO / FIXME Ugh do we really need this arg system
-        return {}
-
     def run(self):
 
         disk_partitions = psutil.disk_partitions()

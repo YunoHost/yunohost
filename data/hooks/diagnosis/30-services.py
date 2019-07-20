@@ -21,10 +21,6 @@ class ServicesDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
 
-    def validate_args(self, args):
-        # TODO / FIXME Ugh do we really need this arg system
-        return {}
-
     def run(self):
 
         all_result = service_status()

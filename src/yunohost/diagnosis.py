@@ -84,7 +84,7 @@ def diagnosis_show(categories=[], issues=False, full=False):
     return {"reports": all_reports}
 
 
-def diagnosis_run(categories=[], force=False, args=None):
+def diagnosis_run(categories=[], force=False):
 
     # Get all the categories
     all_categories = _list_diagnosis_categories()
@@ -98,13 +98,6 @@ def diagnosis_run(categories=[], force=False, args=None):
         if unknown_categories:
             raise YunohostError('unknown_categories', categories=", ".join(unknown_categories))
 
-    # Transform "arg1=val1&arg2=val2" to { "arg1": "val1", "arg2": "val2" }
-    if args is not None:
-        args = {arg.split("=")[0]: arg.split("=")[1] for arg in args.split("&")}
-    else:
-        args = {}
-    args["force"] = force
-
     issues = []
     # Call the hook ...
     diagnosed_categories = []
@@ -113,7 +106,7 @@ def diagnosis_run(categories=[], force=False, args=None):
         path = [p for n, p in all_categories if n == category][0]
 
         try:
-            code, report = hook_exec(path, args=args, env=None)
+            code, report = hook_exec(path, args={"force": force}, env=None)
         except Exception as e:
             logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True)  # FIXME : i18n
         else:
@@ -143,7 +136,6 @@ class Diagnoser():
         self.logger_debug, self.logger_warning, self.logger_info = loggers
         self.env = env
         self.args = args or {}
-        self.args.update(self.validate_args(self.args))
         self.cache_file = Diagnoser.cache_file(self.id_)
 
         descr_key = "diagnosis_description_" + self.id_

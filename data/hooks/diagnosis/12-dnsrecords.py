@@ -14,14 +14,6 @@ class DNSRecordsDiagnoser(Diagnoser):
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600 * 24
 
-    def validate_args(self, args):
-        all_domains = domain_list()["domains"]
-        if "domain" not in args.keys():
-            return {"domains": all_domains}
-        else:
-            assert args["domain"] in all_domains, "Unknown domain"
-            return {"domains": [args["domain"]]}
-
     def run(self):
 
         resolvers = read_file("/etc/resolv.dnsmasq.conf").split("\n")
@@ -32,7 +24,8 @@ class DNSRecordsDiagnoser(Diagnoser):
         self.resolver = ipv4_resolvers[0]
         main_domain = _get_maindomain()
 
-        for domain in self.args["domains"]:
+        all_domains = domain_list()["domains"]
+        for domain in all_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
             for report in self.check_domain(domain, domain == main_domain):
                 yield report
