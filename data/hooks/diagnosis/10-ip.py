@@ -17,19 +17,26 @@ class IPDiagnoser(Diagnoser):
 
     def run(self):
 
-        #
-        # IPv4 Diagnosis
-        #
+        # ############################################################ #
+        # PING : Check that we can ping outside at least in ipv4 or v6 #
+        # ############################################################ #
 
-        # If we can't ping, there's not much else we can do
-        if not self.can_ping_outside(4):
-            ipv4 = None
-        # If we do ping, check that we can resolv domain name
-        else:
-            can_resolve_dns = self.can_resolve_dns()
-            # And if we do, then we can fetch the public ip
-            if can_resolve_dns:
-                ipv4 = self.get_public_ip(4)
+        can_ping_ipv4 = self.can_ping_outside(4)
+        can_ping_ipv6 = self.can_ping_outside(6)
+
+        if not can_ping_ipv4 and not can_ping_ipv6:
+            yield dict(meta={"test": "ping"},
+                       status="ERROR",
+                       summary=("diagnosis_ip_not_connected_at_all", {}))
+            # Not much else we can do if there's no internet at all
+            return
+
+        # ###################################################### #
+        # DNS RESOLUTION : Check that we can resolve domain name #
+        # (later needed to talk to ip. and ip6.yunohost.org)     #
+        # ###################################################### #
+
+        can_resolve_dns = self.can_resolve_dns()
 
         # In every case, we can check that resolvconf seems to be okay
         # (symlink managed by resolvconf service + pointing to dnsmasq)
@@ -39,37 +46,37 @@ class IPDiagnoser(Diagnoser):
         # If it turns out that at the same time, resolvconf is bad, that's probably
         # the cause of this, so we use a different message in that case
         if not can_resolve_dns:
-            yield dict(meta={"name": "dnsresolution"},
+            yield dict(meta={"test": "dnsresolv"},
                        status="ERROR",
                        summary=("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
                           else ("diagnosis_ip_broken_resolvconf", {}))
+            return
         # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
         # still warn that we're using a weird resolv conf ...
         elif not good_resolvconf:
-            yield dict(meta={"name": "dnsresolution"},
+            yield dict(meta={"test": "dnsresolv"},
                        status="WARNING",
                        summary=("diagnosis_ip_weird_resolvconf", {}))
         else:
-            # Well, maybe we could report a "success", "dns resolution is working", idk if it's worth it
-            pass
+            yield dict(meta={"test": "dnsresolv"},
+                       status="SUCCESS",
+                       summary=("diagnosis_ip_dnsresolution_working", {}))
 
-        # And finally, we actually report the ipv4 connectivity stuff
-        yield dict(meta={"version": 4},
+        # ##################################################### #
+        # IP DIAGNOSIS : Check that we're actually able to talk #
+        # to a web server to fetch current IPv4 and v6          #
+        # ##################################################### #
+
+        ipv4 = self.get_public_ip(4) if can_ping_ipv4 else None
+        ipv6 = self.get_public_ip(6) if can_ping_ipv6 else None
+
+        yield dict(meta={"test": "ip", "version": 4},
                    data=ipv4,
                    status="SUCCESS" if ipv4 else "ERROR",
                    summary=("diagnosis_ip_connected_ipv4", {}) if ipv4
                       else ("diagnosis_ip_no_ipv4", {}))
 
-        #
-        # IPv6 Diagnosis
-        #
-
-        if not self.can_ping_outside(4):
-            ipv6 = None
-        else:
-            ipv6 = self.get_public_ip(6)
-
-        yield dict(meta={"version": 6},
+        yield dict(meta={"test": "ip", "version": 6},
                    data=ipv6,
                    status="SUCCESS" if ipv6 else "WARNING",
                    summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
@@ -124,12 +131,9 @@ class IPDiagnoser(Diagnoser):
         # but if we want to be able to diagnose DNS resolution issues independently from
         # internet connectivity, we gotta rely on fixed IPs first....
 
-        if protocol == 4:
-            url = 'https://ip.yunohost.org'
-        elif protocol == 6:
-            url = 'https://ip6.yunohost.org'
-        else:
-            raise ValueError("invalid protocol version, it should be either 4 or 6 and was '%s'" % repr(protocol))
+        assert protocol in [4, 6], "Invalid protocol version, it should be either 4 or 6 and was '%s'" % repr(protocol)
+
+        url = 'https://ip%s.yunohost.org' % ('6' if protocol == 6 else '')
 
         try:
             return download_text(url, timeout=30).strip()

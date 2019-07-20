@@ -159,6 +159,8 @@
     "diagnosis_ip_no_ipv4": "The server does not have a working IPv4.",
     "diagnosis_ip_connected_ipv6": "The server is connected to the Internet through IPv6 !",
     "diagnosis_ip_no_ipv6": "The server does not have a working IPv6.",
+    "diagnosis_ip_not_connected_at_all": "The server does not seem to be connected to the Internet at all!?",
+    "diagnosis_ip_dnsresolution_working": "Domain name resolution is working!",
     "diagnosis_ip_broken_dnsresolution": "Domain name resolution seems to be broken for some reason ... Is a firewall blocking DNS requests ?",
     "diagnosis_ip_broken_resolvconf": "Domain name resolution seems to be broken on your server, which seems related to /etc/resolv.conf not pointing to 127.0.0.1.",
     "diagnosis_ip_weird_resolvconf": "Be careful that you seem to be using a custom /etc/resolv.conf. Instead, this file should be a symlink to /etc/resolvconf/run/resolv.conf itself pointing to 127.0.0.1 (dnsmasq).",
