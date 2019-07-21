@@ -1647,7 +1647,7 @@ def app_config_show_panel(app):
                         [{option["name"]: parsed_values[generated_name]}],
                         [option]
                     )
-                    option["default"] = args_dict[option["name"]]
+                    option["default"] = args_dict[option["name"]][0]
                 else:
                     logger.debug("Variable '%s' is not declared by config script, using default", generated_name)
                     # do nothing, we'll use the default if present
