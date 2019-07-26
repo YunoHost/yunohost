@@ -1928,6 +1928,9 @@ class TarBackupMethod(BackupMethod):
             logger.debug("cannot open backup archive '%s'",
                          self._archive_file, exc_info=1)
             raise YunohostError('backup_archive_open_failed')
+
+        # FIXME : Is this really useful to close the archive just to
+        # reopen it right after this with the same options ...?
         tar.close()
 
         # Mount the tarball
@@ -1940,6 +1943,11 @@ class TarBackupMethod(BackupMethod):
         elif "./info.json" in tar.getnames():
             leading_dot = "./"
             tar.extract('./info.json', path=self.work_dir)
+        else:
+            logger.debug("unable to retrieve 'info.json' inside the archive",
+                         exc_info=1)
+            tar.close()
+            raise YunohostError('backup_invalid_archive')
 
         if "backup.csv" in tar.getnames():
             tar.extract('backup.csv', path=self.work_dir)
@@ -1983,6 +1991,8 @@ class TarBackupMethod(BackupMethod):
                 if tarinfo.name.startswith(leading_dot+"apps/" + app)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
+
+        # FIXME : Don't we want to close the tar archive here or at some point ?
 
 
 class BorgBackupMethod(BackupMethod):
