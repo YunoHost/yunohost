@@ -121,7 +121,7 @@ def log_list(category=[], limit=None, with_details=False):
     return result
 
 
-def log_display(path, number=50, share=False):
+def log_display(path, number=None, share=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -201,7 +201,10 @@ def log_display(path, number=50, share=False):
     # Display logs if exist
     if os.path.exists(log_path):
         from yunohost.service import _tail
-        logs = _tail(log_path, int(number))
+        if number:
+            logs = _tail(log_path, int(number))
+        else:
+            logs = read_file(log_path)
         infos['log_path'] = log_path
         infos['logs'] = logs
 
