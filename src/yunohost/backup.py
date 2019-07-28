@@ -1438,7 +1438,7 @@ class RestoreManager():
 
             # Remove all permission in LDAP
             result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
+                                 filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
             permission_list = [p['cn'][0] for p in result]
             for l in permission_list:
                 permission_remove(app_instance_name, l.split('.')[0], force=True)
