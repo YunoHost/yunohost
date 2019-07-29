@@ -1484,7 +1484,7 @@ def app_action_run(app, action, args=None):
     # Retrieve arguments list for install script
     args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
-    args_list = [ value[0] for value in args_odict.values() ]
+    args_list = [value[0] for value in args_odict.values()]
 
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
@@ -1553,10 +1553,10 @@ def app_config_show_panel(app):
     }
 
     return_code, parsed_values = hook_exec(config_script,
-                                args=["show"],
-                                env=env,
-                                return_format="plain_dict"
-                                )
+                                           args=["show"],
+                                           env=env,
+                                           return_format="plain_dict"
+                                           )
 
     if return_code != 0:
         raise Exception("script/config show return value code: %s (considered as an error)", return_code)
