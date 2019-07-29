@@ -343,7 +343,7 @@ def app_info(app, show_status=False, raw=False):
 
     """
     if not _is_installed(app):
-        raise YunohostError('app_not_installed', app=app)
+        raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     app_setting_path = APPS_SETTING_PATH + app
 
@@ -409,7 +409,7 @@ def app_map(app=None, raw=False, user=None):
 
     if app is not None:
         if not _is_installed(app):
-            raise YunohostError('app_not_installed', app=app)
+            raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
         apps = [app, ]
     else:
         apps = os.listdir(APPS_SETTING_PATH)
@@ -462,7 +462,7 @@ def app_change_url(operation_logger, app, domain, path):
 
     installed = _is_installed(app)
     if not installed:
-        raise YunohostError('app_not_installed', app=app)
+        raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
         raise YunohostError("app_change_no_change_url_script", app_name=app)
@@ -607,7 +607,7 @@ def app_upgrade(app=[], url=None, file=None):
 
     # Abort if any of those app is in fact not installed..
     for app in [app for app in apps if not _is_installed(app)]:
-        raise YunohostError('app_not_installed', app=app)
+        raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if len(apps) == 0:
         raise YunohostError('app_no_upgrade')
@@ -971,7 +971,7 @@ def app_remove(operation_logger, app):
     from yunohost.hook import hook_exec, hook_remove, hook_callback
     from yunohost.permission import permission_remove, permission_sync_to_user
     if not _is_installed(app):
-        raise YunohostError('app_not_installed', app=app)
+        raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     operation_logger.start()
 
@@ -1443,7 +1443,7 @@ def app_ssowatconf():
 def app_change_label(app, new_label):
     installed = _is_installed(app)
     if not installed:
-        raise YunohostError('app_not_installed', app=app)
+        raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     app_setting(app, "label", value=new_label)
 
@@ -1606,7 +1606,7 @@ def app_config_apply(app, args):
 
     installed = _is_installed(app)
     if not installed:
-        raise YunohostError('app_not_installed', app=app)
+        raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     config_panel = _get_app_config_panel(app)
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
@@ -1651,6 +1651,23 @@ def app_config_apply(app, args):
         raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
 
     logger.success("Config updated as expected")
+
+
+def _get_all_installed_apps_id():
+    """
+    Return something like:
+       ' * app1
+         * app2
+         * ...'
+    """
+
+    all_apps_ids = [x["id"] for x in app_list(installed=True)["apps"]]
+    all_apps_ids = sorted(all_apps_ids)
+
+    all_apps_ids_formatted = "\n * ".join(all_apps_ids)
+    all_apps_ids_formatted = "\n * " + all_apps_ids_formatted
+
+    return all_apps_ids_formatted
 
 
 def _get_app_actions(app_id):
@@ -1873,7 +1890,7 @@ def _get_app_settings(app_id):
 
     """
     if not _is_installed(app_id):
-        raise YunohostError('app_not_installed', app=app_id)
+        raise YunohostError('app_not_installed', app=app_id, all_apps=_get_all_installed_apps_id())
     try:
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
