@@ -539,7 +539,7 @@
     "system_upgraded": "The system has been upgraded",
     "system_username_exists": "Username already exists in the system users",
     "this_action_broke_dpkg": "This action broke dpkg/apt (the system package managers)... You can try to solve this issue by connecting through SSH and running `sudo dpkg --configure -a`.",
-    "tools_update_failed_to_app_fetchlit": "Failed to update YunoHost's apps because: {error}",
+    "tools_update_failed_to_app_fetchlist": "Failed to update YunoHost's apps because: {error}",
     "tools_upgrade_at_least_one": "Please specify --apps OR --system",
     "tools_upgrade_cant_both": "Cannot upgrade both system and apps at the same time",
     "tools_upgrade_cant_hold_critical_packages": "Unable to hold critical packages ...",

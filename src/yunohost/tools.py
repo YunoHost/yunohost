@@ -521,7 +521,7 @@ def tools_update(apps=False, system=False):
         try:
             app_fetchlist()
         except YunohostError as e:
-            logger.error('tools_update_failed_to_app_fetchlit', error=e)
+            logger.error(m18n.n('tools_update_failed_to_app_fetchlist'), error=e)
 
         upgradable_apps = list(_list_upgradable_apps())
 
