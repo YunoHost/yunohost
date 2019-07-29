@@ -420,6 +420,9 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'domain' not in app_settings:
             continue
+        if 'path' not in app_settings:
+            # we assume that an app that doesn't have a path doesn't have an HTTP api
+            continue
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
         if user is not None:
@@ -430,7 +433,7 @@ def app_map(app=None, raw=False, user=None):
                 continue
 
         domain = app_settings['domain']
-        path = app_settings.get('path', '/')
+        path = app_settings['path']
 
         if raw:
             if domain not in result:
