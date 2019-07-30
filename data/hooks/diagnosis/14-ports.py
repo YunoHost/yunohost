@@ -4,6 +4,7 @@ import os
 import requests
 
 from yunohost.diagnosis import Diagnoser
+from yunohost.utils.error import YunohostError
 
 
 class PortsDiagnoser(Diagnoser):
@@ -19,11 +20,11 @@ class PortsDiagnoser(Diagnoser):
         # Ideally, a port could be related to a service...
         # FIXME / TODO : for now this list of port is hardcoded, might want
         # to fetch this from the firewall.yml in /etc/yunohost/
-        ports = [ 22, 25, 53, 80, 443, 587, 993, 5222, 5269 ]
+        ports = [22, 25, 53, 80, 443, 587, 993, 5222, 5269]
 
         try:
-            r = requests.post('https://ynhdiagnoser.netlib.re/check-ports', json={'ports': ports}).json()
-            if not "status" in r.keys():
+            r = requests.post('https://ynhdiagnoser.netlib.re/check-ports', json={'ports': ports}, timeout=30).json()
+            if "status" not in r.keys():
                 raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             elif r["status"] == "error":
                 if "content" in r.keys():
@@ -37,16 +38,16 @@ class PortsDiagnoser(Diagnoser):
 
         found_issues = False
         for port in ports:
-            if r["ports"].get(str(port), None) != True:
+            if r["ports"].get(str(port), None) is not True:
                 found_issues = True
                 yield dict(meta={"port": port},
                            status="ERROR",
-                           summary=("diagnosis_ports_unreachable", {"port":port}))
+                           summary=("diagnosis_ports_unreachable", {"port": port}))
 
         if not found_issues:
             yield dict(meta={},
                        status="SUCCESS",
-                       summary=("diagnosis_ports_ok",{}))
+                       summary=("diagnosis_ports_ok", {}))
 
 
 def main(args, env, loggers):
