@@ -13,6 +13,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600 * 24
+    dependencies = ["ip"]
 
     def run(self):
 

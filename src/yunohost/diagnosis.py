@@ -137,12 +137,7 @@ class Diagnoser():
         self.env = env
         self.args = args or {}
         self.cache_file = Diagnoser.cache_file(self.id_)
-
-        descr_key = "diagnosis_description_" + self.id_
-        self.description = m18n.n(descr_key)
-        # If no description available, fallback to id
-        if self.description == descr_key:
-            self.description = self.id_
+        self.description = Diagnoser.get_description(self.id_)
 
     def cached_time_ago(self):
 
@@ -159,8 +154,17 @@ class Diagnoser():
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Cache still valid : %s" % self.cache_file)
+            # FIXME : i18n
             logger.info("(Cache still valid for %s diagnosis. Not re-diagnosing yet!)" % self.description)
             return 0, {}
+
+        for dependency in self.dependencies:
+            dep_report = Diagnoser.get_cached_report(dependency)
+            dep_errors = [item for item in dep_report["items"] if item["status"] == "ERROR"]
+            if dep_errors:
+                # FIXME : i18n
+                logger.error("Can't run diagnosis for %s while there are important issues related to %s." % (self.description, Diagnoser.get_description(dependency)))
+                return 1, {}
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
 
@@ -201,6 +205,13 @@ class Diagnoser():
         return report
 
     @staticmethod
+    def get_description(id_):
+        key = "diagnosis_description_" + id_
+        descr = m18n.n(key)
+        # If no description available, fallback to id
+        return descr if descr != key else id_
+
+    @staticmethod
     def i18n(report):
 
         # "Render" the strings with m18n.n
@@ -209,11 +220,7 @@ class Diagnoser():
         # was generated ... e.g. if the diagnosing happened inside a cron job with locale EN
         # instead of FR used by the actual admin...
 
-        descr_key = "diagnosis_description_" + report["id"]
-        report["description"] = m18n.n(descr_key)
-        # If no description available, fallback to id
-        if report["description"] == descr_key:
-            report["description"] = report["id"]
+        report["description"] = Diagnoser.get_description(report["id"])
 
         for item in report["items"]:
             summary_key, summary_args = item["summary"]

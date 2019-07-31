@@ -13,6 +13,7 @@ class HttpDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600
+    dependencies = ["ip"]
 
     def run(self):
 
@@ -28,7 +29,6 @@ class HttpDiagnoser(Diagnoser):
 
             try:
                 r = requests.post('https://ynhdiagnoser.netlib.re/check-http', json={'domain': domain, "nonce": nonce}, timeout=30).json()
-                print(r)
                 if "status" not in r.keys():
                     raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
                 elif r["status"] == "error" and ("code" not in r.keys() or r["code"] not in ["error_http_check_connection_error", "error_http_check_unknown_error"]):
@@ -37,7 +37,6 @@ class HttpDiagnoser(Diagnoser):
                     else:
                         raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             except Exception as e:
-                print(e)
                 raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
 
             if r["status"] == "ok":
