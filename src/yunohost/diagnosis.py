@@ -116,8 +116,10 @@ def diagnosis_run(categories=[], force=False):
 
     if issues:
         if msettings.get("interface") == "api":
+            # FIXME: i18n
             logger.info("You can go to the Diagnosis section (in the home screen) to see the issues found.")
         else:
+            # FIXME: i18n
             logger.info("You can run 'yunohost diagnosis show --issues' to display the issues found.")
 
     return

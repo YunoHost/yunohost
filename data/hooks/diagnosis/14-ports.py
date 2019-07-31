@@ -37,18 +37,15 @@ class PortsDiagnoser(Diagnoser):
         except Exception as e:
             raise YunohostError("diagnosis_ports_could_not_diagnose", error=e)
 
-        found_issues = False
         for port in ports:
             if r["ports"].get(str(port), None) is not True:
-                found_issues = True
                 yield dict(meta={"port": port},
                            status="ERROR",
                            summary=("diagnosis_ports_unreachable", {"port": port}))
-
-        if not found_issues:
-            yield dict(meta={},
-                       status="SUCCESS",
-                       summary=("diagnosis_ports_ok", {}))
+            else:
+                yield dict(meta={},
+                           status="SUCCESS",
+                           summary=("diagnosis_ports_ok", {"port": port}))
 
 
 def main(args, env, loggers):
