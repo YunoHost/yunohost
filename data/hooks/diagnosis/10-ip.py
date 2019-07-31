@@ -57,7 +57,8 @@ class IPDiagnoser(Diagnoser):
         elif not good_resolvconf:
             yield dict(meta={"test": "dnsresolv"},
                        status="WARNING",
-                       summary=("diagnosis_ip_weird_resolvconf", {}))
+                       summary=("diagnosis_ip_weird_resolvconf", {}),
+                       details=[("diagnosis_ip_weird_resolvconf_details", ())])
         else:
             yield dict(meta={"test": "dnsresolv"},
                        status="SUCCESS",
