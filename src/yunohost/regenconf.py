@@ -525,31 +525,32 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
 def manually_modified_files():
 
-    # We do this to have --quiet, i.e. don't throw a whole bunch of logs
-    # just to fetch this...
-    # Might be able to optimize this by looking at what the regen conf does
-    # and only do the part that checks file hashes...
-    cmd = "yunohost tools regen-conf --dry-run --output-as json --quiet"
-    j = json.loads(subprocess.check_output(cmd.split()))
-
-    # j is something like :
-    # {"postfix": {"applied": {}, "pending": {"/etc/postfix/main.cf": {"status": "modified"}}}
-
     output = []
-    for app, actions in j.items():
-        for action, files in actions.items():
-            for filename, infos in files.items():
-                if infos["status"] == "modified":
-                    output.append(filename)
+    regenconf_categories = _get_regenconf_infos()
+    for category, infos in regenconf_categories.items():
+        conffiles = infos["conffiles"]
+        for path, hash_ in conffiles.items():
+            if hash_ != _calculate_hash(path):
+                output.append(path)
 
     return output
 
 
-def manually_modified_files_compared_to_debian_default():
+def manually_modified_files_compared_to_debian_default(ignore_handled_by_regenconf=False):
 
     # from https://serverfault.com/a/90401
-    r = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
-                                | awk 'OFS=\"  \"{print $2,$1}' \
-                                | md5sum -c 2>/dev/null \
-                                | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
-    return r.strip().split("\n")
+    files = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
+                                   | awk 'OFS=\"  \"{print $2,$1}' \
+                                   | md5sum -c 2>/dev/null \
+                                   | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
+    files = files.strip().split("\n")
+
+    if ignore_handled_by_regenconf:
+        regenconf_categories = _get_regenconf_infos()
+        regenconf_files = []
+        for infos in regenconf_categories.values():
+            regenconf_files.extend(infos["conffiles"].keys())
+
+        files = [f for f in files if f not in regenconf_files]
+
+    return files
