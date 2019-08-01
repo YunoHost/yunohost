@@ -64,7 +64,7 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
         try:
             report = Diagnoser.get_cached_report(category)
         except Exception as e:
-            logger.error("Failed to fetch diagnosis result for category '%s' : %s" % (category, str(e)))  # FIXME : i18n
+            logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
         else:
             if not full:
                 del report["timestamp"]
@@ -136,7 +136,7 @@ def diagnosis_run(categories=[], force=False):
         try:
             code, report = hook_exec(path, args={"force": force}, env=None)
         except Exception as e:
-            logger.error("Diagnosis failed for category '%s' : %s" % (category, str(e)), exc_info=True)  # FIXME : i18n
+            logger.error(m18n.n("diagnosis_failed_for_category", category=category, error=str(e)), exc_info=True)
         else:
             diagnosed_categories.append(category)
             if report != {}:
@@ -144,11 +144,9 @@ def diagnosis_run(categories=[], force=False):
 
     if issues:
         if msettings.get("interface") == "api":
-            # FIXME: i18n
-            logger.info("You can go to the Diagnosis section (in the home screen) to see the issues found.")
+            logger.info(m18n.n("diagnosis_display_tip_web"))
         else:
-            # FIXME: i18n
-            logger.info("You can run 'yunohost diagnosis show --issues' to display the issues found.")
+            logger.info(m18n.n("diagnosis_display_tip_cli"))
 
     return
 
@@ -163,6 +161,7 @@ class Diagnoser():
 
     def __init__(self, args, env, loggers):
 
+        # FIXME ? That stuff with custom loggers is weird ... (mainly inherited from the bash hooks, idk)
         self.logger_debug, self.logger_warning, self.logger_info = loggers
         self.env = env
         self.args = args or {}
@@ -184,16 +183,14 @@ class Diagnoser():
 
         if not self.args.get("force", False) and self.cached_time_ago() < self.cache_duration:
             self.logger_debug("Cache still valid : %s" % self.cache_file)
-            # FIXME : i18n
-            logger.info("(Cache still valid for %s diagnosis. Not re-diagnosing yet!)" % self.description)
+            logger.info(m18n.n("diagnosis_cache_still_valid", category=self.description))
             return 0, {}
 
         for dependency in self.dependencies:
             dep_report = Diagnoser.get_cached_report(dependency)
             dep_errors = [item for item in dep_report["items"] if item["status"] == "ERROR"]
             if dep_errors:
-                # FIXME : i18n
-                logger.error("Can't run diagnosis for %s while there are important issues related to %s." % (self.description, Diagnoser.get_description(dependency)))
+                logger.error(m18n.n("diagnosis_cant_run_because_of_dep", category=self.description, dep=Diagnoser.get_description(dependency)))
                 return 1, {}
 
         self.logger_debug("Running diagnostic for %s" % self.id_)
@@ -204,7 +201,6 @@ class Diagnoser():
                       "cached_for": self.cache_duration,
                       "items": items}
 
-        # TODO / FIXME : should handle the case where we only did a partial diagnosis
         self.logger_debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
         Diagnoser.i18n(new_report)
@@ -212,13 +208,12 @@ class Diagnoser():
         errors   = [item for item in new_report["items"] if item["status"] == "ERROR"]
         warnings = [item for item in new_report["items"] if item["status"] == "WARNING"]
 
-        # FIXME : i18n
         if errors:
-            logger.error("Found %s significant issue(s) related to %s!" % (len(errors), new_report["description"]))
+            logger.error(m18n.n("diagnosis_found_issues", errors=len(errors), category=new_report["description"]))
         elif warnings:
-            logger.warning("Found %s item(s) that could be improved for %s." % (len(warnings), new_report["description"]))
+            logger.warning(m18n.n("diagnosis_found_warnings", warnings=len(warnings), category=new_report["description"]))
         else:
-            logger.success("Everything looks good for %s!" % new_report["description"])
+            logger.success(m18n.n("diagnosis_everything_ok", category=new_report["description"]))
 
         return 0, new_report
 
