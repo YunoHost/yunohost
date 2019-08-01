@@ -31,7 +31,7 @@ do_init_regen() {
 do_pre_regen() {
   pending_dir=$1
 
-  # Add openldap user in the ssl-cert group to let it access the ceriticate for TLS
+  # Add openldap user in the ssl-cert group to let it access the certificate for TLS
   sudo usermod -aG ssl-cert openldap
 
   cd /usr/share/yunohost/templates/slapd
