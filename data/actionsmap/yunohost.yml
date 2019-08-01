@@ -1887,6 +1887,9 @@ diagnosis:
                 --issues:
                     help: Only display issues
                     action: store_true
+                --share:
+                    help: Share the logs using yunopaste
+                    action: store_true
 
         run:
             action_help: Show most recents diagnosis results

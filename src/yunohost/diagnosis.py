@@ -44,7 +44,7 @@ def diagnosis_list():
     return {"categories": all_categories_names}
 
 
-def diagnosis_show(categories=[], issues=False, full=False):
+def diagnosis_show(categories=[], issues=False, full=False, share=False):
 
     # Get all the categories
     all_categories = _list_diagnosis_categories()
@@ -81,7 +81,35 @@ def diagnosis_show(categories=[], issues=False, full=False):
 
             all_reports.append(report)
 
-    return {"reports": all_reports}
+    if share:
+        from yunohost.utils.yunopaste import yunopaste
+        content = _dump_human_readable_reports(all_reports)
+        url = yunopaste(content)
+
+        logger.info(m18n.n("log_available_on_yunopaste", url=url))
+        if msettings.get('interface') == 'api':
+            return {"url": url}
+        else:
+            return
+    else:
+        return {"reports": all_reports}
+
+def _dump_human_readable_reports(reports):
+
+    output = ""
+
+    for report in reports:
+        output += "=================================\n"
+        output += "{description} ({id})\n".format(**report)
+        output += "=================================\n\n"
+        for item in report["items"]:
+            output += "[{status}] {summary}\n".format(**item)
+            for detail in item.get("details", []):
+                output += "  - " + detail + "\n"
+            output += "\n"
+        output += "\n\n"
+
+    return(output)
 
 
 def diagnosis_run(categories=[], force=False):
