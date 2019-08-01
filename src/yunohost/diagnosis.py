@@ -74,7 +74,7 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
                     if "data" in item:
                         del item["data"]
             if issues:
-                report["items"] = [item for item in report["items"] if item["status"] != "SUCCESS"]
+                report["items"] = [item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]]
                 # Ignore this category if no issue was found
                 if not report["items"]:
                     continue
@@ -140,7 +140,7 @@ def diagnosis_run(categories=[], force=False):
         else:
             diagnosed_categories.append(category)
             if report != {}:
-                issues.extend([item for item in report["items"] if item["status"] != "SUCCESS"])
+                issues.extend([item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]])
 
     if issues:
         if msettings.get("interface") == "api":
