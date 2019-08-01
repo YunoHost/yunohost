@@ -1606,16 +1606,6 @@ tools:
                     help: Upgrade only the system packages
                     action: store_true
 
-        ### tools_diagnosis()
-        diagnosis:
-            action_help: YunoHost diagnosis
-            api: GET /diagnosis
-            arguments:
-                -p:
-                    full: --private
-                    help: Show private data (domain, IP)
-                    action: store_true
-
         ### tools_port_available()
         port-available:
             action_help: Check availability of a local port
