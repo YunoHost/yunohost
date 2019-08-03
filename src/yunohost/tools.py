@@ -970,6 +970,43 @@ def tools_reboot(operation_logger, force=False):
         subprocess.check_call(['systemctl', 'reboot'])
 
 
+def tools_shell(command=None):
+    """
+    Launch an (i)python shell in the YunoHost context.
+
+    This is entirely aim for development.
+    """
+
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+
+    if command:
+        exec(command)
+        return
+
+    logger.warn("The \033[1;34mldap\033[0m interface is available in this context")
+    try:
+        from IPython import embed
+        embed()
+    except ImportError:
+        logger.warn("You don't have IPython installed, consider installing it as it is way better than the standard shell.")
+        logger.warn("Falling back on the standard shell.")
+
+        import readline  # will allow Up/Down/History in the console
+        readline  # to please pyflakes
+        import code
+        vars = globals().copy()
+        vars.update(locals())
+        shell = code.InteractiveConsole(vars)
+        shell.interact()
+
+
+# ############################################ #
+#                                              #
+#            Migrations management             #
+#                                              #
+# ############################################ #
+
 def tools_migrations_list(pending=False, done=False):
     """
     List existing migrations
@@ -1153,37 +1190,6 @@ def tools_migrations_state():
         return {"last_run_migration": None}
 
     return read_json(MIGRATIONS_STATE_PATH)
-
-
-def tools_shell(command=None):
-    """
-    Launch an (i)python shell in the YunoHost context.
-
-    This is entirely aim for development.
-    """
-
-    from yunohost.utils.ldap import _get_ldap_interface
-    ldap = _get_ldap_interface()
-
-    if command:
-        exec(command)
-        return
-
-    logger.warn("The \033[1;34mldap\033[0m interface is available in this context")
-    try:
-        from IPython import embed
-        embed()
-    except ImportError:
-        logger.warn("You don't have IPython installed, consider installing it as it is way better than the standard shell.")
-        logger.warn("Falling back on the standard shell.")
-
-        import readline  # will allow Up/Down/History in the console
-        readline  # to please pyflakes
-        import code
-        vars = globals().copy()
-        vars.update(locals())
-        shell = code.InteractiveConsole(vars)
-        shell.interact()
 
 
 def _get_migrations_list():
