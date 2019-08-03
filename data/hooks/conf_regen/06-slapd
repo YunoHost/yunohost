@@ -76,6 +76,9 @@ do_post_regen() {
   sudo chown -R openldap:openldap /etc/ldap/schema/
   sudo chown -R openldap:openldap /etc/ldap/slapd.d/
 
+  # Add openldap user in the ssl-cert group to let it access the certificate for TLS
+  sudo usermod -aG ssl-cert openldap
+
   [ -z "$regen_conf_files" ] && exit 0
 
   # check the slapd config file at first
