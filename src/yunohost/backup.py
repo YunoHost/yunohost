@@ -1250,7 +1250,9 @@ class RestoreManager():
                                '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
                                ['cn']):
             if not ldap.remove('cn=%s,ou=permission' % per['cn'][0]):
-                raise YunohostError('permission_deletion_failed', permission=permission, app=app)
+                raise YunohostError('permission_deletion_failed',
+                                    permission=per['cn'][0].split('.')[0],
+                                    app=per['cn'][0].split('.')[1])
 
         # Restore permission for the app which is installed
         for per in old_apps_permission:
@@ -1370,7 +1372,7 @@ class RestoreManager():
             # Restore permissions
             if os.path.isfile(app_settings_in_archive + '/permission.ldif'):
                 filtred_entries =  ['entryUUID', 'creatorsName', 'createTimestamp', 'entryCSN', 'structuralObjectClass',
-                                   'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
+                                    'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
                 entries = read_ldif('%s/permission.ldif' % app_settings_in_archive, filtred_entries)
                 group_list = user_group_list(['cn'])['groups']
                 for dn, entry in entries:
@@ -1379,9 +1381,10 @@ class RestoreManager():
                         group_name = group.split(',')[0].split('=')[1]
                         if group_name not in group_list:
                             entry['groupPermission'].remove(group)
-                    print(entry)
                     if not ldap.add('cn=%s,ou=permission' % entry['cn'][0], entry):
-                        raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
+                        raise YunohostError('apps_permission_restoration_failed',
+                                            permission=entry['cn'][0].split('.')[0],
+                                            app=entry['cn'][0].split('.')[1])
             else:
                 from yunohost.tools import _get_migration_by_name
                 setup_group_permission = _get_migration_by_name("setup_group_permission")
@@ -1435,7 +1438,7 @@ class RestoreManager():
 
             # Remove all permission in LDAP
             result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
+                                 filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
             permission_list = [p['cn'][0] for p in result]
             for l in permission_list:
                 permission_remove(app_instance_name, l.split('.')[0], force=True)
