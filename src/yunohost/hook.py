@@ -329,7 +329,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     else:
         # TODO / FIXME : if needed in the future, implement support for other
         # languages...
-        assert hook_ext == "", "hook_exec only supports bash and python hooks for now"
+        assert hook_ext in ["", ".sh"], "hook_exec only supports bash and python hooks for now"
 
     # Define output loggers and call command
     loggers = (
