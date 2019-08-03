@@ -37,7 +37,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_json, write_to_json
+from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
 from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
@@ -52,7 +52,8 @@ from yunohost.log import is_unit_operation, OperationLogger
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
-MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
+MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
+OLD_MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
 
 logger = getActionLogger('yunohost.tools')
 
@@ -1019,131 +1020,126 @@ def tools_migrations_list(pending=False, done=False):
     # Get all migrations
     migrations = _get_migrations_list()
 
-    # If asked, filter pending or done migrations
-    if pending or done:
-        last_migration = tools_migrations_state()["last_run_migration"]
-        last_migration = last_migration["number"] if last_migration else -1
-        if done:
-            migrations = [m for m in migrations if m.number <= last_migration]
-        if pending:
-            migrations = [m for m in migrations if m.number > last_migration]
-
     # Reduce to dictionnaries
     migrations = [{"id": migration.id,
                    "number": migration.number,
                    "name": migration.name,
                    "mode": migration.mode,
+                   "state": migration.state,
                    "description": migration.description,
                    "disclaimer": migration.disclaimer} for migration in migrations]
+
+    # If asked, filter pending or done migrations
+    if pending or done:
+        if done:
+            migrations = [m for m in migrations if m["state"] != "pending"]
+        if pending:
+            migrations = [m for m in migrations if m["state"] == "pending"]
 
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclaimer=False):
+def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, revert=False, accept_disclaimer=False):
     """
     Perform migrations
+
+    targets : a list of migrations to act on (by default : all pending)
+    auto : automatic mode, run only 'automatic' migrations (compared to manual migrations). Option meant to be used in debian's postinst script during upgades.
+    skip : skip specified migrations (must explicit which migrations)
+    revert : to revert already-ran migrations (must explicit which migrations)
+    force_rerun : to re-run already ran migrations (if you know what you're doing...) (must explicit which migrations)
+    accept_disclaimer : accept disclaimer for manual migration that requires it (only valid for one migration)
     """
 
-    # state is a datastructure that represents the last run migration
-    # it has this form:
-    # {
-    #     "last_run_migration": {
-    #             "number": "00xx",
-    #             "name": "some name",
-    #         }
-    # }
-    state = tools_migrations_state()
+    all_migrations = _get_migrations_list()
 
-    last_run_migration_number = state["last_run_migration"]["number"] if state["last_run_migration"] else 0
+    # auto, skip, revert and force are exclusive options
+    if auto + skip + revert + force_rerun > 1:
+        raise YunohostError("--auto, --skip, --revert and --force-rerun are exclusive options.")
 
-    # load all migrations
-    migrations = _get_migrations_list()
-    migrations = sorted(migrations, key=lambda x: x.number)
+    # If no target specified
+    if not targets:
+        # skip, revert or force require explicit targets
+        if (revert or force_rerun):
+            raise YunohostError("You must provide explicit targets when using --skip, --revert or --force-rerun")
 
-    if not migrations:
+        # Otherwise, targets are all pending migrations
+        targets = [m for m in all_migrations if m.state == "pending"]
+
+    # If explicit targets are provided, we shall validate them
+    else:
+        def get_matching_migration(target):
+            for m in all_migrations:
+                if m.id == target or m.name == target or m.id.split("_")[0] == target:
+                    return m
+
+            raise YunohostError("No such migration called %s" % target)
+
+        targets = [get_matching_migration(t) for t in targets]
+        done = [t.id for t in targets if t.state != "pending"]
+        pending = [t.id for t in targets if t.state == "pending"]
+
+        if skip and done:
+            raise YunohostError("Those migrations are not pending so cannot be skipped: %s" % ', '.join(done))
+        if (revert or force_rerun) and pending:
+            raise YunohostError("Those migrations were not already ran so cannot be reverted or reran: %s" % ', '.join(pending))
+
+    # So, is there actually something to do ?
+    if not targets:
         logger.info(m18n.n('migrations_no_migrations_to_run'))
         return
 
-    all_migration_numbers = [x.number for x in migrations]
+    # Actually run selected migrations
+    for migration in targets:
 
-    if target is None:
-        target = migrations[-1].number
+        # If we are migrating in "automatic mode" (i.e. from debian configure
+        # during an upgrade of the package) but we are asked to run migrations
+        # to be ran manually by the user, stop there and ask the user to
+        # run the migration manually.
+        if auto and migration.mode == "manual":
+            logger.warn(m18n.n('migrations_to_be_ran_manually',
+                               number=migration.number,
+                               name=migration.name))
 
-    # validate input, target must be "0" or a valid number
-    elif target != 0 and target not in all_migration_numbers:
-        raise YunohostError('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers)))
+            # We go to the next migration
+            continue
 
-    logger.debug(m18n.n('migrations_current_target', target))
-
-    # no new migrations to run
-    if target == last_run_migration_number:
-        logger.info(m18n.n('migrations_no_migrations_to_run'))
-        return
-
-    logger.debug(m18n.n('migrations_show_last_migration', last_run_migration_number))
-
-    # we need to run missing migrations
-    if last_run_migration_number < target:
-        logger.debug(m18n.n('migrations_forward'))
-        # drop all already run migrations
-        migrations = filter(lambda x: target >= x.number > last_run_migration_number, migrations)
-        mode = "forward"
-
-    # we need to go backward on already run migrations
-    elif last_run_migration_number > target:
-        logger.debug(m18n.n('migrations_backward'))
-        # drop all not already run migrations
-        migrations = filter(lambda x: target < x.number <= last_run_migration_number, migrations)
-        mode = "backward"
-
-    else:  # can't happen, this case is handle before
-        raise Exception()
-
-    # effectively run selected migrations
-    for migration in migrations:
-
-        if not skip:
-            # If we are migrating in "automatic mode" (i.e. from debian configure
-            # during an upgrade of the package) but we are asked to run migrations
-            # to be ran manually by the user, stop there and ask the user to
-            # run the migration manually.
-            if auto and migration.mode == "manual":
-                logger.warn(m18n.n('migrations_to_be_ran_manually',
+        # If some migrations have disclaimers (and we're not trying to skip them)
+        if migration.disclaimer and not skip:
+            # require the --accept-disclaimer option.
+            # Otherwise, go to the next migration
+            if not accept_disclaimer:
+                logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
                                    number=migration.number,
-                                   name=migration.name))
-                break
-
-            # If some migrations have disclaimers,
-            if migration.disclaimer:
-                # require the --accept-disclaimer option. Otherwise, stop everything
-                # here and display the disclaimer
-                if not accept_disclaimer:
-                    logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                                       number=migration.number,
-                                       name=migration.name,
-                                       disclaimer=migration.disclaimer))
-                    break
-                # --accept-disclaimer will only work for the first migration
-                else:
-                    accept_disclaimer = False
+                                   name=migration.name,
+                                   disclaimer=migration.disclaimer))
+                continue
+            # --accept-disclaimer will only work for the first migration
+            else:
+                accept_disclaimer = False
 
         # Start register change on system
+        mode = "backward" if revert else "forward"
         operation_logger = OperationLogger('tools_migrations_migrate_' + mode)
         operation_logger.start()
 
-        if not skip:
+        if skip:
+            logger.warn(m18n.n('migrations_skip_migration',
+                               number=migration.number,
+                               name=migration.name))
+            _write_migration_state(migration.id, "skipped")
+            operation_logger.success()
+        else:
 
             logger.info(m18n.n('migrations_show_currently_running_migration',
                                number=migration.number, name=migration.name))
 
             try:
                 migration.operation_logger = operation_logger
-                if mode == "forward":
-                    migration.migrate()
-                elif mode == "backward":
+                if revert:
                     migration.backward()
-                else:  # can't happen
-                    raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
+                else:
+                    migration.migrate()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
@@ -1153,33 +1149,11 @@ def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclai
                              name=migration.name)
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
-                break
             else:
                 logger.success(m18n.n('migrations_success',
                                       number=migration.number, name=migration.name))
-
-        else:  # if skip
-            logger.warn(m18n.n('migrations_skip_migration',
-                               number=migration.number,
-                               name=migration.name))
-
-        # update the state to include the latest run migration
-        state["last_run_migration"] = {
-            "number": migration.number,
-            "name": migration.name
-        }
-
-        operation_logger.success()
-
-        # Skip migrations one at a time
-        if skip:
-            break
-
-    # special case where we want to go back from the start
-    if target == 0:
-        state["last_run_migration"] = None
-
-    write_to_json(MIGRATIONS_STATE_PATH, state)
+                _write_migration_state(migration.id, "done")
+                operation_logger.success()
 
 
 def tools_migrations_state():
@@ -1187,9 +1161,16 @@ def tools_migrations_state():
     Show current migration state
     """
     if not os.path.exists(MIGRATIONS_STATE_PATH):
-        return {"last_run_migration": None}
+        return {"migrations": {}}
 
-    return read_json(MIGRATIONS_STATE_PATH)
+    return read_yaml(MIGRATIONS_STATE_PATH)
+
+
+def _write_migration_state(migration_id, state):
+
+    current_states = tools_migrations_state()
+    current_states["migrations"][migration_id] = state
+    write_to_yaml(MIGRATIONS_STATE_PATH, current_states)
 
 
 def _get_migrations_list():
@@ -1207,8 +1188,21 @@ def _get_migrations_list():
         logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
         return migrations
 
+    # states is a datastructure that represents the last run migration
+    # it has this form:
+    # {
+    #     "0001_foo": "skipped",
+    #     "0004_baz": "done",
+    #     "0002_bar": "skipped",
+    #     "0005_zblerg": "done",
+    # }
+    # (in particular, pending migrations / not already ran are not listed
+    states = tools_migrations_state()["migrations"]
+
     for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
-        migrations.append(_load_migration(migration_file))
+        m = _load_migration(migration_file)
+        m.state = states.get(m.id, "pending")
+        migrations.append(m)
 
     return sorted(migrations, key=lambda m: m.id)
 
