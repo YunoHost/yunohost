@@ -33,6 +33,7 @@ from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
 
 from moulinette import m18n, msettings
+from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
@@ -181,17 +182,19 @@ def log_display(path, number=50, share=False):
     if os.path.exists(md_path):
         with open(md_path, "r") as md_file:
             try:
-                metadata = yaml.safe_load(md_file)
-                infos['metadata_path'] = md_path
-                infos['metadata'] = metadata
-                if 'log_path' in metadata:
-                    log_path = metadata['log_path']
-            except yaml.YAMLError:
-                error = m18n.n('log_corrupted_md_file', md_file=md_path)
+                metadata = read_yaml(md_file)
+            except MoulinetteError as e:
+                error = m18n.n('log_corrupted_md_file', md_file=md_path, error=e)
                 if os.path.exists(log_path):
                     logger.warning(error)
                 else:
                     raise YunohostError(error)
+            else:
+                infos['metadata_path'] = md_path
+                infos['metadata'] = metadata
+
+                if 'log_path' in metadata:
+                    log_path = metadata['log_path']
 
     # Display logs if exist
     if os.path.exists(log_path):
