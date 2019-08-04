@@ -180,21 +180,20 @@ def log_display(path, number=None, share=False):
 
     # Display metadata if exist
     if os.path.exists(md_path):
-        with open(md_path, "r") as md_file:
-            try:
-                metadata = read_yaml(md_file)
-            except MoulinetteError as e:
-                error = m18n.n('log_corrupted_md_file', md_file=md_path, error=e)
-                if os.path.exists(log_path):
-                    logger.warning(error)
-                else:
-                    raise YunohostError(error)
+        try:
+            metadata = read_yaml(md_path)
+        except MoulinetteError as e:
+            error = m18n.n('log_corrupted_md_file', md_file=md_path, error=e)
+            if os.path.exists(log_path):
+                logger.warning(error)
             else:
-                infos['metadata_path'] = md_path
-                infos['metadata'] = metadata
+                raise YunohostError(error)
+        else:
+            infos['metadata_path'] = md_path
+            infos['metadata'] = metadata
 
-                if 'log_path' in metadata:
-                    log_path = metadata['log_path']
+            if 'log_path' in metadata:
+                log_path = metadata['log_path']
 
     # Display logs if exist
     if os.path.exists(log_path):
