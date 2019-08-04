@@ -1,3 +1,9 @@
+yunohost (3.6.4.5) stable; urgency=low
+
+  - [fix] Typo in hotfix...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 04 Aug 2019 18:45:00  +0000
+
 yunohost (3.6.4.4) stable; urgency=low
 
   - [fix] Small typo breaking experimental config panel for apps (1224380)
