@@ -252,7 +252,7 @@
     "invalid_url_format": "Invalid URL format",
     "ip6tables_unavailable": "You cannot play with ip6tables here. You are either in a container or your kernel does not support it",
     "iptables_unavailable": "You cannot play with iptables here. You are either in a container or your kernel does not support it",
-    "log_corrupted_md_file": "The yaml metadata file associated with logs is corrupted: '{md_file}'",
+    "log_corrupted_md_file": "The yaml metadata file associated with logs is corrupted: '{md_file}\nError: {error}'",
     "log_category_404": "The log category '{category}' does not exist",
     "log_link_to_log": "Full log of this operation: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_help_to_get_log": "To view the log of the operation '{desc}', use the command 'yunohost log display {name}'",
