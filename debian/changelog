@@ -1,14 +1,25 @@
+yunohost (3.6.4.4) stable; urgency=low
+
+  - [fix] Small typo breaking experimental config panel for apps (1224380)
+  - [mod] Remove the old ugly trick to change the admin password, not needed anymore (1cb0a26)
+  - [fix] Legit variable getting caught as an info to be redacted by the core (8212010)
+  - [fix] Exception handling for corrupted metadata about operation logs (#754)
+
+  Contributors: Aleks, Bram, ljf
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 04 Aug 2019 18:20:00  +0000
+
 yunohost (3.6.4.3) stable; urgency=low
 
   - [hotfix] Fix some password-redacting cases that weren't caught up
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Set, 06 Jul 2019 19:35:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jul 2019 19:35:00  +0000
 
 yunohost (3.6.4.2) stable; urgency=low
 
   - [hotfix] Use the acme-v02 API to fix the newAccount keyError in acme_tiny
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Set, 06 Jul 2019 18:40:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jul 2019 18:40:00  +0000
 
 yunohost (3.6.4.1) stable; urgency=low
 
