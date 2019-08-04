@@ -520,9 +520,8 @@ def tools_update(apps=False, system=False):
         logger.info(m18n.n('updating_app_lists'))
         try:
             app_fetchlist()
-        except YunohostError:
-            # FIXME : silent exception !?
-            pass
+        except YunohostError as e:
+            logger.error(m18n.n('tools_update_failed_to_app_fetchlist'), error=e)
 
         upgradable_apps = list(_list_upgradable_apps())
 
