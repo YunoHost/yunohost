@@ -251,14 +251,20 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     for appslist in appslists.keys():
 
         json_path = "%s/%s.json" % (REPO_PATH, appslist)
+
+        # If we don't have the json yet, try to fetch it
         if not os.path.exists(json_path):
             app_fetchlist(name=appslist)
 
-        with open(json_path) as json_list:
-            for app, info in json.loads(str(json_list.read())).items():
+        # If it now exist
+        if os.path.exists(json_path):
+            appslist_content = read_json(json_path)
+            for app, info in appslist_content.items():
                 if app not in app_dict:
                     info['repository'] = appslist
                     app_dict[app] = info
+        else:
+            logger.warning("Uh there's no data for applist '%s' ... (That should be just a temporary issue?)" % appslist)
 
     # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
