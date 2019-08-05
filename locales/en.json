@@ -285,7 +285,6 @@
     "log_permission_update": "Update permission '{}' for app '{}'",
     "log_selfsigned_cert_install": "Install self signed certificate on '{}' domain",
     "log_letsencrypt_cert_renew": "Renew '{}' Let's encrypt certificate",
-    "log_service_enable": "Enable '{}' service",
     "log_regen_conf": "Regenerate system configurations '{}'",
     "log_user_create": "Add '{}' user",
     "log_user_delete": "Delete '{}' user",
