@@ -103,7 +103,12 @@ def log_list(category=[], limit=None, with_details=False):
                 entry["started_at"] = log_datetime
 
             if with_details:
-                metadata = read_yaml(md_path)
+                try:
+                    metadata = read_yaml(md_path)
+                except Exception as e:
+                    # If we can't read the yaml for some reason, report an error and ignore this entry...
+                    logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
+                    continue
                 entry["success"] = metadata.get("success", "?") if metadata else "?"
 
             result[category].append(entry)
