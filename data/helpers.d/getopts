@@ -76,6 +76,8 @@ ynh_handle_getopts_args () {
 			# ${#arguments[@]} is the size of the array
 			for arg in `seq 0 $(( ${#arguments[@]} - 1 ))`
 			do
+				# Escape options' values starting with -. Otherwise the - will be considered as another option.
+				arguments[arg]="${arguments[arg]//--${args_array[$option_flag]}-/--${args_array[$option_flag]}\\TOBEREMOVED\\-}"
 				# And replace long option (value of the option_flag) by the short option, the option_flag itself
 				# (e.g. for [u]=user, --user will be -u)
 				# Replace long option with =
@@ -152,6 +154,9 @@ ynh_handle_getopts_args () {
 									# If there's already another value for this option, add a ; before adding the new value
 									eval ${option_var}+="\;"
 								fi
+
+								# Remove the \ that escape - at beginning of values.
+								all_args[i]="${all_args[i]//\\TOBEREMOVED\\/}"
 
 								# For the record.
 								# We're using eval here to get the content of the variable stored itself as simple text in $option_var...
