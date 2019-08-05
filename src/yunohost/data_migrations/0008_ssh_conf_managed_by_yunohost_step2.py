@@ -33,6 +33,8 @@ class MyMigration(Migration):
     shown - and the user may also choose to skip this migration.
     """
 
+    dependencies = ["ssh_conf_managed_by_yunohost_step1"]
+
     def migrate(self):
         settings_set("service.ssh.allow_deprecated_dsa_hostkey", False)
         regen_conf(names=['ssh'], force=True)
@@ -44,7 +46,7 @@ class MyMigration(Migration):
 
     def backward(self):
 
-        raise YunohostError("migration_0008_backward_impossible")
+        raise YunohostError("migration_backward_impossible", name=self.name)
 
     @property
     def mode(self):

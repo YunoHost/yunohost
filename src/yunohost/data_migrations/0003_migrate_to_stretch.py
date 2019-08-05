@@ -31,7 +31,7 @@ class MyMigration(Migration):
 
     def backward(self):
 
-        raise YunohostError("migration_0003_backward_impossible")
+        raise YunohostError("migration_backward_impossible", name=self.name)
 
     def migrate(self):
 

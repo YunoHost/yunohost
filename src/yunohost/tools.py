@@ -1052,6 +1052,15 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
     all_migrations = _get_migrations_list()
 
+    # Small utility that allows up to get a migration given a name, id or number later
+    def get_matching_migration(target):
+        for m in all_migrations:
+            if m.id == target or m.name == target or m.id.split("_")[0] == target:
+                return m
+
+        raise YunohostError("No such migration called %s" % target)
+
+
     # auto, skip, revert and force are exclusive options
     if auto + skip + revert + force_rerun > 1:
         raise YunohostError("--auto, --skip, --revert and --force-rerun are exclusive options.")
@@ -1067,13 +1076,6 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
     # If explicit targets are provided, we shall validate them
     else:
-        def get_matching_migration(target):
-            for m in all_migrations:
-                if m.id == target or m.name == target or m.id.split("_")[0] == target:
-                    return m
-
-            raise YunohostError("No such migration called %s" % target)
-
         targets = [get_matching_migration(t) for t in targets]
         done = [t.id for t in targets if t.state != "pending"]
         pending = [t.id for t in targets if t.state == "pending"]
@@ -1102,6 +1104,14 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
             # We go to the next migration
             continue
+
+        # Check for migration dependencies
+        if not revert and not skip:
+            dependencies = [get_matching_migration(dep) for dep in migration.dependencies]
+            pending_dependencies = [dep.id for dep in dependencies if dep.state == "pending"]
+            if pending_dependencies:
+                logger.error("Can't run migration %s because first you need to run these migrations: %s" % (migration.id, ', '.join(pending_dependencies)))
+                continue
 
         # If some migrations have disclaimers (and we're not trying to skip them)
         if migration.disclaimer and not skip:
@@ -1308,6 +1318,7 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
+    dependencies = [] # List of migration ids required before running this migration
 
     def forward(self):
         raise NotImplementedError()

@@ -14,6 +14,8 @@ class MyMigration(Migration):
 
     "Migrate DBs from Postgresql 9.4 to 9.6 after migrating to Stretch"
 
+    dependencies = ["migrate_to_stretch"]
+
     def migrate(self):
 
         if not self.package_is_installed("postgresql-9.4"):
