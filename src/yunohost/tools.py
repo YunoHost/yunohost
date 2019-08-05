@@ -1298,18 +1298,11 @@ def _skip_all_migrations():
     This is meant to be used during postinstall to
     initialize the migration system.
     """
-    state = tools_migrations_state()
-
-    # load all migrations
-    migrations = _get_migrations_list()
-    migrations = sorted(migrations, key=lambda x: x.number)
-    last_migration = migrations[-1]
-
-    state["last_run_migration"] = {
-        "number": last_migration.number,
-        "name": last_migration.name
-    }
-    write_to_json(MIGRATIONS_STATE_PATH, state)
+    all_migrations = _get_migrations_list()
+    new_states = {"migrations": {}}
+    for migration in all_migrations:
+        new_states["migrations"][migration.id] = "skipped"
+    write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
 class Migration(object):
