@@ -1042,12 +1042,12 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
     """
     Perform migrations
 
-    targets : a list of migrations to act on (by default : all pending)
-    auto : automatic mode, run only 'automatic' migrations (compared to manual migrations). Option meant to be used in debian's postinst script during upgades.
-    skip : skip specified migrations (must explicit which migrations)
-    revert : to revert already-ran migrations (must explicit which migrations)
-    force_rerun : to re-run already ran migrations (if you know what you're doing...) (must explicit which migrations)
-    accept_disclaimer : accept disclaimer for manual migration that requires it (only valid for one migration)
+    targets        A list migrations to run (all pendings by default)
+    --skip         Skip specified migrations (to be used only if you know what you are doing) (must explicit which migrations)
+    --auto         Automatic mode, won't run manual migrations (to be used only if you know what you are doing) (must explicit which migrations)
+    --force-rerun  Re-run already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
+    --revert       Attempt to revert already-ran migrations (must explicit which migrations)
+    --accept-disclaimer  Accept disclaimers of migrations (please read them before using this option) (only valid for one migration)
     """
 
     all_migrations = _get_migrations_list()
@@ -1058,18 +1058,18 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
             if m.id == target or m.name == target or m.id.split("_")[0] == target:
                 return m
 
-        raise YunohostError("No such migration called %s" % target)
+        raise YunohostError("migrations_no_such_migration", id=target)
 
 
     # auto, skip, revert and force are exclusive options
     if auto + skip + revert + force_rerun > 1:
-        raise YunohostError("--auto, --skip, --revert and --force-rerun are exclusive options.")
+        raise YunohostError("migrations_exclusive_options")
 
     # If no target specified
     if not targets:
         # skip, revert or force require explicit targets
         if (revert or force_rerun):
-            raise YunohostError("You must provide explicit targets when using --skip, --revert or --force-rerun")
+            raise YunohostError("migrations_must_provide_explicit_targets")
 
         # Otherwise, targets are all pending migrations
         targets = [m for m in all_migrations if m.state == "pending"]
@@ -1081,9 +1081,11 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
         pending = [t.id for t in targets if t.state == "pending"]
 
         if skip and done:
-            raise YunohostError("Those migrations are not pending so cannot be skipped: %s" % ', '.join(done))
+            raise YunohostError("migrations_not_pending_cant_skip", ids=', '.join(done))
         if (revert or force_rerun) and pending:
-            raise YunohostError("Those migrations were not already ran so cannot be reverted or reran: %s" % ', '.join(pending))
+            raise YunohostError("migrations_pending_cant_revert_or_rerun", ids=', '.join(pending))
+        if not (skip or revert or force_rerun) and done:
+            raise YunohostError("migrations_already_ran", ids=', '.join(done))
 
     # So, is there actually something to do ?
     if not targets:
@@ -1098,9 +1100,7 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
         # to be ran manually by the user, stop there and ask the user to
         # run the migration manually.
         if auto and migration.mode == "manual":
-            logger.warn(m18n.n('migrations_to_be_ran_manually',
-                               number=migration.number,
-                               name=migration.name))
+            logger.warn(m18n.n('migrations_to_be_ran_manually', id=migration.id))
 
             # We go to the next migration
             continue
@@ -1110,17 +1110,18 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
             dependencies = [get_matching_migration(dep) for dep in migration.dependencies]
             pending_dependencies = [dep.id for dep in dependencies if dep.state == "pending"]
             if pending_dependencies:
-                logger.error("Can't run migration %s because first you need to run these migrations: %s" % (migration.id, ', '.join(pending_dependencies)))
+                logger.error(m18n.n('migrations_dependencies_not_satisfied',
+                                    id=migration.id,
+                                    dependencies_id=', '.join(pending_dependencies)))
                 continue
 
         # If some migrations have disclaimers (and we're not trying to skip them)
-        if migration.disclaimer and not skip:
+        if migration.disclaimer and not skip and not revert:
             # require the --accept-disclaimer option.
             # Otherwise, go to the next migration
             if not accept_disclaimer:
                 logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                                   number=migration.number,
-                                   name=migration.name,
+                                   id=migration.id,
                                    disclaimer=migration.disclaimer))
                 continue
             # --accept-disclaimer will only work for the first migration
@@ -1133,35 +1134,37 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
         operation_logger.start()
 
         if skip:
-            logger.warn(m18n.n('migrations_skip_migration',
-                               number=migration.number,
-                               name=migration.name))
+            logger.warn(m18n.n('migrations_skip_migration', id=migration.id))
+            migration.state = "skipped"
             _write_migration_state(migration.id, "skipped")
             operation_logger.success()
         else:
 
-            logger.info(m18n.n('migrations_show_currently_running_migration',
-                               number=migration.number, name=migration.name))
-
             try:
                 migration.operation_logger = operation_logger
                 if revert:
+                    logger.info(m18n.n('migrations_running_backward', id=migration.id))
                     migration.backward()
                 else:
+                    logger.info(m18n.n('migrations_running_forward', id=migration.id))
                     migration.migrate()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
                 msg = m18n.n('migrations_migration_has_failed',
-                             exception=e,
-                             number=migration.number,
-                             name=migration.name)
+                             exception=e, id=migration.id)
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
             else:
-                logger.success(m18n.n('migrations_success',
-                                      number=migration.number, name=migration.name))
-                _write_migration_state(migration.id, "done")
+                if revert:
+                    logger.success(m18n.n('migrations_success_revert', id=migration.id))
+                    migration.state = "pending"
+                    _write_migration_state(migration.id, "pending")
+                else:
+                    logger.success(m18n.n('migrations_success_forward', id=migration.id))
+                    migration.state = "done"
+                    _write_migration_state(migration.id, "done")
+
                 operation_logger.success()
 
 
@@ -1274,10 +1277,7 @@ def _load_migration(migration_file):
 
     migration_id = migration_file[:-len(".py")]
 
-    number, name = migration_id.split("_", 1)
-
-    logger.debug(m18n.n('migrations_loading_migration',
-                        number=number, name=name))
+    logger.debug(m18n.n('migrations_loading_migration', id=migration_id))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -1285,12 +1285,11 @@ def _load_migration(migration_file):
         # able to run it in the next loop
         module = import_module("yunohost.data_migrations.{}".format(migration_id))
         return module.MyMigration(migration_id)
-    except Exception:
+    except Exception as e:
         import traceback
         traceback.print_exc()
 
-        raise YunohostError('migrations_error_failed_to_load_migration',
-                            number=number, name=name)
+        raise YunohostError('migrations_failed_to_load_migration', id=migration_id, error=e)
 
 
 def _skip_all_migrations():
