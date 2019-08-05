@@ -398,7 +398,8 @@ class OperationLogger(object):
 
         dump = yaml.safe_dump(self.metadata, default_flow_style=False)
         for data in self.data_to_redact:
-            dump = dump.replace(data, "**********")
+            # N.B. : we need quotes here, otherwise yaml isn't happy about loading the yml later
+            dump = dump.replace(data, "'**********'")
         with open(self.md_path, 'w') as outfile:
             outfile.write(dump)
 
