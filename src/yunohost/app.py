@@ -590,9 +590,6 @@ def app_upgrade(app=[], url=None, file=None):
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
-    # Retrieve interface
-    is_api = msettings.get('interface') == 'api'
-
     try:
         app_list()
     except YunohostError:
