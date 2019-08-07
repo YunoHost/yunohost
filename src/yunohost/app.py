@@ -667,7 +667,6 @@ def app_upgrade(app=[], url=None, file=None):
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
 
-
         try:
             upgrade_retcode = hook_exec(extracted_app_folder + '/scripts/upgrade',
                                         args=args_list, env=env_dict)[0]
