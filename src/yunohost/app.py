@@ -674,7 +674,7 @@ def app_upgrade(app=[], url=None, file=None):
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
             operation_logger.error(msg)
 
-            # display this is there are remaining apps
+            # display this if there are remaining apps
             if apps[number + 1:]:
                 logger.error(m18n.n('app_upgrade_stoped'))
                 not_upgraded_apps = apps[number:]
