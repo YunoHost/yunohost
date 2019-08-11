@@ -23,6 +23,12 @@ class MailDiagnoser(Diagnoser):
 
         # ideally, SPF / DMARC / DKIM validation ... (c.f. https://github.com/alexAubin/yunoScripts/blob/master/yunoDKIM.py possibly though that looks horrible)
 
+        # check that the mail queue is not filled with hundreds of email pending
+
+        # check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
+
+        # check for unusual failed sending attempt being refused in the logs ?
+
 
 def main(args, env, loggers):
     return MailDiagnoser(args, env, loggers).diagnose()
