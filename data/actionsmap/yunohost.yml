@@ -104,7 +104,7 @@ user:
                         ask: ask_email
                         required: True
                         pattern: &pattern_email
-                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
+                            - !!str ".+@.+"
                             - "pattern_email"
                 -p:
                     full: --password
