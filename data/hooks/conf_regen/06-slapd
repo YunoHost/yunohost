@@ -78,6 +78,8 @@ do_post_regen() {
 
   # Add openldap user in the ssl-cert group to let it access the certificate for TLS
   sudo usermod -aG ssl-cert openldap
+  chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
+  chmod o-rwx /etc/yunohost/certs/yunohost.org/
 
   [ -z "$regen_conf_files" ] && exit 0
 

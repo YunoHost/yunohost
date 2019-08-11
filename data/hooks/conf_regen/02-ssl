@@ -78,6 +78,9 @@ do_init_regen() {
       ln -sf "$ynh_crt" /etc/ssl/certs/yunohost_crt.pem
       ln -sf "$ynh_key" /etc/ssl/private/yunohost_key.pem
   fi
+
+  chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
+  chmod o-rwx /etc/yunohost/certs/yunohost.org/
 }
 
 do_pre_regen() {
