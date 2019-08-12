@@ -1476,7 +1476,8 @@ def app_action_list(app):
     }
 
 
-def app_action_run(app, action, args=None):
+@is_unit_operation()
+def app_action_run(operation_logger, app, action, args=None):
     logger.warning(m18n.n('experimental_feature'))
 
     from yunohost.hook import hook_exec
@@ -1488,6 +1489,8 @@ def app_action_run(app, action, args=None):
 
     if action not in actions:
         raise YunohostError("action '%s' not available for app '%s', available actions are: %s" % (action, app, ", ".join(actions.keys())), raw_msg=True)
+
+    operation_logger.start()
 
     action_declaration = actions[action]
 
@@ -1525,17 +1528,21 @@ def app_action_run(app, action, args=None):
     )[0]
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        raise YunohostError("Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode), raw_msg=True)
+        msg = "Error while executing action '%s' of app '%s': return code %s" % (action, app, retcode)
+        operation_logger.error(msg)
+        raise YunohostError(msg, raw_msg=True)
 
     os.remove(path)
 
+    operation_logger.success()
     return logger.success("Action successed!")
 
 
 # Config panel todo list:
 # * docstrings
 # * merge translations on the json once the workflow is in place
-def app_config_show_panel(app):
+@is_unit_operation()
+def app_config_show_panel(operation_logger, app):
     logger.warning(m18n.n('experimental_feature'))
 
     from yunohost.hook import hook_exec
@@ -1543,6 +1550,7 @@ def app_config_show_panel(app):
     # this will take care of checking if the app is installed
     app_info_dict = app_info(app)
 
+    operation_logger.start()
     config_panel = _get_app_config_panel(app)
     config_script = os.path.join(APPS_SETTING_PATH, app, 'scripts', 'config')
 
@@ -1606,10 +1614,12 @@ def app_config_show_panel(app):
         "app": app,
         "app_name": app_info_dict["name"],
         "config_panel": config_panel,
+        "logs": operation_logger.success(),
     }
 
 
-def app_config_apply(app, args):
+@is_unit_operation()
+def app_config_apply(operation_logger, app, args):
     logger.warning(m18n.n('experimental_feature'))
 
     from yunohost.hook import hook_exec
@@ -1625,6 +1635,7 @@ def app_config_apply(app, args):
         # XXX real exception
         raise Exception("Not config-panel.json nor scripts/config")
 
+    operation_logger.start()
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env = {
         "YNH_APP_ID": app_id,
@@ -1658,9 +1669,14 @@ def app_config_apply(app, args):
                             )[0]
 
     if return_code != 0:
-        raise Exception("'script/config apply' return value code: %s (considered as an error)", return_code)
+        msg = "'script/config apply' return value code: %s (considered as an error)" % return_code
+        operation_logger.error(msg)
+        raise Exception(msg)
 
     logger.success("Config updated as expected")
+    return {
+        "logs": operation_logger.success(),
+    }
 
 
 def _get_all_installed_apps_id():
