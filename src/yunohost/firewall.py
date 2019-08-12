@@ -26,11 +26,7 @@
 import os
 import sys
 import yaml
-try:
-    import miniupnpc
-except ImportError:
-    sys.stderr.write('Error: Yunohost CLI Require miniupnpc lib\n')
-    sys.exit(1)
+import miniupnpc
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
