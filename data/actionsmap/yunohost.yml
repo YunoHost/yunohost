@@ -1585,6 +1585,9 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
+            configuration:
+                # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
+                authenticate: false
             arguments:
                 -d:
                     full: --domain
