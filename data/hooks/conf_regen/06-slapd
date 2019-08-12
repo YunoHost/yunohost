@@ -15,6 +15,7 @@ do_init_regen() {
   # fix some permissions
   chown root:openldap /etc/ldap/slapd.conf
   chown -R openldap:openldap /etc/ldap/schema/
+  usermod -aG ssl-cert openldap
 
   # check the slapd config file at first
   slaptest -Q -u -f /etc/ldap/slapd.conf
