@@ -71,6 +71,10 @@ DEFAULTS = OrderedDict([
         "choices": ["intermediate", "modern"]}),
     ("pop3.enabled", {"type": "bool", "default": False}),
     ("smtp.allow_ipv6", {"type": "bool", "default": True}),
+    ("smtp.relay.host", {"type": "string", "default": ""}),
+    ("smtp.relay.port", {"type": "int", "default": 587}),
+    ("smtp.relay.user", {"type": "string", "default": ""}),
+    ("smtp.relay.password", {"type": "string", "default": ""}),
 ])
 
 

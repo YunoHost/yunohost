@@ -72,7 +72,11 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydomain = {{ main_domain }}
 mydestination = localhost
+{% if relay_host == "" %}
 relayhost =
+{% else %}
+relayhost = [{{ relay_host }}]:{{ relay_port }}
+{% endif %}
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
 mailbox_command = procmail -a "$EXTENSION"
 mailbox_size_limit = 0
@@ -178,3 +182,19 @@ default_destination_rate_delay = 5s
 # So it's easly possible to scan a server to know which email adress is valid
 # and after to send spam
 disable_vrfy_command = yes
+
+{% if relay_user != "" %}
+# Relay email through an other smtp account
+# enable SASL authentication
+smtp_sasl_auth_enable = yes
+# disallow methods that allow anonymous authentication.
+smtp_sasl_security_options = noanonymous
+# where to find sasl_passwd
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+{% if relay_port == "587" %}
+# Enable STARTTLS encryption
+smtp_use_tls = yes
+{% endif %}
+# where to find CA certificates
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+{% endif %}
