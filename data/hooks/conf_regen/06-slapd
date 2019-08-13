@@ -73,12 +73,12 @@ do_post_regen() {
   mkdir -p /etc/ldap/slapd.d
 
   # fix some permissions
+  echo "Making sure we have the right permissions needed ..."
+  # penldap user should be in the ssl-cert group to let it access the certificate for TLS
+  usermod -aG ssl-cert openldap
   chown root:openldap /etc/ldap/slapd.conf
   chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
-
-  # Add openldap user in the ssl-cert group to let it access the certificate for TLS
-  usermod -aG ssl-cert openldap
   chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
   chmod o-rwx /etc/yunohost/certs/yunohost.org/
 
@@ -92,6 +92,7 @@ do_post_regen() {
   if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
       # regenerate LDAP config directory and import database as root
       # since the admin user may be unavailable
+      echo "Regenerate LDAP config directory and import the database using slapadd"
       sh -c "rm -Rf /etc/ldap/slapd.d;
   mkdir /etc/ldap/slapd.d;
   slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
@@ -101,14 +102,17 @@ do_post_regen() {
   chown -R openldap:openldap /var/lib/ldap" 2>&1
   else
       # regenerate LDAP config directory from slapd.conf
+      echo "Regenerate LDAP config directory from slapd.conf"
       rm -Rf /etc/ldap/slapd.d
       mkdir /etc/ldap/slapd.d
       slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
       chown -R openldap:openldap /etc/ldap/slapd.d/
   fi
 
-  su openldap -c "slapindex"
+  echo "Running slapdindex"
+  su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
 
+  echo "Reloading slapd"
   service slapd force-reload
 
   # on slow hardware/vm this regen conf would exit before the admin user that
