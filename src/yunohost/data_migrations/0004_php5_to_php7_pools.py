@@ -72,28 +72,28 @@ class MyMigration(Migration):
         # Reload nginx
         _run_service_command("reload", "nginx")
 
-        def backward(self):
+    def backward(self):
 
-            # Get list of php7 pool files
-            php7_pool_files = glob.glob("{}/*.conf".format(PHP7_POOLS))
+        # Get list of php7 pool files
+        php7_pool_files = glob.glob("{}/*.conf".format(PHP7_POOLS))
 
-            # Keep only files which have the migration comment
-            php7_pool_files = [f for f in php7_pool_files if open(f).readline().strip() == MIGRATION_COMMENT]
+        # Keep only files which have the migration comment
+        php7_pool_files = [f for f in php7_pool_files if open(f).readline().strip() == MIGRATION_COMMENT]
 
-            # Delete those files
-            for f in php7_pool_files:
-                os.remove(f)
+        # Delete those files
+        for f in php7_pool_files:
+            os.remove(f)
 
-            # Reload/restart the php pools
-            _run_service_command("stop", "php7.0-fpm")
-            os.system("systemctl start php5-fpm")
+        # Reload/restart the php pools
+        _run_service_command("stop", "php7.0-fpm")
+        os.system("systemctl start php5-fpm")
 
-            # Get list of nginx conf file
-            nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
-            for f in nginx_conf_files:
-                # Replace the socket prefix if it's found
-                c = "sed -i -e 's@{}@{}@g' {}".format(PHP7_SOCKETS_PREFIX, PHP5_SOCKETS_PREFIX, f)
-                os.system(c)
+        # Get list of nginx conf file
+        nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
+        for f in nginx_conf_files:
+            # Replace the socket prefix if it's found
+            c = "sed -i -e 's@{}@{}@g' {}".format(PHP7_SOCKETS_PREFIX, PHP5_SOCKETS_PREFIX, f)
+            os.system(c)
 
-            # Reload nginx
-            _run_service_command("reload", "nginx")
+        # Reload nginx
+        _run_service_command("reload", "nginx")
