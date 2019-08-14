@@ -177,19 +177,19 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     fullname = '%s %s' % (firstname, lastname)
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh'],
-        'givenName': firstname,
-        'sn': lastname,
-        'displayName': fullname,
-        'cn': fullname,
-        'uid': username,
-        'mail': mail,
-        'maildrop': username,
-        'mailuserquota': mailbox_quota,
-        'userPassword': _hash_user_password(password),
-        'gidNumber': uid,
-        'uidNumber': uid,
-        'homeDirectory': '/home/' + username,
-        'loginShell': '/bin/false'
+        'givenName': [firstname],
+        'sn': [lastname],
+        'displayName': [fullname],
+        'cn': [fullname],
+        'uid': [username],
+        'mail': mail,  # NOTE: this one seems to be already a list
+        'maildrop': [username],
+        'mailuserquota': [mailbox_quota],
+        'userPassword': [_hash_user_password(password)],
+        'gidNumber': [uid],
+        'uidNumber': [uid],
+        'homeDirectory': ['/home/' + username],
+        'loginShell': ['/bin/false']
     }
 
     # If it is the first user, add some aliases
@@ -327,21 +327,21 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     # Get modifications from arguments
     new_attr_dict = {}
     if firstname:
-        new_attr_dict['givenName'] = firstname  # TODO: Validate
-        new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + user['sn'][0]
+        new_attr_dict['givenName'] = [firstname]  # TODO: Validate
+        new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + user['sn'][0]]
 
     if lastname:
-        new_attr_dict['sn'] = lastname  # TODO: Validate
-        new_attr_dict['cn'] = new_attr_dict['displayName'] = user['givenName'][0] + ' ' + lastname
+        new_attr_dict['sn'] = [lastname]  # TODO: Validate
+        new_attr_dict['cn'] = new_attr_dict['displayName'] = [user['givenName'][0] + ' ' + lastname]
 
     if lastname and firstname:
-        new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
+        new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + lastname]
 
     if change_password:
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 
-        new_attr_dict['userPassword'] = _hash_user_password(change_password)
+        new_attr_dict['userPassword'] = [_hash_user_password(change_password)]
 
     if mail:
         main_domain = _get_maindomain()
@@ -406,7 +406,7 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         new_attr_dict['maildrop'] = user['maildrop']
 
     if mailbox_quota is not None:
-        new_attr_dict['mailuserquota'] = mailbox_quota
+        new_attr_dict['mailuserquota'] = [mailbox_quota]
 
     operation_logger.start()
 
