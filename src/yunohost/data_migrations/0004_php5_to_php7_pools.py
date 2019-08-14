@@ -24,7 +24,7 @@ class MyMigration(Migration):
 
     dependencies = ["migrate_to_stretch"]
 
-    def migrate(self):
+    def forward(self):
 
         # Get list of php5 pool files
         php5_pool_files = glob.glob("{}/*.conf".format(PHP5_POOLS))

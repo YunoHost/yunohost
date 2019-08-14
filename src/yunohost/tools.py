@@ -1316,7 +1316,7 @@ class Migration(object):
         raise NotImplementedError()
 
     def backward(self):
-        pass
+        raise YunohostError("migration_backward_impossible", name=self.name)
 
     @property
     def disclaimer(self):
