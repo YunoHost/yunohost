@@ -1139,8 +1139,8 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
             try:
                 migration.operation_logger = operation_logger
-                    logger.info(m18n.n('migrations_running_forward', id=migration.id))
-                    migration.run()
+                logger.info(m18n.n('migrations_running_forward', id=migration.id))
+                migration.run()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
@@ -1291,9 +1291,6 @@ def _skip_all_migrations():
     for migration in all_migrations:
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
-
-
-def _get_revert_dependencies(migration, all_migrations):
 
 
 class Migration(object):
