@@ -1095,9 +1095,9 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
     for migration in targets:
 
         # If we are migrating in "automatic mode" (i.e. from debian configure
-        # during an upgrade of the package) but we are asked to run migrations
-        # to be ran manually by the user, stop there and ask the user to
-        # run the migration manually.
+        # during an upgrade of the package) but we are asked for running
+        # migrations to be ran manually by the user, stop there and ask the
+        # user to run the migration manually.
         if auto and migration.mode == "manual":
             logger.warn(m18n.n('migrations_to_be_ran_manually', id=migration.id))
 
