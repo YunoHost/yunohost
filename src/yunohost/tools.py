@@ -86,15 +86,15 @@ def tools_ldapinit():
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     admin_dict = {
-        'cn': 'admin',
-        'uid': 'admin',
-        'description': 'LDAP Administrator',
-        'gidNumber': '1007',
-        'uidNumber': '1007',
-        'homeDirectory': '/home/admin',
-        'loginShell': '/bin/bash',
+        'cn': ['admin'],
+        'uid': ['admin'],
+        'description': ['LDAP Administrator'],
+        'gidNumber': ['1007'],
+        'uidNumber': ['1007'],
+        'homeDirectory': ['/home/admin'],
+        'loginShell': ['/bin/bash'],
         'objectClass': ['organizationalRole', 'posixAccount', 'simpleSecurityObject'],
-        'userPassword': 'yunohost'
+        'userPassword': ['yunohost']
     }
 
     ldap.update('cn=admin', admin_dict)
@@ -138,7 +138,7 @@ def tools_adminpw(new_password, check_strength=True):
     ldap = _get_ldap_interface()
 
     try:
-        ldap.update("cn=admin", {"userPassword": new_hash, })
+        ldap.update("cn=admin", {"userPassword": [ new_hash ], })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
