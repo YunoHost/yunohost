@@ -17,7 +17,7 @@
     "app_manifest_invalid": "Manifeste d’application incorrect : {error}",
     "app_no_upgrade": "Aucune application à mettre à jour",
     "app_not_correctly_installed": "{app:s} semble être mal installé",
-    "app_not_installed": "L'application '{app:s}' n’est pas installé. Vous trouverez ici la liste des applications installées: {all_apps}",
+    "app_not_installed": "L'application « {app:s} » n’est pas installée. Voici la liste des applications installées: {all_apps}",
     "app_not_properly_removed": "{app:s} n’a pas été supprimé correctement",
     "app_package_need_update": "Le paquet de l’application {app} doit être mis à jour pour être en adéquation avec les changements de YunoHost",
     "app_recent_version_required": "{app:s} nécessite une version plus récente de YunoHost",
@@ -562,5 +562,5 @@
     "tools_upgrade_special_packages_explanation": "Cette opération prendra fin mais la mise à jour spécifique continuera en arrière-plan. Veuillez ne pas lancer d'autre action sur votre serveur dans les 10 prochaines minutes (en fonction de la vitesse de votre matériel). Une fois que c'est fait, vous devrez peut-être vous reconnecter sur le panel d'administration web. Le journal de la mise à jour sera disponible dans Outils > Log (dans le panel d'administration web) ou dans la liste des journaux YunoHost (en ligne de commande).",
     "update_apt_cache_failed": "Impossible de mettre à jour le cache APT (gestionnaire de paquets Debian). Voici un extrait du fichier sources.list qui pourrait vous aider à identifier les lignes problématiques :\n{sourceslist}",
     "update_apt_cache_warning": "Des erreurs se sont produites lors de la mise à jour du cache APT (gestionnaire de paquets Debian). Voici un extrait des lignes du fichier sources.list qui pourrait vous aider à identifier les lignes problématiques :\n{sourceslist}",
-    "apps_permission_not_found": "Aucune permission n'a été trouvée pour les applications installées"
+    "apps_permission_not_found": "Aucune permission trouvée pour les applications installées"
 }
