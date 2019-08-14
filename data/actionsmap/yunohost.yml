@@ -1736,7 +1736,7 @@ tools:
                         help: Skip specified migrations (to be used only if you know what you are doing)
                         action: store_true
                     --revert:
-                        help: Attempt to revert already-ran migrations
+                        help: Attempt to revert already-ran migrations (to be used only if you know what you are doing)
                         action: store_true
                     --force-rerun:
                         help: Re-run already-ran migrations (to be used only if you know what you are doing)

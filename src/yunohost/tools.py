@@ -1046,7 +1046,7 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
     --skip         Skip specified migrations (to be used only if you know what you are doing) (must explicit which migrations)
     --auto         Automatic mode, won't run manual migrations (to be used only if you know what you are doing) (must explicit which migrations)
     --force-rerun  Re-run already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
-    --revert       Attempt to revert already-ran migrations (must explicit which migrations)
+    --revert       Attempt to revert already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
     --accept-disclaimer  Accept disclaimers of migrations (please read them before using this option) (only valid for one migration)
     """
 
