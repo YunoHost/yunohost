@@ -55,13 +55,7 @@ class MyMigration(Migration):
         # right after the regenconf, such that it will appear as
         # "manually modified".
         if os.path.exists('/etc/yunohost/from_script'):
-            try:
-                rm('/etc/yunohost/from_script')
-                copyfile(SSHD_CONF, '/etc/ssh/sshd_config.bkp')
-                regen_conf(names=['ssh'], force=True)
-                copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
-            except Exception:
-                if os.path.exists('/etc/yunohost/sshd_config.bkp'):
-                    copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
-                    _run_service_command('restart', 'ssh')
-                raise
+            rm('/etc/yunohost/from_script')
+            copyfile(SSHD_CONF, '/etc/ssh/sshd_config.bkp')
+            regen_conf(names=['ssh'], force=True)
+            copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
