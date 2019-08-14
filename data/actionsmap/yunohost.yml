@@ -1736,10 +1736,10 @@ tools:
                         help: Skip specified migrations (to be used only if you know what you are doing)
                         action: store_true
                     --revert:
-                        help: Attempt to revert already-ran migrations (to be used only if you know what you are doing)
+                        help: Attempt to revert already-ran specified migrations (to be used only if you know what you are doing)
                         action: store_true
                     --force-rerun:
-                        help: Re-run already-ran migrations (to be used only if you know what you are doing)
+                        help: Re-run already-ran specified migration (to be used only if you know what you are doing)
                         action: store_true
                     --auto:
                         help: Automatic mode, won't run manual migrations (to be used only if you know what you are doing)
