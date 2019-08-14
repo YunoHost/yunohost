@@ -1060,7 +1060,6 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
         raise YunohostError("migrations_no_such_migration", id=target)
 
-
     # auto, skip, revert and force are exclusive options
     if auto + skip + revert + force_rerun > 1:
         raise YunohostError("migrations_exclusive_options")
