@@ -16,7 +16,7 @@ class MyMigration(Migration):
 
     dependencies = ["migrate_to_stretch"]
 
-    def forward(self):
+    def run(self):
 
         if not self.package_is_installed("postgresql-9.4"):
             logger.warning(m18n.n("migration_0005_postgresql_94_not_installed"))

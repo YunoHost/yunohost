@@ -34,7 +34,7 @@ class MyMigration(Migration):
     use the recommended configuration, with an appropriate disclaimer.
     """
 
-    def forward(self):
+    def run(self):
 
         # Check if deprecated DSA Host Key is in config
         dsa_rgx = r'^[ \t]*HostKey[ \t]+/etc/ssh/ssh_host_dsa_key[ \t]*(?:#.*)?$'
@@ -55,19 +55,13 @@ class MyMigration(Migration):
         # right after the regenconf, such that it will appear as
         # "manually modified".
         if os.path.exists('/etc/yunohost/from_script'):
-            rm('/etc/yunohost/from_script')
-            copyfile(SSHD_CONF, '/etc/ssh/sshd_config.bkp')
-            regen_conf(names=['ssh'], force=True)
-            copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
-
-        # Restart ssh and backward if it fail
-        if not _run_service_command('restart', 'ssh'):
-            self.backward()
-            raise YunohostError("migration_0007_cancel")
-
-    def backward(self):
-
-        # We don't backward completely but it should be enough
-        copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
-        if not _run_service_command('restart', 'ssh'):
-            raise YunohostError("migration_0007_cannot_restart")
+            try:
+                rm('/etc/yunohost/from_script')
+                copyfile(SSHD_CONF, '/etc/ssh/sshd_config.bkp')
+                regen_conf(names=['ssh'], force=True)
+                copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
+            except Exception:
+                if os.path.exists('/etc/yunohost/sshd_config.bkp'):
+                    copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
+                    _run_service_command('restart', 'ssh')
+                raise

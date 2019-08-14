@@ -29,7 +29,7 @@ class MyMigration(Migration):
 
     mode = "manual"
 
-    def forward(self):
+    def run(self):
 
         self.logfile = "/var/log/yunohost/{}.log".format(self.name)
 

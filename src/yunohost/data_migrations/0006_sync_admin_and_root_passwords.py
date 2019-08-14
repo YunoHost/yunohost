@@ -20,7 +20,7 @@ class MyMigration(Migration):
 
     "Synchronize admin and root passwords"
 
-    def forward(self):
+    def run(self):
 
         new_hash = self._get_admin_hash()
         self._replace_root_hash(new_hash)

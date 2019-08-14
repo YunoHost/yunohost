@@ -15,7 +15,7 @@ class MyMigration(Migration):
 
     "Migrate from official.json to apps.json"
 
-    def forward(self):
+    def run(self):
 
         # Backup current app list json
         os.system("cp %s %s" % (APPSLISTS_JSON, APPSLISTS_BACKUP))
@@ -28,17 +28,21 @@ class MyMigration(Migration):
             "labriqueinter.net/apps/labriqueinternet.json",
             "labriqueinter.net/internetcube.json"
         ]
+        try:
+            appslists = _read_appslist_list()
+            for appslist, infos in appslists.items():
+                if infos["url"].split("//")[-1] in lists_to_remove:
+                    app_removelist(name=appslist)
 
-        appslists = _read_appslist_list()
-        for appslist, infos in appslists.items():
-            if infos["url"].split("//")[-1] in lists_to_remove:
-                app_removelist(name=appslist)
+            # Replace by apps.json list
+            app_fetchlist(name="yunohost",
+                          url="https://app.yunohost.org/apps.json")
+        except Exception:
+            if os.path.exists(APPSLISTS_BACKUP):
+                os.system("cp %s %s" % (APPSLISTS_BACKUP, APPSLISTS_JSON))
+            raise
+        else:
+            if os.path.exists(APPSLISTS_BACKUP):
+                os.remove(APPSLISTS_BACKUP)
 
-        # Replace by apps.json list
-        app_fetchlist(name="yunohost",
-                      url="https://app.yunohost.org/apps.json")
 
-    def backward(self):
-
-        if os.path.exists(APPSLISTS_BACKUP):
-            os.system("cp %s %s" % (APPSLISTS_BACKUP, APPSLISTS_JSON))

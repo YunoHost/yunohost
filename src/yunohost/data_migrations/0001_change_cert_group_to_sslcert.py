@@ -10,10 +10,11 @@ class MyMigration(Migration):
 
     all_certificate_files = glob.glob("/etc/yunohost/certs/*/*.pem")
 
-    def forward(self):
-        for filename in self.all_certificate_files:
-            chown(filename, uid="root", gid="ssl-cert")
-
-    def backward(self):
-        for filename in self.all_certificate_files:
-            chown(filename, uid="root", gid="metronome")
+    def run(self):
+        try:
+            for filename in self.all_certificate_files:
+                chown(filename, uid="root", gid="ssl-cert")
+        except Exception:
+            for filename in self.all_certificate_files:
+                chown(filename, uid="root", gid="metronome")
+            raise

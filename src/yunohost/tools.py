@@ -1038,7 +1038,7 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, revert=False, accept_disclaimer=False):
+def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
     """
     Perform migrations
 
@@ -1046,7 +1046,6 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
     --skip         Skip specified migrations (to be used only if you know what you are doing) (must explicit which migrations)
     --auto         Automatic mode, won't run manual migrations (to be used only if you know what you are doing)
     --force-rerun  Re-run already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
-    --revert       Attempt to revert already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
     --accept-disclaimer  Accept disclaimers of migrations (please read them before using this option) (only valid for one migration)
     """
 
@@ -1060,14 +1059,14 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
         raise YunohostError("migrations_no_such_migration", id=target)
 
-    # auto, skip, revert and force are exclusive options
-    if auto + skip + revert + force_rerun > 1:
+    # auto, skip and force are exclusive options
+    if auto + skip + force_rerun > 1:
         raise YunohostError("migrations_exclusive_options")
 
     # If no target specified
     if not targets:
         # skip, revert or force require explicit targets
-        if (skip or revert or force_rerun):
+        if (skip or force_rerun):
             raise YunohostError("migrations_must_provide_explicit_targets")
 
         # Otherwise, targets are all pending migrations
@@ -1081,9 +1080,9 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
         if skip and done:
             raise YunohostError("migrations_not_pending_cant_skip", ids=', '.join(done))
-        if (revert or force_rerun) and pending:
+        if force_rerun and pending:
             raise YunohostError("migrations_pending_cant_revert_or_rerun", ids=', '.join(pending))
-        if not (skip or revert or force_rerun) and done:
+        if not (skip or force_rerun) and done:
             raise YunohostError("migrations_already_ran", ids=', '.join(done))
 
     # So, is there actually something to do ?
@@ -1105,7 +1104,7 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
             continue
 
         # Check for migration dependencies
-        if not revert and not skip:
+        if not skip:
             dependencies = [get_matching_migration(dep) for dep in migration.dependencies]
             pending_dependencies = [dep.id for dep in dependencies if dep.state == "pending"]
             if pending_dependencies:
@@ -1115,7 +1114,7 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
                 continue
 
         # If some migrations have disclaimers (and we're not trying to skip them)
-        if migration.disclaimer and not skip and not revert:
+        if migration.disclaimer and not skip:
             # require the --accept-disclaimer option.
             # Otherwise, go to the next migration
             if not accept_disclaimer:
@@ -1128,8 +1127,7 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
                 accept_disclaimer = False
 
         # Start register change on system
-        mode = "backward" if revert else "forward"
-        operation_logger = OperationLogger('tools_migrations_migrate_' + mode)
+        operation_logger = OperationLogger('tools_migrations_migrate_forward')
         operation_logger.start()
 
         if skip:
@@ -1141,12 +1139,8 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
             try:
                 migration.operation_logger = operation_logger
-                if revert:
-                    logger.info(m18n.n('migrations_running_backward', id=migration.id))
-                    migration.backward()
-                else:
                     logger.info(m18n.n('migrations_running_forward', id=migration.id))
-                    migration.migrate()
+                    migration.run()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
@@ -1155,14 +1149,9 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
             else:
-                if revert:
-                    logger.success(m18n.n('migrations_success_revert', id=migration.id))
-                    migration.state = "pending"
-                    _write_migration_state(migration.id, "pending")
-                else:
-                    logger.success(m18n.n('migrations_success_forward', id=migration.id))
-                    migration.state = "done"
-                    _write_migration_state(migration.id, "done")
+                logger.success(m18n.n('migrations_success_forward', id=migration.id))
+                migration.state = "done"
+                _write_migration_state(migration.id, "done")
 
                 operation_logger.success()
 
@@ -1304,6 +1293,9 @@ def _skip_all_migrations():
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
+def _get_revert_dependencies(migration, all_migrations):
+
+
 class Migration(object):
 
     # Those are to be implemented by daughter classes
@@ -1311,20 +1303,14 @@ class Migration(object):
     mode = "auto"
     dependencies = [] # List of migration ids required before running this migration
 
-    def forward(self):
-        raise NotImplementedError()
-
-    def backward(self):
-        raise YunohostError("migration_backward_impossible", name=self.name)
-
     @property
     def disclaimer(self):
         return None
 
     # The followings shouldn't be overriden
 
-    def migrate(self):
-        self.forward()
+    def run(self):
+        raise NotImplementedError()
 
     def __init__(self, id_):
         self.id = id_
