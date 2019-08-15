@@ -15,7 +15,7 @@ class MyMigration(Migration):
 
     "Migrate from official.json to apps.json"
 
-    def migrate(self):
+    def forward(self):
 
         # Backup current app list json
         os.system("cp %s %s" % (APPSLISTS_JSON, APPSLISTS_BACKUP))

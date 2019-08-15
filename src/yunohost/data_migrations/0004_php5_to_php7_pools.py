@@ -22,7 +22,9 @@ class MyMigration(Migration):
 
     "Migrate php5-fpm 'pool' conf files to php7 stuff"
 
-    def migrate(self):
+    dependencies = ["migrate_to_stretch"]
+
+    def forward(self):
 
         # Get list of php5 pool files
         php5_pool_files = glob.glob("{}/*.conf".format(PHP5_POOLS))

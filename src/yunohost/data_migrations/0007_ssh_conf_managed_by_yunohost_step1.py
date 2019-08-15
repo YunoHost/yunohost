@@ -34,7 +34,7 @@ class MyMigration(Migration):
     use the recommended configuration, with an appropriate disclaimer.
     """
 
-    def migrate(self):
+    def forward(self):
 
         # Check if deprecated DSA Host Key is in config
         dsa_rgx = r'^[ \t]*HostKey[ \t]+/etc/ssh/ssh_host_dsa_key[ \t]*(?:#.*)?$'
