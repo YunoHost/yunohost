@@ -1,0 +1,5 @@
+log_path: /var/log/fail2ban.log
+related_to:
+- - service
+  - fail2ban
+

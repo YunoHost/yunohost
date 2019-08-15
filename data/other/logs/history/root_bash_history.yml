@@ -1,0 +1,4 @@
+log_path: '/root/.bash_history'
+related_to:
+- - user
+  - admin
