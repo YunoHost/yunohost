@@ -7,6 +7,7 @@ data/hooks/* /usr/share/yunohost/hooks/
 data/other/yunoprompt.service /etc/systemd/system/
 data/other/password/* /usr/share/yunohost/other/password/
 data/other/dpkg-origins/yunohost /etc/dpkg/origins
+data/other/logs/* /var/log/yunohost/categories/
 data/other/* /usr/share/yunohost/yunohost-config/moulinette/
 data/templates/* /usr/share/yunohost/templates/
 data/helpers /usr/share/yunohost/
