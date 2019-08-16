@@ -2571,6 +2571,39 @@ def backup_delete(name):
 
     logger.success(m18n.n('backup_deleted'))
 
+
+#
+# Repository subcategory
+#
+import yunohost.repository
+
+
+def backup_repository_list(full):
+    return yunohost.repository.backup_repository_list(full)
+
+
+def backup_repository_info(name, human_readable, space_used):
+    return yunohost.repository.backup_repository_info(name, human_readable, space_used)
+
+
+def backup_repository_add(location, name, description, methods, quota, encryption):
+    return yunohost.repository.backup_repository_add(location, name, description, methods, quota, encryption)
+
+
+def backup_repository_update(name, description, quota, password):
+    return yunohost.repository.backup_repository_update(name, description, quota, password)
+
+
+def backup_repository_remove(name, purge):
+    return yunohost.repository.backup_repository_remove(name, purge)
+
+
+
+#
+# End Repository subcategory
+#
+
+
 #
 # Misc helpers                                                              #
 #

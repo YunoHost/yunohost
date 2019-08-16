@@ -32,13 +32,12 @@ from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, read_json, write_to_json
+from moulinette.utils.filesystem import read_file, read_yaml, write_to_json
 
 
 from yunohost.utils.error import YunohostError
 from yunohost.monitor import binary_to_human
 from yunohost.log import OperationLogger, is_unit_operation
-from yunohost.backup import BackupMethod
 
 logger = getActionLogger('yunohost.repository')
 REPOSITORIES_PATH = '/etc/yunohost/repositories.yml'
@@ -75,7 +74,7 @@ class BackupRepository(object):
 
         if os.path.exists(REPOSITORIES_PATH):
             try:
-                cls.repositories = read_json(REPOSITORIES_PATH)
+                cls.repositories = read_yaml(REPOSITORIES_PATH)['repositories']
             except MoulinetteError as e:
                 raise YunohostError(
                     'backup_cant_open_repositories_file', reason=e)
@@ -94,6 +93,7 @@ class BackupRepository(object):
     def __init__(self, created, location, name=None, description=None, method=None,
                  encryption=None, quota=None):
 
+        from yunohost.backup import BackupMethod
         self.location = location
         self._split_location()
 
@@ -154,7 +154,8 @@ class BackupRepository(object):
         self.domain = location_match.group('domain')
         self.path = location_match.group('path')
 
-def backup_repository_list(name, full=False):
+
+def backup_repository_list(full=False):
     """
     List available repositories where put archives
     """
@@ -164,6 +165,7 @@ def backup_repository_list(name, full=False):
         return repositories
     else:
         return repositories.keys()
+
 
 def backup_repository_info(name, human_readable=True, space_used=False):
     """
@@ -189,7 +191,7 @@ def backup_repository_info(name, human_readable=True, space_used=False):
 
 @is_unit_operation()
 def backup_repository_add(operation_logger, location, name, description=None,
-                        methods=None, quota=None, encryption="passphrase"):
+                          methods=None, quota=None, encryption="passphrase"):
     """
     Add a backup repository
 

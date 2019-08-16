@@ -1039,19 +1039,20 @@ backup:
                 add:
                     action_help: Add a backup repository
                     api: POST /backup/repository/<name>
-                    configuration:
-                        authenticate: all
-                        authenticator: ldap-anonymous
                     arguments:
-                        path:
-                            help: Path eventually on another server
+                        location:
+                            help: Location on this server or on an other
                             extra:
-                                pattern: *pattern_backup_repository_path
+                                pattern: &pattern_backup_repository_location
+                                    - !!str ^((ssh://)?[a-z_]\w*@\[\w\-\.]+:)?(~?/)?[\w/]*$
+                                    - "pattern_backup_repository_location"
                         -n:
                             full: --name
                             help: Name of the repository
                             extra:
-                                pattern: *pattern_backup_repository_name
+                                pattern: &pattern_backup_repository_name
+                                    - !!str ^\w+$
+                                    - "pattern_backup_repository_name"
                         -d:
                             full: --description
                             help: Short description of the repository
@@ -1061,7 +1062,7 @@ backup:
                         -q:
                             full: --quota
                             help: Quota to configure with this repository
-                        --e:
+                        -e:
                             full: --encryption
                             help: Type of encryption
 
