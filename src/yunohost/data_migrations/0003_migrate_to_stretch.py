@@ -10,9 +10,9 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.tools import Migration
 from yunohost.app import unstable_apps
-from yunohost.service import (_run_service_command,
-                              manually_modified_files,
-                              manually_modified_files_compared_to_debian_default)
+from yunohost.service import _run_service_command
+from yunohost.regenconf import (manually_modified_files,
+                                manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import get_installed_version
 from yunohost.utils.network import get_network_interfaces
@@ -35,7 +35,7 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        self.logfile = "/tmp/{}.log".format(self.name)
+        self.logfile = "/var/log/yunohost/{}.log".format(self.name)
 
         self.check_assertions()
 

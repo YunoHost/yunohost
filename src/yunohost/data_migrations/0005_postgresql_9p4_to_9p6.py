@@ -38,6 +38,6 @@ class MyMigration(Migration):
 
     def package_is_installed(self, package_name):
 
-        p = subprocess.Popen("dpkg --list | grep -q -w {}".format(package_name), shell=True)
+        p = subprocess.Popen("dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name), shell=True)
         p.communicate()
         return p.returncode == 0

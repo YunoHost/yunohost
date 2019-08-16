@@ -20,8 +20,6 @@ mysql:
 glances: {}
 ssh:
   log: /var/log/auth.log
-ssl:
-  status: null
 metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
 slapd:
@@ -34,10 +32,9 @@ yunohost-firewall:
   need_lock: true
 nslcd:
   log: /var/log/syslog
-nsswitch:
-  status: null
-yunohost:
-  status: null
+nsswitch: null
+ssl: null
+yunohost: null
 bind9: null
 tahoe-lafs: null
 memcached: null

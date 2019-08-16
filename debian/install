@@ -1,10 +1,12 @@
 bin/* /usr/bin/
 sbin/* /usr/sbin/
 data/bash-completion.d/yunohost /etc/bash_completion.d/
+doc/yunohost.8.gz /usr/share/man/man8/
 data/actionsmap/* /usr/share/moulinette/actionsmap/
 data/hooks/* /usr/share/yunohost/hooks/
 data/other/yunoprompt.service /etc/systemd/system/
 data/other/password/* /usr/share/yunohost/other/password/
+data/other/dpkg-origins/yunohost /etc/dpkg/origins
 data/other/* /usr/share/yunohost/yunohost-config/moulinette/
 data/templates/* /usr/share/yunohost/templates/
 data/helpers /usr/share/yunohost/

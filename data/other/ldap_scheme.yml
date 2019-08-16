@@ -17,6 +17,12 @@ parents:
             - organizationalUnit
             - top
 
+    ou=permission:
+        ou: permission
+        objectClass:
+            - organizationalUnit
+            - top
+
     ou=groups:
         ou: groups
         objectClass:
@@ -29,22 +35,6 @@ parents:
             - top
 
 children:
-    cn=admins,ou=groups:
-        cn: admins
-        gidNumber: "4001"
-        memberUid: admin
-        objectClass:
-            - posixGroup
-            - top
-
-    cn=sftpusers,ou=groups:
-        cn: sftpusers
-        gidNumber: "4002"
-        memberUid: admin
-        objectClass:
-            - posixGroup
-            - top
-
     cn=admin,ou=sudo:
         cn: admin
         sudoUser: admin
@@ -54,3 +44,34 @@ children:
         objectClass:
             - sudoRole
             - top
+    cn=admins,ou=groups:
+        cn: admins
+        gidNumber: "4001"
+        memberUid: admin
+        objectClass:
+            - posixGroup
+            - top
+    cn=all_users,ou=groups:
+        cn: all_users
+        gidNumber: "4002"
+        objectClass:
+            - posixGroup
+            - groupOfNamesYnh
+
+depends_children:
+    cn=main.mail,ou=permission:
+        cn: main.mail
+        gidNumber: "5001"
+        objectClass:
+            - posixGroup
+            - permissionYnh
+        groupPermission:
+            - "cn=all_users,ou=groups,dc=yunohost,dc=org"
+    cn=main.metronome,ou=permission:
+        cn: main.metronome
+        gidNumber: "5002"
+        objectClass:
+            - posixGroup
+            - permissionYnh
+        groupPermission:
+            - "cn=all_users,ou=groups,dc=yunohost,dc=org"

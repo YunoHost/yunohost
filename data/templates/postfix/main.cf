@@ -33,7 +33,11 @@ smtpd_tls_key_file = /etc/yunohost/certs/{{ main_domain }}/key.pem
 smtpd_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtpd_tls_loglevel=1
+{% if compatibility == "intermediate" %}
 smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3
+{% else %}
+smtpd_tls_mandatory_protocols=!SSLv2,!SSLv3,!TLSv1,!TLSv1.1
+{% endif %}
 smtpd_tls_mandatory_ciphers=high
 smtpd_tls_eecdh_grade = ultra
 
@@ -58,7 +62,7 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydomain = {{ main_domain }}
 mydestination = localhost
-relayhost = 
+relayhost =
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
 mailbox_command = procmail -a "$EXTENSION"
 mailbox_size_limit = 0
@@ -68,71 +72,71 @@ inet_interfaces = all
 #### Fit to the maximum message size to 30mb, more than allowed by GMail or Yahoo ####
 message_size_limit = 31457280
 
-# Virtual Domains Control 
-virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf 
-virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf 
-virtual_mailbox_base = 
-virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf 
-virtual_alias_domains = 
-virtual_minimum_uid = 100 
-virtual_uid_maps = static:vmail 
+# Virtual Domains Control
+virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf
+virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf
+virtual_mailbox_base =
+virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf
+virtual_alias_domains =
+virtual_minimum_uid = 100
+virtual_uid_maps = static:vmail
 virtual_gid_maps = static:mail
 smtpd_sender_login_maps= ldap:/etc/postfix/ldap-accounts.cf
 
-# Dovecot LDA 
-virtual_transport = dovecot 
+# Dovecot LDA
+virtual_transport = dovecot
 dovecot_destination_recipient_limit = 1
 
-# Enable SASL authentication for the smtpd daemon 
-smtpd_sasl_auth_enable = yes 
-smtpd_sasl_type = dovecot 
-smtpd_sasl_path = private/auth 
-# Fix some outlook's bugs 
-broken_sasl_auth_clients = yes 
-# Reject anonymous connections 
-smtpd_sasl_security_options = noanonymous 
+# Enable SASL authentication for the smtpd daemon
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+# Fix some outlook's bugs
+broken_sasl_auth_clients = yes
+# Reject anonymous connections
+smtpd_sasl_security_options = noanonymous
 smtpd_sasl_local_domain =
 
 
-# Wait until the RCPT TO command before evaluating restrictions 
-smtpd_delay_reject = yes 
- 
-# Basics Restrictions 
-smtpd_helo_required = yes 
-strict_rfc821_envelopes = yes 
- 
-# Requirements for the connecting server 
-smtpd_client_restrictions = 
-    permit_mynetworks, 
-    permit_sasl_authenticated, 
-    reject_rbl_client bl.spamcop.net, 
-    reject_rbl_client cbl.abuseat.org, 
-    reject_rbl_client zen.spamhaus.org, 
-    permit 
- 
-# Requirements for the HELO statement 
-smtpd_helo_restrictions = 
-    permit_mynetworks, 
-    permit_sasl_authenticated, 
-    reject_non_fqdn_hostname, 
-    reject_invalid_hostname, 
-    permit 
- 
-# Requirements for the sender address 
+# Wait until the RCPT TO command before evaluating restrictions
+smtpd_delay_reject = yes
+
+# Basics Restrictions
+smtpd_helo_required = yes
+strict_rfc821_envelopes = yes
+
+# Requirements for the connecting server
+smtpd_client_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_rbl_client bl.spamcop.net,
+    reject_rbl_client cbl.abuseat.org,
+    reject_rbl_client zen.spamhaus.org,
+    permit
+
+# Requirements for the HELO statement
+smtpd_helo_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_non_fqdn_hostname,
+    reject_invalid_hostname,
+    permit
+
+# Requirements for the sender address
 smtpd_sender_restrictions =
-    reject_sender_login_mismatch, 
-    permit_mynetworks, 
-    permit_sasl_authenticated, 
-    reject_non_fqdn_sender, 
+    reject_sender_login_mismatch,
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_non_fqdn_sender,
     reject_unknown_sender_domain,
-    permit 
- 
-# Requirement for the recipient address 
-smtpd_recipient_restrictions = 
-    permit_mynetworks, 
-    permit_sasl_authenticated, 
-    reject_non_fqdn_recipient, 
-    reject_unknown_recipient_domain, 
+    permit
+
+# Requirement for the recipient address
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_non_fqdn_recipient,
+    reject_unknown_recipient_domain,
     reject_unauth_destination,
     permit
 
@@ -154,3 +158,13 @@ smtpd_milters = inet:localhost:11332
 
 # Skip email without checking if milter has died
 milter_default_action = accept
+
+# Avoid to send simultaneously too many emails
+smtp_destination_concurrency_limit = 1
+default_destination_rate_delay = 5s
+
+# Avoid email adress scanning
+# By default it's possible to detect if the email adress exist
+# So it's easly possible to scan a server to know which email adress is valid
+# and after to send spam
+disable_vrfy_command = yes

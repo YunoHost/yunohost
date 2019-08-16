@@ -1,0 +1,298 @@
+#!/bin/bash
+
+PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
+
+# Open a connection as a user
+#
+# examples: 
+#    ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
+#    ynh_psql_connect_as 'user' 'pass' < /path/to/file.sql
+#
+# usage: ynh_psql_connect_as --user=user --password=password [--database=database]
+# | arg: -u, --user - the user name to connect as
+# | arg: -p, --password - the user password
+# | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_connect_as() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=upd
+	declare -Ar args_array=([u]=user= [p]=password= [d]=database=)
+	local user
+	local password
+	local database
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	database="${database:-}"
+
+	sudo --login --user=postgres PGUSER="$user" PGPASSWORD="$password" psql "$database"
+}
+
+# Execute a command as root user
+#
+# usage: ynh_psql_execute_as_root --sql=sql [--database=database]
+# | arg: -s, --sql - the SQL command to execute
+# | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_execute_as_root() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=sd
+	declare -Ar args_array=([s]=sql= [d]=database=)
+	local sql
+	local database
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	database="${database:-}"
+
+	ynh_psql_connect_as --user="postgres" --password="$(sudo cat $PSQL_ROOT_PWD_FILE)" \
+		--database="$database" <<<"$sql"
+}
+
+# Execute a command from a file as root user
+#
+# usage: ynh_psql_execute_file_as_root --file=file [--database=database]
+# | arg: -f, --file - the file containing SQL commands
+# | arg: -d, --database - the database to connect to
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_execute_file_as_root() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=fd
+	declare -Ar args_array=([f]=file= [d]=database=)
+	local file
+	local database
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+	database="${database:-}"
+
+	ynh_psql_connect_as --user="postgres" --password="$(sudo cat $PSQL_ROOT_PWD_FILE)" \
+		--database="$database" <"$file"
+}
+
+# Create a database and grant optionnaly privilegies to a user
+#
+# [internal]
+#
+# usage: ynh_psql_create_db db [user]
+# | arg: db - the database name to create
+# | arg: user - the user to grant privilegies
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_create_db() {
+	local db=$1
+	local user=${2:-}
+
+	local sql="CREATE DATABASE ${db};"
+
+	# grant all privilegies to user
+	if [ -n "$user" ]; then
+		sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user} WITH GRANT OPTION;"
+	fi
+
+	ynh_psql_execute_as_root --sql="$sql"
+}
+
+# Drop a database
+#
+# [internal]
+#
+# If you intend to drop the database *and* the associated user,
+# consider using ynh_psql_remove_db instead.
+#
+# usage: ynh_psql_drop_db db
+# | arg: db - the database name to drop
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_drop_db() {
+	local db=$1
+	# First, force disconnection of all clients connected to the database
+	# https://stackoverflow.com/questions/5408156/how-to-drop-a-postgresql-database-if-there-are-active-connections-to-it
+	# https://dba.stackexchange.com/questions/16426/how-to-drop-all-connections-to-a-specific-database-without-stopping-the-server
+	ynh_psql_execute_as_root --sql="SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db';" --database="$db"
+	sudo --login --user=postgres dropdb $db
+}
+
+# Dump a database
+#
+# example: ynh_psql_dump_db 'roundcube' > ./dump.sql
+#
+# usage: ynh_psql_dump_db --database=database
+# | arg: -d, --database - the database name to dump
+# | ret: the psqldump output
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_dump_db() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=d
+	declare -Ar args_array=([d]=database=)
+	local database
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	sudo --login --user=postgres pg_dump "$database"
+}
+
+# Create a user
+#
+# [internal]
+#
+# usage: ynh_psql_create_user user pwd
+# | arg: user - the user name to create
+# | arg: pwd - the password to identify user by
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_create_user() {
+	local user=$1
+	local pwd=$2
+	ynh_psql_execute_as_root --sql="CREATE USER $user WITH ENCRYPTED PASSWORD '$pwd'"
+}
+
+# Check if a psql user exists
+#
+# usage: ynh_psql_user_exists --user=user
+# | arg: -u, --user - the user for which to check existence
+ynh_psql_user_exists() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=u
+	declare -Ar args_array=([u]=user=)
+	local user
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user" ; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+# Check if a psql database exists
+#
+# usage: ynh_psql_database_exists --database=database
+# | arg: -d, --database - the database for which to check existence
+ynh_psql_database_exists() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=d
+	declare -Ar args_array=([d]=database=)
+	local database
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+# Drop a user
+#
+# [internal]
+#
+# usage: ynh_psql_drop_user user
+# | arg: user - the user name to drop
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_drop_user() {
+	ynh_psql_execute_as_root --sql="DROP USER ${1};"
+}
+
+# Create a database, an user and its password. Then store the password in the app's config
+#
+# After executing this helper, the password of the created database will be available in $db_pwd
+# It will also be stored as "psqlpwd" into the app settings.
+#
+# usage: ynh_psql_setup_db --db_user=user --db_name=name [--db_pwd=pwd]
+# | arg: -u, --db_user - Owner of the database
+# | arg: -n, --db_name - Name of the database
+# | arg: -p, --db_pwd - Password of the database. If not given, a password will be generated
+ynh_psql_setup_db() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=unp
+	declare -Ar args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
+	local db_user
+	local db_name
+	db_pwd=""
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	local new_db_pwd=$(ynh_string_random) # Generate a random password
+	# If $db_pwd is not given, use new_db_pwd instead for db_pwd
+	db_pwd="${db_pwd:-$new_db_pwd}"
+
+	if ! ynh_psql_user_exists --user=$db_user; then
+		ynh_psql_create_user "$db_user" "$db_pwd"
+	fi
+
+	ynh_psql_create_db "$db_name" "$db_user"                     # Create the database
+	ynh_app_setting_set --app=$app --key=psqlpwd --value=$db_pwd # Store the password in the app's config
+}
+
+# Remove a database if it exists, and the associated user
+#
+# usage: ynh_psql_remove_db --db_user=user --db_name=name
+# | arg: -u, --db_user - Owner of the database
+# | arg: -n, --db_name - Name of the database
+ynh_psql_remove_db() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=un
+	declare -Ar args_array=([u]=db_user= [n]=db_name=)
+	local db_user
+	local db_name
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
+	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
+		ynh_psql_drop_db $db_name # Remove the database
+	else
+		ynh_print_warn --message="Database $db_name not found"
+	fi
+
+	# Remove psql user if it exists
+	if ynh_psql_user_exists --user=$db_user; then
+		ynh_psql_drop_user $db_user
+	else
+		ynh_print_warn --message="User $db_user not found"
+	fi
+}
+
+# Create a master password and set up global settings
+# Please always call this script in install and restore scripts
+#
+# usage: ynh_psql_test_if_first_run
+ynh_psql_test_if_first_run() {
+	if [ -f "$PSQL_ROOT_PWD_FILE" ]; then
+		echo "PostgreSQL is already installed, no need to create master password"
+	else
+		local psql_root_password="$(ynh_string_random)"
+		echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
+
+		if [ -e /etc/postgresql/9.4/ ]; then
+			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
+			local logfile=/var/log/postgresql/postgresql-9.4-main.log
+		elif [ -e /etc/postgresql/9.6/ ]; then
+			local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
+			local logfile=/var/log/postgresql/postgresql-9.6-main.log
+		else
+			ynh_die "postgresql shoud be 9.4 or 9.6"
+		fi
+
+		ynh_systemd_action --service_name=postgresql --action=start
+
+		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
+
+		# force all user to connect to local database using passwords
+		# https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
+		# Note: we can't use peer since YunoHost create users with nologin
+		#  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
+		ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3password" --target_file="$pg_hba"
+
+		# Advertise service in admin panel
+		yunohost service add postgresql --log "$logfile"
+
+		systemctl enable postgresql
+		ynh_systemd_action --service_name=postgresql --action=reload
+	fi
+}
