@@ -573,5 +573,10 @@
     "group_info_failed": "L'information sur le groupe a échoué",
     "group_unknown": "Le groupe {group:s} est inconnu",
     "group_updated": "Le groupe '{group}' a été mis à jour",
-    "group_update_failed": "La mise à jour du groupe '{group}' a échoué"
+    "group_update_failed": "La mise à jour du groupe '{group}' a échoué",
+    "group_already_allowed": "Le groupe '{group:s}' a déjà la permission '{permission:s}' activée pour l'application '{app:s}'",
+    "group_already_disallowed": "Le groupe '{group:s}' a déjà la permission '{permission:s}'  désactivée pour l'application '{app:s}'",
+    "group_name_already_exist": "Le groupe {name:s} existe déjà",
+    "group_creation_failed": "Échec de la création du groupe '{group}'",
+    "group_deletion_failed": "Échec de la suppression du groupe '{group}'"
 }
