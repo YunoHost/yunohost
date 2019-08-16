@@ -105,7 +105,7 @@ def user_list(fields=None):
 
 
 @is_unit_operation([('username', 'user')])
-def user_create(operation_logger, username, firstname, lastname, mail, password,
+def user_create(operation_logger, username, firstname, lastname, domain, password,
                 mailbox_quota="0"):
     """
     Create user
@@ -126,7 +126,22 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
+    from moulinette import msignals, msettings, m18n
+    from yunohost.domain import domain_list
+    if domain is None:
+        if msettings.get('interface') == 'api':
+            raise YunohostError('Invalide usage, specify domain argument')
+        else:
+            # On affiche les differents domaines possibles
+            for domain_checked in domain_list()['domains'] :
+                msignals.display("- {}".format(domain_checked))
+            domain = msignals.prompt(m18n.n('ask_domain'))
 
+    # Check that the domain exists
+    if domain not in domain_list()['domains']:
+        raise YunohostError('domain_unknown', domain)
+
+    mail=username+'@'+ domain
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:
@@ -158,10 +173,6 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     if mail in aliases:
         raise YunohostError('mail_unavailable')
 
-    # Check that the mail domain exists
-    if mail.split("@")[1] not in domain_list()['domains']:
-        raise YunohostError('mail_domain_unknown', domain=mail.split("@")[1])
-
     operation_logger.start()
 
     # Get random UID/GID
@@ -176,6 +187,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
+
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh'],
         'givenName': [firstname],
