@@ -562,5 +562,16 @@
     "tools_upgrade_special_packages_explanation": "Cette opération prendra fin mais la mise à jour spécifique continuera en arrière-plan. Veuillez ne pas lancer d'autre action sur votre serveur dans les 10 prochaines minutes (en fonction de la vitesse de votre matériel). Une fois que c'est fait, vous devrez peut-être vous reconnecter sur le panel d'administration web. Le journal de la mise à jour sera disponible dans Outils > Log (dans le panel d'administration web) ou dans la liste des journaux YunoHost (en ligne de commande).",
     "update_apt_cache_failed": "Impossible de mettre à jour le cache APT (gestionnaire de paquets Debian). Voici un extrait du fichier sources.list qui pourrait vous aider à identifier les lignes problématiques :\n{sourceslist}",
     "update_apt_cache_warning": "Des erreurs se sont produites lors de la mise à jour du cache APT (gestionnaire de paquets Debian). Voici un extrait des lignes du fichier sources.list qui pourrait vous aider à identifier les lignes problématiques :\n{sourceslist}",
-    "apps_permission_not_found": "Aucune permission trouvée pour les applications installées"
+    "apps_permission_not_found": "Aucune permission trouvée pour les applications installées",
+    "apps_permission_restoration_failed": "L'autorisation '{permission:s}' pour la restauration de l'application {app:s} a échoué",
+    "backup_permission": "Autorisation de sauvegarde pour l'application {app:s}",
+    "edit_group_not_allowed": "Vous n'êtes pas autorisé à modifier le groupe {group:s}",
+    "error_when_removing_sftpuser_group": "Erreur en essayant de supprimer le groupe sftpusers",
+    "group_created": "Le groupe '{group}' a créé avec succès",
+    "group_deleted": "Le groupe '{group}' a été supprimé",
+    "group_deletion_not_allowed": "Le groupe {group:s} ne peut pas être supprimé manuellement.",
+    "group_info_failed": "L'information sur le groupe a échoué",
+    "group_unknown": "Le groupe {group:s} est inconnu",
+    "group_updated": "Le groupe '{group}' a été mis à jour",
+    "group_update_failed": "La mise à jour du groupe '{group}' a échoué"
 }
