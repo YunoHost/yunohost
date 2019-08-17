@@ -230,7 +230,8 @@ def app_map(app=None, raw=False, user=None):
         app -- Specific app to map
 
     """
-    from yunohost.permission import user_permission_list
+    # TODO / FIXME : Aleks to Josue : not sure why this was included but not used ...
+    # from yunohost.permission import user_permission_list
     from yunohost.utils.ldap import _get_ldap_interface
 
     apps = []
@@ -327,7 +328,7 @@ def app_change_url(operation_logger, app, domain, path):
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, 'change_url')
-    args_list = [ value[0] for value in args_odict.values() ]
+    args_list = [value[0] for value in args_odict.values()]
     args_list.append(app)
 
     # Prepare env. var. to pass to script
@@ -380,7 +381,7 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_update(app, permission="main", add_url=[domain+path], remove_url=[old_domain+old_path], sync_perm=True)
+    permission_update(app, permission="main", add_url=[domain + path], remove_url=[old_domain + old_path], sync_perm=True)
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
@@ -415,9 +416,6 @@ def app_upgrade(app=[], url=None, file=None):
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
-    # Retrieve interface
-    is_api = msettings.get('interface') == 'api'
-
     try:
         app_list()
     except YunohostError:
@@ -430,15 +428,15 @@ def app_upgrade(app=[], url=None, file=None):
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
         if not url and not file:
-            apps = [app["id"] for app in app_list(installed=True)["apps"]]
+            apps = [app_["id"] for app_ in app_list(installed=True)["apps"]]
     elif not isinstance(app, list):
         apps = [app]
 
     # Remove possible duplicates
-    apps = [app for i,app in enumerate(apps) if apps not in apps[:i]]
+    apps = [app_ for i, app_ in enumerate(apps) if app_ not in apps[:i]]
 
     # Abort if any of those app is in fact not installed..
-    for app in [app for app in apps if not _is_installed(app)]:
+    for app in [app_ for app_ in apps if not _is_installed(app_)]:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if len(apps) == 0:
@@ -477,7 +475,7 @@ def app_upgrade(app=[], url=None, file=None):
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade')
-        args_list = [ value[0] for value in args_odict.values() ]
+        args_list = [value[0] for value in args_odict.values()]
         args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
@@ -585,7 +583,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             return
 
         answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
-                                   answers='Y/N'))
+                                        answers='Y/N'))
         if answer.upper() != "Y":
             raise YunohostError("aborting")
 
@@ -639,7 +637,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = [ value[0] for value in args_odict.values() ]
+    args_list = [value[0] for value in args_odict.values()]
     args_list.append(app_instance_name)
 
     # Prepare env. var. to pass to script
@@ -654,8 +652,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Tell the operation_logger to redact all password-type args
     # Also redact the % escaped version of the password that might appear in
     # the 'args' section of metadata (relevant for password with non-alphanumeric char)
-    data_to_redact = [ value[0] for value in args_odict.values() if value[1] == "password" ]
-    data_to_redact += [ urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data ]
+    data_to_redact = [value[0] for value in args_odict.values() if value[1] == "password"]
+    data_to_redact += [urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data]
     operation_logger.data_to_redact.extend(data_to_redact)
 
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
@@ -736,7 +734,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                 )[0]
                 # Remove all permission in LDAP
                 result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                    filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
+                                     filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
                 permission_list = [p['cn'][0] for p in result]
                 for l in permission_list:
                     permission_remove(app_instance_name, l.split('.')[0], force=True)
@@ -785,7 +783,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
     if domain and path:
-        permission_update(app_instance_name, permission="main", add_url=[domain+path], sync_perm=False)
+        permission_update(app_instance_name, permission="main", add_url=[domain + path], sync_perm=False)
 
     permission_sync_to_user()
 
@@ -818,7 +816,7 @@ def app_remove(operation_logger, app):
     # TODO: display fail messages from script
     try:
         shutil.rmtree('/tmp/yunohost_remove')
-    except:
+    except Exception:
         pass
 
     # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
@@ -864,7 +862,7 @@ def app_remove(operation_logger, app):
         raise YunohostError("this_action_broke_dpkg")
 
 
-@is_unit_operation(['permission','app'])
+@is_unit_operation(['permission', 'app'])
 def app_addaccess(operation_logger, apps, users=[]):
     """
     Grant access right to users (everyone by default)
@@ -878,12 +876,12 @@ def app_addaccess(operation_logger, apps, users=[]):
 
     permission = user_permission_update(operation_logger, app=apps, permission="main", add_username=users)
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
+    result = {p: v['main']['allowed_users'] for p, v in permission['permissions'].items()}
 
     return {'allowed_users': result}
 
 
-@is_unit_operation(['permission','app'])
+@is_unit_operation(['permission', 'app'])
 def app_removeaccess(operation_logger, apps, users=[]):
     """
     Revoke access right to users (everyone by default)
@@ -897,12 +895,12 @@ def app_removeaccess(operation_logger, apps, users=[]):
 
     permission = user_permission_update(operation_logger, app=apps, permission="main", del_username=users)
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
+    result = {p: v['main']['allowed_users'] for p, v in permission['permissions'].items()}
 
     return {'allowed_users': result}
 
 
-@is_unit_operation(['permission','app'])
+@is_unit_operation(['permission', 'app'])
 def app_clearaccess(operation_logger, apps):
     """
     Reset access rights for the app
@@ -915,9 +913,10 @@ def app_clearaccess(operation_logger, apps):
 
     permission = user_permission_clear(operation_logger, app=apps, permission="main")
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
+    result = {p: v['main']['allowed_users'] for p, v in permission['permissions'].items()}
 
     return {'allowed_users': result}
+
 
 def app_debug(app):
     """
@@ -1686,8 +1685,7 @@ def _get_app_config_panel(app_id):
             "panel": [],
         }
 
-        panels = filter(lambda (key, value): key not in ("name", "version")
-                                             and isinstance(value, OrderedDict),
+        panels = filter(lambda (key, value): key not in ("name", "version") and isinstance(value, OrderedDict),
                         toml_config_panel.items())
 
         for key, value in panels:
@@ -1697,8 +1695,7 @@ def _get_app_config_panel(app_id):
                 "sections": [],
             }
 
-            sections = filter(lambda (k, v): k not in ("name",)
-                                             and isinstance(v, OrderedDict),
+            sections = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
                               value.items())
 
             for section_key, section_value in sections:
@@ -1708,8 +1705,7 @@ def _get_app_config_panel(app_id):
                     "options": [],
                 }
 
-                options = filter(lambda (k, v): k not in ("name",)
-                                                and isinstance(v, OrderedDict),
+                options = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
                                  section_value.items())
 
                 for option_key, option_value in options:
@@ -2455,8 +2451,8 @@ def _parse_args_in_yunohost_format(args, action_args):
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "domain" ]
-    path_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "path" ]
+    domain_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "domain"]
+    path_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "path"]
 
     if len(domain_args) == 1 and len(path_args) == 1:
 
@@ -2683,6 +2679,7 @@ def _load_appslist():
 #        Small utilities          #
 # ############################### #
 #
+
 
 def is_true(arg):
     """
