@@ -907,25 +907,6 @@ def _check_if_vulnerable_to_meltdown():
     return CVEs[0]["VULNERABLE"]
 
 
-def tools_port_available(port):
-    """
-    Check availability of a local port
-
-    Keyword argument:
-        port -- Port to check
-
-    """
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(("localhost", int(port)))
-        s.close()
-    except socket.error:
-        return True
-    else:
-        return False
-
-
 @is_unit_operation()
 def tools_shutdown(operation_logger, force=False):
     shutdown = force

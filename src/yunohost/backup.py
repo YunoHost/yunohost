@@ -43,7 +43,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_php5
+    app_info, _is_installed, _parse_app_instance_name, _patch_php5, _patch_legacy_helpers
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -1334,6 +1334,9 @@ class RestoreManager():
         app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
         app_settings_in_archive = os.path.join(app_dir_in_archive, 'settings')
         app_scripts_in_archive = os.path.join(app_settings_in_archive, 'scripts')
+
+        # Attempt to patch legacy helpers...
+        _patch_legacy_helpers(app_settings_in_archive)
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(app_settings_in_archive)
