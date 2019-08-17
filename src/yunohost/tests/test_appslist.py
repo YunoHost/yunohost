@@ -3,34 +3,49 @@ import pytest
 import requests
 import requests_mock
 import glob
-import time
+import shutil
+
+from moulinette import m18n
+from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
 from yunohost.utils.error import YunohostError
+from yunohost.app import (_initialize_appslists_system,
+                          _read_appslist_list,
+                          _update_appslist,
+                          _actual_appslist_api_url,
+                          _load_appslist,
+                          logger,
+                          APPSLISTS_CACHE,
+                          APPSLISTS_CONF,
+                          APPSLISTS_CRON_PATH,
+                          APPSLISTS_API_VERSION,
+                          APPSLISTS_DEFAULT_URL)
 
-from yunohost.app import app_fetchlist, app_removelist, app_listlists, _using_legacy_appslist_system, _migrate_appslist_system, _register_new_appslist
+APPSLISTS_DEFAULT_URL_FULL = _actual_appslist_api_url(APPSLISTS_DEFAULT_URL)
+CRON_FOLDER, CRON_NAME = APPSLISTS_CRON_PATH.rsplit("/", 1)
 
-URL_OFFICIAL_APP_LIST = "https://app.yunohost.org/official.json"
-REPO_PATH = '/var/cache/yunohost/repo'
-APPSLISTS_JSON = '/etc/yunohost/appslists.json'
+DUMMY_APPLIST = """{
+   "foo": {"id": "foo", "level": 4},
+   "bar": {"id": "bar", "level": 7}
+}
+"""
 
+class AnyStringWith(str):
+    def __eq__(self, other):
+        return self in other
 
 def setup_function(function):
 
-    # Clear all appslist
-    files = glob.glob(REPO_PATH + "/*")
-    for f in files:
-        os.remove(f)
+    # Clear applist cache
+    shutil.rmtree(APPSLISTS_CACHE, ignore_errors=True)
 
-    # Clear appslist crons
-    files = glob.glob("/etc/cron.d/yunohost-applist-*")
-    for f in files:
-        os.remove(f)
+    # Clear appslist cron
+    if os.path.exists(APPSLISTS_CRON_PATH):
+        os.remove(APPSLISTS_CRON_PATH)
 
-    if os.path.exists("/etc/cron.daily/yunohost-fetch-appslists"):
-        os.remove("/etc/cron.daily/yunohost-fetch-appslists")
-
-    if os.path.exists(APPSLISTS_JSON):
-        os.remove(APPSLISTS_JSON)
+    # Clear appslist conf
+    if os.path.exists(APPSLISTS_CONF):
+        os.remove(APPSLISTS_CONF)
 
 
 def teardown_function(function):
@@ -38,352 +53,258 @@ def teardown_function(function):
 
 
 def cron_job_is_there():
-    r = os.system("run-parts -v --test /etc/cron.daily/ | grep yunohost-fetch-appslists")
+    r = os.system("run-parts -v --test %s | grep %s" % (CRON_FOLDER, CRON_NAME))
     return r == 0
 
-
 #
-# Test listing of appslists and registering of appslists                      #
+# ################################################
 #
 
 
-def test_appslist_list_empty():
-    """
-    Calling app_listlists() with no registered list should return empty dict
-    """
+def test_appslist_init(mocker):
 
-    assert app_listlists() == {}
+    # Cache is empty
+    assert not glob.glob(APPSLISTS_CACHE + "/*")
+    # Conf doesn't exist yet
+    assert not os.path.exists(APPSLISTS_CONF)
+    # Conf doesn't exist yet
+    assert not os.path.exists(APPSLISTS_CRON_PATH)
 
+    # Initialize ...
+    mocker.spy(m18n, "n")
+    _initialize_appslists_system()
+    m18n.n.assert_any_call('appslist_init_success')
 
-def test_appslist_list_register():
-    """
-    Register a new list
-    """
-
-    # Assume we're starting with an empty app list
-    assert app_listlists() == {}
-
-    # Register a new dummy list
-    _register_new_appslist("https://lol.com/appslist.json", "dummy")
-
-    appslist_dict = app_listlists()
-    assert "dummy" in appslist_dict.keys()
-    assert appslist_dict["dummy"]["url"] == "https://lol.com/appslist.json"
-
+    # Then there's a cron enabled
     assert cron_job_is_there()
 
+    # And a conf with at least one list
+    assert os.path.exists(APPSLISTS_CONF)
+    appslist_list = _read_appslist_list()
+    assert len(appslist_list)
 
-def test_appslist_list_register_conflict_name():
-    """
-    Attempt to register a new list with conflicting name
-    """
-
-    _register_new_appslist("https://lol.com/appslist.json", "dummy")
-    with pytest.raises(YunohostError):
-        _register_new_appslist("https://lol.com/appslist2.json", "dummy")
-
-    appslist_dict = app_listlists()
-
-    assert "dummy" in appslist_dict.keys()
-    assert "dummy2" not in appslist_dict.keys()
+    # Cache is expected to still be empty though
+    # (if we did update the appslist during init,
+    # we couldn't differentiate easily exceptions
+    # related to lack of network connectivity)
+    assert not glob.glob(APPSLISTS_CACHE + "/*")
 
 
-def test_appslist_list_register_conflict_url():
-    """
-    Attempt to register a new list with conflicting url
-    """
+def test_appslist_emptylist():
 
-    _register_new_appslist("https://lol.com/appslist.json", "dummy")
-    with pytest.raises(YunohostError):
-        _register_new_appslist("https://lol.com/appslist.json", "plopette")
+    # Initialize ...
+    _initialize_appslists_system()
 
-    appslist_dict = app_listlists()
+    # Let's imagine somebody removed the default applist because uh idk they dont want to use our default applist
+    os.system("rm %s" % APPSLISTS_CONF)
+    os.system("touch %s" % APPSLISTS_CONF)
 
-    assert "dummy" in appslist_dict.keys()
-    assert "plopette" not in appslist_dict.keys()
+    appslist_list = _read_appslist_list()
+    assert not len(appslist_list)
 
 
-#
-# Test fetching of appslists                                                 #
-#
+def test_appslist_update_success(mocker):
+
+    # Initialize ...
+    _initialize_appslists_system()
+
+    # Cache is empty
+    assert not glob.glob(APPSLISTS_CACHE + "/*")
+
+    # Update
+    with requests_mock.Mocker() as m:
+
+        _actual_appslist_api_url,
+        # Mock the server response with a dummy applist
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+
+        mocker.spy(m18n, "n")
+        _update_appslist()
+        m18n.n.assert_any_call("appslist_updating")
+        m18n.n.assert_any_call("appslist_update_success")
+
+    # Cache shouldn't be empty anymore empty
+    assert glob.glob(APPSLISTS_CACHE + "/*")
+
+    app_dict = _load_appslist()
+    assert "foo" in app_dict.keys()
+    assert "bar" in app_dict.keys()
 
 
-def test_appslist_fetch():
-    """
-    Do a fetchlist and test the .json got updated.
-    """
-    assert app_listlists() == {}
+def test_appslist_update_404(mocker):
 
-    _register_new_appslist(URL_OFFICIAL_APP_LIST, "yunohost")
+    # Initialize ...
+    _initialize_appslists_system()
 
     with requests_mock.Mocker() as m:
 
-        # Mock the server response with a valid (well, empty, yep) json
-        m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ }')
+        # 404 error
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL,
+                       status_code=404)
 
-        official_lastUpdate = app_listlists()["yunohost"]["lastUpdate"]
-        app_fetchlist()
-        new_official_lastUpdate = app_listlists()["yunohost"]["lastUpdate"]
+        with pytest.raises(YunohostError):
+            mocker.spy(m18n, "n")
+            _update_appslist()
+            m18n.n.assert_any_call("appslist_failed_to_download")
 
-    assert new_official_lastUpdate > official_lastUpdate
+def test_appslist_update_timeout(mocker):
 
-
-def test_appslist_fetch_single_appslist():
-    """
-    Register several lists but only fetch one. Check only one got updated.
-    """
-
-    assert app_listlists() == {}
-    _register_new_appslist(URL_OFFICIAL_APP_LIST, "yunohost")
-    _register_new_appslist("https://lol.com/appslist.json", "dummy")
-
-    time.sleep(1)
+    # Initialize ...
+    _initialize_appslists_system()
 
     with requests_mock.Mocker() as m:
 
-        # Mock the server response with a valid (well, empty, yep) json
-        m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ }')
-
-        official_lastUpdate = app_listlists()["yunohost"]["lastUpdate"]
-        dummy_lastUpdate = app_listlists()["dummy"]["lastUpdate"]
-        app_fetchlist(name="yunohost")
-        new_official_lastUpdate = app_listlists()["yunohost"]["lastUpdate"]
-        new_dummy_lastUpdate = app_listlists()["dummy"]["lastUpdate"]
-
-    assert new_official_lastUpdate > official_lastUpdate
-    assert new_dummy_lastUpdate == dummy_lastUpdate
-
-
-def test_appslist_fetch_unknownlist():
-    """
-    Attempt to fetch an unknown list
-    """
-
-    assert app_listlists() == {}
-
-    with pytest.raises(YunohostError):
-        app_fetchlist(name="swag")
-
-
-def test_appslist_fetch_url_but_no_name():
-    """
-    Do a fetchlist with url given, but no name given
-    """
-
-    with pytest.raises(YunohostError):
-        app_fetchlist(url=URL_OFFICIAL_APP_LIST)
-
-
-def test_appslist_fetch_badurl():
-    """
-    Do a fetchlist with a bad url
-    """
-
-    app_fetchlist(url="https://not.a.valid.url/plop.json", name="plop")
-
-
-def test_appslist_fetch_badfile():
-    """
-    Do a fetchlist and mock a response with a bad json
-    """
-    assert app_listlists() == {}
-
-    _register_new_appslist(URL_OFFICIAL_APP_LIST, "yunohost")
-
-    with requests_mock.Mocker() as m:
-
-        m.register_uri("GET", URL_OFFICIAL_APP_LIST, text='{ not json lol }')
-
-        app_fetchlist()
-
-
-def test_appslist_fetch_404():
-    """
-    Do a fetchlist and mock a 404 response
-    """
-    assert app_listlists() == {}
-
-    _register_new_appslist(URL_OFFICIAL_APP_LIST, "yunohost")
-
-    with requests_mock.Mocker() as m:
-
-        m.register_uri("GET", URL_OFFICIAL_APP_LIST, status_code=404)
-
-        app_fetchlist()
-
-
-def test_appslist_fetch_sslerror():
-    """
-    Do a fetchlist and mock an SSL error
-    """
-    assert app_listlists() == {}
-
-    _register_new_appslist(URL_OFFICIAL_APP_LIST, "yunohost")
-
-    with requests_mock.Mocker() as m:
-
-        m.register_uri("GET", URL_OFFICIAL_APP_LIST,
-                       exc=requests.exceptions.SSLError)
-
-        app_fetchlist()
-
-
-def test_appslist_fetch_timeout():
-    """
-    Do a fetchlist and mock a timeout
-    """
-    assert app_listlists() == {}
-
-    _register_new_appslist(URL_OFFICIAL_APP_LIST, "yunohost")
-
-    with requests_mock.Mocker() as m:
-
-        m.register_uri("GET", URL_OFFICIAL_APP_LIST,
+        # Timeout
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL,
                        exc=requests.exceptions.ConnectTimeout)
 
-        app_fetchlist()
+        with pytest.raises(YunohostError):
+            mocker.spy(m18n, "n")
+            _update_appslist()
+            m18n.n.assert_any_call("appslist_failed_to_download")
 
 
-#
-# Test remove of appslist                                                    #
-#
+def test_appslist_update_sslerror(mocker):
+
+    # Initialize ...
+    _initialize_appslists_system()
+
+    with requests_mock.Mocker() as m:
+
+        # SSL error
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL,
+                       exc=requests.exceptions.SSLError)
+
+        with pytest.raises(YunohostError):
+            mocker.spy(m18n, "n")
+            _update_appslist()
+            m18n.n.assert_any_call("appslist_failed_to_download")
 
 
-def test_appslist_remove():
-    """
-    Register a new appslist, then remove it
-    """
+def test_appslist_update_corrupted(mocker):
 
-    # Assume we're starting with an empty app list
-    assert app_listlists() == {}
+    # Initialize ...
+    _initialize_appslists_system()
 
-    # Register a new dummy list
-    _register_new_appslist("https://lol.com/appslist.json", "dummy")
-    app_removelist("dummy")
+    with requests_mock.Mocker() as m:
 
-    # Should end up with no list registered
-    assert app_listlists() == {}
+        # Corrupted json
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL,
+                       text=DUMMY_APPLIST[:-2])
 
-
-def test_appslist_remove_unknown():
-    """
-    Attempt to remove an unknown list
-    """
-
-    with pytest.raises(YunohostError):
-        app_removelist("dummy")
+        with pytest.raises(YunohostError):
+            mocker.spy(m18n, "n")
+            _update_appslist()
+            m18n.n.assert_any_call("appslist_failed_to_download")
 
 
-#
-# Test migration from legacy appslist system                                 #
-#
+def test_appslist_load_with_empty_cache(mocker):
+
+    # Initialize ...
+    _initialize_appslists_system()
+
+    # Cache is empty
+    assert not glob.glob(APPSLISTS_CACHE + "/*")
+
+    # Update
+    with requests_mock.Mocker() as m:
+
+        # Mock the server response with a dummy applist
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+
+        # Try to load the applist
+        # This should implicitly trigger an update in the background
+        mocker.spy(m18n, "n")
+        app_dict = _load_appslist()
+        m18n.n.assert_any_call("appslist_obsolete_cache")
+        m18n.n.assert_any_call("appslist_update_success")
 
 
-def add_legacy_cron(name, url):
-    with open("/etc/cron.d/yunohost-applist-%s" % name, "w") as f:
-        f.write('00 00 * * * root yunohost app fetchlist -u %s -n %s > /dev/null 2>&1\n' % (url, name))
+    # Cache shouldn't be empty anymore empty
+    assert glob.glob(APPSLISTS_CACHE + "/*")
+
+    assert "foo" in app_dict.keys()
+    assert "bar" in app_dict.keys()
 
 
-def test_appslist_check_using_legacy_system_testFalse():
-    """
-    If no legacy cron job is there, the check should return False
-    """
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-    assert _using_legacy_appslist_system() is False
+def test_appslist_load_with_conflicts_between_lists(mocker):
+
+    # Initialize ...
+    _initialize_appslists_system()
+
+    conf = [{"id": "default", "url": APPSLISTS_DEFAULT_URL},
+            {"id": "default2", "url": APPSLISTS_DEFAULT_URL.replace("yunohost.org", "yolohost.org")}]
+
+    write_to_yaml(APPSLISTS_CONF, conf)
+
+    # Update
+    with requests_mock.Mocker() as m:
+
+        # Mock the server response with a dummy applist
+        # + the same applist for the second list
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL.replace("yunohost.org", "yolohost.org"), text=DUMMY_APPLIST)
+
+        # Try to load the applist
+        # This should implicitly trigger an update in the background
+        mocker.spy(logger, "warning")
+        app_dict = _load_appslist()
+        logger.warning.assert_any_call(AnyStringWith("Duplicate"))
+
+    # Cache shouldn't be empty anymore empty
+    assert glob.glob(APPSLISTS_CACHE + "/*")
+
+    assert "foo" in app_dict.keys()
+    assert "bar" in app_dict.keys()
 
 
-def test_appslist_check_using_legacy_system_testTrue():
-    """
-    If there's a legacy cron job, the check should return True
-    """
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-    add_legacy_cron("yunohost", "https://app.yunohost.org/official.json")
-    assert _using_legacy_appslist_system() is True
+def test_appslist_load_with_oudated_api_version(mocker):
+
+    # Initialize ...
+    _initialize_appslists_system()
+
+    # Update
+    with requests_mock.Mocker() as m:
+
+        mocker.spy(m18n, "n")
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+        _update_appslist()
+
+    # Cache shouldn't be empty anymore empty
+    assert glob.glob(APPSLISTS_CACHE + "/*")
+
+    # Tweak the cache to replace the from_api_version with a different one
+    for cache_file in glob.glob(APPSLISTS_CACHE + "/*"):
+        cache_json = read_json(cache_file)
+        assert cache_json["from_api_version"] == APPSLISTS_API_VERSION
+        cache_json["from_api_version"] = 0
+        write_to_json(cache_file, cache_json)
+
+    # Update
+    with requests_mock.Mocker() as m:
+
+        # Mock the server response with a dummy applist
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+
+        mocker.spy(m18n, "n")
+        app_dict = _load_appslist()
+        m18n.n.assert_any_call("appslist_update_success")
+
+    assert "foo" in app_dict.keys()
+    assert "bar" in app_dict.keys()
+
+    # Check that we indeed have the new api number in cache
+    for cache_file in glob.glob(APPSLISTS_CACHE + "/*"):
+        cache_json = read_json(cache_file)
+        assert cache_json["from_api_version"] == APPSLISTS_API_VERSION
 
 
-def test_appslist_system_migration():
-    """
-    Test that legacy cron jobs get migrated correctly when calling app_listlists
-    """
 
-    # Start with no legacy cron, no appslist registered
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-    assert app_listlists() == {}
-    assert not os.path.exists("/etc/cron.daily/yunohost-fetch-appslists")
+def test_appslist_migrate_legacy_explicitly():
 
-    # Add a few legacy crons
-    add_legacy_cron("yunohost", "https://app.yunohost.org/official.json")
-    add_legacy_cron("dummy", "https://swiggitty.swaggy.lol/yolo.json")
-
-    # Migrate
-    assert _using_legacy_appslist_system() is True
-    _migrate_appslist_system()
-    assert _using_legacy_appslist_system() is False
-
-    # No legacy cron job should remain
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-
-    # Check they are in app_listlists anyway
-    appslist_dict = app_listlists()
-    assert "yunohost" in appslist_dict.keys()
-    assert appslist_dict["yunohost"]["url"] == "https://app.yunohost.org/official.json"
-    assert "dummy" in appslist_dict.keys()
-    assert appslist_dict["dummy"]["url"] == "https://swiggitty.swaggy.lol/yolo.json"
-
-    assert cron_job_is_there()
+    raise NotImplementedError
 
 
-def test_appslist_system_migration_badcron():
-    """
-    Test the migration on a bad legacy cron (no url found inside cron job)
-    """
+def test_appslist_migrate_legacy_implicitly():
 
-    # Start with no legacy cron, no appslist registered
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-    assert app_listlists() == {}
-    assert not os.path.exists("/etc/cron.daily/yunohost-fetch-appslists")
-
-    # Add a "bad" legacy cron
-    add_legacy_cron("wtflist", "ftp://the.fuck.is.this")
-
-    # Migrate
-    assert _using_legacy_appslist_system() is True
-    _migrate_appslist_system()
-    assert _using_legacy_appslist_system() is False
-
-    # No legacy cron should remain, but it should be backuped in /etc/yunohost
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-    assert os.path.exists("/etc/yunohost/wtflist.oldlist.bkp")
-
-    # Appslist should still be empty
-    assert app_listlists() == {}
-
-
-def test_appslist_system_migration_conflict():
-    """
-    Test migration of conflicting cron job (in terms of url)
-    """
-
-    # Start with no legacy cron, no appslist registered
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-    assert app_listlists() == {}
-    assert not os.path.exists("/etc/cron.daily/yunohost-fetch-appslists")
-
-    # Add a few legacy crons
-    add_legacy_cron("yunohost", "https://app.yunohost.org/official.json")
-    add_legacy_cron("dummy", "https://app.yunohost.org/official.json")
-
-    # Migrate
-    assert _using_legacy_appslist_system() is True
-    _migrate_appslist_system()
-    assert _using_legacy_appslist_system() is False
-
-    # No legacy cron job should remain
-    assert glob.glob("/etc/cron.d/yunohost-applist-*") == []
-
-    # Only one among "dummy" and "yunohost" should be listed
-    appslist_dict = app_listlists()
-    assert (len(appslist_dict.keys()) == 1)
-    assert ("dummy" in appslist_dict.keys()) or ("yunohost" in appslist_dict.keys())
-
-    assert cron_job_is_there()
+    raise NotImplementedError

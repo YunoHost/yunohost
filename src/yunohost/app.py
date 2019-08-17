@@ -39,7 +39,8 @@ from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, read_toml
+from moulinette.utils.network import download_json
+from moulinette.utils.filesystem import read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -48,12 +49,16 @@ from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger('yunohost.app')
 
-REPO_PATH = '/var/cache/yunohost/repo'
 APPS_PATH = '/usr/share/yunohost/apps'
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
 INSTALL_TMP = '/var/cache/yunohost'
 APP_TMP_FOLDER = INSTALL_TMP + '/from_file'
-APPSLISTS_JSON = '/etc/yunohost/appslists.json'
+
+APPSLISTS_CACHE = '/var/cache/yunohost/repo'
+APPSLISTS_CONF = '/etc/yunohost/appslists.yml'
+APPSLISTS_CRON_PATH = "/etc/cron.daily/yunohost-fetch-appslists"
+APPSLISTS_API_VERSION = 1
+APPSLISTS_DEFAULT_URL = "https://app.yunohost.org/default"
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -2541,6 +2546,155 @@ def _parse_app_instance_name(app_instance_name):
     app_instance_nb = int(match.groupdict().get('appinstancenb')) if match.groupdict().get('appinstancenb') is not None else 1
     return (appid, app_instance_nb)
 
+
+#
+# ############################### #
+#  Applications list management   #
+# ############################### #
+#
+
+
+def _initialize_appslists_system():
+    """
+    This function is meant to intialize the appslist system with YunoHost's default applist.
+
+    It also creates the cron job that will update the list every day
+    """
+
+    default_appslist_list = [{"id": "default", "url": APPSLISTS_DEFAULT_URL}]
+
+    cron_job = []
+    cron_job.append("#!/bin/bash")
+    # We add a random delay between 0 and 60 min to avoid every instance fetching
+    # the appslist at the same time every night
+    cron_job.append("(sleep $((RANDOM%3600));")
+    cron_job.append("yunohost tools update --apps > /dev/null) &")
+    try:
+        logger.debug("Initializing appslist system with YunoHost's default app list")
+        write_to_yaml(APPSLISTS_CONF, default_appslist_list)
+
+        logger.debug("Installing appslist fetch daily cron job")
+        write_to_file(APPSLISTS_CRON_PATH, '\n'.join(cron_job))
+        chown(APPSLISTS_CRON_PATH, uid="root", gid="root")
+        chmod(APPSLISTS_CRON_PATH, 0o755)
+    except Exception as e:
+        raise YunohostError("Could not initialize the appslist system... : %s" % str(e))
+
+    logger.success(m18n.n("appslist_init_success"))
+
+
+def _read_appslist_list():
+    """
+    Read the json corresponding to the list of appslists
+    """
+
+    try:
+        list_ = read_yaml(APPSLISTS_CONF)
+        # Support the case where file exists but is empty
+        # by returning [] if list_ is None
+        return list_ if list_ else []
+    except Exception as e:
+        raise YunohostError("Could not read the appslist list ... : %s" % str(e))
+
+
+def _actual_appslist_api_url(base_url):
+
+    return "{base_url}/v{version}/apps.json".format(base_url=base_url, version=APPSLISTS_API_VERSION)
+
+
+def _update_appslist():
+    """
+    Fetches the json for each appslist and update the cache
+
+    appslist_list is for example :
+     [   {"id": "default", "url": "https://app.yunohost.org/default/"}  ]
+
+    Then for each appslist, the actual json URL to be fetched is like :
+       https://app.yunohost.org/default/vX/apps.json
+
+    And store it in :
+        /var/cache/yunohost/repo/default.json
+    """
+
+    appslist_list = _read_appslist_list()
+
+    logger.info(m18n.n("appslist_updating"))
+
+    # Create cache folder if needed
+    if not os.path.exists(APPSLISTS_CACHE):
+        logger.debug("Initialize folder for appslist cache")
+        mkdir(APPSLISTS_CACHE, mode=0o750, parents=True, uid='root')
+
+    for appslist in appslist_list:
+        applist_id = appslist["id"]
+        actual_api_url = _actual_appslist_api_url(appslist["url"])
+
+        # Fetch the json
+        try:
+            appslist_content = download_json(actual_api_url)
+        except Exception as e:
+            raise YunohostError("appslist_failed_to_download", applist=applist_id, error=str(e))
+
+        # Remember the appslist api version for later
+        appslist_content["from_api_version"] = APPSLISTS_API_VERSION
+
+        # Save the appslist data in the cache
+        cache_file = "{cache_folder}/{list}.json".format(cache_folder=APPSLISTS_CACHE, list=applist_id)
+        try:
+            write_to_json(cache_file, appslist_content)
+        except Exception as e:
+            raise YunohostError("Unable to write cache data for %s appslist : %s" % (applist_id, str(e)))
+
+    logger.success(m18n.n("appslist_update_success"))
+
+
+def _load_appslist():
+    """
+    Read all the appslist cache file and build a single dict (app_dict)
+    corresponding to all known apps in all indexes
+    """
+
+    app_dict = {}
+
+    for appslist_id in [L["id"] for L in _read_appslist_list()]:
+
+        # Let's load the json from cache for this appslist
+        cache_file = "{cache_folder}/{list}.json".format(cache_folder=APPSLISTS_CACHE, list=appslist_id)
+
+        try:
+            appslist_content = read_json(cache_file) if os.path.exists(cache_file) else None
+        except Exception as e:
+            raise ("Unable to read cache for appslist %s : %s" % (appslist_id, str(e)))
+
+        # Check that the version of the data matches version ....
+        # ... otherwise it means we updated yunohost in the meantime
+        # and need to update the cache for everything to be consistent
+        if not appslist_content or appslist_content.get("from_api_version") != APPSLISTS_API_VERSION:
+            logger.info(m18n.n("appslist_obsolete_cache"))
+            _update_appslist()
+            appslist_content = read_json(cache_file)
+
+        del appslist_content["from_api_version"]
+
+        # Add apps from this applist to the output
+        for app, info in appslist_content.items():
+
+            # (N.B. : there's a small edge case where multiple appslist could be listing the same apps ...
+            #         in which case we keep only the first one found)
+            if app in app_dict:
+                logger.warning("Duplicate app %s found between appslist %s and %s" % (app, appslist_id, app_dict[app]['repository']))
+                continue
+
+            info['repository'] = appslist_id
+            app_dict[app] = info
+
+    return app_dict
+
+#
+# ############################### #
+#        Small utilities          #
+# ############################### #
+#
 
 def is_true(arg):
     """
