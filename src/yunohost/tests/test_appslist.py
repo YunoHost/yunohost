@@ -6,7 +6,7 @@ import glob
 import shutil
 
 from moulinette import m18n
-from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
+from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml, mkdir
 
 from yunohost.utils.error import YunohostError
 from yunohost.app import (_initialize_appslists_system,
@@ -49,7 +49,11 @@ def setup_function(function):
 
 
 def teardown_function(function):
-    pass
+
+    # Clear applist cache
+    # Otherwise when using apps stuff after running the test,
+    # we'll still have the dummy unusable list
+    shutil.rmtree(APPSLISTS_CACHE, ignore_errors=True)
 
 
 def cron_job_is_there():
@@ -302,9 +306,53 @@ def test_appslist_load_with_oudated_api_version(mocker):
 
 def test_appslist_migrate_legacy_explicitly():
 
-    raise NotImplementedError
+    open("/etc/yunohost/appslists.json", "w").write('{"yunohost": {"yolo":"swag"}}')
+    mkdir(APPSLISTS_CACHE, 0o750, parents=True)
+    open(APPSLISTS_CACHE+"/yunohost_old.json", "w").write('{"foo":{}, "bar": {}}')
+    open(APPSLISTS_CRON_PATH, "w").write("# Some old cron")
+
+    from yunohost.tools import _get_migration_by_name
+    migration = _get_migration_by_name("futureproof_appslist_system")
+
+    with requests_mock.Mocker() as m:
+
+        # Mock the server response with a dummy applist
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+        migration.migrate()
+
+    # Old conf shouldnt be there anymore (got renamed to .old)
+    assert not os.path.exists("/etc/yunohost/appslists.json")
+    # Old cache should have been removed
+    assert not os.path.exists(APPSLISTS_CACHE+"/yunohost_old.json")
+    # Cron should have been changed
+    assert "/bin/bash" in open(APPSLISTS_CRON_PATH, "r").read()
+    assert cron_job_is_there()
+
+    # Reading the appslist should work
+    app_dict = _load_appslist()
+    assert "foo" in app_dict.keys()
+    assert "bar" in app_dict.keys()
 
 
 def test_appslist_migrate_legacy_implicitly():
 
-    raise NotImplementedError
+    open("/etc/yunohost/appslists.json", "w").write('{"yunohost": {"yolo":"swag"}}')
+    mkdir(APPSLISTS_CACHE, 0o750, parents=True)
+    open(APPSLISTS_CACHE+"/yunohost_old.json", "w").write('{"old_foo":{}, "old_bar": {}}')
+    open(APPSLISTS_CRON_PATH, "w").write("# Some old cron")
+
+    with requests_mock.Mocker() as m:
+        m.register_uri("GET", APPSLISTS_DEFAULT_URL_FULL, text=DUMMY_APPLIST)
+        app_dict = _load_appslist()
+
+    assert "foo" in app_dict.keys()
+    assert "bar" in app_dict.keys()
+
+    # Old conf shouldnt be there anymore (got renamed to .old)
+    assert not os.path.exists("/etc/yunohost/appslists.json")
+    # Old cache should have been removed
+    assert not os.path.exists(APPSLISTS_CACHE+"/yunohost_old.json")
+    # Cron should have been changed
+    assert "/bin/bash" in open(APPSLISTS_CRON_PATH, "r").read()
+    assert cron_job_is_there()
+
