@@ -48,6 +48,10 @@ class HttpDiagnoser(Diagnoser):
                            status="ERROR",
                            summary=("diagnosis_http_unreachable", {"domain": domain}))
 
+        # In there or idk where else ...
+        # try to diagnose hairpinning situation by crafting a request for the
+        # global ip (from within local network) and seeing if we're getting the right page ?
+
 
 def main(args, env, loggers):
     return HttpDiagnoser(args, env, loggers).diagnose()
