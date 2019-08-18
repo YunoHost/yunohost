@@ -676,7 +676,7 @@ def app_upgrade(app=[], url=None, file=None):
 
             # display this if there are remaining apps
             if apps[number + 1:]:
-                logger.error(m18n.n('app_upgrade_stoped'))
+                logger.error(m18n.n('app_upgrade_stopped'))
                 not_upgraded_apps = apps[number:]
                 # we don't want to continue upgrading apps here in case that breaks
                 # everything
