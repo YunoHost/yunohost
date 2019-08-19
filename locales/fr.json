@@ -578,5 +578,15 @@
     "group_already_disallowed": "Le groupe '{group:s}' a déjà la permission '{permission:s}'  désactivée pour l'application '{app:s}'",
     "group_name_already_exist": "Le groupe {name:s} existe déjà",
     "group_creation_failed": "Échec de la création du groupe '{group}'",
-    "group_deletion_failed": "Échec de la suppression du groupe '{group}'"
+    "group_deletion_failed": "Échec de la suppression du groupe '{group}'",
+    "edit_permission_with_group_all_users_not_allowed": "Vous n'êtes pas autorisé à modifier les permissions pour le groupe 'all_users', utilisez'yunohost user permission clear APP' ou 'yunohost user permission add APP -u USER'.",
+    "log_permission_add": "Ajouter l'autorisation '{}' pour l'application '{}'",
+    "log_permission_remove": "Supprimer l'autorisation '{}'",
+    "log_permission_update": "Mise à jour de l'autorisation '{}' pour l'application '{}'",
+    "log_user_group_add": "Ajouter '{}' au groupe",
+    "log_user_group_delete": "Supprimer le groupe '{}'",
+    "log_user_group_update": "Mettre à jour '{}' pour le groupe",
+    "log_user_permission_add": "Mettre à jour l'autorisation pour '{}'",
+    "log_user_permission_remove": "Mettre à jour l'autorisation pour '{}'",
+    "mailbox_disabled": "La boîte aux lettres est désactivée pour l'utilisateur {user:s}"
 }
