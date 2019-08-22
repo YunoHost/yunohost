@@ -33,6 +33,8 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         # FIXME : somewhere, should implement a check for reverse DNS ...
 
+        # FIXME / TODO : somewhere, could also implement a check for domain expiring soon
+
     def check_domain(self, domain, is_main_domain):
 
         expected_configuration = _build_dns_conf(domain)

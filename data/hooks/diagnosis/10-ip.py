@@ -84,6 +84,8 @@ class IPDiagnoser(Diagnoser):
                    summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
                       else ("diagnosis_ip_no_ipv6", {}))
 
+        # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
+
     def can_ping_outside(self, protocol=4):
 
         assert protocol in [4, 6], "Invalid protocol version, it should be either 4 or 6 and was '%s'" % repr(protocol)

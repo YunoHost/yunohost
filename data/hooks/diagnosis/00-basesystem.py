@@ -21,6 +21,8 @@ class BaseSystemDiagnoser(Diagnoser):
                    status="INFO",
                    summary=("diagnosis_basesystem_kernel", {"kernel_version": kernel_version}))
 
+        # FIXME / TODO : add virt/vm technology using systemd-detect-virt and/or machine arch
+
         # Debian release
         debian_version = read_file("/etc/debian_version").strip()
         yield dict(meta={"test": "host"},
