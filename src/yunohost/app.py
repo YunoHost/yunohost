@@ -584,9 +584,6 @@ def app_upgrade(app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
-    if packages.dpkg_is_broken():
-        raise YunohostError("dpkg_is_broken")
-
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
@@ -638,7 +635,7 @@ def app_upgrade(app=[], url=None, file=None):
 
         # Check requirements
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
-        _check_services_status_for_app(manifest.get("services", []))
+        _assert_system_is_sane_for_app(manifest, "pre")
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
@@ -716,6 +713,7 @@ def app_upgrade(app=[], url=None, file=None):
             # So much win
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
+            _assert_system_is_sane_for_app(manifest, "post")
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
             operation_logger.success()
 
@@ -736,8 +734,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
-    if packages.dpkg_is_broken():
-        raise YunohostError("dpkg_is_broken")
 
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
@@ -801,7 +797,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Check requirements
     _check_manifest_requirements(manifest, app_id)
-    _check_services_status_for_app(manifest.get("services", []))
+    _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -894,8 +890,17 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         import traceback
         logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
     finally:
+        try:
+            broke_the_system = False
+            _assert_system_is_sane_for_app(manifest, "post")
+        except Exception as e:
+            broke_the_system = True
+            error_msg = operation_logger.error(str(e))
+
         if install_retcode != 0:
             error_msg = operation_logger.error(m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode))
+
+        if install_retcode != 0 or broke_the_system:
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -926,6 +931,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     logger.warning(msg)
                     operation_logger_remove.error(msg)
                 else:
+                    _assert_system_is_sane_for_app(manifest, "post")
                     operation_logger_remove.success()
 
             # Clean tmp folders
@@ -933,9 +939,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             shutil.rmtree(extracted_app_folder)
 
             app_ssowatconf()
-
-            if packages.dpkg_is_broken():
-                logger.error(m18n.n("this_action_broke_dpkg"))
 
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
@@ -1004,6 +1007,8 @@ def app_remove(operation_logger, app):
     # script might date back from jessie install)
     _patch_php5(app_setting_path)
 
+    manifest = _get_manifest_of_app(app_setting_path)
+
     os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
@@ -1038,9 +1043,7 @@ def app_remove(operation_logger, app):
         permission_remove(app, l.split('.')[0], force=True, sync_perm=False)
 
     permission_sync_to_user()
-
-    if packages.dpkg_is_broken():
-        raise YunohostError("this_action_broke_dpkg")
+    _assert_system_is_sane_for_app(manifest, "post")
 
 
 @is_unit_operation(['permission','app'])
@@ -2910,9 +2913,11 @@ def unstable_apps():
     return output
 
 
-def _check_services_status_for_app(services):
+def _assert_system_is_sane_for_app(manifest, when):
 
     logger.debug("Checking that required services are up and running...")
+
+    services = manifest.get("services", [])
 
     # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
     def replace_alias(service):
@@ -2928,11 +2933,26 @@ def _check_services_status_for_app(services):
     service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
+    if "nginx" not in services:
+        services = ["nginx"] + services
+    if "fail2ban" not in services:
+        services.append("fail2ban")
+
     # List services currently down and raise an exception if any are found
     faulty_services = [s for s in services if service_status(s)["active"] != "active"]
     if faulty_services:
-        raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
-                            services=', '.join(faulty_services))
+        if when == "pre":
+            raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
+                                services=', '.join(faulty_services))
+        elif when == "post":
+            raise YunohostError('app_action_broke_system',
+                                services=', '.join(faulty_services))
+
+    if packages.dpkg_is_broken():
+        if when == "pre":
+            raise YunohostError("dpkg_is_broken")
+        elif when == "post":
+            raise YunohostError("this_action_broke_dpkg")
 
 
 def _patch_php5(app_folder):
