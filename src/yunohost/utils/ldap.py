@@ -20,7 +20,7 @@
 """
 
 import atexit
-from moulinette.core import init_authenticator
+from moulinette.authenticators import ldap
 
 # We use a global variable to do some caching
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
@@ -31,12 +31,16 @@ def _get_ldap_interface():
     global _ldap_interface
 
     if _ldap_interface is None:
-        # Instantiate LDAP Authenticator
-        AUTH_IDENTIFIER = ('ldap', 'as-root')
-        AUTH_PARAMETERS = {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
-                           'base_dn': 'dc=yunohost,dc=org',
-                           'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'}
-        _ldap_interface = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
+
+        conf = { "vendor": "ldap",
+                 "name": "as-root",
+                 "parameters": { 'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
+                                 'base_dn': 'dc=yunohost,dc=org',
+                                 'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth' },
+                 "extra": {}
+               }
+
+        _ldap_interface = ldap.Authenticator(**conf)
 
     return _ldap_interface
 
