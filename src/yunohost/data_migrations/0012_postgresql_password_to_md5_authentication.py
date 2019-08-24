@@ -1,7 +1,7 @@
 import glob
 import re
 from yunohost.tools import Migration
-from moulinette.utils.filesystem import chown
+from moulinette.utils.filesystem import read_file, write_to_file
 
 
 class MyMigration(Migration):
