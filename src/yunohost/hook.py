@@ -460,9 +460,8 @@ def _hook_exec_python(path, args, env, loggers):
         sys.path = [dir_] + sys.path
     module = import_module(name)
 
-    # TODO : We might want to check here that it's a tuple
-    # containing an int + a dict ?
     ret = module.main(args, env, loggers)
+    # # Assert that the return is a (int, dict) tuple
     assert isinstance(ret, tuple) \
             and len(ret) == 2 \
             and isinstance(ret[0],int) \
