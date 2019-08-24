@@ -27,6 +27,7 @@ import os
 import re
 import sys
 import tempfile
+import mimetypes
 from glob import iglob
 from importlib import import_module
 
@@ -320,17 +321,6 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if not os.path.isfile(path):
         raise YunohostError('file_does_not_exist', path=path)
 
-    # Check the type of the hook (bash by default)
-    hook_type = "bash"
-    # (non-bash hooks shall start with something like "#!/usr/bin/env language")
-    hook_ext = os.path.splitext(path)[1]
-    if hook_ext == ".py":
-        hook_type = "python"
-    else:
-        # TODO / FIXME : if needed in the future, implement support for other
-        # languages...
-        assert hook_ext in ["", ".sh"], "hook_exec only supports bash and python hooks for now"
-
     # Define output loggers and call command
     loggers = (
         lambda l: logger.debug(l.rstrip()+"\r"),
@@ -338,13 +328,13 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         lambda l: logger.info(l.rstrip())
     )
 
-    if hook_type == "bash":
-        returncode, returndata = _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, loggers)
-    elif hook_type == "python":
+    # Check the type of the hook (bash by default)
+    # For now we support only python and bash hooks.
+    hook_type = mimetypes.MimeTypes().guess_type(path)[0]
+    if hook_type == 'text/x-python':
         returncode, returndata = _hook_exec_python(path, args, env, loggers)
     else:
-        # Doesn't happen ... c.f. previous assertion
-        returncode, returndata = None, {}
+        returncode, returndata = _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, loggers)
 
     # Check and return process' return code
     if returncode is None:
