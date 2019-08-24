@@ -10,7 +10,7 @@ class MyMigration(Migration):
 
     def migrate(self):
 
-        logger.info("This is migration is oudated and doesn't do anything anymore. The migration 12 will handle this instead.")
+        logger.info("This migration is oudated and doesn't do anything anymore. The migration 12 will handle this instead.")
         pass
 
     def backward(self):
