@@ -71,9 +71,6 @@ def get_gateway():
     return addr.popitem()[1] if len(addr) == 1 else None
 
 
-#
-
-
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):
     """
     Extract IP addresses (v4 and/or v6) from a string limited to one
