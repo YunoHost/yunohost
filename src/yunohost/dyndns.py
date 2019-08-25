@@ -325,8 +325,8 @@ def dyndns_removecron():
     """
     try:
         os.remove("/etc/cron.d/yunohost-dyndns")
-    except:
-        raise YunohostError('dyndns_cron_remove_failed')
+    except Exception as e:
+        raise YunohostError('dyndns_cron_remove_failed', error=e)
 
     logger.success(m18n.n('dyndns_cron_removed'))
 
