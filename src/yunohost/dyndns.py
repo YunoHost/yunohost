@@ -176,7 +176,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
 @is_unit_operation()
 def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None, key=None,
-                  ipv4=None, ipv6=None):
+                  ipv4=None, ipv6=None, force=False):
     """
     Update IP on DynDNS platform
 
@@ -249,7 +249,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
 
     # no need to update
-    if old_ipv4 == ipv4 and old_ipv6 == ipv6:
+    if not force and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
         logger.info("No updated needed.")
         return
     else:
