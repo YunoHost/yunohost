@@ -600,5 +600,9 @@
     "system_groupname_exists": "Lo nom del grop existís ja dins lo sistèma de grops",
     "tools_update_failed_to_app_fetchlist": "Fracàs de l’actualizacion de la lista d’aplicacions de YunoHost a causa de : {error}",
     "user_already_in_group": "L’utilizaire {user:} es ja dins lo grop {group:s}",
-    "user_not_in_group": "L’utilizaire {user:} es pas dins lo grop {group:s}"
+    "user_not_in_group": "L’utilizaire {user:} es pas dins lo grop {group:s}",
+    "edit_permission_with_group_all_users_not_allowed": "Podètz pas modificar las permissions del grop « all_users », utilizatz « yunohost user permission clear APP » o « yunohost user permission add APP -u USER ».",
+    "mailbox_disabled": "La bóstia de las letras es desactivada per l’utilizaire {user:s}",
+    "migration_0011_LDAP_config_dirty": "Sembla qu’avètz modificat manualament la configuracion LDAP. Per far aquesta migracion cal actualizar la configuracion LDAP.\nSalvagardatz la configuracion actuala, reïnicializatz la configuracion originala amb la comanda « yunohost tools regen-conf -f » e tornatz ensajar la migracion",
+    "need_define_permission_before": "Vos cal tornar definir las permission en utilizant « yunohost user permission add -u USER » abans de suprimir un grop permés"
 }
