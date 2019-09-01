@@ -1533,6 +1533,14 @@ dyndns:
                 -i:
                     full: --ipv4
                     help: IP address to send
+                -f:
+                    full: --force
+                    help: Force the update (for debugging only)
+                    action: store_true
+                -D:
+                    full: --dry-run
+                    help: Only display the generated zone
+                    action: store_true
                 -6:
                     full: --ipv6
                     help: IPv6 address to send
