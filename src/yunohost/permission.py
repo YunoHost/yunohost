@@ -484,8 +484,9 @@ def permission_sync_to_user(force=False):
     for per in ldap.search('ou=permission,dc=yunohost,dc=org',
                            '(objectclass=permissionYnh)',
                            ['cn', 'inheritPermission', 'groupPermission', 'memberUid']):
+        print(per)
         if 'groupPermission' not in per:
-            continue
+            per['groupPermission'] = []
         user_permission = set()
         for group in per['groupPermission']:
             group = group.split("=")[1].split(",")[0]
