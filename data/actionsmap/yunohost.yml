@@ -274,7 +274,7 @@ user:
                 ### user_permission_list()
                 list:
                     action_help: List access to user and group
-                    api: GET /users/permission/<app>
+                    api: GET /users/permissions/<app>
                     arguments:
                         -a:
                             full: --app
@@ -300,7 +300,7 @@ user:
                 ### user_permission_add()
                 add:
                     action_help: Grant access right to users and group
-                    api: POST /users/permission/<app>
+                    api: POST /users/permissions/<app>
                     arguments:
                         app:
                             help: Application to manage the permission
@@ -328,7 +328,7 @@ user:
                 ### user_permission_remove()
                 remove:
                     action_help: Revoke access right to users and group
-                    api: PUT /users/permission/<app>
+                    api: PUT /users/permissions/<app>
                     arguments:
                         app:
                             help: Application to manage the permission
@@ -356,7 +356,7 @@ user:
                 ## user_permission_clear()
                 clear:
                     action_help: Reset access rights for the app
-                    api: DELETE /users/permission/<app>
+                    api: DELETE /users/permissions/<app>
                     arguments:
                         app:
                             help: Application to manage the permission
