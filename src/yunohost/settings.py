@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 
 from datetime import datetime
 from collections import OrderedDict
@@ -46,6 +47,7 @@ DEFAULTS = OrderedDict([
         "choices": ["intermediate", "modern"]}),
     ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
         "choices": ["intermediate", "modern"]}),
+    ("pop3.enabled", {"type": "bool", "default": False}),
 ])
 
 
@@ -299,3 +301,29 @@ def reconfigure_ssh(setting_name, old_value, new_value):
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['postfix'])
+
+@post_change_hook("pop3.enabled")
+def reconfigure_dovecot(setting_name, old_value, new_value):
+    dovecot_package = 'dovecot-pop3d'
+
+    environment = os.environ.copy()
+    environment.update({'DEBIAN_FRONTEND': 'noninteractive'})
+
+    if new_value == "True":
+        command = [
+            'apt-get',
+            '-y',
+            '--no-remove',
+            '-o Dpkg::Options::=--force-confdef',
+            '-o Dpkg::Options::=--force-confold',
+            'install',
+            dovecot_package,
+        ]
+        subprocess.call(command, env=environment)
+        if old_value != new_value:
+            service_regen_conf(names=['dovecot'])
+    else:
+        if old_value != new_value:
+            service_regen_conf(names=['dovecot'])
+        command = ['apt-get', '-y', 'remove', dovecot_package]
+        subprocess.call(command, env=environment)
