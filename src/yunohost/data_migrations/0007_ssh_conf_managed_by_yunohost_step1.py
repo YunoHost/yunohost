@@ -59,3 +59,12 @@ class MyMigration(Migration):
             copyfile(SSHD_CONF, '/etc/ssh/sshd_config.bkp')
             regen_conf(names=['ssh'], force=True)
             copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
+
+        # Restart ssh and rollback if it failed
+        if not _run_service_command('restart', 'ssh'):
+            # We don't rollback completely but it should be enough
+            copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
+            if not _run_service_command('restart', 'ssh'):
+                raise YunohostError("migration_0007_cannot_restart")
+            else:
+                raise YunohostError("migration_0007_cancelled")

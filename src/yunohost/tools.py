@@ -1081,7 +1081,7 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
         if skip and done:
             raise YunohostError("migrations_not_pending_cant_skip", ids=', '.join(done))
         if force_rerun and pending:
-            raise YunohostError("migrations_pending_cant_revert_or_rerun", ids=', '.join(pending))
+            raise YunohostError("migrations_pending_cant_rerun", ids=', '.join(pending))
         if not (skip or force_rerun) and done:
             raise YunohostError("migrations_already_ran", ids=', '.join(done))
 
@@ -1304,10 +1304,10 @@ class Migration(object):
     def disclaimer(self):
         return None
 
-    # The followings shouldn't be overriden
-
     def run(self):
         raise NotImplementedError()
+
+    # The followings shouldn't be overriden
 
     def __init__(self, id_):
         self.id = id_
