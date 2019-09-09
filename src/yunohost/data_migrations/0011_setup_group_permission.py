@@ -92,7 +92,7 @@ class MyMigration(Migration):
             app_setting(app, 'allowed_users', delete=True)
 
 
-    def forward(self):
+    def run(self):
         # Check if the migration can be processed
         ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
         # By this we check if the have been customized

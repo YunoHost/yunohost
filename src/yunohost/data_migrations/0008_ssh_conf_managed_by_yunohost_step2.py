@@ -35,7 +35,7 @@ class MyMigration(Migration):
 
     dependencies = ["ssh_conf_managed_by_yunohost_step1"]
 
-    def forward(self):
+    def run(self):
         settings_set("service.ssh.allow_deprecated_dsa_hostkey", False)
         regen_conf(names=['ssh'], force=True)
 
