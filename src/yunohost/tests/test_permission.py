@@ -135,7 +135,7 @@ def check_LDAP_db_integrity():
 def check_permission_for_apps():
     # We check that the for each installed apps we have at last the "main" permission
     # and we don't have any permission linked to no apps. The only exception who is not liked to an app
-    # is mail, metronome, and sftp
+    # is mail, xmpp, and sftp
 
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
@@ -146,7 +146,7 @@ def check_permission_for_apps():
     installed_apps = {app['id'] for app in app_list(installed=True)['apps']}
     permission_list_set = {permission['cn'][0].split(".")[1] for permission in permission_search}
 
-    extra_service_permission = set(['mail', 'metronome'])
+    extra_service_permission = set(['mail', 'xmpp'])
     if 'sftp' in permission_list_set:
         extra_service_permission.add('sftp')
     assert installed_apps == permission_list_set - extra_service_permission
@@ -164,8 +164,8 @@ def test_list_permission():
     assert "main" in res['blog']
     assert "mail" in res
     assert "main" in res['mail']
-    assert "metronome" in res
-    assert "main" in res['metronome']
+    assert "xmpp" in res
+    assert "main" in res['xmpp']
     assert ["all_users"] == res['wiki']['main']['allowed_groups']
     assert ["alice"] == res['blog']['main']['allowed_groups']
     assert set(["alice", "bob"]) == set(res['wiki']['main']['allowed_users'])
@@ -220,9 +220,9 @@ def test_remove_bad_permission():
     assert "blog" in res
     assert "main" in res['blog']
     assert "mail" in res
-    assert "main" in res ['mail']
-    assert "metronome" in res
-    assert "main" in res['metronome']
+    assert "main" in res['mail']
+    assert "xmpp" in res
+    assert "main" in res['xmpp']
 
 def test_remove_main_permission():
     with pytest.raises(YunohostError):

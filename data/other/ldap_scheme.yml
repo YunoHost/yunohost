@@ -67,8 +67,8 @@ depends_children:
             - permissionYnh
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
-    cn=main.metronome,ou=permission:
-        cn: main.metronome
+    cn=main.xmpp,ou=permission:
+        cn: main.xmpp
         gidNumber: "5002"
         objectClass:
             - posixGroup

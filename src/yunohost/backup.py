@@ -1191,7 +1191,7 @@ class RestoreManager():
         old_apps_permission = []
         try:
             old_apps_permission = ldap.search('ou=permission,dc=yunohost,dc=org',
-                                              '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
+                                              '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.xmpp))(!(cn=main.sftp)))',
                                               ['cn', 'objectClass', 'groupPermission', 'URL', 'gidNumber'])
         except:
             logger.info(m18n.n('apps_permission_not_found'))
@@ -1247,7 +1247,7 @@ class RestoreManager():
 
         # Remove all permission for all app which sill in the LDAP
         for per in ldap.search('ou=permission,dc=yunohost,dc=org',
-                               '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
+                               '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.xmpp))(!(cn=main.sftp)))',
                                ['cn']):
             if not ldap.remove('cn=%s,ou=permission' % per['cn'][0]):
                 raise YunohostError('permission_deletion_failed',
