@@ -657,7 +657,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
-                logger.warning('tools_upgrade_regular_packages_failed',
+                logger.warning(m18n.n('tools_upgrade_regular_packages_failed'),
                                packages_list=', '.join(noncritical_packages_upgradable))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))

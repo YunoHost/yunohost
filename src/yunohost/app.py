@@ -472,7 +472,7 @@ def app_change_url(operation_logger, app, domain, path):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
-        raise YunohostError("app_change_no_change_url_script", app_name=app)
+        raise YunohostError("app_change_url_no_script", app_name=app)
 
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
