@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/YunoHost/yunohost.svg?branch=stretch-unstable)](https://travis-ci.org/YunoHost/yunohost)
+[![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/stretch-unstable/LICENSE)
+
 # YunoHost core
 
 This repository is the core of YunoHost code.
