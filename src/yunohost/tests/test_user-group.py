@@ -1,7 +1,7 @@
 import pytest
 
 from moulinette.core import MoulinetteError
-from yunohost.user import user_list, user_info, user_group_list, user_create, user_delete, user_update, user_group_add, user_group_delete, user_group_update, user_group_info
+from yunohost.user import user_list, user_info, user_group_list, user_create, user_delete, user_update, user_group_create, user_group_delete, user_group_update, user_group_info
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 from yunohost.tests.test_permission import check_LDAP_db_integrity
@@ -24,8 +24,8 @@ def setup_function(function):
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
     user_create("jack", "Jack", "Black", "jack@" + maindomain, "test123Ynh")
 
-    user_group_add("dev")
-    user_group_add("apps")
+    user_group_create("dev")
+    user_group_create("apps")
     user_group_update("dev", add_user=["alice"])
     user_group_update("apps", add_user=["bob"])
 
@@ -83,7 +83,7 @@ def test_del_user():
     assert "alice" not in group_res['all_users']['members']
 
 def test_add_group():
-    user_group_add("adminsys")
+    user_group_create("adminsys")
 
     group_res = user_group_list()['groups']
     assert "adminsys" in group_res
@@ -122,12 +122,12 @@ def test_del_bad_user_1():
 def test_add_bad_group_1():
     # Check groups already exist with special group "all_users"
     with pytest.raises(YunohostError):
-        user_group_add("all_users")
+        user_group_create("all_users")
 
 def test_add_bad_group_2():
     # Check groups already exist (for standard groups)
     with pytest.raises(MoulinetteError):
-        user_group_add("dev")
+        user_group_create("dev")
 
 def test_del_bad_group_1():
     # Check not allowed to remove this groups

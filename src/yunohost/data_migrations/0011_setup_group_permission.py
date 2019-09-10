@@ -7,7 +7,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.user import user_group_add, user_group_update
+from yunohost.user import user_group_create, user_group_update
 from yunohost.app import app_setting, app_list
 from yunohost.regenconf import regen_conf
 from yunohost.permission import permission_add, permission_sync_to_user
@@ -65,7 +65,7 @@ class MyMigration(Migration):
             username = user_info['uid'][0]
             ldap.update('uid=%s,ou=users' % username,
                         {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
-            user_group_add(username, gid=user_info['uidNumber'][0], sync_perm=False)
+            user_group_create(username, gid=user_info['uidNumber'][0], sync_perm=False)
             user_group_update(groupname=username, add_user=username, force=True, sync_perm=False)
             user_group_update(groupname='all_users', add_user=username, force=True, sync_perm=False)
 

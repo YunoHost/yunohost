@@ -212,8 +212,8 @@ user:
                             help: fields to fetch
                             nargs: "+"
 
-                ### user_group_add()
-                add:
+                ### user_group_create()
+                create:
                     action_help: Create group
                     api: POST /users/groups
                     arguments:

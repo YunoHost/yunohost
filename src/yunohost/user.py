@@ -218,7 +218,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
                                exc_info=1)
 
         # Create group for user and add to group 'all_users'
-        user_group_add(groupname=username, gid=uid, sync_perm=False)
+        user_group_create(groupname=username, gid=uid, sync_perm=False)
         user_group_update(groupname=username, add_user=username, force=True, sync_perm=False)
         user_group_update(groupname='all_users', add_user=username, force=True, sync_perm=True)
 
@@ -554,7 +554,7 @@ def user_group_list(fields=None):
 
 
 @is_unit_operation([('groupname', 'user')])
-def user_group_add(operation_logger, groupname, gid=None, sync_perm=True):
+def user_group_create(operation_logger, groupname, gid=None, sync_perm=True):
     """
     Create group
 

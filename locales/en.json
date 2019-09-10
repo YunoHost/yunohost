@@ -288,7 +288,7 @@
     "log_regen_conf": "Regenerate system configurations '{}'",
     "log_user_create": "Add '{}' user",
     "log_user_delete": "Delete '{}' user",
-    "log_user_group_add": "Add '{}' group",
+    "log_user_group_create": "Create '{}' group",
     "log_user_group_delete": "Delete '{}' group",
     "log_user_group_update": "Update '{}' group",
     "log_user_update": "Update information of '{}' user",
