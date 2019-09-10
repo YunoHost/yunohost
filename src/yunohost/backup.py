@@ -1247,7 +1247,7 @@ class RestoreManager():
 
         # Remove all permission for all app which sill in the LDAP
         for per in ldap.search('ou=permission,dc=yunohost,dc=org',
-                               '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.xmpp))(!(cn=main.sftp)))',
+                               '(&(objectClass=permissionYnh)(!(cn=mail.main))(!(cn=xmpp.main))(!(cn=sftp.main)))',
                                ['cn']):
             if not ldap.remove('cn=%s,ou=permission' % per['cn'][0]):
                 raise YunohostError('permission_deletion_failed',

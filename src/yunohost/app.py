@@ -432,7 +432,7 @@ def app_map(app=None, raw=False, user=None):
         if user is not None:
             ldap = _get_ldap_interface()
             if not ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                               filter='(&(objectclass=permissionYnh)(cn=main.%s)(inheritPermission=uid=%s,ou=users,dc=yunohost,dc=org))' % (app_id, user),
+                               filter='(&(objectclass=permissionYnh)(cn=%s.main)(inheritPermission=uid=%s,ou=users,dc=yunohost,dc=org))' % (app_id, user),
                                attrs=['cn']):
                 continue
 
