@@ -1180,11 +1180,7 @@ def _migrate_legacy_migration_json():
     last_run_migration_id = str(old_state["number"]) + "_" + old_state["name"]
 
     # Extract the list of migration ids
-    try:
-        from . import data_migrations
-    except ImportError:
-        # Well ugh what are we supposed to do if we can't do this >.>...
-        pass
+    from . import data_migrations
     migrations_path = data_migrations.__path__[0]
     migration_files = filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
     # (here we remove the .py extension and make sure the ids are sorted)
