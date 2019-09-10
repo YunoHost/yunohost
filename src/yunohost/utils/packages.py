@@ -33,36 +33,6 @@ logger = logging.getLogger('yunohost.utils.packages')
 
 # Exceptions -----------------------------------------------------------------
 
-class PackageException(Exception):
-
-    """Base exception related to a package
-
-    Represent an exception related to the package named `pkgname`. If no
-    `message` is provided, it will first try to use the translation key
-    `message_key` if defined by the derived class. Otherwise, a standard
-    message will be used.
-
-    """
-    message_key = 'package_unexpected_error'
-
-    def __init__(self, pkgname, message=None):
-        super(PackageException, self).__init__(
-            message or m18n.n(self.message_key, pkgname=pkgname))
-        self.pkgname = pkgname
-
-
-class UnknownPackage(PackageException):
-
-    """The package is not found in the cache."""
-    message_key = 'package_unknown'
-
-
-class UninstalledPackage(PackageException):
-
-    """The package is not installed."""
-    message_key = 'package_not_installed'
-
-
 class InvalidSpecifier(ValueError):
 
     """An invalid specifier was found."""
@@ -402,41 +372,38 @@ def get_installed_version(*pkgnames, **kwargs):
     """Get the installed version of package(s)
 
     Retrieve one or more packages named `pkgnames` and return their installed
-    version as a dict or as a string if only one is requested and `as_dict` is
-    `False`. If `strict` is `True`, an exception will be raised if a package
-    is unknown or not installed.
+    version as a dict or as a string if only one is requested.
 
     """
     versions = OrderedDict()
     cache = apt.Cache()
 
     # Retrieve options
-    as_dict = kwargs.get('as_dict', False)
-    strict = kwargs.get('strict', False)
     with_repo = kwargs.get('with_repo', False)
 
     for pkgname in pkgnames:
         try:
             pkg = cache[pkgname]
         except KeyError:
-            if strict:
-                raise UnknownPackage(pkgname)
             logger.warning(m18n.n('package_unknown', pkgname=pkgname))
+            if with_repo:
+                versions[pkgname] = {
+                    "version": None,
+                    "repo": None,
+                }
+            else:
+                versions[pkgname] = None
             continue
 
         try:
             version = pkg.installed.version
         except AttributeError:
-            if strict:
-                raise UninstalledPackage(pkgname)
             version = None
 
         try:
             # stable, testing, unstable
             repo = pkg.installed.origins[0].component
         except AttributeError:
-            if strict:
-                raise UninstalledPackage(pkgname)
             repo = ""
 
         if with_repo:
@@ -449,7 +416,7 @@ def get_installed_version(*pkgnames, **kwargs):
         else:
             versions[pkgname] = version
 
-    if len(pkgnames) == 1 and not as_dict:
+    if len(pkgnames) == 1:
         return versions[pkgnames[0]]
     return versions
 
