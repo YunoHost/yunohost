@@ -484,7 +484,7 @@ def permission_sync_to_user(force=False):
     for per in ldap.search('ou=permission,dc=yunohost,dc=org',
                            '(objectclass=permissionYnh)',
                            ['cn', 'inheritPermission', 'groupPermission', 'memberUid']):
-        print(per)
+
         if 'groupPermission' not in per:
             per['groupPermission'] = []
         user_permission = set()
