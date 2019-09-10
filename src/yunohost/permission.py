@@ -35,6 +35,12 @@ from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
 
+#
+#
+#  The followings are the methods exposed through the "yunohost user permission" interface
+#
+#
+
 
 def user_permission_list(app=None, permission=None, username=None, group=None):
     """
@@ -315,6 +321,14 @@ def user_permission_clear(operation_logger, app=[], permission=None, sync_perm=T
 
     return user_permission_list(app, permission)
 
+#
+#
+#  The followings methods are *not* directly exposed.
+#  They are used to create/delete the permissions (e.g. during app install/remove)
+#  and by some app helpers to possibly add additional permissions and tweak the urls
+#
+#
+
 
 @is_unit_operation(['permission', 'app'])
 def permission_create(operation_logger, app, permission, urls=None, default_allow=True, sync_perm=True):
@@ -374,9 +388,9 @@ def permission_create(operation_logger, app, permission, urls=None, default_allo
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_update(operation_logger, app, permission, add_url=None, remove_url=None, sync_perm=True):
+def permission_urls(operation_logger, app, permission, add_url=None, remove_url=None, sync_perm=True):
     """
-    Update a permission for a specific application
+    Update urls related to a permission for a specific application
 
     Keyword argument:
         app            -- an application OR sftp, xmpp (metronome), mail
