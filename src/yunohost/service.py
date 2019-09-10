@@ -35,8 +35,6 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils import log, filesystem
 
-from yunohost.log import is_unit_operation
-
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
 logger = log.getActionLogger('yunohost.service')
@@ -215,8 +213,7 @@ def service_reload_or_restart(names):
                 raise YunohostError('service_reload_or_restart_failed', service=name, logs=_get_journalctl_logs(name))
 
 
-@is_unit_operation()
-def service_enable(operation_logger, names):
+def service_enable(names):
     """
     Enable one or more services
 
@@ -224,7 +221,6 @@ def service_enable(operation_logger, names):
         names -- Services name to enable
 
     """
-    operation_logger.start()
     if isinstance(names, str):
         names = [names]
     for name in names:

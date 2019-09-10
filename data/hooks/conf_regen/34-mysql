@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-MYSQL_PKG="mariadb-server-10.1"
+MYSQL_PKG="$(dpkg --list | sed -ne 's/^ii  \(mariadb-server-[[:digit:].]\+\) .*$/\1/p')"
 . /usr/share/yunohost/helpers
 
 do_pre_regen() {

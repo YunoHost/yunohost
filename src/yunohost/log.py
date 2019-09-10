@@ -103,7 +103,12 @@ def log_list(category=[], limit=None, with_details=False):
                 entry["started_at"] = log_datetime
 
             if with_details:
-                metadata = read_yaml(md_path)
+                try:
+                    metadata = read_yaml(md_path)
+                except Exception as e:
+                    # If we can't read the yaml for some reason, report an error and ignore this entry...
+                    logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
+                    continue
                 entry["success"] = metadata.get("success", "?") if metadata else "?"
 
             result[category].append(entry)
@@ -310,7 +315,7 @@ class RedactingFormatter(Formatter):
         try:
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
-            match = re.search(r'(pwd|pass|password|secret|key)=(\S{3,})$', record.strip())
+            match = re.search(r'(pwd|pass|password|secret|key|token)=(\S{3,})$', record.strip())
             if match and match.group(2) not in self.data_to_redact:
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
@@ -396,7 +401,8 @@ class OperationLogger(object):
 
         dump = yaml.safe_dump(self.metadata, default_flow_style=False)
         for data in self.data_to_redact:
-            dump = dump.replace(data, "**********")
+            # N.B. : we need quotes here, otherwise yaml isn't happy about loading the yml later
+            dump = dump.replace(data, "'**********'")
         with open(self.md_path, 'w') as outfile:
             outfile.write(dump)
 

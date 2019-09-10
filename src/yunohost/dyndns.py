@@ -33,7 +33,7 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file
+from moulinette.utils.filesystem import write_to_file, read_file
 from moulinette.utils.network import download_json
 from moulinette.utils.process import check_output
 
@@ -176,7 +176,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
 @is_unit_operation()
 def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None, key=None,
-                  ipv4=None, ipv6=None):
+                  ipv4=None, ipv6=None, force=False, dry_run=False):
     """
     Update IP on DynDNS platform
 
@@ -249,7 +249,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
 
     # no need to update
-    if old_ipv4 == ipv4 and old_ipv6 == ipv6:
+    if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
         logger.info("No updated needed.")
         return
     else:
@@ -279,7 +279,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
-            record["value"] = record["value"].replace(";", "\;")
+            record["value"] = record["value"].replace(";", r"\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")
@@ -296,13 +296,18 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
 
     logger.debug("Now pushing new conf to DynDNS host...")
 
-    try:
-        command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
-        subprocess.check_call(command)
-    except subprocess.CalledProcessError:
-        raise YunohostError('dyndns_ip_update_failed')
+    if not dry_run:
+        try:
+            command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            raise YunohostError('dyndns_ip_update_failed')
 
-    logger.success(m18n.n('dyndns_ip_updated'))
+        logger.success(m18n.n('dyndns_ip_updated'))
+    else:
+        print(read_file(DYNDNS_ZONE))
+        print("")
+        print("Warning: dry run, this is only the generated config, it won't be applied")
 
 
 def dyndns_installcron():
@@ -325,8 +330,8 @@ def dyndns_removecron():
     """
     try:
         os.remove("/etc/cron.d/yunohost-dyndns")
-    except:
-        raise YunohostError('dyndns_cron_remove_failed')
+    except Exception as e:
+        raise YunohostError('dyndns_cron_remove_failed', error=e)
 
     logger.success(m18n.n('dyndns_cron_removed'))
 

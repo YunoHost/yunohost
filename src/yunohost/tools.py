@@ -225,10 +225,6 @@ def _set_hostname(hostname, pretty_hostname=None):
     Change the machine hostname using hostnamectl
     """
 
-    if _is_inside_container():
-        logger.warning("You are inside a container and hostname cannot easily be changed")
-        return
-
     if not pretty_hostname:
         pretty_hostname = "(YunoHost/%s)" % hostname
 
@@ -252,26 +248,23 @@ def _set_hostname(hostname, pretty_hostname=None):
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            raise YunohostError('domain_hostname_failed')
+            logger.error(m18n.n('domain_hostname_failed'))
         else:
             logger.debug(out)
 
 
-def _is_inside_container():
+def _detect_virt():
     """
-    Check if we're inside a container (i.e. LXC)
-
-    Returns True or False
+    Returns the output of systemd-detect-virt (so e.g. 'none' or 'lxc' or ...)
+    You can check the man of the command to have a list of possible outputs...
     """
 
-    # See https://www.2daygeek.com/check-linux-system-physical-virtual-machine-virtualization-technology/
-    p = subprocess.Popen("sudo systemd-detect-virt".split(),
+    p = subprocess.Popen("systemd-detect-virt".split(),
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
 
     out, _ = p.communicate()
-    container = ['lxc', 'lxd', 'docker']
-    return out.split()[0] in container
+    return out.split()[0]
 
 
 @is_unit_operation()

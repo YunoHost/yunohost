@@ -1,3 +1,9 @@
+yunohost (3.6.4.6) stable; urgency=low
+
+  - [fix] Hopefully fix the issue about corrupted logs metadata files (d507d447, 1cec9d78)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 05 Aug 2019 18:37:00  +0000
+
 yunohost (3.6.4.5) stable; urgency=low
 
   - [fix] Typo in hotfix...
