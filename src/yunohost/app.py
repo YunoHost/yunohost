@@ -738,7 +738,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import permission_add, permission_update, permission_remove, permission_sync_to_user
+    from yunohost.permission import permission_create, permission_update, permission_delete, permission_sync_to_user
     ldap = _get_ldap_interface()
 
     # Fetch or extract sources
@@ -875,7 +875,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Create permission before the install (useful if the install script redefine the permission)
     # Note that sync_perm is disabled to avoid triggering a whole bunch of code and messages
     # can't be sure that we don't have one case when it's needed
-    permission_add(app=app_instance_name, permission="main", sync_perm=False)
+    permission_create(app=app_instance_name, permission="main", sync_perm=False)
 
     # Execute the app install script
     install_retcode = 1
@@ -914,7 +914,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                                     filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
                 permission_list = [p['cn'][0] for p in result]
                 for l in permission_list:
-                    permission_remove(app_instance_name, l.split('.')[0], force=True)
+                    permission_delete(app_instance_name, l.split('.')[0], force=True)
 
                 if remove_retcode != 0:
                     msg = m18n.n('app_not_properly_removed',
@@ -980,7 +980,7 @@ def app_remove(operation_logger, app):
     """
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_exec, hook_remove, hook_callback
-    from yunohost.permission import permission_remove, permission_sync_to_user
+    from yunohost.permission import permission_delete, permission_sync_to_user
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
@@ -1031,7 +1031,7 @@ def app_remove(operation_logger, app):
                          filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app, attrs=['cn'])
     permission_list = [p['cn'][0] for p in result]
     for l in permission_list:
-        permission_remove(app, l.split('.')[0], force=True, sync_perm=False)
+        permission_delete(app, l.split('.')[0], force=True, sync_perm=False)
 
     permission_sync_to_user()
 

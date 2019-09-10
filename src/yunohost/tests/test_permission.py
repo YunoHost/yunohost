@@ -3,7 +3,7 @@ import pytest
 from moulinette.core import MoulinetteError
 from yunohost.app import app_install, app_remove, app_change_url, app_list
 from yunohost.user import user_list, user_create, user_permission_list, user_delete, user_group_list, user_group_delete, user_permission_add, user_permission_remove, user_permission_clear
-from yunohost.permission import permission_add, permission_update, permission_remove
+from yunohost.permission import permission_create, permission_update, permission_delete
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 
@@ -21,15 +21,15 @@ def clean_user_groups_permission():
     for a, per in user_permission_list()['permissions'].items():
         if a in ['wiki', 'blog', 'site']:
             for p in per:
-                permission_remove(a, p, force=True, sync_perm=False)
+                permission_delete(a, p, force=True, sync_perm=False)
 
 def setup_function(function):
     clean_user_groups_permission()
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
-    permission_add("wiki", "main", [maindomain + "/wiki"], sync_perm=False)
-    permission_add("blog", "main", sync_perm=False)
+    permission_create("wiki", "main", [maindomain + "/wiki"], sync_perm=False)
+    permission_create("blog", "main", sync_perm=False)
 
     user_permission_add(["blog"], "main", group="alice")
 
@@ -177,7 +177,7 @@ def test_list_permission():
 #
 
 def test_add_permission_1():
-    permission_add("site", "test")
+    permission_create("site", "test")
 
     res = user_permission_list()['permissions']
     assert "site" in res
@@ -186,7 +186,7 @@ def test_add_permission_1():
     assert set(["alice", "bob"]) == set(res['site']['test']['allowed_users'])
 
 def test_add_permission_2():
-    permission_add("site", "main", default_allow=False)
+    permission_create("site", "main", default_allow=False)
 
     res = user_permission_list()['permissions']
     assert "site" in res
@@ -195,7 +195,7 @@ def test_add_permission_2():
     assert [] == res['site']['main']['allowed_users']
 
 def test_remove_permission():
-    permission_remove("wiki", "main", force=True)
+    permission_delete("wiki", "main", force=True)
 
     res = user_permission_list()['permissions']
     assert "wiki" not in res
@@ -207,12 +207,12 @@ def test_remove_permission():
 def test_add_bad_permission():
     # Create permission with same name
     with pytest.raises(YunohostError):
-        permission_add("wiki", "main")
+        permission_create("wiki", "main")
 
 def test_remove_bad_permission():
     # Remove not existant permission
     with pytest.raises(MoulinetteError):
-        permission_remove("non_exit", "main", force=True)
+        permission_delete("non_exit", "main", force=True)
 
     res = user_permission_list()['permissions']
     assert "wiki" in res
@@ -226,7 +226,7 @@ def test_remove_bad_permission():
 
 def test_remove_main_permission():
     with pytest.raises(YunohostError):
-        permission_remove("blog", "main")
+        permission_delete("blog", "main")
 
     res = user_permission_list()['permissions']
     assert "mail" in res

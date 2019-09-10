@@ -317,7 +317,7 @@ def user_permission_clear(operation_logger, app=[], permission=None, sync_perm=T
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_add(operation_logger, app, permission, urls=None, default_allow=True, sync_perm=True):
+def permission_create(operation_logger, app, permission, urls=None, default_allow=True, sync_perm=True):
     """
     Create a new permission for a specific application
 
@@ -431,7 +431,7 @@ def permission_update(operation_logger, app, permission, add_url=None, remove_ur
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_remove(operation_logger, app, permission, force=False, sync_perm=True):
+def permission_delete(operation_logger, app, permission, force=False, sync_perm=True):
     """
     Remove a permission for a specific application
 

@@ -1303,7 +1303,7 @@ class RestoreManager():
         """
         from moulinette.utils.filesystem import read_ldif
         from yunohost.user import user_group_list
-        from yunohost.permission import permission_remove
+        from yunohost.permission import permission_delete
         from yunohost.utils.ldap import _get_ldap_interface
         ldap = _get_ldap_interface()
 
@@ -1441,7 +1441,7 @@ class RestoreManager():
                                  filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
             permission_list = [p['cn'][0] for p in result]
             for l in permission_list:
-                permission_remove(app_instance_name, l.split('.')[0], force=True)
+                permission_delete(app_instance_name, l.split('.')[0], force=True)
 
             # TODO Cleaning app hooks
         else:

@@ -10,7 +10,7 @@ from yunohost.tools import Migration
 from yunohost.user import user_group_create, user_group_update
 from yunohost.app import app_setting, app_list
 from yunohost.regenconf import regen_conf
-from yunohost.permission import permission_add, permission_sync_to_user
+from yunohost.permission import permission_create, permission_sync_to_user
 from yunohost.user import user_permission_add
 
 logger = getActionLogger('yunohost.migration')
@@ -85,7 +85,7 @@ class MyMigration(Migration):
             domain = app_setting(app, 'domain')
 
             urls = [domain + path] if domain and path else None
-            permission_add(app, permission='main', urls=urls, default_allow=True, sync_perm=False)
+            permission_create(app, permission='main', urls=urls, default_allow=True, sync_perm=False)
             if permission:
                 allowed_group = permission.split(',')
                 user_permission_add([app], permission='main', group=allowed_group, sync_perm=False)
