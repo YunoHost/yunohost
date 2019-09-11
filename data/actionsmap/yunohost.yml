@@ -208,9 +208,14 @@ user:
                     action_help: List group
                     api: GET /users/groups
                     arguments:
-                        --fields:
-                            help: fields to fetch
-                            nargs: "+"
+                        -n:
+                            full: --names-only
+                            help: Only list the name of the groups without any additional info
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: List all the info available for each groups
+                            action: store_true
 
                 ### user_group_create()
                 create:

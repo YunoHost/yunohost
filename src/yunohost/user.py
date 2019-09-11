@@ -489,66 +489,44 @@ def user_info(username):
 #
 # Group subcategory
 #
-def user_group_list(fields=None):
+def user_group_list(names_only=False, full=False):
     """
     List users
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for user fetching
-        limit -- Maximum number of user fetched
-        fields -- fields to fetch
-
+        names-only -- Only list the name of the groups without any additional info
+        full -- List all the info available for each groups
     """
-    from yunohost.utils.ldap import _get_ldap_interface
+
+    # Fetch relevant informations
+
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
-    group_attr = {
-        'cn': 'groupname',
-        'member': 'members',
-        'permission': 'permission'
-    }
-    attrs = ['cn']
-    groups = {}
 
-    if fields:
-        keys = group_attr.keys()
-        for attr in fields:
-            if attr in keys:
-                attrs.append(attr)
-            else:
-                raise YunohostError('field_invalid', attr)
+    if names_only:
+        fields_to_fetch = ["cn"]
+    elif full:
+        fields_to_fetch = ["cn", "member", "permission"]
     else:
-        attrs = ['cn', 'member']
+        fields_to_fetch = ["cn", "member"]
 
-    result = ldap.search('ou=groups,dc=yunohost,dc=org',
-                         '(objectclass=groupOfNamesYnh)',
-                         attrs)
+    groups_infos = ldap.search('ou=groups,dc=yunohost,dc=org',
+                               '(objectclass=groupOfNamesYnh)',
+                               fields_to_fetch)
 
-    for group in result:
-        # The group "admins" should be hidden for the user
-        if group_attr['cn'] == "admins":
-            continue
-        entry = {}
-        for attr, values in group.items():
-            if values:
-                if attr == "member":
-                    entry[group_attr[attr]] = []
-                    for v in values:
-                        entry[group_attr[attr]].append(v.split("=")[1].split(",")[0])
-                elif attr == "permission":
-                    entry[group_attr[attr]] = {}
-                    for v in values:
-                        permission = v.split("=")[1].split(",")[0].split(".")[1]
-                        pType = v.split("=")[1].split(",")[0].split(".")[0]
-                        if permission in entry[group_attr[attr]]:
-                            entry[group_attr[attr]][permission].append(pType)
-                        else:
-                            entry[group_attr[attr]][permission] = [pType]
-                else:
-                    entry[group_attr[attr]] = values[0]
+    # Parse / organize information to be outputed
 
-        groupname = entry[group_attr['cn']]
-        groups[groupname] = entry
+    groups = {}
+    for infos in groups_infos:
+        name = infos["cn"][0]
+        groups[name] = {}
+        if "member" in fields_to_fetch:
+            groups[name]["members"] = [_ldap_path_extract(p, "uid") for p in infos.get("member", [])]
+        if "permission" in fields_to_fetch:
+            groups[name]["permissions"] = [_ldap_path_extract(p, "cn") for p in infos.get("permission", [])]
+
+    if names_only:
+        groups = groups.keys()
 
     return {'groups': groups}
 

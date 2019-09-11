@@ -169,13 +169,13 @@ def user_permission_update(operation_logger, app=[], permission=None, add_userna
 
     # Validate that the group exist
     for g in add_group:
-        if g not in user_group_list(['cn'])['groups']:
+        if g not in user_group_list()['groups']:
             raise YunohostError('group_unknown', group=g)
     for u in add_username:
         if u not in user_list(['uid'])['users']:
             raise YunohostError('user_unknown', user=u)
     for g in del_group:
-        if g not in user_group_list(['cn'])['groups']:
+        if g not in user_group_list()['groups']:
             raise YunohostError('group_unknown', group=g)
     for u in del_username:
         if u not in user_list(['uid'])['users']:
@@ -244,14 +244,12 @@ def user_permission_update(operation_logger, app=[], permission=None, add_userna
     for a in app:
         allowed_users = set()
         disallowed_users = set()
-        group_list = user_group_list(['member'])['groups']
+        group_list = user_group_list()['groups']
 
         for g in add_group:
-            if 'members' in group_list[g]:
-                allowed_users.union(group_list[g]['members'])
+            allowed_users.union(group_list[g]['members'])
         for g in del_group:
-            if 'members' in group_list[g]:
-                disallowed_users.union(group_list[g]['members'])
+            disallowed_users.union(group_list[g]['members'])
 
         allowed_users = ','.join(allowed_users)
         disallowed_users = ','.join(disallowed_users)

@@ -1374,7 +1374,7 @@ class RestoreManager():
                 filtred_entries =  ['entryUUID', 'creatorsName', 'createTimestamp', 'entryCSN', 'structuralObjectClass',
                                     'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
                 entries = read_ldif('%s/permission.ldif' % app_settings_in_archive, filtred_entries)
-                group_list = user_group_list(['cn'])['groups']
+                group_list = user_group_list()['groups']
                 for dn, entry in entries:
                     # Remove the group which has been removed
                     for group in entry['groupPermission']:
