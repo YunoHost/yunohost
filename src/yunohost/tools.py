@@ -39,7 +39,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
+from yunohost.domain import domain_add, domain_list
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_start, service_enable
@@ -166,58 +166,8 @@ def tools_adminpw(new_password, check_strength=True):
 
 @is_unit_operation()
 def tools_maindomain(operation_logger, new_main_domain=None):
-    """
-    Check the current main domain, or change it
-
-    Keyword argument:
-        new_domain -- The new domain to be set as the main domain
-
-    """
-
-    # If no new domain specified, we return the current main domain
-    if not new_domain:
-        return {'current_main_domain': _get_maindomain()}
-
-    # Check domain exists
-    if new_domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    operation_logger.related_to.append(('domain', new_domain))
-    operation_logger.start()
-
-    # Apply changes to ssl certs
-    ssl_key = "/etc/ssl/private/yunohost_key.pem"
-    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
-    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_domain
-    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
-
-    try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
-            os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
-            os.remove(ssl_crt)
-
-        os.symlink(new_ssl_key, ssl_key)
-        os.symlink(new_ssl_crt, ssl_crt)
-
-        _set_maindomain(new_domain)
-    except Exception as e:
-        logger.warning("%s" % e, exc_info=1)
-        raise YunohostError('maindomain_change_failed')
-
-    _set_hostname(new_domain)
-
-    # Generate SSOwat configuration file
-    app_ssowatconf()
-
-    # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r'):
-            regen_conf()
-    except IOError:
-        pass
-
-    logger.success(m18n.n('maindomain_changed'))
+    from yunohost.domain import domain_maindomain
+    return domain_main_domain(new_main_domain=new_main_domain)
 
 
 def _set_hostname(hostname, pretty_hostname=None):

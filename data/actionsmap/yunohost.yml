@@ -441,6 +441,19 @@ domain:
                             - !!str ^[0-9]+$
                             - "pattern_positive_number"
 
+        ### domain_maindomain()
+        maindomain:
+            action_help: Check the current main domain, or change it
+            api:
+                - GET /domains/main
+                - PUT /domains/main
+            arguments:
+                -n:
+                    full: --new-main-domain
+                    help: Change the current main domain
+                    extra:
+                        pattern: *pattern_domain
+
         ### certificate_status()
         cert-status:
             action_help: List status of current certificates (all by default).
@@ -1542,6 +1555,7 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Check the current main domain, or change it
+            deprecated: true
             api:
                 - GET /domains/main
                 - PUT /domains/main
