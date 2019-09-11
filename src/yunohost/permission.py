@@ -358,70 +358,41 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
         raise YunohostError('permission_deletion_failed', permission=permission)
 
 
-def permission_sync_to_user(force=False):
+def permission_sync_to_user():
     """
     Sychronise the inheritPermission attribut in the permission object from the
     user<->group link and the group<->permission link
-
-    Keyword argument:
-        force    -- Force to recreate all attributes. Used generally with the
-        backup which uses "slapadd" which doesnt' use the memberOf overlay.
-        Note that by removing all value and adding a new time, we force the
-        overlay to update all attributes
     """
-    # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
-    # So we need to check before each ldap operation that we really change something in LDAP
     import os
     from yunohost.app import app_ssowatconf
+    from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
-    permission_attrs = [
-        'cn',
-        'member',
-    ]
-    group_info = ldap.search('ou=groups,dc=yunohost,dc=org',
-                             '(objectclass=groupOfNamesYnh)', permission_attrs)
-    group_info = {g['cn'][0]: g for g in group_info}
+    groups = user_group_list(full=True)["groups"]
+    permissions = user_permission_list(full=True)["permissions"]
 
-    for per in ldap.search('ou=permission,dc=yunohost,dc=org',
-                           '(objectclass=permissionYnh)',
-                           ['cn', 'inheritPermission', 'groupPermission', 'memberUid']):
+    for permission_name, permission_infos in permissions.items():
 
-        if 'groupPermission' not in per:
-            per['groupPermission'] = []
-        user_permission = set()
-        for group in per['groupPermission']:
-            group = group.split("=")[1].split(",")[0]
-            if 'member' not in group_info[group]:
-                continue
-            for user in group_info[group]['member']:
-                user_permission.add(user)
+        # These are the users currently allowed because there's an 'inheritPermission' object corresponding to it
+        currently_allowed_users = set(permission_infos["corresponding_users"])
 
-        if 'inheritPermission' not in per:
-            per['inheritPermission'] = []
-        if 'memberUid' not in per:
-            per['memberUid'] = []
+        # These are the users that should be allowed because they are member of a group that is allowed for this permission ...
+        should_be_allowed_users = set([user for group in permission_infos["allowed"] for user in groups[group]["members"]])
 
-        uid_val = [v.split("=")[1].split(",")[0] for v in user_permission]
-        if user_permission == set(per['inheritPermission']) and set(uid_val) == set(per['memberUid']) and not force:
+        # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
+        # So we need to check before each ldap operation that we really change something in LDAP
+        if currently_allowed_users == should_be_allowed_users:
+            # We're all good, this permission is already correctly synchronized !
             continue
-        inheritPermission = {'inheritPermission': user_permission, 'memberUid': uid_val}
-        if force:
-            if per['groupPermission']:
-                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': []}):
-                    raise YunohostError('permission_update_failed_clear')
-                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], {'groupPermission': per['groupPermission']}):
-                    raise YunohostError('permission_update_failed_populate')
-            if per['inheritPermission']:
-                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], {'inheritPermission': []}):
-                    raise YunohostError('permission_update_failed_clear')
-            if user_permission:
-                if not ldap.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
-                    raise YunohostError('permission_update_failed')
-        else:
-            if not ldap.update('cn=%s,ou=permission' % per['cn'][0], inheritPermission):
-                raise YunohostError('permission_update_failed')
+
+        new_inherited_perms = {'inheritPermission': ["uid=%s,ou=users,dc=yunohost,dc=org" % u for u in should_be_allowed_users],
+                               'memberUid': should_be_allowed_users}
+
+        # Commit the change with the new inherited stuff
+        if not ldap.update('cn=%s,ou=permission' % permission_name, new_inherited_perms):
+            raise YunohostError('permission_update_failed')
+
     logger.debug(m18n.n('permission_generated'))
 
     app_ssowatconf()
