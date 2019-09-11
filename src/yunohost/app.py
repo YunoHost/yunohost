@@ -1414,12 +1414,10 @@ def app_ssowatconf():
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
-    permission = {}
-    for a in user_permission_list()['permissions'].values():
-        for p in a.values():
-            if 'URL' in p:
-                for u in p['URL']:
-                    permission[u] = p['allowed_users']
+    permissions_per_url = {}
+    for permission_name, permission_infos in user_permission_list(full=True)['permissions'].items():
+        for url in permission_infos["urls"]:
+            permissions_per_url[url] = permission_infos['corresponding_users']
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -1441,7 +1439,7 @@ def app_ssowatconf():
         'redirected_regex': redirected_regex,
         'users': {username: app_map(user=username)
                   for username in user_list()['users'].keys()},
-        'permission': permission,
+        'permissions': permissions_per_url,
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
