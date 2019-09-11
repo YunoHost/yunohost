@@ -1557,7 +1557,6 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Check the current main domain, or change it
-            deprecated: true
             api:
                 - GET /domains/main
                 - PUT /domains/main
