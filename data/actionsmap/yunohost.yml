@@ -468,7 +468,7 @@ domain:
 
         ### domain_dns_conf()
         dns-conf:
-            action_help: Generate DNS configuration for a domain
+            action_help: Generate sample DNS configuration for a domain
             api: GET /domains/<domain>/dns
             arguments:
                 domain:
