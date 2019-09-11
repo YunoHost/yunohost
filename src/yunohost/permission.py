@@ -67,7 +67,7 @@ def user_permission_list(short=False, full=False):
         permissions[name]["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
 
         if full:
-            permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])],
+            permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
             permissions[name]["urls"] = infos.get("URL", [])
 
     if short:
@@ -92,11 +92,11 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     # Fetch currently allowed groups for this permission
 
-    permissions = user_permission_list(full=True)["permissions"]
-    if permission not in permissions:
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if existing_permission is None:
         raise YunohostError('permission_not_found', permission=permission)
 
-    current_allowed_groups = permissions[permission]["allowed"]
+    current_allowed_groups = existing_permission["allowed"]
     all_existing_groups = user_group_list()['groups'].keys()
 
     # Compute new allowed group list (and make sure what we're doing make sense)
@@ -152,13 +152,19 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         new_permission = user_permission_list(full=True)["permissions"][permission]
 
         # Trigger app callbacks
-        # FIXME : this is not how this hook works... gotta compute the list of user actually added / removed
 
-        #app = permission.split(".")[0]
-        #if add:
-        #    hook_callback('post_app_addaccess', args=[app, new_permission["corresponding_users"]])
-        #if remove:
-        #    hook_callback('post_app_removeaccess', args=[app, new_permission["corresponding_users"]])
+        app = permission.split(".")[0]
+
+        old_allowed_users = set(existing_permission["corresponding_users"])
+        new_allowed_users = set(new_permission["corresponding_users"])
+
+        effectively_added_users = new_allowed_users - old_allowed_users
+        effectively_removed_users = old_allowed_users - new_allowed_users
+
+        if effectively_added_users:
+            hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
+        if effectively_removed_users:
+            hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
 
         return new_permission
 
@@ -196,8 +202,20 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
     new_permission = user_permission_list(full=True)["permissions"][permission]
 
-    # FIXME : trigger app callbacks
-    # app = permission.split(".")[0]
+    # Trigger app callbacks
+
+    app = permission.split(".")[0]
+
+    old_allowed_users = set(existing_permission["corresponding_users"])
+    new_allowed_users = set(new_permission["corresponding_users"])
+
+    effectively_added_users = new_allowed_users - old_allowed_users
+    effectively_removed_users = old_allowed_users - new_allowed_users
+
+    if effectively_added_users:
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
+    if effectively_removed_users:
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
 
     return new_permission
 
