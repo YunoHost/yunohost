@@ -156,7 +156,14 @@ def domain_remove(operation_logger, domain, force=False):
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
-        raise YunohostError('domain_cannot_remove_main')
+        other_domains = domain_list()["domains"]
+        other_domains.remove(domain)
+
+        if other_domains:
+            raise YunohostError('domain_cannot_remove_main',
+                                domain=domain, other_domains="\n * " + ("\n * ".join(other_domains)))
+        else:
+            raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
     for app in os.listdir('/etc/yunohost/apps/'):
