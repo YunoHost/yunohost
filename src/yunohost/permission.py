@@ -92,33 +92,31 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     # Fetch currently allowed groups for this permission
 
-    result = ldap.search('ou=permission,dc=yunohost,dc=org',
-                         '(objectclass=permissionYnh)',
-                         ["cn", "groupPermission"])
-    result = {p['cn'][0]: p for p in result}
-    if permission not in result:
+    permissions = user_permission_list(full=True)["permissions"]
+    if permission not in permissions:
         raise YunohostError('permission_not_found', permission=permission)
 
-    current_allowed_groups = [_ldap_path_extract(p, "cn") for p in result[permission].get("groupPermission", [])]
+    current_allowed_groups = permissions[permission]["allowed"]
+    all_existing_groups = user_group_list()['groups'].keys()
 
     # Compute new allowed group list (and make sure what we're doing make sense)
 
     new_allowed_groups = copy.copy(current_allowed_groups)
 
     if add:
-        existing_groups = user_group_list()['groups'].keys()
         groups_to_add = [add] if not isinstance(add, list) else add
         for group in groups_to_add:
-            if group not in existing_groups:
+            if group not in all_existing_groups:
                 raise YunohostError('group_unknown', group=group)
             if group in current_allowed_groups:
                 logger.warning(m18n.n('group_already_allowed', permission=permission, group=group))
+
         new_allowed_groups += groups_to_add
 
     if remove:
         groups_to_remove = [remove] if not isinstance(remove, list) else remove
         for group in groups_to_remove:
-            if group not in existing_groups:
+            if group not in all_existing_groups:
                 raise YunohostError('group_unknown', group=group)
             if group not in current_allowed_groups:
                 logger.warning(m18n.n('group_already_disallowed', permission=permission, group=group))
@@ -130,7 +128,8 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # because the current situation is probably not what they expect / is temporary ?
 
     if len(new_allowed_groups) > 1 and "all_users" in new_allowed_groups:
-        # FIXME : write a better explanation
+        # FIXME : i18n
+        # FIXME : write a better explanation ?
         logger.warning("This permission is currently enabled for all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the specific groups currently allowed.")
 
     # Commit the new allowed group list
@@ -139,6 +138,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
+        # FIXME : i18n
         logger.warning("No change was applied because not relevant modification were found")
     elif ldap.update('cn=%s,ou=permission' % permission,
                      {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in new_allowed_groups]}):
@@ -149,19 +149,19 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         if sync_perm:
             permission_sync_to_user()
 
+        new_permission = user_permission_list(full=True)["permissions"][permission]
+
         # Trigger app callbacks
+        app = permission.split(".")[0]
+        if add:
+            hook_callback('post_app_addaccess', args=[app, new_permission["corresponding_users"]])
+        if remove:
+            hook_callback('post_app_removeaccess', args=[app, new_permission["corresponding_users"]])
 
-        # FIXME FIXME FIXME
-
-        #if groups_to_add:
-        #    hook_callback('post_app_addaccess', args=[app, allowed_users])
-        #if groups_to_remove:
-        #    hook_callback('post_app_removeaccess', args=[app, disallowed_users])
+        return new_permission
 
     else:
         raise YunohostError('permission_update_failed')
-
-    return user_permission_list()["permissions"][permission]
 
 
 def user_permission_clear(operation_logger, app=[], permission=None, sync_perm=True):
