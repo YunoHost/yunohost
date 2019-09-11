@@ -229,27 +229,22 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_create(operation_logger, app, permission, urls=None, default_allow=True, sync_perm=True):
+def permission_create(operation_logger, permission, urls=None, sync_perm=True):
     """
     Create a new permission for a specific application
 
     Keyword argument:
-        app        -- an application OR sftp, xmpp (metronome), mail
-        permission -- name of the permission ("main" by default)
+        permission -- Name of the permission (e.g. nextcloud.main or wordpress.editors)
         urls       -- list of urls to specify for the permission
-
     """
-    from yunohost.domain import _normalize_domain_path
+
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
     # Validate uniqueness of permission in LDAP
-    permission_name = str(permission + '.' + app)  # str(...) Fix encoding issue
-    conflict = ldap.get_conflict({
-        'cn': permission_name
-    }, base_dn='ou=permission,dc=yunohost,dc=org')
-    if conflict:
-        raise YunohostError('permission_already_exist', permission=permission, app=app)
+    if ldap.get_conflict({'cn': permission},
+                         base_dn='ou=permission,dc=yunohost,dc=org'):
+        raise YunohostError('permission_already_exist', permission=permission)
 
     # Get random GID
     all_gid = {x.gr_gid for x in grp.getgrall()}
@@ -261,110 +256,106 @@ def permission_create(operation_logger, app, permission, urls=None, default_allo
 
     attr_dict = {
         'objectClass': ['top', 'permissionYnh', 'posixGroup'],
-        'cn': permission_name,
+        'cn': permission,
         'gidNumber': gid,
     }
-    if default_allow:
+
+    # For main permission, we add all users by default
+    if permission.endswith(".main"):
         attr_dict['groupPermission'] = 'cn=all_users,ou=groups,dc=yunohost,dc=org'
 
     if urls:
-        attr_dict['URL'] = []
-        for url in urls:
-            domain = url[:url.index('/')]
-            path = url[url.index('/'):]
-            domain, path = _normalize_domain_path(domain, path)
-            attr_dict['URL'].append(domain + path)
+        attr_dict['URL'] = [_normalize_url(url) for url in urls]
 
     operation_logger.start()
-    if ldap.add('cn=%s,ou=permission' % permission_name, attr_dict):
+    if ldap.add('cn=%s,ou=permission' % permission, attr_dict):
         if sync_perm:
             permission_sync_to_user()
-        logger.debug(m18n.n('permission_created', permission=permission, app=app))
-        return user_permission_list(app, permission)
-
-    raise YunohostError('permission_creation_failed')
+        logger.debug(m18n.n('permission_created', permission=permission))
+        return user_permission_list(full=True)["permissions"][permission]
+    else:
+        raise YunohostError('permission_creation_failed')
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_urls(operation_logger, app, permission, add_url=None, remove_url=None, sync_perm=True):
+def permission_urls(operation_logger, permission, add=None, remove=None, sync_perm=True):
     """
     Update urls related to a permission for a specific application
 
     Keyword argument:
-        app            -- an application OR sftp, xmpp (metronome), mail
-        permission     -- name of the permission ("main" by default)
-        add_url        -- Add a new url for a permission
-        remove_url     -- Remove a url for a permission
+        permission -- Name of the permission (e.g. nextcloud.main or wordpress.editors)
+        add        -- List of urls to add
+        remove     -- List of urls to remove
 
     """
-    from yunohost.domain import _normalize_domain_path
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
-    permission_name = str(permission + '.' + app)  # str(...) Fix encoding issue
+    # Fetch existing permission
 
-    # Populate permission informations
-    result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                         filter='cn=' + permission_name, attrs=['URL'])
-    if not result:
-        raise YunohostError('permission_not_found', permission=permission, app=app)
-    permission_obj = result[0]
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if not existing_permission:
+        raise YunohostError('permission_not_found', permission=permission)
 
-    if 'URL' not in permission_obj:
-        permission_obj['URL'] = []
+    # Compute new url list
 
-    url = set(permission_obj['URL'])
+    new_urls = copy.copy(existing_permission["urls"])
 
-    if add_url:
-        for u in add_url:
-            domain = u[:u.index('/')]
-            path = u[u.index('/'):]
-            domain, path = _normalize_domain_path(domain, path)
-            url.add(domain + path)
-    if remove_url:
-        for u in remove_url:
-            domain = u[:u.index('/')]
-            path = u[u.index('/'):]
-            domain, path = _normalize_domain_path(domain, path)
-            url.discard(domain + path)
+    if add:
+        urls_to_add = [add] if not isinstance(add, list) else add
+        urls_to_add = [_normalize_url(url) for url in urls_to_add]
+        new_urls += urls_to_add
+    if remove:
+        urls_to_remove = [remove] if not isinstance(remove, list) else remove
+        urls_to_remove = [_normalize_url(url) for url in urls_to_remove]
+        new_urls = [u for u in new_urls if u not in urls_to_remove]
 
-    if url == set(permission_obj['URL']):
+    if set(new_urls) == set(existing_permission["urls"]):
         logger.warning(m18n.n('permission_update_nothing_to_do'))
-        return user_permission_list(app, permission)
+        return existing_permission
+
+    # Actually commit the change
 
     operation_logger.start()
-    if ldap.update('cn=%s,ou=permission' % permission_name, {'cn': permission_name, 'URL': url}):
+    if ldap.update('cn=%s,ou=permission' % permission, {'URL': new_urls}):
         if sync_perm:
             permission_sync_to_user()
-        logger.debug(m18n.n('permission_updated', permission=permission, app=app))
-        return user_permission_list(app, permission)
-
-    raise YunohostError('premission_update_failed')
+        logger.debug(m18n.n('permission_updated', permission=permission))
+        return user_permission_list(full=True)["permissions"][permission]
+    else:
+        raise YunohostError('premission_update_failed')
 
 
 @is_unit_operation(['permission', 'app'])
-def permission_delete(operation_logger, app, permission, force=False, sync_perm=True):
+def permission_delete(operation_logger, permission, force=False, sync_perm=True):
     """
-    Remove a permission for a specific application
+    Delete a permission
 
     Keyword argument:
-        app        -- an application OR sftp, xmpp (metronome), mail
-        permission -- name of the permission ("main" by default)
-
+        permission -- Name of the permission (e.g. nextcloud.main or wordpress.editors)
     """
 
-    if permission == "main" and not force:
+    if permission.endswith("main") and not force:
         raise YunohostError('remove_main_permission_not_allowed')
 
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
+    # Make sure this permission exists
+
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if not existing_permission:
+        raise YunohostError('permission_not_found', permission=permission)
+
+    # Actually delete the permission
+
     operation_logger.start()
-    if not ldap.remove('cn=%s,ou=permission' % str(permission + '.' + app)):
-        raise YunohostError('permission_deletion_failed', permission=permission, app=app)
-    if sync_perm:
-        permission_sync_to_user()
-    logger.debug(m18n.n('permission_deleted', permission=permission, app=app))
+    if ldap.remove('cn=%s,ou=permission' % permission):
+        if sync_perm:
+            permission_sync_to_user()
+        logger.debug(m18n.n('permission_deleted', permission=permission))
+    else:
+        raise YunohostError('permission_deletion_failed', permission=permission)
 
 
 def permission_sync_to_user(force=False):
@@ -438,3 +429,10 @@ def permission_sync_to_user(force=False):
     # Reload unscd, otherwise the group ain't propagated to the LDAP database
     os.system('nscd --invalidate=passwd')
     os.system('nscd --invalidate=group')
+
+def _normalize_url(url):
+    from yunohost.domain import _normalize_domain_path
+    domain = url[:url.index('/')]
+    path = url[url.index('/'):]
+    domain, path = _normalize_domain_path(domain, path)
+    return domain + path
