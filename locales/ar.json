@@ -429,5 +429,17 @@
     "password_too_simple_1": "يجب أن يكون طول الكلمة السرية على الأقل 8 حروف",
     "service_description_php7.0-fpm": "يُشغّل التطبيقات المكتوبة بلغة الـ PHP على Nginx",
     "updating_app_lists": "جارٍ جلب التحديثات المتوفرة الخاصة بالتطبيقات…",
-    "already_up_to_date": "كل شيء على ما يرام! ليس هناك ما يتطلّب تحديثًا!"
+    "already_up_to_date": "كل شيء على ما يرام! ليس هناك ما يتطلّب تحديثًا!",
+    "service_description_nslcd": "يدير اتصال متسخدمي واي يونوهوست عبر طرفية سطر الأوامر",
+    "service_description_slapd": "يخزّن المستخدمين والنطاقات والمعلومات المتعلقة بها",
+    "service_reloaded": "تم إعادة تحميل خدمة  '{service:s}'",
+    "service_restarted": "تم إعادة تشغيل خدمة  '{service:s}'",
+    "group_unknown": "الفريق {group:s} مجهول",
+    "group_deletion_failed": "فشلت عملية حذف الفريق '{group}'",
+    "group_deleted": "تم حذف الفريق '{group}'",
+    "group_created": "تم إنشاء الفريق '{group}' بنجاح",
+    "group_name_already_exist": "الفريق {name:s} موجود بالفعل",
+    "error_when_removing_sftpuser_group": "حدث خطأ أثناء محاولة حذف فريق sftpusers",
+    "dyndns_could_not_check_available": "لا يمكن التحقق مِن أنّ {domain:s} متوفر على {provider:s}.",
+    "backup_mount_archive_for_restore": "جارٍ تهيئة النسخة الاحتياطية للاسترجاع…"
 }
