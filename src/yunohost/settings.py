@@ -15,6 +15,25 @@ logger = getActionLogger('yunohost.settings')
 SETTINGS_PATH = "/etc/yunohost/settings.json"
 SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
+def is_boolean(value):
+    """
+    Ensure a string value is intended as a boolean
+
+    Keyword arguments:
+        arg -- The string to check
+
+    Returns:
+        Boolean
+
+    """
+    if isinstance(value, bool):
+        return True
+    elif isinstance(value, basestring):
+        return str(value).lower() in ['true', 'on', 'yes', 'false', 'off', 'no']
+    else:
+        return False
+
+
 # a settings entry is in the form of:
 # namespace.subnamespace.name: {type, value, default, description, [choices]}
 # choices is only for enum
@@ -95,7 +114,7 @@ def settings_set(key, value):
     key_type = settings[key]["type"]
 
     if key_type == "bool":
-        if not isinstance(value, bool):
+        if not is_boolean(value):
             raise YunohostError('global_settings_bad_type_for_setting', setting=key,
                                 received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "int":
