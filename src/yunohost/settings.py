@@ -28,7 +28,7 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * bool
 # * int
 # * string
-# * enum (in form a python list)
+# * enum (in the form of a python list)
 
 DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True}),
