@@ -2903,9 +2903,9 @@ def is_true(arg):
     if isinstance(arg, bool):
         return arg
     elif isinstance(arg, basestring):
-        true_list = ['yes', 'Yes', 'true', 'True']
+        true_list = ['yes', 'true', 'on']
         for string in true_list:
-            if arg == string:
+            if arg.lower() == string:
                 return True
         return False
     else:
