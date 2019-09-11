@@ -489,12 +489,12 @@ def user_info(username):
 #
 # Group subcategory
 #
-def user_group_list(names_only=False, full=False):
+def user_group_list(short=False, full=False):
     """
     List users
 
     Keyword argument:
-        names-only -- Only list the name of the groups without any additional info
+        short -- Only list the name of the groups without any additional info
         full -- List all the info available for each groups
     """
 
@@ -502,30 +502,24 @@ def user_group_list(names_only=False, full=False):
 
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
-
-    if names_only:
-        fields_to_fetch = ["cn"]
-    elif full:
-        fields_to_fetch = ["cn", "member", "permission"]
-    else:
-        fields_to_fetch = ["cn", "member"]
-
     groups_infos = ldap.search('ou=groups,dc=yunohost,dc=org',
                                '(objectclass=groupOfNamesYnh)',
-                               fields_to_fetch)
+                               ["cn", "member", "permission"])
 
     # Parse / organize information to be outputed
 
     groups = {}
     for infos in groups_infos:
+
         name = infos["cn"][0]
         groups[name] = {}
-        if "member" in fields_to_fetch:
-            groups[name]["members"] = [_ldap_path_extract(p, "uid") for p in infos.get("member", [])]
-        if "permission" in fields_to_fetch:
+
+        groups[name]["members"] = [_ldap_path_extract(p, "uid") for p in infos.get("member", [])]
+
+        if full:
             groups[name]["permissions"] = [_ldap_path_extract(p, "cn") for p in infos.get("permission", [])]
 
-    if names_only:
+    if short:
         groups = groups.keys()
 
     return {'groups': groups}
@@ -719,9 +713,9 @@ def user_group_info(groupname):
 # Permission subcategory
 #
 
-def user_permission_list():
+def user_permission_list(short=False, full=False):
     import yunohost.permission
-    return yunohost.permission.user_permission_list()
+    return yunohost.permission.user_permission_list(short, full)
 
 
 @is_unit_operation([('permission', 'user')])

@@ -208,13 +208,13 @@ user:
                     action_help: List existing groups
                     api: GET /users/groups
                     arguments:
-                        -n:
-                            full: --names-only
-                            help: Only list the name of the groups without any additional info
+                        -s:
+                            full: --short
+                            help: List only the names of groups
                             action: store_true
                         -f:
                             full: --full
-                            help: List all the info available for each groups
+                            help: Display all informations known about each groups
                             action: store_true
 
                 ### user_group_create()
@@ -281,6 +281,16 @@ user:
                 list:
                     action_help: List permissions and corresponding accesses
                     api: GET /users/permissions/<permission>
+                    arguments:
+                        -s:
+                            full: --short
+                            help: List only the names of permissions
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all informations known about each permissions, including the full list of users corresponding to allowed groups.
+                            action: store_true
+
 
                 ### user_permission_update()
                 update:

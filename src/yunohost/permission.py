@@ -43,29 +43,35 @@ logger = getActionLogger('yunohost.user')
 #
 
 
-def user_permission_list():
+def user_permission_list(short=False, full=False):
     """
     List permissions and corresponding accesses
     """
 
-    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
+    # Fetch relevant informations
 
-    # Fetch all permissions objects
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
                                     '(objectclass=permissionYnh)',
-                                    ['cn', 'groupPermission', 'inheritPermission', 'URL'])
+                                    ["cn", 'groupPermission', 'inheritPermission', 'URL'])
+
+    # Parse / organize information to be outputed
 
     permissions = {}
     for infos in permissions_infos:
 
         name = infos['cn'][0]
+        permissions[name] = {}
 
-        permissions[name] = {
-            "allowed_users": [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])],
-            "allowed_groups": [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])],
-            "urls": infos.get("URL", [])
-        }
+        permissions[name]["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
+
+        if full:
+            permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])],
+            permissions[name]["urls"] = infos.get("URL", [])
+
+    if short:
+        permissions = permissions.keys()
 
     return {'permissions': permissions}
 
