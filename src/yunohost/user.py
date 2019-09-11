@@ -525,7 +525,7 @@ def user_group_list(short=False, full=False):
     return {'groups': groups}
 
 
-@is_unit_operation([('groupname', 'user')])
+@is_unit_operation([('groupname', 'group')])
 def user_group_create(operation_logger, groupname, gid=None, primary_group=False, sync_perm=True):
     """
     Create group
@@ -536,8 +536,6 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
     """
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
-
-    operation_logger.start()
 
     ldap = _get_ldap_interface()
 
@@ -574,6 +572,7 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
     if primary_group:
         attr_dict["member"] = ["uid=" + groupname + ",ou=users,dc=yunohost,dc=org"]
 
+    operation_logger.start()
     if ldap.add('cn=%s,ou=groups' % groupname, attr_dict):
         logger.success(m18n.n('group_created', group=groupname))
         if sync_perm:
@@ -583,7 +582,7 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
     raise YunohostError('group_creation_failed', group=groupname)
 
 
-@is_unit_operation([('groupname', 'user')])
+@is_unit_operation([('groupname', 'group')])
 def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     """
     Delete user
@@ -614,7 +613,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
         permission_sync_to_user()
 
 
-@is_unit_operation([('groupname', 'user')])
+@is_unit_operation([('groupname', 'group')])
 def user_group_update(operation_logger, groupname, add=None, remove=None, force=False, sync_perm=True):
     """
     Update user informations
@@ -650,6 +649,8 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
 
             if user in current_group:
                 logger.warning(m18n.n('user_already_in_group', user=user, group=groupname))
+            else:
+                operation_logger.related_to.append(('user', user))
 
         new_group += users_to_add
 
@@ -659,6 +660,8 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
         for user in users_to_remove:
             if user not in current_group:
                 logger.warning(m18n.n('user_not_in_group', user=user, group=groupname))
+            else:
+                operation_logger.related_to.append(('user', user))
 
         # Remove users_to_remove from new_group
         # Kinda like a new_group -= users_to_remove
@@ -666,9 +669,8 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
 
     new_group_dns = ["uid=" + user + ",ou=users,dc=yunohost,dc=org" for user in new_group]
 
-    operation_logger.start()
-
     if set(new_group) != set(current_group):
+        operation_logger.start()
         ldap = _get_ldap_interface()
         if not ldap.update('cn=%s,ou=groups' % groupname, {"member": set(new_group_dns), "memberUid": set(new_group)}):
             raise YunohostError('group_update_failed', group=groupname)
@@ -718,18 +720,16 @@ def user_permission_list(short=False, full=False):
     return yunohost.permission.user_permission_list(short, full)
 
 
-@is_unit_operation([('permission', 'user')])
-def user_permission_update(operation_logger, permission, add=None, remove=None, sync_perm=True):
+def user_permission_update(permission, add=None, remove=None, sync_perm=True):
     import yunohost.permission
-    return yunohost.permission.user_permission_update(operation_logger, permission,
+    return yunohost.permission.user_permission_update(permission,
                                                       add=add, remove=remove,
                                                       sync_perm=sync_perm)
 
 
-@is_unit_operation([('app', 'user')])
-def user_permission_reset(operation_logger, permission, sync_perm=True):
+def user_permission_reset(permission, sync_perm=True):
     import yunohost.permission
-    return yunohost.permission.user_permission_reset(operation_logger, permission,
+    return yunohost.permission.user_permission_reset(permission,
                                                      sync_perm=sync_perm)
 
 

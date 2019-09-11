@@ -44,7 +44,7 @@ CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service',
               'app']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
-RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
+RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
@@ -213,7 +213,7 @@ def log_display(path, number=None, share=False):
     return infos
 
 
-def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
+def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
                       exclude=['password'], operation_key=None):
     """
     Configure quickly a unit operation

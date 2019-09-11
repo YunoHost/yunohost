@@ -1039,8 +1039,7 @@ def app_remove(operation_logger, app):
         raise YunohostError("this_action_broke_dpkg")
 
 
-@is_unit_operation(['permission','app'])
-def app_addaccess(operation_logger, apps, users=[]):
+def app_addaccess(apps, users=[]):
     """
     Grant access right to users (everyone by default)
 
@@ -1051,15 +1050,15 @@ def app_addaccess(operation_logger, apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    permission = user_permission_update(operation_logger, app=apps, permission="main", add_username=users)
+    output = {}
+    for app in apps:
+        permission = user_permission_update(app+".main", add=users)
+        output[app] = permission["corresponding_users"]
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
-
-    return {'allowed_users': result}
+    return {'allowed_users': output}
 
 
-@is_unit_operation(['permission','app'])
-def app_removeaccess(operation_logger, apps, users=[]):
+def app_removeaccess(apps, users=[]):
     """
     Revoke access right to users (everyone by default)
 
@@ -1070,15 +1069,15 @@ def app_removeaccess(operation_logger, apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    permission = user_permission_update(operation_logger, app=apps, permission="main", del_username=users)
+    output = {}
+    for app in apps:
+        permission = user_permission_update(app+".main", remove=users)
+        output[app] = permission["corresponding_users"]
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
-
-    return {'allowed_users': result}
+    return {'allowed_users': output}
 
 
-@is_unit_operation(['permission','app'])
-def app_clearaccess(operation_logger, apps):
+def app_clearaccess(apps):
     """
     Reset access rights for the app
 
@@ -1086,13 +1085,15 @@ def app_clearaccess(operation_logger, apps):
         apps
 
     """
-    from yunohost.permission import user_permission_clear
+    from yunohost.permission import user_permission_reset
 
-    permission = user_permission_clear(operation_logger, app=apps, permission="main")
+    output = {}
+    for app in apps:
+        permission = user_permission_reset(app+".main")
+        output[app] = permission["corresponding_users"]
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
+    return {'allowed_users': output}
 
-    return {'allowed_users': result}
 
 def app_debug(app):
     """

@@ -76,6 +76,7 @@ def user_permission_list(short=False, full=False):
     return {'permissions': permissions}
 
 
+@is_unit_operation()
 def user_permission_update(operation_logger, permission, add=None, remove=None, sync_perm=True):
     """
     Allow or Disallow a user or group to a permission for a specific application
@@ -98,6 +99,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     current_allowed_groups = existing_permission["allowed"]
     all_existing_groups = user_group_list()['groups'].keys()
+    operation_logger.related_to.append(('app', permission.split(".")[0]))
 
     # Compute new allowed group list (and make sure what we're doing make sense)
 
@@ -110,6 +112,8 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
                 raise YunohostError('group_unknown', group=group)
             if group in current_allowed_groups:
                 logger.warning(m18n.n('group_already_allowed', permission=permission, group=group))
+            else:
+                operation_logger.related_to.append(('group', group))
 
         new_allowed_groups += groups_to_add
 
@@ -120,6 +124,8 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
                 raise YunohostError('group_unknown', group=group)
             if group not in current_allowed_groups:
                 logger.warning(m18n.n('group_already_disallowed', permission=permission, group=group))
+            else:
+                operation_logger.related_to.append(('group', group))
 
         new_allowed_groups = [g for g in new_allowed_groups if g not in groups_to_remove]
 
@@ -132,15 +138,17 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         # FIXME : write a better explanation ?
         logger.warning("This permission is currently enabled for all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the specific groups currently allowed.")
 
-    # Commit the new allowed group list
-
-    operation_logger.start()
-
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
         # FIXME : i18n
         logger.warning("No change was applied because not relevant modification were found")
-    elif ldap.update('cn=%s,ou=permission' % permission,
+        return
+
+    # Commit the new allowed group list
+
+    operation_logger.start()
+
+    if ldap.update('cn=%s,ou=permission' % permission,
                      {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in new_allowed_groups]}):
         logger.debug(m18n.n('permission_updated', permission=permission))
 
@@ -172,6 +180,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         raise YunohostError('permission_update_failed')
 
 
+@is_unit_operation()
 def user_permission_reset(operation_logger, permission, sync_perm=True):
     """
     Reset a given permission to just 'all_users'
@@ -190,6 +199,9 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
         raise YunohostError('permission_not_found', permission=permission)
 
     # Update permission with default (all_users)
+
+    operation_logger.related_to.append(('app', permission.split(".")[0]))
+    operation_logger.start()
 
     default_permission = {'groupPermission': ['cn=all_users,ou=groups,dc=yunohost,dc=org']}
     if ldap.update('cn=%s,ou=permission' % permission, default_permission):
@@ -228,7 +240,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 #
 
 
-@is_unit_operation(['permission', 'app'])
+@is_unit_operation()
 def permission_create(operation_logger, permission, urls=None, sync_perm=True):
     """
     Create a new permission for a specific application
@@ -267,6 +279,7 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
     if urls:
         attr_dict['URL'] = [_normalize_url(url) for url in urls]
 
+    operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
     if ldap.add('cn=%s,ou=permission' % permission, attr_dict):
         if sync_perm:
@@ -277,7 +290,7 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
         raise YunohostError('permission_creation_failed')
 
 
-@is_unit_operation(['permission', 'app'])
+@is_unit_operation()
 def permission_urls(operation_logger, permission, add=None, remove=None, sync_perm=True):
     """
     Update urls related to a permission for a specific application
@@ -316,6 +329,7 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
 
     # Actually commit the change
 
+    operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
     if ldap.update('cn=%s,ou=permission' % permission, {'URL': new_urls}):
         if sync_perm:
@@ -326,7 +340,7 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
         raise YunohostError('premission_update_failed')
 
 
-@is_unit_operation(['permission', 'app'])
+@is_unit_operation()
 def permission_delete(operation_logger, permission, force=False, sync_perm=True):
     """
     Delete a permission
@@ -349,6 +363,7 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
 
     # Actually delete the permission
 
+    operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
     if ldap.remove('cn=%s,ou=permission' % permission):
         if sync_perm:
