@@ -42,79 +42,30 @@ logger = getActionLogger('yunohost.user')
 #
 
 
-def user_permission_list(app=None, permission=None, username=None, group=None):
+def user_permission_list():
     """
-    List permission for specific application
-
-    Keyword argument:
-        app        -- an application OR sftp, xmpp (metronome), mail
-        permission -- name of the permission ("main" by default)
-        username   -- Username to get informations
-        group      -- Groupname to get informations
+    List permissions and corresponding accesses
 
     """
 
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
+
+    # Fetch all permissions objects
     ldap = _get_ldap_interface()
-
-    permission_attrs = [
-        'cn',
-        'groupPermission',
-        'inheritPermission',
-        'URL',
-    ]
-
-    # Normally app is alway defined but it should be possible to set it
-    if app and not isinstance(app, list):
-        app = [app]
-    if permission and not isinstance(permission, list):
-        permission = [permission]
-    if not isinstance(username, list):
-        username = [username]
-    if not isinstance(group, list):
-        group = [group]
+    permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
+                                    '(objectclass=permissionYnh)',
+                                    ['cn', 'groupPermission', 'inheritPermission', 'URL'])
 
     permissions = {}
+    for infos in permissions_infos:
 
-    result = ldap.search('ou=permission,dc=yunohost,dc=org',
-                         '(objectclass=permissionYnh)', permission_attrs)
+        name = infos['cn'][0]
 
-    for res in result:
-        try:
-            permission_name, app_name = res['cn'][0].split('.')
-        except:
-            logger.warning(m18n.n('permission_name_not_valid', permission=res['cn'][0]))
-        group_name = []
-        if 'groupPermission' in res:
-            for g in res['groupPermission']:
-                group_name.append(g.split("=")[1].split(",")[0])
-        user_name = []
-        if 'inheritPermission' in res:
-            for u in res['inheritPermission']:
-                user_name.append(u.split("=")[1].split(",")[0])
-
-        # Don't show the result if the user defined a specific permission, user or group
-        if app and app_name not in app:
-            continue
-        if permission and permission_name not in permission:
-            continue
-        if username[0] and not set(username) & set(user_name):
-            continue
-        if group[0] and not set(group) & set(group_name):
-            continue
-
-        if app_name not in permissions:
-            permissions[app_name] = {}
-
-        permissions[app_name][permission_name] = {'allowed_users': [], 'allowed_groups': []}
-        for g in group_name:
-            permissions[app_name][permission_name]['allowed_groups'].append(g)
-        for u in user_name:
-            permissions[app_name][permission_name]['allowed_users'].append(u)
-        if 'URL' in res:
-            permissions[app_name][permission_name]['URL'] = []
-            for u in res['URL']:
-                permissions[app_name][permission_name]['URL'].append(u)
+        permissions[name] = {
+            "allowed_users": [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])],
+            "allowed_groups": [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])],
+            "urls": infos.get("URL", [])
+        }
 
     return {'permissions': permissions}
 

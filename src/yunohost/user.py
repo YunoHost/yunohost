@@ -453,7 +453,7 @@ def user_info(username):
 
         if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
-        elif not user_permission_list(app="mail", permission="main", username=username)['permissions']:
+        elif username not in user_permission_list()["permissions"]["mail.main"]["allowed_users"]:
             logger.warning(m18n.n('mailbox_disabled', user=username))
         else:
             cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
@@ -719,9 +719,9 @@ def user_group_info(groupname):
 # Permission subcategory
 #
 
-def user_permission_list(app=None, permission=None, username=None, group=None, sync_perm=True):
+def user_permission_list():
     import yunohost.permission
-    return yunohost.permission.user_permission_list(app, permission, username, group)
+    return yunohost.permission.user_permission_list()
 
 
 @is_unit_operation([('app', 'user')])

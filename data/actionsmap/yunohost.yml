@@ -274,33 +274,12 @@ user:
                                 pattern: *pattern_username
 
         permission:
-            subcategory_help: Manage user permission
+            subcategory_help: Manage permissions
             actions:
                 ### user_permission_list()
                 list:
-                    action_help: List access to user and group
-                    api: GET /users/permissions/<app>
-                    arguments:
-                        -a:
-                            full: --app
-                            help: Application to manage the permission
-                            nargs: "*"
-                            metavar: APP
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
-                        -g:
-                            full: --group
-                            help: Group name
-                            nargs: "*"
-                            metavar: GROUP
+                    action_help: List permissions and corresponding accesses
+                    api: GET /users/permissions/<permission>
 
                 ### user_permission_add()
                 add:

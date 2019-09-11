@@ -1256,10 +1256,8 @@ class RestoreManager():
 
         # Restore permission for the app which is installed
         for per in old_apps_permission:
-            try:
-                permission_name, app_name = per['cn'][0].split('.')
-            except:
-                logger.warning(m18n.n('permission_name_not_valid', permission=per['cn'][0]))
+            # FIXME : will come here later to fix this following previous commits ...
+            permission_name, app_name = per['cn'][0].split('.')
             if _is_installed(app_name):
                 if not ldap.add('cn=%s,ou=permission' % per['cn'][0], per):
                     raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
