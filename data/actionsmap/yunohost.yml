@@ -201,11 +201,11 @@ user:
 
     subcategories:
         group:
-            subcategory_help: Manage group
+            subcategory_help: Manage user groups
             actions:
                 ### user_group_list()
                 list:
-                    action_help: List group
+                    action_help: List existing groups
                     api: GET /users/groups
                     arguments:
                         -n:
@@ -223,7 +223,7 @@ user:
                     api: POST /users/groups
                     arguments:
                         groupname:
-                            help: The unique group name to add
+                            help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
                                     - !!str ^[a-z0-9_]+$
@@ -235,7 +235,7 @@ user:
                     api: DELETE /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Username to delete
+                            help: Name of the group to be deleted
                             extra:
                                 pattern: *pattern_groupname
 
@@ -245,7 +245,7 @@ user:
                     api: PUT /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Username to update
+                            help: Name of the group to be updated
                             extra:
                                 pattern: *pattern_groupname
                         -a:
@@ -265,11 +265,11 @@ user:
 
                 ### user_group_info()
                 info:
-                    action_help: Get group information
+                    action_help: Get information for a specific group
                     api: GET /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Groupname to get information
+                            help: Name of the group to get info about
                             extra:
                                 pattern: *pattern_username
 
