@@ -1547,7 +1547,7 @@ tools:
                 - PUT /domains/main
             arguments:
                 -n:
-                    full: --new-domain
+                    full: --new-main-domain
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain

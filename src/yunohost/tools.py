@@ -165,7 +165,7 @@ def tools_adminpw(new_password, check_strength=True):
 
 
 @is_unit_operation()
-def tools_maindomain(operation_logger, new_domain=None):
+def tools_maindomain(operation_logger, new_main_domain=None):
     """
     Check the current main domain, or change it
 
