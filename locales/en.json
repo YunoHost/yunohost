@@ -50,7 +50,6 @@
     "app_upgrade_some_app_failed": "Unable to upgrade some applications",
     "app_upgraded": "{app:s} has been upgraded",
     "apps_permission_not_found": "No permission found for the installed apps",
-    "apps_permission_restoration_failed": "Permission '{permission:s}' for app {app:s} restoration has failed",
     "appslist_corrupted_json": "Could not load the application lists. It looks like {filename:s} is corrupted.",
     "appslist_could_not_migrate": "Could not migrate app list {appslist:s}! Unable to parse the url… The old cron job has been kept in {bkp_file:s}.",
     "appslist_fetched": "The application list {appslist:s} has been fetched",

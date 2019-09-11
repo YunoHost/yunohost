@@ -40,7 +40,7 @@ from moulinette import msignals, m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, mkdir
+from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
     app_info, _is_installed, _parse_app_instance_name, _patch_php5
@@ -677,6 +677,8 @@ class BackupManager():
         backup_app_failed -- Raised at the end if the app backup script
                              execution failed
         """
+        from yunohost.permission import user_permission_list
+
         app_setting_path = os.path.join('/etc/yunohost/apps/', app)
 
         # Prepare environment
@@ -703,13 +705,10 @@ class BackupManager():
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
 
             # backup permissions
-            #
-            # FIXME : why can't we instead use a simple yaml file to store the
-            # relevant info and recreate the permission object from it ...
-            #
             logger.debug(m18n.n('backup_permission', app=app))
-            ldap_url = "ldap:///dc=yunohost,dc=org???(&(objectClass=permissionYnh)(cn=*.%s))" % app
-            os.system("slapcat -b dc=yunohost,dc=org -H '%s' -l '%s/permission.ldif'" % (ldap_url, settings_dir))
+            permissions = user_permission_list(full=True)["permissions"]
+            this_app_permissions = {name: infos for name, infos in permissions.items() if name.startswith(app + ".")}
+            write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
         except:
             abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
@@ -1289,11 +1288,8 @@ class RestoreManager():
                                         name already exists
         restore_app_failed -- Raised if the restore bash script failed
         """
-        from moulinette.utils.filesystem import read_ldif
         from yunohost.user import user_group_list
-        from yunohost.permission import permission_delete
-        from yunohost.utils.ldap import _get_ldap_interface
-        ldap = _get_ldap_interface()
+        from yunohost.permission import permission_create, permission_delete, user_permission_list, user_permission_update
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1358,26 +1354,25 @@ class RestoreManager():
             restore_script = os.path.join(tmp_folder_for_app_restore, 'restore')
 
             # Restore permissions
-            #
-            # FIXME : why can't we instead use a simple yaml file to store the
-            # relevant info and recreate the permission object from it ...
-            #
-            if os.path.isfile(app_settings_in_archive + '/permission.ldif'):
-                filtred_entries =  ['entryUUID', 'creatorsName', 'createTimestamp', 'entryCSN', 'structuralObjectClass',
-                                    'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
-                entries = read_ldif('%s/permission.ldif' % app_settings_in_archive, filtred_entries)
-                group_list = user_group_list()['groups']
-                for dn, entry in entries:
-                    # Remove the group which has been removed
-                    for group in entry['groupPermission']:
-                        group_name = group.split(',')[0].split('=')[1]
-                        if group_name not in group_list:
-                            entry['groupPermission'].remove(group)
-                    if not ldap.add('cn=%s,ou=permission' % entry['cn'][0], entry):
-                        raise YunohostError('apps_permission_restoration_failed',
-                                            permission=entry['cn'][0].split('.')[0],
-                                            app=entry['cn'][0].split('.')[1])
+            if os.path.isfile('%s/permissions.yml' % app_settings_new_path):
+
+                permissions = read_yaml('%s/permissions.yml' % app_settings_new_path)
+                existing_groups = user_group_list()['groups']
+
+                for permission_name, permission_infos in permissions:
+
+                    permission_create(permission_name, urls=permission_infos.get("urls", []))
+
+                    if "allowed" not in permissions_infos:
+                        logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s ... You might need to reconfigure permissions yourself!" % (permission_name, app_instance_name))
+                    else:
+                        groups = [g for g in permission_infos["allowed"] if g in existing_groups]
+                        user_permission_update(permission_name, remove="all_users", add=groups)
+
+                os.remove('%s/permissions.yml' % app_settings_new_path)
             else:
+                # Otherwise, we need to migrate the legacy permissions of this
+                # app (included in its settings.yml)
                 from yunohost.tools import _get_migration_by_name
                 setup_group_permission = _get_migration_by_name("setup_group_permission")
                 setup_group_permission.migrate_app_permission(app=app_instance_name)
