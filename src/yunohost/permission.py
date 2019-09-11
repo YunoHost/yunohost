@@ -36,6 +36,8 @@ from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
 
+SYSTEM_PERMS = ["mail", "xmpp", "stfp"]
+
 #
 #
 #  The followings are the methods exposed through the "yunohost user permission" interface
@@ -43,7 +45,7 @@ logger = getActionLogger('yunohost.user')
 #
 
 
-def user_permission_list(short=False, full=False):
+def user_permission_list(short=False, full=False, ignore_system_perms=True):
     """
     List permissions and corresponding accesses
     """
@@ -62,8 +64,11 @@ def user_permission_list(short=False, full=False):
     for infos in permissions_infos:
 
         name = infos['cn'][0]
-        permissions[name] = {}
 
+        if ignore_system_perms and name.split(".")[0] in SYSTEM_PERMS:
+            continue
+
+        permissions[name] = {}
         permissions[name]["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
 
         if full:

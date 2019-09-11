@@ -465,7 +465,7 @@ def app_change_url(operation_logger, app, domain, path):
     """
     from yunohost.hook import hook_exec, hook_callback
     from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
-    from yunohost.permission import permission_update
+    from yunohost.permission import permission_urls
 
     installed = _is_installed(app)
     if not installed:
@@ -555,7 +555,7 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_update(app, permission="main", add_url=[domain+path], remove_url=[old_domain+old_path], sync_perm=True)
+    permission_urls(app+".main", add=[domain+path], remove=[old_domain+old_path], sync_perm=True)
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
@@ -738,7 +738,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import permission_create, permission_update, permission_delete, permission_sync_to_user
+    from yunohost.permission import permission_create, permission_urls, permission_delete, permission_sync_to_user
     ldap = _get_ldap_interface()
 
     # Fetch or extract sources
@@ -875,7 +875,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Create permission before the install (useful if the install script redefine the permission)
     # Note that sync_perm is disabled to avoid triggering a whole bunch of code and messages
     # can't be sure that we don't have one case when it's needed
-    permission_create(app=app_instance_name, permission="main", sync_perm=False)
+    permission_create(app_instance_name+".main", sync_perm=False)
 
     # Execute the app install script
     install_retcode = 1
@@ -910,11 +910,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
                 # Remove all permission in LDAP
-                result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                    filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
-                permission_list = [p['cn'][0] for p in result]
-                for l in permission_list:
-                    permission_delete(app_instance_name, l.split('.')[0], force=True)
+                for permission_name in user_permission_list()["permissions"].keys():
+                    if permission_name.startswith(app_instance_name+"."):
+                        permission_delete(permission_name, force=True)
 
                 if remove_retcode != 0:
                     msg = m18n.n('app_not_properly_removed',
@@ -960,8 +958,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
     if domain and path:
-        permission_update(app_instance_name, permission="main", add_url=[domain+path], sync_perm=False)
-
+        permission_urls(app_instance_name+".main", add=[domain+path], sync_perm=False)
     permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
@@ -978,7 +975,6 @@ def app_remove(operation_logger, app):
         app -- App(s) to delete
 
     """
-    from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_exec, hook_remove, hook_callback
     from yunohost.permission import permission_delete, permission_sync_to_user
     if not _is_installed(app):
@@ -1026,12 +1022,9 @@ def app_remove(operation_logger, app):
     hook_remove(app)
 
     # Remove all permission in LDAP
-    ldap = _get_ldap_interface()
-    result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                         filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app, attrs=['cn'])
-    permission_list = [p['cn'][0] for p in result]
-    for l in permission_list:
-        permission_delete(app, l.split('.')[0], force=True, sync_perm=False)
+    for permission_name in user_permission_list()["permissions"].keys():
+        if permission_name.startswith(app+"."):
+            permission_delete(permission_name, force=True, sync_perm=False)
 
     permission_sync_to_user()
 
