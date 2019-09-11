@@ -249,15 +249,15 @@ user:
                             extra:
                                 pattern: *pattern_groupname
                         -a:
-                            full: --add-user
-                            help: User to add in group
+                            full: --add
+                            help: User(s) to add in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
                         -r:
-                            full: --remove-user
-                            help: User to remove in group
+                            full: --remove
+                            help: User(s) to remove in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:

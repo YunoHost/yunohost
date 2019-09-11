@@ -26,8 +26,8 @@ def setup_function(function):
 
     user_group_create("dev")
     user_group_create("apps")
-    user_group_update("dev", add_user=["alice"])
-    user_group_update("apps", add_user=["bob"])
+    user_group_update("dev", add=["alice"])
+    user_group_update("apps", add=["bob"])
 
 def teardown_function(function):
     clean_user_groups()
@@ -151,28 +151,28 @@ def test_update_user_1():
     assert "NewLast" == info['lastname']
 
 def test_update_group_1():
-    user_group_update("dev", add_user=["bob"])
+    user_group_update("dev", add=["bob"])
 
     group_res = user_group_list()['groups']
     assert set(["alice", "bob"]) == set(group_res['dev']['members'])
 
 def test_update_group_2():
     # Try to add a user in a group when the user is already in
-    user_group_update("apps", add_user=["bob"])
+    user_group_update("apps", add=["bob"])
 
     group_res = user_group_list()['groups']
     assert ["bob"] == group_res['apps']['members']
 
 def test_update_group_3():
     # Try to remove a user in a group
-    user_group_update("apps", remove_user=["bob"])
+    user_group_update("apps", remove=["bob"])
 
     group_res = user_group_list()['groups']
     assert "members" not in group_res['apps']
 
 def test_update_group_4():
     # Try to remove a user in a group when it is not already in
-    user_group_update("apps", remove_user=["jack"])
+    user_group_update("apps", remove=["jack"])
 
     group_res = user_group_list()['groups']
     assert ["bob"] == group_res['apps']['members']
@@ -190,21 +190,21 @@ def test_bad_update_user_1():
 def bad_update_group_1():
     # Check groups not found
     with pytest.raises(YunohostError):
-        user_group_update("not_exit", add_user=["alice"])
+        user_group_update("not_exit", add=["alice"])
 
 def test_bad_update_group_2():
     # Check remove user in groups "all_users" not allowed
     with pytest.raises(YunohostError):
-        user_group_update("all_users", remove_user=["alice"])
+        user_group_update("all_users", remove=["alice"])
 
 def test_bad_update_group_3():
     # Check remove user in it own group not allowed
     with pytest.raises(YunohostError):
-        user_group_update("alice", remove_user=["alice"])
+        user_group_update("alice", remove=["alice"])
 
 def test_bad_update_group_1():
     # Check add bad user in group
     with pytest.raises(YunohostError):
-        user_group_update("dev", add_user=["not_exist"])
+        user_group_update("dev", add=["not_exist"])
 
     assert "not_exist" not in user_group_list()["groups"]["dev"]

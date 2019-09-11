@@ -66,8 +66,8 @@ class MyMigration(Migration):
             ldap.update('uid=%s,ou=users' % username,
                         {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
             user_group_create(username, gid=user_info['uidNumber'][0], sync_perm=False)
-            user_group_update(groupname=username, add_user=username, force=True, sync_perm=False)
-            user_group_update(groupname='all_users', add_user=username, force=True, sync_perm=False)
+            user_group_update(groupname=username, add=username, force=True, sync_perm=False)
+            user_group_update(groupname='all_users', add=username, force=True, sync_perm=False)
 
 
     def migrate_app_permission(self, app=None):
