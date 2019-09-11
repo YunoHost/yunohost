@@ -447,7 +447,7 @@
     "port_already_opened": "Port {port:d} is already opened for {ip_version:s} connections",
     "port_available": "Port {port:d} is available",
     "port_unavailable": "Port {port:d} is not available",
-    "recommend_to_add_first_user": "The post-install is finished but YunoHost needs at least one user to work correctly, you should add one using 'yunohost user create $username' or the admin interface.",
+    "recommend_to_add_first_user": "The post-install is finished but YunoHost needs at least one user to work correctly, you should add one using 'yunohost user create <username>' or the admin interface.",
     "remove_main_permission_not_allowed": "Removing the main permission is not allowed",
     "remove_user_of_group_not_allowed": "You are not allowed to remove the user {user:s} in the group {group:s}",
     "regenconf_file_backed_up": "The configuration file '{conf}' has been backed up to '{backup}'",
