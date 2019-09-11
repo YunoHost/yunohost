@@ -236,7 +236,7 @@ def domain_dns_conf(domain, ttl=None):
 
 
 @is_unit_operation()
-def domain_maindomain(operation_logger, new_main_domain=None):
+def domain_main_domain(operation_logger, new_main_domain=None):
     """
     Check the current main domain, or change it
 

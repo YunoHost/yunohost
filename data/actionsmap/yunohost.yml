@@ -442,8 +442,10 @@ domain:
                             - "pattern_positive_number"
 
         ### domain_maindomain()
-        maindomain:
+        main-domain:
             action_help: Check the current main domain, or change it
+            deprecated_alias:
+                - maindomain
             api:
                 - GET /domains/main
                 - PUT /domains/main
