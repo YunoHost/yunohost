@@ -724,21 +724,11 @@ def user_permission_list():
     return yunohost.permission.user_permission_list()
 
 
-@is_unit_operation([('app', 'user')])
-def user_permission_add(operation_logger, app, permission="main", username=None, group=None, sync_perm=True):
+@is_unit_operation([('permission', 'user')])
+def user_permission_update(operation_logger, permission, add=None, remove=None, sync_perm=True):
     import yunohost.permission
-    return yunohost.permission.user_permission_update(operation_logger, app, permission=permission,
-                                                      add_username=username, add_group=group,
-                                                      del_username=None, del_group=None,
-                                                      sync_perm=sync_perm)
-
-
-@is_unit_operation([('app', 'user')])
-def user_permission_remove(operation_logger, app, permission="main", username=None, group=None, sync_perm=True):
-    import yunohost.permission
-    return yunohost.permission.user_permission_update(operation_logger, app, permission=permission,
-                                                      add_username=None, add_group=None,
-                                                      del_username=username, del_group=group,
+    return yunohost.permission.user_permission_update(operation_logger, permission,
+                                                      add=add, remove=remove,
                                                       sync_perm=sync_perm)
 
 

@@ -276,64 +276,31 @@ user:
         permission:
             subcategory_help: Manage permissions
             actions:
+
                 ### user_permission_list()
                 list:
                     action_help: List permissions and corresponding accesses
                     api: GET /users/permissions/<permission>
 
-                ### user_permission_add()
-                add:
-                    action_help: Grant access right to users and group
-                    api: POST /users/permissions/<app>
+                ### user_permission_update()
+                update:
+                    action_help: Grant / remove permissions to groups or users
+                    api: POST /users/permissions/<permission>
                     arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
+                        permission:
+                            help: Permission to manage (e.g. mail.main or wordpress.editors)
+                        -a:
+                            full: --add
+                            help: Group or user names to add to this permission
                             nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
+                            metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
-                        -g:
-                            full: --group
-                            help: Group name
+                        -r:
+                            full: --remove
+                            help: Group or user names to remove from this permission
                             nargs: "*"
-                            metavar: GROUP
-                            extra:
-                                pattern: *pattern_username
-
-                ### user_permission_remove()
-                remove:
-                    action_help: Revoke access right to users and group
-                    api: PUT /users/permissions/<app>
-                    arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
-                            extra:
-                                pattern: *pattern_username
-                        -g:
-                            full: --group
-                            help: Group name
-                            nargs: "*"
-                            metavar: GROUP
+                            metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
 
