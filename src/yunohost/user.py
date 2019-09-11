@@ -219,8 +219,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
                                exc_info=1)
 
         # Create group for user and add to group 'all_users'
-        user_group_create(groupname=username, gid=uid, sync_perm=False)
-        user_group_update(groupname=username, add=username, force=True, sync_perm=False)
+        user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
         user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
 
         # TODO: Send a welcome mail to user
@@ -533,7 +532,7 @@ def user_group_list(names_only=False, full=False):
 
 
 @is_unit_operation([('groupname', 'user')])
-def user_group_create(operation_logger, groupname, gid=None, sync_perm=True):
+def user_group_create(operation_logger, groupname, gid=None, primary_group=False, sync_perm=True):
     """
     Create group
 
@@ -575,6 +574,12 @@ def user_group_create(operation_logger, groupname, gid=None, sync_perm=True):
         'gidNumber': gid,
     }
 
+    # Here we handle the creation of a primary group
+    # We want to initialize this group to contain the corresponding user
+    # (then we won't be able to add/remove any user in this group)
+    if primary_group:
+        attr_dict["member"] = ["uid=" + groupname + ",ou=users,dc=yunohost,dc=org"]
+
     if ldap.add('cn=%s,ou=groups' % groupname, attr_dict):
         logger.success(m18n.n('group_created', group=groupname))
         if sync_perm:
@@ -596,9 +601,14 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    forbidden_groups = ["all_users", "admins"] + user_list(fields=['uid'])['users'].keys()
-    if not force and groupname in forbidden_groups:
-        raise YunohostError('group_deletion_not_allowed', group=groupname)
+    # Refuse to delete primary groups of a user (e.g. group 'sam' related to user 'sam')
+    # without the force option...
+    #
+    # We also can't delete "all_users" because that's a special group...
+    existing_users = user_list()['users'].keys()
+    undeletable_groups = existing_users + ["all_users", "admins"]
+    if groupname in undeletable_groups and not force:
+        raise YunohostError('group_cannot_be_deleted', group=groupname)
 
     operation_logger.start()
     ldap = _get_ldap_interface()
@@ -625,18 +635,17 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    # FIXME : we should also refuse to edit the main group of a user (e.g. group 'sam' related to user 'sam')
-
-    if (groupname == 'all_users' or groupname == 'admins') and not force:
-        raise YunohostError('edit_group_not_allowed', group=groupname)
-
-    ldap = _get_ldap_interface()
+    # Refuse to edit a primary group of a user (e.g. group 'sam' related to user 'sam')
+    # Those kind of group should only ever contain the user (e.g. sam) and only this one.
+    # We also can't edit "all_users" without the force option because that's a special group...
+    existing_users = user_list()['users'].keys()
+    uneditable_groups = existing_users + ["all_users", "admins"]
+    if groupname in uneditable_groups and not force:
+        raise YunohostError('group_cannot_be_edited', group=groupname)
 
     # We extract the uid for each member of the group to keep a simple flat list of members
     current_group = user_group_info(groupname)["members"]
     new_group = copy.copy(current_group)
-
-    existing_users = user_list()['users'].keys()
 
     if add:
         users_to_add = [add] if not isinstance(add, list) else add
@@ -654,11 +663,6 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
         users_to_remove = [remove] if not isinstance(remove, list) else remove
 
         for user in users_to_remove:
-            if user == groupname:
-                # FIXME : well if the user equals the group, why pass the two info...
-                # anyway we should just forbid this from the very beginning ... (editing a user-related group)
-                raise YunohostError('remove_user_of_group_not_allowed', user=user, group=groupname)
-
             if user not in current_group:
                 logger.warning(m18n.n('user_not_in_group', user=user, group=groupname))
 
@@ -671,6 +675,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     operation_logger.start()
 
     if set(new_group) != set(current_group):
+        ldap = _get_ldap_interface()
         if not ldap.update('cn=%s,ou=groups' % groupname, {"member": set(new_group_dns), "memberUid": set(new_group)}):
             raise YunohostError('group_update_failed', group=groupname)
 
