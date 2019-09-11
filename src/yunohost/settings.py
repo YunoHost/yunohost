@@ -147,8 +147,6 @@ def settings_set(key, value):
     settings[key]["value"] = value
     _save_settings(settings)
 
-    # TODO : whatdo if the old value is the same as
-    # the new value...
     try:
         trigger_post_change_hook(key, old_value, value)
     except Exception as e:
