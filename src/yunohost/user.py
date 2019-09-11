@@ -727,9 +727,9 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
 
 @is_unit_operation([('app', 'user')])
-def user_permission_clear(operation_logger, app, permission=None, sync_perm=True):
+def user_permission_reset(operation_logger, permission, sync_perm=True):
     import yunohost.permission
-    return yunohost.permission.user_permission_clear(operation_logger, app, permission,
+    return yunohost.permission.user_permission_reset(operation_logger, permission,
                                                      sync_perm=sync_perm)
 
 

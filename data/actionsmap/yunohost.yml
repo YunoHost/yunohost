@@ -314,19 +314,13 @@ user:
                             extra:
                                 pattern: *pattern_username
 
-                ## user_permission_clear()
-                clear:
-                    action_help: Reset access rights for the app
+                ## user_permission_reset()
+                reset:
+                    action_help: Reset allowed groups to the default (all_users) for a given permission
                     api: DELETE /users/permissions/<app>
                     arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
+                        permission:
+                            help: Permission to be resetted (e.g. mail.main or wordpress.editors)
 
         ssh:
             subcategory_help: Manage ssh access

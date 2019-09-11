@@ -429,7 +429,6 @@
     "pattern_positive_number": "Must be a positive number",
     "pattern_username": "Must be lower-case alphanumeric and underscore characters only",
     "pattern_password_app": "Sorry, passwords should not contain the following characters: {forbidden_chars}",
-    "permission_already_clear": "Permission '{permission:s}' already clear for app {app:s}",
     "permission_already_exist": "Permission '{permission:s}' for app {app:s} already exist",
     "permission_created": "Permission '{permission:s}' for app {app:s} created",
     "permission_creation_failed": "Permission creation failed",

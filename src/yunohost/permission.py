@@ -152,11 +152,13 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         new_permission = user_permission_list(full=True)["permissions"][permission]
 
         # Trigger app callbacks
-        app = permission.split(".")[0]
-        if add:
-            hook_callback('post_app_addaccess', args=[app, new_permission["corresponding_users"]])
-        if remove:
-            hook_callback('post_app_removeaccess', args=[app, new_permission["corresponding_users"]])
+        # FIXME : this is not how this hook works... gotta compute the list of user actually added / removed
+
+        #app = permission.split(".")[0]
+        #if add:
+        #    hook_callback('post_app_addaccess', args=[app, new_permission["corresponding_users"]])
+        #if remove:
+        #    hook_callback('post_app_removeaccess', args=[app, new_permission["corresponding_users"]])
 
         return new_permission
 
@@ -164,63 +166,40 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         raise YunohostError('permission_update_failed')
 
 
-def user_permission_clear(operation_logger, app=[], permission=None, sync_perm=True):
+def user_permission_reset(operation_logger, permission, sync_perm=True):
     """
-    Reset the permission for a specific application
+    Reset a given permission to just 'all_users'
 
     Keyword argument:
-        app        -- an application OR sftp, xmpp (metronome), mail
-        permission -- name of the permission ("main" by default)
-        username   -- Username to get informations (all by default)
-        group      -- Groupname to get informations (all by default)
-
+        permission -- The name of the permission to be reseted
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
-    if permission:
-        if not isinstance(permission, list):
-            permission = [permission]
-    else:
-        permission = ["main"]
+    # Fetch existing permission
+
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if existing_permission is None:
+        raise YunohostError('permission_not_found', permission=permission)
+
+    # Update permission with default (all_users)
 
     default_permission = {'groupPermission': ['cn=all_users,ou=groups,dc=yunohost,dc=org']}
+    if ldap.update('cn=%s,ou=permission' % permission, default_permission):
+        logger.debug(m18n.n('permission_updated', permission=permission))
+    else:
+        raise YunohostError('permission_update_failed')
 
-    # Populate permission informations
-    permission_attrs = [
-        'cn',
-        'groupPermission',
-    ]
-    result = ldap.search('ou=permission,dc=yunohost,dc=org',
-                         '(objectclass=permissionYnh)', permission_attrs)
-    result = {p['cn'][0]: p for p in result}
+    if sync_perm:
+        permission_sync_to_user()
 
-    for a in app:
-        for per in permission:
-            permission_name = per + '.' + a
-            if permission_name not in result:
-                raise YunohostError('permission_not_found', permission=per, app=a)
-            if 'groupPermission' in result[permission_name] and 'cn=all_users,ou=groups,dc=yunohost,dc=org' in result[permission_name]['groupPermission']:
-                logger.warning(m18n.n('permission_already_clear', permission=per, app=a))
-                continue
-            if ldap.update('cn=%s,ou=permission' % permission_name, default_permission):
-                logger.debug(m18n.n('permission_updated', permission=per, app=a))
-            else:
-                raise YunohostError('permission_update_failed')
+    new_permission = user_permission_list(full=True)["permissions"][permission]
 
-    permission_sync_to_user()
+    # FIXME : trigger app callbacks
+    # app = permission.split(".")[0]
 
-    for a in app:
-        permission_name = 'main.' + a
-        result = ldap.search('ou=permission,dc=yunohost,dc=org',
-                             filter='cn=' + permission_name, attrs=['inheritPermission'])
-        if result:
-            allowed_users = result[0]['inheritPermission']
-            new_user_list = ','.join(allowed_users)
-            hook_callback('post_app_removeaccess', args=[app, new_user_list])
-
-    return user_permission_list(app, permission)
+    return new_permission
 
 #
 #
