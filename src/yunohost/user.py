@@ -544,12 +544,12 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
         'cn': groupname
     }, base_dn='ou=groups,dc=yunohost,dc=org')
     if conflict:
-        raise YunohostError('group_name_already_exist', name=groupname)
+        raise YunohostError('group_already_exist', group=groupname)
 
     # Validate uniqueness of groupname in system group
     all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
     if groupname in all_existing_groupnames:
-        raise YunohostError('system_groupname_exists')
+        raise YunohostError('group_already_exist_on_system', group=groupname)
 
     if not gid:
         # Get random GID
@@ -648,7 +648,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
                 raise YunohostError('user_unknown', user=user)
 
             if user in current_group:
-                logger.warning(m18n.n('user_already_in_group', user=user, group=groupname))
+                logger.warning(m18n.n('group_user_already_in_group', user=user, group=groupname))
             else:
                 operation_logger.related_to.append(('user', user))
 
@@ -659,7 +659,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
 
         for user in users_to_remove:
             if user not in current_group:
-                logger.warning(m18n.n('user_not_in_group', user=user, group=groupname))
+                logger.warning(m18n.n('group_user_not_in_group', user=user, group=groupname))
             else:
                 operation_logger.related_to.append(('user', user))
 
