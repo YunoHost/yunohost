@@ -1,23 +1,23 @@
-import yaml
 import time
 import os
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_yaml
 
 from yunohost.tools import Migration
 from yunohost.user import user_group_create, user_group_update
 from yunohost.app import app_setting, app_list
 from yunohost.regenconf import regen_conf
-from yunohost.permission import permission_create, permission_sync_to_user
-from yunohost.user import user_permission_add
+from yunohost.permission import permission_create, user_permission_update, permission_sync_to_user
 
 logger = getActionLogger('yunohost.migration')
 
 ###################################################
 # Tools used also for restoration
 ###################################################
+
 
 class MyMigration(Migration):
     """
@@ -38,10 +38,9 @@ class MyMigration(Migration):
         try:
             ldap.remove('cn=sftpusers,ou=groups')
         except:
-            logger.warn(m18n.n("error_when_removing_sftpuser_group"))
+            logger.warn(m18n.n("migration_0011_error_when_removing_sftpuser_group"))
 
-        with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
-            ldap_map = yaml.load(f)
+        ldap_map = read_yaml('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml')
 
         try:
             attr_dict = ldap_map['parents']['ou=permission']
@@ -65,10 +64,8 @@ class MyMigration(Migration):
             username = user_info['uid'][0]
             ldap.update('uid=%s,ou=users' % username,
                         {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
-            user_group_create(username, gid=user_info['uidNumber'][0], sync_perm=False)
-            user_group_update(groupname=username, add=username, force=True, sync_perm=False)
+            user_group_create(username, gid=user_info['uidNumber'][0], primary_group=True, sync_perm=False)
             user_group_update(groupname='all_users', add=username, force=True, sync_perm=False)
-
 
     def migrate_app_permission(self, app=None):
         logger.info(m18n.n("migration_0011_migrate_permission"))
@@ -85,12 +82,11 @@ class MyMigration(Migration):
             domain = app_setting(app, 'domain')
 
             urls = [domain + path] if domain and path else None
-            permission_create(app, permission='main', urls=urls, default_allow=True, sync_perm=False)
+            permission_create(app+".main", urls=urls, sync_perm=False)
             if permission:
                 allowed_group = permission.split(',')
-                user_permission_add([app], permission='main', group=allowed_group, sync_perm=False)
+                user_permission_update(app+".main", remove="all_users", add=allowed_group, sync_perm=False)
             app_setting(app, 'allowed_users', delete=True)
-
 
     def run(self):
         # Check if the migration can be processed
