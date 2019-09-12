@@ -245,8 +245,17 @@ def user_delete(operation_logger, username, purge=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.permission import permission_sync_to_user
 
     operation_logger.start()
+
+    user_group_update("all_users", remove=username, force=True, sync_perm=False)
+    for group, infos in user_group_list()["groups"].items():
+        # If the user is in this group (and it's not the primary group),
+        # remove the member from the group
+        if username != group and username in infos["members"]:
+            user_group_update(group, remove=username, sync_perm=False)
+    user_group_delete(username, force=True, sync_perm=True)
 
     ldap = _get_ldap_interface()
     if ldap.remove('uid=%s,ou=users' % username):
@@ -258,19 +267,6 @@ def user_delete(operation_logger, username, purge=False):
             subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
     else:
         raise YunohostError('user_deletion_failed')
-
-    user_group_delete(username, force=True, sync_perm=True)
-
-    group_list = ldap.search('ou=groups,dc=yunohost,dc=org',
-                             '(&(objectclass=groupOfNamesYnh)(memberUid=%s))'
-                             % username, ['cn'])
-    for group in group_list:
-        user_list = ldap.search('ou=groups,dc=yunohost,dc=org',
-                                'cn=' + group['cn'][0],
-                                ['memberUid'])[0]
-        user_list['memberUid'].remove(username)
-        if not ldap.update('cn=%s,ou=groups' % group['cn'][0], user_list):
-            raise YunohostError('group_update_failed')
 
     hook_callback('post_user_delete', args=[username, purge])
 
