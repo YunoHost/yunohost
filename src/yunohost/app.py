@@ -735,11 +735,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     if packages.dpkg_is_broken():
         raise YunohostError("dpkg_is_broken")
 
-    from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import permission_create, permission_urls, permission_delete, permission_sync_to_user
-    ldap = _get_ldap_interface()
+    from yunohost.permission import user_permission_list, permission_create, permission_urls, permission_delete, permission_sync_to_user
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -976,7 +974,7 @@ def app_remove(operation_logger, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
-    from yunohost.permission import permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, permission_delete, permission_sync_to_user
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 

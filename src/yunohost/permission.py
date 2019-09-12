@@ -45,7 +45,7 @@ SYSTEM_PERMS = ["mail", "xmpp", "stfp"]
 #
 
 
-def user_permission_list(short=False, full=False, ignore_system_perms=True):
+def user_permission_list(short=False, full=False, ignore_system_perms=False):
     """
     List permissions and corresponding accesses
     """
@@ -273,13 +273,13 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
 
     attr_dict = {
         'objectClass': ['top', 'permissionYnh', 'posixGroup'],
-        'cn': permission,
+        'cn': str(permission),
         'gidNumber': gid,
     }
 
     # For main permission, we add all users by default
     if permission.endswith(".main"):
-        attr_dict['groupPermission'] = 'cn=all_users,ou=groups,dc=yunohost,dc=org'
+        attr_dict['groupPermission'] = ['cn=all_users,ou=groups,dc=yunohost,dc=org']
 
     if urls:
         attr_dict['URL'] = [_normalize_url(url) for url in urls]
