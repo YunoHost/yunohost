@@ -153,36 +153,37 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     operation_logger.start()
 
-    if ldap.update('cn=%s,ou=permission' % permission,
-                     {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in new_allowed_groups]}):
-        logger.debug(m18n.n('permission_updated', permission=permission))
+    try:
+        ldap.update('cn=%s,ou=permission' % permission,
+                    {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in new_allowed_groups]})
+    except Exception as e:
+        raise YunohostError('permission_update_failed', permission=permission, error=e)
 
-        # Trigger permission sync if asked
+    logger.debug(m18n.n('permission_updated', permission=permission))
 
-        if sync_perm:
-            permission_sync_to_user()
+    # Trigger permission sync if asked
 
-        new_permission = user_permission_list(full=True)["permissions"][permission]
+    if sync_perm:
+        permission_sync_to_user()
 
-        # Trigger app callbacks
+    new_permission = user_permission_list(full=True)["permissions"][permission]
 
-        app = permission.split(".")[0]
+    # Trigger app callbacks
 
-        old_allowed_users = set(existing_permission["corresponding_users"])
-        new_allowed_users = set(new_permission["corresponding_users"])
+    app = permission.split(".")[0]
 
-        effectively_added_users = new_allowed_users - old_allowed_users
-        effectively_removed_users = old_allowed_users - new_allowed_users
+    old_allowed_users = set(existing_permission["corresponding_users"])
+    new_allowed_users = set(new_permission["corresponding_users"])
 
-        if effectively_added_users:
-            hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
-        if effectively_removed_users:
-            hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
+    effectively_added_users = new_allowed_users - old_allowed_users
+    effectively_removed_users = old_allowed_users - new_allowed_users
 
-        return new_permission
+    if effectively_added_users:
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
+    if effectively_removed_users:
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
 
-    else:
-        raise YunohostError('permission_update_failed', permission=permission)
+    return new_permission
 
 
 @is_unit_operation()
@@ -209,10 +210,12 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     operation_logger.start()
 
     default_permission = {'groupPermission': ['cn=all_users,ou=groups,dc=yunohost,dc=org']}
-    if ldap.update('cn=%s,ou=permission' % permission, default_permission):
-        logger.debug(m18n.n('permission_updated', permission=permission))
-    else:
-        raise YunohostError('permission_update_failed', permission=permission)
+    try:
+        ldap.update('cn=%s,ou=permission' % permission, default_permission)
+    except Exception as e:
+        raise YunohostError('permission_update_failed', permission=permission, error=e)
+
+    logger.debug(m18n.n('permission_updated', permission=permission))
 
     if sync_perm:
         permission_sync_to_user()
@@ -286,13 +289,17 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
-    if ldap.add('cn=%s,ou=permission' % permission, attr_dict):
-        if sync_perm:
-            permission_sync_to_user()
-        logger.debug(m18n.n('permission_created', permission=permission))
-        return user_permission_list(full=True)["permissions"][permission]
-    else:
-        raise YunohostError('permission_creation_failed')
+
+    try:
+        ldap.add('cn=%s,ou=permission' % permission, attr_dict)
+    except Exception as e:
+        raise YunohostError('permission_creation_failed', permission=permission, error=e)
+
+    if sync_perm:
+        permission_sync_to_user()
+
+    logger.debug(m18n.n('permission_created', permission=permission))
+    return user_permission_list(full=True)["permissions"][permission]
 
 
 @is_unit_operation()
@@ -336,13 +343,17 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
-    if ldap.update('cn=%s,ou=permission' % permission, {'URL': new_urls}):
-        if sync_perm:
-            permission_sync_to_user()
-        logger.debug(m18n.n('permission_updated', permission=permission))
-        return user_permission_list(full=True)["permissions"][permission]
-    else:
-        raise YunohostError('permission_update_failed', permission=permission)
+
+    try:
+        ldap.update('cn=%s,ou=permission' % permission, {'URL': new_urls})
+    except Exception as e:
+        raise YunohostError('permission_update_failed', permission=permission, error=e)
+
+    if sync_perm:
+        permission_sync_to_user()
+
+    logger.debug(m18n.n('permission_updated', permission=permission))
+    return user_permission_list(full=True)["permissions"][permission]
 
 
 @is_unit_operation()
@@ -370,12 +381,15 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
-    if ldap.remove('cn=%s,ou=permission' % permission):
-        if sync_perm:
-            permission_sync_to_user()
-        logger.debug(m18n.n('permission_deleted', permission=permission))
-    else:
-        raise YunohostError('permission_deletion_failed', permission=permission)
+
+    try:
+        ldap.remove('cn=%s,ou=permission' % permission)
+    except Exception as e:
+        raise YunohostError('permission_deletion_failed', permission=permission, error=e)
+
+    if sync_perm:
+        permission_sync_to_user()
+    logger.debug(m18n.n('permission_deleted', permission=permission))
 
 
 def permission_sync_to_user():
@@ -410,8 +424,10 @@ def permission_sync_to_user():
                                'memberUid': should_be_allowed_users}
 
         # Commit the change with the new inherited stuff
-        if not ldap.update('cn=%s,ou=permission' % permission_name, new_inherited_perms):
-            raise YunohostError('permission_update_failed', permission=permission_name)
+        try:
+            ldap.update('cn=%s,ou=permission' % permission_name, new_inherited_perms)
+        except Exception as e:
+            raise YunohostError('permission_update_failed', permission=permission_name, error=e)
 
     logger.debug("The permission database has been resynchronized")
 
@@ -420,6 +436,7 @@ def permission_sync_to_user():
     # Reload unscd, otherwise the group ain't propagated to the LDAP database
     os.system('nscd --invalidate=passwd')
     os.system('nscd --invalidate=group')
+
 
 def _normalize_url(url):
     from yunohost.domain import _normalize_domain_path

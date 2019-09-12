@@ -112,8 +112,10 @@ def domain_add(operation_logger, domain, dyndns=False):
             'virtualdomain': domain,
         }
 
-        if not ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
-            raise YunohostError('domain_creation_failed')
+        try:
+            ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict)
+        except Exception as e:
+            raise YunohostError('domain_creation_failed', domain=domain, error=e)
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
@@ -167,10 +169,12 @@ def domain_remove(operation_logger, domain, force=False):
 
     operation_logger.start()
     ldap = _get_ldap_interface()
-    if ldap.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
-    else:
-        raise YunohostError('domain_deletion_failed')
+    try:
+        ldap.remove('virtualdomain=' + domain + ',ou=domains')
+    except Exception as e:
+        raise YunohostError('domain_deletion_failed', domain=domain, error=e)
+
+    os.system('rm -rf /etc/yunohost/certs/%s' % domain)
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()

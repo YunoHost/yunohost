@@ -205,32 +205,34 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
             except IOError as e:
                 raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
 
-    if ldap.add('uid=%s,ou=users' % username, attr_dict):
-        # Invalidate passwd to take user creation into account
-        subprocess.call(['nscd', '-i', 'passwd'])
+    try:
+        ldap.add('uid=%s,ou=users' % username, attr_dict)
+    except Exception as e:
+        raise YunohostError('user_creation_failed', user=username, error=e)
 
-        try:
-            # Attempt to create user home folder
-            subprocess.check_call(
-                ['su', '-', username, '-c', "''"])
-        except subprocess.CalledProcessError:
-            if not os.path.isdir('/home/{0}'.format(username)):
-                logger.warning(m18n.n('user_home_creation_failed'),
-                               exc_info=1)
+    # Invalidate passwd to take user creation into account
+    subprocess.call(['nscd', '-i', 'passwd'])
 
-        # Create group for user and add to group 'all_users'
-        user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
-        user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(
+            ['su', '-', username, '-c', "''"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir('/home/{0}'.format(username)):
+            logger.warning(m18n.n('user_home_creation_failed'),
+                           exc_info=1)
 
-        # TODO: Send a welcome mail to user
-        logger.success(m18n.n('user_created'))
+    # Create group for user and add to group 'all_users'
+    user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
+    user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
 
-        hook_callback('post_user_create',
-                      args=[username, mail, password, firstname, lastname])
+    # TODO: Send a welcome mail to user
+    logger.success(m18n.n('user_created'))
 
-        return {'fullname': fullname, 'username': username, 'mail': mail}
+    hook_callback('post_user_create',
+                  args=[username, mail, password, firstname, lastname])
 
-    raise YunohostError('user_creation_failed')
+    return {'fullname': fullname, 'username': username, 'mail': mail}
 
 
 @is_unit_operation([('username', 'user')])
@@ -258,15 +260,17 @@ def user_delete(operation_logger, username, purge=False):
     user_group_delete(username, force=True, sync_perm=True)
 
     ldap = _get_ldap_interface()
-    if ldap.remove('uid=%s,ou=users' % username):
-        # Invalidate passwd to take user deletion into account
-        subprocess.call(['nscd', '-i', 'passwd'])
+    try:
+        ldap.remove('uid=%s,ou=users' % username)
+    except Exception as e:
+        raise YunohostError('user_deletion_failed', user=username, error=e)
 
-        if purge:
-            subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
-            subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
-    else:
-        raise YunohostError('user_deletion_failed')
+    # Invalidate passwd to take user deletion into account
+    subprocess.call(['nscd', '-i', 'passwd'])
+
+    if purge:
+        subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
+        subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
 
     hook_callback('post_user_delete', args=[username, purge])
 
@@ -387,12 +391,14 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
 
     operation_logger.start()
 
-    if ldap.update('uid=%s,ou=users' % username, new_attr_dict):
-        logger.success(m18n.n('user_updated'))
-        app_ssowatconf()
-        return user_info(username)
-    else:
-        raise YunohostError('user_update_failed')
+    try:
+        ldap.update('uid=%s,ou=users' % username, new_attr_dict)
+    except Exception as e:
+        raise YunohostError('user_update_failed', user=username, error=e)
+
+    logger.success(m18n.n('user_updated'))
+    app_ssowatconf()
+    return user_info(username)
 
 
 def user_info(username):
@@ -476,10 +482,7 @@ def user_info(username):
             'use': storage_use
         }
 
-    if result:
-        return result_dict
-    else:
-        raise YunohostError('user_info_failed')
+    return result_dict
 
 
 #
@@ -569,13 +572,16 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
         attr_dict["member"] = ["uid=" + groupname + ",ou=users,dc=yunohost,dc=org"]
 
     operation_logger.start()
-    if ldap.add('cn=%s,ou=groups' % groupname, attr_dict):
-        logger.success(m18n.n('group_created', group=groupname))
-        if sync_perm:
-            permission_sync_to_user()
-        return {'name': groupname}
+    try:
+        ldap.add('cn=%s,ou=groups' % groupname, attr_dict)
+    except Exception as e:
+        raise YunohostError('group_creation_failed', group=groupname, error=e)
 
-    raise YunohostError('group_creation_failed', group=groupname)
+    if sync_perm:
+        permission_sync_to_user()
+
+    logger.success(m18n.n('group_created', group=groupname))
+    return {'name': groupname}
 
 
 @is_unit_operation([('groupname', 'group')])
@@ -601,12 +607,15 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
 
     operation_logger.start()
     ldap = _get_ldap_interface()
-    if not ldap.remove('cn=%s,ou=groups' % groupname):
-        raise YunohostError('group_deletion_failed', group=groupname)
+    try:
+        ldap.remove('cn=%s,ou=groups' % groupname)
+    except Exception as e:
+        raise YunohostError('group_deletion_failed', group=groupname, error=e)
 
-    logger.success(m18n.n('group_deleted', group=groupname))
     if sync_perm:
         permission_sync_to_user()
+
+    logger.success(m18n.n('group_deleted', group=groupname))
 
 
 @is_unit_operation([('groupname', 'group')])
@@ -668,8 +677,10 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     if set(new_group) != set(current_group):
         operation_logger.start()
         ldap = _get_ldap_interface()
-        if not ldap.update('cn=%s,ou=groups' % groupname, {"member": set(new_group_dns), "memberUid": set(new_group)}):
-            raise YunohostError('group_update_failed', group=groupname)
+        try:
+            ldap.update('cn=%s,ou=groups' % groupname, {"member": set(new_group_dns), "memberUid": set(new_group)})
+        except Exception as e:
+            raise YunohostError('group_update_failed', group=groupname, error=e)
 
     logger.success(m18n.n('group_updated', group=groupname))
     if sync_perm:
