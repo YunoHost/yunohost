@@ -2,8 +2,10 @@ import pytest
 
 from moulinette.core import MoulinetteError
 from yunohost.app import app_install, app_remove, app_change_url, app_list
-from yunohost.user import user_list, user_create, user_permission_list, user_delete, user_group_list, user_group_delete, user_permission_add, user_permission_remove, user_permission_clear
-from yunohost.permission import permission_create, permission_update, permission_delete
+
+from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
+                          user_group_list, user_group_create, user_group_delete, user_group_update, user_group_info
+from yunohost.permission import user_permission_update, user_permission_list, permission_create, permission_urls, permission_delete
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 
@@ -57,7 +59,7 @@ def check_LDAP_db_integrity():
     # One part should be done automatically by the "memberOf" overlay of LDAP.
     # The other part is done by the the "permission_sync_to_user" function of the permission module
 
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
 
     user_search = ldap.search('ou=users,dc=yunohost,dc=org',
@@ -76,60 +78,65 @@ def check_LDAP_db_integrity():
 
     for user in user_search:
         user_dn = 'uid=' + user['uid'][0] + ',ou=users,dc=yunohost,dc=org'
-        group_list = [m.split("=")[1].split(",")[0] for m in user['memberOf']]
-        permission_list = []
-        if 'permission' in user:
-            permission_list = [m.split("=")[1].split(",")[0] for m in user['permission']]
+        group_list = [_ldap_path_extract(m, "cn") for m in user['memberOf']]
+        permission_list = [_ldap_path_extract(m, "cn") for m in user.get('permission', [])]
 
+        # This user's DN sould be found in all groups it is a member of
         for group in group_list:
             assert user_dn in group_map[group]['member']
+
+        # This user's DN should be found in all perms it has access to
         for permission in permission_list:
             assert user_dn in permission_map[permission]['inheritPermission']
 
     for permission in permission_search:
         permission_dn = 'cn=' + permission['cn'][0] + ',ou=permission,dc=yunohost,dc=org'
-        user_list = []
-        group_list = []
-        if 'inheritPermission' in permission:
-            user_list = [m.split("=")[1].split(",")[0] for m in permission['inheritPermission']]
-            assert set(user_list) == set(permission['memberUid'])
-        if 'groupPermission' in permission:
-            group_list = [m.split("=")[1].split(",")[0] for m in permission['groupPermission']]
 
+        # inheritPermission uid's should match memberUids
+        user_list = [_ldap_path_extract(m, "uid") for m in permission.get('inheritPermission', [])]
+        assert set(user_list) == set(permission.get('memberUid', []))
+
+        # This perm's DN should be found on all related users it is related to
         for user in user_list:
             assert permission_dn in user_map[user]['permission']
+
+        # Same for groups : we should find the permission's DN for all related groups
+        group_list = [_ldap_path_extract(m, "cn") for m in permission.get('groupPermission', [])]
         for group in group_list:
             assert permission_dn in group_map[group]['permission']
-            if 'member' in group_map[group]:
-                user_list_in_group = [m.split("=")[1].split(",")[0] for m in group_map[group]['member']]
-                assert set(user_list_in_group) <= set(user_list)
+
+            # The list of user in the group should be a subset of all users related to the current permission
+            users_in_group = [_ldap_path_extract(m, "uid") for m in group_map[group].get("member", [])]
+            assert set(users_in_group) <= set(user_list)
 
     for group in group_search:
         group_dn = 'cn=' + group['cn'][0] + ',ou=groups,dc=yunohost,dc=org'
-        user_list = []
-        permission_list = []
-        if 'member' in group:
-            user_list = [m.split("=")[1].split(",")[0] for m in group['member']]
-            if group['cn'][0] in user_list:
-                # If it's the main group of the user it's normal that it is not in the memberUid
-                g_list = list(user_list)
-                g_list.remove(group['cn'][0])
-                if 'memberUid' in group:
-                    assert set(g_list) == set(group['memberUid'])
-                else:
-                    assert g_list == []
-            else:
-                assert set(user_list) == set(group['memberUid'])
-        if 'permission' in group:
-            permission_list = [m.split("=")[1].split(",")[0] for m in group['permission']]
 
+        user_list = [_ldap_path_extract(m, "uid") for m in group.get("member", [])]
+        # For primary groups, we should find that :
+        #    - len(user_list) is 1 (a primary group has only 1 member)
+        #    - the group name should be an existing yunohost user
+        #    - memberUid is empty (meaning no other member than the corresponding user)
+        if group['cn'][0] in user_list:
+            assert len(user_list) == 1
+            assert group["cn"][0] in user_map
+            assert group.get('memberUid', []) == []
+        # Otherwise, user_list and memberUid should have the same content
+        else:
+            assert set(user_list) == set(group.get('memberUid', []))
+
+        # For all users members, this group should be in the "memberOf" on the other side
         for user in user_list:
             assert group_dn in user_map[user]['memberOf']
+
+        # For all the permissions of this group, the group should be among the "groupPermission" on the other side
+        permission_list = [_ldap_path_extract(m, "cn") for m in group.get('permission', [])]
         for permission in permission_list:
             assert group_dn in permission_map[permission]['groupPermission']
-            if 'inheritPermission' in permission_map:
-                allowed_user_list = [m.split("=")[1].split(",")[0] for m in permission_map[permission]['inheritPermission']]
-                assert set(user_list) <= set(allowed_user_list)
+
+            # And the list of user of this group (user_list) should be a subset of all allowed users for this perm...
+            allowed_user_list = [_ldap_path_extract(m, "uid") for m in permission_map[permission].get('inheritPermission', [])]
+            assert set(user_list) <= set(allowed_user_list)
 
 
 def check_permission_for_apps():
