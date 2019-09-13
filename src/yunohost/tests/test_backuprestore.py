@@ -38,10 +38,10 @@ def setup_function(function):
         add_archive_wordpress_from_2p4()
         assert len(backup_list()["archives"]) == 1
 
-    if "with_backup_legacy_app_installed" in markers:
-        assert not app_is_installed("backup_legacy_app")
-        install_app("backup_legacy_app_ynh", "/yolo")
-        assert app_is_installed("backup_legacy_app")
+    if "with_legacy_app_installed" in markers:
+        assert not app_is_installed("legacy_app")
+        install_app("legacy_app_ynh", "/yolo")
+        assert app_is_installed("legacy_app")
 
     if "with_backup_recommended_app_installed" in markers:
         assert not app_is_installed("backup_recommended_app")
@@ -105,7 +105,7 @@ def backup_test_dependencies_are_met():
 
     # Dummy test apps (or backup archives)
     assert os.path.exists("./tests/apps/backup_wordpress_from_2p4")
-    assert os.path.exists("./tests/apps/backup_legacy_app_ynh")
+    assert os.path.exists("./tests/apps/legacy_app_ynh")
     assert os.path.exists("./tests/apps/backup_recommended_app_ynh")
 
     return True
@@ -155,8 +155,8 @@ def delete_all_backups():
 
 def uninstall_test_apps_if_needed():
 
-    if _is_installed("backup_legacy_app"):
-        app_remove("backup_legacy_app")
+    if _is_installed("legacy_app"):
+        app_remove("legacy_app")
 
     if _is_installed("backup_recommended_app"):
         app_remove("backup_recommended_app")
@@ -497,10 +497,10 @@ def test_restore_app_already_installed(mocker):
     assert _is_installed("wordpress")
 
 
-@pytest.mark.with_backup_legacy_app_installed
+@pytest.mark.with_legacy_app_installed
 def test_backup_and_restore_legacy_app():
 
-    _test_backup_and_restore_app("backup_legacy_app")
+    _test_backup_and_restore_app("legacy_app")
 
 
 @pytest.mark.with_backup_recommended_app_installed
@@ -531,7 +531,7 @@ def _test_backup_and_restore_app(app):
     # Uninstall the app
     app_remove(app)
     assert not app_is_installed(app)
-    assert app not in user_permission_list()['permissions']
+    assert app+".main" not in user_permission_list()['permissions']
 
     # Restore the app
     backup_restore(system=None, name=archives[0],
@@ -541,8 +541,7 @@ def _test_backup_and_restore_app(app):
 
     # Check permission
     per_list = user_permission_list()['permissions']
-    assert app in per_list
-    assert "main" in per_list[app]
+    assert app+".main" in per_list
 
 #
 # Some edge cases                                                            #

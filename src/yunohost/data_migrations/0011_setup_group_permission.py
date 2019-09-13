@@ -89,6 +89,11 @@ class MyMigration(Migration):
             app_setting(app, 'allowed_users', delete=True)
 
     def run(self):
+
+        # FIXME : what do we really want to do here ...
+        # Imho we should just force-regen the conf in all case, and maybe
+        # just display a warning if we detect that the conf was manually modified
+
         # Check if the migration can be processed
         ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
         # By this we check if the have been customized

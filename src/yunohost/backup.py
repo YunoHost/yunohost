@@ -1134,6 +1134,8 @@ class RestoreManager():
 
             self._restore_system()
             self._restore_apps()
+        except Exception as e:
+            logger.error("The following critical error happened during restoration: %s" % e)
         finally:
             self.clean()
 
@@ -1186,11 +1188,12 @@ class RestoreManager():
         if system_targets == []:
             return
 
-        from yunohost.permission import permission_create, user_permission_update, user_permission_list
+        from yunohost.user import user_group_list
+        from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list
 
         # Backup old permission for apps
         # We need to do that because in case of an app is installed we can't remove the permission for this app
-        old_apps_permission = user_permission_list(ignore_system_perms=True)["permissions"]
+        old_apps_permission = user_permission_list(ignore_system_perms=True, full=True)["permissions"]
 
         # Start register change on system
         operation_logger = OperationLogger('backup_restore_system')
@@ -1232,7 +1235,7 @@ class RestoreManager():
         # do the migration 0011 : setup group and permission
         #
         # Legacy code
-        if not user_group_list["groups"]:
+        if not "all_users" in user_group_list()["groups"].keys():
             from yunohost.tools import _get_migration_by_name
             setup_group_permission = _get_migration_by_name("setup_group_permission")
             # Update LDAP schema restart slapd
@@ -1251,14 +1254,12 @@ class RestoreManager():
                 permission_create(permission_name, urls=permission_infos["urls"], sync_perm=False)
                 user_permission_update(permission_name, remove="all_users", add=permission_infos["allowed"])
 
-
     def _restore_apps(self):
         """Restore all apps targeted"""
 
         apps_targets = self.targets.list("apps", exclude=["Skipped"])
 
         for app in apps_targets:
-            print(app)
             self._restore_app(app)
 
     def _restore_app(self, app_instance_name):
@@ -1359,11 +1360,11 @@ class RestoreManager():
                 permissions = read_yaml('%s/permissions.yml' % app_settings_new_path)
                 existing_groups = user_group_list()['groups']
 
-                for permission_name, permission_infos in permissions:
+                for permission_name, permission_infos in permissions.items():
 
                     permission_create(permission_name, urls=permission_infos.get("urls", []))
 
-                    if "allowed" not in permissions_infos:
+                    if "allowed" not in permission_infos:
                         logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s ... You might need to reconfigure permissions yourself!" % (permission_name, app_instance_name))
                     else:
                         groups = [g for g in permission_infos["allowed"] if g in existing_groups]
