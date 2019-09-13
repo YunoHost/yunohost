@@ -488,13 +488,17 @@ def user_info(username):
 #
 # Group subcategory
 #
-def user_group_list(short=False, full=False):
+def user_group_list(short=False, full=False, include_primary_groups=True):
     """
     List users
 
     Keyword argument:
         short -- Only list the name of the groups without any additional info
         full -- List all the info available for each groups
+        include_primary_groups -- Include groups corresponding to users (which should always only contains this user)
+                                  This option is set to false by default in the action map because we don't want to have
+                                  these displayed when the user runs `yunohost user group list`, but internally we do want
+                                  to list them when called from other functions
     """
 
     # Fetch relevant informations
@@ -507,10 +511,15 @@ def user_group_list(short=False, full=False):
 
     # Parse / organize information to be outputed
 
+    users = user_list()["users"]
     groups = {}
     for infos in groups_infos:
 
         name = infos["cn"][0]
+
+        if not include_primary_groups and name in users:
+            continue
+
         groups[name] = {}
 
         groups[name]["members"] = [_ldap_path_extract(p, "uid") for p in infos.get("member", [])]

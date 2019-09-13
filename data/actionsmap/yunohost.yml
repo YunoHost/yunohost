@@ -216,6 +216,11 @@ user:
                             full: --full
                             help: Display all informations known about each groups
                             action: store_true
+                        -p:
+                            full: --include-primary-groups
+                            help: Also display primary groups (each user has an eponym group that only contains itself)
+                            action: store_true
+                            default: false
 
                 ### user_group_create()
                 create:
