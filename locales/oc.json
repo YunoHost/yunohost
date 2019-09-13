@@ -157,7 +157,7 @@
     "downloading": "Telecargament…",
     "dyndns_could_not_check_provide": "Impossible de verificar se {provider:s} pòt provesir {domain:s}.",
     "dyndns_cron_installed": "La tasca cron pel domeni DynDNS es installada",
-    "dyndns_cron_remove_failed": "Impossible de levar la tasca cron pel domeni DynDNS",
+    "dyndns_cron_remove_failed": "Impossible de levar la tasca cron pel domeni DynDNS a causa de {error}",
     "dyndns_cron_removed": "La tasca cron pel domeni DynDNS es levada",
     "dyndns_ip_update_failed": "Impossible d’actualizar l’adreça IP sul domeni DynDNS",
     "dyndns_ip_updated": "Vòstra adreça IP es estada actualizada pel domeni DynDNS",
@@ -604,5 +604,7 @@
     "edit_permission_with_group_all_users_not_allowed": "Podètz pas modificar las permissions del grop « all_users », utilizatz « yunohost user permission clear APP » o « yunohost user permission add APP -u USER ».",
     "mailbox_disabled": "La bóstia de las letras es desactivada per l’utilizaire {user:s}",
     "migration_0011_LDAP_config_dirty": "Sembla qu’avètz modificat manualament la configuracion LDAP. Per far aquesta migracion cal actualizar la configuracion LDAP.\nSalvagardatz la configuracion actuala, reïnicializatz la configuracion originala amb la comanda « yunohost tools regen-conf -f » e tornatz ensajar la migracion",
-    "need_define_permission_before": "Vos cal tornar definir las permission en utilizant « yunohost user permission add -u USER » abans de suprimir un grop permés"
+    "need_define_permission_before": "Vos cal tornar definir las permission en utilizant « yunohost user permission add -u USER » abans de suprimir un grop permés",
+    "permission_already_clear": "La permission « {permission:s} » ja levada per l’aplicacion {app:s}",
+    "migration_description_0012_postgresql_password_to_md5_authentication": "Forçar l’autentificacion postgresql a utilizar md5 per las connexions localas"
 }
