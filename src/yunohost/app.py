@@ -406,10 +406,10 @@ def app_map(app=None, raw=False, user=None):
 
     """
     from yunohost.permission import user_permission_list
-    from yunohost.utils.ldap import _get_ldap_interface
 
     apps = []
     result = {}
+    permissions = user_permission_list(full=True)["permissions"]
 
     if app is not None:
         if not _is_installed(app):
@@ -429,12 +429,8 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
-        if user is not None:
-            ldap = _get_ldap_interface()
-            if not ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                               filter='(&(objectclass=permissionYnh)(cn=%s.main)(inheritPermission=uid=%s,ou=users,dc=yunohost,dc=org))' % (app_id, user),
-                               attrs=['cn']):
-                continue
+        if user and user not in permissions[app_id + ".main"]["corresponding_users"]:
+            continue
 
         domain = app_settings['domain']
         path = app_settings['path']

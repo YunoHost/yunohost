@@ -1,6 +1,6 @@
 import pytest
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list
+from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map
 
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
                           user_group_list, user_group_create, user_group_delete, user_group_update, user_group_info
@@ -331,7 +331,7 @@ def test_permission_remove_url_not_added():
 # Application interaction
 #
 
-def test_install_app():
+def test_permission_app_install():
     app_install("./tests/apps/permissions_app_ynh",
                 args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
@@ -352,7 +352,14 @@ def test_install_app():
     assert res['permissions_app.dev']['allowed'] == []
     assert set(res['permissions_app.dev']['corresponding_users']) == set()
 
-def test_remove_app():
+    # Check that we get the right stuff in app_map, which is used to generate the ssowatconf
+    assert maindomain + "/urlpermissionapp" in app_map(user="alice").keys()
+    user_permission_update("permissions_app.main", remove="all_users", add="bob")
+    assert maindomain + "/urlpermissionapp" not in app_map(user="alice").keys()
+    assert maindomain + "/urlpermissionapp" in app_map(user="bob").keys()
+
+
+def test_permission_app_remove():
     app_install("./tests/apps/permissions_app_ynh",
                 args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
     app_remove("permissions_app")
@@ -361,7 +368,7 @@ def test_remove_app():
     res = user_permission_list(full=True)['permissions']
     assert not any(p.startswith("permissions_app.") for p in res.keys())
 
-def test_change_url():
+def test_permission_app_change_url():
     app_install("./tests/apps/permissions_app_ynh",
                 args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
