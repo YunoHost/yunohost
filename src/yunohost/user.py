@@ -253,6 +253,8 @@ def user_delete(operation_logger, username, purge=False):
 
     user_group_update("all_users", remove=username, force=True, sync_perm=False)
     for group, infos in user_group_list()["groups"].items():
+        if group == "all_users":
+            continue
         # If the user is in this group (and it's not the primary group),
         # remove the member from the group
         if username != group and username in infos["members"]:
