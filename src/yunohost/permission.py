@@ -87,14 +87,18 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     Allow or Disallow a user or group to a permission for a specific application
 
     Keyword argument:
-        permission     -- Name of the permission (e.g. mail.mail or wordpress.editors)
+        permission     -- Name of the permission (e.g. mail or or wordpress or wordpress.editors)
         add            -- List of groups or usernames to add to this permission
         remove         -- List of groups or usernames to remove from to this permission
     """
     from yunohost.hook import hook_callback
     from yunohost.user import user_group_list
-    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
+    from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
 
     # Fetch currently allowed groups for this permission
 
@@ -146,7 +150,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
         # FIXME : i18n
-        logger.warning("No change was applied because not relevant modification were found")
+        logger.warning("The permission was not updated all addition/removal requests already match the current state.")
         return
 
     # Commit the new allowed group list
@@ -192,11 +196,15 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     Reset a given permission to just 'all_users'
 
     Keyword argument:
-        permission -- The name of the permission to be reseted
+        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
 
     # Fetch existing permission
 
@@ -254,12 +262,16 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
     Create a new permission for a specific application
 
     Keyword argument:
-        permission -- Name of the permission (e.g. nextcloud.main or wordpress.editors)
+        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
         urls       -- list of urls to specify for the permission
     """
 
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
 
     # Validate uniqueness of permission in LDAP
     if ldap.get_conflict({'cn': permission},
@@ -308,7 +320,7 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
     Update urls related to a permission for a specific application
 
     Keyword argument:
-        permission -- Name of the permission (e.g. nextcloud.main or wordpress.editors)
+        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
         add        -- List of urls to add
         remove     -- List of urls to remove
 
@@ -362,10 +374,14 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
     Delete a permission
 
     Keyword argument:
-        permission -- Name of the permission (e.g. nextcloud.main or wordpress.editors)
+        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
     """
 
-    if permission.endswith("main") and not force:
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
+
+    if permission.endswith(".main") and not force:
         raise YunohostError('permission_cannot_remove_main')
 
     from yunohost.utils.ldap import _get_ldap_interface

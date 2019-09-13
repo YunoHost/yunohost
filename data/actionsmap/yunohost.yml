@@ -298,7 +298,7 @@ user:
                     api: POST /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail.main or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
                         -a:
                             full: --add
                             help: Group or user names to add to this permission
@@ -320,7 +320,7 @@ user:
                     api: DELETE /users/permissions/<app>
                     arguments:
                         permission:
-                            help: Permission to be resetted (e.g. mail.main or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
 
         ssh:
             subcategory_help: Manage ssh access
