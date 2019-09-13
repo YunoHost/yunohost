@@ -792,6 +792,7 @@ app:
         addaccess:
             action_help: Grant access right to users (everyone by default)
             api: PUT /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -803,6 +804,7 @@ app:
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
             api: DELETE /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -814,6 +816,7 @@ app:
         clearaccess:
             action_help: Reset access rights for the app
             api: POST /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
