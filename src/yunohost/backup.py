@@ -1367,8 +1367,10 @@ class RestoreManager():
                     if "allowed" not in permission_infos:
                         logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s ... You might need to reconfigure permissions yourself!" % (permission_name, app_instance_name))
                     else:
-                        groups = [g for g in permission_infos["allowed"] if g in existing_groups]
-                        user_permission_update(permission_name, remove="all_users", add=groups)
+                        should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
+                        current_allowed = user_permission_list()["permissions"][permission_name]["allowed"]
+                        if should_be_allowed != current_allowed:
+                            user_permission_update(permission_name, remove=current_allowed, add=should_be_allowed)
 
                 os.remove('%s/permissions.yml' % app_settings_new_path)
             else:
