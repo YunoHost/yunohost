@@ -555,6 +555,7 @@
     "upnp_disabled": "UPnP has been disabled",
     "upnp_enabled": "UPnP has been enabled",
     "upnp_port_open_failed": "Unable to open UPnP ports",
+    "user_already_exists": "User {user} already exists",
     "user_created": "The user has been created",
     "user_creation_failed": "Unable to create user {user}: {error}",
     "user_deleted": "The user has been deleted",

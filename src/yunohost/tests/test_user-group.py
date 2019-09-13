@@ -1,6 +1,5 @@
 import pytest
 
-from moulinette.core import MoulinetteError
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
                           user_group_list, user_group_create, user_group_delete, user_group_update, user_group_info
 from yunohost.domain import _get_maindomain
@@ -102,19 +101,23 @@ def test_del_group():
 #
 
 def test_create_user_with_mail_address_already_taken():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         user_create("alice2", "Alice", "White", "alice@" + maindomain, "test123Ynh")
 
 def test_create_user_with_password_too_simple():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         user_create("other", "Alice", "White", "other@" + maindomain, "12")
 
 def test_create_user_already_exists():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         user_create("alice", "Alice", "White", "other@" + maindomain, "test123Ynh")
 
+def test_update_user_with_mail_address_already_taken():
+    with pytest.raises(YunohostError):
+        user_update("bob",  add_mailalias="alice@" + maindomain)
+
 def test_del_user_that_does_not_exist():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         user_delete("doesnt_exist")
 
 def test_create_group_all_users():
@@ -124,7 +127,7 @@ def test_create_group_all_users():
 
 def test_create_group_already_exists():
     # Check groups already exist (regular groups)
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         user_group_create("dev")
 
 def test_del_group_all_users():
@@ -132,7 +135,7 @@ def test_del_group_all_users():
         user_group_delete("all_users")
 
 def test_del_group_that_does_not_exist():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         user_group_delete("doesnt_exist")
 
 #

@@ -1,6 +1,5 @@
 import pytest
 
-from moulinette.core import MoulinetteError
 from yunohost.app import app_install, app_remove, app_change_url, app_list
 
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
@@ -211,7 +210,7 @@ def test_permission_create_already_existing():
         permission_create("wiki.main")
 
 def test_permission_delete_doesnt_existing():
-    with pytest.raises(MoulinetteError):
+    with pytest.raises(YunohostError):
         permission_delete("doesnt.exist", force=True)
 
     res = user_permission_list()['permissions']

@@ -127,12 +127,18 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     ldap = _get_ldap_interface()
 
+    if username in user_list()["users"]:
+        raise YunohostError("user_already_exists", user=username)
+
     # Validate uniqueness of username and mail in LDAP
-    ldap.validate_uniqueness({
-        'uid': username,
-        'mail': mail,
-        'cn': username
-    })
+    try:
+        ldap.validate_uniqueness({
+            'uid': username,
+            'mail': mail,
+            'cn': username
+        })
+    except Exception as e:
+        raise YunohostError('user_creation_failed', user=username, error=e)
 
     # Validate uniqueness of username in system users
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
@@ -249,6 +255,9 @@ def user_delete(operation_logger, username, purge=False):
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.permission import permission_sync_to_user
 
+    if username not in user_list()["users"]:
+        raise YunohostError('user_unknown', user=username)
+
     operation_logger.start()
 
     user_group_update("all_users", remove=username, force=True, sync_perm=False)
@@ -340,7 +349,10 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
             'webmaster@' + main_domain,
             'postmaster@' + main_domain,
         ]
-        ldap.validate_uniqueness({'mail': mail})
+        try:
+            ldap.validate_uniqueness({'mail': mail})
+        except Exception as e:
+            raise YunohostError('user_update_failed', user=username, error=e)
         if mail[mail.find('@') + 1:] not in domains:
             raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
         if mail in aliases:
@@ -353,7 +365,10 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
         for mail in add_mailalias:
-            ldap.validate_uniqueness({'mail': mail})
+            try:
+                ldap.validate_uniqueness({'mail': mail})
+            except Exception as e:
+                raise YunohostError('user_update_failed', user=username, error=e)
             if mail[mail.find('@') + 1:] not in domains:
                 raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
             user['mail'].append(mail)
@@ -610,6 +625,10 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     """
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
+
+    existing_groups = user_group_list()['groups'].keys()
+    if groupname not in existing_groups:
+        raise YunohostError('group_unknown', group=groupname)
 
     # Refuse to delete primary groups of a user (e.g. group 'sam' related to user 'sam')
     # without the force option...
