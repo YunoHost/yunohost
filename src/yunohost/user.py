@@ -589,7 +589,11 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
     if sync_perm:
         permission_sync_to_user()
 
-    logger.success(m18n.n('group_created', group=groupname))
+    if not primary_group:
+        logger.success(m18n.n('group_created', group=groupname))
+    else:
+        logger.debug(m18n.n('group_created', group=groupname))
+
     return {'name': groupname}
 
 
@@ -624,7 +628,10 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     if sync_perm:
         permission_sync_to_user()
 
-    logger.success(m18n.n('group_deleted', group=groupname))
+    if groupname not in existing_users:
+        logger.success(m18n.n('group_deleted', group=groupname))
+    else:
+        logger.debug(m18n.n('group_deleted', group=groupname))
 
 
 @is_unit_operation([('groupname', 'group')])
@@ -691,7 +698,11 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
         except Exception as e:
             raise YunohostError('group_update_failed', group=groupname, error=e)
 
-    logger.success(m18n.n('group_updated', group=groupname))
+    if groupname != "all_users":
+        logger.success(m18n.n('group_updated', group=groupname))
+    else:
+        logger.debug(m18n.n('group_updated', group=groupname))
+
     if sync_perm:
         permission_sync_to_user()
     return user_group_info(groupname)
