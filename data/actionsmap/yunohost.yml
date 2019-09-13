@@ -1737,22 +1737,23 @@ tools:
 
               ### tools_migrations_migrate()
               migrate:
-                  action_help: Perform migrations
+                  action_help: Run migrations
                   api: POST /migrations/migrate
                   arguments:
-                    -t:
-                        help: target migration number (or 0), latest one by default
-                        type: int
-                        full: --target
-                    -s:
-                        help: skip the migration(s), use it only if you know what you are doing
-                        full: --skip
+                    targets:
+                        help: Migrations to run (all pendings by default)
+                        nargs: "*"
+                    --skip:
+                        help: Skip specified migrations (to be used only if you know what you are doing)
+                        action: store_true
+                    --force-rerun:
+                        help: Re-run already-ran specified migration (to be used only if you know what you are doing)
                         action: store_true
                     --auto:
-                        help: automatic mode, won't run manual migrations, use it only if you know what you are doing
+                        help: Automatic mode, won't run manual migrations (to be used only if you know what you are doing)
                         action: store_true
                     --accept-disclaimer:
-                        help: accept disclaimers of migration (please read them before using this option)
+                        help: Accept disclaimers of migrations (please read them before using this option)
                         action: store_true
 
               ### tools_migrations_state()
