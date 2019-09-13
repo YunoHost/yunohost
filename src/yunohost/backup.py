@@ -1135,7 +1135,7 @@ class RestoreManager():
             self._restore_system()
             self._restore_apps()
         except Exception as e:
-            logger.error("The following critical error happened during restoration: %s" % e)
+            raise YunohostError("The following critical error happened during restoration: %s" % e)
         finally:
             self.clean()
 
@@ -1245,7 +1245,7 @@ class RestoreManager():
 
         # Remove all permission for all app which is still in the LDAP
         for permission_name in user_permission_list(ignore_system_perms=True)["permissions"].keys():
-            permission_delete(permission_name)
+            permission_delete(permission_name, force=True)
 
         # Restore permission for the app which is installed
         for permission_name, permission_infos in old_apps_permission.items():
