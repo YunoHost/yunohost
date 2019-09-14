@@ -39,7 +39,6 @@ from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
-from yunohost.tools import _set_hostname
 
 logger = getActionLogger('yunohost.domain')
 
@@ -251,6 +250,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         new_main_domain -- The new domain to be set as the main domain
 
     """
+    from yunohost.tools import _set_hostname
 
     # If no new domain specified, we return the current main domain
     if not new_main_domain:
