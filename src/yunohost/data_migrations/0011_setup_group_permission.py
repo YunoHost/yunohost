@@ -28,6 +28,28 @@ class MyMigration(Migration):
 
     required = True
 
+    def remove_if_exists(self, target):
+
+        from yunohost.utils.ldap import _get_ldap_interface
+        ldap = _get_ldap_interface()
+
+        try:
+            objects = ldap.search(target + ",dc=yunohost,dc=org")
+        # ldap search will raise an exception if no corresponding object is found >.> ...
+        except Exception as e:
+            logger.debug("%s does not exist, no need to delete it" % target)
+            return
+
+        objects.reverse()
+        for o in objects:
+            for dn in o["dn"]:
+                dn = dn.replace(",dc=yunohost,dc=org", "")
+                logger.debug("Deleting old object %s ..." % dn)
+                try:
+                    ldap.remove(dn)
+                except Exception as e:
+                    raise YunohostError("migration_0011_failed_to_remove_stale_object", dn=dn, error=e)
+
     def migrate_LDAP_db(self):
 
         logger.info(m18n.n("migration_0011_update_LDAP_database"))
@@ -35,14 +57,13 @@ class MyMigration(Migration):
         from yunohost.utils.ldap import _get_ldap_interface
         ldap = _get_ldap_interface()
 
-        try:
-            ldap.remove('cn=sftpusers,ou=groups')
-        except:
-            logger.warn(m18n.n("migration_0011_error_when_removing_sftpuser_group"))
-
         ldap_map = read_yaml('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml')
 
         try:
+            self.remove_if_exists("cn=sftpusers,ou=groups")
+            self.remove_if_exists("ou=permission")
+            self.remove_if_exists('cn=all_users,ou=groups')
+
             attr_dict = ldap_map['parents']['ou=permission']
             ldap.add('ou=permission', attr_dict)
 
