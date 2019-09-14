@@ -164,8 +164,7 @@ def tools_adminpw(new_password, check_strength=True):
         logger.success(m18n.n('admin_password_changed'))
 
 
-@is_unit_operation()
-def tools_maindomain(operation_logger, new_main_domain=None):
+def tools_maindomain(new_main_domain=None):
     from yunohost.domain import domain_main_domain
     logger.warning(m18n.g("deprecated_command_alias", prog="yunohost", old="tools maindomain", new="domain main-domain"))
     return domain_main_domain(new_main_domain=new_main_domain)
