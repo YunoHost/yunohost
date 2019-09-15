@@ -1037,6 +1037,8 @@ def app_addaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage permissions.")
+
     output = {}
     for app in apps:
         permission = user_permission_update(app+".main", add=users)
@@ -1056,6 +1058,8 @@ def app_removeaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage permissions.")
+
     output = {}
     for app in apps:
         permission = user_permission_update(app+".main", remove=users)
@@ -1073,6 +1077,8 @@ def app_clearaccess(apps):
 
     """
     from yunohost.permission import user_permission_reset
+
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage permissions.")
 
     output = {}
     for app in apps:
@@ -1181,6 +1187,8 @@ def app_setting(app, key, value=None, delete=False):
             # FIXME: Allow multiple values for some keys?
             if key in ['redirected_urls', 'redirected_regex']:
                 value = yaml.load(value)
+            if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
+                logger.warning("/!\ Packagers ! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage public/private access.")
             app_settings[key] = value
         _set_app_settings(app, app_settings)
 

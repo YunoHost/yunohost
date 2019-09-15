@@ -176,6 +176,8 @@ else:
     elif action == "set":
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
+        if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
+           logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage public/private access.")
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
@@ -249,7 +251,7 @@ ynh_permission_create() {
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
 #
-# usage: ynh_permission_remove --permission "permission"
+# usage: ynh_permission_delete --permission "permission"
 # | arg: permission - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
 #
 # example: ynh_permission_delete --permission editors
