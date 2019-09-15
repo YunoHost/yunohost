@@ -666,56 +666,81 @@ def app_upgrade(app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
-        if hook_exec(extracted_app_folder + '/scripts/upgrade',
-                     args=args_list, env=env_dict)[0] != 0:
-            msg = m18n.n('app_upgrade_failed', app=app_instance_name)
-            operation_logger.error(msg)
 
-            # display this if there are remaining apps
-            if apps[number + 1:]:
-                logger.error(m18n.n('app_upgrade_stopped'))
-                not_upgraded_apps = apps[number:]
-                # we don't want to continue upgrading apps here in case that breaks
-                # everything
-                raise YunohostError('app_not_upgraded',
-                                    failed_app=app_instance_name,
-                                    apps=', '.join(not_upgraded_apps))
+
+        try:
+            upgrade_retcode = hook_exec(extracted_app_folder + '/scripts/upgrade',
+                                        args=args_list, env=env_dict)[0]
+        except (KeyboardInterrupt, EOFError):
+            upgrade_retcode = -1
+        except Exception:
+            import traceback
+            logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        finally:
+
+            # Did the script succeed ?
+            if upgrade_retcode != 0:
+                error_msg = m18n.n('app_upgrade_failed', app=app_instance_name)
+                operation_logger.error(error_msg)
+
+            # Did it broke the system ?
+            try:
+                broke_the_system = False
+                _assert_system_is_sane_for_app(manifest, "post")
+            except Exception as e:
+                broke_the_system = True
+                error_msg = operation_logger.error(str(e))
+
+            # If upgrade failed or broke the system,
+            # raise an error and interrupt all other pending upgrades
+            if upgrade_retcode != 0 or broke_the_system:
+
+                # display this if there are remaining apps
+                if apps[number + 1:]:
+                    logger.error(m18n.n('app_upgrade_stopped'))
+                    not_upgraded_apps = apps[number:]
+                    # we don't want to continue upgrading apps here in case that breaks
+                    # everything
+                    raise YunohostError('app_not_upgraded',
+                                        failed_app=app_instance_name,
+                                        apps=', '.join(not_upgraded_apps))
+                else:
+                    raise YunohostError(error_msg, raw_msg=True)
+
+            # Otherwise we're good and keep going !
             else:
-                raise YunohostError(msg)
-        else:
-            now = int(time.time())
-            # TODO: Move install_time away from app_setting
-            app_setting(app_instance_name, 'update_time', now)
-            status['upgraded_at'] = now
+                now = int(time.time())
+                # TODO: Move install_time away from app_setting
+                app_setting(app_instance_name, 'update_time', now)
+                status['upgraded_at'] = now
 
-            # Clean hooks and add new ones
-            hook_remove(app_instance_name)
-            if 'hooks' in os.listdir(extracted_app_folder):
-                for hook in os.listdir(extracted_app_folder + '/hooks'):
-                    hook_add(app_instance_name, extracted_app_folder + '/hooks/' + hook)
+                # Clean hooks and add new ones
+                hook_remove(app_instance_name)
+                if 'hooks' in os.listdir(extracted_app_folder):
+                    for hook in os.listdir(extracted_app_folder + '/hooks'):
+                        hook_add(app_instance_name, extracted_app_folder + '/hooks/' + hook)
 
-            # Store app status
-            with open(app_setting_path + '/status.json', 'w+') as f:
-                json.dump(status, f)
+                # Store app status
+                with open(app_setting_path + '/status.json', 'w+') as f:
+                    json.dump(status, f)
 
-            # Replace scripts and manifest and conf (if exists)
-            os.system('rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path, app_setting_path))
+                # Replace scripts and manifest and conf (if exists)
+                os.system('rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path, app_setting_path))
 
-            if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
-                os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
-            if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
-                os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+                if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
+                    os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+                if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
+                    os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
-                if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
+                for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
+                    if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+                        os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
-            # So much win
-            logger.success(m18n.n('app_upgraded', app=app_instance_name))
+                # So much win
+                logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
-            _assert_system_is_sane_for_app(manifest, "post")
-            hook_callback('post_app_upgrade', args=args_list, env=env_dict)
-            operation_logger.success()
+                hook_callback('post_app_upgrade', args=args_list, env=env_dict)
+                operation_logger.success()
 
     permission_sync_to_user()
 
