@@ -41,7 +41,7 @@ from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, read_toml
+from moulinette.utils.filesystem import read_json, read_toml, read_yaml
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -1366,34 +1366,29 @@ def app_ssowatconf():
         return s.split(',') if s else []
 
     for app in apps_list:
-        with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
-            app_settings = yaml.load(f)
 
-            if 'no_sso' in app_settings:
-                continue
+        app_settings = read_yaml(APPS_SETTING_PATH + app['id'] + '/settings.yml')
 
-            for item in _get_setting(app_settings, 'skipped_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'skipped_regex'):
-                skipped_regex.append(item)
-            for item in _get_setting(app_settings, 'unprotected_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'unprotected_regex'):
-                unprotected_regex.append(item)
-            for item in _get_setting(app_settings, 'protected_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'protected_regex'):
-                protected_regex.append(item)
-            if 'redirected_urls' in app_settings:
-                redirected_urls.update(app_settings['redirected_urls'])
-            if 'redirected_regex' in app_settings:
-                redirected_regex.update(app_settings['redirected_regex'])
+        if 'no_sso' in app_settings:
+            continue
+
+        app_root_webpath = app_settings['domain'] + app_settings['path'].rstrip('/')
+
+        # Skipped
+        skipped_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'skipped_uris')]
+        skipped_regex += _get_setting(app_settings, 'skipped_regex')
+
+        # Unprotected
+        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'unprotected_uris')]
+        unprotected_regex += _get_setting(app_settings, 'unprotected_regex')
+
+        # Protected
+        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'protected_uris')]
+        unprotected_regex += _get_setting(app_settings, 'protected_regex')
+
+        # Redirected
+        redirected_urls.update(app_settings.get('redirected_urls', {}))
+        redirected_regex.update(app_settings.get('redirected_regex', {}))
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
