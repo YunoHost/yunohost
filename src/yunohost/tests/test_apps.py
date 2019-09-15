@@ -7,7 +7,7 @@ import requests
 from moulinette import m18n
 from moulinette.utils.filesystem import mkdir
 
-from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed
+from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed, app_upgrade
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
@@ -27,11 +27,14 @@ def clean():
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
-    if _is_installed("legacy_app"):
-        app_remove("legacy_app")
-
+    # Gotta first remove break yo system
+    # because some remaining stuff might
+    # make the other app_remove crashs ;P
     if _is_installed("break_yo_system"):
         app_remove("break_yo_system")
+
+    if _is_installed("legacy_app"):
+        app_remove("legacy_app")
 
     to_remove = []
     to_remove += glob.glob("/etc/nginx/conf.d/*.d/*legacy*")
@@ -46,6 +49,7 @@ def clean():
     for folderpath in to_remove:
         shutil.rmtree(folderpath, ignore_errors=True)
 
+    os.system("systemctl reset-failed nginx")  # Reset failed quota for service to avoid running into start-limit rate ?
     os.system("systemctl start nginx")
 
 
@@ -300,18 +304,18 @@ def test_systemfuckedup_during_app_install_and_remove(secondary_domain):
 
 def test_systemfuckedup_during_app_upgrade(secondary_domain):
 
-    raise NotImplementedError
-
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    #app_upgrade("break_yo_system", ...)
+    with pytest.raises(YunohostError):
+        app_upgrade("break_yo_system", file="./tests/apps/break_yo_system_ynh")
 
 
 def test_failed_multiple_app_upgrade(secondary_domain):
 
-    raise NotImplementedError
-
     install_legacy_app(secondary_domain, "/legacy")
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    app_upgrade(["break_yo_system", "legacy"])
+    with pytest.raises(YunohostError):
+        app_upgrade(["break_yo_system", "legacy_app"],
+                    file={"break_yo_system": "./tests/apps/break_yo_system_ynh",
+                          "legacy": "./tests/apps/legacy_app_ynh"})
