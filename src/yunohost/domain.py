@@ -281,7 +281,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         _set_maindomain(new_main_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
-        raise YunohostError('maindomain_change_failed')
+        raise YunohostError('main_domain_change_failed')
 
     _set_hostname(new_main_domain)
 
@@ -295,7 +295,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     except IOError:
         pass
 
-    logger.success(m18n.n('maindomain_changed'))
+    logger.success(m18n.n('main_domain_changed'))
 
 
 def domain_cert_status(domain_list, full=False):
