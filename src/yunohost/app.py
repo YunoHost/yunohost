@@ -733,7 +733,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_urls, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, permission_create, permission_urls, permission_delete, permission_sync_to_user, user_permission_update
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -952,7 +952,13 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
     if domain and path:
+        # FIXME : might want to move this to before running the install script because some app need to run install script during initialization etc (idk) ?
         permission_urls(app_instance_name+".main", add=[domain+path], sync_perm=False)
+
+    # Migrate classic public app still using the legacy unprotected_uris
+    if app_settings.get("unprotected_uris", None) == "/":
+        user_permission_update(app_instance_name+".main", remove="all_users", add="visitors", sync_perm=False)
+
     permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
