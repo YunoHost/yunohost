@@ -142,10 +142,15 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # we shall warn the users that they should probably choose between one or the other,
     # because the current situation is probably not what they expect / is temporary ?
 
-    if len(new_allowed_groups) > 1 and "all_users" in new_allowed_groups:
-        # FIXME : i18n
-        # FIXME : write a better explanation ?
-        logger.warning("This permission is currently enabled for all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the specific groups currently allowed.")
+    if len(new_allowed_groups) > 1:
+        if "all_users" in new_allowed_groups:
+            # FIXME : i18n
+            # FIXME : write a better explanation ?
+            logger.warning("This permission is currently enabled for all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the other groups currently allowed.")
+        if "visitors" in new_allowed_groups:
+            # FIXME : i18n
+            # FIXME : write a better explanation ?
+            logger.warning("This permission is currently enabled for visitors in addition to other groups. You probably want to either remove the 'visitors' permission or remove the other groups currently allowed.")
 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
