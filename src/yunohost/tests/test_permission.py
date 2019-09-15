@@ -333,7 +333,7 @@ def test_permission_remove_url_not_added():
 
 def test_permission_app_install():
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
     assert "permissions_app.main" in res
@@ -361,7 +361,7 @@ def test_permission_app_install():
 
 def test_permission_app_remove():
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
     app_remove("permissions_app")
 
     # Check all permissions for this app got deleted
@@ -383,3 +383,54 @@ def test_permission_app_change_url():
     assert res['permissions_app.main']['urls'] == [maindomain + "/newchangeurl"]
     assert res['permissions_app.admin']['urls'] == [maindomain + "/newchangeurl/admin"]
     assert res['permissions_app.dev']['urls'] == [maindomain + "/newchangeurl/dev"]
+
+
+def test_permission_app_propagation_on_ssowat():
+
+    # TODO / FIXME : To be actually implemented later ....
+    raise NotImplementedError
+
+    app_install("./tests/apps/permissions_app_ynh",
+                args="domain=%s&path=%s&is_public=1&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['permissions_app.main']['allowed'] == ["all_users"]
+
+    assert can_access(maindomain + "/urlpermissionapp", logged_as=None)
+    assert can_access(maindomain + "/urlpermissionapp", logged_as="alice")
+
+    user_permission_update("permissions_app.main", remove="visitors", add="bob")
+    res = user_permission_list(full=True)['permissions']
+
+    assert cannot_access(maindomain + "/urlpermissionapp", logged_as=None)
+    assert cannot_access(maindomain + "/urlpermissionapp", logged_as="alice")
+    assert can_access(maindomain + "/urlpermissionapp", logged_as="bob")
+
+    # Test admin access, as configured during install, only alice should be able to access it
+
+    assert cannot_access(maindomain + "/urlpermissionapp/admin", logged_as=None)
+    assert cannot_access(maindomain + "/urlpermissionapp/admin", logged_as="alice")
+    assert can_access(maindomain + "/urlpermissionapp/admin", logged_as="bob")
+
+def test_permission_legacy_app_propagation_on_ssowat():
+
+    # TODO / FIXME : To be actually implemented later ....
+    raise NotImplementedError
+
+    app_install("./tests/apps/legacy_app_ynh",
+                args="domain=%s&path=%s" % (maindomain, "/legacy"), force=True)
+
+    # App is configured as public by default using the legacy unprotected_uri mechanics
+    # It should automatically be migrated during the install
+    assert res['permissions_app.main']['allowed'] == ["visitors"]
+
+    assert can_access(maindomain + "/legacy", logged_as=None)
+    assert can_access(maindomain + "/legacy", logged_as="alice")
+
+    # Try to update the permission and check that permissions are still consistent
+    user_permission_update("legacy_app.main", remove="visitors", add="bob")
+    res = user_permission_list(full=True)['permissions']
+
+    assert cannot_access(maindomain + "/legacy", logged_as=None)
+    assert cannot_access(maindomain + "/legacy", logged_as="alice")
+    assert can_access(maindomain + "/legacy", logged_as="bob")
