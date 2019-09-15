@@ -931,8 +931,12 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     logger.warning(msg)
                     operation_logger_remove.error(msg)
                 else:
-                    _assert_system_is_sane_for_app(manifest, "post")
-                    operation_logger_remove.success()
+                    try:
+                        _assert_system_is_sane_for_app(manifest, "post")
+                    except Exception as e:
+                        operation_logger_remove.error(e)
+                    else:
+                        operation_logger_remove.success()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
