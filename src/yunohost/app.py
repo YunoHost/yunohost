@@ -620,7 +620,10 @@ def app_upgrade(app=[], url=None, file=None):
 
         app_dict = app_info(app_instance_name, raw=True)
 
-        if file:
+        if file and isinstance(file, dict):
+            # We use this dirty hack to test chained upgrades in unit/functional tests
+            manifest, extracted_app_folder = _extract_app_from_file(file[app_instance_name])
+        elif file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
