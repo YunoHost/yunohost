@@ -679,7 +679,10 @@ def app_upgrade(app=[], url=None, file=None):
         finally:
 
             # Did the script succeed ?
-            if upgrade_retcode != 0:
+            if upgrade_retcode == -1:
+                error_msg = m18n.n('operation_interrupted')
+                operation_logger.error(error_msg)
+            elif upgrade_retcode != 0:
                 error_msg = m18n.n('app_upgrade_failed', app=app_instance_name)
                 operation_logger.error(error_msg)
 

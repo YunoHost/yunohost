@@ -409,6 +409,7 @@
     "no_ipv6_connectivity": "IPv6 connectivity is not available",
     "no_restore_script": "No restore script found for the app '{app:s}'",
     "not_enough_disk_space": "Not enough free disk space on '{path:s}'",
+    "operation_interrupted": "The operation was manually interrupted?",
     "package_not_installed": "Package '{pkgname}' is not installed",
     "package_unexpected_error": "An unexpected error occurred processing the package '{pkgname}'",
     "package_unknown": "Unknown package '{pkgname}'",
