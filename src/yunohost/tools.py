@@ -231,6 +231,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     """
     from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.domain import domain_main_domain
 
     dyndns_provider = "dyndns.yunohost.org"
 
@@ -353,7 +354,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # New domain config
     regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
-    tools_maindomain(domain)
+    domain_main_domain(domain)
 
     # Change LDAP admin password
     tools_adminpw(password, check_strength=not force_password)
