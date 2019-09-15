@@ -1345,6 +1345,7 @@ def app_ssowatconf():
 
     main_domain = _get_maindomain()
     domains = domain_list()['domains']
+    all_permissions = user_permission_list(full=True)['permissions']
 
     skipped_urls = []
     skipped_regex = []
@@ -1378,17 +1379,31 @@ def app_ssowatconf():
         skipped_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'skipped_uris')]
         skipped_regex += _get_setting(app_settings, 'skipped_regex')
 
-        # Unprotected
-        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'unprotected_uris')]
-        unprotected_regex += _get_setting(app_settings, 'unprotected_regex')
-
-        # Protected
-        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'protected_uris')]
-        unprotected_regex += _get_setting(app_settings, 'protected_regex')
-
         # Redirected
         redirected_urls.update(app_settings.get('redirected_urls', {}))
         redirected_regex.update(app_settings.get('redirected_regex', {}))
+
+        # Legacy permission system using (un)protected_uris and _regex managed in app settings...
+        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'unprotected_uris')]
+        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'protected_uris')]
+        unprotected_regex += _get_setting(app_settings, 'unprotected_regex')
+        unprotected_regex += _get_setting(app_settings, 'protected_regex')
+
+        # New permission system
+        this_app_perms = {name: info for name, info in all_permissions.items if name.startswith(app + ".")}
+        for perm_name, perm_info in this_app_perms:
+            urls = [url.rstrip("/") for url in perm_info["urls"]]
+            if "visitors" in perm_info["allowed"]:
+                unprotected_urls += urls
+
+                # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
+                protected_urls = [u for u in protected_urls if u not in urls]
+            else:
+                # TODO : small optimization to implement : we don't need to explictly add all the app roots
+                protected_urls += urls
+
+                # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
+                unprotected_urls = [u for u in unprotected_urls if u not in urls]
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
@@ -1397,8 +1412,10 @@ def app_ssowatconf():
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
+
+
     permissions_per_url = {}
-    for permission_name, permission_infos in user_permission_list(full=True)['permissions'].items():
+    for permission_name, permission_infos in all_permissions.items():
         for url in permission_infos["urls"]:
             permissions_per_url[url] = permission_infos['corresponding_users']
 
