@@ -802,6 +802,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app_instance_name)
 
+    # Validate domain / path availability for webapps
+    _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
+
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
     env_dict["YNH_APP_ID"] = app_id
@@ -2394,8 +2397,7 @@ def _parse_args_for_action(action, args={}):
 def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
-    from yunohost.domain import (domain_list, _get_maindomain,
-                                 _get_conflicting_apps, _normalize_domain_path)
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
@@ -2513,13 +2515,18 @@ def _parse_args_in_yunohost_format(args, action_args):
             assert_password_is_strong_enough('user', arg_value)
         args_dict[arg_name] = (arg_value, arg_type)
 
-    # END loop over action_args...
+    return args_dict
+
+
+def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
+
+    from yunohost.domain import _get_conflicting_apps, _normalize_domain_path
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "domain" ]
-    path_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "path" ]
+    domain_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "domain"]
+    path_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "path"]
 
     if len(domain_args) == 1 and len(path_args) == 1:
 
@@ -2545,7 +2552,25 @@ def _parse_args_in_yunohost_format(args, action_args):
         # standard path format to deal with no matter what the user inputted)
         args_dict[path_args[0][0]] = (path, "path")
 
-    return args_dict
+    # This is likely to be a full-domain app...
+    elif len(domain_args) == 1 and len(path_args) == 0:
+
+        # Confirm that this is a full-domain app This should cover most cases
+        # ...  though anyway the proper solution is to implement some mechanism
+        # in the manifest for app to declare that they require a full domain
+        # (among other thing) so that we can dynamically check/display this
+        # requirement on the webadmin form and not miserably fail at submit time
+
+        # Full-domain apps typically declare something like path_url="/" or path=/
+        # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
+        install_script_content = open(os.path.join(app_folder, 'scripts/install')).read()
+        if re.search(r"\npath(_url)?=[\"']?/[\"']?\n", install_script_content) \
+           and re.search(r"(ynh_webpath_register|yunohost app checkurl)"):
+
+            domain = domain_args[0][1]
+            conflicts = _get_conflicting_apps(domain, "/")
+
+            raise YunohostError('app_full_domain_unavailable', domain)
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):

@@ -19,6 +19,7 @@
     "app_change_url_no_script": "This application '{app_name:s}' doesn't support url modification yet. Maybe you should upgrade the application.",
     "app_change_url_success": "Successfully changed {app:s} url to {domain:s}{path:s}",
     "app_extraction_failed": "Unable to extract installation files",
+    "app_full_domain_unavailable": "Sorry, this application requires a full domain to be installed on, but some other apps are already installed on {domain}. One possible solution is to add a subdomain dedicated to this application.",
     "app_id_invalid": "Invalid app id",
     "app_incompatible": "The app {app} is incompatible with your YunoHost version",
     "app_install_files_invalid": "Invalid installation files",
