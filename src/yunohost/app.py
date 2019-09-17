@@ -590,9 +590,6 @@ def app_upgrade(app=[], url=None, file=None):
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
-    # Retrieve interface
-    is_api = msettings.get('interface') == 'api'
-
     try:
         app_list()
     except YunohostError:
@@ -621,7 +618,7 @@ def app_upgrade(app=[], url=None, file=None):
     if len(apps) > 1:
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
-    for app_instance_name in apps:
+    for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
 
         app_dict = app_info(app_instance_name, raw=True)
@@ -675,9 +672,19 @@ def app_upgrade(app=[], url=None, file=None):
         if hook_exec(extracted_app_folder + '/scripts/upgrade',
                      args=args_list, env=env_dict)[0] != 0:
             msg = m18n.n('app_upgrade_failed', app=app_instance_name)
-            not_upgraded_apps.append(app_instance_name)
-            logger.error(msg)
             operation_logger.error(msg)
+
+            # display this if there are remaining apps
+            if apps[number + 1:]:
+                logger.error(m18n.n('app_upgrade_stopped'))
+                not_upgraded_apps = apps[number:]
+                # we don't want to continue upgrading apps here in case that breaks
+                # everything
+                raise YunohostError('app_not_upgraded',
+                                    failed_app=app_instance_name,
+                                    apps=', '.join(not_upgraded_apps))
+            else:
+                raise YunohostError(msg)
         else:
             now = int(time.time())
             # TODO: Move install_time away from app_setting
@@ -711,9 +718,6 @@ def app_upgrade(app=[], url=None, file=None):
 
             hook_callback('post_app_upgrade', args=args_list, env=env_dict)
             operation_logger.success()
-
-    if not_upgraded_apps:
-        raise YunohostError('app_not_upgraded', apps=', '.join(not_upgraded_apps))
 
     permission_sync_to_user()
 
