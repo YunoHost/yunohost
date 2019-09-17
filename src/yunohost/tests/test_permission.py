@@ -1,3 +1,4 @@
+import requests
 import pytest
 
 from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map
@@ -11,6 +12,7 @@ from yunohost.utils.error import YunohostError
 
 # Get main domain
 maindomain = _get_maindomain()
+dummy_password = "test123Ynh"
 
 def clean_user_groups_permission():
     for u in user_list()['users']:
@@ -27,8 +29,8 @@ def clean_user_groups_permission():
 def setup_function(function):
     clean_user_groups_permission()
 
-    user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
-    user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
+    user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
+    user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
     permission_create("wiki.main", urls=[maindomain + "/wiki"], sync_perm=False)
     permission_create("blog.main", sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
@@ -155,6 +157,30 @@ def check_permission_for_apps():
     installed_apps = {app['id'] for app in app_list(installed=True)['apps']}
 
     assert installed_apps == app_perms_prefix
+
+
+def can_access_webpage(webpath, logged_as=None):
+
+    webpath = webpath.rstrip("/")
+    webroot = webpath.rsplit("/", 1)[0]
+    sso_url = webroot+"/yunohost/sso"
+
+    # Anonymous access
+    if not logged_as:
+        r = requests.get(webpath, verify=False)
+    # Login as a user using dummy password
+    else:
+        with requests.Session() as session:
+            session.post(sso_url,
+                         data={"user": logged_as,
+                               "password": dummy_password},
+                         headers={"Referer": sso_url,
+                                  "Content-Type": "application/x-www-form-urlencoded"},
+                         verify=False)
+            r = session.get(webpath, verify=False)
+
+    # If we can't access it, we got redirected to the sso
+    return not r.url.startswith(sso_url)
 
 #
 # List functions
@@ -396,21 +422,21 @@ def test_permission_app_propagation_on_ssowat():
     res = user_permission_list(full=True)['permissions']
     assert res['permissions_app.main']['allowed'] == ["all_users"]
 
-    assert can_access(maindomain + "/urlpermissionapp", logged_as=None)
-    assert can_access(maindomain + "/urlpermissionapp", logged_as="alice")
+    assert can_access_webpage(maindomain + "/urlpermissionapp", logged_as=None)
+    assert can_access_webpage(maindomain + "/urlpermissionapp", logged_as="alice")
 
     user_permission_update("permissions_app.main", remove="visitors", add="bob")
     res = user_permission_list(full=True)['permissions']
 
-    assert cannot_access(maindomain + "/urlpermissionapp", logged_as=None)
-    assert cannot_access(maindomain + "/urlpermissionapp", logged_as="alice")
-    assert can_access(maindomain + "/urlpermissionapp", logged_as="bob")
+    assert not can_access_webpage(maindomain + "/urlpermissionapp", logged_as=None)
+    assert not can_access_webpage(maindomain + "/urlpermissionapp", logged_as="alice")
+    assert can_access_webpage(maindomain + "/urlpermissionapp", logged_as="bob")
 
     # Test admin access, as configured during install, only alice should be able to access it
 
-    assert cannot_access(maindomain + "/urlpermissionapp/admin", logged_as=None)
-    assert cannot_access(maindomain + "/urlpermissionapp/admin", logged_as="alice")
-    assert can_access(maindomain + "/urlpermissionapp/admin", logged_as="bob")
+    assert not can_access_webpage(maindomain + "/urlpermissionapp/admin", logged_as=None)
+    assert not can_access_webpage(maindomain + "/urlpermissionapp/admin", logged_as="alice")
+    assert can_access_webpage(maindomain + "/urlpermissionapp/admin", logged_as="bob")
 
 def test_permission_legacy_app_propagation_on_ssowat():
 
@@ -424,13 +450,13 @@ def test_permission_legacy_app_propagation_on_ssowat():
     # It should automatically be migrated during the install
     assert res['permissions_app.main']['allowed'] == ["visitors"]
 
-    assert can_access(maindomain + "/legacy", logged_as=None)
-    assert can_access(maindomain + "/legacy", logged_as="alice")
+    assert can_access_webpage(maindomain + "/legacy", logged_as=None)
+    assert can_access_webpage(maindomain + "/legacy", logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent
     user_permission_update("legacy_app.main", remove="visitors", add="bob")
     res = user_permission_list(full=True)['permissions']
 
-    assert cannot_access(maindomain + "/legacy", logged_as=None)
-    assert cannot_access(maindomain + "/legacy", logged_as="alice")
-    assert can_access(maindomain + "/legacy", logged_as="bob")
+    assert not can_access_webpage(maindomain + "/legacy", logged_as=None)
+    assert not can_access_webpage(maindomain + "/legacy", logged_as="alice")
+    assert can_access_webpage(maindomain + "/legacy", logged_as="bob")
