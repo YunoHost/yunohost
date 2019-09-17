@@ -315,7 +315,7 @@ def reconfigure_ssh(setting_name, old_value, new_value):
         service_regen_conf(names=['ssh'])
 
 @post_change_hook("security.postfix.compatibility")
-def reconfigure_ssh(setting_name, old_value, new_value):
+def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['postfix'])
 
