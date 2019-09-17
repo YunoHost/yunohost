@@ -442,5 +442,6 @@
     "error_when_removing_sftpuser_group": "حدث خطأ أثناء محاولة حذف فريق sftpusers",
     "dyndns_could_not_check_available": "لا يمكن التحقق مِن أنّ {domain:s} متوفر على {provider:s}.",
     "backup_mount_archive_for_restore": "جارٍ تهيئة النسخة الاحتياطية للاسترجاع…",
-    "root_password_replaced_by_admin_password": "لقد تم استبدال كلمة سر الجذر root بالكلمة الإدارية لـ admin."
+    "root_password_replaced_by_admin_password": "لقد تم استبدال كلمة سر الجذر root بالكلمة الإدارية لـ admin.",
+    "app_upgrade_stopped": "لقد تم إلغاء تحديث كافة التطبيقات لتجنب حادث بسبب فشل تحديث التطبيق السابق"
 }
