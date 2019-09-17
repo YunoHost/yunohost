@@ -599,9 +599,10 @@
     "app_start_backup": "Obteniendo archivos de respaldo para {app}…",
     "app_start_remove": "Eliminando aplicación {app}…",
     "app_start_install": "Instalando aplicación {app}…",
-    "app_not_upgraded": "Las siguientes aplicaciones no se actualizaron: {apps}",
+    "app_not_upgraded": "Error al actualizar la aplicación «{failed_app}» y como consecuencia se han cancelado las actualizaciones de las siguientes aplicaciones: {apps}",
     "app_action_cannot_be_ran_because_required_services_down": "Esta aplicación necesita algunos servicios que no están funcionando ahora. Antes de continuar, debería intentar reiniciar los siguientes servicios (y posiblemente investigar por qué no funcionan): {services}",
     "already_up_to_date": "¡Nada que hacer! ¡Todo está actualizado!",
     "admin_password_too_long": "Elija una contraseña de menos de 127 caracteres",
-    "aborting": "Cancelando."
+    "aborting": "Cancelando.",
+    "app_upgrade_stopped": "Se ha detenido la actualización de todas las aplicaciones para prevenir un posible daño porque la aplicación anterior no se pudo actualizar"
 }
