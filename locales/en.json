@@ -424,7 +424,7 @@
     "pattern_firstname": "Must be a valid first name",
     "pattern_lastname": "Must be a valid last name",
     "pattern_listname": "Must be alphanumeric and underscore characters only",
-    "pattern_mailbox_quota": "Must be a size with b/k/M/G/T suffix or 0 to not havea quota",
+    "pattern_mailbox_quota": "Must be a size with b/k/M/G/T suffix or 0 to not have a quota",
     "pattern_password": "Must be at least 3 characters long",
     "pattern_port": "Must be a valid port number (i.e. 0-65535)",
     "pattern_port_or_range": "Must be a valid port number (i.e. 0-65535) or range of ports (e.g. 100:200)",
