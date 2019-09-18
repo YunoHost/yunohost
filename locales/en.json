@@ -82,7 +82,7 @@
     "backup_applying_method_tar": "Creating the backup TAR archive…",
     "backup_archive_app_not_found": "Could not find the app '{app:s}' in the backup archive",
     "backup_archive_broken_link": "Could not access the backup archive (broken link to {path:s})",
-    "backup_archive_mount_failed": "Could not mounting the backup archive",
+    "backup_archive_mount_failed": "Could not mount the backup archive",
     "backup_archive_name_exists": "A backup archive with this name already exists.",
     "backup_archive_name_unknown": "Unknown local backup archive named '{name:s}'",
     "backup_archive_open_failed": "Could not open the backup archive",
