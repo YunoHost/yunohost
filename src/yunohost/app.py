@@ -1404,8 +1404,8 @@ def app_ssowatconf():
         unprotected_regex += _get_setting(app_settings, 'protected_regex')
 
         # New permission system
-        this_app_perms = {name: info for name, info in all_permissions.items if name.startswith(app + ".")}
-        for perm_name, perm_info in this_app_perms:
+        this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app['id'] + ".")}
+        for perm_name, perm_info in this_app_perms.items():
             urls = [url.rstrip("/") for url in perm_info["urls"]]
             if "visitors" in perm_info["allowed"]:
                 unprotected_urls += urls
@@ -1414,6 +1414,7 @@ def app_ssowatconf():
                 protected_urls = [u for u in protected_urls if u not in urls]
             else:
                 # TODO : small optimization to implement : we don't need to explictly add all the app roots
+
                 protected_urls += urls
 
                 # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
