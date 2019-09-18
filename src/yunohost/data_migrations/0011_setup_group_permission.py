@@ -62,11 +62,13 @@ class MyMigration(Migration):
         try:
             self.remove_if_exists("cn=sftpusers,ou=groups")
             self.remove_if_exists("ou=permission")
-            self.remove_if_exists('cn=all_users,ou=groups')
-            self.remove_if_exists('cn=visitors,ou=groups')
+            self.remove_if_exists('ou=groups')
 
             attr_dict = ldap_map['parents']['ou=permission']
             ldap.add('ou=permission', attr_dict)
+
+            attr_dict = ldap_map['parents']['ou=groups']
+            ldap.add('ou=groups', attr_dict)
 
             attr_dict = ldap_map['children']['cn=all_users,ou=groups']
             ldap.add('cn=all_users,ou=groups', attr_dict)
