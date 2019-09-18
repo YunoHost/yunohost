@@ -307,7 +307,7 @@
     "mail_domain_unknown": "Unknown e-mail address for domain '{domain:s}'",
     "mail_forward_remove_failed": "Could not remove e-mail forwarding '{mail:s}'",
     "mailbox_disabled": "E-mail turned off for user {user:s}",
-    "mailbox_used_space_dovecot_down": "the Dovecot mailbox service needs to be up, if you want to fetch used mailbox space",
+    "mailbox_used_space_dovecot_down": "The Dovecot mailbox service needs to be up, if you want to fetch used mailbox space",
     "mail_unavailable": "This e-mail address is reserved and shall be automatically allocated to the very first user",
     "maindomain_change_failed": "Could not change the main domain",
     "maindomain_changed": "The main domain now changed",
