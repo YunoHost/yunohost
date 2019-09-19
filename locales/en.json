@@ -291,7 +291,7 @@
     "log_user_group_add": "Add '{}' group",
     "log_user_group_delete": "Delete '{}' group",
     "log_user_group_update": "Update '{}' group",
-    "log_user_update": "Update info of '{}' user",
+    "log_user_update": "Update user info of '{}'",
     "log_user_permission_add": "Update '{}' permission",
     "log_user_permission_remove": "Update '{}' permission",
     "log_tools_maindomain": "Make '{}' the main domain",
