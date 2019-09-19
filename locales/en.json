@@ -96,7 +96,7 @@
     "backup_couldnt_bind": "Could not bind {src:s} to {dest:s}.",
     "backup_created": "Backup created",
     "backup_creating_archive": "Creating the backup archive…",
-    "backup_creation_failed": "Could not create the backup creation",
+    "backup_creation_failed": "Could not create the backup archive",
     "backup_csv_addition_failed": "Could not add files to backup into the CSV file",
     "backup_csv_creation_failed": "Could not create the CSV file needed for restoration",
     "backup_custom_backup_error": "Custom backup method could not get past the 'backup' step",
