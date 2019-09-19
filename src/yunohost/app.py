@@ -429,8 +429,10 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
-        if user and user not in permissions[app_id + ".main"]["corresponding_users"]:
-            continue
+        if user:
+            main_perm = permissions[app_id + ".main"]
+            if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
+                continue
 
         domain = app_settings['domain']
         path = app_settings['path']
@@ -2613,10 +2615,8 @@ def _parse_args_in_yunohost_format(args, action_args):
             if arg_value not in domain_list()['domains']:
                 raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('domain_unknown'))
         elif arg_type == 'user':
-            try:
-                user_info(arg_value)
-            except YunohostError as e:
-                raise YunohostError('app_argument_invalid', name=arg_name, error=e)
+            if not arg_value in user_list()["users"].keys():
+                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('user_unknown', user=arg_value))
         elif arg_type == 'app':
             if not _is_installed(arg_value):
                 raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))

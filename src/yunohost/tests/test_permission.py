@@ -19,7 +19,7 @@ def clean_user_groups_permission():
         user_delete(u)
 
     for g in user_group_list()['groups']:
-        if g != "all_users":
+        if g not in ["all_users", "visitors"]:
             user_group_delete(g)
 
     for p in user_permission_list()['permissions']:
@@ -162,8 +162,7 @@ def check_permission_for_apps():
 def can_access_webpage(webpath, logged_as=None):
 
     webpath = webpath.rstrip("/")
-    webroot = webpath.rsplit("/", 1)[0]
-    sso_url = webroot+"/yunohost/sso"
+    sso_url = "https://"+maindomain+"/yunohost/sso/"
 
     # Anonymous access
     if not logged_as:
@@ -177,6 +176,8 @@ def can_access_webpage(webpath, logged_as=None):
                          headers={"Referer": sso_url,
                                   "Content-Type": "application/x-www-form-urlencoded"},
                          verify=False)
+            # We should have some cookies related to authentication now
+            assert session.cookies
             r = session.get(webpath, verify=False)
 
     # If we can't access it, we got redirected to the sso
@@ -413,30 +414,28 @@ def test_permission_app_change_url():
 
 def test_permission_app_propagation_on_ssowat():
 
-    # TODO / FIXME : To be actually implemented later ....
-    raise NotImplementedError
-
     app_install("./tests/apps/permissions_app_ynh",
                 args="domain=%s&path=%s&is_public=1&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['allowed'] == ["all_users"]
+    assert res['permissions_app.main']['allowed'] == ["visitors"]
 
-    assert can_access_webpage(maindomain + "/urlpermissionapp", logged_as=None)
-    assert can_access_webpage(maindomain + "/urlpermissionapp", logged_as="alice")
+    app_webroot = "https://%s/urlpermissionapp" % maindomain
+    assert can_access_webpage(app_webroot, logged_as=None)
+    assert can_access_webpage(app_webroot, logged_as="alice")
 
     user_permission_update("permissions_app.main", remove="visitors", add="bob")
     res = user_permission_list(full=True)['permissions']
 
-    assert not can_access_webpage(maindomain + "/urlpermissionapp", logged_as=None)
-    assert not can_access_webpage(maindomain + "/urlpermissionapp", logged_as="alice")
-    assert can_access_webpage(maindomain + "/urlpermissionapp", logged_as="bob")
+    assert not can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as="alice")
+    assert can_access_webpage(app_webroot, logged_as="bob")
 
     # Test admin access, as configured during install, only alice should be able to access it
 
-    assert not can_access_webpage(maindomain + "/urlpermissionapp/admin", logged_as=None)
-    assert not can_access_webpage(maindomain + "/urlpermissionapp/admin", logged_as="alice")
-    assert can_access_webpage(maindomain + "/urlpermissionapp/admin", logged_as="bob")
+    assert not can_access_webpage(app_webroot+"/admin", logged_as=None)
+    assert can_access_webpage(app_webroot+"/admin", logged_as="alice")
+    assert not can_access_webpage(app_webroot+"/admin", logged_as="bob")
 
 def test_permission_legacy_app_propagation_on_ssowat():
 
