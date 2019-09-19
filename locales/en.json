@@ -35,7 +35,7 @@
     "app_package_need_update": "The app {app} package needs to be updated to follow YunoHost changes",
     "app_removed": "{app:s} removed",
     "app_requirements_checking": "Checking required packages for {app}…",
-    "app_requirements_failed": "Did not meet requirements for {app}: {error}",
+    "app_requirements_failed": "Some requirements are not met for {app}: {error}",
     "app_requirements_unmeet": "Requirements are not met for {app}, the package {pkgname} ({version}) must be {spec}",
     "app_sources_fetch_failed": "Could not fetch sources files, is the URL correct?",
     "app_start_install": "Installing application {app}…",
