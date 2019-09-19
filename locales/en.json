@@ -383,7 +383,7 @@
     "migrations_pending_cant_rerun": "Those migrations are still pending, so cannot be run again: {ids}",
     "migrations_running_forward": "Running migration {id}…",
     "migrations_skip_migration": "Skipping migration {id}…",
-    "migrations_success_forward": "Ran migration {id}",
+    "migrations_success_forward": "Migration {id} completed",
     "migrations_to_be_ran_manually":  "Migration {id} has to be run manually. Please go to Tools → Migrations on the webadmin page, or run `yunohost tools migrations migrate`.",
     "monitor_disabled": "Server monitoring now turned off",
     "monitor_enabled": "Server monitoring now turned on",
