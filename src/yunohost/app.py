@@ -1039,7 +1039,7 @@ def app_addaccess(apps, users=[]):
 
     output = {}
     for app in apps:
-        permission = user_permission_update(app+".main", add=users)
+        permission = user_permission_update(app+".main", add=users, remove="all_users")
         output[app] = permission["corresponding_users"]
 
     return {'allowed_users': output}
