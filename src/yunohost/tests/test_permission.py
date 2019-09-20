@@ -434,6 +434,9 @@ def test_permission_app_propagation_on_ssowat():
 
     # Test admin access, as configured during install, only alice should be able to access it
 
+    # alice gotta be allowed on the main permission to access the admin tho
+    user_permission_update("permissions_app.main", remove="bob", add="all_users")
+
     assert not can_access_webpage(app_webroot+"/admin", logged_as=None)
     assert can_access_webpage(app_webroot+"/admin", logged_as="alice")
     assert not can_access_webpage(app_webroot+"/admin", logged_as="bob")

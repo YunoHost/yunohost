@@ -427,25 +427,97 @@ def app_map(app=None, raw=False, user=None):
         if 'path' not in app_settings:
             # we assume that an app that doesn't have a path doesn't have an HTTP api
             continue
+        # This 'no_sso' settings sound redundant to not having $path defined ....
+        # At least from what I can see, all apps using it don't have a path defined ...
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
+        # Users must at least have access to the main permission to have access to extra permissions
         if user:
             main_perm = permissions[app_id + ".main"]
             if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
                 continue
 
         domain = app_settings['domain']
-        path = app_settings['path']
+        path = app_settings['path'].rstrip('/')
+        label = app_settings['label']
 
-        if raw:
-            if domain not in result:
-                result[domain] = {}
-            result[domain][path] = {
-                'label': app_settings['label'],
-                'id': app_settings['id']
-            }
-        else:
-            result[domain + path] = app_settings['label']
+        def _sanitized_absolute_url(perm_url):
+            # Nominal case : url is relative to the app's path
+            if perm_url.startswith("/"):
+                perm_domain = domain
+                perm_path = path + perm_url.rstrip("/")
+            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
+            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
+            else:
+                perm_domain, perm_path = perm_url.split("/", 1)
+                perm_path = "/" + perm_path.rstrip("/")
+
+            return perm_domain, perm_path
+
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["urls"]}
+        for perm_name, perm_info in this_app_perms.items():
+            # If we're building the map for a specific user, check the user
+            # actually is allowed for this specific perm
+            if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
+                continue
+            if len(perm_info["urls"]) > 1 or perm_info["urls"][0].startswith("re:"):
+                #
+                # Here we have a big conceptual issue about the sso ...
+                # Let me take a sip of coffee and turn off the music...
+                #
+                # Let's say we have an app foo which created a permission
+                # 'foo.admin' and added as url "/admin" and "/api" This
+                # permission got defined somehow as only accessible for group
+                # "admins".  So both "/admin" and "/api" are protected. Good!
+                #
+                # Now if we really want users in group "admins" to access those
+                # uris, then each users in group "admins" need to have these
+                # urls in the ssowat dict for this user. Which corresponds to a
+                # tile.  To put it otherwise : in the current code of ssowat, a
+                # permission = a tile = a url !
+                #
+                # We also have an issue if the url define is a regex, because
+                # the url we want to add to the dict is going to be turned into
+                # a clickable link (or analyzed by other parts of yunohost
+                # code...). To put it otherwise : in the current code of ssowat,
+                # you can't give access a user to a regex
+                #
+                # Instead, as drafted by Josue, we could rework the ssowat logic
+                # about how routes and their permissions are defined. So for example,
+                # have a dict of
+                # {  "/route1": ["visitors", "user1", "user2", ...],  # Public route
+                #    "/route2_with_a_regex$": ["user1", "user2"],     # Private route
+                #    "/route3": None,                                 # Skipped route idk
+                # }
+                # then each time a user try to request and url, we only keep the
+                # longest matching rule and check the user is allowed etc...
+                #
+                # The challenge with this is (beside actually implementing it)
+                # is that it creates a whole new mechanism that ultimately
+                # replace all the existing logic about
+                # protected/unprotected/skipped uris and regexes and we gotta
+                # handle / migrate all the legacy stuff somehow if we don't
+                # want to end up with a total mess in the future idk
+                logger.error("Permission %s can't be added to the SSOwat configuration because it uses multiple urls and/or uses a regex url" % perm_name)
+                continue
+
+            perm_domain, perm_path = _sanitized_absolute_url(perm_info["urls"][0])
+
+            if perm_name.endswith(".main"):
+                perm_label = label
+            else:
+                # e.g. if perm_name is wordpress.admin, we want "Blog (Admin)" (where Blog is the label of this app)
+                perm_label = "%s (%s)" % (label, perm_name.rsplit(".")[-1].replace("_", " ").title())
+
+            if raw:
+                if domain not in result:
+                    result[perm_domain] = {}
+                result[perm_domain][perm_path] = {
+                    'label': perm_label,
+                    'id': app_id
+                }
+            else:
+                result[perm_domain + perm_path] = perm_label
 
     return result
 
@@ -1382,13 +1454,34 @@ def app_ssowatconf():
 
         app_settings = read_yaml(APPS_SETTING_PATH + app['id'] + '/settings.yml')
 
+        if 'domain' not in app_settings:
+            continue
+        if 'path' not in app_settings:
+            continue
+
+        # This 'no_sso' settings sound redundant to not having $path defined ....
+        # At least from what I can see, all apps using it don't have a path defined ...
         if 'no_sso' in app_settings:
             continue
 
-        app_root_webpath = app_settings['domain'] + app_settings['path'].rstrip('/')
+        domain = app_settings['domain']
+        path = app_settings['path'].rstrip('/')
+
+        def _sanitized_absolute_url(perm_url):
+            # Nominal case : url is relative to the app's path
+            if perm_url.startswith("/"):
+                perm_domain = domain
+                perm_path = path + perm_url.rstrip("/")
+            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
+            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
+            else:
+                perm_domain, perm_path = perm_url.split("/", 1)
+                perm_path = "/" + perm_path.rstrip("/")
+
+            return perm_domain + perm_path
 
         # Skipped
-        skipped_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'skipped_uris')]
+        skipped_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'skipped_uris')]
         skipped_regex += _get_setting(app_settings, 'skipped_regex')
 
         # Redirected
@@ -1396,15 +1489,16 @@ def app_ssowatconf():
         redirected_regex.update(app_settings.get('redirected_regex', {}))
 
         # Legacy permission system using (un)protected_uris and _regex managed in app settings...
-        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'unprotected_uris')]
-        unprotected_urls += [app_root_webpath + uri.rstrip("/") for uri in _get_setting(app_settings, 'protected_uris')]
+        unprotected_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'unprotected_uris')]
+        protected_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'protected_uris')]
         unprotected_regex += _get_setting(app_settings, 'unprotected_regex')
-        unprotected_regex += _get_setting(app_settings, 'protected_regex')
+        protected_regex += _get_setting(app_settings, 'protected_regex')
 
         # New permission system
         this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app['id'] + ".")}
         for perm_name, perm_info in this_app_perms.items():
-            urls = [url.rstrip("/") for url in perm_info["urls"]]
+            # FIXME : gotta handle regex-urls here... meh
+            urls = [_sanitized_absolute_url(url) for url in perm_info["urls"]]
             if "visitors" in perm_info["allowed"]:
                 unprotected_urls += urls
 
