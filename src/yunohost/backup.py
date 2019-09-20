@@ -1365,7 +1365,7 @@ class RestoreManager():
                     permission_create(permission_name, urls=permission_infos.get("urls", []))
 
                     if "allowed" not in permission_infos:
-                        logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s ... You might need to reconfigure permissions yourself!" % (permission_name, app_instance_name))
+                        logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself." % (permission_name, app_instance_name))
                     else:
                         should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
                         current_allowed = user_permission_list()["permissions"][permission_name]["allowed"]
