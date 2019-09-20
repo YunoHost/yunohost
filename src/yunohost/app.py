@@ -590,7 +590,7 @@ def app_upgrade(app=[], url=None, file=None):
     try:
         app_list()
     except YunohostError:
-        raise YunohostError('app_no_upgrade')
+        raise YunohostError('apps_already_up_to_date')
 
     not_upgraded_apps = []
 
@@ -611,7 +611,7 @@ def app_upgrade(app=[], url=None, file=None):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if len(apps) == 0:
-        raise YunohostError('app_no_upgrade')
+        raise YunohostError('apps_already_up_to_date')
     if len(apps) > 1:
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 

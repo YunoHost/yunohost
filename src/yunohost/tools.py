@@ -584,10 +584,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
         upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
 
-        if not upgradable_apps:
-            logger.info(m18n.n("app_no_upgrade"))
-            return
-        elif len(apps) and all(app not in upgradable_apps for app in apps):
+        if not upgradable_apps or (len(apps) and all(app not in upgradable_apps for app in apps)):
             logger.info(m18n.n("apps_already_up_to_date"))
             return
 
