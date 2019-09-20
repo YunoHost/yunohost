@@ -268,7 +268,18 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        urls       -- list of urls to specify for the permission
+        urls       -- list of urls to specify for the permission.
+
+    Urls are assumed to be relative to the app domain/path if they start with '/'.
+    For example:
+       /                             -> domain.tld/app
+       /admin                        -> domain.tld/app/admin
+       domain.tld/app/api            -> domain.tld/app/api
+
+    Urls can be later treated as regexes when they start with "re:".
+    For example:
+       re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
+       re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
 
     from yunohost.utils.ldap import _get_ldap_interface
@@ -302,7 +313,7 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
         attr_dict['groupPermission'] = ['cn=all_users,ou=groups,dc=yunohost,dc=org']
 
     if urls:
-        attr_dict['URL'] = [_normalize_url(url) for url in urls]
+        attr_dict['URL'] = urls
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
@@ -326,8 +337,8 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        add        -- List of urls to add
-        remove     -- List of urls to remove
+        add        -- List of urls to add (c.f. permission_create for documentation about their format)
+        remove     -- List of urls to remove (c.f. permission_create for documentation about their format)
 
     """
     from yunohost.utils.ldap import _get_ldap_interface
@@ -345,11 +356,9 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
 
     if add:
         urls_to_add = [add] if not isinstance(add, list) else add
-        urls_to_add = [_normalize_url(url) for url in urls_to_add]
         new_urls += urls_to_add
     if remove:
         urls_to_remove = [remove] if not isinstance(remove, list) else remove
-        urls_to_remove = [_normalize_url(url) for url in urls_to_remove]
         new_urls = [u for u in new_urls if u not in urls_to_remove]
 
     if set(new_urls) == set(existing_permission["urls"]):
@@ -457,11 +466,3 @@ def permission_sync_to_user():
     # Reload unscd, otherwise the group ain't propagated to the LDAP database
     os.system('nscd --invalidate=passwd')
     os.system('nscd --invalidate=group')
-
-
-def _normalize_url(url):
-    from yunohost.domain import _normalize_domain_path
-    domain = url[:url.index('/')]
-    path = url[url.index('/'):]
-    domain, path = _normalize_domain_path(domain, path)
-    return domain + path

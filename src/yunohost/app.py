@@ -553,8 +553,6 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_urls(app+".main", add=[domain+path], remove=[old_domain+old_path], sync_perm=True)
-
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
         # grab nginx errors
@@ -868,10 +866,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
-    # Create permission before the install (useful if the install script redefine the permission)
-    # Note that sync_perm is disabled to avoid triggering a whole bunch of code and messages
-    # can't be sure that we don't have one case when it's needed
-    permission_create(app_instance_name+".main", sync_perm=False)
+    # Initialize the main permission for the app
+    # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
+    permission_create(app_instance_name+".main", urls=["/"])
 
     # Execute the app install script
     install_retcode = 1
@@ -949,17 +946,16 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
 
-    # Add path in permission if it's defined in the app install script
+    # If an app doesn't have at least a domain and a path, assume it's not a webapp and remove the default "/" permission
     app_settings = _get_app_settings(app_instance_name)
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
-    if domain and path:
-        # FIXME : might want to move this to before running the install script because some app need to run install script during initialization etc (idk) ?
-        permission_urls(app_instance_name+".main", add=[domain+path], sync_perm=False)
+    if not (domain and path):
+        permission_urls(app_instance_name + ".main", remove=["/"], sync_perm=False)
 
     # Migrate classic public app still using the legacy unprotected_uris
     if app_settings.get("unprotected_uris", None) == "/":
-        user_permission_update(app_instance_name+".main", remove="all_users", add="visitors", sync_perm=False)
+        user_permission_update(app_instance_name + ".main", remove="all_users", add="visitors", sync_perm=False)
 
     permission_sync_to_user()
 
