@@ -529,9 +529,9 @@ def test_backup_and_restore_permission_app():
     assert "permissions_app.main" in res
     assert "permissions_app.admin" in res
     assert "permissions_app.dev" in res
-    assert res['permissions_app.main']['urls'] == [maindomain + "/urlpermissionapp"]
-    assert res['permissions_app.admin']['urls'] == [maindomain + "/urlpermissionapp/admin"]
-    assert res['permissions_app.dev']['urls'] == [maindomain + "/urlpermissionapp/dev"]
+    assert res['permissions_app.main']['urls'] == ["/"]
+    assert res['permissions_app.admin']['urls'] == ["/admin"]
+    assert res['permissions_app.dev']['urls'] == ["/dev"]
 
     assert res['permissions_app.main']['allowed'] == ["all_users"]
     assert res['permissions_app.admin']['allowed'] == ["alice"]
@@ -543,9 +543,9 @@ def test_backup_and_restore_permission_app():
     assert "permissions_app.main" in res
     assert "permissions_app.admin" in res
     assert "permissions_app.dev" in res
-    assert res['permissions_app.main']['urls'] == [maindomain + "/urlpermissionapp"]
-    assert res['permissions_app.admin']['urls'] == [maindomain + "/urlpermissionapp/admin"]
-    assert res['permissions_app.dev']['urls'] == [maindomain + "/urlpermissionapp/dev"]
+    assert res['permissions_app.main']['urls'] == ["/"]
+    assert res['permissions_app.admin']['urls'] == ["/admin"]
+    assert res['permissions_app.dev']['urls'] == ["/dev"]
 
     assert res['permissions_app.main']['allowed'] == ["all_users"]
     assert res['permissions_app.admin']['allowed'] == ["alice"]
