@@ -180,7 +180,7 @@ def can_access_webpage(webpath, logged_as=None):
             assert session.cookies
             r = session.get(webpath, verify=False)
 
-    # If we can't access it, we got redirected to the sso
+    # If we can't access it, we got redirected to the SSO
     return not r.url.startswith(sso_url)
 
 #

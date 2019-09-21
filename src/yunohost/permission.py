@@ -146,11 +146,11 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         if "all_users" in new_allowed_groups:
             # FIXME : i18n
             # FIXME : write a better explanation ?
-            logger.warning("This permission is currently enabled for all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the other groups currently allowed.")
+            logger.warning("This permission is currently granted to all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the other groups it is currently granted to.")
         if "visitors" in new_allowed_groups:
             # FIXME : i18n
             # FIXME : write a better explanation ?
-            logger.warning("This permission is currently enabled for visitors in addition to other groups. You probably want to either remove the 'visitors' permission or remove the other groups currently allowed.")
+            logger.warning("This permission is currently granted to visitors in addition to other groups. You probably want to either remove the 'visitors' permission or remove the other groups it is currently granted to.")
 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
@@ -268,7 +268,7 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        urls       -- list of urls to specify for the permission.
+        urls       -- list of URLs to specify for the permission.
 
     Urls are assumed to be relative to the app domain/path if they start with '/'.
     For example:
@@ -276,7 +276,7 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
        /admin                        -> domain.tld/app/admin
        domain.tld/app/api            -> domain.tld/app/api
 
-    Urls can be later treated as regexes when they start with "re:".
+    URLs can be later treated as regexes when they start with "re:".
     For example:
        re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
@@ -337,8 +337,8 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        add        -- List of urls to add (c.f. permission_create for documentation about their format)
-        remove     -- List of urls to remove (c.f. permission_create for documentation about their format)
+        add        -- List of URLs to add (c.f. permission_create for documentation about their format)
+        remove     -- List of URLs to remove (c.f. permission_create for documentation about their format)
 
     """
     from yunohost.utils.ldap import _get_ldap_interface

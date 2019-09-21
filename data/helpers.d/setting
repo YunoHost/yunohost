@@ -177,7 +177,7 @@ else:
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
         if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
-           logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage public/private access.")
+           logger.warning("/!\\ Packagers! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to manage public/private access.")
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
@@ -237,15 +237,15 @@ ynh_webpath_register () {
 # usage: ynh_permission_create --permission "permission" [--urls "url" ["url" ...]]
 # | arg: permission - the name for the permission (by default a permission named "main" already exist)
 # | arg: urls - (optional) a list of FULL urls for the permission (e.g. domain.tld/apps/admin)
-# | arg: urls - (optional) a list of urls to specify for the permission.
+# | arg: urls - (optional) a list of URLs to specify for the permission.
 #
-#  Urls are assumed to be relative to the app domain/path if they start with '/'.
+#  URLs are assumed to be relative to the app domain/path if they start with '/'.
 #  For example:
 #     /                             -> domain.tld/app
 #     /admin                        -> domain.tld/app/admin
 #     domain.tld/app/api            -> domain.tld/app/api
 #
-#  Urls can be treated as regexes when they start with "re:".
+#  URLs can be treated as regexes when they start with "re:".
 #  For example:
 #     re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
 #     re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
