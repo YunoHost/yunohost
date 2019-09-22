@@ -606,5 +606,7 @@
     "aborting": "Cancelando.",
     "app_upgrade_stopped": "Se ha detenido la actualización de todas las aplicaciones para prevenir un posible daño porque la aplicación anterior no se pudo actualizar",
     "app_action_broke_system": "Esta acción parece que ha roto estos importantes servicios: {services}",
-    "operation_interrupted": "¿Ha sido interrumpida la operación manualmente?"
+    "operation_interrupted": "¿Ha sido interrumpida la operación manualmente?",
+    "apps_already_up_to_date": "Todas las aplicaciones están ya actualizadas",
+    "dyndns_provider_unreachable": "No se puede conectar con el proveedor de Dyndns {provider}:  o su YunoHost no está correctamente conectado a Internet o el servidor de dynette está caído."
 }
