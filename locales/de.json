@@ -294,7 +294,7 @@
     "backup_applying_method_tar": "Erstellen des Backup-tar Archives…",
     "backup_applying_method_copy": "Kopiere alle Dateien ins Backup…",
     "app_change_url_no_script": "Die Anwendung '{app_name:s}' unterstützt bisher keine URL-Modufikation. Vielleicht gibt es eine Aktualisierung.",
-    "app_location_unavailable": "Diese URL ist entweder nicht verfügbar oder steht in Konflikt mit den bereits installierten Apps:\n{apps: s}",
+    "app_location_unavailable": "Diese URL ist nicht verfügbar oder wird von einer installierten Anwendung genutzt:\n{apps:s}",
     "backup_applying_method_custom": "Rufe die benutzerdefinierte Backup-Methode '{method:s}' auf…",
     "backup_archive_system_part_not_available": "Der System-Teil '{part:s}' ist in diesem Backup nicht enthalten",
     "backup_archive_mount_failed": "Das Einbinden des Backup-Archives ist fehlgeschlagen",
@@ -356,5 +356,6 @@
     "already_up_to_date": "Nichts zu tun. Alles ist bereits auf dem neusten Stand.",
     "admin_password_too_long": "Bitte ein Passwort kürzer als 127 Zeichen wählen",
     "app_action_broke_system": "Diese Aktion hat anscheinend diese wichtigen Services gestört: {services}",
-    "apps_already_up_to_date": "Alle Apps sind bereits aktuell"
+    "apps_already_up_to_date": "Alle Apps sind bereits aktuell",
+    "backup_copying_to_organize_the_archive": "Kopieren von {size: s} MB, um das Archiv zu organisieren"
 }
