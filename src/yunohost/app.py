@@ -2903,11 +2903,7 @@ def is_true(arg):
     if isinstance(arg, bool):
         return arg
     elif isinstance(arg, basestring):
-        true_list = ['yes', 'true', 'on']
-        for string in true_list:
-            if arg.lower() == string:
-                return True
-        return False
+        return arg.lower() in ['yes', 'true', 'on']
     else:
         logger.debug('arg should be a boolean or a string, got %r', arg)
         return True if arg else False
