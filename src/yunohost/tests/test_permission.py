@@ -1,18 +1,19 @@
 import requests
 import pytest
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map
+from conftest import message, raiseYunohostError
 
-from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
-                          user_group_list, user_group_create, user_group_delete, user_group_update, user_group_info
+from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map
+from yunohost.user import user_list, user_create, user_delete, \
+                          user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
                                 permission_create, permission_urls, permission_delete
 from yunohost.domain import _get_maindomain
-from yunohost.utils.error import YunohostError
 
 # Get main domain
 maindomain = _get_maindomain()
 dummy_password = "test123Ynh"
+
 
 def clean_user_groups_permission():
     for u in user_list()['users']:
@@ -26,6 +27,7 @@ def clean_user_groups_permission():
         if any(p.startswith(name) for name in ["wiki", "blog", "site", "permissions_app"]):
             permission_delete(p, force=True, sync_perm=False)
 
+
 def setup_function(function):
     clean_user_groups_permission()
 
@@ -35,6 +37,7 @@ def setup_function(function):
     permission_create("blog.main", sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
+
 def teardown_function(function):
     clean_user_groups_permission()
     try:
@@ -42,11 +45,13 @@ def teardown_function(function):
     except:
         pass
 
+
 @pytest.fixture(autouse=True)
 def check_LDAP_db_integrity_call():
     check_LDAP_db_integrity()
     yield
     check_LDAP_db_integrity()
+
 
 def check_LDAP_db_integrity():
     # Here we check that all attributes in all object are sychronized.
@@ -162,7 +167,7 @@ def check_permission_for_apps():
 def can_access_webpage(webpath, logged_as=None):
 
     webpath = webpath.rstrip("/")
-    sso_url = "https://"+maindomain+"/yunohost/sso/"
+    sso_url = "https://" + maindomain + "/yunohost/sso/"
 
     # Anonymous access
     if not logged_as:
@@ -182,6 +187,7 @@ def can_access_webpage(webpath, logged_as=None):
 
     # If we can't access it, we got redirected to the SSO
     return not r.url.startswith(sso_url)
+
 
 #
 # List functions
@@ -204,8 +210,10 @@ def test_permission_list():
 # Create - Remove functions
 #
 
-def test_permission_create_main():
-    permission_create("site.main")
+
+def test_permission_create_main(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        permission_create("site.main")
 
     res = user_permission_list(full=True)['permissions']
     assert "site.main" in res
@@ -213,8 +221,9 @@ def test_permission_create_main():
     assert set(res['site.main']['corresponding_users']) == set(["alice", "bob"])
 
 
-def test_permission_create_extra():
-    permission_create("site.test")
+def test_permission_create_extra(mocker):
+    with message(mocker, "permission_created", permission="site.test"):
+        permission_create("site.test")
 
     res = user_permission_list(full=True)['permissions']
     assert "site.test" in res
@@ -222,8 +231,10 @@ def test_permission_create_extra():
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
 
-def test_permission_delete():
-    permission_delete("wiki.main", force=True)
+
+def test_permission_delete(mocker):
+    with message(mocker, "permission_deleted", permission="wiki.main"):
+        permission_delete("wiki.main", force=True)
 
     res = user_permission_list()['permissions']
     assert "wiki.main" not in res
@@ -232,12 +243,14 @@ def test_permission_delete():
 # Error on create - remove function
 #
 
-def test_permission_create_already_existing():
-    with pytest.raises(YunohostError):
+
+def test_permission_create_already_existing(mocker):
+    with raiseYunohostError(mocker, "permission_already_exist"):
         permission_create("wiki.main")
 
-def test_permission_delete_doesnt_existing():
-    with pytest.raises(YunohostError):
+
+def test_permission_delete_doesnt_existing(mocker):
+    with raiseYunohostError(mocker, "permission_not_found"):
         permission_delete("doesnt.exist", force=True)
 
     res = user_permission_list()['permissions']
@@ -246,8 +259,9 @@ def test_permission_delete_doesnt_existing():
     assert "mail.main" in res
     assert "xmpp.main" in res
 
-def test_permission_delete_main_without_force():
-    with pytest.raises(YunohostError):
+
+def test_permission_delete_main_without_force(mocker):
+    with raiseYunohostError(mocker, "permission_cannot_remove_main"):
         permission_delete("blog.main")
 
     res = user_permission_list()['permissions']
@@ -259,44 +273,55 @@ def test_permission_delete_main_without_force():
 
 # user side functions
 
-def test_permission_add_group():
-    user_permission_update("wiki.main", add="alice")
+
+def test_permission_add_group(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", add="alice")
 
     res = user_permission_list(full=True)['permissions']
     assert set(res['wiki.main']['allowed']) == set(["all_users", "alice"])
     assert set(res['wiki.main']['corresponding_users']) == set(["alice", "bob"])
 
-def test_permission_remove_group():
-    user_permission_update("blog.main", remove="alice")
+
+def test_permission_remove_group(mocker):
+    with message(mocker, "permission_updated", permission="blog.main"):
+        user_permission_update("blog.main", remove="alice")
 
     res = user_permission_list(full=True)['permissions']
     assert res['blog.main']['allowed'] == []
     assert res['blog.main']['corresponding_users'] == []
 
-def test_permission_add_and_remove_group():
-    user_permission_update("wiki.main", add="alice", remove="all_users")
+
+def test_permission_add_and_remove_group(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", add="alice", remove="all_users")
 
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['allowed'] == ["alice"]
     assert res['wiki.main']['corresponding_users'] == ["alice"]
 
-def test_permission_add_group_already_allowed():
-    user_permission_update("blog.main", add="alice")
+
+def test_permission_add_group_already_allowed(mocker):
+    with message(mocker, "permission_already_allowed", permission="blog.main", group="alice"):
+        user_permission_update("blog.main", add="alice")
 
     res = user_permission_list(full=True)['permissions']
     assert res['blog.main']['allowed'] == ["alice"]
     assert res['blog.main']['corresponding_users'] == ["alice"]
 
-def test_permission_remove_group_already_not_allowed():
-    user_permission_update("blog.main", remove="bob")
+
+def test_permission_remove_group_already_not_allowed(mocker):
+    with message(mocker, "permission_already_disallowed", permission="blog.main", group="bob"):
+        user_permission_update("blog.main", remove="bob")
 
     res = user_permission_list(full=True)['permissions']
     assert res['blog.main']['allowed'] == ["alice"]
     assert res['blog.main']['corresponding_users'] == ["alice"]
 
-def test_permission_reset():
-    # Reset permission
-    user_permission_reset("blog.main")
+
+def test_permission_reset(mocker):
+    with message(mocker, "permission_updated", permission="blog.main"):
+        user_permission_reset("blog.main")
 
     res = user_permission_list(full=True)['permissions']
     assert res['blog.main']['allowed'] == ["all_users"]
@@ -306,50 +331,62 @@ def test_permission_reset():
 # Error on update function
 #
 
-def test_permission_add_group_that_doesnt_exist():
-    with pytest.raises(YunohostError):
+
+def test_permission_add_group_that_doesnt_exist(mocker):
+    with raiseYunohostError(mocker, "group_unknown"):
         user_permission_update("blog.main", add="doesnt_exist")
 
     res = user_permission_list(full=True)['permissions']
     assert res['blog.main']['allowed'] == ["alice"]
     assert res['blog.main']['corresponding_users'] == ["alice"]
 
-def test_permission_update_permission_that_doesnt_exist():
-    with pytest.raises(YunohostError):
+
+def test_permission_update_permission_that_doesnt_exist(mocker):
+    with raiseYunohostError(mocker, "permission_not_found"):
         user_permission_update("doesnt.exist", add="alice")
 
 
 # Permission url management
 
-def test_permission_add_url():
-    permission_urls("blog.main", add=["/testA"])
+
+def test_permission_add_url(mocker):
+    with message(mocker, "permission_updated", permission="blog.main"):
+        permission_urls("blog.main", add=["/testA"])
 
     res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["urls"] == ["/testA"]
 
-def test_permission_add_another_url():
-    permission_urls("wiki.main", add=["/testA"])
+
+def test_permission_add_another_url(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        permission_urls("wiki.main", add=["/testA"])
 
     res = user_permission_list(full=True)['permissions']
     assert set(res["wiki.main"]["urls"]) == set(["/", "/testA"])
 
-def test_permission_remove_url():
-    permission_urls("wiki.main", remove=["/"])
+
+def test_permission_remove_url(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        permission_urls("wiki.main", remove=["/"])
 
     res = user_permission_list(full=True)['permissions']
     assert res["wiki.main"]["urls"] == []
 
-def test_permission_add_url_already_added():
+
+def test_permission_add_url_already_added(mocker):
     res = user_permission_list(full=True)['permissions']
     assert res["wiki.main"]["urls"] == ["/"]
 
-    permission_urls("wiki.main", add=["/"])
+    with message(mocker, "permission_update_nothing_to_do"):
+        permission_urls("wiki.main", add=["/"])
 
     res = user_permission_list(full=True)['permissions']
     assert res["wiki.main"]["urls"] == ["/"]
 
-def test_permission_remove_url_not_added():
-    permission_urls("wiki.main", remove=["/doesnt_exist"])
+
+def test_permission_remove_url_not_added(mocker):
+    with message(mocker, "permission_update_nothing_to_do"):
+        permission_urls("wiki.main", remove=["/doesnt_exist"])
 
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['urls'] == ["/"]
@@ -357,6 +394,7 @@ def test_permission_remove_url_not_added():
 #
 # Application interaction
 #
+
 
 def test_permission_app_install():
     app_install("./tests/apps/permissions_app_ynh",
@@ -394,6 +432,7 @@ def test_permission_app_remove():
     # Check all permissions for this app got deleted
     res = user_permission_list(full=True)['permissions']
     assert not any(p.startswith("permissions_app.") for p in res.keys())
+
 
 def test_permission_app_change_url():
     app_install("./tests/apps/permissions_app_ynh",
@@ -440,6 +479,7 @@ def test_permission_app_propagation_on_ssowat():
     assert not can_access_webpage(app_webroot+"/admin", logged_as=None)
     assert can_access_webpage(app_webroot+"/admin", logged_as="alice")
     assert not can_access_webpage(app_webroot+"/admin", logged_as="bob")
+
 
 def test_permission_legacy_app_propagation_on_ssowat():
 
