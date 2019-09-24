@@ -299,7 +299,7 @@ user:
 
                 ### user_permission_update()
                 update:
-                    action_help: Grant / remove permissions to groups or users
+                    action_help: Manage group or user permissions
                     api: POST /users/permissions/<permission>
                     arguments:
                         permission:
