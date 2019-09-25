@@ -524,7 +524,7 @@
     "service_reloaded_or_restarted": "Le service '{service:s}' a été rechargé ou redémarré",
     "this_action_broke_dpkg": "Cette action a laissé des paquets non configurés par dpkg/apt (les gestionnaires de paquets système). Vous pouvez essayer de résoudre ce problème en vous connectant via SSH et en exécutant `sudo dpkg --configure -a`.",
     "app_action_cannot_be_ran_because_required_services_down": "Cette application requiert certains services qui sont actuellement arrêtés. Avant de continuer, vous devriez essayer de redémarrer les services suivants (et éventuellement rechercher pourquoi ils sont arrêtés) : {services}",
-    "admin_password_too_long": "Choisissez un mot de passe plus court que 127 caractères",
+    "admin_password_too_long": "Veuillez choisir un mot de passe de moins de 127 caractères",
     "log_regen_conf": "Régénérer les configurations du système '{}'",
     "migration_0009_not_needed": "Cette migration semble avoir déjà été jouée ? On l'ignore.",
     "regenconf_file_backed_up": "Le fichier de configuration '{conf}' a été sauvegardé sous '{backup}'",
