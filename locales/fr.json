@@ -557,7 +557,7 @@
     "tools_upgrade_special_packages": "Mise à jour des paquets 'spécifiques' (liés a YunoHost) …",
     "tools_upgrade_special_packages_completed": "La mise à jour des paquets de YunoHost est finie!\nPressez [Entrée] pour revenir à la ligne de commande",
     "updating_app_lists": "Récupération des mises à jour des applications disponibles…",
-    "dpkg_lock_not_available": "Cette commande ne peut être lancée maintenant car il semblerai qu'un autre programme utilise déjà le verrou dpkg du gestionnaire de paquets du système",
+    "dpkg_lock_not_available": "Cette commande ne peut être exécutée actuellement car un autre programme semble utiliser le verrou de dpkg (gestionnaire de paquets).",
     "tools_upgrade_cant_unhold_critical_packages": "Impossible de dé-marquer les paquets critiques …",
     "tools_upgrade_special_packages_explanation": "Cette opération prendra fin mais la mise à jour spécifique continuera en arrière-plan. Veuillez ne pas lancer d'autre action sur votre serveur dans les 10 prochaines minutes (en fonction de la vitesse de votre matériel). Une fois que c'est fait, vous devrez peut-être vous reconnecter sur le panel d'administration web. Le journal de la mise à jour sera disponible dans Outils > Log (dans le panel d'administration web) ou dans la liste des journaux YunoHost (en ligne de commande).",
     "update_apt_cache_failed": "Impossible de mettre à jour le cache APT (gestionnaire de paquets Debian). Voici un extrait du fichier sources.list qui pourrait vous aider à identifier les lignes problématiques :\n{sourceslist}",
