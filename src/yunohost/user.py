@@ -678,7 +678,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     if not force:
         if groupname == "all_users":
             raise YunohostError('group_cannot_edit_all_users')
-        elif groupname == "all_users":
+        elif groupname == "visitors":
             raise YunohostError('group_cannot_edit_visitors')
         elif groupname in existing_users:
             raise YunohostError('group_cannot_edit_primary_group', group=groupname)
