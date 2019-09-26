@@ -917,7 +917,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         # "Common" app install failure : the script failed and returned exit code != 0
         install_failed = (install_retcode != 0)
         if install_failed:
-            error = m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode)
+            error = m18n.n('app_install_script_failed')
             logger.exception(error)
             operation_logger.error(error)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
