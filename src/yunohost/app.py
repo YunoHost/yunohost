@@ -944,10 +944,21 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                                                           env=env_dict_remove)
                 operation_logger_remove.start()
 
-                remove_retcode = hook_exec(
-                    os.path.join(extracted_app_folder, 'scripts/remove'),
-                    args=[app_instance_name], env=env_dict_remove
-                )[0]
+                # Try to remove the app
+                try:
+                    remove_retcode = hook_exec(
+                        os.path.join(extracted_app_folder, 'scripts/remove'),
+                        args=[app_instance_name], env=env_dict_remove
+                    )[0]
+                # Here again, calling hook_exec could failed miserably, or get
+                # manually interrupted (by mistake or because script was stuck)
+                # In that case we still want to proceed with the rest of the
+                # removal (permissions, /etc/yunohost/apps/{app} ...)
+                except (KeyboardInterrupt, EOFError, Exception):
+                    remove_retcode = -1
+                    import traceback
+                    logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+
                 # Remove all permission in LDAP
                 result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
                                     filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
@@ -1057,11 +1068,24 @@ def app_remove(operation_logger, app):
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
-                 env=env_dict)[0] == 0:
-        logger.success(m18n.n('app_removed', app=app))
+    try:
+        ret = hook_exec('/tmp/yunohost_remove/scripts/remove',
+                        args=args_list,
+                        env=env_dict)[0]
+    # Here again, calling hook_exec could failed miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    # In that case we still want to proceed with the rest of the
+    # removal (permissions, /etc/yunohost/apps/{app} ...)
+    except (KeyboardInterrupt, EOFError, Exception):
+        ret = -1
+        import traceback
+        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
+    if ret == 0:
+        logger.success(m18n.n('app_removed', app=app))
         hook_callback('post_app_remove', args=args_list, env=env_dict)
+    else:
+        logger.warning(m18n.n('app_not_properly_removed', app=app))
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
