@@ -40,10 +40,13 @@ ynh_use_logrotate () {
 	fi
 
 	if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]; then
-		if [ "$(echo ${1##*.})" == "log" ]; then	# Keep only the extension to check if it's a logfile
-			local logfile=$1	# In this case, focus logrotate on the logfile
+		# If the given logfile parameter already exists as a file, or if it ends up with ".log",
+		# we just want to manage a single file
+		if [ -f "$1" ] || [ "$(echo ${1##*.})" == "log" ]; then
+			local logfile=$1
+		# Otherwise we assume we want to manage a directory and all its .log file inside
 		else
-			local logfile=$1/*.log	# Else, uses the directory and all logfile into it.
+			local logfile=$1/*.log
 		fi
 	fi
 	# LEGACY CODE
@@ -54,7 +57,7 @@ ynh_use_logrotate () {
 	fi
 	if [ -n "$logfile" ]
 	then
-		if [ "$(echo ${logfile##*.})" != "log" ]; then	# Keep only the extension to check if it's a logfile
+		if [ ! -f "$1" ] && [ "$(echo ${logfile##*.})" != "log" ]; then	# Keep only the extension to check if it's a logfile
 			local logfile="$logfile/*.log"	# Else, uses the directory and all logfile into it.
 		fi
 	else
