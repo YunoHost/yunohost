@@ -944,53 +944,57 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
-            if not no_remove_on_failure:
-                # Setup environment for remove script
-                env_dict_remove = {}
-                env_dict_remove["YNH_APP_ID"] = app_id
-                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
-                # Execute remove script
-                operation_logger_remove = OperationLogger('remove_on_failed_install',
-                                                          [('app', app_instance_name)],
-                                                          env=env_dict_remove)
-                operation_logger_remove.start()
+            # This option is meant for packagers to debug their apps more easily
+            if no_remove_on_failure:
+                raise YunohostError("The installation of %s failed, but was not cleaned up as requested by --no-remove-on-failure." % app_id, raw_msg=True)
 
-                # Try to remove the app
+            # Setup environment for remove script
+            env_dict_remove = {}
+            env_dict_remove["YNH_APP_ID"] = app_id
+            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+
+            # Execute remove script
+            operation_logger_remove = OperationLogger('remove_on_failed_install',
+                                                      [('app', app_instance_name)],
+                                                      env=env_dict_remove)
+            operation_logger_remove.start()
+
+            # Try to remove the app
+            try:
+                remove_retcode = hook_exec(
+                    os.path.join(extracted_app_folder, 'scripts/remove'),
+                    args=[app_instance_name], env=env_dict_remove
+                )[0]
+            # Here again, calling hook_exec could failed miserably, or get
+            # manually interrupted (by mistake or because script was stuck)
+            # In that case we still want to proceed with the rest of the
+            # removal (permissions, /etc/yunohost/apps/{app} ...)
+            except (KeyboardInterrupt, EOFError, Exception):
+                remove_retcode = -1
+                import traceback
+                logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+
+            # Remove all permission in LDAP
+            result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
+                                filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
+            permission_list = [p['cn'][0] for p in result]
+            for l in permission_list:
+                permission_remove(app_instance_name, l.split('.')[0], force=True)
+
+            if remove_retcode != 0:
+                msg = m18n.n('app_not_properly_removed',
+                             app=app_instance_name)
+                logger.warning(msg)
+                operation_logger_remove.error(msg)
+            else:
                 try:
-                    remove_retcode = hook_exec(
-                        os.path.join(extracted_app_folder, 'scripts/remove'),
-                        args=[app_instance_name], env=env_dict_remove
-                    )[0]
-                # Here again, calling hook_exec could failed miserably, or get
-                # manually interrupted (by mistake or because script was stuck)
-                # In that case we still want to proceed with the rest of the
-                # removal (permissions, /etc/yunohost/apps/{app} ...)
-                except (KeyboardInterrupt, EOFError, Exception):
-                    remove_retcode = -1
-                    import traceback
-                    logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
-
-                # Remove all permission in LDAP
-                result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                    filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
-                permission_list = [p['cn'][0] for p in result]
-                for l in permission_list:
-                    permission_remove(app_instance_name, l.split('.')[0], force=True)
-
-                if remove_retcode != 0:
-                    msg = m18n.n('app_not_properly_removed',
-                                 app=app_instance_name)
-                    logger.warning(msg)
-                    operation_logger_remove.error(msg)
+                    _assert_system_is_sane_for_app(manifest, "post")
+                except Exception as e:
+                    operation_logger_remove.error(e)
                 else:
-                    try:
-                        _assert_system_is_sane_for_app(manifest, "post")
-                    except Exception as e:
-                        operation_logger_remove.error(e)
-                    else:
-                        operation_logger_remove.success()
+                    operation_logger_remove.success()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
