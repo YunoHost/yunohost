@@ -908,29 +908,42 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     permission_add(app=app_instance_name, permission="main", sync_perm=False)
 
     # Execute the app install script
-    install_retcode = 1
+    install_failed = True
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
             args=args_list, env=env_dict
         )[0]
+        # "Common" app install failure : the script failed and returned exit code != 0
+        install_failed = (install_retcode != 0)
+        if install_failed:
+            error = m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode)
+            logger.exception(error)
+            operation_logger.error(error)
+    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
-        install_retcode = -1
-    except Exception:
+        error = m18n.n('operation_interrupted')
+        logger.exception(error)
+        operation_logger.error(error)
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception as e :
         import traceback
-        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+        logger.exception(error)
+        operation_logger.error(error)
     finally:
+        # Whatever happened (install success or failure) we check if it broke the system
+        # and warn the user about it
         try:
             broke_the_system = False
             _assert_system_is_sane_for_app(manifest, "post")
         except Exception as e:
             broke_the_system = True
-            error_msg = operation_logger.error(str(e))
+            logger.exception(str(e))
+            operation_logger.error(str(e))
 
-        if install_retcode != 0:
-            error_msg = operation_logger.error(m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode))
-
-        if install_retcode != 0 or broke_the_system:
+        # If the install failed or broke the system, we remove it
+        if install_failed or broke_the_system:
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -985,11 +998,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
             app_ssowatconf()
 
-            if install_retcode == -1:
-                msg = m18n.n('operation_interrupted') + " " + error_msg
-                raise YunohostError(msg, raw_msg=True)
-            msg = error_msg
-            raise YunohostError(msg, raw_msg=True)
+            raise YunohostError("app_install_failed", app=app_id)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
