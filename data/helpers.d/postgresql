@@ -87,7 +87,7 @@ ynh_psql_create_db() {
 
 	# grant all privilegies to user
 	if [ -n "$user" ]; then
-		sql+="OWNER ${user} GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user} WITH GRANT OPTION;"
+		sql+="ALTER DATABASE ${db} OWNER TO ${user}; GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user} WITH GRANT OPTION;"
 	fi
 
 	ynh_psql_execute_as_root --sql="$sql"
