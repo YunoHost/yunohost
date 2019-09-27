@@ -823,7 +823,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             level = raw_app_list[app_name_to_test].get("level", None)
             confirm = "danger"
             if state in ["working", "validated"]:
-                if isinstance(level, int) and level >= 3:
+                if isinstance(level, int) and level >= 5:
                     confirm = None
                 elif isinstance(level, int) and level > 0:
                     confirm = "warning"
