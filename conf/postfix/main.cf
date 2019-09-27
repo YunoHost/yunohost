@@ -107,7 +107,10 @@ virtual_alias_domains =
 virtual_minimum_uid = 100
 virtual_uid_maps = static:vmail
 virtual_gid_maps = static:mail
-smtpd_sender_login_maps= ldap:/etc/postfix/ldap-accounts.cf
+smtpd_sender_login_maps=
+   ldap:/etc/postfix/ldap-accounts.cf, # Regular Yunohost accounts
+   hash:/etc/postfix/sender_login_maps # Extra maps for system users who need to send emails
+
 
 # Dovecot LDA
 virtual_transport = dovecot
