@@ -797,9 +797,19 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     raw_app_list = app_list(raw=True)
 
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
+
+        # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
         if app in raw_app_list:
-            state = raw_app_list[app].get("state", "notworking")
-            level = raw_app_list[app].get("level", None)
+            app_name_to_test = app
+        # If we got an url like "https://github.com/foo/bar_ynh, we want to
+        # extract "bar" and test if we know this app
+        elif ('http://' in app) or ('https://' in app):
+            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh","")
+
+        if app_name_to_test in raw_app_list:
+
+            state = raw_app_list[app_name_to_test].get("state", "notworking")
+            level = raw_app_list[app_name_to_test].get("level", None)
             confirm = "danger"
             if state in ["working", "validated"]:
                 if isinstance(level, int) and level >= 3:
