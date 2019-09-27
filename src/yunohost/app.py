@@ -789,10 +789,21 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         if confirm is None or force or msettings.get('interface') == 'api':
             return
 
-        answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
-                                   answers='Y/N'))
-        if answer.upper() != "Y":
-            raise YunohostError("aborting")
+        if confirm in ["danger", "thirdparty"]:
+            answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                       answers='Yes, I understand'),
+                                    color="red")
+            if answer != "Yes, I understand":
+                raise YunohostError("aborting")
+
+        else:
+            answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                       answers='Y/N'),
+                                    color="yellow")
+            if answer.upper() != "Y":
+                raise YunohostError("aborting")
+
+
 
     raw_app_list = app_list(raw=True)
 
