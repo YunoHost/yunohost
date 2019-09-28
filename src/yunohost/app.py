@@ -915,7 +915,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             args=args_list, env=env_dict
         )[0]
         # "Common" app install failure : the script failed and returned exit code != 0
-        install_failed = (install_retcode != 0)
+        install_failed = True if install_retcode != 0 else False
         if install_failed:
             error = m18n.n('app_install_script_failed')
             logger.exception(error)
@@ -967,7 +967,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
-            # Here again, calling hook_exec could failed miserably, or get
+            # Here again, calling hook_exec could fail miserably, or get
             # manually interrupted (by mistake or because script was stuck)
             # In that case we still want to proceed with the rest of the
             # removal (permissions, /etc/yunohost/apps/{app} ...)
@@ -1085,7 +1085,7 @@ def app_remove(operation_logger, app):
         ret = hook_exec('/tmp/yunohost_remove/scripts/remove',
                         args=args_list,
                         env=env_dict)[0]
-    # Here again, calling hook_exec could failed miserably, or get
+    # Here again, calling hook_exec could fail miserably, or get
     # manually interrupted (by mistake or because script was stuck)
     # In that case we still want to proceed with the rest of the
     # removal (permissions, /etc/yunohost/apps/{app} ...)
