@@ -44,6 +44,7 @@ from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_status, service_start, service_enable
 from yunohost.regenconf import regen_conf
+from yunohost.certificate import _set_permissions
 from yunohost.monitor import monitor_disk, monitor_system
 from yunohost.utils.packages import ynh_packages_version, _dump_sources_list, _list_upgradable_apt_packages
 from yunohost.utils.network import get_public_ip
