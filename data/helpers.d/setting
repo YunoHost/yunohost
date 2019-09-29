@@ -1,27 +1,299 @@
+#!/bin/bash
+
 # Get an application setting
 #
-# usage: ynh_app_setting_get app key
-# | arg: app - the application id
-# | arg: key - the setting to get
+# usage: ynh_app_setting_get --app=app --key=key
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting to get
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_get() {
-    sudo yunohost app setting "$1" "$2" --output-as plain --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    declare -Ar args_array=( [a]=app= [k]=key= )
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_app_setting "get" "$app" "$key"
 }
 
 # Set an application setting
 #
-# usage: ynh_app_setting_set app key value
-# | arg: app - the application id
-# | arg: key - the setting name to set
-# | arg: value - the setting value to set
+# usage: ynh_app_setting_set --app=app --key=key --value=value
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting name to set
+# | arg: -v, --value - the setting value to set
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_set() {
-    sudo yunohost app setting "$1" "$2" --value="$3" --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=akv
+    declare -Ar args_array=( [a]=app= [k]=key= [v]=value= )
+    local app
+    local key
+    local value
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_app_setting "set" "$app" "$key" "$value"
 }
 
 # Delete an application setting
 #
-# usage: ynh_app_setting_delete app key
-# | arg: app - the application id
-# | arg: key - the setting to delete
+# usage: ynh_app_setting_delete --app=app --key=key
+# | arg: -a, --app - the application id
+# | arg: -k, --key - the setting to delete
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_delete() {
-    sudo yunohost app setting -d "$1" "$2" --quiet
+    # Declare an array to define the options of this helper.
+    local legacy_args=ak
+    declare -Ar args_array=( [a]=app= [k]=key= )
+    local app
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_app_setting "delete" "$app" "$key"
+}
+
+# Add skipped_uris urls into the config
+#
+# usage: ynh_add_skipped_uris [--appid=app] --url=url1,url2 [--regex]
+# | arg: -a, --appid - the application id
+# | arg: -u, --url - the urls to add to the sso for this app
+# | arg: -r, --regex - Use the key 'skipped_regex' instead of 'skipped_uris'
+#
+# An URL set with 'skipped_uris' key will be totally ignored by the SSO,
+# which means that the access will be public and the logged-in user information will not be passed to the app.
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_add_skipped_uris() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=aur
+    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
+    local appid
+    local url
+    local regex
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    appid={appid:-$app}
+    regex={regex:-0}
+
+    local key=skipped_uris
+    if [ $regex -eq 1 ]; then
+        key=skipped_regex
+    fi
+
+    ynh_app_setting_set --app=$appid --key=$key --value="$url"
+}
+
+# Add unprotected_uris urls into the config
+#
+# usage: ynh_add_unprotected_uris [--appid=app] --url=url1,url2 [--regex]
+# | arg: -a, --appid - the application id
+# | arg: -u, --url - the urls to add to the sso for this app
+# | arg: -r, --regex - Use the key 'unprotected_regex' instead of 'unprotected_uris'
+#
+# An URL set with unprotected_uris key will be accessible publicly, but if an user is logged in,
+# his information will be accessible (through HTTP headers) to the app.
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_add_unprotected_uris() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=aur
+    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
+    local appid
+    local url
+    local regex
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    appid={appid:-$app}
+    regex={regex:-0}
+
+    local key=unprotected_uris
+    if [ $regex -eq 1 ]; then
+        key=unprotected_regex
+    fi
+
+    ynh_app_setting_set --app=$appid --key=$key --value="$url"
+}
+
+# Add protected_uris urls into the config
+#
+# usage: ynh_add_protected_uris [--appid=app] --url=url1,url2 [--regex]
+# | arg: -a, --appid - the application id
+# | arg: -u, --url - the urls to add to the sso for this app
+# | arg: -r, --regex - Use the key 'protected_regex' instead of 'protected_uris'
+#
+# An URL set with protected_uris will be blocked by the SSO and accessible only to authenticated and authorized users.
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_add_protected_uris() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=aur
+    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
+    local appid
+    local url
+    local regex
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    appid={appid:-$app}
+    regex={regex:-0}
+
+    local key=protected_uris
+    if [ $regex -eq 1 ]; then
+        key=protected_regex
+    fi
+
+    ynh_app_setting_set --app=$appid --key=$key --value="$url"
+}
+
+# Small "hard-coded" interface to avoid calling "yunohost app" directly each
+# time dealing with a setting is needed (which may be so slow on ARM boards)
+#
+# [internal]
+#
+ynh_app_setting()
+{
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python - <<EOF
+import os, yaml
+app, action = os.environ['APP'], os.environ['ACTION'].lower()
+key, value = os.environ['KEY'], os.environ.get('VALUE', None)
+setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
+assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
+with open(setting_file) as f:
+    settings = yaml.load(f)
+if action == "get":
+    if key in settings:
+        print(settings[key])
+else:
+    if action == "delete":
+        if key in settings:
+            del settings[key]
+    elif action == "set":
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.load(value)
+        settings[key] = value
+    else:
+        raise ValueError("action should either be get, set or delete")
+    with open(setting_file, "w") as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
+EOF
+}
+
+# Check availability of a web path
+#
+# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
+#
+# usage: ynh_webpath_available --domain=domain --path_url=path
+# | arg: -d, --domain - the domain/host of the url
+# | arg: -p, --path_url - the web path to check the availability of
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_webpath_available () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=dp
+	declare -Ar args_array=( [d]=domain= [p]=path_url= )
+	local domain
+	local path_url
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	sudo yunohost domain url-available $domain $path_url
+}
+
+# Register/book a web path for an app
+#
+# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
+#
+# usage: ynh_webpath_register --app=app --domain=domain --path_url=path
+# | arg: -a, --app - the app for which the domain should be registered
+# | arg: -d, --domain - the domain/host of the web path
+# | arg: -p, --path_url - the web path to be registered
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_webpath_register () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=adp
+	declare -Ar args_array=( [a]=app= [d]=domain= [p]=path_url= )
+	local app
+	local domain
+	local path_url
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	sudo yunohost app register-url $app $domain $path_url
+}
+
+# Create a new permission for the app
+#
+# usage: ynh_permission_create --app "app" --permission "permission" --defaultdisallow [--urls "url" ["url" ...]]
+# | arg: app - the application id
+# | arg: permission - the name for the permission (by default a permission named "main" already exist)
+# | arg: defaultdisallow - define if all user will be allowed by default
+# | arg: urls - the list of urls for the the permission
+ynh_permission_create() {
+    declare -Ar args_array=( [a]=app= [p]=permission= [d]=defaultdisallow [u]=urls= )
+    local app
+    local permission
+    local defaultdisallow
+    local urls
+    ynh_handle_getopts_args "$@"
+    if [[ -n ${defaultdisallow:-} ]]; then
+        defaultdisallow=",default_allow=False"
+    fi
+
+    if [[ -n ${urls:-} ]]; then
+        urls=",urls=['${urls//';'/"','"}']"
+    fi
+    yunohost tools shell -c "from yunohost.permission import permission_add; permission_add('$app', '$permission' ${defaultdisallow:-} ${urls:-}, sync_perm=False)"
+}
+
+# Remove a permission for the app (note that when the app is removed all permission is automatically removed)
+#
+# usage: ynh_permission_remove --app "app" --permission "permission"
+# | arg: app - the application id
+# | arg: permission - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
+ynh_permission_remove() {
+    declare -Ar args_array=( [a]=app= [p]=permission= )
+    local app
+    local permission
+    ynh_handle_getopts_args "$@"
+
+    yunohost tools shell -c "from yunohost.permission import permission_remove; permission_remove('$app', '$permission', sync_perm=False)"
+}
+
+# Add a path managed by the SSO
+#
+# usage: ynh_permission_add_path --app "app" --permission "permission" --url "url" ["url" ...]
+# | arg: app - the application id
+# | arg: permission - the name for the permission
+# | arg: url - the FULL url for the the permission (ex domain.tld/apps/admin)
+ynh_permission_add_path() {
+    declare -Ar args_array=( [a]=app= [p]=permission= [u]=url= )
+    local app
+    local permission
+    local url
+    ynh_handle_getopts_args "$@"
+
+    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update('$app', '$permission', add_url=['${url//';'/"','"}'], sync_perm=False)"
+}
+
+# Remove a path managed by the SSO
+#
+# usage: ynh_permission_del_path --app "app" --permission "permission" --url "url" ["url" ...]
+# | arg: app - the application id
+# | arg: permission - the name for the permission
+# | arg: url - the FULL url for the the permission (ex domain.tld/apps/admin)
+ynh_permission_del_path() {
+    declare -Ar args_array=( [a]=app= [p]=permission= [u]=url= )
+    local app
+    local permission
+    local url
+    ynh_handle_getopts_args "$@"
+
+    yunohost tools shell -c "from yunohost.permission import permission_update; permission_update('$app', '$permission', remove_url=['${url//';'/"','"}'], sync_perm=False)"
 }

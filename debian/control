@@ -2,18 +2,20 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7)
+Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7), python-yaml, python-jinja2
 Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: https://yunohost.org/
 
 Package: yunohost
+Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 2.7.1), ssowat (>= 2.7.1)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc, python-dbus, python-jinja2
- , glances
+ , python-toml
+ , glances, apt-transport-https
  , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
  , ca-certificates, netcat-openbsd, iproute
  , mariadb-server, php-mysql | php-mysqlnd

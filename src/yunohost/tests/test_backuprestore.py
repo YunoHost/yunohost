@@ -1,27 +1,20 @@
 import pytest
-import time
-import requests
 import os
 import shutil
 import subprocess
 from mock import ANY
 
 from moulinette import m18n
-from moulinette.core import init_authenticator
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
-from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete
+from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete, _recursive_umount
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
+from yunohost.user import user_permission_list
+from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
 # Get main domain
 maindomain = ""
-
-# Instantiate LDAP Authenticator
-AUTH_IDENTIFIER = ('ldap', 'ldap-anonymous')
-AUTH_PARAMETERS = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
-auth = None
-
 
 def setup_function(function):
 
@@ -29,9 +22,6 @@ def setup_function(function):
     maindomain = _get_maindomain()
 
     print ""
-
-    global auth
-    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
 
     assert backup_test_dependencies_are_met()
 
@@ -42,7 +32,7 @@ def setup_function(function):
 
     assert len(backup_list()["archives"]) == 0
 
-    markers = function.__dict__.keys()
+    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
 
     if "with_wordpress_archive_from_2p4" in markers:
         add_archive_wordpress_from_2p4()
@@ -72,21 +62,29 @@ def setup_function(function):
 
 def teardown_function(function):
 
-    print ""
-    global auth
-    auth = init_authenticator(AUTH_IDENTIFIER, AUTH_PARAMETERS)
-
     assert tmp_backup_directory_is_empty()
 
     reset_ssowat_conf()
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
-    markers = function.__dict__.keys()
+    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
 
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
 
+
+@pytest.fixture(autouse=True)
+def check_LDAP_db_integrity_call():
+    check_LDAP_db_integrity()
+    yield
+    check_LDAP_db_integrity()
+
+@pytest.fixture(autouse=True)
+def check_permission_for_apps_call():
+    check_permission_for_apps()
+    yield
+    check_permission_for_apps()
 
 #
 # Helpers                                                                    #
@@ -146,7 +144,7 @@ def reset_ssowat_conf():
 
     # Make sure we have a ssowat
     os.system("mkdir -p /etc/ssowat/")
-    app_ssowatconf(auth)
+    app_ssowatconf()
 
 
 def delete_all_backups():
@@ -158,18 +156,18 @@ def delete_all_backups():
 def uninstall_test_apps_if_needed():
 
     if _is_installed("backup_legacy_app"):
-        app_remove(auth, "backup_legacy_app")
+        app_remove("backup_legacy_app")
 
     if _is_installed("backup_recommended_app"):
-        app_remove(auth, "backup_recommended_app")
+        app_remove("backup_recommended_app")
 
     if _is_installed("wordpress"):
-        app_remove(auth, "wordpress")
+        app_remove("wordpress")
 
 
 def install_app(app, path, additionnal_args=""):
 
-    app_install(auth, "./tests/apps/%s" % app,
+    app_install("./tests/apps/%s" % app,
                 args="domain=%s&path=%s%s" % (maindomain, path,
                                               additionnal_args), force=True)
 
@@ -249,7 +247,7 @@ def test_backup_and_restore_all_sys():
     assert not os.path.exists("/etc/ssowat/conf.json")
 
     # Restore the backup
-    backup_restore(auth, name=archives[0], force=True,
+    backup_restore(name=archives[0], force=True,
                    system=[], apps=None)
 
     # Check ssowat conf is back
@@ -270,13 +268,13 @@ def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
 
     # Restore system archive from 2.4
     try:
-        backup_restore(auth, name=backup_list()["archives"][1],
+        backup_restore(name=backup_list()["archives"][1],
                        system=[],
                        apps=None,
                        force=True)
     finally:
         # Restore system as it was
-        backup_restore(auth, name=backup_list()["archives"][0],
+        backup_restore(name=backup_list()["archives"][0],
                        system=[],
                        apps=None,
                        force=True)
@@ -412,7 +410,7 @@ def test_backup_with_no_compress():
 @pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_app_wordpress_from_Ynh2p4():
 
-    backup_restore(auth, system=None, name=backup_list()["archives"][0],
+    backup_restore(system=None, name=backup_list()["archives"][0],
                    apps=["wordpress"])
 
 
@@ -430,7 +428,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
     with pytest.raises(YunohostError):
-        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+        backup_restore(system=None, name=backup_list()["archives"][0],
                        apps=["wordpress"])
 
     m18n.n.assert_any_call('restore_app_failed', app='wordpress')
@@ -451,7 +449,7 @@ def test_restore_app_not_enough_free_space(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
     with pytest.raises(YunohostError):
-        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+        backup_restore(system=None, name=backup_list()["archives"][0],
                        apps=["wordpress"])
 
     m18n.n.assert_any_call('restore_not_enough_disk_space',
@@ -470,7 +468,7 @@ def test_restore_app_not_in_backup(mocker):
     mocker.spy(m18n, "n")
 
     with pytest.raises(YunohostError):
-        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+        backup_restore(system=None, name=backup_list()["archives"][0],
                        apps=["yoloswag"])
 
     m18n.n.assert_any_call('backup_archive_app_not_found', app="yoloswag")
@@ -483,14 +481,14 @@ def test_restore_app_already_installed(mocker):
 
     assert not _is_installed("wordpress")
 
-    backup_restore(auth, system=None, name=backup_list()["archives"][0],
+    backup_restore(system=None, name=backup_list()["archives"][0],
                    apps=["wordpress"])
 
     assert _is_installed("wordpress")
 
     mocker.spy(m18n, "n")
     with pytest.raises(YunohostError):
-        backup_restore(auth, system=None, name=backup_list()["archives"][0],
+        backup_restore(system=None, name=backup_list()["archives"][0],
                        apps=["wordpress"])
 
     m18n.n.assert_any_call('restore_already_installed_app', app="wordpress")
@@ -531,14 +529,20 @@ def _test_backup_and_restore_app(app):
     assert app in archives_info["apps"].keys()
 
     # Uninstall the app
-    app_remove(auth, app)
+    app_remove(app)
     assert not app_is_installed(app)
+    assert app not in user_permission_list()['permissions']
 
     # Restore the app
-    backup_restore(auth, system=None, name=archives[0],
+    backup_restore(system=None, name=archives[0],
                    apps=[app])
 
     assert app_is_installed(app)
+
+    # Check permission
+    per_list = user_permission_list()['permissions']
+    assert app in per_list
+    assert "main" in per_list[app]
 
 #
 # Some edge cases                                                            #
@@ -555,7 +559,7 @@ def test_restore_archive_with_no_json(mocker):
 
     mocker.spy(m18n, "n")
     with pytest.raises(YunohostError):
-        backup_restore(auth, name="badbackup", force=True)
+        backup_restore(name="badbackup", force=True)
     m18n.n.assert_any_call('backup_invalid_archive')
 
 
@@ -571,7 +575,7 @@ def test_backup_binds_are_readonly(monkeypatch):
 
         assert "Read-only file system" in output
 
-        if self._recursive_umount(self.work_dir) > 0:
+        if not _recursive_umount(self.work_dir):
             raise Exception("Backup cleaning failed !")
 
         self.clean()

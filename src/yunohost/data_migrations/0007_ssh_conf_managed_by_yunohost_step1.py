@@ -3,15 +3,12 @@ import re
 
 from shutil import copyfile
 
-from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, rm
 
 from yunohost.tools import Migration
-from yunohost.service import service_regen_conf, \
-                             _get_conf_hashes, \
-                             _calculate_hash, \
-                             _run_service_command
+from yunohost.service import _run_service_command
+from yunohost.regenconf import regen_conf
 from yunohost.settings import settings_set
 from yunohost.utils.error import YunohostError
 
@@ -37,7 +34,7 @@ class MyMigration(Migration):
     use the recommended configuration, with an appropriate disclaimer.
     """
 
-    def migrate(self):
+    def run(self):
 
         # Check if deprecated DSA Host Key is in config
         dsa_rgx = r'^[ \t]*HostKey[ \t]+/etc/ssh/ssh_host_dsa_key[ \t]*(?:#.*)?$'
@@ -48,10 +45,6 @@ class MyMigration(Migration):
                 break
         if dsa:
             settings_set("service.ssh.allow_deprecated_dsa_hostkey", True)
-
-        # Create sshd_config.d dir
-        if not os.path.exists(SSHD_CONF + '.d'):
-            mkdir(SSHD_CONF + '.d', 0o755, uid='root', gid='root')
 
         # Here, we make it so that /etc/ssh/sshd_config is managed
         # by the regen conf (in particular in the case where the
@@ -64,17 +57,14 @@ class MyMigration(Migration):
         if os.path.exists('/etc/yunohost/from_script'):
             rm('/etc/yunohost/from_script')
             copyfile(SSHD_CONF, '/etc/ssh/sshd_config.bkp')
-            service_regen_conf(names=['ssh'], force=True)
+            regen_conf(names=['ssh'], force=True)
             copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
 
-        # Restart ssh and backward if it fail
+        # Restart ssh and rollback if it failed
         if not _run_service_command('restart', 'ssh'):
-            self.backward()
-            raise YunohostError("migration_0007_cancel")
-
-    def backward(self):
-
-        # We don't backward completely but it should be enough
-        copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
-        if not _run_service_command('restart', 'ssh'):
-            raise YunohostError("migration_0007_cannot_restart")
+            # We don't rollback completely but it should be enough
+            copyfile('/etc/ssh/sshd_config.bkp', SSHD_CONF)
+            if not _run_service_command('restart', 'ssh'):
+                raise YunohostError("migration_0007_cannot_restart")
+            else:
+                raise YunohostError("migration_0007_cancelled")

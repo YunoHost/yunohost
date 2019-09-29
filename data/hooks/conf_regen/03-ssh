@@ -2,7 +2,7 @@
 
 set -e
 
-. /usr/share/yunohost/helpers.d/utils
+. /usr/share/yunohost/helpers
 
 do_pre_regen() {
     pending_dir=$1
@@ -12,7 +12,7 @@ do_pre_regen() {
     [[ ! -f /etc/yunohost/from_script ]] || return 0
 
     cd /usr/share/yunohost/templates/ssh
-    
+
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false
 
@@ -22,6 +22,9 @@ do_pre_regen() {
     if [[ "$(yunohost settings get 'service.ssh.allow_deprecated_dsa_hostkey')" == "True" ]]; then
         ssh_keys="$ssh_keys $(ls /etc/ssh/ssh_host_dsa_key 2>/dev/null || true)"
     fi
+
+    # Support different strategy for security configurations
+    export compatibility="$(yunohost settings get 'security.ssh.compatibility')"
 
     export ssh_keys
     export ipv6_enabled

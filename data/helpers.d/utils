@@ -1,107 +1,90 @@
-# Extract a key from a plain command output
-#
-# example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
-#
-# usage: ynh_get_plain_key key [subkey [subsubkey ...]]
-# | ret: string - the key's value
-ynh_get_plain_key() {
-    local prefix="#"
-    local founded=0
-    local key=$1
-    shift
-    while read line; do
-        if [[ "$founded" == "1" ]] ; then
-            [[ "$line" =~ ^${prefix}[^#] ]] && return
-            echo $line
-        elif [[ "$line" =~ ^${prefix}${key}$ ]]; then
-            if [[ -n "${1:-}" ]]; then
-                prefix+="#"
-                key=$1
-                shift
-            else
-                founded=1
-            fi
-        fi
-    done
-}
+#!/bin/bash
 
-# Restore a previous backup if the upgrade process failed
+# Handle script crashes / failures
+#
+# [internal]
 #
 # usage:
-# ynh_backup_before_upgrade
+# ynh_exit_properly is used only by the helper ynh_abort_if_errors.
+# You should not use it directly.
+# Instead, add to your script:
 # ynh_clean_setup () {
-# 	ynh_restore_upgradebackup
+#        instructions...
 # }
-# ynh_abort_if_errors
 #
-ynh_restore_upgradebackup () {
-	echo "Upgrade failed." >&2
-	local app_bck=${app//_/-}	# Replace all '_' by '-'
-
-  	NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
-
-	if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
-	then	
-		# Check if an existing backup can be found before removing and restoring the application.
-		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$backup_number
-		then
-			# Remove the application then restore it
-			sudo yunohost app remove $app
-			# Restore the backup
-			sudo yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force
-			ynh_die "The app was restored to the way it was before the failed upgrade."
-		fi
-	else
-      		echo "\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !" >&2
-  	fi
-}
-
-# Make a backup in case of failed upgrade
+# This function provide a way to clean some residual of installation that not managed by remove script.
 #
-# usage:
-# ynh_backup_before_upgrade
-# ynh_clean_setup () {
-# 	ynh_restore_upgradebackup
-# }
-# ynh_abort_if_errors
+# It prints a warning to inform that the script was failed, and execute the ynh_clean_setup function if used in the app script
 #
-ynh_backup_before_upgrade () {
-	if [ ! -e "/etc/yunohost/apps/$app/scripts/backup" ]
-	then
-		echo "This app doesn't have any backup script." >&2
-		return
+ynh_exit_properly () {
+	local exit_code=$?
+	if [ "$exit_code" -eq 0 ]; then
+			exit 0	# Exit without error if the script ended correctly
 	fi
-	backup_number=1
-	local old_backup_number=2
-	local app_bck=${app//_/-}	# Replace all '_' by '-'
-	NO_BACKUP_UPGRADE=${NO_BACKUP_UPGRADE:-0}
 
-        if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
-        then
-		# Check if a backup already exists with the prefix 1
-		if sudo yunohost backup list | grep -q $app_bck-pre-upgrade1
-		then
-			# Prefix becomes 2 to preserve the previous backup
-			backup_number=2
-			old_backup_number=1
-		fi
+	trap '' EXIT	# Ignore new exit signals
+	set +eu	# Do not exit anymore if a command fail or if a variable is empty
 
-		# Create backup
-		sudo BACKUP_CORE_ONLY=1 yunohost backup create --apps $app --name $app_bck-pre-upgrade$backup_number
-		if [ "$?" -eq 0 ]
-		then
-			# If the backup succeeded, remove the previous backup
-			if sudo yunohost backup list | grep -q $app_bck-pre-upgrade$old_backup_number
-			then
-				# Remove the previous backup only if it exists
-				sudo yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
+	# Small tempo to avoid the next message being mixed up with other DEBUG messages
+	sleep 0.5
+
+	ynh_print_err --message="!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!"
+
+	# If the script is executed from the CLI, dump the end of the log that precedes the crash.
+	if [ "$YNH_INTERFACE" == "cli" ]
+	then
+		# Unset xtrace to not spoil the log
+		set +x
+
+		local ynh_log="/var/log/yunohost/yunohost-cli.log"
+
+		# Wait for the log to be fill with the data until the crash.
+		local timeout=0
+		while ! tail --lines=20 "$ynh_log" | grep --quiet "+ ynh_exit_properly"
+		do
+			((timeout++))
+			if [ $timeout -eq 500 ]; then
+				break
 			fi
-		else
-			ynh_die "Backup failed, the upgrade process was aborted."
-		fi
-        else
-                echo "\$NO_BACKUP_UPGRADE is set, backup will be avoided. Be careful, this upgrade is going to be operated without a security backup"
-        fi
+		done
+
+		echo -e "\e[34m\e[1mPlease find here an extract of the log before the crash:\e[0m" >&2
+		# Tail the last 30 lines of log of YunoHost
+		# But remove all lines after "ynh_exit_properly"
+		# Remove the timestamp at the beginning of the line
+		# Remove "yunohost.hook..."
+		# Add DEBUG and color it at the beginning of each log line.
+		echo -e "$(tail --lines=30 "$ynh_log" \
+			| sed '1,/+ ynh_exit_properly/!d' \
+			| sed 's/^[[:digit:]: ,-]*//g' \
+			| sed 's/ *yunohost.hook.*\]/ -/g' \
+			| sed 's/^WARNING /&/g' \
+			| sed 's/^DEBUG /&  /g' \
+			| sed 's/^INFO /&   /g' \
+			| sed 's/^/\\e[34m\\e[1m[DEBUG]\\e[0m: /g')" >&2
+		set -x
+	fi
+
+	if type -t ynh_clean_setup > /dev/null; then	# Check if the function exist in the app script.
+		ynh_clean_setup	# Call the function to do specific cleaning for the app.
+	fi
+
+	ynh_die	# Exit with error status
+}
+
+# Exits if an error occurs during the execution of the script.
+#
+# usage: ynh_abort_if_errors
+#
+# This configure the rest of the script execution such that, if an error occurs
+# or if an empty variable is used, the execution of the script stops
+# immediately and a call to `ynh_clean_setup` is triggered if it has been
+# defined by your script.
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_abort_if_errors () {
+	set -eu	# Exit if a command fail, and if a variable is used unset.
+	trap ynh_exit_properly EXIT	# Capturing exit signals on shell script
 }
 
 # Download, check integrity, uncompress and patch the source from app.src
@@ -118,10 +101,12 @@ ynh_backup_before_upgrade () {
 # SOURCE_FORMAT=tar.gz
 # # (Optional) Put false if sources are directly in the archive root
 # # default: true
+# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories
+# # to remove.
 # SOURCE_IN_SUBDIR=false
 # # (Optionnal) Name of the local archive (offline setup support)
 # # default: ${src_id}.${src_format}
-# SOURCE_FILENAME=example.tar.gz 
+# SOURCE_FILENAME=example.tar.gz
 # # (Optional) If it set as false don't extract the source.
 # # (Useful to get a debian package or a python wheel.)
 # # default: true
@@ -136,27 +121,44 @@ ynh_backup_before_upgrade () {
 # If it's ok, the source archive will be uncompressed in $dest_dir. If the
 # SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
 # removed.
+# If SOURCE_IN_SUBDIR is a numeric value, 2 for example, the 2 first level
+# directories will be removed
 #
 # Finally, patches named sources/patches/${src_id}-*.patch and extra files in
 # sources/extra_files/$src_id will be applied to dest_dir
 #
 #
-# usage: ynh_setup_source dest_dir [source_id]
-# | arg: dest_dir  - Directory where to setup sources
-# | arg: source_id - Name of the app, if the package contains more than one app
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
+# | arg: -d, --dest_dir  - Directory where to setup sources
+# | arg: -s, --source_id - Name of the app, if the package contains more than one app
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source () {
-    local dest_dir=$1
-    local src_id=${2:-app} # If the argument is not given, source_id equals "app"
+    # Declare an array to define the options of this helper.
+    local legacy_args=ds
+    declare -Ar args_array=( [d]=dest_dir= [s]=source_id= )
+    local dest_dir
+    local source_id
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
+
+    local src_file_path="$YNH_CWD/../conf/${source_id}.src"
+    # In case of restore script the src file is in an other path.
+    # So try to use the restore path if the general path point to no file.
+    if [ ! -e "$src_file_path" ]; then
+        src_file_path="$YNH_CWD/../settings/conf/${source_id}.src"
+    fi
 
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    local src_url=$(grep 'SOURCE_URL=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$YNH_CWD/../conf/${src_id}.src" | cut -d= -f2-)
+    local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut -d= -f2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut -d= -f2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut -d= -f2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut -d= -f2-)
+    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut -d= -f2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut -d= -f2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut -d= -f2-)
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -165,7 +167,7 @@ ynh_setup_source () {
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
     if [ "$src_filename" = "" ] ; then
-        src_filename="${src_id}.${src_format}"
+        src_filename="${source_id}.${src_format}"
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
 
@@ -173,56 +175,62 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
-        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err $out
+        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err --message="$out"
     fi
 
     # Check the control sum
     echo "${src_sum} ${src_filename}" | ${src_sumprg} -c --status \
-        || ynh_die "Corrupt source"
+        || ynh_die --message="Corrupt source"
 
     # Extract source into the app dir
     mkdir -p "$dest_dir"
-    
+
     if ! "$src_extract"
     then
         mv $src_filename $dest_dir
     elif [ "$src_format" = "zip" ]
-    then 
+    then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir ; then
             local tmp_dir=$(mktemp -d)
             unzip -quo $src_filename -d "$tmp_dir"
             cp -a $tmp_dir/*/. "$dest_dir"
-            ynh_secure_remove "$tmp_dir"
+            ynh_secure_remove --file="$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
         fi
     else
         local strip=""
-        if $src_in_subdir ; then
-            strip="--strip-components 1"
+        if [ "$src_in_subdir" != "false" ]
+        then
+            if [ "$src_in_subdir" == "true" ]; then
+                local sub_dirs=1
+            else
+                local sub_dirs="$src_in_subdir"
+            fi
+            strip="--strip-components $sub_dirs"
         fi
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
             tar -xf $src_filename -C "$dest_dir" $strip
         else
-            ynh_die "Archive format unrecognized."
+            ynh_die --message="Archive format unrecognized."
         fi
     fi
 
     # Apply patches
-    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${src_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
+    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${source_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
         local old_dir=$(pwd)
         (cd "$dest_dir" \
-            && for p in $YNH_CWD/../sources/patches/${src_id}-*.patch; do \
+            && for p in $YNH_CWD/../sources/patches/${source_id}-*.patch; do \
                 patch -p1 < $p; done) \
-            || ynh_die "Unable to apply patches"
+            || ynh_die --message="Unable to apply patches"
         cd $old_dir
     fi
 
     # Add supplementary files
-    if test -e "$YNH_CWD/../sources/extra_files/${src_id}"; then
-        cp -a $YNH_CWD/../sources/extra_files/$src_id/. "$dest_dir"
+    if test -e "$YNH_CWD/../sources/extra_files/${source_id}"; then
+        cp -a $YNH_CWD/../sources/extra_files/$source_id/. "$dest_dir"
     fi
 }
 
@@ -231,38 +239,47 @@ ynh_setup_source () {
 # $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
 # example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
-# 
+#
 # usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
 # | arg: page_uri    - Path (relative to $path_url) of the page where POST data will be sent
 # | arg: key1=value1 - (Optionnal) POST key and corresponding value
 # | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
 # | arg: ...         - (Optionnal) More POST keys and values
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_local_curl () {
-	# Define url of page to curl
-	local full_page_url=https://localhost$path_url$1
+    # Define url of page to curl
+    local local_page=$(ynh_normalize_url_path $1)
+    local full_path=$path_url$local_page
 
-	# Concatenate all other arguments with '&' to prepare POST data
-	local POST_data=""
-	local arg=""
-	for arg in "${@:2}"
-	do
-		POST_data="${POST_data}${arg}&"
-	done
-	if [ -n "$POST_data" ]
-	then
-		# Add --data arg and remove the last character, which is an unecessary '&'
-		POST_data="--data ${POST_data::-1}"
-	fi
-	
-	# Wait untils nginx has fully reloaded (avoid curl fail with http2)
-	sleep 2
+    if [ "${path_url}" == "/" ]; then
+        full_path=$local_page
+    fi
 
-	# Curl the URL
-	curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
+    local full_page_url=https://localhost$full_path
+
+    # Concatenate all other arguments with '&' to prepare POST data
+    local POST_data=""
+    local arg=""
+    for arg in "${@:2}"
+    do
+        POST_data="${POST_data}${arg}&"
+    done
+    if [ -n "$POST_data" ]
+    then
+        # Add --data arg and remove the last character, which is an unecessary '&'
+        POST_data="--data ${POST_data::-1}"
+    fi
+
+    # Wait untils nginx has fully reloaded (avoid curl fail with http2)
+    sleep 2
+
+    # Curl the URL
+    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
 }
 
 # Render templates with Jinja2
-# 
+#
 # Attention : Variables should be exported before calling this helper to be
 # accessible inside templates.
 #
@@ -277,4 +294,226 @@ ynh_render_template() {
    python2.7 -c 'import os, sys, jinja2; sys.stdout.write(
                     jinja2.Template(sys.stdin.read()
                  ).render(os.environ));' < $template_path > $output_path
+}
+
+# Fetch the Debian release codename
+#
+# usage: ynh_get_debian_release
+# | ret: The Debian release codename (i.e. jessie, stretch, ...)
+#
+# Requires YunoHost version 2.7.12 or higher.
+ynh_get_debian_release () {
+	echo $(lsb_release --codename --short)
+}
+
+# Create a directory under /tmp
+#
+# [internal]
+#
+# Deprecated helper
+#
+# usage: ynh_mkdir_tmp
+# | ret: the created directory path
+ynh_mkdir_tmp() {
+    ynh_print_warn --message="The helper ynh_mkdir_tmp is deprecated."
+    ynh_print_warn --message="You should use 'mktemp -d' instead and manage permissions \
+properly with chmod/chown."
+    local TMP_DIR=$(mktemp -d)
+
+    # Give rights to other users could be a security risk.
+    # But for retrocompatibility we need it. (This helpers is deprecated)
+    chmod 755 $TMP_DIR
+    echo $TMP_DIR
+}
+
+# Remove a file or a directory securely
+#
+# usage: ynh_secure_remove --file=path_to_remove
+# | arg: -f, --file - File or directory to remove
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_secure_remove () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=f
+    declare -Ar args_array=( [f]=file= )
+    local file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    local forbidden_path=" \
+    /var/www \
+    /home/yunohost.app"
+
+    if [ $# -ge 2 ]
+    then
+        ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
+    fi
+
+    if [[ "$forbidden_path" =~ "$file" \
+        # Match all paths or subpaths in $forbidden_path
+        || "$file" =~ ^/[[:alnum:]]+$ \
+        # Match all first level paths from / (Like /var, /root, etc...)
+        || "${file:${#file}-1}" = "/" ]]
+        # Match if the path finishes by /. Because it seems there is an empty variable
+    then
+        ynh_print_warn --message="Avoid deleting $file."
+    else
+        if [ -e "$file" ]
+        then
+            sudo rm -R "$file"
+        else
+            ynh_print_info --message="$file wasn't deleted because it doesn't exist."
+        fi
+    fi
+}
+
+# Extract a key from a plain command output
+#
+# example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
+#
+# usage: ynh_get_plain_key key [subkey [subsubkey ...]]
+# | ret: string - the key's value
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_get_plain_key() {
+    local prefix="#"
+    local founded=0
+    # We call this key_ so that it's not caught as
+    # an info to be redacted by the core
+    local key_=$1
+    shift
+    while read line; do
+        if [[ "$founded" == "1" ]] ; then
+            [[ "$line" =~ ^${prefix}[^#] ]] && return
+            echo $line
+        elif [[ "$line" =~ ^${prefix}${key_}$ ]]; then
+            if [[ -n "${1:-}" ]]; then
+                prefix+="#"
+                key_=$1
+                shift
+            else
+                founded=1
+            fi
+        fi
+    done
+}
+
+# Read the value of a key in a ynh manifest file
+#
+# usage: ynh_read_manifest manifest key
+# | arg: -m, --manifest= - Path of the manifest to read
+# | arg: -k, --key= - Name of the key to find
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_read_manifest () {
+	# Declare an array to define the options of this helper.
+        local legacy_args=mk
+        declare -Ar args_array=( [m]=manifest= [k]=manifest_key= )
+        local manifest
+        local manifest_key
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	if [ ! -e "$manifest" ]; then
+		# If the manifest isn't found, try the common place for backup and restore script.
+		manifest="../settings/manifest.json"
+	fi
+
+	jq ".$manifest_key" "$manifest" --raw-output
+}
+
+# Read the upstream version from the manifest
+#
+# The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
+# For example : 4.3-2~ynh3
+# This include the number before ~ynh
+# In the last example it return 4.3-2
+#
+# usage: ynh_app_upstream_version [-m manifest]
+# | arg: -m, --manifest= - Path of the manifest to read
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_app_upstream_version () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
+    declare -Ar args_array=( [m]=manifest= )
+    local manifest
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    manifest="${manifest:-../manifest.json}"
+    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    echo "${version_key/~ynh*/}"
+}
+
+# Read package version from the manifest
+#
+# The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
+# For example : 4.3-2~ynh3
+# This include the number after ~ynh
+# In the last example it return 3
+#
+# usage: ynh_app_package_version [-m manifest]
+# | arg: -m, --manifest= - Path of the manifest to read
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_app_package_version () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=m
+    declare -Ar args_array=( [m]=manifest= )
+    local manifest
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    manifest="${manifest:-../manifest.json}"
+    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    echo "${version_key/*~ynh/}"
+}
+
+# Checks the app version to upgrade with the existing app version and returns:
+#
+# - UPGRADE_APP if the upstream app version has changed
+# - UPGRADE_PACKAGE if only the YunoHost package has changed
+#
+# It stops the current script without error if the package is up-to-date
+#
+# This helper should be used to avoid an upgrade of an app, or the upstream part
+# of it, when it's not needed
+#
+# To force an upgrade, even if the package is up to date,
+# you have to set the variable YNH_FORCE_UPGRADE before.
+# example: sudo YNH_FORCE_UPGRADE=1 yunohost app upgrade MyApp
+#
+# usage: ynh_check_app_version_changed
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_check_app_version_changed () {
+  local force_upgrade=${YNH_FORCE_UPGRADE:-0}
+  local package_check=${PACKAGE_CHECK_EXEC:-0}
+
+  # By default, upstream app version has changed
+  local return_value="UPGRADE_APP"
+
+  local current_version=$(ynh_read_manifest --manifest="/etc/yunohost/apps/$YNH_APP_INSTANCE_NAME/manifest.json" --manifest_key="version" || echo 1.0)
+  local current_upstream_version="$(ynh_app_upstream_version --manifest="/etc/yunohost/apps/$YNH_APP_INSTANCE_NAME/manifest.json")"
+  local update_version=$(ynh_read_manifest --manifest="../manifest.json" --manifest_key="version" || echo 1.0)
+  local update_upstream_version="$(ynh_app_upstream_version)"
+
+  if [ "$current_version" == "$update_version" ] ; then
+      # Complete versions are the same
+      if [ "$force_upgrade" != "0" ]
+      then
+        ynh_print_info --message="Upgrade forced by YNH_FORCE_UPGRADE."
+        unset YNH_FORCE_UPGRADE
+      elif [ "$package_check" != "0" ]
+      then
+        ynh_print_info --message="Upgrade forced for package check."
+      else
+        ynh_die "Up-to-date, nothing to do" 0
+      fi
+  elif [ "$current_upstream_version" == "$update_upstream_version" ] ; then
+    # Upstream versions are the same, only YunoHost package versions differ
+    return_value="UPGRADE_PACKAGE"
+  fi
+  echo $return_value
 }

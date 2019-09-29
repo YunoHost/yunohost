@@ -1,15 +1,8 @@
 import pytest
 
-from moulinette.core import init_authenticator
 from yunohost.utils.error import YunohostError
 from yunohost.app import app_install, app_remove
 from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
-
-# Instantiate LDAP Authenticator
-auth_identifier = ('ldap', 'ldap-anonymous')
-auth_parameters = {'uri': 'ldap://localhost:389', 'base_dn': 'dc=yunohost,dc=org'}
-auth = init_authenticator(auth_identifier, auth_parameters)
-
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -18,7 +11,7 @@ maindomain = _get_maindomain()
 def setup_function(function):
 
     try:
-        app_remove(auth, "register_url_app")
+        app_remove("register_url_app")
     except:
         pass
 
@@ -26,7 +19,7 @@ def setup_function(function):
 def teardown_function(function):
 
     try:
-        app_remove(auth, "register_url_app")
+        app_remove("register_url_app")
     except:
         pass
 
@@ -41,28 +34,28 @@ def test_normalize_domain_path():
 def test_urlavailable():
 
     # Except the maindomain/macnuggets to be available
-    assert domain_url_available(auth, maindomain, "/macnuggets")
+    assert domain_url_available(maindomain, "/macnuggets")
 
     # We don't know the domain yolo.swag
     with pytest.raises(YunohostError):
-        assert domain_url_available(auth, "yolo.swag", "/macnuggets")
+        assert domain_url_available("yolo.swag", "/macnuggets")
 
 
 def test_registerurl():
 
-    app_install(auth, "./tests/apps/register_url_app_ynh",
+    app_install("./tests/apps/register_url_app_ynh",
                 args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"), force=True)
 
-    assert not domain_url_available(auth, maindomain, "/urlregisterapp")
+    assert not domain_url_available(maindomain, "/urlregisterapp")
 
     # Try installing at same location
     with pytest.raises(YunohostError):
-        app_install(auth, "./tests/apps/register_url_app_ynh",
+        app_install("./tests/apps/register_url_app_ynh",
                     args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"), force=True)
 
 
 def test_registerurl_baddomain():
 
     with pytest.raises(YunohostError):
-        app_install(auth, "./tests/apps/register_url_app_ynh",
+        app_install("./tests/apps/register_url_app_ynh",
                     args="domain=%s&path=%s" % ("yolo.swag", "/urlregisterapp"), force=True)

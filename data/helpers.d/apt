@@ -1,8 +1,12 @@
+#!/bin/bash
+
 # Check if apt is free to use, or wait, until timeout.
 #
 # [internal]
 #
 # usage: ynh_wait_dpkg_free
+#
+# Requires YunoHost version 3.3.1 or higher.
 ynh_wait_dpkg_free() {
     local try
     # With seq 1 17, timeout will be almost 30 minutes
@@ -15,6 +19,21 @@ ynh_wait_dpkg_free() {
             # Sleep an exponential time at each round
             sleep $(( try * try ))
         else
+            # Check if dpkg hasn't been interrupted and is fully available.
+            # See this for more information: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
+            local dpkg_dir="/var/lib/dpkg/updates/"
+
+            # For each file in $dpkg_dir
+            while read dpkg_file <&9
+            do
+                # Check if the name of this file contains only numbers.
+                if echo "$dpkg_file" | grep -Pq "^[[:digit:]]+$"
+                then
+                    # If so, that a remaining of dpkg.
+                    ynh_print_err "E: dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
+                    return 1
+                fi
+            done 9<<< "$(ls -1 $dpkg_dir)"
             return 0
         fi
     done
@@ -23,26 +42,44 @@ ynh_wait_dpkg_free() {
 
 # Check either a package is installed or not
 #
-# example: ynh_package_is_installed 'yunohost' && echo "ok"
+# example: ynh_package_is_installed --package=yunohost && echo "ok"
 #
-# usage: ynh_package_is_installed name
-# | arg: name - the package name to check
+# usage: ynh_package_is_installed --package=name
+# | arg: -p, --package - the package name to check
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    declare -Ar args_array=( [p]=package= )
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
     ynh_wait_dpkg_free
-    dpkg-query -W -f '${Status}' "$1" 2>/dev/null \
+    dpkg-query -W -f '${Status}' "$package" 2>/dev/null \
         | grep -c "ok installed" &>/dev/null
 }
 
 # Get the version of an installed package
 #
-# example: version=$(ynh_package_version 'yunohost')
+# example: version=$(ynh_package_version --package=yunohost)
 #
-# usage: ynh_package_version name
-# | arg: name - the package name to get version
+# usage: ynh_package_version --package=name
+# | arg: -p, --package - the package name to get version
 # | ret: the version or an empty string
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_version() {
-    if ynh_package_is_installed "$1"; then
-        dpkg-query -W -f '${Version}' "$1" 2>/dev/null
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    declare -Ar args_array=( [p]=package= )
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if ynh_package_is_installed "$package"; then
+        dpkg-query -W -f '${Version}' "$package" 2>/dev/null
     else
         echo ''
     fi
@@ -53,14 +90,18 @@ ynh_package_version() {
 # [internal]
 #
 # usage: ynh_apt update
+#
+# Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
-    DEBIAN_FRONTEND=noninteractive sudo apt-get -y $@
+    DEBIAN_FRONTEND=noninteractive apt-get -y $@
 }
 
 # Update package index files
 #
 # usage: ynh_package_update
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_update() {
     ynh_apt update
 }
@@ -69,6 +110,8 @@ ynh_package_update() {
 #
 # usage: ynh_package_install name [name [...]]
 # | arg: name - the package name to install
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_install() {
     ynh_apt --no-remove -o Dpkg::Options::=--force-confdef \
             -o Dpkg::Options::=--force-confold install $@
@@ -78,6 +121,8 @@ ynh_package_install() {
 #
 # usage: ynh_package_remove name [name [...]]
 # | arg: name - the package name to remove
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_remove() {
     ynh_apt remove $@
 }
@@ -86,6 +131,8 @@ ynh_package_remove() {
 #
 # usage: ynh_package_autoremove name [name [...]]
 # | arg: name - the package name to remove
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_autoremove() {
     ynh_apt autoremove $@
 }
@@ -94,6 +141,8 @@ ynh_package_autoremove() {
 #
 # usage: ynh_package_autopurge name [name [...]]
 # | arg: name - the package name to autoremove and purge
+#
+# Requires YunoHost version 2.7.2 or higher.
 ynh_package_autopurge() {
     ynh_apt autoremove --purge $@
 }
@@ -108,6 +157,8 @@ ynh_package_autopurge() {
 #
 # usage: ynh_package_install_from_equivs controlfile
 # | arg: controlfile - path of the equivs control file
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_install_from_equivs () {
     local controlfile=$1
 
@@ -115,7 +166,7 @@ ynh_package_install_from_equivs () {
     local pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
     local pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number
     [[ -z "$pkgname" || -z "$pkgversion" ]] \
-        && echo "Invalid control file" && exit 1	# Check if this 2 variables aren't empty.
+        && ynh_die --message="Invalid control file"	# Check if this 2 variables aren't empty.
 
     # Update packages cache
     ynh_package_update
@@ -131,11 +182,11 @@ ynh_package_install_from_equivs () {
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
     ynh_wait_dpkg_free
-    (cp "$controlfile" "${TMPDIR}/control" && cd "$TMPDIR" \
-     && equivs-build ./control 1>/dev/null \
-     && sudo dpkg --force-depends \
-          -i "./${pkgname}_${pkgversion}_all.deb" 2>&1 \
-     && ynh_package_install -f) || ynh_die "Unable to install dependencies"
+    cp "$controlfile" "${TMPDIR}/control"
+    (cd "$TMPDIR"
+    equivs-build ./control 1> /dev/null
+    dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
+    ynh_package_install -f || ynh_die --message="Unable to install dependencies"
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
@@ -143,13 +194,15 @@ ynh_package_install_from_equivs () {
 }
 
 # Define and install dependencies with a equivs control file
+#
 # This helper can/should only be called once per app
 #
+# example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
+#
 # usage: ynh_install_app_dependencies dep [dep [...]]
-# | arg: dep - the package name to install in dependence
-#   You can give a choice between some package with this syntax : "dep1|dep2"
-#   Example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
-#   This mean in the dependence tree : dep1 & dep2 & (dep3 | dep4 | dep5)
+# | arg: dep - the package name to install in dependence. Writing "dep3|dep4|dep5" can be used to specify alternatives. For example : dep1 dep2 "dep3|dep4|dep5" will require to install dep1 and dep 2 and (dep3 or dep4 or dep5).
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_install_app_dependencies () {
     local dependencies=$@
     local dependencies=${dependencies// /, }
@@ -176,9 +229,9 @@ Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
     ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
-        || ynh_die "Unable to install dependencies"	# Install the fake package and its dependencies
+        || ynh_die --message="Unable to install dependencies"	# Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
-    ynh_app_setting_set $app apt_dependencies $dependencies
+    ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
 }
 
 # Remove fake package and its dependencies
@@ -186,6 +239,8 @@ EOF
 # Dependencies will removed only if no other package need them.
 #
 # usage: ynh_remove_app_dependencies
+#
+# Requires YunoHost version 2.6.4 or higher.
 ynh_remove_app_dependencies () {
     local dep_app=${app//_/-}	# Replace all '_' by '-'
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.

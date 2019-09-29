@@ -33,7 +33,7 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file
+from moulinette.utils.filesystem import write_to_file, read_file
 from moulinette.utils.network import download_json
 from moulinette.utils.process import check_output
 
@@ -119,6 +119,9 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
         subscribe_host -- Dynette HTTP API to subscribe to
 
     """
+    if len(glob.glob('/etc/yunohost/dyndns/*.key')) != 0 or os.path.exists('/etc/cron.d/yunohost-dyndns'):
+        raise YunohostError('domain_dyndns_already_subscribed')
+
     if domain is None:
         domain = _get_maindomain()
         operation_logger.related_to.append(('domain', domain))
@@ -144,7 +147,8 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
                       'dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s' % domain)
             os.system('chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private')
 
-        key_file = glob.glob('/etc/yunohost/dyndns/*.key')[0]
+        private_file = glob.glob('/etc/yunohost/dyndns/*%s*.private' % domain)[0]
+        key_file = glob.glob('/etc/yunohost/dyndns/*%s*.key' % domain)[0]
         with open(key_file) as f:
             key = f.readline().strip().split(' ', 6)[-1]
 
@@ -152,9 +156,13 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
     # Send subscription
     try:
         r = requests.post('https://%s/key/%s?key_algo=hmac-sha512' % (subscribe_host, base64.b64encode(key)), data={'subdomain': domain}, timeout=30)
-    except requests.ConnectionError:
-        raise YunohostError('no_internet_connection')
+    except Exception as e:
+        os.system("rm -f %s" % private_file)
+        os.system("rm -f %s" % key_file)
+        raise YunohostError('dyndns_registration_failed', error=str(e))
     if r.status_code != 201:
+        os.system("rm -f %s" % private_file)
+        os.system("rm -f %s" % key_file)
         try:
             error = json.loads(r.text)['error']
         except:
@@ -168,7 +176,7 @@ def dyndns_subscribe(operation_logger, subscribe_host="dyndns.yunohost.org", dom
 
 @is_unit_operation()
 def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None, key=None,
-                  ipv4=None, ipv6=None):
+                  ipv4=None, ipv6=None, force=False, dry_run=False):
     """
     Update IP on DynDNS platform
 
@@ -204,7 +212,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("migrate_to_tsig_sha256")
         try:
-            migration.migrate(dyn_host, domain, key)
+            migration.run(dyn_host, domain, key)
         except Exception as e:
             logger.error(m18n.n('migrations_migration_has_failed',
                                 exception=e,
@@ -241,7 +249,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
 
     # no need to update
-    if old_ipv4 == ipv4 and old_ipv6 == ipv6:
+    if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
         logger.info("No updated needed.")
         return
     else:
@@ -271,7 +279,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
             # should be muc.the.domain.tld. or the.domain.tld
             if record["value"] == "@":
                 record["value"] = domain
-            record["value"] = record["value"].replace(";", "\;")
+            record["value"] = record["value"].replace(";", r"\;")
 
             action = "update add {name}.{domain}. {ttl} {type} {value}".format(domain=domain, **record)
             action = action.replace(" @.", " ")
@@ -288,13 +296,18 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
 
     logger.debug("Now pushing new conf to DynDNS host...")
 
-    try:
-        command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
-        subprocess.check_call(command)
-    except subprocess.CalledProcessError:
-        raise YunohostError('dyndns_ip_update_failed')
+    if not dry_run:
+        try:
+            command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            raise YunohostError('dyndns_ip_update_failed')
 
-    logger.success(m18n.n('dyndns_ip_updated'))
+        logger.success(m18n.n('dyndns_ip_updated'))
+    else:
+        print(read_file(DYNDNS_ZONE))
+        print("")
+        print("Warning: dry run, this is only the generated config, it won't be applied")
 
 
 def dyndns_installcron():
@@ -317,8 +330,8 @@ def dyndns_removecron():
     """
     try:
         os.remove("/etc/cron.d/yunohost-dyndns")
-    except:
-        raise YunohostError('dyndns_cron_remove_failed')
+    except Exception as e:
+        raise YunohostError('dyndns_cron_remove_failed', error=e)
 
     logger.success(m18n.n('dyndns_cron_removed'))
 
@@ -333,7 +346,8 @@ def _guess_current_dyndns_domain(dyn_host):
     """
 
     # Retrieve the first registered domain
-    for path in glob.iglob('/etc/yunohost/dyndns/K*.private'):
+    paths = list(glob.iglob('/etc/yunohost/dyndns/K*.private'))
+    for path in paths:
         match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
         if not match:
             match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
@@ -343,7 +357,9 @@ def _guess_current_dyndns_domain(dyn_host):
 
         # Verify if domain is registered (i.e., if it's available, skip
         # current domain beause that's not the one we want to update..)
-        if _dyndns_available(dyn_host, _domain):
+        # If there's only 1 such key found, then avoid doing the request
+        # for nothing (that's very probably the one we want to find ...)
+        if len(paths) > 1 and _dyndns_available(dyn_host, _domain):
             continue
         else:
             return (_domain, path)

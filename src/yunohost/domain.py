@@ -34,14 +34,15 @@ from moulinette.utils.log import getActionLogger
 
 import yunohost.certificate
 
-from yunohost.service import service_regen_conf
+from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
+from yunohost.hook import hook_callback
 
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list(auth):
+def domain_list():
     """
     List domains
 
@@ -51,10 +52,12 @@ def domain_list(auth):
         limit -- Maximum number of domain fetched
 
     """
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    ldap = _get_ldap_interface()
+    result = ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
+
     result_list = []
-
-    result = auth.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
-
     for domain in result:
         result_list.append(domain['virtualdomain'][0])
 
@@ -62,7 +65,7 @@ def domain_list(auth):
 
 
 @is_unit_operation()
-def domain_add(operation_logger, auth, domain, dyndns=False):
+def domain_add(operation_logger, domain, dyndns=False):
     """
     Create a custom domain
 
@@ -73,9 +76,12 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    ldap = _get_ldap_interface()
 
     try:
-        auth.validate_uniqueness({'virtualdomain': domain})
+        ldap.validate_uniqueness({'virtualdomain': domain})
     except MoulinetteError:
         raise YunohostError('domain_exists')
 
@@ -106,18 +112,18 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
             'virtualdomain': domain,
         }
 
-        if not auth.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
+        if not ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
             raise YunohostError('domain_creation_failed')
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
-            service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
-            app_ssowatconf(auth)
+            regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
+            app_ssowatconf()
 
     except Exception:
         # Force domain removal silently
         try:
-            domain_remove(auth, domain, True)
+            domain_remove(domain, True)
         except:
             pass
         raise
@@ -128,7 +134,7 @@ def domain_add(operation_logger, auth, domain, dyndns=False):
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, auth, domain, force=False):
+def domain_remove(operation_logger, domain, force=False):
     """
     Delete domains
 
@@ -139,8 +145,9 @@ def domain_remove(operation_logger, auth, domain, force=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
+    from yunohost.utils.ldap import _get_ldap_interface
 
-    if not force and domain not in domain_list(auth)['domains']:
+    if not force and domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
     # Check domain is not the main domain
@@ -159,13 +166,14 @@ def domain_remove(operation_logger, auth, domain, force=False):
                     raise YunohostError('domain_uninstall_app_first')
 
     operation_logger.start()
-    if auth.remove('virtualdomain=' + domain + ',ou=domains') or force:
+    ldap = _get_ldap_interface()
+    if ldap.remove('virtualdomain=' + domain + ',ou=domains') or force:
         os.system('rm -rf /etc/yunohost/certs/%s' % domain)
     else:
         raise YunohostError('domain_deletion_failed')
 
-    service_regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
-    app_ssowatconf(auth)
+    regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
+    app_ssowatconf()
 
     hook_callback('post_domain_remove', args=[domain])
 
@@ -201,11 +209,18 @@ def domain_dns_conf(domain, ttl=None):
     result += "; Mail"
     for record in dns_conf["mail"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
-
     result += "\n\n"
+
     result += "; Extra"
     for record in dns_conf["extra"]:
         result += "\n{name} {ttl} IN {type} {value}".format(**record)
+
+    for name, record_list in dns_conf.items():
+        if name not in ("basic", "xmpp", "mail", "extra") and record_list:
+            result += "\n\n"
+            result += "; " + name
+            for record in record_list:
+                result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     is_cli = True if msettings.get('interface') == 'cli' else False
     if is_cli:
@@ -214,31 +229,32 @@ def domain_dns_conf(domain, ttl=None):
     return result
 
 
-def domain_cert_status(auth, domain_list, full=False):
-    return yunohost.certificate.certificate_status(auth, domain_list, full)
+def domain_cert_status(domain_list, full=False):
+    return yunohost.certificate.certificate_status(domain_list, full)
 
 
-def domain_cert_install(auth, domain_list, force=False, no_checks=False, self_signed=False, staging=False):
-    return yunohost.certificate.certificate_install(auth, domain_list, force, no_checks, self_signed, staging)
+def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
-def domain_cert_renew(auth, domain_list, force=False, no_checks=False, email=False, staging=False):
-    return yunohost.certificate.certificate_renew(auth, domain_list, force, no_checks, email, staging)
+def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+    return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
-def _get_conflicting_apps(auth, domain, path):
+def _get_conflicting_apps(domain, path, ignore_app=None):
     """
     Return a list of all conflicting apps with a domain/path (it can be empty)
 
     Keyword argument:
         domain -- The domain for the web path (e.g. your.domain.tld)
         path -- The path to check (e.g. /coffee)
+        ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
     """
 
     domain, path = _normalize_domain_path(domain, path)
 
     # Abort if domain is unknown
-    if domain not in domain_list(auth)['domains']:
+    if domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
     # This import cannot be put on top of file because it would create a
@@ -253,6 +269,8 @@ def _get_conflicting_apps(auth, domain, path):
     if domain in apps_map:
         # Loop through apps
         for p, a in apps_map[domain].items():
+            if a["id"] == ignore_app:
+                continue
             if path == p:
                 conflicts.append((p, a["id"], a["label"]))
             # We also don't want conflicts with other apps starting with
@@ -263,7 +281,7 @@ def _get_conflicting_apps(auth, domain, path):
     return conflicts
 
 
-def domain_url_available(auth, domain, path):
+def domain_url_available(domain, path):
     """
     Check availability of a web path
 
@@ -272,7 +290,7 @@ def domain_url_available(auth, domain, path):
         path -- The path to check (e.g. /coffee)
     """
 
-    return len(_get_conflicting_apps(auth, domain, path)) == 0
+    return len(_get_conflicting_apps(domain, path)) == 0
 
 
 def _get_maindomain():
@@ -335,6 +353,9 @@ def _build_dns_conf(domain, ttl=3600):
         "extra": [
             {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
+        "example_of_a_custom_rule": [
+            {"type": "SRV", "name": "_matrix", "value": "domain.tld.", "ttl": 3600}
+        ],
     }
     """
 
@@ -393,12 +414,48 @@ def _build_dns_conf(domain, ttl=3600):
         ["@", ttl, "CAA", '128 issue "letsencrypt.org"']
     ]
 
-    return {
+    # Official record
+    records = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
         "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
         "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
+
+    # Custom records
+    hook_results = hook_callback('custom_dns_rules', args=[domain])
+    for hook_name, results in hook_results.items():
+        #
+        # There can be multiple results per hook name, so results look like
+        # {'/some/path/to/hook1':
+        #       { 'state': 'succeed',
+        #         'stdreturn': [{'type': 'SRV',
+        #                        'name': 'stuff.foo.bar.',
+        #                        'value': 'yoloswag',
+        #                        'ttl': 3600}]
+        #       },
+        #  '/some/path/to/hook2':
+        #       { ... },
+        #  [...]
+        #
+        # Loop over the sub-results
+        custom_records = [v['stdreturn'] for v in results.values()
+                          if v and v['stdreturn']]
+
+        records[hook_name] = []
+        for record_list in custom_records:
+            # Check that record_list is indeed a list of dict
+            # with the required keys
+            if not isinstance(record_list, list) \
+               or any(not isinstance(record, dict) for record in record_list) \
+               or any(key not in record for record in record_list for key in ["name", "ttl", "type", "value"]):
+                # Display an error, mainly for app packagers trying to implement a hook
+                logger.warning("Ignored custom record from hook '%s' because the data is not a *list* of dict with keys name, ttl, type and value. Raw data : %s" % (hook_name, record_list))
+                continue
+
+            records[hook_name].extend(record_list)
+
+    return records
 
 
 def _get_DKIM(domain):

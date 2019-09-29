@@ -16,7 +16,7 @@
     "yunohost_already_installed": "YunoHost estas jam instalita",
     "yunohost_ca_creation_failed": "Ne eblas krei atestan aŭtoritaton",
     "yunohost_ca_creation_success": "Loka atesta aŭtoritato estas kreita.",
-    "yunohost_installing": "Instalata YunoHost...",
+    "yunohost_installing": "Instalante YunoHost…",
     "service_description_glances": "monitoras sisteminformojn de via servilo",
     "service_description_metronome": "mastrumas XMPP tujmesaĝilon kontojn",
     "service_description_mysql": "stokas aplikaĵojn datojn (SQL datumbazo)",
@@ -32,5 +32,12 @@
     "service_description_yunohost-api": "mastrumas interagojn inter la YunoHost retinterfaco kaj la sistemo",
     "service_description_yunohost-firewall": "mastrumas malfermitajn kaj fermitajn konektejojn al servoj",
     "service_disable_failed": "Neebla malaktivigi servon '{service:s}'\n\nFreŝaj protokoloj de la servo : {logs:s}",
-    "service_disabled": "Servo '{service:s}' estas malaktivigita"
+    "service_disabled": "Servo '{service:s}' estas malaktivigita",
+    "action_invalid": "Nevalida ago « {action:s} »",
+    "admin_password": "Pasvorto de la estro",
+    "admin_password_too_long": "Bonvolu elekti pasvorton pli mallonga ol 127 signoj",
+    "already_up_to_date": "Neniu estas farenda! Ĉiu jam estas ĝisdata!",
+    "app_argument_choice_invalid": "Nevalida elekto por argumento « {name:s} », ĝi devas esti unu el {choices:s}",
+    "app_argument_invalid": "Nevalida valoro por argumento « {name:s} » : {error:s}",
+    "app_change_url_failed_nginx_reload": "Reŝargi nginx malsuksesis. Jen la eligo de « nginx -t » :\n{nginx_errors:s}"
 }

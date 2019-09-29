@@ -1,12 +1,10 @@
 #!/bin/bash
 
 set -e
+. /usr/share/yunohost/helpers
 
 do_pre_regen() {
   pending_dir=$1
-
-  # source ip helpers
-  . /usr/share/yunohost/helpers.d/ip
 
   cd /usr/share/yunohost/templates/dnsmasq
 

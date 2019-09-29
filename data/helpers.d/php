@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Create a dedicated php-fpm config
+#
+# usage: ynh_add_fpm_config [--phpversion=7.X]
+# | arg: -v, --phpversion - Version of php to use.
+#
+# Requires YunoHost version 2.7.2 or higher.
+ynh_add_fpm_config () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=v
+	declare -Ar args_array=( [v]=phpversion= )
+	local phpversion
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	# Configure PHP-FPM 7.0 by default
+	phpversion="${phpversion:-7.0}"
+
+	local fpm_config_dir="/etc/php/$phpversion/fpm"
+	local fpm_service="php${phpversion}-fpm"
+	# Configure PHP-FPM 5 on Debian Jessie
+	if [ "$(ynh_get_debian_release)" == "jessie" ]; then
+		fpm_config_dir="/etc/php5/fpm"
+		fpm_service="php5-fpm"
+	fi
+	ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
+	ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
+	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
+	ynh_backup_if_checksum_is_different --file="$finalphpconf"
+	sudo cp ../conf/php-fpm.conf "$finalphpconf"
+	ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
+	ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
+	ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
+	ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
+	sudo chown root: "$finalphpconf"
+	ynh_store_file_checksum --file="$finalphpconf"
+
+	if [ -e "../conf/php-fpm.ini" ]
+	then
+		echo "Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead." >&2
+		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
+		ynh_backup_if_checksum_is_different "$finalphpini"
+		sudo cp ../conf/php-fpm.ini "$finalphpini"
+		sudo chown root: "$finalphpini"
+		ynh_store_file_checksum "$finalphpini"
+	fi
+	ynh_systemd_action --service_name=$fpm_service --action=reload
+}
+
+# Remove the dedicated php-fpm config
+#
+# usage: ynh_remove_fpm_config
+#
+# Requires YunoHost version 2.7.2 or higher.
+ynh_remove_fpm_config () {
+	local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+	local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
+	# Assume php version 7 if not set
+	if [ -z "$fpm_config_dir" ]; then
+		fpm_config_dir="/etc/php/7.0/fpm"
+		fpm_service="php7.0-fpm"
+	fi
+	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
+	ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini" 2>&1
+	ynh_systemd_action --service_name=$fpm_service --action=reload
+}

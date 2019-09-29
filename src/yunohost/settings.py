@@ -7,6 +7,7 @@ from collections import OrderedDict
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from yunohost.service import service_regen_conf
 
 logger = getActionLogger('yunohost.settings')
 
@@ -39,6 +40,12 @@ DEFAULTS = OrderedDict([
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
+    ("security.ssh.compatibility", {"type": "enum", "default": "modern",
+        "choices": ["intermediate", "modern"]}),
+    ("security.nginx.compatibility", {"type": "enum", "default": "intermediate",
+        "choices": ["intermediate", "modern"]}),
+    ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
+        "choices": ["intermediate", "modern"]}),
 ])
 
 
@@ -109,15 +116,23 @@ def settings_set(key, value):
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
             raise YunohostError('global_settings_bad_choice_for_enum', setting=key,
-                                received_type=type(value).__name__,
-                                expected_type=", ".join(settings[key]["choices"]))
+                                choice=str(value),
+                                available_choices=", ".join(settings[key]["choices"]))
     else:
         raise YunohostError('global_settings_unknown_type', setting=key,
                             unknown_type=key_type)
 
+    old_value = settings[key].get("value")
     settings[key]["value"] = value
-
     _save_settings(settings)
+
+    # TODO : whatdo if the old value is the same as
+    # the new value...
+    try:
+        trigger_post_change_hook(key, old_value, value)
+    except Exception as e:
+        logger.error("Post-change hook for setting %s failed : %s" % (key, e))
+        raise
 
 
 def settings_reset(key):
@@ -235,3 +250,52 @@ def _save_settings(settings, location=SETTINGS_PATH):
             settings_fd.write(result)
     except Exception as e:
         raise YunohostError('global_settings_cant_write_settings', reason=e)
+
+
+# Meant to be a dict of setting_name -> function to call
+post_change_hooks = {}
+
+
+def post_change_hook(setting_name):
+    def decorator(func):
+        assert setting_name in DEFAULTS.keys(), "The setting %s does not exists" % setting_name
+        assert setting_name not in post_change_hooks, "You can only register one post change hook per setting (in particular for %s)" % setting_name
+        post_change_hooks[setting_name] = func
+        return func
+    return decorator
+
+
+def trigger_post_change_hook(setting_name, old_value, new_value):
+    if setting_name not in post_change_hooks:
+        logger.debug("Nothing to do after changing setting %s" % setting_name)
+        return
+
+    f = post_change_hooks[setting_name]
+    f(setting_name, old_value, new_value)
+
+
+# ===========================================
+#
+# Actions to trigger when changing a setting
+# You can define such an action with :
+#
+# @post_change_hook("your.setting.name")
+# def some_function_name(setting_name, old_value, new_value):
+#     # Do some stuff
+#
+# ===========================================
+
+@post_change_hook("security.nginx.compatibility")
+def reconfigure_nginx(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf(names=['nginx'])
+
+@post_change_hook("security.ssh.compatibility")
+def reconfigure_ssh(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf(names=['ssh'])
+
+@post_change_hook("security.postfix.compatibility")
+def reconfigure_ssh(setting_name, old_value, new_value):
+    if old_value != new_value:
+        service_regen_conf(names=['postfix'])
