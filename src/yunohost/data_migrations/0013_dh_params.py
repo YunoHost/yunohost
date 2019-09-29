@@ -5,6 +5,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import chown
 
 from yunohost.tools import Migration
+from yunohost.certificate import _set_permissions
 from yunohost.service import service_regen_conf
 
 cron_job_file = "/etc/cron.hourly/yunohost-generate-dh-params"
@@ -12,9 +13,10 @@ command = "nice -n 19 openssl dhparam -out /etc/ssl/private/dh2048.pem -outform 
 dhparams_file = "/etc/ssl/private/dh2048.pem"
 
 class MyMigration(Migration):
-    "This migration will add dh_params line and generate it in installed instance"
+    
+    "Add dh_params line and generate it in installed instance"
 
-    def migrate(self):
+    def run(self):
 
         if not os.path.exists(dhparams_file):
             with open(cron_job_file, "w") as f:
