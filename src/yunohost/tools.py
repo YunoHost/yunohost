@@ -61,6 +61,7 @@ logger = getActionLogger('yunohost.tools')
 def cron_add(command, cron_job_file):
     with open(cron_job_file, "w") as f:
         f.write("#!/bin/bash\n")
+        f.write("set -eux\n")
         f.write(command)
 
     _set_permissions(cron_job_file, "root", "root", 0o755)
