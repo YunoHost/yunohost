@@ -58,6 +58,13 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 logger = getActionLogger('yunohost.tools')
 
 
+def cron_add(command, cron_job_file):
+    with open(cron_job_file, "w") as f:
+        f.write("#!/bin/bash\n")
+        f.write(command)
+
+    _set_permissions(cron_job_file, "root", "root", 0o755)
+
 def tools_ldapinit():
     """
     YunoHost LDAP initialization
@@ -326,12 +333,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     command = "nice -n 19 openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048 -dsaparam 2> /var/log/yunohost/dhparam_generation.log && chown root:ssl-cert /etc/ssl/private/dh2048.pem && yunohost service regen-conf >> /var/log/yunohost/dhparam_generation.log && rm /etc/cron.hourly/yunohost-generate-dh-params\n"
 
-
-    with open(cron_job_file, "w") as f:
-        f.write("#!/bin/bash\n")
-        f.write(command)
-
-    _set_permissions(cron_job_file, "root", "root", 0o755)
+    cron_add(command, cron_job_file)
+    
 
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
