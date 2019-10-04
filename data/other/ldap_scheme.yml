@@ -59,16 +59,16 @@ children:
             - groupOfNamesYnh
 
 depends_children:
-    cn=main.mail,ou=permission:
-        cn: main.mail
+    cn=mail.main,ou=permission:
+        cn: mail.main
         gidNumber: "5001"
         objectClass:
             - posixGroup
             - permissionYnh
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
-    cn=main.metronome,ou=permission:
-        cn: main.metronome
+    cn=xmpp.main,ou=permission:
+        cn: xmpp.main
         gidNumber: "5002"
         objectClass:
             - posixGroup

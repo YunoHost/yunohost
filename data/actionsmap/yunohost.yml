@@ -201,24 +201,34 @@ user:
 
     subcategories:
         group:
-            subcategory_help: Manage group
+            subcategory_help: Manage user groups
             actions:
                 ### user_group_list()
                 list:
-                    action_help: List group
+                    action_help: List existing groups
                     api: GET /users/groups
                     arguments:
-                        --fields:
-                            help: fields to fetch
-                            nargs: "+"
+                        -s:
+                            full: --short
+                            help: List only the names of groups
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all informations known about each groups
+                            action: store_true
+                        -p:
+                            full: --include-primary-groups
+                            help: Also display primary groups (each user has an eponym group that only contains itself)
+                            action: store_true
+                            default: false
 
-                ### user_group_add()
-                add:
+                ### user_group_create()
+                create:
                     action_help: Create group
                     api: POST /users/groups
                     arguments:
                         groupname:
-                            help: The unique group name to add
+                            help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
                                     - !!str ^[a-z0-9_]+$
@@ -230,7 +240,7 @@ user:
                     api: DELETE /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Username to delete
+                            help: Name of the group to be deleted
                             extra:
                                 pattern: *pattern_groupname
 
@@ -240,19 +250,19 @@ user:
                     api: PUT /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Username to update
+                            help: Name of the group to be updated
                             extra:
                                 pattern: *pattern_groupname
                         -a:
-                            full: --add-user
-                            help: User to add in group
+                            full: --add
+                            help: User(s) to add in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
                         -r:
-                            full: --remove-user
-                            help: User to remove in group
+                            full: --remove
+                            help: User(s) to remove in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
@@ -260,112 +270,62 @@ user:
 
                 ### user_group_info()
                 info:
-                    action_help: Get group information
+                    action_help: Get information about a specific group
                     api: GET /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Groupname to get information
+                            help: Name of the group to fetch info about
                             extra:
                                 pattern: *pattern_username
 
         permission:
-            subcategory_help: Manage user permission
+            subcategory_help: Manage permissions
             actions:
+
                 ### user_permission_list()
                 list:
-                    action_help: List access to user and group
-                    api: GET /users/permissions/<app>
+                    action_help: List permissions and corresponding accesses
+                    api: GET /users/permissions/<permission>
                     arguments:
+                        -s:
+                            full: --short
+                            help: Only list permission names
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all info known about each permission, including the full user list of each group it is granted to.
+                            action: store_true
+
+
+                ### user_permission_update()
+                update:
+                    action_help: Manage group or user permissions
+                    api: POST /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
                         -a:
-                            full: --app
-                            help: Application to manage the permission
+                            full: --add
+                            help: Group or usernames to grant this permission to
                             nargs: "*"
-                            metavar: APP
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
-                        -g:
-                            full: --group
-                            help: Group name
-                            nargs: "*"
-                            metavar: GROUP
-
-                ### user_permission_add()
-                add:
-                    action_help: Grant access right to users and group
-                    api: POST /users/permissions/<app>
-                    arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
+                            metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
-                        -g:
-                            full: --group
-                            help: Group name
+                        -r:
+                            full: --remove
+                            help: Group or usernames revoke this permission from
                             nargs: "*"
-                            metavar: GROUP
+                            metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
 
-                ### user_permission_remove()
-                remove:
-                    action_help: Revoke access right to users and group
-                    api: PUT /users/permissions/<app>
-                    arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
-                            extra:
-                                pattern: *pattern_username
-                        -g:
-                            full: --group
-                            help: Group name
-                            nargs: "*"
-                            metavar: GROUP
-                            extra:
-                                pattern: *pattern_username
-
-                ## user_permission_clear()
-                clear:
-                    action_help: Reset access rights for the app
+                ## user_permission_reset()
+                reset:
+                    action_help: Reset allowed groups to the default (all_users) for a given permission
                     api: DELETE /users/permissions/<app>
                     arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
 
         ssh:
             subcategory_help: Manage ssh access
@@ -832,6 +792,7 @@ app:
         addaccess:
             action_help: Grant access right to users (everyone by default)
             api: PUT /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -843,6 +804,7 @@ app:
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
             api: DELETE /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -854,6 +816,7 @@ app:
         clearaccess:
             action_help: Reset access rights for the app
             api: POST /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"

@@ -32,6 +32,7 @@ import crypt
 import random
 import string
 import subprocess
+import copy
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
@@ -126,12 +127,18 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     ldap = _get_ldap_interface()
 
+    if username in user_list()["users"]:
+        raise YunohostError("user_already_exists", user=username)
+
     # Validate uniqueness of username and mail in LDAP
-    ldap.validate_uniqueness({
-        'uid': username,
-        'mail': mail,
-        'cn': username
-    })
+    try:
+        ldap.validate_uniqueness({
+            'uid': username,
+            'mail': mail,
+            'cn': username
+        })
+    except Exception as e:
+        raise YunohostError('user_creation_failed', user=username, error=e)
 
     # Validate uniqueness of username in system users
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
@@ -204,33 +211,34 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
             except IOError as e:
                 raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
 
-    if ldap.add('uid=%s,ou=users' % username, attr_dict):
-        # Invalidate passwd to take user creation into account
-        subprocess.call(['nscd', '-i', 'passwd'])
+    try:
+        ldap.add('uid=%s,ou=users' % username, attr_dict)
+    except Exception as e:
+        raise YunohostError('user_creation_failed', user=username, error=e)
 
-        try:
-            # Attempt to create user home folder
-            subprocess.check_call(
-                ['su', '-', username, '-c', "''"])
-        except subprocess.CalledProcessError:
-            if not os.path.isdir('/home/{0}'.format(username)):
-                logger.warning(m18n.n('user_home_creation_failed'),
-                               exc_info=1)
+    # Invalidate passwd to take user creation into account
+    subprocess.call(['nscd', '-i', 'passwd'])
 
-        # Create group for user and add to group 'all_users'
-        user_group_add(groupname=username, gid=uid, sync_perm=False)
-        user_group_update(groupname=username, add_user=username, force=True, sync_perm=False)
-        user_group_update(groupname='all_users', add_user=username, force=True, sync_perm=True)
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(
+            ['su', '-', username, '-c', "''"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir('/home/{0}'.format(username)):
+            logger.warning(m18n.n('user_home_creation_failed'),
+                           exc_info=1)
 
-        # TODO: Send a welcome mail to user
-        logger.success(m18n.n('user_created'))
+    # Create group for user and add to group 'all_users'
+    user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
+    user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
 
-        hook_callback('post_user_create',
-                      args=[username, mail, password, firstname, lastname])
+    # TODO: Send a welcome mail to user
+    logger.success(m18n.n('user_created'))
 
-        return {'fullname': fullname, 'username': username, 'mail': mail}
+    hook_callback('post_user_create',
+                  args=[username, mail, password, firstname, lastname])
 
-    raise YunohostError('user_creation_failed')
+    return {'fullname': fullname, 'username': username, 'mail': mail}
 
 
 @is_unit_operation([('username', 'user')])
@@ -245,32 +253,35 @@ def user_delete(operation_logger, username, purge=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.permission import permission_sync_to_user
+
+    if username not in user_list()["users"]:
+        raise YunohostError('user_unknown', user=username)
 
     operation_logger.start()
 
-    ldap = _get_ldap_interface()
-    if ldap.remove('uid=%s,ou=users' % username):
-        # Invalidate passwd to take user deletion into account
-        subprocess.call(['nscd', '-i', 'passwd'])
-
-        if purge:
-            subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
-            subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
-    else:
-        raise YunohostError('user_deletion_failed')
-
+    user_group_update("all_users", remove=username, force=True, sync_perm=False)
+    for group, infos in user_group_list()["groups"].items():
+        if group == "all_users":
+            continue
+        # If the user is in this group (and it's not the primary group),
+        # remove the member from the group
+        if username != group and username in infos["members"]:
+            user_group_update(group, remove=username, sync_perm=False)
     user_group_delete(username, force=True, sync_perm=True)
 
-    group_list = ldap.search('ou=groups,dc=yunohost,dc=org',
-                             '(&(objectclass=groupOfNamesYnh)(memberUid=%s))'
-                             % username, ['cn'])
-    for group in group_list:
-        user_list = ldap.search('ou=groups,dc=yunohost,dc=org',
-                                'cn=' + group['cn'][0],
-                                ['memberUid'])[0]
-        user_list['memberUid'].remove(username)
-        if not ldap.update('cn=%s,ou=groups' % group['cn'][0], user_list):
-            raise YunohostError('group_update_failed')
+    ldap = _get_ldap_interface()
+    try:
+        ldap.remove('uid=%s,ou=users' % username)
+    except Exception as e:
+        raise YunohostError('user_deletion_failed', user=username, error=e)
+
+    # Invalidate passwd to take user deletion into account
+    subprocess.call(['nscd', '-i', 'passwd'])
+
+    if purge:
+        subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
+        subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
 
     hook_callback('post_user_delete', args=[username, purge])
 
@@ -338,7 +349,10 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
             'webmaster@' + main_domain,
             'postmaster@' + main_domain,
         ]
-        ldap.validate_uniqueness({'mail': mail})
+        try:
+            ldap.validate_uniqueness({'mail': mail})
+        except Exception as e:
+            raise YunohostError('user_update_failed', user=username, error=e)
         if mail[mail.find('@') + 1:] not in domains:
             raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
         if mail in aliases:
@@ -351,7 +365,10 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
         for mail in add_mailalias:
-            ldap.validate_uniqueness({'mail': mail})
+            try:
+                ldap.validate_uniqueness({'mail': mail})
+            except Exception as e:
+                raise YunohostError('user_update_failed', user=username, error=e)
             if mail[mail.find('@') + 1:] not in domains:
                 raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
             user['mail'].append(mail)
@@ -391,12 +408,14 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
 
     operation_logger.start()
 
-    if ldap.update('uid=%s,ou=users' % username, new_attr_dict):
-        logger.success(m18n.n('user_updated'))
-        app_ssowatconf()
-        return user_info(username)
-    else:
-        raise YunohostError('user_update_failed')
+    try:
+        ldap.update('uid=%s,ou=users' % username, new_attr_dict)
+    except Exception as e:
+        raise YunohostError('user_update_failed', user=username, error=e)
+
+    logger.success(m18n.n('user_updated'))
+    app_ssowatconf()
+    return user_info(username)
 
 
 def user_info(username):
@@ -453,7 +472,7 @@ def user_info(username):
 
         if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
-        elif not user_permission_list(app="mail", permission="main", username=username)['permissions']:
+        elif username not in user_permission_list(full=True)["permissions"]["mail.main"]["corresponding_users"]:
             logger.warning(m18n.n('mailbox_disabled', user=username))
         else:
             cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
@@ -480,81 +499,59 @@ def user_info(username):
             'use': storage_use
         }
 
-    if result:
-        return result_dict
-    else:
-        raise YunohostError('user_info_failed')
+    return result_dict
 
 
 #
 # Group subcategory
 #
-def user_group_list(fields=None):
+def user_group_list(short=False, full=False, include_primary_groups=True):
     """
     List users
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for user fetching
-        limit -- Maximum number of user fetched
-        fields -- fields to fetch
-
+        short -- Only list the name of the groups without any additional info
+        full -- List all the info available for each groups
+        include_primary_groups -- Include groups corresponding to users (which should always only contains this user)
+                                  This option is set to false by default in the action map because we don't want to have
+                                  these displayed when the user runs `yunohost user group list`, but internally we do want
+                                  to list them when called from other functions
     """
-    from yunohost.utils.ldap import _get_ldap_interface
+
+    # Fetch relevant informations
+
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
-    group_attr = {
-        'cn': 'groupname',
-        'member': 'members',
-        'permission': 'permission'
-    }
-    attrs = ['cn']
+    groups_infos = ldap.search('ou=groups,dc=yunohost,dc=org',
+                               '(objectclass=groupOfNamesYnh)',
+                               ["cn", "member", "permission"])
+
+    # Parse / organize information to be outputed
+
+    users = user_list()["users"]
     groups = {}
+    for infos in groups_infos:
 
-    if fields:
-        keys = group_attr.keys()
-        for attr in fields:
-            if attr in keys:
-                attrs.append(attr)
-            else:
-                raise YunohostError('field_invalid', attr)
-    else:
-        attrs = ['cn', 'member']
+        name = infos["cn"][0]
 
-    result = ldap.search('ou=groups,dc=yunohost,dc=org',
-                         '(objectclass=groupOfNamesYnh)',
-                         attrs)
-
-    for group in result:
-        # The group "admins" should be hidden for the user
-        if group_attr['cn'] == "admins":
+        if not include_primary_groups and name in users:
             continue
-        entry = {}
-        for attr, values in group.items():
-            if values:
-                if attr == "member":
-                    entry[group_attr[attr]] = []
-                    for v in values:
-                        entry[group_attr[attr]].append(v.split("=")[1].split(",")[0])
-                elif attr == "permission":
-                    entry[group_attr[attr]] = {}
-                    for v in values:
-                        permission = v.split("=")[1].split(",")[0].split(".")[1]
-                        pType = v.split("=")[1].split(",")[0].split(".")[0]
-                        if permission in entry[group_attr[attr]]:
-                            entry[group_attr[attr]][permission].append(pType)
-                        else:
-                            entry[group_attr[attr]][permission] = [pType]
-                else:
-                    entry[group_attr[attr]] = values[0]
 
-        groupname = entry[group_attr['cn']]
-        groups[groupname] = entry
+        groups[name] = {}
+
+        groups[name]["members"] = [_ldap_path_extract(p, "uid") for p in infos.get("member", [])]
+
+        if full:
+            groups[name]["permissions"] = [_ldap_path_extract(p, "cn") for p in infos.get("permission", [])]
+
+    if short:
+        groups = groups.keys()
 
     return {'groups': groups}
 
 
-@is_unit_operation([('groupname', 'user')])
-def user_group_add(operation_logger, groupname, gid=None, sync_perm=True):
+@is_unit_operation([('groupname', 'group')])
+def user_group_create(operation_logger, groupname, gid=None, primary_group=False, sync_perm=True):
     """
     Create group
 
@@ -565,8 +562,6 @@ def user_group_add(operation_logger, groupname, gid=None, sync_perm=True):
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    operation_logger.start()
-
     ldap = _get_ldap_interface()
 
     # Validate uniqueness of groupname in LDAP
@@ -574,12 +569,12 @@ def user_group_add(operation_logger, groupname, gid=None, sync_perm=True):
         'cn': groupname
     }, base_dn='ou=groups,dc=yunohost,dc=org')
     if conflict:
-        raise YunohostError('group_name_already_exist', name=groupname)
+        raise YunohostError('group_already_exist', group=groupname)
 
     # Validate uniqueness of groupname in system group
     all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
     if groupname in all_existing_groupnames:
-        raise YunohostError('system_groupname_exists')
+        raise YunohostError('group_already_exist_on_system', group=groupname)
 
     if not gid:
         # Get random GID
@@ -596,16 +591,30 @@ def user_group_add(operation_logger, groupname, gid=None, sync_perm=True):
         'gidNumber': gid,
     }
 
-    if ldap.add('cn=%s,ou=groups' % groupname, attr_dict):
+    # Here we handle the creation of a primary group
+    # We want to initialize this group to contain the corresponding user
+    # (then we won't be able to add/remove any user in this group)
+    if primary_group:
+        attr_dict["member"] = ["uid=" + groupname + ",ou=users,dc=yunohost,dc=org"]
+
+    operation_logger.start()
+    try:
+        ldap.add('cn=%s,ou=groups' % groupname, attr_dict)
+    except Exception as e:
+        raise YunohostError('group_creation_failed', group=groupname, error=e)
+
+    if sync_perm:
+        permission_sync_to_user()
+
+    if not primary_group:
         logger.success(m18n.n('group_created', group=groupname))
-        if sync_perm:
-            permission_sync_to_user()
-        return {'name': groupname}
+    else:
+        logger.debug(m18n.n('group_created', group=groupname))
 
-    raise YunohostError('group_creation_failed', group=groupname)
+    return {'name': groupname}
 
 
-@is_unit_operation([('groupname', 'user')])
+@is_unit_operation([('groupname', 'group')])
 def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     """
     Delete user
@@ -617,102 +626,104 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    forbidden_groups = ["all_users", "admins"] + user_list(fields=['uid'])['users'].keys()
-    if not force and groupname in forbidden_groups:
-        raise YunohostError('group_deletion_not_allowed', group=groupname)
+    existing_groups = user_group_list()['groups'].keys()
+    if groupname not in existing_groups:
+        raise YunohostError('group_unknown', group=groupname)
+
+    # Refuse to delete primary groups of a user (e.g. group 'sam' related to user 'sam')
+    # without the force option...
+    #
+    # We also can't delete "all_users" because that's a special group...
+    existing_users = user_list()['users'].keys()
+    undeletable_groups = existing_users + ["all_users", "admins"]
+    if groupname in undeletable_groups and not force:
+        raise YunohostError('group_cannot_be_deleted', group=groupname)
 
     operation_logger.start()
     ldap = _get_ldap_interface()
-    if not ldap.remove('cn=%s,ou=groups' % groupname):
-        raise YunohostError('group_deletion_failed', group=groupname)
+    try:
+        ldap.remove('cn=%s,ou=groups' % groupname)
+    except Exception as e:
+        raise YunohostError('group_deletion_failed', group=groupname, error=e)
 
-    logger.success(m18n.n('group_deleted', group=groupname))
     if sync_perm:
         permission_sync_to_user()
 
+    if groupname not in existing_users:
+        logger.success(m18n.n('group_deleted', group=groupname))
+    else:
+        logger.debug(m18n.n('group_deleted', group=groupname))
 
-@is_unit_operation([('groupname', 'user')])
-def user_group_update(operation_logger, groupname, add_user=None, remove_user=None, force=False, sync_perm=True):
+
+@is_unit_operation([('groupname', 'group')])
+def user_group_update(operation_logger, groupname, add=None, remove=None, force=False, sync_perm=True):
     """
     Update user informations
 
     Keyword argument:
         groupname -- Groupname to update
-        add_user -- User to add in group
-        remove_user -- User to remove in group
+        add -- User(s) to add in group
+        remove -- User(s) to remove in group
 
     """
 
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    if (groupname == 'all_users' or groupname == 'admins') and not force:
-        raise YunohostError('edit_group_not_allowed', group=groupname)
+    # Refuse to edit a primary group of a user (e.g. group 'sam' related to user 'sam')
+    # Those kind of group should only ever contain the user (e.g. sam) and only this one.
+    # We also can't edit "all_users" without the force option because that's a special group...
+    existing_users = user_list()['users'].keys()
+    uneditable_groups = existing_users + ["all_users", "admins"]
+    if groupname in uneditable_groups and not force:
+        raise YunohostError('group_cannot_be_edited', group=groupname)
 
-    ldap = _get_ldap_interface()
+    # We extract the uid for each member of the group to keep a simple flat list of members
+    current_group = user_group_info(groupname)["members"]
+    new_group = copy.copy(current_group)
 
-    # Populate group informations
-    attrs_to_fetch = ['member']
-    result = ldap.search(base='ou=groups,dc=yunohost,dc=org',
-                         filter='cn=' + groupname, attrs=attrs_to_fetch)
-    if not result:
-        raise YunohostError('group_unknown', group=groupname)
-    group = result[0]
+    if add:
+        users_to_add = [add] if not isinstance(add, list) else add
 
-    new_group_list = {'member': set(), 'memberUid': set()}
-    if 'member' in group:
-        new_group_list['member'] = set(group['member'])
-    else:
-        group['member'] = []
-
-    existing_users = user_list(fields=['uid'])['users'].keys()
-
-    if add_user:
-        if not isinstance(add_user, list):
-            add_user = [add_user]
-
-        for user in add_user:
+        for user in users_to_add:
             if user not in existing_users:
                 raise YunohostError('user_unknown', user=user)
 
-        for user in add_user:
-            userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
-            if userDN in group['member']:
-                logger.warning(m18n.n('user_already_in_group', user=user, group=groupname))
-            new_group_list['member'].add(userDN)
-
-    if remove_user:
-        if not isinstance(remove_user, list):
-            remove_user = [remove_user]
-
-        for user in remove_user:
-            if user == groupname:
-                raise YunohostError('remove_user_of_group_not_allowed', user=user, group=groupname)
-
-        for user in remove_user:
-            userDN = "uid=" + user + ",ou=users,dc=yunohost,dc=org"
-            if 'member' in group and userDN in group['member']:
-                new_group_list['member'].remove(userDN)
+            if user in current_group:
+                logger.warning(m18n.n('group_user_already_in_group', user=user, group=groupname))
             else:
-                logger.warning(m18n.n('user_not_in_group', user=user, group=groupname))
+                operation_logger.related_to.append(('user', user))
 
-    # Sychronise memberUid with member (to keep the posix group structure)
-    # In posixgroup the main group of each user is only written in the gid number of the user
-    for member in new_group_list['member']:
-        member_Uid = member.split("=")[1].split(",")[0]
-        # Don't add main user in the group.
-        # Note that in the Unix system the main user of the group is linked by the gid in the user attribute.
-        # So the main user need to be not in the memberUid list of his own group.
-        if member_Uid != groupname:
-            new_group_list['memberUid'].add(member_Uid)
+        new_group += users_to_add
 
-    operation_logger.start()
+    if remove:
+        users_to_remove = [remove] if not isinstance(remove, list) else remove
 
-    if new_group_list['member'] != set(group['member']):
-        if not ldap.update('cn=%s,ou=groups' % groupname, new_group_list):
-            raise YunohostError('group_update_failed', group=groupname)
+        for user in users_to_remove:
+            if user not in current_group:
+                logger.warning(m18n.n('group_user_not_in_group', user=user, group=groupname))
+            else:
+                operation_logger.related_to.append(('user', user))
 
-    logger.success(m18n.n('group_updated', group=groupname))
+        # Remove users_to_remove from new_group
+        # Kinda like a new_group -= users_to_remove
+        new_group = [u for u in new_group if u not in users_to_remove]
+
+    new_group_dns = ["uid=" + user + ",ou=users,dc=yunohost,dc=org" for user in new_group]
+
+    if set(new_group) != set(current_group):
+        operation_logger.start()
+        ldap = _get_ldap_interface()
+        try:
+            ldap.update('cn=%s,ou=groups' % groupname, {"member": set(new_group_dns), "memberUid": set(new_group)})
+        except Exception as e:
+            raise YunohostError('group_update_failed', group=groupname, error=e)
+
+    if groupname != "all_users":
+        logger.success(m18n.n('group_updated', group=groupname))
+    else:
+        logger.debug(m18n.n('group_updated', group=groupname))
+
     if sync_perm:
         permission_sync_to_user()
     return user_group_info(groupname)
@@ -727,59 +738,46 @@ def user_group_info(groupname):
 
     """
 
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
 
-    group_attrs = [
-        'cn', 'member', 'permission'
-    ]
-    result = ldap.search('ou=groups,dc=yunohost,dc=org', "cn=" + groupname, group_attrs)
+    # Fetch info for this group
+    result = ldap.search('ou=groups,dc=yunohost,dc=org',
+                         "cn=" + groupname,
+                         ["cn", "member", "permission"])
 
     if not result:
         raise YunohostError('group_unknown', group=groupname)
 
-    group = result[0]
+    infos = result[0]
 
-    result_dict = {
-        'groupname': group['cn'][0],
-        'member': None
+    # Format data
+
+    return {
+        'members': [_ldap_path_extract(p, "uid") for p in infos.get("member", [])],
+        'permissions': [_ldap_path_extract(p, "cn") for p in infos.get("permission", [])]
     }
-    if 'member' in group:
-        result_dict['member'] = {m.split("=")[1].split(",")[0] for m in group['member']}
-    return result_dict
 
 
 #
 # Permission subcategory
 #
 
-def user_permission_list(app=None, permission=None, username=None, group=None, sync_perm=True):
+def user_permission_list(short=False, full=False):
     import yunohost.permission
-    return yunohost.permission.user_permission_list(app, permission, username, group)
+    return yunohost.permission.user_permission_list(short, full)
 
 
-@is_unit_operation([('app', 'user')])
-def user_permission_add(operation_logger, app, permission="main", username=None, group=None, sync_perm=True):
+def user_permission_update(permission, add=None, remove=None, sync_perm=True):
     import yunohost.permission
-    return yunohost.permission.user_permission_update(operation_logger, app, permission=permission,
-                                                      add_username=username, add_group=group,
-                                                      del_username=None, del_group=None,
+    return yunohost.permission.user_permission_update(permission,
+                                                      add=add, remove=remove,
                                                       sync_perm=sync_perm)
 
 
-@is_unit_operation([('app', 'user')])
-def user_permission_remove(operation_logger, app, permission="main", username=None, group=None, sync_perm=True):
+def user_permission_reset(permission, sync_perm=True):
     import yunohost.permission
-    return yunohost.permission.user_permission_update(operation_logger, app, permission=permission,
-                                                      add_username=None, add_group=None,
-                                                      del_username=username, del_group=group,
-                                                      sync_perm=sync_perm)
-
-
-@is_unit_operation([('app', 'user')])
-def user_permission_clear(operation_logger, app, permission=None, sync_perm=True):
-    import yunohost.permission
-    return yunohost.permission.user_permission_clear(operation_logger, app, permission,
+    return yunohost.permission.user_permission_reset(permission,
                                                      sync_perm=sync_perm)
 
 
