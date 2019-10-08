@@ -226,8 +226,8 @@ ynh_install_app_dependencies () {
     # If we require to install php dependency
     if echo $dependencies | grep -q 'php';
     then
-        # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33+1 on debian)
-        if dpkg --list | grep php | grep -q "7.0.33-10"
+        # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
+        if dpkg --list | grep "php7.0" | grep -q -v "7.0.33-0+deb9u5"
         then
             # And sury ain't already installed
             if ! grep -nrq "sury" /etc/apt/sources.list*
