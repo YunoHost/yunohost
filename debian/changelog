@@ -1,3 +1,9 @@
+yunohost (3.6.5.1) stable; urgency=low
+  
+  - [mod] Change maxretry of fail2ban from 6 to 10 (fe8fd1b)
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 Oct 2019 20:00:00  +0000
+
 yunohost (3.6.5) stable; urgency=low
 
   - [enh] Detect and warn early about unavailable full domains... (#798)
