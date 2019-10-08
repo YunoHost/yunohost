@@ -2564,13 +2564,14 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
         # Full-domain apps typically declare something like path_url="/" or path=/
         # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
         install_script_content = open(os.path.join(app_folder, 'scripts/install')).read()
+
         if re.search(r"\npath(_url)?=[\"']?/[\"']?\n", install_script_content) \
-           and re.search(r"(ynh_webpath_register|yunohost app checkurl)"):
+           and re.search(r"(ynh_webpath_register|yunohost app checkurl)", install_script_content):
 
             domain = domain_args[0][1]
             conflicts = _get_conflicting_apps(domain, "/")
 
-            raise YunohostError('app_full_domain_unavailable', domain)
+            raise YunohostError('app_full_domain_unavailable', domain=domain)
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):
