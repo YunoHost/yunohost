@@ -625,5 +625,6 @@
     "permission_already_allowed": "El grupo «{group}» ya tiene el permiso «{permission}» activado",
     "permission_already_disallowed": "El grupo «{group}» ya tiene el permiso «{permission}» desactivado",
     "permission_cannot_remove_main": "No está permitido eliminar un permiso principal",
-    "user_already_exists": "El usuario {user} ya existe"
+    "user_already_exists": "El usuario {user} ya existe",
+    "app_full_domain_unavailable": "Lamentablemente esta aplicación necesita un dominio completo para ser instalada pero ya hay otras aplicaciones instaladas en el dominio «{domain}». Una solución posible es añadir y usar un subdominio dedicado a esta aplicación."
 }
