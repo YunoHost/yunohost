@@ -36,16 +36,22 @@ def clean():
     if _is_installed("legacy_app"):
         app_remove("legacy_app")
 
+    if _is_installed("full_domain_app"):
+        app_remove("full_domain_app")
+
     to_remove = []
     to_remove += glob.glob("/etc/nginx/conf.d/*.d/*legacy*")
+    to_remove += glob.glob("/etc/nginx/conf.d/*.d/*full_domain*")
     to_remove += glob.glob("/etc/nginx/conf.d/*.d/*break_yo_system*")
     for filepath in to_remove:
         os.remove(filepath)
 
     to_remove = []
     to_remove += glob.glob("/etc/yunohost/apps/*legacy_app*")
+    to_remove += glob.glob("/etc/yunohost/apps/*full_domain_app*")
     to_remove += glob.glob("/etc/yunohost/apps/*break_yo_system*")
     to_remove += glob.glob("/var/www/*legacy*")
+    to_remove += glob.glob("/var/www/*full_domain*")
     for folderpath in to_remove:
         shutil.rmtree(folderpath, ignore_errors=True)
 
@@ -117,6 +123,13 @@ def install_legacy_app(domain, path):
 
     app_install("./tests/apps/legacy_app_ynh",
                 args="domain=%s&path=%s" % (domain, path),
+                force=True)
+
+
+def install_full_domain_app(domain):
+
+    app_install("./tests/apps/full_domain_app_ynh",
+                args="domain=%s" % domain,
                 force=True)
 
 
@@ -270,6 +283,22 @@ def test_legacy_app_failed_remove(secondary_domain):
     # to this app got removed ...
     #
     assert app_is_not_installed(secondary_domain, "legacy")
+
+
+def test_full_domain_app(secondary_domain):
+
+    install_full_domain_app(secondary_domain)
+
+    assert app_is_exposed_on_http(secondary_domain, "/", "This is a dummy app")
+
+
+def test_full_domain_app_with_conflicts(secondary_domain):
+
+    install_legacy_app(secondary_domain, "/legacy")
+
+    # TODO : once #808 is merged, add test that the message raised is 'app_full_domain_unavailable'
+    with pytest.raises(YunohostError):
+        install_full_domain_app(secondary_domain)
 
 
 def test_systemfuckedup_during_app_install(secondary_domain):
