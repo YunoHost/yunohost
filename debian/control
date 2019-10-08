@@ -31,7 +31,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , equivs, lsof
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
- , bash-completion, rsyslog, etckeeper
+ , bash-completion, rsyslog
  , php-gd, php-curl, php-gettext, php-mcrypt
  , python-pip
  , unattended-upgrades
