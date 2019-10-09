@@ -268,7 +268,12 @@ def user_delete(operation_logger, username, purge=False):
         # remove the member from the group
         if username != group and username in infos["members"]:
             user_group_update(group, remove=username, sync_perm=False)
-    user_group_delete(username, force=True, sync_perm=True)
+
+    # Delete primary group if it exists (why wouldnt it exists ?  because some
+    # epic bug happened somewhere else and only a partial removal was
+    # performed...)
+    if username in user_group_list()['groups'].keys():
+        user_group_delete(username, force=True, sync_perm=True)
 
     ldap = _get_ldap_interface()
     try:

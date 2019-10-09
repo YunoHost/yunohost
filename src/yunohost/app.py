@@ -433,6 +433,9 @@ def app_map(app=None, raw=False, user=None):
             continue
         # Users must at least have access to the main permission to have access to extra permissions
         if user:
+            if not app_id + ".main" in permissions:
+                logger.warning("Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/" % app_id)
+                continue
             main_perm = permissions[app_id + ".main"]
             if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
                 continue
