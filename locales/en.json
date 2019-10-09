@@ -268,7 +268,7 @@
     "log_letsencrypt_cert_install": "Install a Let's encrypt certificate on '{}' domain",
     "log_permission_create": "Create permission '{}'",
     "log_permission_delete": "Delete permission '{}'",
-    "log_permission_urls": "Update urls related to permission '{}'",
+    "log_permission_url": "Update url related to permission '{}'",
     "log_selfsigned_cert_install": "Install self signed certificate on '{}' domain",
     "log_letsencrypt_cert_renew": "Renew '{}' Let's encrypt certificate",
     "log_regen_conf": "Regenerate system configurations '{}'",

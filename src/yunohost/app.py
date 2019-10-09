@@ -454,33 +454,18 @@ def app_map(app=None, raw=False, user=None):
 
             return perm_domain, perm_path
 
-        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["urls"]}
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
                 continue
-            if len(perm_info["urls"]) > 1 or perm_info["urls"][0].startswith("re:"):
-                #
-                # Here we have a big conceptual issue about the sso ...
-                # Let me take a sip of coffee and turn off the music...
-                #
-                # Let's say we have an app foo which created a permission
-                # 'foo.admin' and added as url "/admin" and "/api" This
-                # permission got defined somehow as only accessible for group
-                # "admins".  So both "/admin" and "/api" are protected. Good!
-                #
-                # Now if we really want users in group "admins" to access those
-                # uris, then each users in group "admins" need to have these
-                # urls in the ssowat dict for this user. Which corresponds to a
-                # tile.  To put it otherwise : in the current code of ssowat, a
-                # permission = a tile = a url !
-                #
-                # We also have an issue if the url define is a regex, because
+            if perm_info["url"].startswith("re:"):
+                # Here, we have an issue if the chosen url is a regex, because
                 # the url we want to add to the dict is going to be turned into
                 # a clickable link (or analyzed by other parts of yunohost
                 # code...). To put it otherwise : in the current code of ssowat,
-                # you can't give access a user to a regex
+                # you can't give access a user to a regex.
                 #
                 # Instead, as drafted by Josue, we could rework the ssowat logic
                 # about how routes and their permissions are defined. So for example,
@@ -498,10 +483,10 @@ def app_map(app=None, raw=False, user=None):
                 # protected/unprotected/skipped uris and regexes and we gotta
                 # handle / migrate all the legacy stuff somehow if we don't
                 # want to end up with a total mess in the future idk
-                logger.error("Permission %s can't be added to the SSOwat configuration because it uses multiple urls and/or uses a regex url" % perm_name)
+                logger.error("Permission %s can't be added to the SSOwat configuration because it doesn't support regexes so far..." % perm_name)
                 continue
 
-            perm_domain, perm_path = _sanitized_absolute_url(perm_info["urls"][0])
+            perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
 
             if perm_name.endswith(".main"):
                 perm_label = label
@@ -535,7 +520,6 @@ def app_change_url(operation_logger, app, domain, path):
     """
     from yunohost.hook import hook_exec, hook_callback
     from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
-    from yunohost.permission import permission_urls
 
     installed = _is_installed(app)
     if not installed:
@@ -835,7 +819,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_urls, permission_delete, permission_sync_to_user, user_permission_update
+    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -994,7 +978,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Initialize the main permission for the app
     # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
-    permission_create(app_instance_name+".main", urls=["/"])
+    permission_create(app_instance_name+".main", url="/")
 
     # Execute the app install script
     install_retcode = 1
@@ -1088,7 +1072,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
     if not (domain and path):
-        permission_urls(app_instance_name + ".main", remove=["/"], sync_perm=False)
+        permission_url(app_instance_name + ".main", url=None, sync_perm=False)
 
     # Migrate classic public app still using the legacy unprotected_uris
     if app_settings.get("unprotected_uris", None) == "/":
@@ -1178,7 +1162,7 @@ def app_addaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage permissions.")
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions.")
 
     output = {}
     for app in apps:
@@ -1199,7 +1183,7 @@ def app_removeaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage permissions.")
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions.")
 
     output = {}
     for app in apps:
@@ -1219,7 +1203,7 @@ def app_clearaccess(apps):
     """
     from yunohost.permission import user_permission_reset
 
-    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage permissions.")
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions.")
 
     output = {}
     for app in apps:
@@ -1329,7 +1313,7 @@ def app_setting(app, key, value=None, delete=False):
             if key in ['redirected_urls', 'redirected_regex']:
                 value = yaml.load(value)
             if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
-                logger.warning("/!\ Packagers ! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers ynh_permission_{create,urls,update,delete} and the 'visitors' group to manage public/private access.")
+                logger.warning("/!\ Packagers ! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage public/private access.")
             app_settings[key] = value
         _set_app_settings(app, app_settings)
 
@@ -1562,20 +1546,24 @@ def app_ssowatconf():
         # New permission system
         this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app['id'] + ".")}
         for perm_name, perm_info in this_app_perms.items():
+
+            # Ignore permissions for which there's no url defined
+            if not perm_info["url"]:
+                continue
+
             # FIXME : gotta handle regex-urls here... meh
-            urls = [_sanitized_absolute_url(url) for url in perm_info["urls"]]
+            url = _sanitized_absolute_url(perm_info["url"])
             if "visitors" in perm_info["allowed"]:
-                unprotected_urls += urls
+                unprotected_urls.append(url)
 
                 # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
-                protected_urls = [u for u in protected_urls if u not in urls]
+                protected_urls = [u for u in protected_urls if u != url]
             else:
                 # TODO : small optimization to implement : we don't need to explictly add all the app roots
-
-                protected_urls += urls
+                protected_urls.append(url)
 
                 # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
-                unprotected_urls = [u for u in unprotected_urls if u not in urls]
+                unprotected_urls = [u for u in unprotected_urls if u != url]
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
@@ -1585,11 +1573,13 @@ def app_ssowatconf():
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
 
-
     permissions_per_url = {}
-    for permission_name, permission_infos in all_permissions.items():
-        for url in permission_infos["urls"]:
-            permissions_per_url[url] = permission_infos['corresponding_users']
+    for perm_name, perm_info in all_permissions.items():
+        # Ignore permissions for which there's no url defined
+        if not perm_info["url"]:
+            continue
+        permissions_per_url[perm_info["url"]] = perm_info['corresponding_users']
+
 
     conf_dict = {
         'portal_domain': main_domain,

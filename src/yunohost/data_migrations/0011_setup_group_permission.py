@@ -107,8 +107,8 @@ class MyMigration(Migration):
             path = app_setting(app, 'path')
             domain = app_setting(app, 'domain')
 
-            urls = "/" if domain and path else None
-            permission_create(app+".main", urls=urls, sync_perm=False)
+            url = "/" if domain and path else None
+            permission_create(app+".main", url=url, sync_perm=False)
             if permission:
                 allowed_group = permission.split(',')
                 user_permission_update(app+".main", remove="all_users", add=allowed_group, sync_perm=False)

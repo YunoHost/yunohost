@@ -1189,7 +1189,7 @@ class RestoreManager():
             return
 
         from yunohost.user import user_group_list
-        from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list
+        from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list, permission_sync_to_user
 
         # Backup old permission for apps
         # We need to do that because in case of an app is installed we can't remove the permission for this app
@@ -1251,7 +1251,7 @@ class RestoreManager():
         for permission_name, permission_infos in old_apps_permission.items():
             app_name = permission_name.split(".")[0]
             if _is_installed(app_name):
-                permission_create(permission_name, urls=permission_infos["urls"], sync_perm=False)
+                permission_create(permission_name, url=permission_infos["url"], sync_perm=False)
                 user_permission_update(permission_name, remove="all_users", add=permission_infos["allowed"])
 
     def _restore_apps(self):
@@ -1362,7 +1362,7 @@ class RestoreManager():
 
                 for permission_name, permission_infos in permissions.items():
 
-                    permission_create(permission_name, urls=permission_infos.get("urls", []))
+                    permission_create(permission_name, url=permission_infos.get("url", None))
 
                     if "allowed" not in permission_infos:
                         logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself." % (permission_name, app_instance_name))

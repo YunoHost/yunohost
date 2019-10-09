@@ -73,7 +73,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
 
         if full:
             permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
-            permissions[name]["urls"] = infos.get("URL", [])
+            permissions[name]["url"] = infos.get("URL", [None])[0]
 
     if short:
         permissions = permissions.keys()
@@ -260,27 +260,27 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 #
 #  The followings methods are *not* directly exposed.
 #  They are used to create/delete the permissions (e.g. during app install/remove)
-#  and by some app helpers to possibly add additional permissions and tweak the urls
+#  and by some app helpers to possibly add additional permissions
 #
 #
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, urls=None, sync_perm=True):
+def permission_create(operation_logger, permission, url=None, sync_perm=True):
     """
     Create a new permission for a specific application
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        urls       -- list of URLs to specify for the permission.
+        url        -- (optional) URL for which access will be allowed/forbidden
 
-    Urls are assumed to be relative to the app domain/path if they start with '/'.
-    For example:
+    If provided, 'url' is assumed to be relative to the app domain/path if they
+    start with '/'.  For example:
        /                             -> domain.tld/app
        /admin                        -> domain.tld/app/admin
        domain.tld/app/api            -> domain.tld/app/api
 
-    URLs can be later treated as regexes when they start with "re:".
+    'url' can be later treated as a regex if it starts with "re:".
     For example:
        re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
@@ -316,8 +316,8 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
     if permission.endswith(".main"):
         attr_dict['groupPermission'] = ['cn=all_users,ou=groups,dc=yunohost,dc=org']
 
-    if urls:
-        attr_dict['URL'] = urls
+    if url:
+        attr_dict['URL'] = url
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
@@ -335,15 +335,13 @@ def permission_create(operation_logger, permission, urls=None, sync_perm=True):
 
 
 @is_unit_operation()
-def permission_urls(operation_logger, permission, add=None, remove=None, sync_perm=True):
+def permission_url(operation_logger, permission, url=None, sync_perm=True):
     """
     Update urls related to a permission for a specific application
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        add        -- List of URLs to add (c.f. permission_create for documentation about their format)
-        remove     -- List of URLs to remove (c.f. permission_create for documentation about their format)
-
+        url        -- (optional) URL for which access will be allowed/forbidden
     """
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
@@ -355,17 +353,9 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
         raise YunohostError('permission_not_found', permission=permission)
 
     # Compute new url list
+    old_url = existing_permission["url"]
 
-    new_urls = copy.copy(existing_permission["urls"])
-
-    if add:
-        urls_to_add = [add] if not isinstance(add, list) else add
-        new_urls += urls_to_add
-    if remove:
-        urls_to_remove = [remove] if not isinstance(remove, list) else remove
-        new_urls = [u for u in new_urls if u not in urls_to_remove]
-
-    if set(new_urls) == set(existing_permission["urls"]):
+    if old_url == url:
         logger.warning(m18n.n('permission_update_nothing_to_do'))
         return existing_permission
 
@@ -375,7 +365,7 @@ def permission_urls(operation_logger, permission, add=None, remove=None, sync_pe
     operation_logger.start()
 
     try:
-        ldap.update('cn=%s,ou=permission' % permission, {'URL': new_urls})
+        ldap.update('cn=%s,ou=permission' % permission, {'URL': [url]})
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 
