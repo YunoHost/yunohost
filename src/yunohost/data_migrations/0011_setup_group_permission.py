@@ -60,7 +60,6 @@ class MyMigration(Migration):
         ldap_map = read_yaml('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml')
 
         try:
-            self.remove_if_exists("cn=sftpusers,ou=groups")
             self.remove_if_exists("ou=permission")
             self.remove_if_exists('ou=groups')
 
