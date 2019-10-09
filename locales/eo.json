@@ -552,5 +552,6 @@
     "log_app_remove": "Forigu la aplikon '{}'",
     "service_restart_failed": "Ne povis rekomenci la servon '{service:s}'\n\nLastatempaj servaj protokoloj: {logs:s}",
     "firewall_rules_cmd_failed": "Iuj komandoj pri fajroŝirmilo malsukcesis. Pliaj informoj en ensaluto.",
-    "certmanager_certificate_fetching_or_enabling_failed": "Provante uzi la novan atestilon por {domain:s} ne funkciis …"
+    "certmanager_certificate_fetching_or_enabling_failed": "Provante uzi la novan atestilon por {domain:s} ne funkciis …",
+    "app_full_domain_unavailable": "Bedaŭrinde, ĉi tiu apliko postulas plenan domajnon esti instalita, sed iuj aliaj programoj jam estas instalitaj sur '{domain}'. Unu ebla solvo estas aldoni kaj uzi subdomajnon dediĉitan al ĉi tiu aplikaĵo anstataŭe."
 }
