@@ -217,6 +217,10 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     if existing_permission is None:
         raise YunohostError('permission_not_found', permission=permission)
 
+    if existing_permission["allowed"] == ["all_users"]:
+        logger.warning("The permission was not updated all addition/removal requests already match the current state.")
+        return
+
     # Update permission with default (all_users)
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))

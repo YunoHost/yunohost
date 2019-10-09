@@ -306,6 +306,17 @@ def test_permission_reset():
     assert res['blog.main']['allowed'] == ["all_users"]
     assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
 
+
+def test_permission_reset_idempotency():
+    # Reset permission
+    user_permission_reset("blog.main")
+    user_permission_reset("blog.main")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.main']['allowed'] == ["all_users"]
+    assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
+
+
 #
 # Error on update function
 #
