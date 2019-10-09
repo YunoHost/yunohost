@@ -232,11 +232,12 @@ ynh_webpath_register () {
 
 # Create a new permission for the app
 #
-# example: ynh_permission_create --permission admin --url /admin
+# example: ynh_permission_create --permission admin --url /admin --allowed alice bob
 #
-# usage: ynh_permission_create --permission "permission" [--url "url"]
+# usage: ynh_permission_create --permission "permission" [--url "url"] [--allowed group1 group2]
 # | arg: permission - the name for the permission (by default a permission named "main" already exist)
 # | arg: url - (optional) URL for which access will be allowed/forbidden
+# | arg: allowed - (optional) A list of group/user to allow for the permission
 #
 # If provided, 'url' is assumed to be relative to the app domain/path if they
 # start with '/'.  For example:
@@ -250,9 +251,10 @@ ynh_webpath_register () {
 #    re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
 #
 ynh_permission_create() {
-    declare -Ar args_array=( [p]=permission= [u]=url= )
+    declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= )
     local permission
-    local urls
+    local url
+    local allowed
     ynh_handle_getopts_args "$@"
 
     if [[ -n ${url:-} ]]; then
@@ -261,7 +263,11 @@ ynh_permission_create() {
         url="None"
     fi
 
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url, sync_perm=False)"
+    if [[ -n ${allowed:-} ]]; then
+        allowed=",allowed=['${allowed//';'/"','"}']"
+    fi
+
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} , sync_perm=False)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)

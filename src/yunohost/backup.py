@@ -1251,8 +1251,7 @@ class RestoreManager():
         for permission_name, permission_infos in old_apps_permission.items():
             app_name = permission_name.split(".")[0]
             if _is_installed(app_name):
-                permission_create(permission_name, url=permission_infos["url"], sync_perm=False)
-                user_permission_update(permission_name, remove="all_users", add=permission_infos["allowed"], sync_perm=False)
+                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
 
         permission_sync_to_user()
 
@@ -1365,15 +1364,13 @@ class RestoreManager():
 
                 for permission_name, permission_infos in permissions.items():
 
-                    permission_create(permission_name, url=permission_infos.get("url", None), sync_perm=False)
-
                     if "allowed" not in permission_infos:
                         logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself." % (permission_name, app_instance_name))
+                        should_be_allowed = ["all_users"]
                     else:
                         should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
-                        current_allowed = user_permission_list()["permissions"][permission_name]["allowed"]
-                        if should_be_allowed != current_allowed:
-                            user_permission_update(permission_name, remove=current_allowed, add=should_be_allowed, sync_perm=False)
+
+                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed, sync_perm=False)
 
                 permission_sync_to_user()
 

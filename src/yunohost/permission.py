@@ -266,13 +266,14 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, url=None, sync_perm=True):
+def permission_create(operation_logger, permission, url=None, allowed=None, sync_perm=True):
     """
     Create a new permission for a specific application
 
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
         url        -- (optional) URL for which access will be allowed/forbidden
+        allowed    -- (optional) A list of group/user to allow for the permission
 
     If provided, 'url' is assumed to be relative to the app domain/path if they
     start with '/'.  For example:
@@ -286,6 +287,7 @@ def permission_create(operation_logger, permission, url=None, sync_perm=True):
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
 
+    from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
@@ -312,8 +314,18 @@ def permission_create(operation_logger, permission, url=None, sync_perm=True):
         'gidNumber': gid,
     }
 
+    # If who should be allowed is explicitly provided, use this info
+    if allowed:
+        if not isinstance(allowed, list):
+            allowed = [allowed]
+        # (though first we validate that the targets actually exist)
+        all_existing_groups = user_group_list()['groups'].keys()
+        for g in allowed:
+            if g not in all_existing_groups:
+                raise YunohostError('group_unknown', group=g)
+        attr_dict['groupPermission'] = ['cn=%s,ou=groups,dc=yunohost,dc=org' % g for g in allowed]
     # For main permission, we add all users by default
-    if permission.endswith(".main"):
+    elif permission.endswith(".main"):
         attr_dict['groupPermission'] = ['cn=all_users,ou=groups,dc=yunohost,dc=org']
 
     if url:

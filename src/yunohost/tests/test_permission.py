@@ -226,6 +226,15 @@ def test_permission_create_extra():
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
 
+
+def test_permission_create_with_allowed():
+    permission_create("site.test", allowed=["alice"])
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.test" in res
+    assert res['site.test']['allowed'] == ["alice"]
+
+
 def test_permission_delete():
     permission_delete("wiki.main", force=True)
 

@@ -108,10 +108,12 @@ class MyMigration(Migration):
             domain = app_setting(app, 'domain')
 
             url = "/" if domain and path else None
-            permission_create(app+".main", url=url, sync_perm=False)
             if permission:
-                allowed_group = permission.split(',')
-                user_permission_update(app+".main", remove="all_users", add=allowed_group, sync_perm=False)
+                allowed_groups = permission.split(',')
+            else:
+                allowed_groups = ["all_users"]
+            permission_create(app+".main", url=url, allowed=allowed_groups, sync_perm=False)
+
             app_setting(app, 'allowed_users', delete=True)
 
             # Migrate classic public app still using the legacy unprotected_uris
