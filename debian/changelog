@@ -1,8 +1,14 @@
+yunohost (3.6.5.2) stable; urgency=low
+
+  - [fix] Alex was drunk and released an epic stupid bug in stable (2623d385)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 10 Oct 2019 01:00:00  +0000
+
 yunohost (3.6.5.1) stable; urgency=low
   
   - [mod] Change maxretry of fail2ban from 6 to 10 (fe8fd1b)
  
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 Oct 2019 20:00:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 Oct 2019 20:00:00  +0000
 
 yunohost (3.6.5) stable; urgency=low
 
@@ -11,7 +17,7 @@ yunohost (3.6.5) stable; urgency=low
   - [fix] Epicly ugly workaround for the goddamn dependency nighmare about sury fucking up php7.0 dependencies (#809)
   - [fix] Support logfiles not ending with .log in logrotate ... (#810)
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 Oct 2019 19:00:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 Oct 2019 19:00:00  +0000
 
 yunohost (3.6.4.6) stable; urgency=low
 
