@@ -199,7 +199,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
             with open('/etc/ssowat/conf.json.persistent') as json_conf:
                 ssowat_conf = json.loads(str(json_conf.read()))
         except ValueError as e:
-            raise YunohostError('ssowat_persistent_conf_read_error', error=e.strerror)
+            raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
         except IOError:
             ssowat_conf = {}
 
@@ -209,7 +209,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
                 with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
                     json.dump(ssowat_conf, f, sort_keys=True, indent=4)
             except IOError as e:
-                raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
+                raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
 
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)

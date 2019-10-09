@@ -542,7 +542,7 @@ def app_change_url(operation_logger, app, domain, path):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if not os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")):
-        raise YunohostError("app_change_no_change_url_script", app_name=app)
+        raise YunohostError("app_change_url_no_script", app_name=app)
 
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
@@ -652,19 +652,13 @@ def app_upgrade(app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
-    if packages.dpkg_is_broken():
-        raise YunohostError("dpkg_is_broken")
-
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
-
-    # Retrieve interface
-    is_api = msettings.get('interface') == 'api'
 
     try:
         app_list()
     except YunohostError:
-        raise YunohostError('app_no_upgrade')
+        raise YunohostError('apps_already_up_to_date')
 
     not_upgraded_apps = []
 
@@ -685,16 +679,19 @@ def app_upgrade(app=[], url=None, file=None):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if len(apps) == 0:
-        raise YunohostError('app_no_upgrade')
+        raise YunohostError('apps_already_up_to_date')
     if len(apps) > 1:
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
-    for app_instance_name in apps:
+    for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
 
         app_dict = app_info(app_instance_name, raw=True)
 
-        if file:
+        if file and isinstance(file, dict):
+            # We use this dirty hack to test chained upgrades in unit/functional tests
+            manifest, extracted_app_folder = _extract_app_from_file(file[app_instance_name])
+        elif file:
             manifest, extracted_app_folder = _extract_app_from_file(file)
         elif url:
             manifest, extracted_app_folder = _fetch_app_from_git(url)
@@ -709,7 +706,7 @@ def app_upgrade(app=[], url=None, file=None):
 
         # Check requirements
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
-        _check_services_status_for_app(manifest.get("services", []))
+        _assert_system_is_sane_for_app(manifest, "pre")
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
@@ -740,48 +737,83 @@ def app_upgrade(app=[], url=None, file=None):
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
-        if hook_exec(extracted_app_folder + '/scripts/upgrade',
-                     args=args_list, env=env_dict)[0] != 0:
-            msg = m18n.n('app_upgrade_failed', app=app_instance_name)
-            not_upgraded_apps.append(app_instance_name)
-            logger.error(msg)
-            operation_logger.error(msg)
-        else:
-            now = int(time.time())
-            # TODO: Move install_time away from app_setting
-            app_setting(app_instance_name, 'update_time', now)
-            status['upgraded_at'] = now
 
-            # Clean hooks and add new ones
-            hook_remove(app_instance_name)
-            if 'hooks' in os.listdir(extracted_app_folder):
-                for hook in os.listdir(extracted_app_folder + '/hooks'):
-                    hook_add(app_instance_name, extracted_app_folder + '/hooks/' + hook)
+        try:
+            upgrade_retcode = hook_exec(extracted_app_folder + '/scripts/upgrade',
+                                        args=args_list, env=env_dict)[0]
+        except (KeyboardInterrupt, EOFError):
+            upgrade_retcode = -1
+        except Exception:
+            import traceback
+            logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        finally:
 
-            # Store app status
-            with open(app_setting_path + '/status.json', 'w+') as f:
-                json.dump(status, f)
+            # Did the script succeed ?
+            if upgrade_retcode == -1:
+                error_msg = m18n.n('operation_interrupted')
+                operation_logger.error(error_msg)
+            elif upgrade_retcode != 0:
+                error_msg = m18n.n('app_upgrade_failed', app=app_instance_name)
+                operation_logger.error(error_msg)
 
-            # Replace scripts and manifest and conf (if exists)
-            os.system('rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path, app_setting_path))
+            # Did it broke the system ?
+            try:
+                broke_the_system = False
+                _assert_system_is_sane_for_app(manifest, "post")
+            except Exception as e:
+                broke_the_system = True
+                error_msg = operation_logger.error(str(e))
 
-            if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
-                os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
-            if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
-                os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+            # If upgrade failed or broke the system,
+            # raise an error and interrupt all other pending upgrades
+            if upgrade_retcode != 0 or broke_the_system:
 
-            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
-                if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
+                # display this if there are remaining apps
+                if apps[number + 1:]:
+                    logger.error(m18n.n('app_upgrade_stopped'))
+                    not_upgraded_apps = apps[number:]
+                    # we don't want to continue upgrading apps here in case that breaks
+                    # everything
+                    raise YunohostError('app_not_upgraded',
+                                        failed_app=app_instance_name,
+                                        apps=', '.join(not_upgraded_apps))
+                else:
+                    raise YunohostError(error_msg, raw_msg=True)
 
-            # So much win
-            logger.success(m18n.n('app_upgraded', app=app_instance_name))
+            # Otherwise we're good and keep going !
+            else:
+                now = int(time.time())
+                # TODO: Move install_time away from app_setting
+                app_setting(app_instance_name, 'update_time', now)
+                status['upgraded_at'] = now
 
-            hook_callback('post_app_upgrade', args=args_list, env=env_dict)
-            operation_logger.success()
+                # Clean hooks and add new ones
+                hook_remove(app_instance_name)
+                if 'hooks' in os.listdir(extracted_app_folder):
+                    for hook in os.listdir(extracted_app_folder + '/hooks'):
+                        hook_add(app_instance_name, extracted_app_folder + '/hooks/' + hook)
 
-    if not_upgraded_apps:
-        raise YunohostError('app_not_upgraded', apps=', '.join(not_upgraded_apps))
+                # Store app status
+                with open(app_setting_path + '/status.json', 'w+') as f:
+                    json.dump(status, f)
+
+                # Replace scripts and manifest and conf (if exists)
+                os.system('rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path, app_setting_path))
+
+                if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
+                    os.system('mv "%s/manifest.json" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+                if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
+                    os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
+
+                for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
+                    if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+                        os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
+
+                # So much win
+                logger.success(m18n.n('app_upgraded', app=app_instance_name))
+
+                hook_callback('post_app_upgrade', args=args_list, env=env_dict)
+                operation_logger.success()
 
     permission_sync_to_user()
 
@@ -800,8 +832,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         no_remove_on_failure -- Debug option to avoid removing the app on a failed installation
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
-    if packages.dpkg_is_broken():
-        raise YunohostError("dpkg_is_broken")
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
@@ -825,20 +855,41 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         if confirm is None or force or msettings.get('interface') == 'api':
             return
 
-        answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
-                                   answers='Y/N'))
-        if answer.upper() != "Y":
-            raise YunohostError("aborting")
+        if confirm in ["danger", "thirdparty"]:
+            answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                       answers='Yes, I understand'),
+                                    color="red")
+            if answer != "Yes, I understand":
+                raise YunohostError("aborting")
+
+        else:
+            answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                       answers='Y/N'),
+                                    color="yellow")
+            if answer.upper() != "Y":
+                raise YunohostError("aborting")
+
+
 
     raw_app_list = app_list(raw=True)
 
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
+
+        # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
         if app in raw_app_list:
-            state = raw_app_list[app].get("state", "notworking")
-            level = raw_app_list[app].get("level", None)
+            app_name_to_test = app
+        # If we got an url like "https://github.com/foo/bar_ynh, we want to
+        # extract "bar" and test if we know this app
+        elif ('http://' in app) or ('https://' in app):
+            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh","")
+
+        if app_name_to_test in raw_app_list:
+
+            state = raw_app_list[app_name_to_test].get("state", "notworking")
+            level = raw_app_list[app_name_to_test].get("level", None)
             confirm = "danger"
             if state in ["working", "validated"]:
-                if isinstance(level, int) and level >= 3:
+                if isinstance(level, int) and level >= 5:
                     confirm = None
                 elif isinstance(level, int) and level > 0:
                     confirm = "warning"
@@ -863,7 +914,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Check requirements
     _check_manifest_requirements(manifest, app_id)
-    _check_services_status_for_app(manifest.get("services", []))
+    _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
     instance_number = _installed_instance_number(app_id, last=True) + 1
@@ -882,6 +933,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
     args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app_instance_name)
+
+    # Validate domain / path availability for webapps
+    _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
@@ -955,8 +1009,17 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         import traceback
         logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
     finally:
+        try:
+            broke_the_system = False
+            _assert_system_is_sane_for_app(manifest, "post")
+        except Exception as e:
+            broke_the_system = True
+            error_msg = operation_logger.error(str(e))
+
         if install_retcode != 0:
             error_msg = operation_logger.error(m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode))
+
+        if install_retcode != 0 or broke_the_system:
             if not no_remove_on_failure:
                 # Setup environment for remove script
                 env_dict_remove = {}
@@ -985,16 +1048,18 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     logger.warning(msg)
                     operation_logger_remove.error(msg)
                 else:
-                    operation_logger_remove.success()
+                    try:
+                        _assert_system_is_sane_for_app(manifest, "post")
+                    except Exception as e:
+                        operation_logger_remove.error(e)
+                    else:
+                        operation_logger_remove.success()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
 
             app_ssowatconf()
-
-            if packages.dpkg_is_broken():
-                logger.error(m18n.n("this_action_broke_dpkg"))
 
             if install_retcode == -1:
                 msg = m18n.n('operation_interrupted') + " " + error_msg
@@ -1066,6 +1131,8 @@ def app_remove(operation_logger, app):
     # script might date back from jessie install)
     _patch_php5(app_setting_path)
 
+    manifest = _get_manifest_of_app(app_setting_path)
+
     os.system('cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove' % app_setting_path)
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
@@ -1097,9 +1164,7 @@ def app_remove(operation_logger, app):
             permission_delete(permission_name, force=True, sync_perm=False)
 
     permission_sync_to_user()
-
-    if packages.dpkg_is_broken():
-        raise YunohostError("this_action_broke_dpkg")
+    _assert_system_is_sane_for_app(manifest, "post")
 
 
 def app_addaccess(apps, users=[]):
@@ -1117,7 +1182,7 @@ def app_addaccess(apps, users=[]):
 
     output = {}
     for app in apps:
-        permission = user_permission_update(app+".main", add=users)
+        permission = user_permission_update(app+".main", add=users, remove="all_users")
         output[app] = permission["corresponding_users"]
 
     return {'allowed_users': output}
@@ -2611,8 +2676,7 @@ def _parse_args_for_action(action, args={}):
 def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
-    from yunohost.domain import (domain_list, _get_maindomain,
-                                 _get_conflicting_apps, _normalize_domain_path)
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
@@ -2728,13 +2792,18 @@ def _parse_args_in_yunohost_format(args, action_args):
             assert_password_is_strong_enough('user', arg_value)
         args_dict[arg_name] = (arg_value, arg_type)
 
-    # END loop over action_args...
+    return args_dict
+
+
+def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
+
+    from yunohost.domain import _get_conflicting_apps, _normalize_domain_path
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "domain" ]
-    path_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "path" ]
+    domain_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "domain"]
+    path_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "path"]
 
     if len(domain_args) == 1 and len(path_args) == 1:
 
@@ -2760,7 +2829,26 @@ def _parse_args_in_yunohost_format(args, action_args):
         # standard path format to deal with no matter what the user inputted)
         args_dict[path_args[0][0]] = (path, "path")
 
-    return args_dict
+    # This is likely to be a full-domain app...
+    elif len(domain_args) == 1 and len(path_args) == 0:
+
+        # Confirm that this is a full-domain app This should cover most cases
+        # ...  though anyway the proper solution is to implement some mechanism
+        # in the manifest for app to declare that they require a full domain
+        # (among other thing) so that we can dynamically check/display this
+        # requirement on the webadmin form and not miserably fail at submit time
+
+        # Full-domain apps typically declare something like path_url="/" or path=/
+        # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
+        install_script_content = open(os.path.join(app_folder, 'scripts/install')).read()
+
+        if re.search(r"\npath(_url)?=[\"']?/[\"']?\n", install_script_content) \
+           and re.search(r"(ynh_webpath_register|yunohost app checkurl)", install_script_content):
+
+            domain = domain_args[0][1]
+            conflicts = _get_conflicting_apps(domain, "/")
+
+            raise YunohostError('app_full_domain_unavailable', domain=domain)
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):
@@ -3009,9 +3097,11 @@ def unstable_apps():
     return output
 
 
-def _check_services_status_for_app(services):
+def _assert_system_is_sane_for_app(manifest, when):
 
     logger.debug("Checking that required services are up and running...")
+
+    services = manifest.get("services", [])
 
     # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
     def replace_alias(service):
@@ -3027,11 +3117,26 @@ def _check_services_status_for_app(services):
     service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
+    if "nginx" not in services:
+        services = ["nginx"] + services
+    if "fail2ban" not in services:
+        services.append("fail2ban")
+
     # List services currently down and raise an exception if any are found
     faulty_services = [s for s in services if service_status(s)["active"] != "active"]
     if faulty_services:
-        raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
-                            services=', '.join(faulty_services))
+        if when == "pre":
+            raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
+                                services=', '.join(faulty_services))
+        elif when == "post":
+            raise YunohostError('app_action_broke_system',
+                                services=', '.join(faulty_services))
+
+    if packages.dpkg_is_broken():
+        if when == "pre":
+            raise YunohostError("dpkg_is_broken")
+        elif when == "post":
+            raise YunohostError("this_action_broke_dpkg")
 
 
 def _patch_php5(app_folder):

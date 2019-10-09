@@ -41,11 +41,11 @@ def pytest_cmdline_main(config):
     root_handlers = set(handlers)
 
     # Define loggers level
-    level = 'INFO'
+    level = 'DEBUG'
     if config.option.yunodebug:
         tty_level = 'DEBUG'
     else:
-        tty_level = 'SUCCESS'
+        tty_level = 'INFO'
 
     # Custom logging configuration
     logging = {
