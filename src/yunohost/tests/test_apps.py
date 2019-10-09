@@ -119,10 +119,10 @@ def app_is_exposed_on_http(domain, path, message_in_page):
         return False
 
 
-def install_legacy_app(domain, path):
+def install_legacy_app(domain, path, public=True):
 
     app_install("./tests/apps/legacy_app_ynh",
-                args="domain=%s&path=%s" % (domain, path),
+                args="domain=%s&path=%s&is_public=%s" % (domain, path, 1 if public else 0),
                 force=True)
 
 
@@ -180,13 +180,7 @@ def test_legacy_app_install_secondary_domain_on_root(secondary_domain):
 
 def test_legacy_app_install_private(secondary_domain):
 
-    install_legacy_app(secondary_domain, "/legacy")
-
-    settings = open("/etc/yunohost/apps/legacy_app/settings.yml", "r").read()
-    new_settings = settings.replace("\nunprotected_uris: /", "")
-    assert new_settings != settings
-    open("/etc/yunohost/apps/legacy_app/settings.yml", "w").write(new_settings)
-    app_ssowatconf()
+    install_legacy_app(secondary_domain, "/legacy", public=False)
 
     assert app_is_installed(secondary_domain, "legacy_app")
     assert not app_is_exposed_on_http(secondary_domain, "/legacy", "This is a dummy app")
