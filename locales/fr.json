@@ -634,7 +634,7 @@
     "permission_deletion_failed": "Impossible de supprimer la permission '{permission}': {error}",
     "remove_user_of_group_not_allowed": "Vous n'êtes pas autorisé à supprimer l'utilisateur '{utilisateur: s}' dans le groupe '{groupe: s}'",
     "migration_description_0011_setup_group_permission": "Configurer le groupe d'utilisateurs et configurer les autorisations pour les applications et les services",
-    "migration_0011_LDAP_config_dirty": "Il semble que vous ayez personnalisé votre configuration LDAP. Pour cette migration, la configuration LDAP doit être mise à jour.\nVous devez enregistrer votre configuration actuelle, réintialiser la configuration d'origine en exécutant 'yunohost tools regen-conf -f', puis réessayer la migration.",
+    "migration_0011_LDAP_config_dirty": "Il semble que vous ayez personnalisé votre configuration LDAP. Pour cette migration, la configuration LDAP doit être mise à jour.\nVous devez enregistrer votre configuration actuelle, réintialiser la configuration d'origine en exécutant 'yunohost tools regen-conf -f', puis réessayer la migration",
     "migration_0011_LDAP_update_failed": "Impossible de mettre à jour LDAP. Erreur: {error: s}",
     "group_already_exist": "Le groupe {group} existe déjà",
     "group_already_exist_on_system": "Le groupe {group} existe déjà dans les groupes système",
@@ -652,5 +652,6 @@
     "permission_already_allowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' activée '",
     "permission_already_disallowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé '",
     "permission_cannot_remove_main": "Supprimer une autorisation principale n'est pas autorisé",
-    "user_already_exists": "L'utilisateur {user} existe déjà"
+    "user_already_exists": "L'utilisateur {user} existe déjà",
+    "app_full_domain_unavailable": "Désolé, cette application nécessite l'installation d'un domaine complet, mais d'autres applications sont déjà installées sur le domaine '{domain}'. Une solution possible consiste à ajouter et à utiliser un sous-domaine dédié à cette application."
 }
