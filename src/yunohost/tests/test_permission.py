@@ -41,6 +41,10 @@ def teardown_function(function):
         app_remove("permissions_app")
     except:
         pass
+    try:
+        app_remove("legacy_app")
+    except:
+        pass
 
 @pytest.fixture(autouse=True)
 def check_LDAP_db_integrity_call():
@@ -443,23 +447,22 @@ def test_permission_app_propagation_on_ssowat():
 
 def test_permission_legacy_app_propagation_on_ssowat():
 
-    # TODO / FIXME : To be actually implemented later ....
-    raise NotImplementedError
-
     app_install("./tests/apps/legacy_app_ynh",
                 args="domain=%s&path=%s" % (maindomain, "/legacy"), force=True)
 
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
-    assert res['permissions_app.main']['allowed'] == ["visitors"]
+    res = user_permission_list(full=True)['permissions']
+    assert res['legacy_app.main']['allowed'] == ["visitors"]
 
-    assert can_access_webpage(maindomain + "/legacy", logged_as=None)
-    assert can_access_webpage(maindomain + "/legacy", logged_as="alice")
+    app_webroot = "https://%s/legacy" % maindomain
+
+    assert can_access_webpage(app_webroot, logged_as=None)
+    assert can_access_webpage(app_webroot, logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent
     user_permission_update("legacy_app.main", remove="visitors", add="bob")
-    res = user_permission_list(full=True)['permissions']
 
-    assert not can_access_webpage(maindomain + "/legacy", logged_as=None)
-    assert not can_access_webpage(maindomain + "/legacy", logged_as="alice")
-    assert can_access_webpage(maindomain + "/legacy", logged_as="bob")
+    assert not can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as="alice")
+    assert can_access_webpage(app_webroot, logged_as="bob")
