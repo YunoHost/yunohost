@@ -132,7 +132,7 @@ class MyMigration(Migration):
         ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
         # By this we check if the have been customized
         if ldap_regen_conf_status and ldap_regen_conf_status['slapd']['pending']:
-            logger.warning("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR)
+            logger.warning(m18n.n("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
 
         # Backup LDAP and the apps settings before to do the migration
         logger.info(m18n.n("migration_0011_backup_before_migration"))

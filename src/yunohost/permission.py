@@ -144,18 +144,13 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     if len(new_allowed_groups) > 1:
         if "all_users" in new_allowed_groups:
-            # FIXME : i18n
-            # FIXME : write a better explanation ?
-            logger.warning("This permission is currently granted to all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the other groups it is currently granted to.")
+            logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
         if "visitors" in new_allowed_groups:
-            # FIXME : i18n
-            # FIXME : write a better explanation ?
-            logger.warning("This permission is currently granted to visitors in addition to other groups. You probably want to either remove the 'visitors' permission or remove the other groups it is currently granted to.")
+            logger.warning(m18n.n("permission_currently_allowed_for_visitors"))
 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
-        # FIXME : i18n
-        logger.warning("The permission was not updated all addition/removal requests already match the current state.")
+        logger.warning("permission_already_up_to_date")
         return
 
     # Commit the new allowed group list
@@ -218,7 +213,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
         raise YunohostError('permission_not_found', permission=permission)
 
     if existing_permission["allowed"] == ["all_users"]:
-        logger.warning("The permission was not updated all addition/removal requests already match the current state.")
+        logger.warning(m18n.n("permission_already_up_to_date"))
         return
 
     # Update permission with default (all_users)
