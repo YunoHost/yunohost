@@ -346,7 +346,7 @@
     "migration_0011_can_not_backup_before_migration": "The backup of the system before the migration failed. Migration failed. Error: {error:s}",
     "migration_0011_create_group": "Creating a group for each user…",
     "migration_0011_done": "Migration successful. You are now able to manage usergroups.",
-    "migration_0011_LDAP_config_dirty": "It look like that you customized your LDAP configuration. For this migration the LDAP configuration needs to be updated.\nYou need to save your current configuration, reintialize the original configuration by running 'yunohost tools regen-conf -f' and retry the migration",
+    "migration_0011_slapd_config_will_be_overwritten": "It looks like you manually edited the slapd configuration. For this critical migration, YunoHost needs to force the update of the slapd configuration. The original files will be backuped in {conf_backup_folder}.",
     "migration_0011_LDAP_update_failed": "Could not update LDAP. Error: {error:s}",
     "migration_0011_migrate_permission": "Migrating permissions from apps settings to LDAP…",
     "migration_0011_migration_failed_trying_to_rollback": "Migration failed… trying to roll back the system.",

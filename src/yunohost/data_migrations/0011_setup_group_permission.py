@@ -9,7 +9,7 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.tools import Migration
 from yunohost.user import user_group_create, user_group_update
 from yunohost.app import app_setting, app_list
-from yunohost.regenconf import regen_conf
+from yunohost.regenconf import regen_conf, BACKUP_CONF_DIR
 from yunohost.permission import permission_create, user_permission_update, permission_sync_to_user
 
 logger = getActionLogger('yunohost.migration')
@@ -130,7 +130,7 @@ class MyMigration(Migration):
         ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
         # By this we check if the have been customized
         if ldap_regen_conf_status and ldap_regen_conf_status['slapd']['pending']:
-            raise YunohostError("migration_0011_LDAP_config_dirty")
+            logger.warning("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR)
 
         # Backup LDAP and the apps settings before to do the migration
         logger.info(m18n.n("migration_0011_backup_before_migration"))
