@@ -113,7 +113,9 @@ class IPDiagnoser(Diagnoser):
         # So let's try to ping the first 4~5 resolvers (shuffled)
         # If we succesfully ping any of them, we conclude that we are indeed connected
         def ping(protocol, target):
+            print("ping -c1 -%s -W 3 %s >/dev/null 2>/dev/null" % (protocol, target))
             return os.system("ping -c1 -%s -W 3 %s >/dev/null 2>/dev/null" % (protocol, target)) == 0
+
 
         random.shuffle(resolvers)
         return any(ping(protocol, resolver) for resolver in resolvers[:5])
