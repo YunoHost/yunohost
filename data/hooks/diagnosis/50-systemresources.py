@@ -31,7 +31,6 @@ class SystemResourcesDiagnoser(Diagnoser):
         else:
             item["status"] = "SUCCESS"
             item["summary"] = ("diagnosis_ram_ok", infos)
-        print(item)
         yield item
 
         #
@@ -51,7 +50,6 @@ class SystemResourcesDiagnoser(Diagnoser):
         else:
             item["status"] = "SUCCESS"
             item["summary"] = ("diagnosis_swap_ok", infos)
-        print(item)
         yield item
 
         #
