@@ -29,7 +29,7 @@ import time
 
 from moulinette import m18n, msettings
 from moulinette.utils import log
-from moulinette.utils.filesystem import read_json, write_to_json
+from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.hook import hook_list, hook_exec
@@ -37,7 +37,7 @@ from yunohost.hook import hook_list, hook_exec
 logger = log.getActionLogger('yunohost.diagnosis')
 
 DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
-
+DIAGNOSIS_CONFIG_FILE = '/etc/yunohost/diagnosis.yml'
 
 def diagnosis_list():
     all_categories_names = [h for h, _ in _list_diagnosis_categories()]
@@ -151,8 +151,132 @@ def diagnosis_run(categories=[], force=False):
     return
 
 
-def diagnosis_ignore(category, args="", unignore=False):
-    pass
+def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
+    """
+    This action is meant for the admin to ignore issues reported by the
+    diagnosis system if they are known and understood by the admin.  For
+    example, the lack of ipv6 on an instance, or badly configured XMPP dns
+    records if the admin doesn't care so much about XMPP. The point being that
+    the diagnosis shouldn't keep complaining about those known and "expected"
+    issues, and instead focus on new unexpected issues that could arise.
+
+    For example, to ignore badly XMPP dnsrecords for domain yolo.test:
+
+        yunohost diagnosis ignore --add-filter dnsrecords domain=yolo.test category=xmpp
+                                                  ^              ^             ^
+                                            the general    additional       other
+                                            diagnosis       criterias       criteria
+                                            category to    to target        to target
+                                            act on           specific       specific
+                                                             reports        reports
+    Or to ignore all dnsrecords issues:
+
+        yunohost diagnosis ignore --add-filter dnsrecords
+
+    The filters are stored in the diagnosis configuration in a data structure like:
+
+    ignore_filters: {
+        "ip": [
+           {"version": 6}     # Ignore all issues related to ipv6
+        ],
+        "dnsrecords": [
+           {"domain": "yolo.test", "category": "xmpp"}, # Ignore all issues related to DNS xmpp records for yolo.test
+           {}                                           # Ignore all issues about dnsrecords
+        ]
+    }
+    """
+
+    # Ignore filters are stored in
+    configuration = _diagnosis_read_configuration()
+
+    if list:
+        return {"ignore_filters": configuration.get("ignore_filters", {})}
+
+    def validate_filter_criterias(filter_):
+
+        # Get all the categories
+        all_categories = _list_diagnosis_categories()
+        all_categories_names = [category for category, _ in all_categories]
+
+        # Sanity checks for the provided arguments
+        if len(filter_) == 0:
+            raise YunohostError("You should provide at least one criteria being the diagnosis category to ignore")
+        category = filter_[0]
+        if category not in all_categories_names:
+            raise YunohostError("%s is not a diagnosis category" % category)
+        if any("=" not in criteria for criteria in filter_[1:]):
+            raise YunohostError("Extra criterias should be of the form key=value (e.g. domain=yolo.test)")
+
+        # Convert the provided criteria into a nice dict
+        criterias = {c.split("=")[0]: c.split("=")[1] for c in filter_[1:]}
+
+        return category, criterias
+
+    if add_filter:
+
+        category, criterias = validate_filter_criterias(add_filter)
+
+        # Fetch current issues for the requested category
+        current_issues_for_this_category = diagnosis_show(categories=[category], issues=True, full=True)
+        current_issues_for_this_category = current_issues_for_this_category["reports"][0].get("items", {})
+
+        # Accept the given filter only if the criteria effectively match an existing issue
+        if not any(issue_matches_criterias(i, criterias) for i in current_issues_for_this_category):
+            raise YunohostError("No issues was found matching the given criteria.")
+
+        # Make sure the subdicts/lists exists
+        if "ignore_filters" not in configuration:
+            configuration["ignore_filters"] = {}
+        if category not in configuration["ignore_filters"]:
+            configuration["ignore_filters"][category] = []
+
+        if criterias in configuration["ignore_filters"][category]:
+            logger.warning("This filter already exists.")
+            return
+
+        configuration["ignore_filters"][category].append(criterias)
+        _diagnosis_write_configuration(configuration)
+        logger.success("Filter added")
+        return
+
+    if remove_filter:
+
+        category, criterias = validate_filter_criterias(remove_filter)
+
+        # Make sure the subdicts/lists exists
+        if "ignore_filters" not in configuration:
+            configuration["ignore_filters"] = {}
+        if category not in configuration["ignore_filters"]:
+            configuration["ignore_filters"][category] = []
+
+        if criterias not in configuration["ignore_filters"][category]:
+            raise YunohostError("This filter does not exists.")
+
+        configuration["ignore_filters"][category].remove(criterias)
+        _diagnosis_write_configuration(configuration)
+        logger.success("Filter removed")
+        return
+
+
+def _diagnosis_read_configuration():
+    if not os.path.exists(DIAGNOSIS_CONFIG_FILE):
+        return {}
+
+    return read_yaml(DIAGNOSIS_CONFIG_FILE)
+
+
+def _diagnosis_write_configuration(conf):
+    write_to_yaml(DIAGNOSIS_CONFIG_FILE, conf)
+
+
+def issue_matches_criterias(issues, criterias):
+    for key, value in criterias.items():
+        if key not in issues["meta"]:
+            return False
+        if str(issues["meta"][key]) != value:
+            return False
+    return True
+
 
 ############################################################
 

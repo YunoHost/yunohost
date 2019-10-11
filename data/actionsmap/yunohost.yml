@@ -1893,14 +1893,17 @@ diagnosis:
                     action: store_true
 
         ignore:
-            action_help: Configure some diagnosis results to be ignored
+            action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
             api: PUT /diagnosis/ignore
             arguments:
-                category:
-                    help: Diagnosis category to be affected
-                -a:
-                    help: Arguments, to be used to ignore only some parts of a report (e.g. "domain=domain.tld")
-                    full: --args
-                --unignore:
-                    help: Unignore a previously ignored report
+                --add-filter:
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    nargs: "*"
+                    metavar: CRITERIA
+                --remove-filter:
+                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    nargs: "*"
+                    metavar: CRITERIA
+                --list:
+                    help: List active ignore filters
                     action: store_true
