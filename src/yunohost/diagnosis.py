@@ -66,11 +66,14 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
         except Exception as e:
             logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
         else:
+            add_ignore_flag_to_issues(report)
             if not full:
                 del report["timestamp"]
                 del report["cached_for"]
+                report["items"] = [item for item in report["items"] if not item["ignored"]]
                 for item in report["items"]:
                     del item["meta"]
+                    del item["ignored"]
                     if "data" in item:
                         del item["data"]
             if issues:
@@ -269,13 +272,41 @@ def _diagnosis_write_configuration(conf):
     write_to_yaml(DIAGNOSIS_CONFIG_FILE, conf)
 
 
-def issue_matches_criterias(issues, criterias):
+def issue_matches_criterias(issue, criterias):
+    """
+    e.g. an issue with:
+       meta:
+          domain: yolo.test
+          category: xmpp
+
+    matches the criterias {"domain": "yolo.test"}
+    """
     for key, value in criterias.items():
-        if key not in issues["meta"]:
+        if key not in issue["meta"]:
             return False
-        if str(issues["meta"][key]) != value:
+        if str(issue["meta"][key]) != value:
             return False
     return True
+
+def add_ignore_flag_to_issues(report):
+    """
+    Iterate over issues in a report, and flag them as ignored if they match an
+    ignored filter from the configuration
+
+    N.B. : for convenience. we want to make sure the "ignored" key is set for
+    every item in the report
+    """
+
+    ignore_filters = _diagnosis_read_configuration().get("ignore_filters", {}).get(report["id"], [])
+
+    for report_item in report["items"]:
+        report_item["ignored"] = False
+        if report_item["status"] not in ["WARNING", "ERROR"]:
+            continue
+        for criterias in ignore_filters:
+            if issue_matches_criterias(report_item, criterias):
+                report_item["ignored"] = True
+                break
 
 
 ############################################################
@@ -328,16 +359,22 @@ class Diagnoser():
         self.logger_debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
         Diagnoser.i18n(new_report)
+        add_ignore_flag_to_issues(new_report)
 
-        errors   = [item for item in new_report["items"] if item["status"] == "ERROR"]
-        warnings = [item for item in new_report["items"] if item["status"] == "WARNING"]
+        errors   = [item for item in new_report["items"] if item["status"] == "ERROR" and not item["ignored"]]
+        warnings = [item for item in new_report["items"] if item["status"] == "WARNING" and not item["ignored"]]
+        errors_ignored = [item for item in new_report["items"] if item["status"] == "ERROR" and item["ignored"]]
+        warning_ignored = [item for item in new_report["items"] if item["status"] == "WARNING" and item["ignored"]]
+        ignored_msg = " " + m18n.n("diagnosis_ignored_issues", nb_ignored=len(errors_ignored+warning_ignored)) if errors_ignored or warning_ignored else ""
 
-        if errors:
-            logger.error(m18n.n("diagnosis_found_issues", errors=len(errors), category=new_report["description"]))
+        if errors and warnings:
+            logger.error(m18n.n("diagnosis_found_errors_and_warnings", errors=len(errors), warnings=len(warnings), category=new_report["description"]) + ignored_msg)
+        elif errors:
+            logger.error(m18n.n("diagnosis_found_errors", errors=len(errors), category=new_report["description"]) + ignored_msg)
         elif warnings:
-            logger.warning(m18n.n("diagnosis_found_warnings", warnings=len(warnings), category=new_report["description"]))
+            logger.warning(m18n.n("diagnosis_found_warnings", warnings=len(warnings), category=new_report["description"]) + ignored_msg)
         else:
-            logger.success(m18n.n("diagnosis_everything_ok", category=new_report["description"]))
+            logger.success(m18n.n("diagnosis_everything_ok", category=new_report["description"]) + ignored_msg)
 
         return 0, new_report
 
