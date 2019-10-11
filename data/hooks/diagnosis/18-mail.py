@@ -13,7 +13,11 @@ class MailDiagnoser(Diagnoser):
 
     def run(self):
 
-        return  # TODO / FIXME TO BE IMPLEMETED in the future ...
+         # TODO / FIXME TO BE IMPLEMETED in the future ...
+
+        yield dict(meta={},
+                   status="WARNING",
+                   summary=("nothing_implemented_yet", {}))
 
         # Mail blacklist using dig requests (c.f. ljf's code)
 
