@@ -66,7 +66,7 @@ class SystemResourcesDiagnoser(Diagnoser):
             free_abs_GB = usage.free / (1024 ** 3)
             free_percent = 100 - usage.percent
 
-            item = dict(meta={"mountpoint": mountpoint, "device": device})
+            item = dict(meta={"test": "diskusage", "mountpoint": mountpoint})
             infos = {"mountpoint": mountpoint, "device": device, "free_abs_GB": free_abs_GB, "free_percent": free_percent}
             if free_abs_GB < 1 or free_percent < 5:
                 item["status"] = "ERROR"
