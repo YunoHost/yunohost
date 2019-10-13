@@ -198,7 +198,7 @@
     "executing_script": "Execució de l'script « {script:s} »…",
     "extracting": "Extracció en curs…",
     "dyndns_cron_installed": "S'ha instal·lat la tasca cron pel DynDNS",
-    "dyndns_cron_remove_failed": "No s'ha pogut eliminar la tasca cron pel DynDNS",
+    "dyndns_cron_remove_failed": "No s'ha pogut eliminar la tasca cron per a DynDNS: {error}",
     "dyndns_cron_removed": "S'ha eliminat la tasca cron pel DynDNS",
     "experimental_feature": "Atenció: aquesta funcionalitat és experimental i no es considera estable, no s'ha d'utilitzar a excepció de saber el que esteu fent.",
     "field_invalid": "Camp incorrecte « {:s} »",
@@ -581,5 +581,6 @@
     "system_groupname_exists": "El nom de grup ja existeix en el sistema de grups",
     "tools_update_failed_to_app_fetchlist": "No s'ha pogut actualitzar la llista d'aplicacions de YunoHost a causa de: {error}",
     "user_already_in_group": "L'usuari {user:s} ja és en el grup {group:s}",
-    "user_not_in_group": "L'usuari {user:s} no és en el grup {group:s}"
+    "user_not_in_group": "L'usuari {user:s} no és en el grup {group:s}",
+    "migration_description_0012_postgresql_password_to_md5_authentication": "Força l'autenticació postgresql a fer servir md5 per a les connexions locals"
 }

@@ -7,7 +7,7 @@ from yunohost.app import app_install, app_remove, app_change_url, app_list, app_
 from yunohost.user import user_list, user_create, user_delete, \
                           user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
-                                permission_create, permission_urls, permission_delete
+                                permission_create, permission_delete, permission_url
 from yunohost.domain import _get_maindomain
 
 # Get main domain
@@ -33,7 +33,7 @@ def setup_function(function):
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
-    permission_create("wiki.main", urls=["/"], sync_perm=False)
+    permission_create("wiki.main", url="/", sync_perm=False)
     permission_create("blog.main", sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
@@ -42,6 +42,10 @@ def teardown_function(function):
     clean_user_groups_permission()
     try:
         app_remove("permissions_app")
+    except:
+        pass
+    try:
+        app_remove("legacy_app")
     except:
         pass
 
@@ -204,7 +208,7 @@ def test_permission_list():
     assert res['blog.main']['allowed'] == ["alice"]
     assert set(res['wiki.main']['corresponding_users']) == set(["alice", "bob"])
     assert res['blog.main']['corresponding_users'] == ["alice"]
-    assert res['wiki.main']['urls'] == ["/"]
+    assert res['wiki.main']['url'] == "/"
 
 #
 # Create - Remove functions
@@ -230,6 +234,14 @@ def test_permission_create_extra(mocker):
     # all_users is only enabled by default on .main perms
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
+
+
+def test_permission_create_with_allowed():
+    permission_create("site.test", allowed=["alice"])
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.test" in res
+    assert res['site.test']['allowed'] == ["alice"]
 
 
 def test_permission_delete(mocker):
@@ -327,6 +339,17 @@ def test_permission_reset(mocker):
     assert res['blog.main']['allowed'] == ["all_users"]
     assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
 
+
+def test_permission_reset_idempotency():
+    # Reset permission
+    user_permission_reset("blog.main")
+    user_permission_reset("blog.main")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.main']['allowed'] == ["all_users"]
+    assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
+
+
 #
 # Error on update function
 #
@@ -345,51 +368,19 @@ def test_permission_update_permission_that_doesnt_exist(mocker):
     with raiseYunohostError(mocker, "permission_not_found"):
         user_permission_update("doesnt.exist", add="alice")
 
-
 # Permission url management
 
-
-def test_permission_add_url(mocker):
-    with message(mocker, "permission_updated", permission="blog.main"):
-        permission_urls("blog.main", add=["/testA"])
+def test_permission_redefine_url():
+    permission_url("blog.main", url="/pwet")
 
     res = user_permission_list(full=True)['permissions']
-    assert res["blog.main"]["urls"] == ["/testA"]
+    assert res["blog.main"]["url"] == "/pwet"
 
-
-def test_permission_add_another_url(mocker):
-    with message(mocker, "permission_updated", permission="wiki.main"):
-        permission_urls("wiki.main", add=["/testA"])
+def test_permission_remove_url():
+    permission_url("blog.main", url=None)
 
     res = user_permission_list(full=True)['permissions']
-    assert set(res["wiki.main"]["urls"]) == set(["/", "/testA"])
-
-
-def test_permission_remove_url(mocker):
-    with message(mocker, "permission_updated", permission="wiki.main"):
-        permission_urls("wiki.main", remove=["/"])
-
-    res = user_permission_list(full=True)['permissions']
-    assert res["wiki.main"]["urls"] == []
-
-
-def test_permission_add_url_already_added(mocker):
-    res = user_permission_list(full=True)['permissions']
-    assert res["wiki.main"]["urls"] == ["/"]
-
-    with message(mocker, "permission_update_nothing_to_do"):
-        permission_urls("wiki.main", add=["/"])
-
-    res = user_permission_list(full=True)['permissions']
-    assert res["wiki.main"]["urls"] == ["/"]
-
-
-def test_permission_remove_url_not_added(mocker):
-    with message(mocker, "permission_update_nothing_to_do"):
-        permission_urls("wiki.main", remove=["/doesnt_exist"])
-
-    res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['urls'] == ["/"]
+    assert res["blog.main"]["url"] is None
 
 #
 # Application interaction
@@ -404,9 +395,9 @@ def test_permission_app_install():
     assert "permissions_app.main" in res
     assert "permissions_app.admin" in res
     assert "permissions_app.dev" in res
-    assert res['permissions_app.main']['urls'] == ["/"]
-    assert res['permissions_app.admin']['urls'] == ["/admin"]
-    assert res['permissions_app.dev']['urls'] == ["/dev"]
+    assert res['permissions_app.main']['url'] == "/"
+    assert res['permissions_app.admin']['url'] == "/admin"
+    assert res['permissions_app.dev']['url'] == "/dev"
 
     assert res['permissions_app.main']['allowed'] == ["all_users"]
     assert set(res['permissions_app.main']['corresponding_users']) == set(["alice", "bob"])
@@ -440,16 +431,16 @@ def test_permission_app_change_url():
 
     # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['urls'] == ["/"]
-    assert res['permissions_app.admin']['urls'] == ["/admin"]
-    assert res['permissions_app.dev']['urls'] == ["/dev"]
+    assert res['permissions_app.main']['url'] == "/"
+    assert res['permissions_app.admin']['url'] == "/admin"
+    assert res['permissions_app.dev']['url'] == "/dev"
 
     app_change_url("permissions_app", maindomain, "/newchangeurl")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['urls'] == ["/"]
-    assert res['permissions_app.admin']['urls'] == ["/admin"]
-    assert res['permissions_app.dev']['urls'] == ["/dev"]
+    assert res['permissions_app.main']['url'] == "/"
+    assert res['permissions_app.admin']['url'] == "/admin"
+    assert res['permissions_app.dev']['url'] == "/dev"
 
 
 def test_permission_app_propagation_on_ssowat():
@@ -483,23 +474,22 @@ def test_permission_app_propagation_on_ssowat():
 
 def test_permission_legacy_app_propagation_on_ssowat():
 
-    # TODO / FIXME : To be actually implemented later ....
-    raise NotImplementedError
-
     app_install("./tests/apps/legacy_app_ynh",
                 args="domain=%s&path=%s" % (maindomain, "/legacy"), force=True)
 
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
-    assert res['permissions_app.main']['allowed'] == ["visitors"]
+    res = user_permission_list(full=True)['permissions']
+    assert res['legacy_app.main']['allowed'] == ["visitors"]
 
-    assert can_access_webpage(maindomain + "/legacy", logged_as=None)
-    assert can_access_webpage(maindomain + "/legacy", logged_as="alice")
+    app_webroot = "https://%s/legacy" % maindomain
+
+    assert can_access_webpage(app_webroot, logged_as=None)
+    assert can_access_webpage(app_webroot, logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent
     user_permission_update("legacy_app.main", remove="visitors", add="bob")
-    res = user_permission_list(full=True)['permissions']
 
-    assert not can_access_webpage(maindomain + "/legacy", logged_as=None)
-    assert not can_access_webpage(maindomain + "/legacy", logged_as="alice")
-    assert can_access_webpage(maindomain + "/legacy", logged_as="bob")
+    assert not can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as="alice")
+    assert can_access_webpage(app_webroot, logged_as="bob")

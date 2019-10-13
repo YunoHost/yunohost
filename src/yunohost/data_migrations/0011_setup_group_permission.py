@@ -9,7 +9,7 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.tools import Migration
 from yunohost.user import user_group_create, user_group_update
 from yunohost.app import app_setting, app_list
-from yunohost.regenconf import regen_conf
+from yunohost.regenconf import regen_conf, BACKUP_CONF_DIR
 from yunohost.permission import permission_create, user_permission_update, permission_sync_to_user
 
 logger = getActionLogger('yunohost.migration')
@@ -60,7 +60,6 @@ class MyMigration(Migration):
         ldap_map = read_yaml('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml')
 
         try:
-            self.remove_if_exists("cn=sftpusers,ou=groups")
             self.remove_if_exists("ou=permission")
             self.remove_if_exists('ou=groups')
 
@@ -108,11 +107,13 @@ class MyMigration(Migration):
             path = app_setting(app, 'path')
             domain = app_setting(app, 'domain')
 
-            urls = "/" if domain and path else None
-            permission_create(app+".main", urls=urls, sync_perm=False)
+            url = "/" if domain and path else None
             if permission:
-                allowed_group = permission.split(',')
-                user_permission_update(app+".main", remove="all_users", add=allowed_group, sync_perm=False)
+                allowed_groups = permission.split(',')
+            else:
+                allowed_groups = ["all_users"]
+            permission_create(app+".main", url=url, allowed=allowed_groups, sync_perm=False)
+
             app_setting(app, 'allowed_users', delete=True)
 
             # Migrate classic public app still using the legacy unprotected_uris
@@ -131,7 +132,7 @@ class MyMigration(Migration):
         ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
         # By this we check if the have been customized
         if ldap_regen_conf_status and ldap_regen_conf_status['slapd']['pending']:
-            raise YunohostError("migration_0011_LDAP_config_dirty")
+            logger.warning(m18n.n("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
 
         # Backup LDAP and the apps settings before to do the migration
         logger.info(m18n.n("migration_0011_backup_before_migration"))

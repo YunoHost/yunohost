@@ -199,7 +199,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
             with open('/etc/ssowat/conf.json.persistent') as json_conf:
                 ssowat_conf = json.loads(str(json_conf.read()))
         except ValueError as e:
-            raise YunohostError('ssowat_persistent_conf_read_error', error=e.strerror)
+            raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
         except IOError:
             ssowat_conf = {}
 
@@ -209,7 +209,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
                 with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
                     json.dump(ssowat_conf, f, sort_keys=True, indent=4)
             except IOError as e:
-                raise YunohostError('ssowat_persistent_conf_write_error', error=e.strerror)
+                raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
 
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)
@@ -268,7 +268,12 @@ def user_delete(operation_logger, username, purge=False):
         # remove the member from the group
         if username != group and username in infos["members"]:
             user_group_update(group, remove=username, sync_perm=False)
-    user_group_delete(username, force=True, sync_perm=True)
+
+    # Delete primary group if it exists (why wouldnt it exists ?  because some
+    # epic bug happened somewhere else and only a partial removal was
+    # performed...)
+    if username in user_group_list()['groups'].keys():
+        user_group_delete(username, force=True, sync_perm=True)
 
     ldap = _get_ldap_interface()
     try:
@@ -678,7 +683,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     if not force:
         if groupname == "all_users":
             raise YunohostError('group_cannot_edit_all_users')
-        elif groupname == "all_users":
+        elif groupname == "visitors":
             raise YunohostError('group_cannot_edit_visitors')
         elif groupname in existing_users:
             raise YunohostError('group_cannot_edit_primary_group', group=groupname)

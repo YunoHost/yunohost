@@ -270,11 +270,11 @@ user:
 
                 ### user_group_info()
                 info:
-                    action_help: Get information for a specific group
+                    action_help: Get information about a specific group
                     api: GET /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Name of the group to get info about
+                            help: Name of the group to fetch info about
                             extra:
                                 pattern: *pattern_username
 
@@ -289,31 +289,31 @@ user:
                     arguments:
                         -s:
                             full: --short
-                            help: List only the names of permissions
+                            help: Only list permission names
                             action: store_true
                         -f:
                             full: --full
-                            help: Display all informations known about each permissions, including the full list of users corresponding to allowed groups.
+                            help: Display all info known about each permission, including the full user list of each group it is granted to.
                             action: store_true
 
 
                 ### user_permission_update()
                 update:
-                    action_help: Grant / remove permissions to groups or users
+                    action_help: Manage group or user permissions
                     api: POST /users/permissions/<permission>
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
                         -a:
                             full: --add
-                            help: Group or user names to add to this permission
+                            help: Group or usernames to grant this permission to
                             nargs: "*"
                             metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
                         -r:
                             full: --remove
-                            help: Group or user names to remove from this permission
+                            help: Group or usernames revoke this permission from
                             nargs: "*"
                             metavar: GROUP_OR_USER
                             extra:

@@ -212,7 +212,7 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("migrate_to_tsig_sha256")
         try:
-            migration.migrate(dyn_host, domain, key)
+            migration.run(dyn_host, domain, key)
         except Exception as e:
             logger.error(m18n.n('migrations_migration_has_failed',
                                 exception=e,

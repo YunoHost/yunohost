@@ -70,7 +70,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             or not os.path.exists(REGEN_CONF_FILE)):
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("decouple_regenconf_from_services")
-        migration.migrate()
+        migration.run()
 
     result = {}
 
