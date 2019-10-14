@@ -1,7 +1,7 @@
 import pytest
 
-from moulinette.core import MoulinetteError
-from yunohost.user import user_list, user_info, user_group_list, user_create, user_delete, user_update, user_group_add, user_group_delete, user_group_update, user_group_info
+from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
+                          user_group_list, user_group_create, user_group_delete, user_group_update, user_group_info
 from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 from yunohost.tests.test_permission import check_LDAP_db_integrity
@@ -24,10 +24,10 @@ def setup_function(function):
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
     user_create("jack", "Jack", "Black", "jack@" + maindomain, "test123Ynh")
 
-    user_group_add("dev")
-    user_group_add("apps")
-    user_group_update("dev", add_user=["alice"])
-    user_group_update("apps", add_user=["bob"])
+    user_group_create("dev")
+    user_group_create("apps")
+    user_group_update("dev", add=["alice"])
+    user_group_update("apps", add=["bob"])
 
 def teardown_function(function):
     clean_user_groups()
@@ -82,12 +82,13 @@ def test_del_user():
     assert "alice" not in group_res
     assert "alice" not in group_res['all_users']['members']
 
-def test_add_group():
-    user_group_add("adminsys")
+def test_create_group():
+    user_group_create("adminsys")
 
     group_res = user_group_list()['groups']
     assert "adminsys" in group_res
-    assert "members" not in group_res['adminsys']
+    assert "members" in group_res['adminsys'].keys()
+    assert group_res["adminsys"]["members"] == []
 
 def test_del_group():
     user_group_delete("dev")
@@ -99,112 +100,106 @@ def test_del_group():
 # Error on create / remove function
 #
 
-def test_add_bad_user_1():
-    # Check email already exist
-    with pytest.raises(MoulinetteError):
+def test_create_user_with_mail_address_already_taken():
+    with pytest.raises(YunohostError):
         user_create("alice2", "Alice", "White", "alice@" + maindomain, "test123Ynh")
 
-def test_add_bad_user_2():
-    # Check to short password
-    with pytest.raises(MoulinetteError):
+def test_create_user_with_password_too_simple():
+    with pytest.raises(YunohostError):
         user_create("other", "Alice", "White", "other@" + maindomain, "12")
 
-def test_add_bad_user_3():
-    # Check user already exist
-    with pytest.raises(MoulinetteError):
+def test_create_user_already_exists():
+    with pytest.raises(YunohostError):
         user_create("alice", "Alice", "White", "other@" + maindomain, "test123Ynh")
 
-def test_del_bad_user_1():
-    # Check user not found
-    with pytest.raises(MoulinetteError):
-        user_delete("not_exit")
+def test_update_user_with_mail_address_already_taken():
+    with pytest.raises(YunohostError):
+        user_update("bob",  add_mailalias="alice@" + maindomain)
 
-def test_add_bad_group_1():
+def test_del_user_that_does_not_exist():
+    with pytest.raises(YunohostError):
+        user_delete("doesnt_exist")
+
+def test_create_group_all_users():
     # Check groups already exist with special group "all_users"
     with pytest.raises(YunohostError):
-        user_group_add("all_users")
+        user_group_create("all_users")
 
-def test_add_bad_group_2():
-    # Check groups already exist (for standard groups)
-    with pytest.raises(MoulinetteError):
-        user_group_add("dev")
+def test_create_group_already_exists():
+    # Check groups already exist (regular groups)
+    with pytest.raises(YunohostError):
+        user_group_create("dev")
 
-def test_del_bad_group_1():
-    # Check not allowed to remove this groups
+def test_del_group_all_users():
     with pytest.raises(YunohostError):
         user_group_delete("all_users")
 
-def test_del_bad_group_2():
-    # Check groups not found
-    with pytest.raises(MoulinetteError):
-        user_group_delete("not_exit")
+def test_del_group_that_does_not_exist():
+    with pytest.raises(YunohostError):
+        user_group_delete("doesnt_exist")
 
 #
 # Update function
 #
 
-def test_update_user_1():
+def test_update_user():
     user_update("alice", firstname="NewName", lastname="NewLast")
 
     info = user_info("alice")
-    assert "NewName" == info['firstname']
-    assert "NewLast" == info['lastname']
+    assert info['firstname'] == "NewName"
+    assert info['lastname'] == "NewLast"
 
-def test_update_group_1():
-    user_group_update("dev", add_user=["bob"])
-
-    group_res = user_group_list()['groups']
-    assert set(["alice", "bob"]) == set(group_res['dev']['members'])
-
-def test_update_group_2():
-    # Try to add a user in a group when the user is already in
-    user_group_update("apps", add_user=["bob"])
+def test_update_group_add_user():
+    user_group_update("dev", add=["bob"])
 
     group_res = user_group_list()['groups']
-    assert ["bob"] == group_res['apps']['members']
+    assert set(group_res['dev']['members']) == set(["alice", "bob"])
 
-def test_update_group_3():
-    # Try to remove a user in a group
-    user_group_update("apps", remove_user=["bob"])
-
-    group_res = user_group_list()['groups']
-    assert "members" not in group_res['apps']
-
-def test_update_group_4():
-    # Try to remove a user in a group when it is not already in
-    user_group_update("apps", remove_user=["jack"])
+def test_update_group_add_user_already_in():
+    user_group_update("apps", add=["bob"])
 
     group_res = user_group_list()['groups']
-    assert ["bob"] == group_res['apps']['members']
+    assert group_res['apps']['members'] == ["bob"]
+
+def test_update_group_remove_user():
+    user_group_update("apps", remove=["bob"])
+
+    group_res = user_group_list()['groups']
+    assert group_res['apps']['members'] == []
+
+def test_update_group_remove_user_not_already_in():
+    user_group_update("apps", remove=["jack"])
+
+    group_res = user_group_list()['groups']
+    assert group_res['apps']['members'] == ["bob"]
 
 #
 # Error on update functions
 #
 
-def test_bad_update_user_1():
-    # Check user not found
+def test_update_user_that_doesnt_exist():
     with pytest.raises(YunohostError):
-        user_update("not_exit", firstname="NewName", lastname="NewLast")
+        user_update("doesnt_exist", firstname="NewName", lastname="NewLast")
 
-
-def bad_update_group_1():
+def test_update_group_that_doesnt_exist():
     # Check groups not found
     with pytest.raises(YunohostError):
-        user_group_update("not_exit", add_user=["alice"])
+        user_group_update("doesnt_exist", add=["alice"])
 
-def test_bad_update_group_2():
-    # Check remove user in groups "all_users" not allowed
+def test_update_group_all_users_manually():
     with pytest.raises(YunohostError):
-        user_group_update("all_users", remove_user=["alice"])
+        user_group_update("all_users", remove=["alice"])
 
-def test_bad_update_group_3():
-    # Check remove user in it own group not allowed
+    assert "alice" in user_group_list()["groups"]["all_users"]["members"]
+
+def test_update_group_primary_manually():
     with pytest.raises(YunohostError):
-        user_group_update("alice", remove_user=["alice"])
+        user_group_update("alice", remove=["alice"])
+    assert "alice" in user_group_list()["groups"]["alice"]["members"]
 
-def test_bad_update_group_1():
+def test_update_group_add_user_that_doesnt_exist():
     # Check add bad user in group
     with pytest.raises(YunohostError):
-        user_group_update("dev", add_user=["not_exist"])
+        user_group_update("dev", add=["doesnt_exist"])
 
-    assert "not_exist" not in user_group_list()["groups"]["dev"]
+    assert "doesnt_exist" not in user_group_list()["groups"]["dev"]["members"]

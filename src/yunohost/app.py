@@ -406,10 +406,10 @@ def app_map(app=None, raw=False, user=None):
 
     """
     from yunohost.permission import user_permission_list
-    from yunohost.utils.ldap import _get_ldap_interface
 
     apps = []
     result = {}
+    permissions = user_permission_list(full=True)["permissions"]
 
     if app is not None:
         if not _is_installed(app):
@@ -429,12 +429,8 @@ def app_map(app=None, raw=False, user=None):
             continue
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
-        if user is not None:
-            ldap = _get_ldap_interface()
-            if not ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                               filter='(&(objectclass=permissionYnh)(cn=main.%s)(inheritPermission=uid=%s,ou=users,dc=yunohost,dc=org))' % (app_id, user),
-                               attrs=['cn']):
-                continue
+        if user and user not in permissions[app_id + ".main"]["corresponding_users"]:
+            continue
 
         domain = app_settings['domain']
         path = app_settings['path']
@@ -465,7 +461,7 @@ def app_change_url(operation_logger, app, domain, path):
     """
     from yunohost.hook import hook_exec, hook_callback
     from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
-    from yunohost.permission import permission_update
+    from yunohost.permission import permission_urls
 
     installed = _is_installed(app)
     if not installed:
@@ -555,7 +551,7 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_update(app, permission="main", add_url=[domain+path], remove_url=[old_domain+old_path], sync_perm=True)
+    permission_urls(app+".main", add=[domain+path], remove=[old_domain+old_path], sync_perm=True)
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
@@ -765,11 +761,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
 
-    from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import permission_add, permission_update, permission_remove, permission_sync_to_user
-    ldap = _get_ldap_interface()
+    from yunohost.permission import user_permission_list, permission_create, permission_urls, permission_delete, permission_sync_to_user
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -789,20 +783,41 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         if confirm is None or force or msettings.get('interface') == 'api':
             return
 
-        answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
-                                   answers='Y/N'))
-        if answer.upper() != "Y":
-            raise YunohostError("aborting")
+        if confirm in ["danger", "thirdparty"]:
+            answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                       answers='Yes, I understand'),
+                                    color="red")
+            if answer != "Yes, I understand":
+                raise YunohostError("aborting")
+
+        else:
+            answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
+                                       answers='Y/N'),
+                                    color="yellow")
+            if answer.upper() != "Y":
+                raise YunohostError("aborting")
+
+
 
     raw_app_list = app_list(raw=True)
 
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
+
+        # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
         if app in raw_app_list:
-            state = raw_app_list[app].get("state", "notworking")
-            level = raw_app_list[app].get("level", None)
+            app_name_to_test = app
+        # If we got an url like "https://github.com/foo/bar_ynh, we want to
+        # extract "bar" and test if we know this app
+        elif ('http://' in app) or ('https://' in app):
+            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh","")
+
+        if app_name_to_test in raw_app_list:
+
+            state = raw_app_list[app_name_to_test].get("state", "notworking")
+            level = raw_app_list[app_name_to_test].get("level", None)
             confirm = "danger"
             if state in ["working", "validated"]:
-                if isinstance(level, int) and level >= 3:
+                if isinstance(level, int) and level >= 5:
                     confirm = None
                 elif isinstance(level, int) and level > 0:
                     confirm = "warning"
@@ -846,6 +861,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
     args_list = [ value[0] for value in args_odict.values() ]
     args_list.append(app_instance_name)
+
+    # Validate domain / path availability for webapps
+    _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
@@ -905,7 +923,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Create permission before the install (useful if the install script redefine the permission)
     # Note that sync_perm is disabled to avoid triggering a whole bunch of code and messages
     # can't be sure that we don't have one case when it's needed
-    permission_add(app=app_instance_name, permission="main", sync_perm=False)
+    permission_create(app_instance_name+".main", sync_perm=False)
 
     # Execute the app install script
     install_failed = True
@@ -977,11 +995,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                 logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
             # Remove all permission in LDAP
-            result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
-            permission_list = [p['cn'][0] for p in result]
-            for l in permission_list:
-                permission_remove(app_instance_name, l.split('.')[0], force=True)
+            for permission_name in user_permission_list()["permissions"].keys():
+                if permission_name.startswith(app_instance_name+"."):
+                    permission_delete(permission_name, force=True)
 
             if remove_retcode != 0:
                 msg = m18n.n('app_not_properly_removed',
@@ -1025,8 +1041,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
     if domain and path:
-        permission_update(app_instance_name, permission="main", add_url=[domain+path], sync_perm=False)
-
+        permission_urls(app_instance_name+".main", add=[domain+path], sync_perm=False)
     permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
@@ -1043,9 +1058,8 @@ def app_remove(operation_logger, app):
         app -- App(s) to delete
 
     """
-    from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_exec, hook_remove, hook_callback
-    from yunohost.permission import permission_remove, permission_sync_to_user
+    from yunohost.permission import user_permission_list, permission_delete, permission_sync_to_user
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
@@ -1106,19 +1120,15 @@ def app_remove(operation_logger, app):
     hook_remove(app)
 
     # Remove all permission in LDAP
-    ldap = _get_ldap_interface()
-    result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                         filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app, attrs=['cn'])
-    permission_list = [p['cn'][0] for p in result]
-    for l in permission_list:
-        permission_remove(app, l.split('.')[0], force=True, sync_perm=False)
+    for permission_name in user_permission_list()["permissions"].keys():
+        if permission_name.startswith(app+"."):
+            permission_delete(permission_name, force=True, sync_perm=False)
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
 
 
-@is_unit_operation(['permission','app'])
-def app_addaccess(operation_logger, apps, users=[]):
+def app_addaccess(apps, users=[]):
     """
     Grant access right to users (everyone by default)
 
@@ -1129,15 +1139,15 @@ def app_addaccess(operation_logger, apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    permission = user_permission_update(operation_logger, app=apps, permission="main", add_username=users)
+    output = {}
+    for app in apps:
+        permission = user_permission_update(app+".main", add=users, remove="all_users")
+        output[app] = permission["corresponding_users"]
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
-
-    return {'allowed_users': result}
+    return {'allowed_users': output}
 
 
-@is_unit_operation(['permission','app'])
-def app_removeaccess(operation_logger, apps, users=[]):
+def app_removeaccess(apps, users=[]):
     """
     Revoke access right to users (everyone by default)
 
@@ -1148,15 +1158,15 @@ def app_removeaccess(operation_logger, apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    permission = user_permission_update(operation_logger, app=apps, permission="main", del_username=users)
+    output = {}
+    for app in apps:
+        permission = user_permission_update(app+".main", remove=users)
+        output[app] = permission["corresponding_users"]
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
-
-    return {'allowed_users': result}
+    return {'allowed_users': output}
 
 
-@is_unit_operation(['permission','app'])
-def app_clearaccess(operation_logger, apps):
+def app_clearaccess(apps):
     """
     Reset access rights for the app
 
@@ -1164,13 +1174,15 @@ def app_clearaccess(operation_logger, apps):
         apps
 
     """
-    from yunohost.permission import user_permission_clear
+    from yunohost.permission import user_permission_reset
 
-    permission = user_permission_clear(operation_logger, app=apps, permission="main")
+    output = {}
+    for app in apps:
+        permission = user_permission_reset(app+".main")
+        output[app] = permission["corresponding_users"]
 
-    result = {p : v['main']['allowed_users'] for p, v in permission['permissions'].items()}
+    return {'allowed_users': output}
 
-    return {'allowed_users': result}
 
 def app_debug(app):
     """
@@ -1492,12 +1504,10 @@ def app_ssowatconf():
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
-    permission = {}
-    for a in user_permission_list()['permissions'].values():
-        for p in a.values():
-            if 'URL' in p:
-                for u in p['URL']:
-                    permission[u] = p['allowed_users']
+    permissions_per_url = {}
+    for permission_name, permission_infos in user_permission_list(full=True)['permissions'].items():
+        for url in permission_infos["urls"]:
+            permissions_per_url[url] = permission_infos['corresponding_users']
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -1519,7 +1529,7 @@ def app_ssowatconf():
         'redirected_regex': redirected_regex,
         'users': {username: app_map(user=username)
                   for username in user_list()['users'].keys()},
-        'permission': permission,
+        'permissions': permissions_per_url,
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
@@ -2584,8 +2594,7 @@ def _parse_args_for_action(action, args={}):
 def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
-    from yunohost.domain import (domain_list, _get_maindomain,
-                                 _get_conflicting_apps, _normalize_domain_path)
+    from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_info, user_list
 
     args_dict = OrderedDict()
@@ -2703,13 +2712,18 @@ def _parse_args_in_yunohost_format(args, action_args):
             assert_password_is_strong_enough('user', arg_value)
         args_dict[arg_name] = (arg_value, arg_type)
 
-    # END loop over action_args...
+    return args_dict
+
+
+def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
+
+    from yunohost.domain import _get_conflicting_apps, _normalize_domain_path
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "domain" ]
-    path_args = [ (name, value[0]) for name, value in args_dict.items() if value[1] == "path" ]
+    domain_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "domain"]
+    path_args = [(name, value[0]) for name, value in args_dict.items() if value[1] == "path"]
 
     if len(domain_args) == 1 and len(path_args) == 1:
 
@@ -2735,7 +2749,25 @@ def _parse_args_in_yunohost_format(args, action_args):
         # standard path format to deal with no matter what the user inputted)
         args_dict[path_args[0][0]] = (path, "path")
 
-    return args_dict
+    # This is likely to be a full-domain app...
+    elif len(domain_args) == 1 and len(path_args) == 0:
+
+        # Confirm that this is a full-domain app This should cover most cases
+        # ...  though anyway the proper solution is to implement some mechanism
+        # in the manifest for app to declare that they require a full domain
+        # (among other thing) so that we can dynamically check/display this
+        # requirement on the webadmin form and not miserably fail at submit time
+
+        # Full-domain apps typically declare something like path_url="/" or path=/
+        # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
+        install_script_content = open(os.path.join(app_folder, 'scripts/install')).read()
+
+        if re.search(r"\npath(_url)?=[\"']?/[\"']?\n", install_script_content) \
+           and re.search(r"(ynh_webpath_register|yunohost app checkurl)", install_script_content):
+
+            domain = domain_args[0][1]
+            if _get_conflicting_apps(domain, "/"):
+                raise YunohostError('app_full_domain_unavailable', domain=domain)
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):
