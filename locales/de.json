@@ -413,5 +413,6 @@
     "global_settings_setting_security_password_admin_strength": "Stärke des Admin-Passworts",
     "global_settings_key_doesnt_exists": "Der Schlüssel'{settings_key:s}' existiert nicht in den globalen Einstellungen, du kannst  alle verfügbaren Schlüssel sehen, indem du 'yunohost settings list' ausführst",
     "log_app_makedefault": "Mache '{}' zur Standard-Anwendung",
-    "hook_json_return_error": "Konnte die Rückkehr vom Einsprungpunkt {path:s} nicht lesen. Fehler: {msg:s}. Unformatierter Inhalt: {raw_content}"
+    "hook_json_return_error": "Konnte die Rückkehr vom Einsprungpunkt {path:s} nicht lesen. Fehler: {msg:s}. Unformatierter Inhalt: {raw_content}",
+    "app_full_domain_unavailable": "Es tut uns leid, aber diese Anwendung erfordert die Installation einer vollständigen Domäne, aber einige andere Anwendungen sind bereits auf der Domäne'{domain}' installiert. Eine mögliche Lösung ist das Hinzufügen und Verwenden einer Subdomain, die dieser Anwendung zugeordnet ist."
 }
