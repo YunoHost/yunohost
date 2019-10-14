@@ -89,7 +89,7 @@
     "backup_archive_open_failed": "Could not open the backup archive",
     "backup_archive_system_part_not_available": "System part '{part:s}' unavailable in this backup",
     "backup_archive_writing_error": "Could not add the files '{source:s}' (named in the archive '{dest:s}') to be backed up into the compressed archive '{archive:s}'",
-    "backup_ask_for_copying_if_needed": "Do you want to perform the backup using {size:s} MB temporarily due to inability to prepare some files for backup using a more efficient method?",
+    "backup_ask_for_copying_if_needed": "Do you want to perform the backup using {size:s} MB temporarily? (This way is used since some files could not be prepared using a more efficient method.)",
     "backup_borg_not_implemented": "The Borg backup method is not yet implemented",
     "backup_cant_mount_uncompress_archive": "Could not mount the uncompressed archive as write protected",
     "backup_cleaning_failed": "Could not clean-up the temporary backup folder",
