@@ -331,7 +331,7 @@
     "migration_0005_postgresql_94_not_installed": "PostgreSQL was not installed on your system. Nothing to do.",
     "migration_0005_postgresql_96_not_installed": "PostgreSQL 9.4 is installed, but not postgresql 9.6‽ Something weird might have happened on your system:(…",
     "migration_0005_not_enough_space": "Make sufficient space available in {path} to run the migration.",
-    "migration_0006_disclaimer": "YunoHost now expects the admin and root passwords to be synchronized. This migration, replaces your root password with the admin password.",
+    "migration_0006_disclaimer": "YunoHost now expects the admin and root passwords to be synchronized. This migration replaces your root password with the admin password.",
     "migration_0007_cancelled": "Could not improve the way your SSH configuration is managed.",
     "migration_0007_cannot_restart": "SSH can't be restarted after trying to cancel migration number 6.",
     "migration_0008_general_disclaimer": "To improve the security of your server, it is recommended to let YunoHost manage the SSH configuration. Your current SSH setup differs from the recommendation. If you let YunoHost reconfigure it, the way you connect to your server through SSH will change thusly:",
