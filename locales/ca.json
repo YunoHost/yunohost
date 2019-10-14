@@ -615,5 +615,7 @@
     "permission_already_allowed": "El grup «{group}» ja té el permís «{permission}» activat",
     "permission_cannot_remove_main": "No es permet eliminar un permís principal",
     "user_already_exists": "L'usuari {user} ja existeix",
-    "app_upgrade_stopped": "S'ha aturat l'actualització de totes les aplicacions per prevenir els possibles danys ja que hi ha hagut un error en l'actualització de l'anterior aplicació"
+    "app_upgrade_stopped": "S'ha aturat l'actualització de totes les aplicacions per prevenir els possibles danys ja que hi ha hagut un error en l'actualització de l'anterior aplicació",
+    "app_install_failed": "No s'ha pogut instal·lar {app}",
+    "app_install_script_failed": "Hi ha hagut un error en el script d'instal·lació de l'aplicació"
 }
