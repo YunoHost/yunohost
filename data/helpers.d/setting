@@ -176,6 +176,8 @@ else:
     elif action == "set":
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
+        if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
+           logger.warning("/!\\ Packagers! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to manage public/private access.")
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
@@ -230,29 +232,51 @@ ynh_webpath_register () {
 
 # Create a new permission for the app
 #
-# usage: ynh_permission_create --permission "permission" [--urls "url" ["url" ...]]
-# | arg: permission - the name for the permission (by default a permission named "main" already exist)
-# | arg: urls - (optional) a list of FULL urls for the permission (e.g. domain.tld/apps/admin)
+# example: ynh_permission_create --permission admin --url /admin --allowed alice bob
 #
-# example: ynh_permission_create --permission admin --urls domain.tld/blog/admin
+# usage: ynh_permission_create --permission "permission" [--url "url"] [--allowed group1 group2]
+# | arg: permission - the name for the permission (by default a permission named "main" already exist)
+# | arg: url - (optional) URL for which access will be allowed/forbidden
+# | arg: allowed - (optional) A list of group/user to allow for the permission
+#
+# If provided, 'url' is assumed to be relative to the app domain/path if they
+# start with '/'.  For example:
+#    /                             -> domain.tld/app
+#    /admin                        -> domain.tld/app/admin
+#    domain.tld/app/api            -> domain.tld/app/api
+#
+# 'url' can be later treated as a regex if it starts with "re:".
+# For example:
+#    re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
+#    re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
+#
 ynh_permission_create() {
-    declare -Ar args_array=( [p]=permission= [u]=urls= )
+    declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= )
     local permission
-    local urls
+    local url
+    local allowed
     ynh_handle_getopts_args "$@"
 
-    if [[ -n ${urls:-} ]]; then
-        urls=",urls=['${urls//';'/"','"}']"
+    if [[ -n ${url:-} ]]; then
+        url="'$url'"
+    else
+        url="None"
     fi
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission' ${urls:-}, sync_perm=False)"
+
+    if [[ -n ${allowed:-} ]]; then
+        allowed=",allowed=['${allowed//';'/"','"}']"
+    fi
+
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} , sync_perm=False)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
 #
-# usage: ynh_permission_remove --permission "permission"
+# example: ynh_permission_delete --permission editors
+#
+# usage: ynh_permission_delete --permission "permission"
 # | arg: permission - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
 #
-# example: ynh_permission_delete --permission editors
 ynh_permission_delete() {
     declare -Ar args_array=( [p]=permission= )
     local permission
@@ -261,29 +285,27 @@ ynh_permission_delete() {
     yunohost tools shell -c "from yunohost.permission import permission_delete; permission_delete('$app.$permission', sync_perm=False)"
 }
 
-# Manage urls related to a permission
+# Redefine the url associated to a permission
 #
-# usage: ynh_permission_urls --permission "permission" --add "url" ["url" ...] --remove "url" ["url" ...]
+# usage: ynh_permission_url --permission "permission" --url "url"
 # | arg: permission - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-# | arg: add - (optional) a list of FULL urls to add to the permission (e.g. domain.tld/apps/admin)
-# | arg: remove - (optional) a list of FULL urls to remove from the permission (e.g. other.tld/apps/admin)
+# | arg: url - (optional) URL for which access will be allowed/forbidden
 #
-ynh_permission_urls() {
-    declare -Ar args_array=([p]=permission= [a]=add= [r]=remove=)
+ynh_permission_url() {
+    declare -Ar args_array=([p]=permission= [u]=url=)
     local permission
-    local add
-    local remove
+    local url
     ynh_handle_getopts_args "$@"
 
-    if [[ -n ${add:-} ]]; then
-        add=",add=['${add//';'/"','"}']"
-    fi
-    if [[ -n ${remove:-} ]]; then
-        remove=",remove=['${remove//';'/"','"}']"
+    if [[ -n ${url:-} ]]; then
+        url="'$url'"
+    else
+        url="None"
     fi
 
-    yunohost tools shell -c "from yunohost.permission import permission_urls; permission_urls('$app.$permission' ${add:-} ${remove:-})"
+    yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission', url=$url)"
 }
+
 
 # Update a permission for the app
 #
