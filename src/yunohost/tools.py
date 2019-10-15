@@ -608,8 +608,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
 
-        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
