@@ -14,7 +14,7 @@ def clean_user_groups():
         user_delete(u)
 
     for g in user_group_list()['groups']:
-        if g != "all_users":
+        if g not in ["all_users", "visitors"]:
             user_group_delete(g)
 
 def setup_function(function):

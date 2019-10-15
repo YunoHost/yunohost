@@ -265,7 +265,12 @@ def user_delete(operation_logger, username, purge=False):
         # remove the member from the group
         if username != group and username in infos["members"]:
             user_group_update(group, remove=username, sync_perm=False)
-    user_group_delete(username, force=True, sync_perm=True)
+
+    # Delete primary group if it exists (why wouldnt it exists ?  because some
+    # epic bug happened somewhere else and only a partial removal was
+    # performed...)
+    if username in user_group_list()['groups'].keys():
+        user_group_delete(username, force=True, sync_perm=True)
 
     ldap = _get_ldap_interface()
     try:
@@ -632,7 +637,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     #
     # We also can't delete "all_users" because that's a special group...
     existing_users = user_list()['users'].keys()
-    undeletable_groups = existing_users + ["all_users", "admins"]
+    undeletable_groups = existing_users + ["all_users", "visitors"]
     if groupname in undeletable_groups and not force:
         raise YunohostError('group_cannot_be_deleted', group=groupname)
 
@@ -667,13 +672,18 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
+    existing_users = user_list()['users'].keys()
+
     # Refuse to edit a primary group of a user (e.g. group 'sam' related to user 'sam')
     # Those kind of group should only ever contain the user (e.g. sam) and only this one.
     # We also can't edit "all_users" without the force option because that's a special group...
-    existing_users = user_list()['users'].keys()
-    uneditable_groups = existing_users + ["all_users", "admins"]
-    if groupname in uneditable_groups and not force:
-        raise YunohostError('group_cannot_be_edited', group=groupname)
+    if not force:
+        if groupname == "all_users":
+            raise YunohostError('group_cannot_edit_all_users')
+        elif groupname == "visitors":
+            raise YunohostError('group_cannot_edit_visitors')
+        elif groupname in existing_users:
+            raise YunohostError('group_cannot_edit_primary_group', group=groupname)
 
     # We extract the uid for each member of the group to keep a simple flat list of members
     current_group = user_group_info(groupname)["members"]
