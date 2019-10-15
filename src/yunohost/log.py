@@ -502,7 +502,10 @@ class OperationLogger(object):
         The missing of the message below could help to see an electrical
         shortage.
         """
-        self.error(m18n.n('log_operation_unit_unclosed_properly'))
+        if self.ended_at is not None or self.started_at is None:
+            return
+        else:
+            self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
 
 def _get_description_from_name(name):

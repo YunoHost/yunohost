@@ -41,7 +41,8 @@ from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, read_toml, read_yaml
+from moulinette.utils.filesystem import read_json, read_toml, read_yaml, write_to_json
+from moulinette.utils.filesystem import read_json, read_toml
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -984,63 +985,91 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     permission_create(app_instance_name+".main", url="/", allowed=["all_users"])
 
     # Execute the app install script
-    install_retcode = 1
+    install_failed = True
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
             args=args_list, env=env_dict
         )[0]
+        # "Common" app install failure : the script failed and returned exit code != 0
+        install_failed = True if install_retcode != 0 else False
+        if install_failed:
+            error = m18n.n('app_install_script_failed')
+            logger.exception(error)
+            operation_logger.error(error)
+    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
-        install_retcode = -1
-    except Exception:
+        error = m18n.n('operation_interrupted')
+        logger.exception(error)
+        operation_logger.error(error)
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception as e :
         import traceback
-        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+        logger.exception(error)
+        operation_logger.error(error)
     finally:
+        # Whatever happened (install success or failure) we check if it broke the system
+        # and warn the user about it
         try:
             broke_the_system = False
             _assert_system_is_sane_for_app(manifest, "post")
         except Exception as e:
             broke_the_system = True
-            error_msg = operation_logger.error(str(e))
+            logger.exception(str(e))
+            operation_logger.error(str(e))
 
-        if install_retcode != 0:
-            error_msg = operation_logger.error(m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode))
+        # If the install failed or broke the system, we remove it
+        if install_failed or broke_the_system:
 
-        if install_retcode != 0 or broke_the_system:
-            if not no_remove_on_failure:
-                # Setup environment for remove script
-                env_dict_remove = {}
-                env_dict_remove["YNH_APP_ID"] = app_id
-                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            # This option is meant for packagers to debug their apps more easily
+            if no_remove_on_failure:
+                raise YunohostError("The installation of %s failed, but was not cleaned up as requested by --no-remove-on-failure." % app_id, raw_msg=True)
 
-                # Execute remove script
-                operation_logger_remove = OperationLogger('remove_on_failed_install',
-                                                          [('app', app_instance_name)],
-                                                          env=env_dict_remove)
-                operation_logger_remove.start()
+            # Setup environment for remove script
+            env_dict_remove = {}
+            env_dict_remove["YNH_APP_ID"] = app_id
+            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
+            # Execute remove script
+            operation_logger_remove = OperationLogger('remove_on_failed_install',
+                                                      [('app', app_instance_name)],
+                                                      env=env_dict_remove)
+            operation_logger_remove.start()
+
+            # Try to remove the app
+            try:
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
-                # Remove all permission in LDAP
-                for permission_name in user_permission_list()["permissions"].keys():
-                    if permission_name.startswith(app_instance_name+"."):
-                        permission_delete(permission_name, force=True)
+            # Here again, calling hook_exec could fail miserably, or get
+            # manually interrupted (by mistake or because script was stuck)
+            # In that case we still want to proceed with the rest of the
+            # removal (permissions, /etc/yunohost/apps/{app} ...)
+            except (KeyboardInterrupt, EOFError, Exception):
+                remove_retcode = -1
+                import traceback
+                logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
-                if remove_retcode != 0:
-                    msg = m18n.n('app_not_properly_removed',
-                                 app=app_instance_name)
-                    logger.warning(msg)
-                    operation_logger_remove.error(msg)
+            # Remove all permission in LDAP
+            for permission_name in user_permission_list()["permissions"].keys():
+                if permission_name.startswith(app_instance_name+"."):
+                    permission_delete(permission_name, force=True)
+
+            if remove_retcode != 0:
+                msg = m18n.n('app_not_properly_removed',
+                             app=app_instance_name)
+                logger.warning(msg)
+                operation_logger_remove.error(msg)
+            else:
+                try:
+                    _assert_system_is_sane_for_app(manifest, "post")
+                except Exception as e:
+                    operation_logger_remove.error(e)
                 else:
-                    try:
-                        _assert_system_is_sane_for_app(manifest, "post")
-                    except Exception as e:
-                        operation_logger_remove.error(e)
-                    else:
-                        operation_logger_remove.success()
+                    operation_logger_remove.success()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
@@ -1048,11 +1077,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
             app_ssowatconf()
 
-            if install_retcode == -1:
-                msg = m18n.n('operation_interrupted') + " " + error_msg
-                raise YunohostError(msg, raw_msg=True)
-            msg = error_msg
-            raise YunohostError(msg, raw_msg=True)
+            raise YunohostError("app_install_failed", app=app_id)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -1134,11 +1159,24 @@ def app_remove(operation_logger, app):
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
-                 env=env_dict)[0] == 0:
-        logger.success(m18n.n('app_removed', app=app))
+    try:
+        ret = hook_exec('/tmp/yunohost_remove/scripts/remove',
+                        args=args_list,
+                        env=env_dict)[0]
+    # Here again, calling hook_exec could fail miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    # In that case we still want to proceed with the rest of the
+    # removal (permissions, /etc/yunohost/apps/{app} ...)
+    except (KeyboardInterrupt, EOFError, Exception):
+        ret = -1
+        import traceback
+        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
+    if ret == 0:
+        logger.success(m18n.n('app_removed', app=app))
         hook_callback('post_app_remove', args=args_list, env=env_dict)
+    else:
+        logger.warning(m18n.n('app_not_properly_removed', app=app))
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
@@ -1265,25 +1303,21 @@ def app_makedefault(operation_logger, app, domain=None):
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
                             other_app=app_map(raw=True)[domain]["/"]["id"])
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=e)
-    except IOError:
+    # TODO / FIXME : current trick is to add this to conf.json.persisten
+    # This is really not robust and should be improved
+    # e.g. have a flag in /etc/yunohost/apps/$app/ to say that this is the
+    # default app or idk...
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=e)
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))
