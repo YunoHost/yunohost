@@ -41,7 +41,7 @@ from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, read_toml
+from moulinette.utils.filesystem import read_json, read_toml, write_to_json
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -1233,25 +1233,21 @@ def app_makedefault(operation_logger, app, domain=None):
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
                             other_app=app_map(raw=True)[domain]["/"]["id"])
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=e)
-    except IOError:
+    # TODO / FIXME : current trick is to add this to conf.json.persisten
+    # This is really not robust and should be improved
+    # e.g. have a flag in /etc/yunohost/apps/$app/ to say that this is the
+    # default app or idk...
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=e)
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))

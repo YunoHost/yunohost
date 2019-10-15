@@ -35,8 +35,10 @@ import subprocess
 import copy
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
+
+from yunohost.utils.error import YunohostError
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
 
@@ -195,21 +197,16 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
         attr_dict['mail'] = [attr_dict['mail']] + aliases
 
         # If exists, remove the redirection from the SSO
-        try:
-            with open('/etc/ssowat/conf.json.persistent') as json_conf:
-                ssowat_conf = json.loads(str(json_conf.read()))
-        except ValueError as e:
-            raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
-        except IOError:
+        if not os.path.exists('/etc/ssowat/conf.json.persistent'):
             ssowat_conf = {}
+        else:
+            ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
         if 'redirected_urls' in ssowat_conf and '/' in ssowat_conf['redirected_urls']:
             del ssowat_conf['redirected_urls']['/']
-            try:
-                with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-                    json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-            except IOError as e:
-                raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
+
+            write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
+            os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)
