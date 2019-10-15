@@ -42,7 +42,6 @@ from datetime import datetime
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json, read_toml, read_yaml, write_to_json
-from moulinette.utils.filesystem import read_json, read_toml
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
