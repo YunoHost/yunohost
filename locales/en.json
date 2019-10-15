@@ -514,8 +514,6 @@
     "service_unknown": "Unknown service '{service:s}'",
     "ssowat_conf_generated": "SSOwat configuration generated",
     "ssowat_conf_updated": "SSOwat configuration updated",
-    "ssowat_persistent_conf_read_error": "Could not read persistent SSOwat configuration: {error:s}. Edit /etc/ssowat/conf.json.persistent file to fix the JSON syntax",
-    "ssowat_persistent_conf_write_error": "Could not save persistent SSOwat configuration: {error:s}. Edit /etc/ssowat/conf.json.persistent file to fix the JSON syntax",
     "system_upgraded": "System upgraded",
     "system_username_exists": "Username already exists in the list of system users",
     "this_action_broke_dpkg": "This action broke dpkg/APT (the system package managers)… You can try to solve this issue by connecting through SSH and running `sudo dpkg --configure -a`.",

@@ -350,25 +350,17 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
-    except IOError:
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -616,8 +608,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
 
-        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
