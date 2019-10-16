@@ -2,7 +2,7 @@
 
 [![Build status](https://travis-ci.org/YunoHost/yunohost.svg?branch=stretch-unstable)](https://travis-ci.org/YunoHost/yunohost)
 [![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/stretch-unstable/LICENSE)
-![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)
+[![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)](https://mastodon.social/@yunohost)
 
 This repository corresponds to the core code of YunoHost, mainly written in Python and Bash.
 
@@ -14,7 +14,7 @@ You can learn more about what's YunoHost and its features [here](https://yunohos
 
 # Screenshots
 
-Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single-sign on user portal ([SSOwat](https://github.com/YunoHost/ssowat))
+Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single sign-on user portal ([SSOwat](https://github.com/YunoHost/ssowat))
 --- |  ---
 ![](https://raw.githubusercontent.com/YunoHost/doc/master/images/webadmin.png) | ![](https://raw.githubusercontent.com/YunoHost/doc/master/images/user_panel.png)
 
