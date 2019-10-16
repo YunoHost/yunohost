@@ -159,7 +159,7 @@ ynh_add_protected_uris() {
 ynh_app_setting()
 {
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python - <<EOF
-import os, yaml
+import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)
 setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
@@ -177,7 +177,7 @@ else:
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
         if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
-           logger.warning("/!\\ Packagers! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to manage public/private access.")
+           sys.stderr.write("/!\\ Packagers! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to manage public/private access.\n")
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
