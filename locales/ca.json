@@ -285,7 +285,7 @@
     "ldap_initialized": "S'ha iniciat LDAP",
     "license_undefined": "indefinit",
     "mail_alias_remove_failed": "No s'han pogut eliminar els àlies del correu «{mail:s}»",
-    "mail_domain_unknown": "Domini d'adreça de correu per «{domain:s}» desconegut",
+    "mail_domain_unknown": "El domini «{domain:s}» de l'adreça de correu no és vàlid. Utilitzeu un domini administrat per aquest servidor.",
     "mail_forward_remove_failed": "No s'han pogut eliminar el reenviament de correu «{mail:s}»",
     "mailbox_used_space_dovecot_down": "S'ha d'engegar el servei de correu Dovecot, per poder obtenir l'espai utilitzat per la bústia de correu",
     "mail_unavailable": "Aquesta adreça de correu està reservada i ha de ser atribuïda automàticament el primer usuari",
@@ -617,5 +617,13 @@
     "user_already_exists": "L'usuari {user} ja existeix",
     "app_upgrade_stopped": "S'ha aturat l'actualització de totes les aplicacions per prevenir els possibles danys ja que hi ha hagut un error en l'actualització de l'anterior aplicació",
     "app_install_failed": "No s'ha pogut instal·lar {app}",
-    "app_install_script_failed": "Hi ha hagut un error en el script d'instal·lació de l'aplicació"
+    "app_install_script_failed": "Hi ha hagut un error en el script d'instal·lació de l'aplicació",
+    "group_cannot_edit_all_users": "El grup «all_users» no es pot editar manualment. És un grup especial destinat a contenir els usuaris registrats a YunoHost",
+    "group_cannot_edit_visitors": "El grup «visitors» no es pot editar manualment. És un grup especial que representa els visitants anònims",
+    "group_cannot_edit_primary_group": "El grup «{group}» no es pot editar manualment. És el grup principal destinat a contenir un usuari específic.",
+    "log_permission_url": "Actualització de la URL associada al permís «{}»",
+    "migration_0011_slapd_config_will_be_overwritten": "Sembla que heu modificat manualment la configuració de sldap. Per aquesta migració crítica, YunoHost ha de forçar l'actualització de la configuració sldap. Es farà una còpia de seguretat a {conf_backup_folder}.",
+    "permission_already_up_to_date": "No s'ha actualitzat el permís perquè la petició d'afegir/eliminar ja corresponent a l'estat actual.",
+    "permission_currently_allowed_for_visitors": "El permís ja el tenen el grup de visitants a més d'altres grups. Segurament s'hauria de revocar el permís al grup dels visitants o eliminar els altres grups als que s'ha atribuït.",
+    "permission_currently_allowed_for_all_users": "El permís ha el té el grup de tots els usuaris (all_users) a més d'altres grups. Segurament s'hauria de revocar el permís a «all_users» o eliminar els altres grups als que s'ha atribuït."
 }
