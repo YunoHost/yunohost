@@ -653,5 +653,15 @@
     "permission_already_disallowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé '",
     "permission_cannot_remove_main": "Supprimer une autorisation principale n'est pas autorisé",
     "user_already_exists": "L'utilisateur {user} existe déjà",
-    "app_full_domain_unavailable": "Désolé, cette application nécessite l'installation d'un domaine complet, mais d'autres applications sont déjà installées sur le domaine '{domain}'. Une solution possible consiste à ajouter et à utiliser un sous-domaine dédié à cette application."
+    "app_full_domain_unavailable": "Désolé, cette application nécessite l'installation d'un domaine complet, mais d'autres applications sont déjà installées sur le domaine '{domain}'. Une solution possible consiste à ajouter et à utiliser un sous-domaine dédié à cette application.",
+    "group_cannot_edit_all_users": "Le groupe 'all_users' ne peut pas être édité manuellement. C'est un groupe spécial destiné à contenir tous les utilisateurs enregistrés dans YunoHost",
+    "group_cannot_edit_visitors": "Le groupe 'visiteurs' ne peut pas être édité manuellement. C'est un groupe spécial représentant les visiteurs anonymes",
+    "group_cannot_edit_primary_group": "Le groupe '{group}' ne peut pas être édité manuellement. C'est le groupe principal destiné à ne contenir qu'un utilisateur spécifique.",
+    "log_permission_url": "Mise à jour de l'URL associée à l'autorisation '{}'",
+    "migration_0011_slapd_config_will_be_overwritten": "Il semble que vous ayez modifié manuellement la configuration de slapd. Pour cette migration critique, YunoHost doit forcer la mise à jour de la configuration de slapd. Les fichiers originaux seront sauvegardés dans {conf_backup_folder}.",
+    "permission_already_up_to_date": "L'autorisation n'a pas été mise à jour car les demandes d'ajout/suppression correspondent déjà à l'état actuel.",
+    "permission_currently_allowed_for_visitors": "Cette autorisation est actuellement accordée aux visiteurs en plus d'autres groupes. Vous voudrez probablement supprimer l'autorisation \"visiteurs\" ou supprimer les autres groupes auxquels il est actuellement attribué.",
+    "permission_currently_allowed_for_all_users": "Cette autorisation est actuellement accordée à tous les utilisateurs en plus des autres groupes. Vous voudrez probablement soit supprimer l'autorisation 'all_users', soit supprimer les autres groupes auxquels il est actuellement autorisé.",
+    "app_install_failed": "Impossible d'installer {app}",
+    "app_install_script_failed": "Une erreur est survenue dans le script d'installation de l'application"
 }
