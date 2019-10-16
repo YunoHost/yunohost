@@ -476,7 +476,7 @@
     "mountpoint_unknown": "Nekonata montpunkto",
     "log_tools_maindomain": "Faru de '{}' la ĉefa domajno",
     "maindomain_change_failed": "Ne povis ŝanĝi la ĉefan domajnon",
-    "mail_domain_unknown": "Nekonata retpoŝtadreso por domajno '{domain:s}'",
+    "mail_domain_unknown": "Nevalida retadreso por domajno '{domain:s}'. Bonvolu uzi domajnon administritan de ĉi tiu servilo.",
     "migrations_cant_reach_migration_file": "Ne povis aliri migrajn dosierojn ĉe la vojo% s",
     "pattern_email": "Devas esti valida retpoŝtadreso (t.e.iu@domain.org)",
     "mail_alias_remove_failed": "Ne povis forigi retpoŝton alias '{mail:s}'",
@@ -553,5 +553,15 @@
     "service_restart_failed": "Ne povis rekomenci la servon '{service:s}'\n\nLastatempaj servaj protokoloj: {logs:s}",
     "firewall_rules_cmd_failed": "Iuj komandoj pri fajroŝirmilo malsukcesis. Pliaj informoj en ensaluto.",
     "certmanager_certificate_fetching_or_enabling_failed": "Provante uzi la novan atestilon por {domain:s} ne funkciis …",
-    "app_full_domain_unavailable": "Bedaŭrinde, ĉi tiu apliko postulas plenan domajnon esti instalita, sed iuj aliaj programoj jam estas instalitaj sur '{domain}'. Unu ebla solvo estas aldoni kaj uzi subdomajnon dediĉitan al ĉi tiu aplikaĵo anstataŭe."
+    "app_full_domain_unavailable": "Bedaŭrinde, ĉi tiu apliko postulas plenan domajnon esti instalita, sed iuj aliaj programoj jam estas instalitaj sur '{domain}'. Unu ebla solvo estas aldoni kaj uzi subdomajnon dediĉitan al ĉi tiu aplikaĵo anstataŭe.",
+    "migration_0011_slapd_config_will_be_overwritten": "Ŝajnas ke vi permane redaktis la slapd-agordon. Por ĉi tiu kritika migrado, YunoHost bezonas devigi la ĝisdatigon de la slapd-agordo. La originalaj dosieroj estos rezervitaj en {conf_backup_folder}.",
+    "group_cannot_edit_all_users": "La grupo 'all_users' ne povas esti redaktita permane. Ĝi estas speciala grupo celita enhavi ĉiujn uzantojn registritajn en YunoHost",
+    "group_cannot_edit_visitors": "La grupo 'vizitantoj' ne povas esti redaktita permane. Ĝi estas speciala grupo reprezentanta anonimajn vizitantojn",
+    "group_cannot_edit_primary_group": "La grupo '{group}' ne povas esti redaktita permane. Ĝi estas la primara grupo celita enhavi nur unu specifan uzanton.",
+    "log_permission_url": "Ĝisdatigu url-rilataj al permeso '{}'",
+    "permission_already_up_to_date": "La permeso ne estis ĝisdatigita ĉar la petoj pri aldono/forigo jam kongruas kun la aktuala stato.",
+    "permission_currently_allowed_for_visitors": "Ĉi tiu permeso estas nuntempe donita al vizitantoj aldone al aliaj grupoj. Vi probable volas aŭ forigi la permeson de \"vizitantoj\" aŭ forigi la aliajn grupojn al kiuj ĝi nun estas koncedita.",
+    "permission_currently_allowed_for_all_users": "Ĉi tiu permeso estas nuntempe donita al ĉiuj uzantoj aldone al aliaj grupoj. Vi probable volas aŭ forigi la permeson \"all_users\" aŭ forigi la aliajn grupojn, kiujn ĝi nuntempe donas.",
+    "app_install_failed": "Ne povis instali {app}",
+    "app_install_script_failed": "Eraro okazis en la skripto de instalado de la app"
 }
