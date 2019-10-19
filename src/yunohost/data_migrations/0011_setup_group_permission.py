@@ -117,7 +117,7 @@ class MyMigration(Migration):
             app_setting(app, 'allowed_users', delete=True)
 
             # Migrate classic public app still using the legacy unprotected_uris
-            if app_setting(app, "unprotected_uris") == "/":
+            if app_setting(app, "unprotected_uris") == "/" or app_setting(app, "skipped_uris") == "/":
                 user_permission_update(app+".main", remove="all_users", add="visitors", sync_perm=False)
 
             permission_sync_to_user()

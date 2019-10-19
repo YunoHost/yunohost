@@ -1102,7 +1102,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         permission_url(app_instance_name + ".main", url=None, sync_perm=False)
 
     # Migrate classic public app still using the legacy unprotected_uris
-    if app_settings.get("unprotected_uris", None) == "/":
+    if app_settings.get("unprotected_uris", None) == "/" or app_settings.get("skipped_uris", None) == "/":
         user_permission_update(app_instance_name + ".main", remove="all_users", add="visitors", sync_perm=False)
 
     permission_sync_to_user()
