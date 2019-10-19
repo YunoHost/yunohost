@@ -1055,7 +1055,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
                 if permission_name.startswith(app_instance_name+"."):
-                    permission_delete(permission_name, force=True)
+                    permission_delete(permission_name, force=True, sync_perm=False)
 
             if remove_retcode != 0:
                 msg = m18n.n('app_not_properly_removed',
@@ -1074,7 +1074,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
 
-            app_ssowatconf()
+            permission_sync_to_user()
 
             raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
