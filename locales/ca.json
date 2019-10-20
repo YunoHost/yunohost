@@ -616,7 +616,7 @@
     "permission_cannot_remove_main": "No es permet eliminar un permís principal",
     "user_already_exists": "L'usuari {user} ja existeix",
     "app_upgrade_stopped": "S'ha aturat l'actualització de totes les aplicacions per prevenir els possibles danys ja que hi ha hagut un error en l'actualització de l'anterior aplicació",
-    "app_install_failed": "No s'ha pogut instal·lar {app}",
+    "app_install_failed": "No s'ha pogut instal·lar {app}: {error}",
     "app_install_script_failed": "Hi ha hagut un error en el script d'instal·lació de l'aplicació",
     "group_cannot_edit_all_users": "El grup «all_users» no es pot editar manualment. És un grup especial destinat a contenir els usuaris registrats a YunoHost",
     "group_cannot_edit_visitors": "El grup «visitors» no es pot editar manualment. És un grup especial que representa els visitants anònims",
