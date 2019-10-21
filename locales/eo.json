@@ -562,6 +562,6 @@
     "permission_already_up_to_date": "La permeso ne estis ĝisdatigita ĉar la petoj pri aldono/forigo jam kongruas kun la aktuala stato.",
     "permission_currently_allowed_for_visitors": "Ĉi tiu permeso estas nuntempe donita al vizitantoj aldone al aliaj grupoj. Vi probable volas aŭ forigi la permeson de \"vizitantoj\" aŭ forigi la aliajn grupojn al kiuj ĝi nun estas koncedita.",
     "permission_currently_allowed_for_all_users": "Ĉi tiu permeso estas nuntempe donita al ĉiuj uzantoj aldone al aliaj grupoj. Vi probable volas aŭ forigi la permeson \"all_users\" aŭ forigi la aliajn grupojn, kiujn ĝi nuntempe donas.",
-    "app_install_failed": "Ne povis instali {app}",
+    "app_install_failed": "Ne povis instali {app} : {error}",
     "app_install_script_failed": "Eraro okazis en la skripto de instalado de la app"
 }
