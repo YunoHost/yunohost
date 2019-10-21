@@ -627,7 +627,7 @@
     "permission_cannot_remove_main": "No está permitido eliminar un permiso principal",
     "user_already_exists": "El usuario {user} ya existe",
     "app_full_domain_unavailable": "Lamentablemente esta aplicación necesita un dominio completo para ser instalada pero ya hay otras aplicaciones instaladas en el dominio «{domain}». Una solución posible es añadir y usar un subdominio dedicado a esta aplicación.",
-    "app_install_failed": "No se pudo instalar {app}",
+    "app_install_failed": "No se pudo instalar {app}: {error}",
     "app_install_script_failed": "Ha ocurrido un error en el guión de instalación de la aplicación",
     "group_cannot_edit_all_users": "El grupo «all_users» no se puede editar manualmente. Es un grupo especial destinado a contener todos los usuarios registrados en YunoHost",
     "group_cannot_edit_visitors": "El grupo «visitors» no se puede editar manualmente. Es un grupo especial que representa a los visitantes anónimos",
