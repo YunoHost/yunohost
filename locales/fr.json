@@ -662,6 +662,6 @@
     "permission_already_up_to_date": "L'autorisation n'a pas été mise à jour car les demandes d'ajout/suppression correspondent déjà à l'état actuel.",
     "permission_currently_allowed_for_visitors": "Cette autorisation est actuellement accordée aux visiteurs en plus d'autres groupes. Vous voudrez probablement supprimer l'autorisation \"visiteurs\" ou supprimer les autres groupes auxquels il est actuellement attribué.",
     "permission_currently_allowed_for_all_users": "Cette autorisation est actuellement accordée à tous les utilisateurs en plus des autres groupes. Vous voudrez probablement soit supprimer l'autorisation 'all_users', soit supprimer les autres groupes auxquels il est actuellement autorisé.",
-    "app_install_failed": "Impossible d'installer {app}",
+    "app_install_failed": "Impossible d'installer {app}: {error}",
     "app_install_script_failed": "Une erreur est survenue dans le script d'installation de l'application"
 }
