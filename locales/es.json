@@ -119,7 +119,7 @@
     "ldap_initialized": "Inicializado LDAP",
     "license_undefined": "indefinido",
     "mail_alias_remove_failed": "No se pudo eliminar el alias de correo «{mail:s}»",
-    "mail_domain_unknown": "Dirección de correo desconocida para el dominio «{domain:s}»",
+    "mail_domain_unknown": "Dirección de correo no válida para el dominio «{domain:s}». Use un dominio administrado por este servidor.",
     "mail_forward_remove_failed": "No se pudo eliminar el reenvío de correo «{mail:s}»",
     "maindomain_change_failed": "No se pudo cambiar el dominio principal",
     "maindomain_changed": "El dominio principal ha cambiado",
@@ -627,6 +627,14 @@
     "permission_cannot_remove_main": "No está permitido eliminar un permiso principal",
     "user_already_exists": "El usuario {user} ya existe",
     "app_full_domain_unavailable": "Lamentablemente esta aplicación necesita un dominio completo para ser instalada pero ya hay otras aplicaciones instaladas en el dominio «{domain}». Una solución posible es añadir y usar un subdominio dedicado a esta aplicación.",
-    "app_install_failed": "No se pudo instalar {app}",
-    "app_install_script_failed": "Ha ocurrido un error en el guión de instalación de la aplicación"
+    "app_install_failed": "No se pudo instalar {app}: {error}",
+    "app_install_script_failed": "Ha ocurrido un error en el guión de instalación de la aplicación",
+    "group_cannot_edit_all_users": "El grupo «all_users» no se puede editar manualmente. Es un grupo especial destinado a contener todos los usuarios registrados en YunoHost",
+    "group_cannot_edit_visitors": "El grupo «visitors» no se puede editar manualmente. Es un grupo especial que representa a los visitantes anónimos",
+    "group_cannot_edit_primary_group": "El grupo «{group}» no se puede editar manualmente. Es el grupo primario destinado a contener solo un usuario específico.",
+    "log_permission_url": "Actualizar la URL relacionada con el permiso «{}»",
+    "migration_0011_slapd_config_will_be_overwritten": "Parece que ha editado manualmente la configuración de slapd. Para esta migración crítica, YunoHost  necesita forzar la actualización de la configuración de slapd. Los archivos originales se respaldarán en {conf_backup_folder}.",
+    "permission_already_up_to_date": "El permiso no se ha actualizado porque las peticiones de incorporación o eliminación ya coinciden con el estado actual.",
+    "permission_currently_allowed_for_visitors": "Este permiso se concede actualmente a los visitantes además de otros grupos. Probablemente quiere o eliminar el permiso de «visitors» o eliminar los otros grupos a los que está otorgado actualmente.",
+    "permission_currently_allowed_for_all_users": "Este permiso se concede actualmente a todos los usuarios además de los otros grupos. Probablemente quiere o eliminar el permiso de «all_users» o eliminar los otros grupos a los que está otorgado actualmente."
 }
