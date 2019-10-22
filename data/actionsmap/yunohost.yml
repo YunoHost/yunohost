@@ -285,7 +285,7 @@ user:
                 ### user_permission_list()
                 list:
                     action_help: List permissions and corresponding accesses
-                    api: GET /users/permissions/<permission>
+                    api: GET /users/permissions
                     arguments:
                         -s:
                             full: --short
@@ -300,7 +300,7 @@ user:
                 ### user_permission_update()
                 update:
                     action_help: Manage group or user permissions
-                    api: POST /users/permissions/<permission>
+                    api: PUT /users/permissions/<permission>
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)

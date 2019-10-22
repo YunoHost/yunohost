@@ -994,19 +994,19 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         install_failed = True if install_retcode != 0 else False
         if install_failed:
             error = m18n.n('app_install_script_failed')
-            logger.exception(error)
-            operation_logger.error(error)
+            logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
         error = m18n.n('operation_interrupted')
-        logger.exception(error)
-        operation_logger.error(error)
+        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
-    except Exception as e :
+    except Exception as e:
         import traceback
         error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
-        logger.exception(error)
-        operation_logger.error(error)
+        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
         # Whatever happened (install success or failure) we check if it broke the system
         # and warn the user about it
@@ -1015,8 +1015,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             _assert_system_is_sane_for_app(manifest, "post")
         except Exception as e:
             broke_the_system = True
-            logger.exception(str(e))
-            operation_logger.error(str(e))
+            logger.exception(m18n.n("app_install_failed", app=app_id, error=str(e)))
+            failure_message_with_debug_instructions = operation_logger.error(str(e))
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
@@ -1055,7 +1055,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
                 if permission_name.startswith(app_instance_name+"."):
-                    permission_delete(permission_name, force=True)
+                    permission_delete(permission_name, force=True, sync_perm=False)
 
             if remove_retcode != 0:
                 msg = m18n.n('app_not_properly_removed',
@@ -1074,9 +1074,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
 
-            app_ssowatconf()
+            permission_sync_to_user()
 
-            raise YunohostError("app_install_failed", app=app_id)
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -1102,7 +1102,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         permission_url(app_instance_name + ".main", url=None, sync_perm=False)
 
     # Migrate classic public app still using the legacy unprotected_uris
-    if app_settings.get("unprotected_uris", None) == "/":
+    if app_settings.get("unprotected_uris", None) == "/" or app_settings.get("skipped_uris", None) == "/":
         user_permission_update(app_instance_name + ".main", remove="all_users", add="visitors", sync_perm=False)
 
     permission_sync_to_user()
