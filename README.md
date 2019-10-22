@@ -34,27 +34,10 @@ Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single
 - Come chat with us on the [dev chatroom](https://yunohost.org/#/chat_rooms) !
 - You can help translate YunoHost on our [translation platform](https://translate.yunohost.org/engage/yunohost/?utm_source=widget)
 
+<p align="center">
 <img src="https://translate.yunohost.org/widgets/yunohost/-/multi-auto.svg" alt="Translation status" />
-
-
-## Repository content
-
-- [YunoHost core Python 2.7 scripts](./src/yunohost).
-- [An actionsmap](./data/actionsmap/yunohost.yml) describing the CLI and API
-- [Services configuration templates](./data/templates).
-- [Hooks](./data/hooks).
-- [Locales](./locales) for translations of `yunohost` command.
-- [Shell helpers](./helpers.d) for [application packaging](https://yunohost.org/#/packaging_apps_helpers_en).
-- [Modules for the XMPP server Metronome](./lib/metronome/modules).
-- [Debian files](./debian) for package creation.
-
-## How does it work?
-
-- Python core scripts are accessible through two interfaces thanks to the [moulinette framework](https://github.com/YunoHost/moulinette):
-  - the [CLI](https://en.wikipedia.org/wiki/Command-line_interface) corresponding to the `yunohost` command.
-  - the [API](https://en.wikipedia.org/wiki/Application_programming_interface) used by the [web administration interface](https://github.com/YunoHost/yunohost-admin) (other interfaces could be implemented).
-- You can find more details about how YunoHost works on this [documentation (in French)](https://yunohost.org/#/package_list_fr).
+</p>
 
 ## License
 
-As [other components of YunoHost](https://yunohost.org/#/faq_en), this repository is licensed GNU AGPL v3.
+As [other components of YunoHost](https://yunohost.org/#/faq_en), this repository is licensed under GNU AGPL v3.
