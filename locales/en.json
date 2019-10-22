@@ -6,7 +6,7 @@
     "admin_password_changed": "The administration password got changed",
     "admin_password_too_long": "Please choose a password shorter than 127 characters",
     "already_up_to_date": "Nothing to do. Everything is already up-to-date.",
-    "app_action_cannot_be_ran_because_required_services_down": "Start all services required to run the action that failed. Try restarting the following ones (and possibly investigate why they are down): {services}",
+    "app_action_cannot_be_ran_because_required_services_down": "These required services should be running to run this action: {services}. Try restarting them to continue (and possibly investigate why they are down).",
     "app_action_broke_system": "This action seem to have broke these important services: {services}",
     "app_already_installed": "{app:s} is already installed",
     "app_already_installed_cant_change_url": "This app is already installed. The URL cannot be changed just by this function. Look into `app changeurl` if it's available.",
