@@ -100,6 +100,10 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     if "." not in permission:
         permission = permission + ".main"
 
+    # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
+    if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
+        raise YunohostError('permission_require_account', permission=permission)
+
     # Fetch currently allowed groups for this permission
 
     existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
