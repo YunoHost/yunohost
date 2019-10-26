@@ -649,7 +649,7 @@
     "log_user_permission_update": "Mise à jour des accès pour la permission '{}'",
     "log_user_permission_reset": "Réinitialiser la permission '{}'",
     "migration_0011_failed_to_remove_stale_object": "Impossible de supprimer un objet périmé {dn}: {error}",
-    "permission_already_allowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' activée '",
+    "permission_already_allowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' activée",
     "permission_already_disallowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé '",
     "permission_cannot_remove_main": "Supprimer une autorisation principale n'est pas autorisé",
     "user_already_exists": "L'utilisateur '{user}' existe déjà",
@@ -663,5 +663,6 @@
     "permission_currently_allowed_for_visitors": "Cette autorisation est actuellement accordée aux visiteurs en plus d'autres groupes. Vous voudrez probablement supprimer l'autorisation \"visiteurs\" ou supprimer les autres groupes auxquels il est actuellement attribué.",
     "permission_currently_allowed_for_all_users": "Cette autorisation est actuellement accordée à tous les utilisateurs en plus des autres groupes. Vous voudrez probablement soit supprimer l'autorisation 'all_users', soit supprimer les autres groupes auxquels il est actuellement autorisé.",
     "app_install_failed": "Impossible d'installer {app}: {error}",
-    "app_install_script_failed": "Une erreur est survenue dans le script d'installation de l'application"
+    "app_install_script_failed": "Une erreur est survenue dans le script d'installation de l'application",
+    "permission_require_account": "Permission {permission} n'a de sens que pour les utilisateurs ayant un compte et ne peut donc pas être activé pour les visiteurs."
 }
