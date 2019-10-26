@@ -1101,15 +1101,41 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     if not (domain and path):
         permission_url(app_instance_name + ".main", url=None, sync_perm=False)
 
-    # Migrate classic public app still using the legacy unprotected_uris
-    if app_settings.get("unprotected_uris", None) == "/" or app_settings.get("skipped_uris", None) == "/":
-        user_permission_update(app_instance_name + ".main", remove="all_users", add="visitors", sync_perm=False)
+    _migrate_legacy_permissions(app_instance_name)
 
     permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
 
     hook_callback('post_app_install', args=args_list, env=env_dict)
+
+
+def _migrate_legacy_permissions(app):
+
+    from yunohost.permission import user_permission_list, user_permission_update
+
+    # Check if app is apparently using the legacy permission management, defined by the presence of something like
+    # ynh_app_setting_set on unprotected_uris (or yunohost app setting)
+    install_script_path = os.path.join(APPS_SETTING_PATH, app, 'scripts/install')
+    install_script_content = open(install_script_path, "r").read()
+    if not re.search(r"(yunohost app setting|ynh_app_setting_set) .*(unprotected|skipped)_uris", install_script_content):
+        return
+
+    app_settings = _get_app_settings(app)
+    app_perm_currently_allowed = user_permission_list()["permissions"][app + ".main"]["allowed"]
+
+    # If the current permission says app is protected, but there are legacy rules saying it should be public...
+    if app_perm_currently_allowed == ["all_users"] \
+       and (app_settings.get("unprotected_uris", None) == "/"
+            or app_settings.get("skipped_uris", None) == "/"):
+        # Make it public
+        user_permission_update(app + ".main", remove="all_users", add="visitors", sync_perm=False)
+    # If the current permission says app is public, but there are no setting saying it should be public...
+    if app_perm_currently_allowed == ["visitors"] \
+       and (app_settings.get("unprotected_uris", None) is None
+            and app_settings.get("skipped_uris", None) is None):
+        # Make is private
+        user_permission_update(app + ".main", remove="visitors", add="all_users", sync_perm=False)
 
 
 @is_unit_operation()
@@ -1353,6 +1379,12 @@ def app_setting(app, key, value=None, delete=False):
 
         app_settings[key] = value
     _set_app_settings(app, app_settings)
+
+    # Fucking legacy permission management.
+    # We need this because app temporarily set the app as unprotected to configure it with curl...
+    if key.startswith("unprotected_") or key.startswith("skipped_") and value == "/":
+        from permission import user_permission_update
+        user_permission_update(app + ".main", remove="all_users", add="visitors")
 
 
 def app_checkport(port):

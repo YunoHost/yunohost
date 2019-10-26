@@ -184,6 +184,13 @@ else:
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
+
+    # Fucking legacy permission management.
+    # We need this because app temporarily set the app as unprotected to configure it with curl...
+    if [[ "$3" =~ ^(unprotected|skipped)_ ]] && [[ "${4:-}" == "/" ]]
+    then
+        ynh_permission_update --permission "main" --remove "all_users" --add "visitors"
+    fi
 }
 
 # Check availability of a web path
