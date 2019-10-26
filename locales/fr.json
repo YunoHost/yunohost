@@ -248,7 +248,7 @@
     "yunohost_ca_creation_failed": "Impossible de créer l’autorité de certification",
     "yunohost_configured": "YunoHost est maintenant configuré",
     "yunohost_installing": "L'installation de YunoHost est en cours …",
-    "yunohost_not_installed": "YunoHost n'est pas correctement installé. S'il vous plaît exécuter 'yunohost tools postinstall'",
+    "yunohost_not_installed": "YunoHost n'est pas correctement installé. Veuillez exécuter 'yunohost tools postinstall'",
     "certmanager_attempt_to_replace_valid_cert": "Vous êtes en train de vouloir remplacer un certificat correct et valide pour le domaine {domain:s} ! (Utilisez --force pour contourner cela)",
     "certmanager_domain_unknown": "Domaine {domain:s} inconnu",
     "certmanager_domain_cert_not_selfsigned": "Le certificat du domaine {domain:s} n’est pas auto-signé. Voulez-vous vraiment le remplacer ? (Utilisez --force pour cela)",
