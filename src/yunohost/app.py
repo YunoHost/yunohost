@@ -1341,17 +1341,18 @@ def app_setting(app, key, value=None, delete=False):
         except Exception as e:
             logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
             return None
+
+    if delete and key in app_settings:
+        del app_settings[key]
     else:
-        if delete and key in app_settings:
-            del app_settings[key]
-        else:
-            # FIXME: Allow multiple values for some keys?
-            if key in ['redirected_urls', 'redirected_regex']:
-                value = yaml.load(value)
-            if key in ["unprotected_uris", "unprotected_regex", "protected_uris", "protected_regex"]:
-                logger.warning("/!\ Packagers ! This app is using the legacy permission system. Please delete these legacy settings and use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage public/private access.")
-            app_settings[key] = value
-        _set_app_settings(app, app_settings)
+        # FIXME: Allow multiple values for some keys?
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.load(value)
+        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
+            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+
+        app_settings[key] = value
+    _set_app_settings(app, app_settings)
 
 
 def app_checkport(port):
