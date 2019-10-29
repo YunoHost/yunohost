@@ -640,8 +640,11 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+            def is_relevant(l):
+                return "Reading database ..." not in l.rstrip()
+
             callbacks = (
-                lambda l: logger.info("+" + l.rstrip() + "\r"),
+                lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
