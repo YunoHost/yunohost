@@ -1126,16 +1126,16 @@ def _migrate_legacy_permissions(app):
     app_settings = _get_app_settings(app)
     app_perm_currently_allowed = user_permission_list()["permissions"][app + ".main"]["allowed"]
 
+    settings_say_it_should_be_public = (app_settings.get("unprotected_uris", None) == "/"
+                                        or app_settings.get("skipped_uris", None) == "/")
+
     # If the current permission says app is protected, but there are legacy rules saying it should be public...
-    if app_perm_currently_allowed == ["all_users"] \
-       and (app_settings.get("unprotected_uris", None) == "/"
-            or app_settings.get("skipped_uris", None) == "/"):
+    if app_perm_currently_allowed == ["all_users"] and settings_say_it_should_be_public:
         # Make it public
         user_permission_update(app + ".main", remove="all_users", add="visitors", sync_perm=False)
+
     # If the current permission says app is public, but there are no setting saying it should be public...
-    if app_perm_currently_allowed == ["visitors"] \
-       and (app_settings.get("unprotected_uris", None) is None
-            and app_settings.get("skipped_uris", None) is None):
+    if app_perm_currently_allowed == ["visitors"] and not settings_say_it_should_be_public:
         # Make is private
         user_permission_update(app + ".main", remove="visitors", add="all_users", sync_perm=False)
 
