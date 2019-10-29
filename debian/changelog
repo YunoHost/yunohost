@@ -1,3 +1,9 @@
+yunohost (3.6.5.3) stable; urgency=low
+
+  - [fix] More general grep for the php/sury dependency nightmare fix (followup of #809)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 29 Oct 2019 03:48:00  +0000
+
 yunohost (3.6.5.2) stable; urgency=low
 
   - [fix] Alex was drunk and released an epic stupid bug in stable (2623d385)
