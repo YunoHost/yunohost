@@ -155,7 +155,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
         logger.warning(m18n.n("permission_already_up_to_date"))
-        return
+        return existing_permission
 
     # Commit the new allowed group list
 
