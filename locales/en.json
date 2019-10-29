@@ -40,6 +40,7 @@
     "app_requirements_checking": "Checking required packages for {app}…",
     "app_requirements_failed": "Some requirements are not met for {app}: {error}",
     "app_requirements_unmeet": "Requirements are not met for {app}, the package {pkgname} ({version}) must be {spec}",
+    "app_remove_after_failed_install": "Removing the app following the installation failure…",
     "app_sources_fetch_failed": "Could not fetch sources files, is the URL correct?",
     "app_start_install": "Installing the app '{app}'…",
     "app_start_remove": "Removing the app '{app}'…",

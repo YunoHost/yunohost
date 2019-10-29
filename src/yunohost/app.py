@@ -1026,6 +1026,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             # This option is meant for packagers to debug their apps more easily
             if no_remove_on_failure:
                 raise YunohostError("The installation of %s failed, but was not cleaned up as requested by --no-remove-on-failure." % app_id, raw_msg=True)
+            else:
+                logger.warning(m18n.n("app_remove_after_failed_install"))
 
             # Setup environment for remove script
             env_dict_remove = {}
