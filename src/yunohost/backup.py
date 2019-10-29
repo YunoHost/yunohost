@@ -2374,11 +2374,13 @@ def backup_info(name, with_details=False, human_readable=False):
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
 
-                    # Stupid legacy fix for weird format between 3.5 and 3.6
-                    if isinstance(key_info, dict):
-                        key_info = key_info.keys()
-
-                    info[category][name] = key_info = {"paths": key_info}
+                    if category == "system":
+                        # Stupid legacy fix for weird format between 3.5 and 3.6
+                        if isinstance(key_info, dict):
+                            key_info = key_info.keys()
+                        info[category][name] = key_info = {"paths": key_info}
+                    else:
+                        info[category][name] = key_info
 
                     if name in info["size_details"][category].keys():
                         key_info["size"] = info["size_details"][category][name]
