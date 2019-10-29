@@ -370,7 +370,7 @@
     "dyndns_domain_not_provided": "Le fournisseur DynDNS {provider:s} ne peut pas fournir le domaine {domain:s}.",
     "app_make_default_location_already_used": "Impossible de configurer l’application '{app}' par défaut pour le domaine '{domain}' car il est déjà utilisé par l'application '{other_app}'",
     "app_upgrade_app_name": "Mise à jour de l’application {app} …",
-    "backup_output_symlink_dir_broken": "Votre répertoire d'archivage '{chemin:s}' est un lien symbolique brisé. Peut-être avez-vous oublié de re/monter ou de brancher le support de stockage sur lequel il pointe.",
+    "backup_output_symlink_dir_broken": "Votre répertoire d'archivage '{path:s}' est un lien symbolique brisé. Peut-être avez-vous oublié de re/monter ou de brancher le support de stockage sur lequel il pointe.",
     "migrate_tsig_end": "La migration à HMAC-SHA-512 est terminée",
     "migrate_tsig_failed": "La migration du domaine DynDNS {domain} à hmac-sha512 a échoué. Annulation des modifications. Erreur : {error_code} - {error}",
     "migrate_tsig_start": "L’algorithme de génération des clefs n’est pas suffisamment sécurisé pour la signature TSIG du domaine '{domain}', lancement de la migration vers HMAC-SHA-512 qui est plus sécurisé",
