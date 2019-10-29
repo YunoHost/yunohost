@@ -612,6 +612,8 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
+    app_ssowatconf()
+
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
         # grab nginx errors
