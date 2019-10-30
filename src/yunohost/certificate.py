@@ -639,6 +639,9 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
+    # Include xmpp-upload subdomain as subject alternate names
+    csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:xmpp-upload." + domain)])
+
     # Set the key
     with open(key_file, 'rt') as f:
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
