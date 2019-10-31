@@ -120,7 +120,7 @@ class MyMigration(Migration):
             if app_setting(app, "unprotected_uris") == "/" or app_setting(app, "skipped_uris") == "/":
                 user_permission_update(app+".main", remove="all_users", add="visitors", sync_perm=False)
 
-            permission_sync_to_user()
+        permission_sync_to_user()
 
     def run(self):
 
