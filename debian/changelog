@@ -1,3 +1,9 @@
+yunohost (3.7.0.1) testing; urgency=low
+
+  - Hotfix to avoid having a shitload of warnings displayed during the permission migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Oct 2019 20:35:00  +0000
+
 yunohost (3.7.0) testing; urgency=low
 
   # ~ Major stuff
