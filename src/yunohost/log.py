@@ -44,7 +44,7 @@ CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service',
               'app']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
-RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
+RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
@@ -213,7 +213,7 @@ def log_display(path, number=None, share=False):
     return infos
 
 
-def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
+def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
                       exclude=['password'], operation_key=None):
     """
     Configure quickly a unit operation
@@ -315,7 +315,8 @@ class RedactingFormatter(Formatter):
         try:
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
-            match = re.search(r'(pwd|pass|password|secret|key|token)=(\S{3,})$', record.strip())
+            # For 'key', we require to at least have one word char [a-zA-Z0-9_] before it to avoid catching "--key" used in many helpers
+            match = re.search(r'(pwd|pass|password|secret|\wkey|token)=(\S{3,})$', record.strip())
             if match and match.group(2) not in self.data_to_redact:
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
@@ -502,7 +503,10 @@ class OperationLogger(object):
         The missing of the message below could help to see an electrical
         shortage.
         """
-        self.error(m18n.n('log_operation_unit_unclosed_properly'))
+        if self.ended_at is not None or self.started_at is None:
+            return
+        else:
+            self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
 
 def _get_description_from_name(name):

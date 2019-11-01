@@ -40,7 +40,7 @@ from moulinette import msignals, m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, mkdir
+from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
     app_info, _is_installed, _parse_app_instance_name, _patch_php5
@@ -602,10 +602,10 @@ class BackupManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        ret_succeed = {hook: {path:result["state"] for path, result in infos.items()}
+        ret_succeed = {hook: [path for path, result in infos.items() if result["state"] == "succeed"]
                        for hook, infos in ret.items()
                        if any(result["state"] == "succeed" for result in infos.values())}
-        ret_failed = {hook: {path:result["state"] for path, result in infos.items.items()}
+        ret_failed = {hook: [path for path, result in infos.items.items() if result["state"] == "failed"]
                       for hook, infos in ret.items()
                       if any(result["state"] == "failed" for result in infos.values())}
 
@@ -677,6 +677,8 @@ class BackupManager():
         backup_app_failed -- Raised at the end if the app backup script
                              execution failed
         """
+        from yunohost.permission import user_permission_list
+
         app_setting_path = os.path.join('/etc/yunohost/apps/', app)
 
         # Prepare environment
@@ -704,8 +706,9 @@ class BackupManager():
 
             # backup permissions
             logger.debug(m18n.n('backup_permission', app=app))
-            ldap_url = "ldap:///dc=yunohost,dc=org???(&(objectClass=permissionYnh)(cn=*.%s))" % app
-            os.system("slapcat -b dc=yunohost,dc=org -H '%s' -l '%s/permission.ldif'" % (ldap_url, settings_dir))
+            permissions = user_permission_list(full=True)["permissions"]
+            this_app_permissions = {name: infos for name, infos in permissions.items() if name.startswith(app + ".")}
+            write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
         except:
             abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
@@ -919,7 +922,7 @@ class RestoreManager():
 
         successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
-        permission_sync_to_user(force=False)
+        permission_sync_to_user()
 
         if os.path.ismount(self.work_dir):
             ret = subprocess.call(["umount", self.work_dir])
@@ -1131,6 +1134,8 @@ class RestoreManager():
 
             self._restore_system()
             self._restore_apps()
+        except Exception as e:
+            raise YunohostError("The following critical error happened during restoration: %s" % e)
         finally:
             self.clean()
 
@@ -1183,18 +1188,12 @@ class RestoreManager():
         if system_targets == []:
             return
 
-        from yunohost.utils.ldap import _get_ldap_interface
-        ldap = _get_ldap_interface()
+        from yunohost.user import user_group_list
+        from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list, permission_sync_to_user
 
         # Backup old permission for apps
         # We need to do that because in case of an app is installed we can't remove the permission for this app
-        old_apps_permission = []
-        try:
-            old_apps_permission = ldap.search('ou=permission,dc=yunohost,dc=org',
-                                              '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
-                                              ['cn', 'objectClass', 'groupPermission', 'URL', 'gidNumber'])
-        except:
-            logger.info(m18n.n('apps_permission_not_found'))
+        old_apps_permission = user_permission_list(ignore_system_perms=True, full=True)["permissions"]
 
         # Start register change on system
         operation_logger = OperationLogger('backup_restore_system')
@@ -1232,12 +1231,11 @@ class RestoreManager():
 
         regen_conf()
 
-        # Check if we need to do the migration 0009 : setup group and permission
+        # Check that at least a group exists (all_users) to know if we need to
+        # do the migration 0011 : setup group and permission
+        #
         # Legacy code
-        result = ldap.search('ou=groups,dc=yunohost,dc=org',
-                             '(&(objectclass=groupOfNamesYnh)(cn=all_users))',
-                             ['cn'])
-        if not result:
+        if not "all_users" in user_group_list()["groups"].keys():
             from yunohost.tools import _get_migration_by_name
             setup_group_permission = _get_migration_by_name("setup_group_permission")
             # Update LDAP schema restart slapd
@@ -1245,24 +1243,17 @@ class RestoreManager():
             regen_conf(names=['slapd'], force=True)
             setup_group_permission.migrate_LDAP_db()
 
-        # Remove all permission for all app which sill in the LDAP
-        for per in ldap.search('ou=permission,dc=yunohost,dc=org',
-                               '(&(objectClass=permissionYnh)(!(cn=main.mail))(!(cn=main.metronome))(!(cn=main.sftp)))',
-                               ['cn']):
-            if not ldap.remove('cn=%s,ou=permission' % per['cn'][0]):
-                raise YunohostError('permission_deletion_failed',
-                                    permission=per['cn'][0].split('.')[0],
-                                    app=per['cn'][0].split('.')[1])
+        # Remove all permission for all app which is still in the LDAP
+        for permission_name in user_permission_list(ignore_system_perms=True)["permissions"].keys():
+            permission_delete(permission_name, force=True, sync_perm=False)
 
         # Restore permission for the app which is installed
-        for per in old_apps_permission:
-            try:
-                permission_name, app_name = per['cn'][0].split('.')
-            except:
-                logger.warning(m18n.n('permission_name_not_valid', permission=per['cn'][0]))
+        for permission_name, permission_infos in old_apps_permission.items():
+            app_name = permission_name.split(".")[0]
             if _is_installed(app_name):
-                if not ldap.add('cn=%s,ou=permission' % per['cn'][0], per):
-                    raise YunohostError('apps_permission_restoration_failed', permission=permission_name, app=app_name)
+                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
+
+        permission_sync_to_user()
 
 
     def _restore_apps(self):
@@ -1271,7 +1262,6 @@ class RestoreManager():
         apps_targets = self.targets.list("apps", exclude=["Skipped"])
 
         for app in apps_targets:
-            print(app)
             self._restore_app(app)
 
     def _restore_app(self, app_instance_name):
@@ -1301,11 +1291,8 @@ class RestoreManager():
                                         name already exists
         restore_app_failed -- Raised if the restore bash script failed
         """
-        from moulinette.utils.filesystem import read_ldif
         from yunohost.user import user_group_list
-        from yunohost.permission import permission_remove
-        from yunohost.utils.ldap import _get_ldap_interface
-        ldap = _get_ldap_interface()
+        from yunohost.permission import permission_create, permission_delete, user_permission_list, user_permission_update, permission_sync_to_user
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
@@ -1370,22 +1357,27 @@ class RestoreManager():
             restore_script = os.path.join(tmp_folder_for_app_restore, 'restore')
 
             # Restore permissions
-            if os.path.isfile(app_settings_in_archive + '/permission.ldif'):
-                filtred_entries =  ['entryUUID', 'creatorsName', 'createTimestamp', 'entryCSN', 'structuralObjectClass',
-                                    'modifiersName', 'modifyTimestamp', 'inheritPermission', 'memberUid']
-                entries = read_ldif('%s/permission.ldif' % app_settings_in_archive, filtred_entries)
-                group_list = user_group_list(['cn'])['groups']
-                for dn, entry in entries:
-                    # Remove the group which has been removed
-                    for group in entry['groupPermission']:
-                        group_name = group.split(',')[0].split('=')[1]
-                        if group_name not in group_list:
-                            entry['groupPermission'].remove(group)
-                    if not ldap.add('cn=%s,ou=permission' % entry['cn'][0], entry):
-                        raise YunohostError('apps_permission_restoration_failed',
-                                            permission=entry['cn'][0].split('.')[0],
-                                            app=entry['cn'][0].split('.')[1])
+            if os.path.isfile('%s/permissions.yml' % app_settings_new_path):
+
+                permissions = read_yaml('%s/permissions.yml' % app_settings_new_path)
+                existing_groups = user_group_list()['groups']
+
+                for permission_name, permission_infos in permissions.items():
+
+                    if "allowed" not in permission_infos:
+                        logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself." % (permission_name, app_instance_name))
+                        should_be_allowed = ["all_users"]
+                    else:
+                        should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
+
+                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed, sync_perm=False)
+
+                permission_sync_to_user()
+
+                os.remove('%s/permissions.yml' % app_settings_new_path)
             else:
+                # Otherwise, we need to migrate the legacy permissions of this
+                # app (included in its settings.yml)
                 from yunohost.tools import _get_migration_by_name
                 setup_group_permission = _get_migration_by_name("setup_group_permission")
                 setup_group_permission.migrate_app_permission(app=app_instance_name)
@@ -1424,7 +1416,6 @@ class RestoreManager():
             operation_logger.start()
 
             # Execute remove script
-            # TODO: call app_remove instead
             if hook_exec(remove_script, args=[app_instance_name],
                          env=env_dict_remove)[0] != 0:
                 msg = m18n.n('app_not_properly_removed', app=app_instance_name)
@@ -1436,12 +1427,10 @@ class RestoreManager():
             # Cleaning app directory
             shutil.rmtree(app_settings_new_path, ignore_errors=True)
 
-            # Remove all permission in LDAP
-            result = ldap.search(base='ou=permission,dc=yunohost,dc=org',
-                                 filter='(&(objectclass=permissionYnh)(cn=*.%s))' % app_instance_name, attrs=['cn'])
-            permission_list = [p['cn'][0] for p in result]
-            for l in permission_list:
-                permission_remove(app_instance_name, l.split('.')[0], force=True)
+            # Remove all permission in LDAP for this app
+            for permission_name in user_permission_list()["permissions"].keys():
+                if permission_name.startswith(app_instance_name+"."):
+                    permission_delete(permission_name, force=True)
 
             # TODO Cleaning app hooks
         else:
@@ -2384,6 +2373,15 @@ def backup_info(name, with_details=False, human_readable=False):
         if "size_details" in info.keys():
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
+
+                    if category == "system":
+                        # Stupid legacy fix for weird format between 3.5 and 3.6
+                        if isinstance(key_info, dict):
+                            key_info = key_info.keys()
+                        info[category][name] = key_info = {"paths": key_info}
+                    else:
+                        info[category][name] = key_info
+
                     if name in info["size_details"][category].keys():
                         key_info["size"] = info["size_details"][category][name]
                         if human_readable:

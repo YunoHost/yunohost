@@ -350,25 +350,17 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
-    except IOError:
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -584,10 +576,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
         upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
 
-        if not upgradable_apps:
-            logger.info(m18n.n("app_no_upgrade"))
-            return
-        elif len(apps) and all(app not in upgradable_apps for app in apps):
+        if not upgradable_apps or (len(apps) and all(app not in upgradable_apps for app in apps)):
             logger.info(m18n.n("apps_already_up_to_date"))
             return
 
@@ -619,8 +608,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
 
-        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
@@ -651,13 +640,16 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+            def is_relevant(l):
+                return "Reading database ..." not in l.rstrip()
+
             callbacks = (
-                lambda l: logger.info("+" + l.rstrip() + "\r"),
+                lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
-                logger.warning('tools_upgrade_regular_packages_failed',
+                logger.warning(m18n.n('tools_upgrade_regular_packages_failed'),
                                packages_list=', '.join(noncritical_packages_upgradable))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))

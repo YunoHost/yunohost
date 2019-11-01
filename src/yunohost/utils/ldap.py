@@ -40,6 +40,20 @@ def _get_ldap_interface():
 
     return _ldap_interface
 
+
+# We regularly want to extract stuff like 'bar' in ldap path like
+# foo=bar,dn=users.example.org,ou=example.org,dc=org so this small helper allow
+# to do this without relying of dozens of mysterious string.split()[0]
+#
+# e.g. using _ldap_path_extract(path, "foo") on the previous example will
+# return bar
+
+def _ldap_path_extract(path, info):
+    for element in path.split(","):
+        if element.startswith(info + "="):
+            return element[len(info + "="):]
+
+
 # Add this to properly close / delete the ldap interface / authenticator
 # when Python exits ...
 # Otherwise there's a risk that some funky error appears at the very end
