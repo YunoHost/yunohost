@@ -231,7 +231,7 @@ ynh_mysql_remove_db () {
 	fi
 
 	# Remove mysql user if it exists
-        if $(ynh_mysql_user_exists --user=$db_user); then
+	if ynh_mysql_user_exists --user=$db_user; then
 		ynh_mysql_drop_user $db_user
 	fi
 }

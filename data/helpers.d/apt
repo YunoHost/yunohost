@@ -218,6 +218,27 @@ ynh_install_app_dependencies () {
     fi
     local dep_app=${app//_/-}	# Replace all '_' by '-'
 
+    #
+    # Epic ugly hack to fix the goddamn dependency nightmare of sury
+    # Sponsored by the "Djeezusse Fokin Kraiste Why Do Adminsys Has To Be So Fucking Complicated I Should Go Grow Potatoes Instead Of This Shit" collective
+    # https://github.com/YunoHost/issues/issues/1407
+    # 
+    # If we require to install php dependency
+    if echo $dependencies | grep -q 'php';
+    then
+        # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
+        if dpkg --list | grep "php7.0" | grep -q -v "7.0.33-0+deb9"
+        then
+            # And sury ain't already installed
+            if ! grep -nrq "sury" /etc/apt/sources.list*
+            then
+                # Re-add sury
+                echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/sury.list
+                wget -O /etc/apt/trusted.gpg.d/sury.gpg https://packages.sury.org/php/apt.gpg    
+            fi
+        fi
+    fi
+
     cat > /tmp/${dep_app}-ynh-deps.control << EOF	# Make a control file for equivs-build
 Section: misc
 Priority: optional

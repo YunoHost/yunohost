@@ -48,9 +48,9 @@ def get_network_interfaces():
     # Get network devices and their addresses (raw infos from 'ip addr')
     devices_raw = {}
     output = subprocess.check_output('ip addr show'.split())
-    for d in re.split('^(?:[0-9]+: )', output, flags=re.MULTILINE):
+    for d in re.split(r'^(?:[0-9]+: )', output, flags=re.MULTILINE):
         # Extract device name (1) and its addresses (2)
-        m = re.match('([^\s@]+)(?:@[\S]+)?: (.*)', d, flags=re.DOTALL)
+        m = re.match(r'([^\s@]+)(?:@[\S]+)?: (.*)', d, flags=re.DOTALL)
         if m:
             devices_raw[m.group(1)] = m.group(2)
 
@@ -63,15 +63,12 @@ def get_network_interfaces():
 def get_gateway():
 
     output = subprocess.check_output('ip route show'.split())
-    m = re.search('default via (.*) dev ([a-z]+[0-9]?)', output)
+    m = re.search(r'default via (.*) dev ([a-z]+[0-9]?)', output)
     if not m:
         return None
 
     addr = _extract_inet(m.group(1), True)
     return addr.popitem()[1] if len(addr) == 1 else None
-
-
-#
 
 
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):
@@ -89,10 +86,10 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
         A dict of {protocol: address} with protocol one of 'ipv4' or 'ipv6'
 
     """
-    ip4_pattern = '((25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}'
-    ip6_pattern = '(((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)'
-    ip4_pattern += '/[0-9]{1,2})' if not skip_netmask else ')'
-    ip6_pattern += '/[0-9]{1,3})' if not skip_netmask else ')'
+    ip4_pattern = r'((25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}'
+    ip6_pattern = r'(((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)'
+    ip4_pattern += r'/[0-9]{1,2})' if not skip_netmask else ')'
+    ip6_pattern += r'/[0-9]{1,3})' if not skip_netmask else ')'
     result = {}
 
     for m in re.finditer(ip4_pattern, string):

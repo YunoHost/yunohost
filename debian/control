@@ -17,7 +17,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , python-toml
  , glances, apt-transport-https
  , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
- , ca-certificates, netcat-openbsd, iproute
+ , ca-certificates, netcat-openbsd, iproute2
  , mariadb-server, php-mysql | php-mysqlnd
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
@@ -31,7 +31,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , equivs, lsof
 Recommends: yunohost-admin
  , openssh-server, ntp, inetutils-ping | iputils-ping
- , bash-completion, rsyslog, etckeeper
+ , bash-completion, rsyslog
  , php-gd, php-curl, php-gettext, php-mcrypt
  , python-pip
  , unattended-upgrades
