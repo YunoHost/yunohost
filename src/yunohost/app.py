@@ -1283,28 +1283,6 @@ def app_clearaccess(apps):
     return {'allowed_users': output}
 
 
-def app_debug(app):
-    """
-    Display debug informations for an app
-
-    Keyword argument:
-        app
-    """
-    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-
-    return {
-        'name': manifest['id'],
-        'label': manifest['name'],
-        'services': [{
-            "name": x,
-            "logs": [{
-                "file_name": y,
-                "file_content": "\n".join(z),
-            } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
-        } for x in sorted(manifest.get("services", []))]
-    }
-
-
 @is_unit_operation()
 def app_makedefault(operation_logger, app, domain=None):
     """
