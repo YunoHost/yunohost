@@ -145,7 +145,7 @@ def _init_moulinette(debug=False, quiet=False):
             },
             'moulinette': {
                 'level': level,
-                'handlers': handlers,
+                'handlers': [],
                 'propagate': True,
             },
             'moulinette.interface': {
