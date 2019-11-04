@@ -57,6 +57,12 @@ children:
         objectClass:
             - posixGroup
             - groupOfNamesYnh
+    cn=visitors,ou=groups:
+        cn: visitors
+        gidNumber: "4003"
+        objectClass:
+            - posixGroup
+            - groupOfNamesYnh
 
 depends_children:
     cn=mail.main,ou=permission:

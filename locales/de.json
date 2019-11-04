@@ -282,7 +282,7 @@
     "appslist_name_already_tracked": "Es gibt bereits eine registrierte App-Liste mit Namen {name:s}.",
     "appslist_url_already_tracked": "Es gibt bereits eine registrierte Anwendungsliste mit der URL {url:s}.",
     "appslist_migrating": "Migriere Anwendungsliste {appslist:s} …",
-    "appslist_could_not_migrate": "Konnte Anwendungsliste  {appslist:s} nicht migrieren. Konnte die URL nicht verarbeiten... Der alte Cron-Job wurde unter {bkp_file:s} beibehalten.",
+    "appslist_could_not_migrate": "Konnte die Anwendungsliste  {appslist:s} nicht migrieren. Konnte die URL nicht verarbeiten... Der alte Cron-Job wurde unter {bkp_file:s} beibehalten.",
     "appslist_corrupted_json": "Anwendungslisten konnte nicht geladen werden. Es scheint, dass {filename:s} beschädigt ist.",
     "yunohost_ca_creation_success": "Die lokale Zertifizierungs-Authorität wurde angelegt.",
     "app_already_installed_cant_change_url": "Diese Application ist bereits installiert. Die URL kann durch diese Funktion nicht modifiziert werden. Überprüfe ob `app changeurl` verfügbar ist.",
@@ -413,5 +413,6 @@
     "global_settings_setting_security_password_admin_strength": "Stärke des Admin-Passworts",
     "global_settings_key_doesnt_exists": "Der Schlüssel'{settings_key:s}' existiert nicht in den globalen Einstellungen, du kannst  alle verfügbaren Schlüssel sehen, indem du 'yunohost settings list' ausführst",
     "log_app_makedefault": "Mache '{}' zur Standard-Anwendung",
-    "hook_json_return_error": "Konnte die Rückkehr vom Einsprungpunkt {path:s} nicht lesen. Fehler: {msg:s}. Unformatierter Inhalt: {raw_content}"
+    "hook_json_return_error": "Konnte die Rückkehr vom Einsprungpunkt {path:s} nicht lesen. Fehler: {msg:s}. Unformatierter Inhalt: {raw_content}",
+    "app_full_domain_unavailable": "Es tut uns leid, aber diese Anwendung erfordert die Installation einer vollständigen Domäne, aber einige andere Anwendungen sind bereits auf der Domäne'{domain}' installiert. Eine mögliche Lösung ist das Hinzufügen und Verwenden einer Subdomain, die dieser Anwendung zugeordnet ist."
 }
