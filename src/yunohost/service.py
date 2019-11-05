@@ -293,10 +293,8 @@ def service_status(names=[]):
             result[name] = {
                 'status': "unknown",
                 'start_on_boot': "unknown",
-                'active': "unknown",
                 'active_at': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
-                'service_file_path': "unknown",
                 'configuration': "unknown",
             }
 
@@ -316,9 +314,8 @@ def service_status(names=[]):
             result[name] = {
                 'status': str(status.get("SubState", "unknown")),
                 'start_on_boot': str(status.get("UnitFileState", "unknown")),
-                'active': str(status.get("ActiveState", "unknown")),
+                'active_at': "unknown",
                 'description': description,
-                'service_file_path': str(status.get("FragmentPath", "unknown")),
                 'configuration': "unknown",
             }
 
@@ -329,8 +326,6 @@ def service_status(names=[]):
 
             if "ActiveEnterTimestamp" in status:
                 result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
-            else:
-                result[name]['active_at'] = "unknown"
 
             # 'test-status' is an optional field to test the status of the service using a custom command
             if "test-status" in services[name]:
