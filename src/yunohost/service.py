@@ -330,6 +330,11 @@ def service_status(names=[]):
             else:
                 result[name]['active_at'] = "unknown"
 
+            # 'test-status' is an optional field to test the status of the service using a custom command
+            if "test-status" in services[name]:
+                status = os.system(services[name]["test-status"])
+                result[name]["status"] = "running" if status == 0 else "failed"
+
     if len(names) == 1:
         return result[names[0]]
     return result

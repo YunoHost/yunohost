@@ -10,6 +10,7 @@ dovecot:
   log: [/var/log/mail.log,/var/log/mail.err]
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
+  test-status: systemctl show postfix@- | grep -q "^SubState=running"
 rspamd:
   log: /var/log/rspamd/rspamd.log
 redis-server:
@@ -29,6 +30,7 @@ yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
   need_lock: true
+  test-status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
 nslcd:
   log: /var/log/syslog
 glances: null
