@@ -297,6 +297,7 @@ def service_status(names=[]):
                 'active_at': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
                 'service_file_path': "unknown",
+                'configuration': "unknown",
             }
 
         else:
@@ -318,6 +319,7 @@ def service_status(names=[]):
                 'active': str(status.get("ActiveState", "unknown")),
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
+                'configuration': "unknown",
             }
 
             # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
@@ -334,6 +336,11 @@ def service_status(names=[]):
             if "test-status" in services[name]:
                 status = os.system(services[name]["test-status"])
                 result[name]["status"] = "running" if status == 0 else "failed"
+
+            # 'test-status' is an optional field to test the status of the service using a custom command
+            if "test-conf" in services[name]:
+                conf = os.system(services[name]["test-conf"] + " &>/dev/null")
+                result[name]["configuration"] = "valid" if conf == 0 else "broken"
 
     if len(names) == 1:
         return result[names[0]]

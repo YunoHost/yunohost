@@ -1,5 +1,6 @@
 nginx:
   log: /var/log/nginx
+  test-conf: nginx -t
 avahi-daemon:
   log: /var/log/daemon.log
 dnsmasq:
@@ -20,12 +21,14 @@ mysql:
   alternates: ['mariadb']
 ssh:
   log: /var/log/auth.log
+  test-conf: sshd -t
 metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
 slapd:
   log: /var/log/syslog
 php7.0-fpm:
   log: /var/log/php7.0-fpm.log
+  test-conf: php-fpm7.0 --test
 yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
