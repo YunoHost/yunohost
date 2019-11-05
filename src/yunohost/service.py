@@ -292,7 +292,7 @@ def service_status(names=[]):
             logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % name)
             result[name] = {
                 'status': "unknown",
-                'loaded': "unknown",
+                'start_on_boot': "unknown",
                 'active': "unknown",
                 'active_at': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
@@ -315,7 +315,7 @@ def service_status(names=[]):
 
             result[name] = {
                 'status': str(status.get("SubState", "unknown")),
-                'loaded': str(status.get("UnitFileState", "unknown")),
+                'start_on_boot': str(status.get("UnitFileState", "unknown")),
                 'active': str(status.get("ActiveState", "unknown")),
                 'description': description,
                 'service_file_path': str(status.get("FragmentPath", "unknown")),
@@ -324,8 +324,8 @@ def service_status(names=[]):
 
             # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
             # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
-            if result[name]["loaded"] == "generated":
-                result[name]["loaded"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+            if result[name]["start_on_boot"] == "generated":
+                result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
 
             if "ActiveEnterTimestamp" in status:
                 result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
