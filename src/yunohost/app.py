@@ -1619,7 +1619,8 @@ def app_ssowatconf():
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
 
-    # Authorize ACME challenge url
+    # Authorize ynh remote diagnosis, ACME challenge and mail autoconfig urls
+    skipped_regex.append("^[^/]*/%.well%-known/ynh%-diagnosis/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 

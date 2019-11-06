@@ -1469,16 +1469,6 @@ tools:
                     help: Upgrade only the system packages
                     action: store_true
 
-        ### tools_diagnosis()
-        diagnosis:
-            action_help: YunoHost diagnosis
-            api: GET /diagnosis
-            arguments:
-                -p:
-                    full: --private
-                    help: Show private data (domain, IP)
-                    action: store_true
-
         ### tools_port_available()
         port-available:
             action_help: Check availability of a local port
@@ -1723,4 +1713,60 @@ log:
                     type: int
                 --share:
                     help: Share the full log using yunopaste
+                    action: store_true
+
+
+#############################
+#          Diagnosis        #
+#############################
+diagnosis:
+    category_help: Look for possible issues on the server
+    actions:
+
+        list:
+            action_help: List diagnosis categories
+            api: GET /diagnosis/list
+
+        show:
+            action_help: Show most recents diagnosis results
+            api: GET /diagnosis/show
+            arguments:
+                categories:
+                    help: Diagnosis categories to display (all by default)
+                    nargs: "*"
+                --full:
+                    help: Display additional information
+                    action: store_true
+                --issues:
+                    help: Only display issues
+                    action: store_true
+                --share:
+                    help: Share the logs using yunopaste
+                    action: store_true
+
+        run:
+            action_help: Show most recents diagnosis results
+            api: POST /diagnosis/run
+            arguments:
+                categories:
+                    help: Diagnosis categories to run (all by default)
+                    nargs: "*"
+                --force:
+                    help: Ignore the cached report even if it is still 'fresh'
+                    action: store_true
+
+        ignore:
+            action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
+            api: POST /diagnosis/ignore
+            arguments:
+                --add-filter:
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    nargs: "*"
+                    metavar: CRITERIA
+                --remove-filter:
+                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    nargs: "*"
+                    metavar: CRITERIA
+                --list:
+                    help: List active ignore filters
                     action: store_true
