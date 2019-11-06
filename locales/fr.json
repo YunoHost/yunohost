@@ -664,5 +664,6 @@
     "permission_currently_allowed_for_all_users": "Cette autorisation est actuellement accordée à tous les utilisateurs en plus des autres groupes. Vous voudrez probablement soit supprimer l'autorisation 'all_users', soit supprimer les autres groupes auxquels il est actuellement autorisé.",
     "app_install_failed": "Impossible d'installer {app}: {error}",
     "app_install_script_failed": "Une erreur est survenue dans le script d'installation de l'application",
-    "permission_require_account": "Permission {permission} n'a de sens que pour les utilisateurs ayant un compte et ne peut donc pas être activé pour les visiteurs."
+    "permission_require_account": "Permission {permission} n'a de sens que pour les utilisateurs ayant un compte et ne peut donc pas être activé pour les visiteurs.",
+    "app_remove_after_failed_install": "Supprimer l'application après l'échec de l'installation…"
 }
