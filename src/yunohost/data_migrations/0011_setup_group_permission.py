@@ -7,7 +7,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_yaml
 
 from yunohost.tools import Migration
-from yunohost.user import user_group_create, user_group_update
+from yunohost.user import user_list, user_group_create, user_group_update
 from yunohost.app import app_setting, app_list
 from yunohost.regenconf import regen_conf, BACKUP_CONF_DIR
 from yunohost.permission import permission_create, user_permission_update, permission_sync_to_user
@@ -109,10 +109,11 @@ class MyMigration(Migration):
 
             url = "/" if domain and path else None
             if permission:
-                allowed_groups = permission.split(',')
+                known_users = user_list()["users"].keys()
+                allowed = [user for user in permission.split(',') if user in known_users]
             else:
-                allowed_groups = ["all_users"]
-            permission_create(app+".main", url=url, allowed=allowed_groups, sync_perm=False)
+                allowed = ["all_users"]
+            permission_create(app+".main", url=url, allowed=allowed, sync_perm=False)
 
             app_setting(app, 'allowed_users', delete=True)
 
