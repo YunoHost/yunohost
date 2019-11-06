@@ -37,7 +37,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
+from yunohost.domain import domain_add, domain_list
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
@@ -160,60 +160,10 @@ def tools_adminpw(new_password, check_strength=True):
         logger.success(m18n.n('admin_password_changed'))
 
 
-@is_unit_operation()
-def tools_maindomain(operation_logger, new_domain=None):
-    """
-    Check the current main domain, or change it
-
-    Keyword argument:
-        new_domain -- The new domain to be set as the main domain
-
-    """
-
-    # If no new domain specified, we return the current main domain
-    if not new_domain:
-        return {'current_main_domain': _get_maindomain()}
-
-    # Check domain exists
-    if new_domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    operation_logger.related_to.append(('domain', new_domain))
-    operation_logger.start()
-
-    # Apply changes to ssl certs
-    ssl_key = "/etc/ssl/private/yunohost_key.pem"
-    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
-    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_domain
-    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
-
-    try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
-            os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
-            os.remove(ssl_crt)
-
-        os.symlink(new_ssl_key, ssl_key)
-        os.symlink(new_ssl_crt, ssl_crt)
-
-        _set_maindomain(new_domain)
-    except Exception as e:
-        logger.warning("%s" % e, exc_info=1)
-        raise YunohostError('maindomain_change_failed')
-
-    _set_hostname(new_domain)
-
-    # Generate SSOwat configuration file
-    app_ssowatconf()
-
-    # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r'):
-            regen_conf()
-    except IOError:
-        pass
-
-    logger.success(m18n.n('maindomain_changed'))
+def tools_maindomain(new_main_domain=None):
+    from yunohost.domain import domain_main_domain
+    logger.warning(m18n.g("deprecated_command_alias", prog="yunohost", old="tools maindomain", new="domain main-domain"))
+    return domain_main_domain(new_main_domain=new_main_domain)
 
 
 def _set_hostname(hostname, pretty_hostname=None):
@@ -277,6 +227,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     """
     from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.domain import domain_main_domain
 
     dyndns_provider = "dyndns.yunohost.org"
 
@@ -346,25 +297,17 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
-    except IOError:
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -399,7 +342,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # New domain config
     regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
-    tools_maindomain(domain)
+    domain_main_domain(domain)
 
     # Change LDAP admin password
     tools_adminpw(password, check_strength=not force_password)
@@ -612,8 +555,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
 
-        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
@@ -644,8 +587,11 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+            def is_relevant(l):
+                return "Reading database ..." not in l.rstrip()
+
             callbacks = (
-                lambda l: logger.info("+" + l.rstrip() + "\r"),
+                lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)

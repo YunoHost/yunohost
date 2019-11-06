@@ -41,7 +41,7 @@ from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, read_toml
+from moulinette.utils.filesystem import read_json, read_toml, read_yaml, write_to_json
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -427,23 +427,85 @@ def app_map(app=None, raw=False, user=None):
         if 'path' not in app_settings:
             # we assume that an app that doesn't have a path doesn't have an HTTP api
             continue
+        # This 'no_sso' settings sound redundant to not having $path defined ....
+        # At least from what I can see, all apps using it don't have a path defined ...
         if 'no_sso' in app_settings:  # I don't think we need to check for the value here
             continue
-        if user and user not in permissions[app_id + ".main"]["corresponding_users"]:
-            continue
+        # Users must at least have access to the main permission to have access to extra permissions
+        if user:
+            if not app_id + ".main" in permissions:
+                logger.warning("Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/" % app_id)
+                continue
+            main_perm = permissions[app_id + ".main"]
+            if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
+                continue
 
         domain = app_settings['domain']
-        path = app_settings['path']
+        path = app_settings['path'].rstrip('/')
+        label = app_settings['label']
 
-        if raw:
-            if domain not in result:
-                result[domain] = {}
-            result[domain][path] = {
-                'label': app_settings['label'],
-                'id': app_settings['id']
-            }
-        else:
-            result[domain + path] = app_settings['label']
+        def _sanitized_absolute_url(perm_url):
+            # Nominal case : url is relative to the app's path
+            if perm_url.startswith("/"):
+                perm_domain = domain
+                perm_path = path + perm_url.rstrip("/")
+            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
+            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
+            else:
+                perm_domain, perm_path = perm_url.split("/", 1)
+                perm_path = "/" + perm_path.rstrip("/")
+
+            return perm_domain, perm_path
+
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
+        for perm_name, perm_info in this_app_perms.items():
+            # If we're building the map for a specific user, check the user
+            # actually is allowed for this specific perm
+            if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
+                continue
+            if perm_info["url"].startswith("re:"):
+                # Here, we have an issue if the chosen url is a regex, because
+                # the url we want to add to the dict is going to be turned into
+                # a clickable link (or analyzed by other parts of yunohost
+                # code...). To put it otherwise : in the current code of ssowat,
+                # you can't give access a user to a regex.
+                #
+                # Instead, as drafted by Josue, we could rework the ssowat logic
+                # about how routes and their permissions are defined. So for example,
+                # have a dict of
+                # {  "/route1": ["visitors", "user1", "user2", ...],  # Public route
+                #    "/route2_with_a_regex$": ["user1", "user2"],     # Private route
+                #    "/route3": None,                                 # Skipped route idk
+                # }
+                # then each time a user try to request and url, we only keep the
+                # longest matching rule and check the user is allowed etc...
+                #
+                # The challenge with this is (beside actually implementing it)
+                # is that it creates a whole new mechanism that ultimately
+                # replace all the existing logic about
+                # protected/unprotected/skipped uris and regexes and we gotta
+                # handle / migrate all the legacy stuff somehow if we don't
+                # want to end up with a total mess in the future idk
+                logger.error("Permission %s can't be added to the SSOwat configuration because it doesn't support regexes so far..." % perm_name)
+                continue
+
+            perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
+
+            if perm_name.endswith(".main"):
+                perm_label = label
+            else:
+                # e.g. if perm_name is wordpress.admin, we want "Blog (Admin)" (where Blog is the label of this app)
+                perm_label = "%s (%s)" % (label, perm_name.rsplit(".")[-1].replace("_", " ").title())
+
+            if raw:
+                if domain not in result:
+                    result[perm_domain] = {}
+                result[perm_domain][perm_path] = {
+                    'label': perm_label,
+                    'id': app_id
+                }
+            else:
+                result[perm_domain + perm_path] = perm_label
 
     return result
 
@@ -461,7 +523,6 @@ def app_change_url(operation_logger, app, domain, path):
     """
     from yunohost.hook import hook_exec, hook_callback
     from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
-    from yunohost.permission import permission_urls
 
     installed = _is_installed(app)
     if not installed:
@@ -551,7 +612,7 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_urls(app+".main", add=[domain+path], remove=[old_domain+old_path], sync_perm=True)
+    app_ssowatconf()
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
@@ -763,7 +824,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_urls, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -920,81 +981,106 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
-    # Create permission before the install (useful if the install script redefine the permission)
-    # Note that sync_perm is disabled to avoid triggering a whole bunch of code and messages
-    # can't be sure that we don't have one case when it's needed
-    permission_create(app_instance_name+".main", sync_perm=False)
+    # Initialize the main permission for the app
+    # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
+    permission_create(app_instance_name+".main", url="/", allowed=["all_users"])
 
     # Execute the app install script
-    install_retcode = 1
+    install_failed = True
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
             args=args_list, env=env_dict
         )[0]
+        # "Common" app install failure : the script failed and returned exit code != 0
+        install_failed = True if install_retcode != 0 else False
+        if install_failed:
+            error = m18n.n('app_install_script_failed')
+            logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
+    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
-        install_retcode = -1
-    except Exception:
+        error = m18n.n('operation_interrupted')
+        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception as e:
         import traceback
-        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
+        # Whatever happened (install success or failure) we check if it broke the system
+        # and warn the user about it
         try:
             broke_the_system = False
             _assert_system_is_sane_for_app(manifest, "post")
         except Exception as e:
             broke_the_system = True
-            error_msg = operation_logger.error(str(e))
+            logger.exception(m18n.n("app_install_failed", app=app_id, error=str(e)))
+            failure_message_with_debug_instructions = operation_logger.error(str(e))
 
-        if install_retcode != 0:
-            error_msg = operation_logger.error(m18n.n('unexpected_error', error='shell command return code: %s' % install_retcode))
+        # If the install failed or broke the system, we remove it
+        if install_failed or broke_the_system:
 
-        if install_retcode != 0 or broke_the_system:
-            if not no_remove_on_failure:
-                # Setup environment for remove script
-                env_dict_remove = {}
-                env_dict_remove["YNH_APP_ID"] = app_id
-                env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-                env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            # This option is meant for packagers to debug their apps more easily
+            if no_remove_on_failure:
+                raise YunohostError("The installation of %s failed, but was not cleaned up as requested by --no-remove-on-failure." % app_id, raw_msg=True)
+            else:
+                logger.warning(m18n.n("app_remove_after_failed_install"))
 
-                # Execute remove script
-                operation_logger_remove = OperationLogger('remove_on_failed_install',
-                                                          [('app', app_instance_name)],
-                                                          env=env_dict_remove)
-                operation_logger_remove.start()
+            # Setup environment for remove script
+            env_dict_remove = {}
+            env_dict_remove["YNH_APP_ID"] = app_id
+            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
+            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
 
+            # Execute remove script
+            operation_logger_remove = OperationLogger('remove_on_failed_install',
+                                                      [('app', app_instance_name)],
+                                                      env=env_dict_remove)
+            operation_logger_remove.start()
+
+            # Try to remove the app
+            try:
                 remove_retcode = hook_exec(
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
-                # Remove all permission in LDAP
-                for permission_name in user_permission_list()["permissions"].keys():
-                    if permission_name.startswith(app_instance_name+"."):
-                        permission_delete(permission_name, force=True)
+            # Here again, calling hook_exec could fail miserably, or get
+            # manually interrupted (by mistake or because script was stuck)
+            # In that case we still want to proceed with the rest of the
+            # removal (permissions, /etc/yunohost/apps/{app} ...)
+            except (KeyboardInterrupt, EOFError, Exception):
+                remove_retcode = -1
+                import traceback
+                logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
-                if remove_retcode != 0:
-                    msg = m18n.n('app_not_properly_removed',
-                                 app=app_instance_name)
-                    logger.warning(msg)
-                    operation_logger_remove.error(msg)
+            # Remove all permission in LDAP
+            for permission_name in user_permission_list()["permissions"].keys():
+                if permission_name.startswith(app_instance_name+"."):
+                    permission_delete(permission_name, force=True, sync_perm=False)
+
+            if remove_retcode != 0:
+                msg = m18n.n('app_not_properly_removed',
+                             app=app_instance_name)
+                logger.warning(msg)
+                operation_logger_remove.error(msg)
+            else:
+                try:
+                    _assert_system_is_sane_for_app(manifest, "post")
+                except Exception as e:
+                    operation_logger_remove.error(e)
                 else:
-                    try:
-                        _assert_system_is_sane_for_app(manifest, "post")
-                    except Exception as e:
-                        operation_logger_remove.error(e)
-                    else:
-                        operation_logger_remove.success()
+                    operation_logger_remove.success()
 
             # Clean tmp folders
             shutil.rmtree(app_setting_path)
             shutil.rmtree(extracted_app_folder)
 
-            app_ssowatconf()
+            permission_sync_to_user()
 
-            if install_retcode == -1:
-                msg = m18n.n('operation_interrupted') + " " + error_msg
-                raise YunohostError(msg, raw_msg=True)
-            msg = error_msg
-            raise YunohostError(msg, raw_msg=True)
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -1012,17 +1098,48 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
 
-    # Add path in permission if it's defined in the app install script
+    # If an app doesn't have at least a domain and a path, assume it's not a webapp and remove the default "/" permission
     app_settings = _get_app_settings(app_instance_name)
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
-    if domain and path:
-        permission_urls(app_instance_name+".main", add=[domain+path], sync_perm=False)
+    if not (domain and path):
+        permission_url(app_instance_name + ".main", url=None, sync_perm=False)
+
+    _migrate_legacy_permissions(app_instance_name)
+
     permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
 
     hook_callback('post_app_install', args=args_list, env=env_dict)
+
+
+def _migrate_legacy_permissions(app):
+
+    from yunohost.permission import user_permission_list, user_permission_update
+
+    # Check if app is apparently using the legacy permission management, defined by the presence of something like
+    # ynh_app_setting_set on unprotected_uris (or yunohost app setting)
+    install_script_path = os.path.join(APPS_SETTING_PATH, app, 'scripts/install')
+    install_script_content = open(install_script_path, "r").read()
+    if not re.search(r"(yunohost app setting|ynh_app_setting_set) .*(unprotected|skipped)_uris", install_script_content):
+        return
+
+    app_settings = _get_app_settings(app)
+    app_perm_currently_allowed = user_permission_list()["permissions"][app + ".main"]["allowed"]
+
+    settings_say_it_should_be_public = (app_settings.get("unprotected_uris", None) == "/"
+                                        or app_settings.get("skipped_uris", None) == "/")
+
+    # If the current permission says app is protected, but there are legacy rules saying it should be public...
+    if app_perm_currently_allowed == ["all_users"] and settings_say_it_should_be_public:
+        # Make it public
+        user_permission_update(app + ".main", remove="all_users", add="visitors", sync_perm=False)
+
+    # If the current permission says app is public, but there are no setting saying it should be public...
+    if app_perm_currently_allowed == ["visitors"] and not settings_say_it_should_be_public:
+        # Make is private
+        user_permission_update(app + ".main", remove="visitors", add="all_users", sync_perm=False)
 
 
 @is_unit_operation()
@@ -1071,11 +1188,24 @@ def app_remove(operation_logger, app):
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
-    if hook_exec('/tmp/yunohost_remove/scripts/remove', args=args_list,
-                 env=env_dict)[0] == 0:
-        logger.success(m18n.n('app_removed', app=app))
+    try:
+        ret = hook_exec('/tmp/yunohost_remove/scripts/remove',
+                        args=args_list,
+                        env=env_dict)[0]
+    # Here again, calling hook_exec could fail miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    # In that case we still want to proceed with the rest of the
+    # removal (permissions, /etc/yunohost/apps/{app} ...)
+    except (KeyboardInterrupt, EOFError, Exception):
+        ret = -1
+        import traceback
+        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
+    if ret == 0:
+        logger.success(m18n.n('app_removed', app=app))
         hook_callback('post_app_remove', args=args_list, env=env_dict)
+    else:
+        logger.warning(m18n.n('app_not_properly_removed', app=app))
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
@@ -1102,6 +1232,8 @@ def app_addaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions.")
+
     output = {}
     for app in apps:
         permission = user_permission_update(app+".main", add=users, remove="all_users")
@@ -1121,6 +1253,8 @@ def app_removeaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions.")
+
     output = {}
     for app in apps:
         permission = user_permission_update(app+".main", remove=users)
@@ -1139,34 +1273,14 @@ def app_clearaccess(apps):
     """
     from yunohost.permission import user_permission_reset
 
+    logger.warning("/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions.")
+
     output = {}
     for app in apps:
         permission = user_permission_reset(app+".main")
         output[app] = permission["corresponding_users"]
 
     return {'allowed_users': output}
-
-
-def app_debug(app):
-    """
-    Display debug informations for an app
-
-    Keyword argument:
-        app
-    """
-    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-
-    return {
-        'name': manifest['id'],
-        'label': manifest['name'],
-        'services': [{
-            "name": x,
-            "logs": [{
-                "file_name": y,
-                "file_content": "\n".join(z),
-            } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
-        } for x in sorted(manifest.get("services", []))]
-    }
 
 
 @is_unit_operation()
@@ -1196,25 +1310,21 @@ def app_makedefault(operation_logger, app, domain=None):
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
                             other_app=app_map(raw=True)[domain]["/"]["id"])
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=e)
-    except IOError:
+    # TODO / FIXME : current trick is to add this to conf.json.persisten
+    # This is really not robust and should be improved
+    # e.g. have a flag in /etc/yunohost/apps/$app/ to say that this is the
+    # default app or idk...
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=e)
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))
@@ -1239,15 +1349,24 @@ def app_setting(app, key, value=None, delete=False):
         except Exception as e:
             logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
             return None
+
+    if delete and key in app_settings:
+        del app_settings[key]
     else:
-        if delete and key in app_settings:
-            del app_settings[key]
-        else:
-            # FIXME: Allow multiple values for some keys?
-            if key in ['redirected_urls', 'redirected_regex']:
-                value = yaml.load(value)
-            app_settings[key] = value
-        _set_app_settings(app, app_settings)
+        # FIXME: Allow multiple values for some keys?
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.load(value)
+        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
+            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+
+        app_settings[key] = value
+    _set_app_settings(app, app_settings)
+
+    # Fucking legacy permission management.
+    # We need this because app temporarily set the app as unprotected to configure it with curl...
+    if key.startswith("unprotected_") or key.startswith("skipped_") and value == "/":
+        from permission import user_permission_update
+        user_permission_update(app + ".main", remove="all_users", add="visitors")
 
 
 def app_checkport(port):
@@ -1410,6 +1529,7 @@ def app_ssowatconf():
 
     main_domain = _get_maindomain()
     domains = domain_list()['domains']
+    all_permissions = user_permission_list(full=True)['permissions']
 
     skipped_urls = []
     skipped_regex = []
@@ -1431,34 +1551,70 @@ def app_ssowatconf():
         return s.split(',') if s else []
 
     for app in apps_list:
-        with open(APPS_SETTING_PATH + app['id'] + '/settings.yml') as f:
-            app_settings = yaml.load(f)
 
-            if 'no_sso' in app_settings:
+        app_settings = read_yaml(APPS_SETTING_PATH + app['id'] + '/settings.yml')
+
+        if 'domain' not in app_settings:
+            continue
+        if 'path' not in app_settings:
+            continue
+
+        # This 'no_sso' settings sound redundant to not having $path defined ....
+        # At least from what I can see, all apps using it don't have a path defined ...
+        if 'no_sso' in app_settings:
+            continue
+
+        domain = app_settings['domain']
+        path = app_settings['path'].rstrip('/')
+
+        def _sanitized_absolute_url(perm_url):
+            # Nominal case : url is relative to the app's path
+            if perm_url.startswith("/"):
+                perm_domain = domain
+                perm_path = path + perm_url.rstrip("/")
+            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
+            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
+            else:
+                perm_domain, perm_path = perm_url.split("/", 1)
+                perm_path = "/" + perm_path.rstrip("/")
+
+            return perm_domain + perm_path
+
+        # Skipped
+        skipped_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'skipped_uris')]
+        skipped_regex += _get_setting(app_settings, 'skipped_regex')
+
+        # Redirected
+        redirected_urls.update(app_settings.get('redirected_urls', {}))
+        redirected_regex.update(app_settings.get('redirected_regex', {}))
+
+        # Legacy permission system using (un)protected_uris and _regex managed in app settings...
+        unprotected_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'unprotected_uris')]
+        protected_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'protected_uris')]
+        unprotected_regex += _get_setting(app_settings, 'unprotected_regex')
+        protected_regex += _get_setting(app_settings, 'protected_regex')
+
+        # New permission system
+        this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app['id'] + ".")}
+        for perm_name, perm_info in this_app_perms.items():
+
+            # Ignore permissions for which there's no url defined
+            if not perm_info["url"]:
                 continue
 
-            for item in _get_setting(app_settings, 'skipped_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                skipped_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'skipped_regex'):
-                skipped_regex.append(item)
-            for item in _get_setting(app_settings, 'unprotected_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                unprotected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'unprotected_regex'):
-                unprotected_regex.append(item)
-            for item in _get_setting(app_settings, 'protected_uris'):
-                if item[-1:] == '/':
-                    item = item[:-1]
-                protected_urls.append(app_settings['domain'] + app_settings['path'].rstrip('/') + item)
-            for item in _get_setting(app_settings, 'protected_regex'):
-                protected_regex.append(item)
-            if 'redirected_urls' in app_settings:
-                redirected_urls.update(app_settings['redirected_urls'])
-            if 'redirected_regex' in app_settings:
-                redirected_regex.update(app_settings['redirected_regex'])
+            # FIXME : gotta handle regex-urls here... meh
+            url = _sanitized_absolute_url(perm_info["url"])
+            if "visitors" in perm_info["allowed"]:
+                unprotected_urls.append(url)
+
+                # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
+                protected_urls = [u for u in protected_urls if u != url]
+            else:
+                # TODO : small optimization to implement : we don't need to explictly add all the app roots
+                protected_urls.append(url)
+
+                # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
+                unprotected_urls = [u for u in unprotected_urls if u != url]
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
@@ -1468,10 +1624,14 @@ def app_ssowatconf():
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
+
     permissions_per_url = {}
-    for permission_name, permission_infos in user_permission_list(full=True)['permissions'].items():
-        for url in permission_infos["urls"]:
-            permissions_per_url[url] = permission_infos['corresponding_users']
+    for perm_name, perm_info in all_permissions.items():
+        # Ignore permissions for which there's no url defined
+        if not perm_info["url"]:
+            continue
+        permissions_per_url[perm_info["url"]] = perm_info['corresponding_users']
+
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -2472,38 +2632,14 @@ def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
     requirements = manifest.get('requirements', dict())
 
-    # FIXME: Deprecate min_version key
-    if 'min_version' in manifest:
-        requirements['yunohost'] = '>> {0}'.format(manifest['min_version'])
-        logger.debug("the manifest key 'min_version' is deprecated, "
-                     "use 'requirements' instead.")
-
-    # Validate multi-instance app
-    if is_true(manifest.get('multi_instance', False)):
-        # Handle backward-incompatible change introduced in yunohost >= 2.3.6
-        # See https://github.com/YunoHost/issues/issues/156
-        yunohost_req = requirements.get('yunohost', None)
-        if (not yunohost_req or
-                not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
-            raise YunohostError('{0}{1}'.format(
-                m18n.g('colon', m18n.n('app_incompatible'), app=app_instance_name),
-                m18n.n('app_package_need_update', app=app_instance_name)))
-    elif not requirements:
+    if not requirements:
         return
 
     logger.debug(m18n.n('app_requirements_checking', app=app_instance_name))
 
-    # Retrieve versions of each required package
-    try:
-        versions = packages.get_installed_version(
-            *requirements.keys(), strict=True, as_dict=True)
-    except packages.PackageException as e:
-        raise YunohostError('app_requirements_failed', error=str(e), app=app_instance_name)
-
     # Iterate over requirements
     for pkgname, spec in requirements.items():
-        version = versions[pkgname]
-        if version not in packages.SpecifierSet(spec):
+        if not packages.meets_version_specifier(pkgname, spec):
             raise YunohostError('app_requirements_unmeet',
                                 pkgname=pkgname, version=version,
                                 spec=spec, app=app_instance_name)
@@ -2651,10 +2787,8 @@ def _parse_args_in_yunohost_format(args, action_args):
             if arg_value not in domain_list()['domains']:
                 raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('domain_unknown'))
         elif arg_type == 'user':
-            try:
-                user_info(arg_value)
-            except YunohostError as e:
-                raise YunohostError('app_argument_invalid', name=arg_name, error=e)
+            if not arg_value in user_list()["users"].keys():
+                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('user_unknown', user=arg_value))
         elif arg_type == 'app':
             if not _is_installed(arg_value):
                 raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))
