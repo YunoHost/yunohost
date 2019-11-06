@@ -406,6 +406,9 @@ def get_installed_version(*pkgnames, **kwargs):
         except AttributeError:
             repo = ""
 
+        if repo == "now":
+            repo = "local"
+
         if with_repo:
             versions[pkgname] = {
                 "version": version,

@@ -37,16 +37,20 @@ class BaseSystemDiagnoser(Diagnoser):
         # Here, ynh_core_version is for example "3.5.4.12", so [:3] is "3.5" and we check it's the same for all packages
         ynh_core_version = ynh_packages["yunohost"]["version"]
         consistent_versions = all(infos["version"][:3] == ynh_core_version[:3] for infos in ynh_packages.values())
-        ynh_version_details = [("diagnosis_basesystem_ynh_single_version", (package, infos["version"]))
+        ynh_version_details = [("diagnosis_basesystem_ynh_single_version", (package, infos["version"], infos["repo"]))
                                for package, infos in ynh_packages.items()]
 
         if consistent_versions:
             yield dict(meta={"test": "ynh_versions"},
+                       data={"main_version": ynh_core_version, "repo": ynh_packages["yunohost"]["repo"]},
                        status="INFO",
-                       summary=("diagnosis_basesystem_ynh_main_version", {"main_version": ynh_core_version[:3]}),
+                       summary=("diagnosis_basesystem_ynh_main_version",
+                                {"main_version": ynh_core_version,
+                                 "repo": ynh_packages["yunohost"]["repo"]}),
                        details=ynh_version_details)
         else:
             yield dict(meta={"test": "ynh_versions"},
+                       data={"main_version": ynh_core_version, "repo": ynh_packages["yunohost"]["repo"]},
                        status="ERROR",
                        summary=("diagnosis_basesystem_ynh_inconsistent_versions", {}),
                        details=ynh_version_details)
