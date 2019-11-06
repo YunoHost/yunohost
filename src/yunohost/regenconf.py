@@ -131,6 +131,15 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                           show_info=False)['hooks']
         names.remove('ssh')
 
+    # Dirty hack for legacy code : avoid attempting to regen the conf for
+    # glances because it got removed ...  This is only needed *once*
+    # during the upgrade from 3.7 to 3.8 because Yunohost will attempt to
+    # regen glance's conf *before* it gets automatically removed from
+    # services.yml (which will happens only during the regen-conf of
+    # 'yunohost', so at the very end of the regen-conf cycle) Anyway,
+    # this can be safely removed once we're in >= 4.0
+    names.remove("glances")
+
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Keep only the hook names with at least one success
