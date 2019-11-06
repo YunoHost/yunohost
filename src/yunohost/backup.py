@@ -48,7 +48,6 @@ from yunohost.app import (
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
 )
-from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -2492,3 +2491,23 @@ def disk_usage(path):
 
     du_output = subprocess.check_output(['du', '-sb', path])
     return int(du_output.split()[0].decode('utf-8'))
+
+
+def binary_to_human(n, customary=False):
+    """
+    Convert bytes or bits into human readable format with binary prefix
+    Keyword argument:
+        n -- Number to convert
+        customary -- Use customary symbol instead of IEC standard
+    """
+    symbols = ('Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi')
+    if customary:
+        symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    prefix = {}
+    for i, s in enumerate(symbols):
+        prefix[s] = 1 << (i + 1) * 10
+    for s in reversed(symbols):
+        if n >= prefix[s]:
+            value = float(n) / prefix[s]
+            return '%.1f%s' % (value, s)
+    return "%s" % n
