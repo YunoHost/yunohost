@@ -56,7 +56,7 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
     else:
         unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
-            raise YunohostError('unknown_categories', categories=", ".join(categories))
+            raise YunohostError('diagnosis_unknown_categories', categories=", ".join(categories))
 
     # Fetch all reports
     all_reports = []
@@ -127,7 +127,7 @@ def diagnosis_run(categories=[], force=False):
     else:
         unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
-            raise YunohostError('unknown_categories', categories=", ".join(unknown_categories))
+            raise YunohostError('diagnosis_unknown_categories', categories=", ".join(unknown_categories))
 
     issues = []
     # Call the hook ...
