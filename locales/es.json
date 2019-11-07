@@ -638,5 +638,10 @@
     "permission_currently_allowed_for_visitors": "Este permiso se concede actualmente a los visitantes además de otros grupos. Probablemente quiere o eliminar el permiso de «visitors» o eliminar los otros grupos a los que está otorgado actualmente.",
     "permission_currently_allowed_for_all_users": "Este permiso se concede actualmente a todos los usuarios además de los otros grupos. Probablemente quiere o eliminar el permiso de «all_users» o eliminar los otros grupos a los que está otorgado actualmente.",
     "permission_require_account": "El permiso {permission} solo tiene sentido para usuarios con una cuenta y, por lo tanto, no se puede activar para visitantes.",
-    "app_remove_after_failed_install": "Eliminando la aplicación tras el fallo de instalación…"
+    "app_remove_after_failed_install": "Eliminando la aplicación tras el fallo de instalación…",
+    "diagnosis_basesystem_host": "El servidor está ejecutando Debian {debian_version}.",
+    "diagnosis_basesystem_kernel": "El servidor está ejecutando el núcleo de Linux {kernel_version}",
+    "diagnosis_basesystem_ynh_single_version": "{0} versión: {1} ({2})",
+    "diagnosis_basesystem_ynh_main_version": "El servidor está ejecutando YunoHost {main_version} ({repo})",
+    "diagnosis_basesystem_ynh_inconsistent_versions": "Está ejecutando versiones incoherentes de los paquetes de YunoHost... probablemente por una actualización errónea o parcial."
 }
