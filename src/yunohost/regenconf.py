@@ -138,7 +138,8 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
     # services.yml (which will happens only during the regen-conf of
     # 'yunohost', so at the very end of the regen-conf cycle) Anyway,
     # this can be safely removed once we're in >= 4.0
-    names.remove("glances")
+    if "glances" in names:
+        names.remove("glances")
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
