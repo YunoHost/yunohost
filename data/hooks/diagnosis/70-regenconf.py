@@ -15,19 +15,6 @@ class RegenconfDiagnoser(Diagnoser):
 
     def run(self):
 
-        # nginx -t
-        p = subprocess.Popen("nginx -t".split(),
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        out, _ = p.communicate()
-
-        if p.returncode != 0:
-            yield dict(meta={"test": "nginx-t"},
-                       status="ERROR",
-                       summary=("diagnosis_regenconf_nginx_conf_broken", {}),
-                       details=[(out, ())]
-                       )
-
         regenconf_modified_files = manually_modified_files()
         debian_modified_files = manually_modified_files_compared_to_debian_default(ignore_handled_by_regenconf=True)
 
