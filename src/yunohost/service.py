@@ -293,7 +293,7 @@ def service_status(names=[]):
             result[name] = {
                 'status': "unknown",
                 'start_on_boot': "unknown",
-                'active_at': "unknown",
+                'last_state_change': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
                 'configuration': "unknown",
             }
@@ -314,7 +314,7 @@ def service_status(names=[]):
             result[name] = {
                 'status': str(status.get("SubState", "unknown")),
                 'start_on_boot': str(status.get("UnitFileState", "unknown")),
-                'active_at': "unknown",
+                'last_state_change': "unknown",
                 'description': description,
                 'configuration': "unknown",
             }
@@ -324,8 +324,8 @@ def service_status(names=[]):
             if result[name]["start_on_boot"] == "generated":
                 result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
 
-            if "ActiveEnterTimestamp" in status:
-                result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
+            if "StateChangeTimestamp" in status:
+                result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
 
             # 'test-status' is an optional field to test the status of the service using a custom command
             if "test-status" in services[name]:
