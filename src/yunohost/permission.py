@@ -92,7 +92,6 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         remove         -- List of groups or usernames to remove from to this permission
     """
     from yunohost.hook import hook_callback
-    from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
@@ -111,7 +110,6 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         raise YunohostError('permission_not_found', permission=permission)
 
     current_allowed_groups = existing_permission["allowed"]
-    all_existing_groups = user_group_list()['groups'].keys()
     operation_logger.related_to.append(('app', permission.split(".")[0]))
 
     # Compute new allowed group list (and make sure what we're doing make sense)
@@ -121,8 +119,6 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     if add:
         groups_to_add = [add] if not isinstance(add, list) else add
         for group in groups_to_add:
-            if group not in all_existing_groups:
-                raise YunohostError('group_unknown', group=group)
             if group in current_allowed_groups:
                 logger.warning(m18n.n('permission_already_allowed', permission=permission, group=group))
             else:
@@ -133,8 +129,6 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     if remove:
         groups_to_remove = [remove] if not isinstance(remove, list) else remove
         for group in groups_to_remove:
-            if group not in all_existing_groups:
-                raise YunohostError('group_unknown', group=group)
             if group not in current_allowed_groups:
                 logger.warning(m18n.n('permission_already_disallowed', permission=permission, group=group))
             else:
@@ -161,36 +155,9 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     operation_logger.start()
 
-    try:
-        ldap.update('cn=%s,ou=permission' % permission,
-                    {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in new_allowed_groups]})
-    except Exception as e:
-        raise YunohostError('permission_update_failed', permission=permission, error=e)
+    new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_updated', permission=permission))
-
-    # Trigger permission sync if asked
-
-    if sync_perm:
-        permission_sync_to_user()
-
-    new_permission = user_permission_list(full=True)["permissions"][permission]
-
-    # Trigger app callbacks
-
-    app = permission.split(".")[0]
-
-    old_allowed_users = set(existing_permission["corresponding_users"])
-    new_allowed_users = set(new_permission["corresponding_users"])
-
-    effectively_added_users = new_allowed_users - old_allowed_users
-    effectively_removed_users = old_allowed_users - new_allowed_users
-
-    if effectively_added_users:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
-    if effectively_removed_users:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
-
     return new_permission
 
 
@@ -225,34 +192,9 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
 
-    default_permission = {'groupPermission': ['cn=all_users,ou=groups,dc=yunohost,dc=org']}
-    try:
-        ldap.update('cn=%s,ou=permission' % permission, default_permission)
-    except Exception as e:
-        raise YunohostError('permission_update_failed', permission=permission, error=e)
+    new_permission = _update_ldap_group_permission(permission=permission, allowed="all_users", sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_updated', permission=permission))
-
-    if sync_perm:
-        permission_sync_to_user()
-
-    new_permission = user_permission_list(full=True)["permissions"][permission]
-
-    # Trigger app callbacks
-
-    app = permission.split(".")[0]
-
-    old_allowed_users = set(existing_permission["corresponding_users"])
-    new_allowed_users = set(new_permission["corresponding_users"])
-
-    effectively_added_users = new_allowed_users - old_allowed_users
-    effectively_removed_users = old_allowed_users - new_allowed_users
-
-    if effectively_added_users:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
-    if effectively_removed_users:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
-
     return new_permission
 
 #
@@ -286,7 +228,6 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
 
-    from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
@@ -313,20 +254,6 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
         'gidNumber': gid,
     }
 
-    # If who should be allowed is explicitly provided, use this info
-    if allowed:
-        if not isinstance(allowed, list):
-            allowed = [allowed]
-        # (though first we validate that the targets actually exist)
-        all_existing_groups = user_group_list()['groups'].keys()
-        for g in allowed:
-            if g not in all_existing_groups:
-                raise YunohostError('group_unknown', group=g)
-        attr_dict['groupPermission'] = ['cn=%s,ou=groups,dc=yunohost,dc=org' % g for g in allowed]
-    # For main permission, we add all users by default
-    elif permission.endswith(".main"):
-        attr_dict['groupPermission'] = ['cn=all_users,ou=groups,dc=yunohost,dc=org']
-
     if url:
         attr_dict['URL'] = url
 
@@ -338,11 +265,20 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
     except Exception as e:
         raise YunohostError('permission_creation_failed', permission=permission, error=e)
 
-    if sync_perm:
-        permission_sync_to_user()
+    to_add = None
+
+    # If who should be allowed is explicitly provided, use this info
+    if allowed:
+        if not isinstance(allowed, list):
+            to_add = [allowed]
+    # For main permission, we add all users by default
+    elif permission.endswith(".main"):
+        to_add = "all_users"
+
+    new_permission = _update_ldap_group_permission(permission=permission, allowed=to_add, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_created', permission=permission))
-    return user_permission_list(full=True)["permissions"][permission]
+    return new_permission
 
 
 @is_unit_operation()
@@ -471,3 +407,67 @@ def permission_sync_to_user():
     # Reload unscd, otherwise the group ain't propagated to the LDAP database
     os.system('nscd --invalidate=passwd')
     os.system('nscd --invalidate=group')
+
+def _update_ldap_group_permission(permission, allowed, sync_perm=True):
+    """
+        Internal function that will rewrite user permission
+
+        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
+        allowed    -- A list of group/user to allow for the permission
+    """
+
+    from yunohost.hook import hook_callback
+    from yunohost.user import user_group_list
+    from yunohost.utils.ldap import _get_ldap_interface
+    ldap = _get_ldap_interface()
+
+    # Fetch currently allowed groups for this permission
+
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if existing_permission is None:
+        raise YunohostError('permission_not_found', permission=permission)
+
+    all_existing_groups = user_group_list()['groups'].keys()
+
+    if allowed:
+        if not isinstance(allowed, list):
+            allowed = [allowed]
+        for group in allowed:
+            if group not in all_existing_groups:
+                raise YunohostError('group_unknown', group=group)
+    else:
+        if sync_perm:
+            permission_sync_to_user()
+
+        return user_permission_list(full=True)["permissions"][permission]
+
+    try:
+        ldap.update('cn=%s,ou=permission' % permission,
+                    {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in allowed]})
+    except Exception as e:
+        raise YunohostError('permission_update_failed', permission=permission, error=e)
+
+    # Trigger permission sync if asked
+
+    if sync_perm:
+        permission_sync_to_user()
+
+    new_permission = user_permission_list(full=True)["permissions"][permission]
+
+    # Trigger app callbacks
+
+    app = permission.split(".")[0]
+
+    old_allowed_users = set(existing_permission["corresponding_users"])
+    new_allowed_users = set(new_permission["corresponding_users"])
+
+    effectively_added_users = new_allowed_users - old_allowed_users
+    effectively_removed_users = old_allowed_users - new_allowed_users
+
+    if effectively_added_users:
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
+    if effectively_removed_users:
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
+
+    return new_permission
+    
