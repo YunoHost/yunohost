@@ -334,8 +334,17 @@ def service_status(names=[]):
 
             # 'test-status' is an optional field to test the status of the service using a custom command
             if "test-conf" in services[name]:
-                conf = os.system(services[name]["test-conf"] + " &>/dev/null")
-                result[name]["configuration"] = "valid" if conf == 0 else "broken"
+                p = subprocess.Popen(services[name]["test-conf"],
+                                     shell=True,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+
+                out, _ = p.communicate()
+                if p.returncode == 0:
+                    result[name]["configuration"] = "valid"
+                else:
+                    result[name]["configuration"] = "broken"
+                    result[name]["configuration-details"] = out.strip().split("\n")
 
     if len(names) == 1:
         return result[names[0]]
