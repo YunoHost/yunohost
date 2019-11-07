@@ -3140,7 +3140,7 @@ def _assert_system_is_sane_for_app(manifest, when):
         services.append("fail2ban")
 
     # List services currently down and raise an exception if any are found
-    faulty_services = [s for s in services if service_status(s)["active"] != "active"]
+    faulty_services = [s for s in services if service_status(s)["status"] != "running"]
     if faulty_services:
         if when == "pre":
             raise YunohostError('app_action_cannot_be_ran_because_required_services_down',
