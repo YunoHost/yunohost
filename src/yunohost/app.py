@@ -1107,28 +1107,6 @@ def app_clearaccess(apps):
     return {'allowed_users': output}
 
 
-def app_debug(app):
-    """
-    Display debug informations for an app
-
-    Keyword argument:
-        app
-    """
-    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-
-    return {
-        'name': manifest['id'],
-        'label': manifest['name'],
-        'services': [{
-            "name": x,
-            "logs": [{
-                "file_name": y,
-                "file_content": "\n".join(z),
-            } for (y, z) in sorted(service_log(x).items(), key=lambda x: x[0])],
-        } for x in sorted(manifest.get("services", []))]
-    }
-
-
 @is_unit_operation()
 def app_makedefault(operation_logger, app, domain=None):
     """
@@ -1465,7 +1443,8 @@ def app_ssowatconf():
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
 
-    # Authorize ACME challenge url
+    # Authorize ynh remote diagnosis, ACME challenge and mail autoconfig urls
+    skipped_regex.append("^[^/]*/%.well%-known/ynh%-diagnosis/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
     skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
 
@@ -2474,38 +2453,14 @@ def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
     requirements = manifest.get('requirements', dict())
 
-    # FIXME: Deprecate min_version key
-    if 'min_version' in manifest:
-        requirements['yunohost'] = '>> {0}'.format(manifest['min_version'])
-        logger.debug("the manifest key 'min_version' is deprecated, "
-                     "use 'requirements' instead.")
-
-    # Validate multi-instance app
-    if is_true(manifest.get('multi_instance', False)):
-        # Handle backward-incompatible change introduced in yunohost >= 2.3.6
-        # See https://github.com/YunoHost/issues/issues/156
-        yunohost_req = requirements.get('yunohost', None)
-        if (not yunohost_req or
-                not packages.SpecifierSet(yunohost_req) & '>= 2.3.6'):
-            raise YunohostError('{0}{1}'.format(
-                m18n.g('colon', m18n.n('app_incompatible'), app=app_instance_name),
-                m18n.n('app_package_need_update', app=app_instance_name)))
-    elif not requirements:
+    if not requirements:
         return
 
     logger.debug(m18n.n('app_requirements_checking', app=app_instance_name))
 
-    # Retrieve versions of each required package
-    try:
-        versions = packages.get_installed_version(
-            *requirements.keys(), strict=True, as_dict=True)
-    except packages.PackageException as e:
-        raise YunohostError('app_requirements_failed', error=str(e), app=app_instance_name)
-
     # Iterate over requirements
     for pkgname, spec in requirements.items():
-        version = versions[pkgname]
-        if version not in packages.SpecifierSet(spec):
+        if not packages.meets_version_specifier(pkgname, spec):
             raise YunohostError('app_requirements_unmeet',
                                 pkgname=pkgname, version=version,
                                 spec=spec, app=app_instance_name)

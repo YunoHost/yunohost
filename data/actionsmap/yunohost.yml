@@ -441,6 +441,21 @@ domain:
                             - !!str ^[0-9]+$
                             - "pattern_positive_number"
 
+        ### domain_maindomain()
+        main-domain:
+            action_help: Check the current main domain, or change it
+            deprecated_alias:
+                - maindomain
+            api:
+                - GET /domains/main
+                - PUT /domains/main
+            arguments:
+                -n:
+                    full: --new-main-domain
+                    help: Change the current main domain
+                    extra:
+                        pattern: *pattern_domain
+
         ### certificate_status()
         cert-status:
             action_help: List status of current certificates (all by default).
@@ -722,14 +737,6 @@ app:
                     full: --sql
                     help: Initial SQL file
 
-        ### app_debug()
-        debug:
-            action_help: Display all debug informations for an application
-            api: GET /apps/<app>/debug
-            arguments:
-                app:
-                    help: App name
-
         ### app_makedefault()
         makedefault:
             action_help: Redirect domain root to an app
@@ -934,147 +941,6 @@ backup:
                     help: Name of the archive to delete
                     extra:
                         pattern: *pattern_backup_archive_name
-
-
-#############################
-#          Monitor          #
-#############################
-monitor:
-    category_help: Monitor the server
-    actions:
-
-        ### monitor_disk()
-        disk:
-            action_help: Monitor disk space and usage
-            api: GET /monitor/disk
-            arguments:
-                -f:
-                    full: --filesystem
-                    help: Show filesystem disk space
-                    action: append_const
-                    const: filesystem
-                    dest: units
-                -t:
-                    full: --io
-                    help: Show I/O throughput
-                    action: append_const
-                    const: io
-                    dest: units
-                -m:
-                    full: --mountpoint
-                    help: Monitor only the device mounted on MOUNTPOINT
-                    action: store
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_network()
-        network:
-            action_help: Monitor network interfaces
-            api: GET /monitor/network
-            arguments:
-                -u:
-                    full: --usage
-                    help: Show interfaces bit rates
-                    action: append_const
-                    const: usage
-                    dest: units
-                -i:
-                    full: --infos
-                    help: Show network informations
-                    action: append_const
-                    const: infos
-                    dest: units
-                -c:
-                    full: --check
-                    help: Check network configuration
-                    action: append_const
-                    const: check
-                    dest: units
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_system()
-        system:
-            action_help: Monitor system informations and usage
-            api: GET /monitor/system
-            arguments:
-                -m:
-                    full: --memory
-                    help: Show memory usage
-                    action: append_const
-                    const: memory
-                    dest: units
-                -c:
-                    full: --cpu
-                    help: Show CPU usage and load
-                    action: append_const
-                    const: cpu
-                    dest: units
-                -p:
-                    full: --process
-                    help: Show processes summary
-                    action: append_const
-                    const: process
-                    dest: units
-                -u:
-                    full: --uptime
-                    help: Show the system uptime
-                    action: append_const
-                    const: uptime
-                    dest: units
-                -i:
-                    full: --infos
-                    help: Show system informations
-                    action: append_const
-                    const: infos
-                    dest: units
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_updatestats()
-        update-stats:
-            action_help: Update monitoring statistics
-            api: POST /monitor/stats
-            arguments:
-                period:
-                    help: Time period to update
-                    choices:
-                        - day
-                        - week
-                        - month
-
-        ### monitor_showstats()
-        show-stats:
-            action_help: Show monitoring statistics
-            api: GET /monitor/stats
-            arguments:
-                period:
-                    help: Time period to show
-                    choices:
-                        - day
-                        - week
-                        - month
-
-        ### monitor_enable()
-        enable:
-            action_help: Enable server monitoring
-            api: PUT /monitor
-            arguments:
-                -s:
-                    full: --with-stats
-                    help: Enable monitoring statistics
-                    action: store_true
-
-        ### monitor_disable()
-        disable:
-            api: DELETE /monitor
-            action_help: Disable server monitoring
 
 
 #############################
@@ -1510,12 +1376,9 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Check the current main domain, or change it
-            api:
-                - GET /domains/main
-                - PUT /domains/main
             arguments:
                 -n:
-                    full: --new-domain
+                    full: --new-main-domain
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
@@ -1572,16 +1435,6 @@ tools:
                     nargs: "*"
                 --system:
                     help: Upgrade only the system packages
-                    action: store_true
-
-        ### tools_diagnosis()
-        diagnosis:
-            action_help: YunoHost diagnosis
-            api: GET /diagnosis
-            arguments:
-                -p:
-                    full: --private
-                    help: Show private data (domain, IP)
                     action: store_true
 
         ### tools_port_available()
@@ -1828,4 +1681,60 @@ log:
                     type: int
                 --share:
                     help: Share the full log using yunopaste
+                    action: store_true
+
+
+#############################
+#          Diagnosis        #
+#############################
+diagnosis:
+    category_help: Look for possible issues on the server
+    actions:
+
+        list:
+            action_help: List diagnosis categories
+            api: GET /diagnosis/list
+
+        show:
+            action_help: Show most recents diagnosis results
+            api: GET /diagnosis/show
+            arguments:
+                categories:
+                    help: Diagnosis categories to display (all by default)
+                    nargs: "*"
+                --full:
+                    help: Display additional information
+                    action: store_true
+                --issues:
+                    help: Only display issues
+                    action: store_true
+                --share:
+                    help: Share the logs using yunopaste
+                    action: store_true
+
+        run:
+            action_help: Show most recents diagnosis results
+            api: POST /diagnosis/run
+            arguments:
+                categories:
+                    help: Diagnosis categories to run (all by default)
+                    nargs: "*"
+                --force:
+                    help: Ignore the cached report even if it is still 'fresh'
+                    action: store_true
+
+        ignore:
+            action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
+            api: POST /diagnosis/ignore
+            arguments:
+                --add-filter:
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    nargs: "*"
+                    metavar: CRITERIA
+                --remove-filter:
+                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    nargs: "*"
+                    metavar: CRITERIA
+                --list:
+                    help: List active ignore filters
                     action: store_true
