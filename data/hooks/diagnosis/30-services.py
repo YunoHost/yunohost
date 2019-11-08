@@ -15,7 +15,7 @@ class ServicesDiagnoser(Diagnoser):
 
         all_result = service_status()
 
-        for service, result in all_result.items():
+        for service, result in sorted(all_result.items()):
 
             item = dict(meta={"service": service})
 
