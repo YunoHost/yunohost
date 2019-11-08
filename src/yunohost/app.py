@@ -2905,13 +2905,12 @@ def _patch_legacy_helpers(app_folder):
             pattern, replace = regexes
             # If helper is used, attempt to patch the file
             if helper in content and pattern != "":
-                try:
-                    content = pattern.sub(replace, content)
-                    replaced_stuff = True
-                except Exception as e:
-                    import pdb; pdb.set_trace()
+                content = pattern.sub(replace, content)
+                replaced_stuff = True
 
-            # If we couldn't patch the deprecated helper, abort the install or whichever step is performed
+            # If the helpert is *still* in the content, it means that we
+            # couldn't patch the deprecated helper in the previous lines.  In
+            # that case, abort the install or whichever step is performed
             if helper in content:
                 raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.")
 
