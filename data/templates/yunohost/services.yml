@@ -1,6 +1,6 @@
 nginx:
   log: /var/log/nginx
-  test-conf: nginx -t
+  test_conf: nginx -t
   needs_exposed_ports: [80, 443]
 avahi-daemon:
   log: /var/log/daemon.log
@@ -13,7 +13,7 @@ dovecot:
   needs_exposed_ports: [993]
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
-  test-status: systemctl show postfix@- | grep -q "^SubState=running"
+  test_status: systemctl show postfix@- | grep -q "^SubState=running"
   needs_exposed_ports: [25, 587]
 rspamd:
   log: /var/log/rspamd/rspamd.log
@@ -24,7 +24,7 @@ mysql:
   alternates: ['mariadb']
 ssh:
   log: /var/log/auth.log
-  test-conf: sshd -t
+  test_conf: sshd -t
   needs_exposed_ports: [22]
 metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
@@ -33,12 +33,12 @@ slapd:
   log: /var/log/syslog
 php7.0-fpm:
   log: /var/log/php7.0-fpm.log
-  test-conf: php-fpm7.0 --test
+  test_conf: php-fpm7.0 --test
 yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
   need_lock: true
-  test-status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
+  test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
 nslcd:
   log: /var/log/syslog
 glances: null

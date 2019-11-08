@@ -327,14 +327,14 @@ def service_status(names=[]):
             if "StateChangeTimestamp" in status:
                 result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
 
-            # 'test-status' is an optional field to test the status of the service using a custom command
-            if "test-status" in services[name]:
-                status = os.system(services[name]["test-status"])
+            # 'test_status' is an optional field to test the status of the service using a custom command
+            if "test_status" in services[name]:
+                status = os.system(services[name]["test_status"])
                 result[name]["status"] = "running" if status == 0 else "failed"
 
-            # 'test-status' is an optional field to test the status of the service using a custom command
-            if "test-conf" in services[name]:
-                p = subprocess.Popen(services[name]["test-conf"],
+            # 'test_status' is an optional field to test the status of the service using a custom command
+            if "test_conf" in services[name]:
+                p = subprocess.Popen(services[name]["test_conf"],
                                      shell=True,
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
