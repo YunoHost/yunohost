@@ -543,38 +543,6 @@ app:
     category_help: Manage apps
     actions:
 
-        ### app_fetchlist()
-        fetchlist:
-            action_help: Fetch application lists from app servers, or register a new one.
-            api: PUT /appslists
-            arguments:
-                -n:
-                    full: --name
-                    help: Name of the list to fetch (fetches all registered lists if empty)
-                    extra:
-                        pattern: &pattern_listname
-                            - !!str ^[a-z0-9_]+$
-                            - "pattern_listname"
-                -u:
-                    full: --url
-                    help: URL of a new application list to register. To be specified with -n.
-
-        ### app_listlists()
-        listlists:
-            action_help: List registered application lists
-            api: GET /appslists
-
-        ### app_removelist()
-        removelist:
-            action_help: Remove and forget about a given application list
-            api: DELETE /appslists
-            arguments:
-                name:
-                    help: Name of the list to remove
-                    extra:
-                        ask: ask_list_to_remove
-                        pattern: *pattern_listname
-
         ### app_list()
         list:
             action_help: List apps
