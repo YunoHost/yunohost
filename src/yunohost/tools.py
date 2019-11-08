@@ -37,7 +37,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
-from yunohost.app import _update_appslist, app_info, app_upgrade, app_ssowatconf, app_list
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list
 from yunohost.domain import domain_add, domain_list
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
@@ -351,14 +351,14 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
-    # Initialize the appslist system
-    _initialize_appslist_system()
+    # Initialize the apps catalog system
+    _initialize_apps_catalog_system()
 
-    # Try to update the appslist ...
+    # Try to update the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
     try:
-        _update_appslist()
+        _update_apps_catalog()
     except Exception as e:
         logger.warning(str(e))
 
@@ -407,7 +407,6 @@ def tools_update(apps=False, system=False):
     Keyword arguments:
         system -- Fetch available system packages upgrades (equivalent to apt update)
         apps -- Fetch the application list to check which apps can be upgraded
-        appslist -- Just update the application list cache
     """
 
     # If neither --apps nor --system specified, do both
@@ -454,7 +453,7 @@ def tools_update(apps=False, system=False):
     upgradable_apps = []
     if apps:
         try:
-            _update_appslist()
+            _update_apps_catalog()
         except YunohostError as e:
             logger.error(str(e))
 
