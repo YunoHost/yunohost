@@ -5,7 +5,7 @@ import requests
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.error import YunohostError
-
+from yunohost.service import _get_services
 
 class PortsDiagnoser(Diagnoser):
 
@@ -15,16 +15,18 @@ class PortsDiagnoser(Diagnoser):
 
     def run(self):
 
-        # FIXME / TODO : in the future, maybe we want to report different
-        # things per port depending on how important they are
-        # (e.g. XMPP sounds to me much less important than other ports)
-        # Ideally, a port could be related to a service...
-        # FIXME / TODO : for now this list of port is hardcoded, might want
-        # to fetch this from the firewall.yml in /etc/yunohost/
-        ports = [22, 25, 53, 80, 443, 587, 993, 5222, 5269]
+        # This dict is something like :
+        #   {   80: "nginx",
+        #       25: "postfix",
+        #       443: "nginx"
+        #       ... }
+        ports = {}
+        for service, infos in _get_services().items():
+            for port in infos.get("needs_exposed_ports", []):
+                ports[port] = service
 
         try:
-            r = requests.post('https://ynhdiagnoser.netlib.re/check-ports', json={'ports': ports}, timeout=30).json()
+            r = requests.post('https://ynhdiagnoser.netlib.re/check-ports', json={'ports': ports.keys()}, timeout=30).json()
             if "status" not in r.keys():
                 raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             elif r["status"] == "error":
@@ -37,15 +39,17 @@ class PortsDiagnoser(Diagnoser):
         except Exception as e:
             raise YunohostError("diagnosis_ports_could_not_diagnose", error=e)
 
-        for port in ports:
+        for port, service in ports.items():
             if r["ports"].get(str(port), None) is not True:
-                yield dict(meta={"port": port},
+                yield dict(meta={"port": port, "needed_by": service},
                            status="ERROR",
-                           summary=("diagnosis_ports_unreachable", {"port": port}))
+                           summary=("diagnosis_ports_unreachable", {"port": port}),
+                           details=[("diagnosis_ports_needed_by", (service,)), ("diagnosis_ports_forwarding_tip", ())])
             else:
-                yield dict(meta={},
+                yield dict(meta={"port": port, "needed_by": service},
                            status="SUCCESS",
-                           summary=("diagnosis_ports_ok", {"port": port}))
+                           summary=("diagnosis_ports_ok", {"port": port}),
+                           details=[("diagnosis_ports_needed_by", (service))])
 
 
 def main(args, env, loggers):

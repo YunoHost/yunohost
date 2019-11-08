@@ -216,6 +216,8 @@
     "diagnosis_ports_could_not_diagnose": "Could not diagnose if ports are reachable from outside. Error: {error}",
     "diagnosis_ports_unreachable": "Port {port} is not reachable from outside.",
     "diagnosis_ports_ok": "Port {port} is reachable from outside.",
+    "diagnosis_ports_needed_by": "Exposing this port is needed for service {0}",
+    "diagnosis_ports_forwarding_tip": "To fix this issue, most probably you need to configure port forwarding on your internet router as described in https://yunohost.org/port_forwarding",
     "diagnosis_http_could_not_diagnose": "Could not diagnose if domain is reachable from outside. Error: {error}",
     "diagnosis_http_ok": "Domain {domain} is reachable from outside.",
     "diagnosis_http_unreachable": "Domain {domain} is unreachable through HTTP from outside.",
