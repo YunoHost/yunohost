@@ -40,7 +40,7 @@ ynh_port_available () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-    if netcat -z 127.0.0.1 $port;
+    if ss -nltu | grep -q -w :$port
     then
         return 1
     else
