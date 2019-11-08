@@ -34,6 +34,7 @@ from moulinette.utils.log import getActionLogger
 
 import yunohost.certificate
 
+from yunohost.app import app_ssowatconf
 from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -112,8 +113,10 @@ def domain_add(operation_logger, domain, dyndns=False):
             'virtualdomain': domain,
         }
 
-        if not ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
-            raise YunohostError('domain_creation_failed')
+        try:
+            ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict)
+        except Exception as e:
+            raise YunohostError('domain_creation_failed', domain=domain, error=e)
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
@@ -152,7 +155,14 @@ def domain_remove(operation_logger, domain, force=False):
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
-        raise YunohostError('domain_cannot_remove_main')
+        other_domains = domain_list()["domains"]
+        other_domains.remove(domain)
+
+        if other_domains:
+            raise YunohostError('domain_cannot_remove_main',
+                                domain=domain, other_domains="\n * " + ("\n * ".join(other_domains)))
+        else:
+            raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
     for app in os.listdir('/etc/yunohost/apps/'):
@@ -167,10 +177,12 @@ def domain_remove(operation_logger, domain, force=False):
 
     operation_logger.start()
     ldap = _get_ldap_interface()
-    if ldap.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
-    else:
-        raise YunohostError('domain_deletion_failed')
+    try:
+        ldap.remove('virtualdomain=' + domain + ',ou=domains')
+    except Exception as e:
+        raise YunohostError('domain_deletion_failed', domain=domain, error=e)
+
+    os.system('rm -rf /etc/yunohost/certs/%s' % domain)
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
@@ -227,6 +239,63 @@ def domain_dns_conf(domain, ttl=None):
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
+
+
+@is_unit_operation()
+def domain_main_domain(operation_logger, new_main_domain=None):
+    """
+    Check the current main domain, or change it
+
+    Keyword argument:
+        new_main_domain -- The new domain to be set as the main domain
+
+    """
+    from yunohost.tools import _set_hostname
+
+    # If no new domain specified, we return the current main domain
+    if not new_main_domain:
+        return {'current_main_domain': _get_maindomain()}
+
+    # Check domain exists
+    if new_main_domain not in domain_list()['domains']:
+        raise YunohostError('domain_unknown')
+
+    operation_logger.related_to.append(('domain', new_main_domain))
+    operation_logger.start()
+
+    # Apply changes to ssl certs
+    ssl_key = "/etc/ssl/private/yunohost_key.pem"
+    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
+    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_main_domain
+    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_main_domain
+
+    try:
+        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
+            os.remove(ssl_key)
+        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
+            os.remove(ssl_crt)
+
+        os.symlink(new_ssl_key, ssl_key)
+        os.symlink(new_ssl_crt, ssl_crt)
+
+        _set_maindomain(new_main_domain)
+    except Exception as e:
+        logger.warning("%s" % e, exc_info=1)
+        raise YunohostError('main_domain_change_failed')
+
+    _set_hostname(new_main_domain)
+
+    # Generate SSOwat configuration file
+    app_ssowatconf()
+
+    # Regen configurations
+    try:
+        with open('/etc/yunohost/installed', 'r'):
+            regen_conf()
+    except IOError:
+        pass
+
+    logger.success(m18n.n('main_domain_changed'))
 
 
 def domain_cert_status(domain_list, full=False):

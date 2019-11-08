@@ -283,11 +283,11 @@ ynh_psql_test_if_first_run() {
 
 		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
 
-		# force all user to connect to local database using passwords
+		# force all user to connect to local databases using hashed passwords
 		# https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
 		# Note: we can't use peer since YunoHost create users with nologin
 		#  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
-		ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3password" --target_file="$pg_hba"
+		ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
 
 		# Advertise service in admin panel
 		yunohost service add postgresql --log "$logfile"

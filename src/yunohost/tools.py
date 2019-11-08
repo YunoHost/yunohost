@@ -30,29 +30,25 @@ import json
 import subprocess
 import pwd
 import socket
-from xmlrpclib import Fault
 from importlib import import_module
-from collections import OrderedDict
 
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_json, write_to_json
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
+from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
+from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, _install_appslist_fetch_cron
+from yunohost.domain import domain_add, domain_list
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_start, service_enable
+from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
-from yunohost.monitor import monitor_disk, monitor_system
-from yunohost.utils.packages import ynh_packages_version, _dump_sources_list, _list_upgradable_apt_packages
-from yunohost.utils.network import get_public_ip
+from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
 
 # FIXME this is a duplicate from apps.py
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
-MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations_state.json"
+MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger('yunohost.tools')
 
@@ -164,60 +160,10 @@ def tools_adminpw(new_password, check_strength=True):
         logger.success(m18n.n('admin_password_changed'))
 
 
-@is_unit_operation()
-def tools_maindomain(operation_logger, new_domain=None):
-    """
-    Check the current main domain, or change it
-
-    Keyword argument:
-        new_domain -- The new domain to be set as the main domain
-
-    """
-
-    # If no new domain specified, we return the current main domain
-    if not new_domain:
-        return {'current_main_domain': _get_maindomain()}
-
-    # Check domain exists
-    if new_domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    operation_logger.related_to.append(('domain', new_domain))
-    operation_logger.start()
-
-    # Apply changes to ssl certs
-    ssl_key = "/etc/ssl/private/yunohost_key.pem"
-    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
-    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_domain
-    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
-
-    try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
-            os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
-            os.remove(ssl_crt)
-
-        os.symlink(new_ssl_key, ssl_key)
-        os.symlink(new_ssl_crt, ssl_crt)
-
-        _set_maindomain(new_domain)
-    except Exception as e:
-        logger.warning("%s" % e, exc_info=1)
-        raise YunohostError('maindomain_change_failed')
-
-    _set_hostname(new_domain)
-
-    # Generate SSOwat configuration file
-    app_ssowatconf()
-
-    # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r'):
-            regen_conf()
-    except IOError:
-        pass
-
-    logger.success(m18n.n('maindomain_changed'))
+def tools_maindomain(new_main_domain=None):
+    from yunohost.domain import domain_main_domain
+    logger.warning(m18n.g("deprecated_command_alias", prog="yunohost", old="tools maindomain", new="domain main-domain"))
+    return domain_main_domain(new_main_domain=new_main_domain)
 
 
 def _set_hostname(hostname, pretty_hostname=None):
@@ -281,6 +227,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     """
     from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.domain import domain_main_domain
 
     dyndns_provider = "dyndns.yunohost.org"
 
@@ -350,25 +297,17 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
-    except IOError:
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -403,7 +342,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # New domain config
     regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
-    tools_maindomain(domain)
+    domain_main_domain(domain)
 
     # Change LDAP admin password
     tools_adminpw(password, check_strength=not force_password)
@@ -584,10 +523,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
         upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
 
-        if not upgradable_apps:
-            logger.info(m18n.n("app_no_upgrade"))
-            return
-        elif len(apps) and all(app not in upgradable_apps for app in apps):
+        if not upgradable_apps or (len(apps) and all(app not in upgradable_apps for app in apps)):
             logger.info(m18n.n("apps_already_up_to_date"))
             return
 
@@ -619,8 +555,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
 
-        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
@@ -651,13 +587,16 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+            def is_relevant(l):
+                return "Reading database ..." not in l.rstrip()
+
             callbacks = (
-                lambda l: logger.info("+" + l.rstrip() + "\r"),
+                lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
-                logger.warning('tools_upgrade_regular_packages_failed',
+                logger.warning(m18n.n('tools_upgrade_regular_packages_failed'),
                                packages_list=', '.join(noncritical_packages_upgradable))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
@@ -729,184 +668,6 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             operation_logger.success()
 
 
-def tools_diagnosis(private=False):
-    """
-    Return global info about current yunohost instance to help debugging
-
-    """
-    diagnosis = OrderedDict()
-
-    # Debian release
-    try:
-        with open('/etc/debian_version', 'r') as f:
-            debian_version = f.read().rstrip()
-    except IOError as e:
-        logger.warning(m18n.n('diagnosis_debian_version_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['host'] = "Debian %s" % debian_version
-
-    # Kernel version
-    try:
-        with open('/proc/sys/kernel/osrelease', 'r') as f:
-            kernel_version = f.read().rstrip()
-    except IOError as e:
-        logger.warning(m18n.n('diagnosis_kernel_version_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['kernel'] = kernel_version
-
-    # Packages version
-    diagnosis['packages'] = ynh_packages_version()
-
-    diagnosis["backports"] = check_output("dpkg -l |awk '/^ii/ && $3 ~ /bpo[6-8]/ {print $2}'").split()
-
-    # Server basic monitoring
-    diagnosis['system'] = OrderedDict()
-    try:
-        disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except (YunohostError, Fault) as e:
-        logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['system']['disks'] = {}
-        for disk in disks:
-            if isinstance(disks[disk], str):
-                diagnosis['system']['disks'][disk] = disks[disk]
-            else:
-                diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
-                    disks[disk]['mnt_point'],
-                    disks[disk]['size'],
-                    disks[disk]['avail']
-                )
-
-    try:
-        system = monitor_system(units=['cpu', 'memory'], human_readable=True)
-    except YunohostError as e:
-        logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['system']['memory'] = {
-            'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
-            'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
-        }
-
-    # nginx -t
-    p = subprocess.Popen("nginx -t".split(),
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
-    out, _ = p.communicate()
-    diagnosis["nginx"] = out.strip().split("\n")
-    if p.returncode != 0:
-        logger.error(out)
-
-    # Services status
-    services = service_status()
-    diagnosis['services'] = {}
-
-    for service in services:
-        diagnosis['services'][service] = "%s (%s)" % (services[service]['status'], services[service]['loaded'])
-
-    # YNH Applications
-    try:
-        applications = app_list()['apps']
-    except YunohostError as e:
-        diagnosis['applications'] = m18n.n('diagnosis_no_apps')
-    else:
-        diagnosis['applications'] = {}
-        for application in applications:
-            if application['installed']:
-                diagnosis['applications'][application['id']] = application['label'] if application['label'] else application['name']
-
-    # Private data
-    if private:
-        diagnosis['private'] = OrderedDict()
-
-        # Public IP
-        diagnosis['private']['public_ip'] = {}
-        diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
-        diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
-
-        # Domains
-        diagnosis['private']['domains'] = domain_list()['domains']
-
-        diagnosis['private']['regen_conf'] = regen_conf(with_diff=True, dry_run=True)
-
-    try:
-        diagnosis['security'] = {
-            "CVE-2017-5754": {
-                "name": "meltdown",
-                "vulnerable": _check_if_vulnerable_to_meltdown(),
-            }
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Unable to check for meltdown vulnerability: %s" % e)
-
-    return diagnosis
-
-
-def _check_if_vulnerable_to_meltdown():
-    # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
-
-    # We use a cache file to avoid re-running the script so many times,
-    # which can be expensive (up to around 5 seconds on ARM)
-    # and make the admin appear to be slow (c.f. the calls to diagnosis
-    # from the webadmin)
-    #
-    # The cache is in /tmp and shall disappear upon reboot
-    # *or* we compare it to dpkg.log modification time
-    # such that it's re-ran if there was package upgrades
-    # (e.g. from yunohost)
-    cache_file = "/tmp/yunohost-meltdown-diagnosis"
-    dpkg_log = "/var/log/dpkg.log"
-    if os.path.exists(cache_file):
-        if not os.path.exists(dpkg_log) or os.path.getmtime(cache_file) > os.path.getmtime(dpkg_log):
-            logger.debug("Using cached results for meltdown checker, from %s" % cache_file)
-            return read_json(cache_file)[0]["VULNERABLE"]
-
-    # script taken from https://github.com/speed47/spectre-meltdown-checker
-    # script commit id is store directly in the script
-    file_dir = os.path.split(__file__)[0]
-    SCRIPT_PATH = os.path.join(file_dir, "./vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh")
-
-    # '--variant 3' corresponds to Meltdown
-    # example output from the script:
-    # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
-    try:
-        logger.debug("Running meltdown vulnerability checker")
-        call = subprocess.Popen("bash %s --batch json --variant 3" %
-                                SCRIPT_PATH, shell=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-        # TODO / FIXME : here we are ignoring error messages ...
-        # in particular on RPi2 and other hardware, the script complains about
-        # "missing some kernel info (see -v), accuracy might be reduced"
-        # Dunno what to do about that but we probably don't want to harass
-        # users with this warning ...
-        output, err = call.communicate()
-        assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
-
-        # If there are multiple lines, sounds like there was some messages
-        # in stdout that are not json >.> ... Try to get the actual json
-        # stuff which should be the last line
-        output = output.strip()
-        if "\n" in output:
-            logger.debug("Original meltdown checker output : %s" % output)
-            output = output.split("\n")[-1]
-
-        CVEs = json.loads(output)
-        assert len(CVEs) == 1
-        assert CVEs[0]["NAME"] == "MELTDOWN"
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
-        raise Exception("Command output for failed meltdown check: '%s'" % output)
-
-    logger.debug("Writing results from meltdown checker to cache file, %s" % cache_file)
-    write_to_json(cache_file, CVEs)
-    return CVEs[0]["VULNERABLE"]
-
-
 @is_unit_operation()
 def tools_shutdown(operation_logger, force=False):
     shutdown = force
@@ -944,191 +705,6 @@ def tools_reboot(operation_logger, force=False):
         subprocess.check_call(['systemctl', 'reboot'])
 
 
-def tools_migrations_list(pending=False, done=False):
-    """
-    List existing migrations
-    """
-
-    # Check for option conflict
-    if pending and done:
-        raise YunohostError("migrations_list_conflict_pending_done")
-
-    # Get all migrations
-    migrations = _get_migrations_list()
-
-    # If asked, filter pending or done migrations
-    if pending or done:
-        last_migration = tools_migrations_state()["last_run_migration"]
-        last_migration = last_migration["number"] if last_migration else -1
-        if done:
-            migrations = [m for m in migrations if m.number <= last_migration]
-        if pending:
-            migrations = [m for m in migrations if m.number > last_migration]
-
-    # Reduce to dictionnaries
-    migrations = [{"id": migration.id,
-                   "number": migration.number,
-                   "name": migration.name,
-                   "mode": migration.mode,
-                   "description": migration.description,
-                   "disclaimer": migration.disclaimer} for migration in migrations]
-
-    return {"migrations": migrations}
-
-
-def tools_migrations_migrate(target=None, skip=False, auto=False, accept_disclaimer=False):
-    """
-    Perform migrations
-    """
-
-    # state is a datastructure that represents the last run migration
-    # it has this form:
-    # {
-    #     "last_run_migration": {
-    #             "number": "00xx",
-    #             "name": "some name",
-    #         }
-    # }
-    state = tools_migrations_state()
-
-    last_run_migration_number = state["last_run_migration"]["number"] if state["last_run_migration"] else 0
-
-    # load all migrations
-    migrations = _get_migrations_list()
-    migrations = sorted(migrations, key=lambda x: x.number)
-
-    if not migrations:
-        logger.info(m18n.n('migrations_no_migrations_to_run'))
-        return
-
-    all_migration_numbers = [x.number for x in migrations]
-
-    if target is None:
-        target = migrations[-1].number
-
-    # validate input, target must be "0" or a valid number
-    elif target != 0 and target not in all_migration_numbers:
-        raise YunohostError('migrations_bad_value_for_target', ", ".join(map(str, all_migration_numbers)))
-
-    logger.debug(m18n.n('migrations_current_target', target))
-
-    # no new migrations to run
-    if target == last_run_migration_number:
-        logger.info(m18n.n('migrations_no_migrations_to_run'))
-        return
-
-    logger.debug(m18n.n('migrations_show_last_migration', last_run_migration_number))
-
-    # we need to run missing migrations
-    if last_run_migration_number < target:
-        logger.debug(m18n.n('migrations_forward'))
-        # drop all already run migrations
-        migrations = filter(lambda x: target >= x.number > last_run_migration_number, migrations)
-        mode = "forward"
-
-    # we need to go backward on already run migrations
-    elif last_run_migration_number > target:
-        logger.debug(m18n.n('migrations_backward'))
-        # drop all not already run migrations
-        migrations = filter(lambda x: target < x.number <= last_run_migration_number, migrations)
-        mode = "backward"
-
-    else:  # can't happen, this case is handle before
-        raise Exception()
-
-    # effectively run selected migrations
-    for migration in migrations:
-
-        if not skip:
-            # If we are migrating in "automatic mode" (i.e. from debian configure
-            # during an upgrade of the package) but we are asked to run migrations
-            # to be ran manually by the user, stop there and ask the user to
-            # run the migration manually.
-            if auto and migration.mode == "manual":
-                logger.warn(m18n.n('migrations_to_be_ran_manually',
-                                   number=migration.number,
-                                   name=migration.name))
-                break
-
-            # If some migrations have disclaimers,
-            if migration.disclaimer:
-                # require the --accept-disclaimer option. Otherwise, stop everything
-                # here and display the disclaimer
-                if not accept_disclaimer:
-                    logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                                       number=migration.number,
-                                       name=migration.name,
-                                       disclaimer=migration.disclaimer))
-                    break
-                # --accept-disclaimer will only work for the first migration
-                else:
-                    accept_disclaimer = False
-
-        # Start register change on system
-        operation_logger = OperationLogger('tools_migrations_migrate_' + mode)
-        operation_logger.start()
-
-        if not skip:
-
-            logger.info(m18n.n('migrations_show_currently_running_migration',
-                               number=migration.number, name=migration.name))
-
-            try:
-                migration.operation_logger = operation_logger
-                if mode == "forward":
-                    migration.migrate()
-                elif mode == "backward":
-                    migration.backward()
-                else:  # can't happen
-                    raise Exception("Illegal state for migration: '%s', should be either 'forward' or 'backward'" % mode)
-            except Exception as e:
-                # migration failed, let's stop here but still update state because
-                # we managed to run the previous ones
-                msg = m18n.n('migrations_migration_has_failed',
-                             exception=e,
-                             number=migration.number,
-                             name=migration.name)
-                logger.error(msg, exc_info=1)
-                operation_logger.error(msg)
-                break
-            else:
-                logger.success(m18n.n('migrations_success',
-                                      number=migration.number, name=migration.name))
-
-        else:  # if skip
-            logger.warn(m18n.n('migrations_skip_migration',
-                               number=migration.number,
-                               name=migration.name))
-
-        # update the state to include the latest run migration
-        state["last_run_migration"] = {
-            "number": migration.number,
-            "name": migration.name
-        }
-
-        operation_logger.success()
-
-        # Skip migrations one at a time
-        if skip:
-            break
-
-    # special case where we want to go back from the start
-    if target == 0:
-        state["last_run_migration"] = None
-
-    write_to_json(MIGRATIONS_STATE_PATH, state)
-
-
-def tools_migrations_state():
-    """
-    Show current migration state
-    """
-    if not os.path.exists(MIGRATIONS_STATE_PATH):
-        return {"last_run_migration": None}
-
-    return read_json(MIGRATIONS_STATE_PATH)
-
-
 def tools_shell(command=None):
     """
     Launch an (i)python shell in the YunoHost context.
@@ -1160,6 +736,210 @@ def tools_shell(command=None):
         shell.interact()
 
 
+# ############################################ #
+#                                              #
+#            Migrations management             #
+#                                              #
+# ############################################ #
+
+def tools_migrations_list(pending=False, done=False):
+    """
+    List existing migrations
+    """
+
+    # Check for option conflict
+    if pending and done:
+        raise YunohostError("migrations_list_conflict_pending_done")
+
+    # Get all migrations
+    migrations = _get_migrations_list()
+
+    # Reduce to dictionnaries
+    migrations = [{"id": migration.id,
+                   "number": migration.number,
+                   "name": migration.name,
+                   "mode": migration.mode,
+                   "state": migration.state,
+                   "description": migration.description,
+                   "disclaimer": migration.disclaimer} for migration in migrations]
+
+    # If asked, filter pending or done migrations
+    if pending or done:
+        if done:
+            migrations = [m for m in migrations if m["state"] != "pending"]
+        if pending:
+            migrations = [m for m in migrations if m["state"] == "pending"]
+
+    return {"migrations": migrations}
+
+
+def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
+    """
+    Perform migrations
+
+    targets        A list migrations to run (all pendings by default)
+    --skip         Skip specified migrations (to be used only if you know what you are doing) (must explicit which migrations)
+    --auto         Automatic mode, won't run manual migrations (to be used only if you know what you are doing)
+    --force-rerun  Re-run already-ran migrations (to be used only if you know what you are doing)(must explicit which migrations)
+    --accept-disclaimer  Accept disclaimers of migrations (please read them before using this option) (only valid for one migration)
+    """
+
+    all_migrations = _get_migrations_list()
+
+    # Small utility that allows up to get a migration given a name, id or number later
+    def get_matching_migration(target):
+        for m in all_migrations:
+            if m.id == target or m.name == target or m.id.split("_")[0] == target:
+                return m
+
+        raise YunohostError("migrations_no_such_migration", id=target)
+
+    # auto, skip and force are exclusive options
+    if auto + skip + force_rerun > 1:
+        raise YunohostError("migrations_exclusive_options")
+
+    # If no target specified
+    if not targets:
+        # skip, revert or force require explicit targets
+        if (skip or force_rerun):
+            raise YunohostError("migrations_must_provide_explicit_targets")
+
+        # Otherwise, targets are all pending migrations
+        targets = [m for m in all_migrations if m.state == "pending"]
+
+    # If explicit targets are provided, we shall validate them
+    else:
+        targets = [get_matching_migration(t) for t in targets]
+        done = [t.id for t in targets if t.state != "pending"]
+        pending = [t.id for t in targets if t.state == "pending"]
+
+        if skip and done:
+            raise YunohostError("migrations_not_pending_cant_skip", ids=', '.join(done))
+        if force_rerun and pending:
+            raise YunohostError("migrations_pending_cant_rerun", ids=', '.join(pending))
+        if not (skip or force_rerun) and done:
+            raise YunohostError("migrations_already_ran", ids=', '.join(done))
+
+    # So, is there actually something to do ?
+    if not targets:
+        logger.info(m18n.n('migrations_no_migrations_to_run'))
+        return
+
+    # Actually run selected migrations
+    for migration in targets:
+
+        # If we are migrating in "automatic mode" (i.e. from debian configure
+        # during an upgrade of the package) but we are asked for running
+        # migrations to be ran manually by the user, stop there and ask the
+        # user to run the migration manually.
+        if auto and migration.mode == "manual":
+            logger.warn(m18n.n('migrations_to_be_ran_manually', id=migration.id))
+
+            # We go to the next migration
+            continue
+
+        # Check for migration dependencies
+        if not skip:
+            dependencies = [get_matching_migration(dep) for dep in migration.dependencies]
+            pending_dependencies = [dep.id for dep in dependencies if dep.state == "pending"]
+            if pending_dependencies:
+                logger.error(m18n.n('migrations_dependencies_not_satisfied',
+                                    id=migration.id,
+                                    dependencies_id=', '.join(pending_dependencies)))
+                continue
+
+        # If some migrations have disclaimers (and we're not trying to skip them)
+        if migration.disclaimer and not skip:
+            # require the --accept-disclaimer option.
+            # Otherwise, go to the next migration
+            if not accept_disclaimer:
+                logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
+                                   id=migration.id,
+                                   disclaimer=migration.disclaimer))
+                continue
+            # --accept-disclaimer will only work for the first migration
+            else:
+                accept_disclaimer = False
+
+        # Start register change on system
+        operation_logger = OperationLogger('tools_migrations_migrate_forward')
+        operation_logger.start()
+
+        if skip:
+            logger.warn(m18n.n('migrations_skip_migration', id=migration.id))
+            migration.state = "skipped"
+            _write_migration_state(migration.id, "skipped")
+            operation_logger.success()
+        else:
+
+            try:
+                migration.operation_logger = operation_logger
+                logger.info(m18n.n('migrations_running_forward', id=migration.id))
+                migration.run()
+            except Exception as e:
+                # migration failed, let's stop here but still update state because
+                # we managed to run the previous ones
+                msg = m18n.n('migrations_migration_has_failed',
+                             exception=e, id=migration.id)
+                logger.error(msg, exc_info=1)
+                operation_logger.error(msg)
+            else:
+                logger.success(m18n.n('migrations_success_forward', id=migration.id))
+                migration.state = "done"
+                _write_migration_state(migration.id, "done")
+
+                operation_logger.success()
+
+
+def tools_migrations_state():
+    """
+    Show current migration state
+    """
+    if os.path.exists("/etc/yunohost/migrations_state.json"):
+        _migrate_legacy_migration_json()
+
+    if not os.path.exists(MIGRATIONS_STATE_PATH):
+        return {"migrations": {}}
+
+    return read_yaml(MIGRATIONS_STATE_PATH)
+
+
+def _migrate_legacy_migration_json():
+
+    from moulinette.utils.filesystem import read_json
+
+    logger.debug("Migrating legacy migration state json to yaml...")
+
+    # We fetch the old state containing the last run migration
+    old_state = read_json("/etc/yunohost/migrations_state.json")["last_run_migration"]
+    last_run_migration_id = str(old_state["number"]) + "_" + old_state["name"]
+
+    # Extract the list of migration ids
+    from . import data_migrations
+    migrations_path = data_migrations.__path__[0]
+    migration_files = filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
+    # (here we remove the .py extension and make sure the ids are sorted)
+    migration_ids = sorted([f.rsplit(".", 1)[0] for f in migration_files])
+
+    # So now build the new dict for every id up to the last run migration
+    migrations = {}
+    for migration_id in migration_ids:
+        migrations[migration_id] = "done"
+        if last_run_migration_id in migration_id:
+            break
+
+    # Write the new file and rename the old one
+    write_to_yaml(MIGRATIONS_STATE_PATH, {"migrations": migrations})
+    os.rename("/etc/yunohost/migrations_state.json", "/etc/yunohost/migrations_state.json.old")
+
+
+def _write_migration_state(migration_id, state):
+
+    current_states = tools_migrations_state()
+    current_states["migrations"][migration_id] = state
+    write_to_yaml(MIGRATIONS_STATE_PATH, current_states)
+
+
 def _get_migrations_list():
     migrations = []
 
@@ -1175,8 +955,21 @@ def _get_migrations_list():
         logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
         return migrations
 
+    # states is a datastructure that represents the last run migration
+    # it has this form:
+    # {
+    #     "0001_foo": "skipped",
+    #     "0004_baz": "done",
+    #     "0002_bar": "skipped",
+    #     "0005_zblerg": "done",
+    # }
+    # (in particular, pending migrations / not already ran are not listed
+    states = tools_migrations_state()["migrations"]
+
     for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
-        migrations.append(_load_migration(migration_file))
+        m = _load_migration(migration_file)
+        m.state = states.get(m.id, "pending")
+        migrations.append(m)
 
     return sorted(migrations, key=lambda m: m.id)
 
@@ -1203,10 +996,7 @@ def _load_migration(migration_file):
 
     migration_id = migration_file[:-len(".py")]
 
-    number, name = migration_id.split("_", 1)
-
-    logger.debug(m18n.n('migrations_loading_migration',
-                        number=number, name=name))
+    logger.debug(m18n.n('migrations_loading_migration', id=migration_id))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -1214,12 +1004,11 @@ def _load_migration(migration_file):
         # able to run it in the next loop
         module = import_module("yunohost.data_migrations.{}".format(migration_id))
         return module.MyMigration(migration_id)
-    except Exception:
+    except Exception as e:
         import traceback
         traceback.print_exc()
 
-        raise YunohostError('migrations_error_failed_to_load_migration',
-                            number=number, name=name)
+        raise YunohostError('migrations_failed_to_load_migration', id=migration_id, error=e)
 
 
 def _skip_all_migrations():
@@ -1228,18 +1017,11 @@ def _skip_all_migrations():
     This is meant to be used during postinstall to
     initialize the migration system.
     """
-    state = tools_migrations_state()
-
-    # load all migrations
-    migrations = _get_migrations_list()
-    migrations = sorted(migrations, key=lambda x: x.number)
-    last_migration = migrations[-1]
-
-    state["last_run_migration"] = {
-        "number": last_migration.number,
-        "name": last_migration.name
-    }
-    write_to_json(MIGRATIONS_STATE_PATH, state)
+    all_migrations = _get_migrations_list()
+    new_states = {"migrations": {}}
+    for migration in all_migrations:
+        new_states["migrations"][migration.id] = "skipped"
+    write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
 class Migration(object):
@@ -1247,21 +1029,16 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-
-    def forward(self):
-        raise NotImplementedError()
-
-    def backward(self):
-        pass
+    dependencies = [] # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):
         return None
 
-    # The followings shouldn't be overriden
+    def run(self):
+        raise NotImplementedError()
 
-    def migrate(self):
-        self.forward()
+    # The followings shouldn't be overriden
 
     def __init__(self, id_):
         self.id = id_

@@ -29,11 +29,7 @@ class MyMigration(Migration):
 
     mode = "manual"
 
-    def backward(self):
-
-        raise YunohostError("migration_0003_backward_impossible")
-
-    def migrate(self):
+    def run(self):
 
         self.logfile = "/var/log/yunohost/{}.log".format(self.name)
 

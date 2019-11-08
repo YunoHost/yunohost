@@ -17,7 +17,7 @@ class MyMigration(Migration):
     Decouple the regen conf mechanism from the concept of services
     """
 
-    def migrate(self):
+    def run(self):
 
         if "conffiles" not in read_file("/etc/yunohost/services.yml") \
            or os.path.exists(REGEN_CONF_FILE):
@@ -37,6 +37,3 @@ class MyMigration(Migration):
         # (Actually save the modification of services)
         _save_services(services)
 
-    def backward(self):
-
-        pass

@@ -1,7 +1,30 @@
+import pytest
 import sys
 import moulinette
 
+from moulinette import m18n
+from yunohost.utils.error import YunohostError
+from contextlib import contextmanager
+
 sys.path.append("..")
+
+
+
+@contextmanager
+def message(mocker, key, **kwargs):
+    mocker.spy(m18n, "n")
+    yield
+    m18n.n.assert_any_call(key, **kwargs)
+
+
+@contextmanager
+def raiseYunohostError(mocker, key, **kwargs):
+    with pytest.raises(YunohostError) as e_info:
+        yield
+    assert e_info._excinfo[1].key == key
+    if kwargs:
+        assert e_info._excinfo[1].kwargs == kwargs
+
 
 
 def pytest_addoption(parser):
@@ -41,11 +64,11 @@ def pytest_cmdline_main(config):
     root_handlers = set(handlers)
 
     # Define loggers level
-    level = 'INFO'
+    level = 'DEBUG'
     if config.option.yunodebug:
         tty_level = 'DEBUG'
     else:
-        tty_level = 'SUCCESS'
+        tty_level = 'INFO'
 
     # Custom logging configuration
     logging = {
