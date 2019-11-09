@@ -1,5 +1,0 @@
-# Default is to launch glances with '-s' option.
-DAEMON_ARGS="-s -B 127.0.0.1"
-
-# Change to 'true' to have glances running at startup
-RUN="true"

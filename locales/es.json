@@ -121,8 +121,8 @@
     "mail_alias_remove_failed": "No se pudo eliminar el alias de correo «{mail:s}»",
     "mail_domain_unknown": "Dirección de correo no válida para el dominio «{domain:s}». Use un dominio administrado por este servidor.",
     "mail_forward_remove_failed": "No se pudo eliminar el reenvío de correo «{mail:s}»",
-    "maindomain_change_failed": "No se pudo cambiar el dominio principal",
-    "maindomain_changed": "El dominio principal ha cambiado",
+    "main_domain_change_failed": "No se pudo cambiar el dominio principal",
+    "main_domain_changed": "El dominio principal ha cambiado",
     "monitor_disabled": "La monitorización del servidor está ahora desactivada",
     "monitor_enabled": "La monitorización del servidor está ahora activada",
     "monitor_glances_con_failed": "No se pudo conectar al servidor de Glances",
@@ -637,5 +637,6 @@
     "permission_already_up_to_date": "El permiso no se ha actualizado porque las peticiones de incorporación o eliminación ya coinciden con el estado actual.",
     "permission_currently_allowed_for_visitors": "Este permiso se concede actualmente a los visitantes además de otros grupos. Probablemente quiere o eliminar el permiso de «visitors» o eliminar los otros grupos a los que está otorgado actualmente.",
     "permission_currently_allowed_for_all_users": "Este permiso se concede actualmente a todos los usuarios además de los otros grupos. Probablemente quiere o eliminar el permiso de «all_users» o eliminar los otros grupos a los que está otorgado actualmente.",
-    "permission_require_account": "El permiso {permission} solo tiene sentido para usuarios con una cuenta y, por lo tanto, no se puede activar para visitantes."
+    "permission_require_account": "El permiso {permission} solo tiene sentido para usuarios con una cuenta y, por lo tanto, no se puede activar para visitantes.",
+    "app_remove_after_failed_install": "Eliminando la aplicación tras el fallo de instalación…"
 }

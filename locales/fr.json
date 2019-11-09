@@ -122,8 +122,8 @@
     "mail_alias_remove_failed": "Impossible de supprimer l’alias de courriel '{mail:s}'",
     "mail_domain_unknown": "Le domaine '{domain:s}' de cette adress de courriel n'est pas valide. Merci d'utiliser un domain administré par ce serveur.",
     "mail_forward_remove_failed": "Impossible de supprimer le courriel de transfert '{mail:s}'",
-    "maindomain_change_failed": "Impossible de modifier le domaine principal",
-    "maindomain_changed": "Le domaine principal modifié",
+    "main_domain_change_failed": "Impossible de modifier le domaine principal",
+    "main_domain_changed": "Le domaine principal modifié",
     "monitor_disabled": "Surveillance du serveur est maintenant arrêté",
     "monitor_enabled": "La supervision du serveur est maintenant allumée",
     "monitor_glances_con_failed": "Impossible de se connecter au serveur Glances",
@@ -454,7 +454,7 @@
     "log_user_create": "Ajouter l’utilisateur '{}'",
     "log_user_delete": "Supprimer l’utilisateur '{}'",
     "log_user_update": "Mettre à jour les informations de l’utilisateur '{}'",
-    "log_tools_maindomain": "Faire de '{}' le domaine principal",
+    "log_domain_main_domain": "Faire de '{}' le domaine principal",
     "log_tools_migrations_migrate_forward": "Migrer vers",
     "log_tools_migrations_migrate_backward": "Revenir en arrière",
     "log_tools_postinstall": "Faire la post-installation de votre serveur YunoHost",
@@ -664,5 +664,6 @@
     "permission_currently_allowed_for_all_users": "Cette autorisation est actuellement accordée à tous les utilisateurs en plus des autres groupes. Vous voudrez probablement soit supprimer l'autorisation 'all_users', soit supprimer les autres groupes auxquels il est actuellement autorisé.",
     "app_install_failed": "Impossible d'installer {app}: {error}",
     "app_install_script_failed": "Une erreur est survenue dans le script d'installation de l'application",
-    "permission_require_account": "Permission {permission} n'a de sens que pour les utilisateurs ayant un compte et ne peut donc pas être activé pour les visiteurs."
+    "permission_require_account": "Permission {permission} n'a de sens que pour les utilisateurs ayant un compte et ne peut donc pas être activé pour les visiteurs.",
+    "app_remove_after_failed_install": "Supprimer l'application après l'échec de l'installation…"
 }
