@@ -271,20 +271,11 @@ ynh_permission_create() {
         url="None"
     fi
 
-    # Check if permission already exists
-    if ynh_permission_exists --permission $permission; then
-        # If permission exits, update it
-        if [[ -n ${allowed:-} ]]; then
-            allowed="--add ${allowed//';'/" "}"
-        fi
-        ynh_exec_warn_less ynh_permission_update --permission $permission ${allowed:-}
-    else
-        # If not, create it
-        if [[ -n ${allowed:-} ]]; then
-            allowed=",allowed=['${allowed//';'/"','"}']"
-        fi
-        yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} , sync_perm=False)"
+    if [[ -n ${allowed:-} ]]; then
+        allowed=",allowed=['${allowed//';'/"','"}']"
     fi
+    
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} , sync_perm=False)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
