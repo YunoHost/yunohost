@@ -643,5 +643,20 @@
     "diagnosis_basesystem_kernel": "El servidor está ejecutando el núcleo de Linux {kernel_version}",
     "diagnosis_basesystem_ynh_single_version": "{0} versión: {1} ({2})",
     "diagnosis_basesystem_ynh_main_version": "El servidor está ejecutando YunoHost {main_version} ({repo})",
-    "diagnosis_basesystem_ynh_inconsistent_versions": "Está ejecutando versiones incoherentes de los paquetes de YunoHost... probablemente por una actualización errónea o parcial."
+    "diagnosis_basesystem_ynh_inconsistent_versions": "Está ejecutando versiones incoherentes de los paquetes de YunoHost... probablemente por una actualización errónea o parcial.",
+    "diagnosis_failed_for_category": "Diagnóstico fallido para la categoría «{category}» : {error}",
+    "diagnosis_cache_still_valid": "(Caché aún válida para el diagnóstico de {category}. ¡Aún no se ha rediagnosticado!)",
+    "diagnosis_found_errors_and_warnings": "¡Encontrado(s) error(es) significativo(s) {errors} (y aviso(s) {warnings}) relacionado(s) con {category}!",
+    "diagnosis_display_tip_web": "Puede ir a la sección de diagnóstico (en la pantalla principal)  para ver los problemas encontrados.",
+    "diagnosis_display_tip_cli": "Puede ejecutar «yunohost diagnosis show --issues» para mostrar los problemas encontrados.",
+    "apps_catalog_init_success": "¡Sistema de catálogo de aplicaciones inicializado!",
+    "apps_catalog_updating": "Actualizando catálogo de aplicaciones...",
+    "apps_catalog_failed_to_download": "No se pudo descargar el catálogo de aplicaciones {apps_catalog}: {error}",
+    "apps_catalog_obsolete_cache": "La caché del catálogo de aplicaciones está vacía u obsoleta.",
+    "apps_catalog_update_success": "¡El catálogo de aplicaciones ha sido actualizado!",
+    "diagnosis_cant_run_because_of_dep": "No se puede ejecutar el diagnóstico para {category} mientras haya problemas importantes relacionados con {dep}.",
+    "diagnosis_ignored_issues": "(+ {nb_ignored} problema(s) ignorado(s))",
+    "diagnosis_found_errors": "¡Encontrado(s) error(es) significativo(s) {errors} relacionado(s) con {category}!",
+    "diagnosis_found_warnings": "Encontrado elemento(s) {warnings} que puede(n) ser mejorado(s) para {category}.",
+    "diagnosis_everything_ok": "¡Todo se ve bien para {category}!"
 }
