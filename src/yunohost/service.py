@@ -40,25 +40,24 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, log_type="file"):
+def service_add(name, description=None, log=None, log_type="file", test_status=None, test_conf=None, needs_exposed_ports=None, need_lock=False, status=None):
     """
     Add a custom service
 
     Keyword argument:
         name -- Service name to add
-        status -- Custom status command
-        log -- Absolute path to log file to display
-        runlevel -- Runlevel priority of the service
-        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
-        log_type -- Precise if the corresponding log is a file or a systemd log
+        log -- Absolute path to log file to display
+        log_type -- Specify if the corresponding log is a file or a systemd log
+        test_status -- Specify a custom bash command to check the status of the service. N.B. : it only makes sense to specify this if the corresponding systemd service does not return the proper information.
+        test_conf -- Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
+        needs_exposed_ports -- A list of ports that needs to be publicly exposed for the service to work as intended.
+        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
+        status -- Deprecated, doesn't do anything anymore. Use test_status instead.
     """
     services = _get_services()
 
-    if not status:
-        services[name] = {'status': 'service'}
-    else:
-        services[name] = {'status': status}
+    services[name] = {}
 
     if log is not None:
         if not isinstance(log, list):
@@ -77,15 +76,22 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         else:
             raise YunohostError('service_add_failed', service=name)
 
-
-    if runlevel is not None:
-        services[name]['runlevel'] = runlevel
+    if description:
+        services[name]['description'] = description
+    else:
+        logger.warning("/!\\ Packager ! You added a custom service without specifying a description. Please add --description to explain what the service does in a similar fashion to existing services.")
 
     if need_lock:
         services[name]['need_lock'] = True
 
-    if description is not None:
-        services[name]['description'] = description
+    if test_status:
+        services[name]["test_status"] = test_status
+
+    if test_conf:
+        services[name]["test_conf"] = test_conf
+
+    if needs_exposed_ports:
+        services[name]["needs_exposed_ports"] = needs_exposed_ports
 
     try:
         _save_services(services)
@@ -277,7 +283,7 @@ def service_status(names=[]):
         # the hack was to add fake services...
         # we need to extract regenconf from service at some point, also because
         # some app would really like to use it
-        if "status" in services[name] and services[name]["status"] is None:
+        if services[name].get("status", "") is None:
             continue
 
         status = _get_service_information_from_systemd(name)

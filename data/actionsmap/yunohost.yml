@@ -1038,24 +1038,13 @@ service:
             arguments:
                 name:
                     help: Service name to add
-                -s:
-                    full: --status
-                    help: Custom status command
+                -d:
+                    full: --description
+                    help: Description of the service
                 -l:
                     full: --log
                     help: Absolute path to log file to display
                     nargs: "+"
-                -r:
-                    full: --runlevel
-                    help: Runlevel priority of the service
-                    type: int
-                -n:
-                    full: --need_lock
-                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
-                    action: store_true
-                -d:
-                    full: --description
-                    help: Description of the service
                 -t:
                     full: --log_type
                     help: Type of the log (file or systemd)
@@ -1064,6 +1053,22 @@ service:
                         - file
                         - systemd
                     default: file
+                --test_status:
+                    help: Specify a custom bash command to check the status of the service. Note that it only makes sense to specify this if the corresponding systemd service does not return the proper information already.
+                --test_conf:
+                    help: Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
+                --needs_exposed_ports:
+                    help: A list of ports that needs to be publicly exposed for the service to work as intended.
+                    nargs: "+"
+                    type: int
+                    metavar: PORT
+                -n:
+                    full: --need_lock
+                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
+                    action: store_true
+                -s:
+                    full: --status
+                    help: Deprecated, old option. Does nothing anymore. Possibly check the --test_status option.
 
         ### service_remove()
         remove:
