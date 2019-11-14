@@ -36,7 +36,8 @@ from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, _install_appslist_fetch_cron
+
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list
 from yunohost.domain import domain_add, domain_list
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
@@ -350,14 +351,16 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
-    # Setup the default apps list with cron job
+    # Initialize the apps catalog system
+    _initialize_apps_catalog_system()
+
+    # Try to update the apps catalog ...
+    # we don't fail miserably if this fails,
+    # because that could be for example an offline installation...
     try:
-        app_fetchlist(name="yunohost",
-                      url="https://app.yunohost.org/apps.json")
+        _update_apps_catalog()
     except Exception as e:
         logger.warning(str(e))
-
-    _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
@@ -449,11 +452,10 @@ def tools_update(apps=False, system=False):
 
     upgradable_apps = []
     if apps:
-        logger.info(m18n.n('updating_app_lists'))
         try:
-            app_fetchlist()
+            _update_apps_catalog()
         except YunohostError as e:
-            logger.error(m18n.n('tools_update_failed_to_app_fetchlist'), error=e)
+            logger.error(str(e))
 
         upgradable_apps = list(_list_upgradable_apps())
 
@@ -666,25 +668,6 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         else:
             logger.success(m18n.n('system_upgraded'))
             operation_logger.success()
-
-
-def tools_port_available(port):
-    """
-    Check availability of a local port
-
-    Keyword argument:
-        port -- Port to check
-
-    """
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(("localhost", int(port)))
-        s.close()
-    except socket.error:
-        return True
-    else:
-        return False
 
 
 @is_unit_operation()

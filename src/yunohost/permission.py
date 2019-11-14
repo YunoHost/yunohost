@@ -158,6 +158,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_updated', permission=permission))
+
     return new_permission
 
 
@@ -195,6 +196,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     new_permission = _update_ldap_group_permission(permission=permission, allowed="all_users", sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_updated', permission=permission))
+
     return new_permission
 
 #
@@ -457,6 +459,7 @@ def _update_ldap_group_permission(permission, allowed, sync_perm=True):
     # Trigger app callbacks
 
     app = permission.split(".")[0]
+    sub_permission = permission.split(".")[1]
 
     old_allowed_users = set(existing_permission["corresponding_users"])
     new_allowed_users = set(new_permission["corresponding_users"])
@@ -465,9 +468,9 @@ def _update_ldap_group_permission(permission, allowed, sync_perm=True):
     effectively_removed_users = old_allowed_users - new_allowed_users
 
     if effectively_added_users:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users)])
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission])
     if effectively_removed_users:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users)])
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission])
 
     return new_permission
     

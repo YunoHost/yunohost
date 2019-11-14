@@ -13,15 +13,19 @@ class MailDiagnoser(Diagnoser):
 
     def run(self):
 
-         # TODO / FIXME TO BE IMPLEMETED in the future ...
+        # Is outgoing port 25 filtered somehow ?
+        if os.system('/bin/nc -z -w2 yunohost.org 25') == 0:
+            yield dict(meta={"test": "ougoing_port_25"},
+                       status="SUCCESS",
+                       summary=("diagnosis_mail_ougoing_port_25_ok",{}))
+        else:
+            yield dict(meta={"test": "outgoing_port_25"},
+                       status="ERROR",
+                       summary=("diagnosis_mail_ougoing_port_25_blocked",{}))
 
-        yield dict(meta={},
-                   status="WARNING",
-                   summary=("nothing_implemented_yet", {}))
+
 
         # Mail blacklist using dig requests (c.f. ljf's code)
-
-        # Outgoing port 25 (c.f. code in monitor.py, a simple 'nc -zv yunohost.org 25' IIRC)
 
         # SMTP reachability (c.f. check-smtp to be implemented on yunohost's remote diagnoser)
 

@@ -33,15 +33,14 @@ import re
 import urlparse
 import subprocess
 import glob
-import pwd
-import grp
 import urllib
 from collections import OrderedDict
 from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, read_toml, read_yaml, write_to_json
+from moulinette.utils.network import download_json
+from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -50,12 +49,16 @@ from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger('yunohost.app')
 
-REPO_PATH = '/var/cache/yunohost/repo'
 APPS_PATH = '/usr/share/yunohost/apps'
 APPS_SETTING_PATH = '/etc/yunohost/apps/'
 INSTALL_TMP = '/var/cache/yunohost'
 APP_TMP_FOLDER = INSTALL_TMP + '/from_file'
-APPSLISTS_JSON = '/etc/yunohost/appslists.json'
+
+APPS_CATALOG_CACHE = '/var/cache/yunohost/repo'
+APPS_CATALOG_CONF = '/etc/yunohost/apps_catalog.yml'
+APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
+APPS_CATALOG_API_VERSION = 1
+APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -66,166 +69,6 @@ re_github_repo = re.compile(
 re_app_instance_name = re.compile(
     r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
-
-
-def app_listlists():
-    """
-    List fetched lists
-
-    """
-
-    # Migrate appslist system if needed
-    # XXX move to a migration when those are implemented
-    if _using_legacy_appslist_system():
-        _migrate_appslist_system()
-
-    # Get the list
-    appslist_list = _read_appslist_list()
-
-    # Convert 'lastUpdate' timestamp to datetime
-    for name, infos in appslist_list.items():
-        if infos["lastUpdate"] is None:
-            infos["lastUpdate"] = 0
-        infos["lastUpdate"] = datetime.utcfromtimestamp(infos["lastUpdate"])
-
-    return appslist_list
-
-
-def app_fetchlist(url=None, name=None):
-    """
-    Fetch application list(s) from app server. By default, fetch all lists.
-
-    Keyword argument:
-        name -- Name of the list
-        url -- URL of remote JSON list
-    """
-    if url and not url.endswith(".json"):
-        raise YunohostError("This is not a valid application list url. It should end with .json.")
-
-    # If needed, create folder where actual appslists are stored
-    if not os.path.exists(REPO_PATH):
-        os.makedirs(REPO_PATH)
-
-    # Migrate appslist system if needed
-    # XXX move that to a migration once they are finished
-    if _using_legacy_appslist_system():
-        _migrate_appslist_system()
-
-    # Read the list of appslist...
-    appslists = _read_appslist_list()
-
-    # Determine the list of appslist to be fetched
-    appslists_to_be_fetched = []
-
-    # If a url and and a name is given, try to register new list,
-    # the fetch only this list
-    if url is not None:
-        if name:
-            operation_logger = OperationLogger('app_fetchlist')
-            operation_logger.start()
-            _register_new_appslist(url, name)
-            # Refresh the appslists dict
-            appslists = _read_appslist_list()
-            appslists_to_be_fetched = [name]
-            operation_logger.success()
-        else:
-            raise YunohostError('custom_appslist_name_required')
-
-    # If a name is given, look for an appslist with that name and fetch it
-    elif name is not None:
-        if name not in appslists.keys():
-            raise YunohostError('appslist_unknown', appslist=name)
-        else:
-            appslists_to_be_fetched = [name]
-
-    # Otherwise, fetch all lists
-    else:
-        appslists_to_be_fetched = appslists.keys()
-
-    import requests  # lazy loading this module for performance reasons
-    # Fetch all appslists to be fetched
-    for name in appslists_to_be_fetched:
-
-        url = appslists[name]["url"]
-
-        logger.debug("Attempting to fetch list %s at %s" % (name, url))
-
-        # Download file
-        try:
-            appslist_request = requests.get(url, timeout=30)
-        except requests.exceptions.SSLError:
-            logger.error(m18n.n('appslist_retrieve_error',
-                                appslist=name,
-                                error="SSL connection error"))
-            continue
-        except Exception as e:
-            logger.error(m18n.n('appslist_retrieve_error',
-                                appslist=name,
-                                error=str(e)))
-            continue
-        if appslist_request.status_code != 200:
-            logger.error(m18n.n('appslist_retrieve_error',
-                                appslist=name,
-                                error="Server returned code %s " %
-                                str(appslist_request.status_code)))
-            continue
-
-        # Validate app list format
-        # TODO / Possible improvement : better validation for app list (check
-        # that json fields actually look like an app list and not any json
-        # file)
-        appslist = appslist_request.text
-        try:
-            json.loads(appslist)
-        except ValueError as e:
-            logger.error(m18n.n('appslist_retrieve_bad_format',
-                                appslist=name))
-            continue
-
-        # Write app list to file
-        list_file = '%s/%s.json' % (REPO_PATH, name)
-        try:
-            with open(list_file, "w") as f:
-                f.write(appslist)
-        except Exception as e:
-            raise YunohostError("Error while writing appslist %s: %s" % (name, str(e)), raw_msg=True)
-
-        now = int(time.time())
-        appslists[name]["lastUpdate"] = now
-
-        logger.success(m18n.n('appslist_fetched', appslist=name))
-
-    # Write updated list of appslist
-    _write_appslist_list(appslists)
-
-
-@is_unit_operation()
-def app_removelist(operation_logger, name):
-    """
-    Remove list from the repositories
-
-    Keyword argument:
-        name -- Name of the list to remove
-
-    """
-    appslists = _read_appslist_list()
-
-    # Make sure we know this appslist
-    if name not in appslists.keys():
-        raise YunohostError('appslist_unknown', appslist=name)
-
-    operation_logger.start()
-
-    # Remove json
-    json_path = '%s/%s.json' % (REPO_PATH, name)
-    if os.path.exists(json_path):
-        os.remove(json_path)
-
-    # Forget about this appslist
-    del appslists[name]
-    _write_appslist_list(appslists)
-
-    logger.success(m18n.n('appslist_removed', appslist=name))
 
 
 def app_list(filter=None, raw=False, installed=False, with_backup=False):
@@ -243,28 +86,10 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     """
     installed = with_backup or installed
 
-    app_dict = {}
     list_dict = {} if raw else []
 
-    appslists = _read_appslist_list()
-
-    for appslist in appslists.keys():
-
-        json_path = "%s/%s.json" % (REPO_PATH, appslist)
-
-        # If we don't have the json yet, try to fetch it
-        if not os.path.exists(json_path):
-            app_fetchlist(name=appslist)
-
-        # If it now exist
-        if os.path.exists(json_path):
-            appslist_content = read_json(json_path)
-            for app, info in appslist_content.items():
-                if app not in app_dict:
-                    info['repository'] = appslist
-                    app_dict[app] = info
-        else:
-            logger.warning("Uh there's no data for applist '%s' ... (That should be just a temporary issue?)" % appslist)
+    # Get app list from catalog cache
+    app_dict = _load_apps_catalog()
 
     # Get app list from the app settings directory
     for app in os.listdir(APPS_SETTING_PATH):
@@ -315,6 +140,7 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
             # dirty: we used to have manifest containing multi_instance value in form of a string
             # but we've switched to bool, this line ensure retrocompatibility
+
             app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
 
             list_dict[app_id] = app_info_dict
@@ -405,6 +231,7 @@ def app_map(app=None, raw=False, user=None):
         app -- Specific app to map
 
     """
+
     from yunohost.permission import user_permission_list
 
     apps = []
@@ -559,7 +386,7 @@ def app_change_url(operation_logger, app, domain, path):
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, 'change_url')
-    args_list = [ value[0] for value in args_odict.values() ]
+    args_list = [value[0] for value in args_odict.values()]
     args_list.append(app)
 
     # Prepare env. var. to pass to script
@@ -612,7 +439,7 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    app_ssowatconf()
+    permission_update(app, permission="main", add_url=[domain + path], remove_url=[old_domain + old_path], sync_perm=True)
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
@@ -656,15 +483,15 @@ def app_upgrade(app=[], url=None, file=None):
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
         if not url and not file:
-            apps = [app["id"] for app in app_list(installed=True)["apps"]]
+            apps = [app_["id"] for app_ in app_list(installed=True)["apps"]]
     elif not isinstance(app, list):
         apps = [app]
 
     # Remove possible duplicates
-    apps = [app for i,app in enumerate(apps) if apps not in apps[:i]]
+    apps = [app_ for i, app_ in enumerate(apps) if app_ not in apps[:i]]
 
     # Abort if any of those app is in fact not installed..
-    for app in [app for app in apps if not _is_installed(app)]:
+    for app in [app_ for app_ in apps if not _is_installed(app_)]:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     if len(apps) == 0:
@@ -706,7 +533,7 @@ def app_upgrade(app=[], url=None, file=None):
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade')
-        args_list = [ value[0] for value in args_odict.values() ]
+        args_list = [value[0] for value in args_odict.values()]
         args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
@@ -720,6 +547,9 @@ def app_upgrade(app=[], url=None, file=None):
         related_to = [('app', app_instance_name)]
         operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
         operation_logger.start()
+
+        # Attempt to patch legacy helpers ...
+        _patch_legacy_helpers(extracted_app_folder)
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(extracted_app_folder)
@@ -858,8 +688,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             if answer.upper() != "Y":
                 raise YunohostError("aborting")
 
-
-
     raw_app_list = app_list(raw=True)
 
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
@@ -920,7 +748,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = [ value[0] for value in args_odict.values() ]
+    args_list = [value[0] for value in args_odict.values()]
     args_list.append(app_instance_name)
 
     # Validate domain / path availability for webapps
@@ -938,8 +766,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Tell the operation_logger to redact all password-type args
     # Also redact the % escaped version of the password that might appear in
     # the 'args' section of metadata (relevant for password with non-alphanumeric char)
-    data_to_redact = [ value[0] for value in args_odict.values() if value[1] == "password" ]
-    data_to_redact += [ urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data ]
+    data_to_redact = [value[0] for value in args_odict.values() if value[1] == "password"]
+    data_to_redact += [urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data]
     operation_logger.data_to_redact.extend(data_to_redact)
 
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
@@ -962,6 +790,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # TODO: Move install_time away from app settings
     app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
+
+    # Attempt to patch legacy helpers ...
+    _patch_legacy_helpers(extracted_app_folder)
 
     # Apply dirty patch to make php5 apps compatible with php7
     _patch_php5(extracted_app_folder)
@@ -1165,8 +996,11 @@ def app_remove(operation_logger, app):
     # TODO: display fail messages from script
     try:
         shutil.rmtree('/tmp/yunohost_remove')
-    except:
+    except Exception:
         pass
+
+    # Attempt to patch legacy helpers ...
+    _patch_legacy_helpers(app_setting_path)
 
     # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
     # script might date back from jessie install)
@@ -1369,24 +1203,6 @@ def app_setting(app, key, value=None, delete=False):
         user_permission_update(app + ".main", remove="all_users", add="visitors")
 
 
-def app_checkport(port):
-    """
-    Check availability of a local port
-
-    Keyword argument:
-        port -- Port to check
-
-    """
-
-    # This import cannot be moved on top of file because it create a recursive
-    # import...
-    from yunohost.tools import tools_port_available
-    if tools_port_available(port):
-        logger.success(m18n.n('port_available', port=int(port)))
-    else:
-        raise YunohostError('port_unavailable', port=int(port))
-
-
 def app_register_url(app, domain, path):
     """
     Book/register a web path for a given app
@@ -1428,93 +1244,6 @@ def app_register_url(app, domain, path):
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
-
-
-def app_checkurl(url, app=None):
-    """
-    Check availability of a web path
-
-    Keyword argument:
-        url -- Url to check
-        app -- Write domain & path to app settings for further checks
-
-    """
-
-    logger.error("Packagers /!\\ : 'app checkurl' is deprecated ! Please use the helper 'ynh_webpath_register' instead !")
-
-    from yunohost.domain import domain_list, _normalize_domain_path
-
-    if "https://" == url[:8]:
-        url = url[8:]
-    elif "http://" == url[:7]:
-        url = url[7:]
-
-    if url[-1:] != '/':
-        url = url + '/'
-
-    domain = url[:url.index('/')]
-    path = url[url.index('/'):]
-    installed = False
-
-    domain, path = _normalize_domain_path(domain, path)
-
-    apps_map = app_map(raw=True)
-
-    if domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    if domain in apps_map:
-        # Loop through apps
-        for p, a in apps_map[domain].items():
-            # Skip requested app checking
-            if app is not None and a['id'] == app:
-                installed = True
-                continue
-            if path == p:
-                raise YunohostError('app_location_already_used', app=a["id"], path=path)
-            # can't install "/a/b/" if "/a/" exists
-            elif path.startswith(p) or p.startswith(path):
-                raise YunohostError('app_location_install_failed', other_path=p, other_app=a['id'])
-
-    if app is not None and not installed:
-        app_setting(app, 'domain', value=domain)
-        app_setting(app, 'path', value=path)
-
-
-def app_initdb(user, password=None, db=None, sql=None):
-    """
-    Create database and initialize it with optionnal attached script
-
-    Keyword argument:
-        db -- DB name (user unless set)
-        user -- Name of the DB user
-        password -- Password of the DB (generated unless set)
-        sql -- Initial SQL file
-
-    """
-
-    logger.error("Packagers /!\\ : 'app initdb' is deprecated ! Please use the helper 'ynh_mysql_setup_db' instead !")
-
-    if db is None:
-        db = user
-
-    return_pwd = False
-    if password is None:
-        password = random_password(12)
-        return_pwd = True
-
-    mysql_root_pwd = open('/etc/yunohost/mysql').read().rstrip()
-    mysql_command = 'mysql -u root -p%s -e "CREATE DATABASE %s ; GRANT ALL PRIVILEGES ON %s.* TO \'%s\'@localhost IDENTIFIED BY \'%s\';"' % (mysql_root_pwd, db, db, user, password)
-    if os.system(mysql_command) != 0:
-        raise YunohostError('mysql_db_creation_failed')
-    if sql is not None:
-        if os.system('mysql -u %s -p%s %s < %s' % (user, password, db, sql)) != 0:
-            raise YunohostError('mysql_db_init_failed')
-
-    if return_pwd:
-        return password
-
-    logger.success(m18n.n('mysql_db_initialized'))
 
 
 def app_ssowatconf():
@@ -2073,8 +1802,7 @@ def _get_app_config_panel(app_id):
             "panel": [],
         }
 
-        panels = filter(lambda (key, value): key not in ("name", "version")
-                                             and isinstance(value, OrderedDict),
+        panels = filter(lambda (key, value): key not in ("name", "version") and isinstance(value, OrderedDict),
                         toml_config_panel.items())
 
         for key, value in panels:
@@ -2084,8 +1812,7 @@ def _get_app_config_panel(app_id):
                 "sections": [],
             }
 
-            sections = filter(lambda (k, v): k not in ("name",)
-                                             and isinstance(v, OrderedDict),
+            sections = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
                               value.items())
 
             for section_key, section_value in sections:
@@ -2095,8 +1822,7 @@ def _get_app_config_panel(app_id):
                     "options": [],
                 }
 
-                options = filter(lambda (k, v): k not in ("name",)
-                                                and isinstance(v, OrderedDict),
+                options = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
                                  section_value.items())
 
                 for option_key, option_value in options:
@@ -2912,151 +2638,160 @@ def _parse_app_instance_name(app_instance_name):
     return (appid, app_instance_nb)
 
 
-def _using_legacy_appslist_system():
+#
+# ############################### #
+#  Applications list management   #
+# ############################### #
+#
+
+
+def _initialize_apps_catalog_system():
     """
-    Return True if we're using the old fetchlist scheme.
-    This is determined by the presence of some cron job yunohost-applist-foo
+    This function is meant to intialize the apps_catalog system with YunoHost's default app catalog.
+
+    It also creates the cron job that will update the list every day
     """
 
-    return glob.glob("/etc/cron.d/yunohost-applist-*") != []
-
-
-def _migrate_appslist_system():
-    """
-    Migrate from the legacy fetchlist system to the new one
-    """
-    legacy_crons = glob.glob("/etc/cron.d/yunohost-applist-*")
-
-    for cron_path in legacy_crons:
-        appslist_name = os.path.basename(cron_path).replace("yunohost-applist-", "")
-        logger.debug(m18n.n('appslist_migrating', appslist=appslist_name))
-
-        # Parse appslist url in cron
-        cron_file_content = open(cron_path).read().strip()
-        appslist_url_parse = re.search("-u (https?://[^ ]+)", cron_file_content)
-
-        # Abort if we did not find an url
-        if not appslist_url_parse or not appslist_url_parse.groups():
-            # Bkp the old cron job somewhere else
-            bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
-            os.rename(cron_path, bkp_file)
-            # Notice the user
-            logger.warning(m18n.n('appslist_could_not_migrate',
-                           appslist=appslist_name,
-                           bkp_file=bkp_file))
-        # Otherwise, register the list and remove the legacy cron
-        else:
-            appslist_url = appslist_url_parse.groups()[0]
-            try:
-                _register_new_appslist(appslist_url, appslist_name)
-            # Might get an exception if two legacy cron jobs conflict
-            # in terms of url...
-            except Exception as e:
-                logger.error(str(e))
-                # Bkp the old cron job somewhere else
-                bkp_file = "/etc/yunohost/%s.oldlist.bkp" % appslist_name
-                os.rename(cron_path, bkp_file)
-                # Notice the user
-                logger.warning(m18n.n('appslist_could_not_migrate',
-                               appslist=appslist_name,
-                               bkp_file=bkp_file))
-            else:
-                os.remove(cron_path)
-
-
-def _install_appslist_fetch_cron():
-
-    cron_job_file = "/etc/cron.daily/yunohost-fetch-appslists"
-
-    logger.debug("Installing appslist fetch cron job")
+    default_apps_catalog_list = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
 
     cron_job = []
     cron_job.append("#!/bin/bash")
     # We add a random delay between 0 and 60 min to avoid every instance fetching
-    # the appslist at the same time every night
+    # the apps catalog at the same time every night
     cron_job.append("(sleep $((RANDOM%3600));")
-    cron_job.append("yunohost app fetchlist > /dev/null 2>&1) &")
-
-    with open(cron_job_file, "w") as f:
-        f.write('\n'.join(cron_job))
-
-    _set_permissions(cron_job_file, "root", "root", 0o755)
-
-
-# FIXME - Duplicate from certificate.py, should be moved into a common helper
-# thing...
-def _set_permissions(path, user, group, permissions):
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
-
-    os.chown(path, uid, gid)
-    os.chmod(path, permissions)
-
-
-def _read_appslist_list():
-    """
-    Read the json corresponding to the list of appslists
-    """
-
-    # If file does not exists yet, return empty dict
-    if not os.path.exists(APPSLISTS_JSON):
-        return {}
-
-    # Read file content
-    with open(APPSLISTS_JSON, "r") as f:
-        appslists_json = f.read()
-
-    # Parse json, throw exception if what we got from file is not a valid json
+    cron_job.append("yunohost tools update --apps > /dev/null) &")
     try:
-        appslists = json.loads(appslists_json)
-    except ValueError:
-        raise YunohostError('appslist_corrupted_json', filename=APPSLISTS_JSON)
+        logger.debug("Initializing apps catalog system with YunoHost's default app list")
+        write_to_yaml(APPS_CATALOG_CONF, default_apps_catalog_list)
 
-    return appslists
-
-
-def _write_appslist_list(appslist_lists):
-    """
-    Update the json containing list of appslists
-    """
-
-    # Write appslist list
-    try:
-        with open(APPSLISTS_JSON, "w") as f:
-            json.dump(appslist_lists, f)
+        logger.debug("Installing apps catalog fetch daily cron job")
+        write_to_file(APPS_CATALOG_CRON_PATH, '\n'.join(cron_job))
+        chown(APPS_CATALOG_CRON_PATH, uid="root", gid="root")
+        chmod(APPS_CATALOG_CRON_PATH, 0o755)
     except Exception as e:
-        raise YunohostError("Error while writing list of appslist %s: %s" %
-                            (APPSLISTS_JSON, str(e)), raw_msg=True)
+        raise YunohostError("Could not initialize the apps catalog system... : %s" % str(e))
+
+    logger.success(m18n.n("apps_catalog_init_success"))
 
 
-def _register_new_appslist(url, name):
+def _read_apps_catalog_list():
     """
-    Add a new appslist to be fetched regularly.
-    Raise an exception if url or name conflicts with an existing list.
+    Read the json corresponding to the list of apps catalogs
     """
 
-    appslist_list = _read_appslist_list()
+    # Legacy code - can be removed after moving to buster (if the migration got merged before buster)
+    if os.path.exists('/etc/yunohost/appslists.json'):
+        from yunohost.tools import _get_migration_by_name
+        migration = _get_migration_by_name("futureproof_apps_catalog_system")
+        migration.migrate()
 
-    # Check if name conflicts with an existing list
-    if name in appslist_list:
-        raise YunohostError('appslist_name_already_tracked', name=name)
+    try:
+        list_ = read_yaml(APPS_CATALOG_CONF)
+        # Support the case where file exists but is empty
+        # by returning [] if list_ is None
+        return list_ if list_ else []
+    except Exception as e:
+        raise YunohostError("Could not read the apps_catalog list ... : %s" % str(e))
 
-    # Check if url conflicts with an existing list
-    known_appslist_urls = [appslist["url"] for _, appslist in appslist_list.items()]
 
-    if url in known_appslist_urls:
-        raise YunohostError('appslist_url_already_tracked', url=url)
+def _actual_apps_catalog_api_url(base_url):
 
-    logger.debug("Registering new appslist %s at %s" % (name, url))
+    return "{base_url}/v{version}/apps.json".format(base_url=base_url, version=APPS_CATALOG_API_VERSION)
 
-    appslist_list[name] = {
-        "url": url,
-        "lastUpdate": None
-    }
 
-    _write_appslist_list(appslist_list)
+def _update_apps_catalog():
+    """
+    Fetches the json for each apps_catalog and update the cache
 
-    _install_appslist_fetch_cron()
+    apps_catalog_list is for example :
+     [   {"id": "default", "url": "https://app.yunohost.org/default/"}  ]
+
+    Then for each apps_catalog, the actual json URL to be fetched is like :
+       https://app.yunohost.org/default/vX/apps.json
+
+    And store it in :
+        /var/cache/yunohost/repo/default.json
+    """
+
+    apps_catalog_list = _read_apps_catalog_list()
+
+    logger.info(m18n.n("apps_catalog_updating"))
+
+    # Create cache folder if needed
+    if not os.path.exists(APPS_CATALOG_CACHE):
+        logger.debug("Initialize folder for apps catalog cache")
+        mkdir(APPS_CATALOG_CACHE, mode=0o750, parents=True, uid='root')
+
+    for apps_catalog in apps_catalog_list:
+        apps_catalog_id = apps_catalog["id"]
+        actual_api_url = _actual_apps_catalog_api_url(apps_catalog["url"])
+
+        # Fetch the json
+        try:
+            apps_catalog_content = download_json(actual_api_url)
+        except Exception as e:
+            raise YunohostError("apps_catalog_failed_to_download", apps_catalog=apps_catalog_id, error=str(e))
+
+        # Remember the apps_catalog api version for later
+        apps_catalog_content["from_api_version"] = APPS_CATALOG_API_VERSION
+
+        # Save the apps_catalog data in the cache
+        cache_file = "{cache_folder}/{list}.json".format(cache_folder=APPS_CATALOG_CACHE, list=apps_catalog_id)
+        try:
+            write_to_json(cache_file, apps_catalog_content)
+        except Exception as e:
+            raise YunohostError("Unable to write cache data for %s apps_catalog : %s" % (apps_catalog_id, str(e)))
+
+    logger.success(m18n.n("apps_catalog_update_success"))
+
+
+def _load_apps_catalog():
+    """
+    Read all the apps catalog cache files and build a single dict (app_dict)
+    corresponding to all known apps in all indexes
+    """
+
+    app_dict = {}
+
+    for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
+
+        # Let's load the json from cache for this catalog
+        cache_file = "{cache_folder}/{list}.json".format(cache_folder=APPS_CATALOG_CACHE, list=apps_catalog_id)
+
+        try:
+            apps_catalog_content = read_json(cache_file) if os.path.exists(cache_file) else None
+        except Exception as e:
+            raise ("Unable to read cache for apps_catalog %s : %s" % (apps_catalog_id, str(e)))
+
+        # Check that the version of the data matches version ....
+        # ... otherwise it means we updated yunohost in the meantime
+        # and need to update the cache for everything to be consistent
+        if not apps_catalog_content or apps_catalog_content.get("from_api_version") != APPS_CATALOG_API_VERSION:
+            logger.info(m18n.n("apps_catalog_obsolete_cache"))
+            _update_apps_catalog()
+            apps_catalog_content = read_json(cache_file)
+
+        del apps_catalog_content["from_api_version"]
+
+        # Add apps from this catalog to the output
+        for app, info in apps_catalog_content.items():
+
+            # (N.B. : there's a small edge case where multiple apps catalog could be listing the same apps ...
+            #         in which case we keep only the first one found)
+            if app in app_dict:
+                logger.warning("Duplicate app %s found between apps catalog %s and %s" % (app, apps_catalog_id, app_dict[app]['repository']))
+                continue
+
+            info['repository'] = apps_catalog_id
+            app_dict[app] = info
+
+    return app_dict
+
+#
+# ############################### #
+#        Small utilities          #
+# ############################### #
+#
 
 
 def is_true(arg):
@@ -3176,3 +2911,76 @@ def _patch_php5(app_folder):
             "-e 's@php5@php7.0@g' " \
             "%s" % filename
         os.system(c)
+
+def _patch_legacy_helpers(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+
+    stuff_to_replace = {
+        # Replace
+        #    sudo yunohost app initdb $db_user -p $db_pwd
+        # by
+        #    ynh_mysql_setup_db --db_user=$db_user --db_name=$db_user --db_pwd=$db_pwd
+        "yunohost app initdb": (
+            r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
+            r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3"),
+        # Replace
+        #    sudo yunohost app checkport whaterver
+        # by
+        #    ynh_port_available whatever
+        "yunohost app checkport": (
+            r"(sudo )?yunohost app checkport",
+            r"ynh_port_available"),
+        # We can't migrate easily port-available
+        # .. but at the time of writing this code, only two non-working apps are using it.
+        "yunohost tools port-available": (None, None),
+        # Replace
+        #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
+        # by
+        #    ynh_webpath_register --app=${app} --domain=${domain} --path_url=${path_url}
+        "yunohost app checkurl": (
+            r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
+            r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3"),
+    }
+
+    stuff_to_replace_compiled = {h: (re.compile(r[0]), r[1]) if r[0] else (None,None) for h, r in stuff_to_replace.items()}
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        content = read_file(filename)
+        replaced_stuff = False
+
+        for helper, regexes in stuff_to_replace_compiled.items():
+            pattern, replace = regexes
+            # If helper is used, attempt to patch the file
+            if helper in content and pattern != "":
+                content = pattern.sub(replace, content)
+                replaced_stuff = True
+
+            # If the helpert is *still* in the content, it means that we
+            # couldn't patch the deprecated helper in the previous lines.  In
+            # that case, abort the install or whichever step is performed
+            if helper in content:
+                raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.")
+
+        if replaced_stuff:
+
+            # Check the app do load the helper
+            # If it doesn't, add the instruction ourselve (making sure it's after the #!/bin/bash if it's there...
+            if filename.split("/")[-1] in ["install", "remove", "upgrade", "backup", "restore"]:
+                source_helpers = "source /usr/share/yunohost/helpers"
+                if source_helpers not in content:
+                    content.replace("#!/bin/bash", "#!/bin/bash\n"+source_helpers)
+                if source_helpers not in content:
+                    content = source_helpers + "\n" + content
+
+            # Actually write the new content in the file
+            write_to_file(filename, content)
+            # And complain about those damn deprecated helpers
+            logger.error("/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ...")
