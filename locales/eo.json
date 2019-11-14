@@ -564,5 +564,16 @@
     "permission_currently_allowed_for_all_users": "Ĉi tiu permeso estas nuntempe donita al ĉiuj uzantoj aldone al aliaj grupoj. Vi probable volas aŭ forigi la permeson \"all_users\" aŭ forigi la aliajn grupojn, kiujn ĝi nuntempe donas.",
     "app_install_failed": "Ne povis instali {app} : {error}",
     "app_install_script_failed": "Eraro okazis en la skripto de instalado de la app",
-    "app_remove_after_failed_install": "Forigado de la app post la instala fiasko …"
+    "app_remove_after_failed_install": "Forigado de la app post la instala fiasko …",
+    "diagnosis_basesystem_host": "Servilo funkcias Debian {debian_version}.",
+    "apps_catalog_init_success": "Aplikoj katalogsistemo inicializita !",
+    "apps_catalog_updating": "Ĝisdatigante katalogo de aplikoj ...",
+    "apps_catalog_failed_to_download": "Ne eblas elŝuti la katalogon de {apps_catalog}: {error}",
+    "apps_catalog_obsolete_cache": "La kaŝmemoro de la katalogo de programoj estas malplena aŭ malaktuala.",
+    "apps_catalog_update_success": "La aplika katalogo estis ĝisdatigita!",
+    "diagnosis_basesystem_kernel": "Servilo funkcias Linuksan kernon {kernel_version}",
+    "diagnosis_basesystem_ynh_single_version": "{0} versio: {1} ({2})",
+    "diagnosis_basesystem_ynh_main_version": "Servilo funkcias YunoHost {main_version} ({repo})",
+    "diagnosis_basesystem_ynh_inconsistent_versions": "Vi prizorgas malkonsekvencajn versiojn de la YunoHost-pakoj... plej probable pro malsukcesa aŭ parta ĝisdatigo.",
+    "diagnosis_display_tip_web": "Vi povas iri al la sekcio Diagnozo (en la hejmekrano) por vidi la trovitajn problemojn."
 }
