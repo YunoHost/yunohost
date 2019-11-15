@@ -43,12 +43,11 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_php5, dump_app_log_extract_for_debugging
+    app_info, _is_installed, _parse_app_instance_name, _patch_php5, dump_app_log_extract_for_debugging, _patch_legacy_helpers
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
 )
-from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -1322,6 +1321,9 @@ class RestoreManager():
         app_settings_in_archive = os.path.join(app_dir_in_archive, 'settings')
         app_scripts_in_archive = os.path.join(app_settings_in_archive, 'scripts')
 
+        # Attempt to patch legacy helpers...
+        _patch_legacy_helpers(app_settings_in_archive)
+
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(app_settings_in_archive)
 
@@ -2495,3 +2497,23 @@ def disk_usage(path):
 
     du_output = subprocess.check_output(['du', '-sb', path])
     return int(du_output.split()[0].decode('utf-8'))
+
+
+def binary_to_human(n, customary=False):
+    """
+    Convert bytes or bits into human readable format with binary prefix
+    Keyword argument:
+        n -- Number to convert
+        customary -- Use customary symbol instead of IEC standard
+    """
+    symbols = ('Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi')
+    if customary:
+        symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    prefix = {}
+    for i, s in enumerate(symbols):
+        prefix[s] = 1 << (i + 1) * 10
+    for s in reversed(symbols):
+        if n >= prefix[s]:
+            value = float(n) / prefix[s]
+            return '%.1f%s' % (value, s)
+    return "%s" % n
