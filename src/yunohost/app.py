@@ -568,6 +568,8 @@ def app_upgrade(app=[], url=None, file=None):
                 error = m18n.n('app_upgrade_script_failed')
                 logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
                 failure_message_with_debug_instructions = operation_logger.error(error)
+                if msettings.get('interface') != 'api':
+                    dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
             upgrade_retcode = -1
@@ -833,6 +835,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             error = m18n.n('app_install_script_failed')
             logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
+            if msettings.get('interface') != 'api':
+                dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
         error = m18n.n('operation_interrupted')
@@ -947,6 +951,33 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     logger.success(m18n.n('installation_complete'))
 
     hook_callback('post_app_install', args=args_list, env=env_dict)
+
+
+def dump_app_log_extract_for_debugging(operation_logger):
+
+    with open(operation_logger.log_path, "r") as f:
+        lines = f.readlines()
+
+    lines_to_display = []
+    for line in lines:
+
+        if not ": " in line.strip():
+            continue
+
+        # A line typically looks like
+        # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
+        # And we just want the part starting by "DEBUG - "
+        line = line.strip().split(": ", 1)[1]
+        lines_to_display.append(line)
+
+        if line.endswith("+ ynh_exit_properly"):
+            break
+        elif len(lines_to_display) > 20:
+            lines_to_display.pop(0)
+
+    logger.warning("Here's an extract of the logs before the crash. It might help debugging the error:")
+    for line in lines_to_display:
+        logger.info(line)
 
 
 def _migrate_legacy_permissions(app):
