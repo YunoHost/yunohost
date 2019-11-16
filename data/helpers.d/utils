@@ -312,22 +312,23 @@ ynh_secure_remove () {
         ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
     fi
 
-    if [[ "$forbidden_path" =~ "$file" \
+    if [[ -z "$file" ]]
+    then
+        ynh_print_warn --message="ynh_secure_remove called with empty argument, ignoring."
+    else if [[ "$forbidden_path" =~ "$file" \
         # Match all paths or subpaths in $forbidden_path
         || "$file" =~ ^/[[:alnum:]]+$ \
         # Match all first level paths from / (Like /var, /root, etc...)
         || "${file:${#file}-1}" = "/" ]]
         # Match if the path finishes by /. Because it seems there is an empty variable
     then
-        ynh_print_warn --message="Avoid deleting $file."
+        ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
+    else if [ -e "$file" ]
+    then
+        rm -R "$file"
     else
-        if [ -e "$file" ]
-        then
-            sudo rm -R "$file"
-        else
-            ynh_print_info --message="$file wasn't deleted because it doesn't exist."
-        fi
-    fi
+        ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
+    fi fi fi
 }
 
 # Extract a key from a plain command output
