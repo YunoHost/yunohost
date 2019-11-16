@@ -40,7 +40,7 @@ from datetime import datetime
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
-from moulinette.utils.filesystem import read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
+from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_log, service_status, _run_service_command
 from yunohost.utils import packages
@@ -136,6 +136,7 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
             # dirty: we used to have manifest containing multi_instance value in form of a string
             # but we've switched to bool, this line ensure retrocompatibility
+
             app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
 
             list_dict[app_id] = app_info_dict
@@ -529,6 +530,9 @@ def app_upgrade(app=[], url=None, file=None):
         operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
         operation_logger.start()
 
+        # Attempt to patch legacy helpers ...
+        _patch_legacy_helpers(extracted_app_folder)
+
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(extracted_app_folder)
 
@@ -546,6 +550,8 @@ def app_upgrade(app=[], url=None, file=None):
                 error = m18n.n('app_upgrade_script_failed')
                 logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
                 failure_message_with_debug_instructions = operation_logger.error(error)
+                if msettings.get('interface') != 'api':
+                    dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
             upgrade_retcode = -1
@@ -759,6 +765,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     }
     _set_app_settings(app_instance_name, app_settings)
 
+    # Attempt to patch legacy helpers ...
+    _patch_legacy_helpers(extracted_app_folder)
+
     # Apply dirty patch to make php5 apps compatible with php7
     _patch_php5(extracted_app_folder)
 
@@ -794,6 +803,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             error = m18n.n('app_install_script_failed')
             logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
+            if msettings.get('interface') != 'api':
+                dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
         error = m18n.n('operation_interrupted')
@@ -906,6 +917,33 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     hook_callback('post_app_install', args=args_list, env=env_dict)
 
 
+def dump_app_log_extract_for_debugging(operation_logger):
+
+    with open(operation_logger.log_path, "r") as f:
+        lines = f.readlines()
+
+    lines_to_display = []
+    for line in lines:
+
+        if not ": " in line.strip():
+            continue
+
+        # A line typically looks like
+        # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
+        # And we just want the part starting by "DEBUG - "
+        line = line.strip().split(": ", 1)[1]
+        lines_to_display.append(line)
+
+        if line.endswith("+ ynh_exit_properly"):
+            break
+        elif len(lines_to_display) > 20:
+            lines_to_display.pop(0)
+
+    logger.warning("Here's an extract of the logs before the crash. It might help debugging the error:")
+    for line in lines_to_display:
+        logger.info(line)
+
+
 def _migrate_legacy_permissions(app):
 
     from yunohost.permission import user_permission_list, user_permission_update
@@ -959,6 +997,9 @@ def app_remove(operation_logger, app):
         shutil.rmtree('/tmp/yunohost_remove')
     except Exception:
         pass
+
+    # Attempt to patch legacy helpers ...
+    _patch_legacy_helpers(app_setting_path)
 
     # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
     # script might date back from jessie install)
@@ -1161,24 +1202,6 @@ def app_setting(app, key, value=None, delete=False):
         user_permission_update(app + ".main", remove="all_users", add="visitors")
 
 
-def app_checkport(port):
-    """
-    Check availability of a local port
-
-    Keyword argument:
-        port -- Port to check
-
-    """
-
-    # This import cannot be moved on top of file because it create a recursive
-    # import...
-    from yunohost.tools import tools_port_available
-    if tools_port_available(port):
-        logger.success(m18n.n('port_available', port=int(port)))
-    else:
-        raise YunohostError('port_unavailable', port=int(port))
-
-
 def app_register_url(app, domain, path):
     """
     Book/register a web path for a given app
@@ -1220,93 +1243,6 @@ def app_register_url(app, domain, path):
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
-
-
-def app_checkurl(url, app=None):
-    """
-    Check availability of a web path
-
-    Keyword argument:
-        url -- Url to check
-        app -- Write domain & path to app settings for further checks
-
-    """
-
-    logger.error("Packagers /!\\ : 'app checkurl' is deprecated ! Please use the helper 'ynh_webpath_register' instead !")
-
-    from yunohost.domain import domain_list, _normalize_domain_path
-
-    if "https://" == url[:8]:
-        url = url[8:]
-    elif "http://" == url[:7]:
-        url = url[7:]
-
-    if url[-1:] != '/':
-        url = url + '/'
-
-    domain = url[:url.index('/')]
-    path = url[url.index('/'):]
-    installed = False
-
-    domain, path = _normalize_domain_path(domain, path)
-
-    apps_map = app_map(raw=True)
-
-    if domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    if domain in apps_map:
-        # Loop through apps
-        for p, a in apps_map[domain].items():
-            # Skip requested app checking
-            if app is not None and a['id'] == app:
-                installed = True
-                continue
-            if path == p:
-                raise YunohostError('app_location_already_used', app=a["id"], path=path)
-            # can't install "/a/b/" if "/a/" exists
-            elif path.startswith(p) or p.startswith(path):
-                raise YunohostError('app_location_install_failed', other_path=p, other_app=a['id'])
-
-    if app is not None and not installed:
-        app_setting(app, 'domain', value=domain)
-        app_setting(app, 'path', value=path)
-
-
-def app_initdb(user, password=None, db=None, sql=None):
-    """
-    Create database and initialize it with optionnal attached script
-
-    Keyword argument:
-        db -- DB name (user unless set)
-        user -- Name of the DB user
-        password -- Password of the DB (generated unless set)
-        sql -- Initial SQL file
-
-    """
-
-    logger.error("Packagers /!\\ : 'app initdb' is deprecated ! Please use the helper 'ynh_mysql_setup_db' instead !")
-
-    if db is None:
-        db = user
-
-    return_pwd = False
-    if password is None:
-        password = random_password(12)
-        return_pwd = True
-
-    mysql_root_pwd = open('/etc/yunohost/mysql').read().rstrip()
-    mysql_command = 'mysql -u root -p%s -e "CREATE DATABASE %s ; GRANT ALL PRIVILEGES ON %s.* TO \'%s\'@localhost IDENTIFIED BY \'%s\';"' % (mysql_root_pwd, db, db, user, password)
-    if os.system(mysql_command) != 0:
-        raise YunohostError('mysql_db_creation_failed')
-    if sql is not None:
-        if os.system('mysql -u %s -p%s %s < %s' % (user, password, db, sql)) != 0:
-            raise YunohostError('mysql_db_init_failed')
-
-    if return_pwd:
-        return password
-
-    logger.success(m18n.n('mysql_db_initialized'))
 
 
 def app_ssowatconf():
@@ -2929,3 +2865,76 @@ def _patch_php5(app_folder):
             "-e 's@php5@php7.0@g' " \
             "%s" % filename
         os.system(c)
+
+def _patch_legacy_helpers(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+
+    stuff_to_replace = {
+        # Replace
+        #    sudo yunohost app initdb $db_user -p $db_pwd
+        # by
+        #    ynh_mysql_setup_db --db_user=$db_user --db_name=$db_user --db_pwd=$db_pwd
+        "yunohost app initdb": (
+            r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
+            r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3"),
+        # Replace
+        #    sudo yunohost app checkport whaterver
+        # by
+        #    ynh_port_available whatever
+        "yunohost app checkport": (
+            r"(sudo )?yunohost app checkport",
+            r"ynh_port_available"),
+        # We can't migrate easily port-available
+        # .. but at the time of writing this code, only two non-working apps are using it.
+        "yunohost tools port-available": (None, None),
+        # Replace
+        #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
+        # by
+        #    ynh_webpath_register --app=${app} --domain=${domain} --path_url=${path_url}
+        "yunohost app checkurl": (
+            r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
+            r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3"),
+    }
+
+    stuff_to_replace_compiled = {h: (re.compile(r[0]), r[1]) if r[0] else (None,None) for h, r in stuff_to_replace.items()}
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        content = read_file(filename)
+        replaced_stuff = False
+
+        for helper, regexes in stuff_to_replace_compiled.items():
+            pattern, replace = regexes
+            # If helper is used, attempt to patch the file
+            if helper in content and pattern != "":
+                content = pattern.sub(replace, content)
+                replaced_stuff = True
+
+            # If the helpert is *still* in the content, it means that we
+            # couldn't patch the deprecated helper in the previous lines.  In
+            # that case, abort the install or whichever step is performed
+            if helper in content:
+                raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.")
+
+        if replaced_stuff:
+
+            # Check the app do load the helper
+            # If it doesn't, add the instruction ourselve (making sure it's after the #!/bin/bash if it's there...
+            if filename.split("/")[-1] in ["install", "remove", "upgrade", "backup", "restore"]:
+                source_helpers = "source /usr/share/yunohost/helpers"
+                if source_helpers not in content:
+                    content.replace("#!/bin/bash", "#!/bin/bash\n"+source_helpers)
+                if source_helpers not in content:
+                    content = source_helpers + "\n" + content
+
+            # Actually write the new content in the file
+            write_to_file(filename, content)
+            # And complain about those damn deprecated helpers
+            logger.error("/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ...")

@@ -24,7 +24,7 @@ class PortsDiagnoser(Diagnoser):
         ports = [22, 25, 53, 80, 443, 587, 993, 5222, 5269]
 
         try:
-            r = requests.post('https://ynhdiagnoser.netlib.re/check-ports', json={'ports': ports}, timeout=30).json()
+            r = requests.post('https://diagnosis.yunohost.org/check-ports', json={'ports': ports}, timeout=30).json()
             if "status" not in r.keys():
                 raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             elif r["status"] == "error":

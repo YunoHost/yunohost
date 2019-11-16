@@ -28,7 +28,7 @@ class HttpDiagnoser(Diagnoser):
             os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % nonce)
 
             try:
-                r = requests.post('https://ynhdiagnoser.netlib.re/check-http', json={'domain': domain, "nonce": nonce}, timeout=30).json()
+                r = requests.post('https://diagnosis.yunohost.org/check-http', json={'domain': domain, "nonce": nonce}, timeout=30).json()
                 if "status" not in r.keys():
                     raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
                 elif r["status"] == "error" and ("code" not in r.keys() or r["code"] not in ["error_http_check_connection_error", "error_http_check_unknown_error"]):

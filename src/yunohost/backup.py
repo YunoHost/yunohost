@@ -36,14 +36,14 @@ from datetime import datetime
 from glob import glob
 from collections import OrderedDict
 
-from moulinette import msignals, m18n
+from moulinette import msignals, m18n, msettings
 from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_php5
+    app_info, _is_installed, _parse_app_instance_name, _patch_php5, dump_app_log_extract_for_debugging, _patch_legacy_helpers
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -1321,6 +1321,9 @@ class RestoreManager():
         app_settings_in_archive = os.path.join(app_dir_in_archive, 'settings')
         app_scripts_in_archive = os.path.join(app_settings_in_archive, 'scripts')
 
+        # Attempt to patch legacy helpers...
+        _patch_legacy_helpers(app_settings_in_archive)
+
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(app_settings_in_archive)
 
@@ -1397,6 +1400,9 @@ class RestoreManager():
             msg = m18n.n('restore_app_failed', app=app_instance_name)
             logger.exception(msg)
             operation_logger.error(msg)
+
+            if msettings.get('interface') != 'api':
+                dump_app_log_extract_for_debugging(operation_logger)
 
             self.targets.set_result("apps", app_instance_name, "Error")
 

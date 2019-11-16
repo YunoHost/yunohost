@@ -24,6 +24,31 @@ ynh_find_port () {
 	echo $port
 }
 
+# Test if a port is available
+#
+# example: ynh_port_available --port=1234 || ynh_die "Port 1234 is needs to be available for this app"
+#
+# usage: ynh_find_port --port=XYZ
+# | arg: -p, --port - port to check
+#
+# Requires YunoHost version 3.7.x or higher.
+ynh_port_available () {
+	# Declare an array to define the options of this helper.
+	local legacy_args=p
+	declare -Ar args_array=( [p]=port= )
+	local port
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+    if ss -nltu | grep -q -w :$port
+    then
+        return 1
+    else
+        return 0
+    fi
+}
+
+
 # Validate an IP address
 #
 # usage: ynh_validate_ip --family=family --ip_address=ip_address
