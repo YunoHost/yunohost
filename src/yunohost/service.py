@@ -408,6 +408,10 @@ def service_log(name, number=50):
     # First we always add the logs from journalctl / systemd
     result["journalctl"] = _get_journalctl_logs(name, int(number)).splitlines()
 
+    # Mysql and journalctl are fucking annoying, we gotta explictly fetch mariadb ...
+    if name == "mysql":
+        result["journalctl"] = _get_journalctl_logs("mariadb", int(number)).splitlines()
+
     for index, log_path in enumerate(log_list):
         log_type = log_type_list[index]
 
