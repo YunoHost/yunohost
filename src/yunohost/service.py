@@ -395,10 +395,7 @@ def service_log(name, number=50):
     if name not in services.keys():
         raise YunohostError('service_unknown', service=name)
 
-    if 'log' not in services[name]:
-        raise YunohostError('service_no_log', service=name)
-
-    log_list = services[name]['log']
+    log_list = services[name].get('log', [])
     log_type_list = services[name].get('log_type', [])
 
     if not isinstance(log_list, list):
@@ -407,6 +404,9 @@ def service_log(name, number=50):
         log_type_list.extend(["file"] * (len(log_list)-len(log_type_list)))
 
     result = {}
+
+    # First we always add the logs from journalctl / systemd
+    result["journalctl"] = _get_journalctl_logs(name, int(number)).splitlines()
 
     for index, log_path in enumerate(log_list):
         log_type = log_type_list[index]

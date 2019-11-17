@@ -2,10 +2,8 @@ nginx:
   log: /var/log/nginx
   test_conf: nginx -t
   needs_exposed_ports: [80, 443]
-avahi-daemon:
-  log: /var/log/daemon.log
-dnsmasq:
-  log: /var/log/daemon.log
+avahi-daemon: {}
+dnsmasq: {}
 fail2ban:
   log: /var/log/fail2ban.log
 dovecot:
@@ -29,8 +27,7 @@ ssh:
 metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
   needs_exposed_ports: [5222, 5269]
-slapd:
-  log: /var/log/syslog
+slapd: {}
 php7.0-fpm:
   log: /var/log/php7.0-fpm.log
   test_conf: php-fpm7.0 --test
@@ -39,8 +36,7 @@ yunohost-api:
 yunohost-firewall:
   need_lock: true
   test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
-nslcd:
-  log: /var/log/syslog
+nslcd: {}
 glances: null
 nsswitch: null
 ssl: null

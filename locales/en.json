@@ -544,7 +544,6 @@
     "service_disabled": "The '{service:s}' service was turned off",
     "service_enable_failed": "Could not turn on the service '{service:s}'\n\nRecent service logs:{logs:s}",
     "service_enabled": "The '{service:s}' service was turned off",
-    "service_no_log": "No logs to display for the service '{service:s}'",
     "service_regen_conf_is_deprecated": "'yunohost service regen-conf' is deprecated! Please use 'yunohost tools regen-conf' instead.",
     "service_remove_failed": "Could not remove the service '{service:s}'",
     "service_removed": "'{service:s}' service removed",
