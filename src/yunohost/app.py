@@ -77,8 +77,6 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
     Keyword argument:
         filter -- Name filter of app_id or app_name
-        offset -- Starting number for app fetching
-        limit -- Maximum number of app fetched
         raw -- Return the full app_dict
         installed -- Return only installed apps
         with_backup -- Return only apps with backup feature (force --installed filter)
@@ -135,8 +133,6 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
         if raw:
             app_info_dict['installed'] = app_installed
-            if app_installed:
-                app_info_dict['status'] = _get_app_status(app_id)
 
             # dirty: we used to have manifest containing multi_instance value in form of a string
             # but we've switched to bool, this line ensure retrocompatibility
@@ -164,13 +160,12 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     return {'apps': list_dict} if not raw else list_dict
 
 
-def app_info(app, show_status=False, raw=False):
+def app_info(app, raw=False):
     """
     Get app info
 
     Keyword argument:
         app -- Specific app ID
-        show_status -- Show app installation status
         raw -- Return the full app_dict
 
     """
@@ -178,6 +173,9 @@ def app_info(app, show_status=False, raw=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     app_setting_path = APPS_SETTING_PATH + app
+
+    # Retrieve manifest and status
+    manifest = _get_manifest_of_app(app_setting_path)
 
     if raw:
         ret = app_list(filter=app, raw=True)[app]
@@ -196,28 +194,16 @@ def app_info(app, show_status=False, raw=False):
 
         ret['upgradable'] = upgradable
         ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
-
-        manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-
         ret['version'] = manifest.get('version', '-')
 
         return ret
 
-    # Retrieve manifest and status
-    manifest = _get_manifest_of_app(app_setting_path)
-    status = _get_app_status(app, format_date=True)
-
     info = {
         'name': manifest['name'],
         'description': _value_for_locale(manifest['description']),
-        # FIXME: Temporarly allow undefined license
         'license': manifest.get('license', m18n.n('license_undefined')),
-        # FIXME: Temporarly allow undefined version
         'version': manifest.get('version', '-'),
-        # TODO: Add more info
     }
-    if show_status:
-        info['status'] = status
     return info
 
 
@@ -526,10 +512,6 @@ def app_upgrade(app=[], url=None, file=None):
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
 
-        # Retrieve current app status
-        status = _get_app_status(app_instance_name)
-        status['remote'] = manifest.get('remote', None)
-
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade')
@@ -608,19 +590,14 @@ def app_upgrade(app=[], url=None, file=None):
 
             # Otherwise we're good and keep going !
             now = int(time.time())
-            # TODO: Move install_time away from app_setting
             app_setting(app_instance_name, 'update_time', now)
-            status['upgraded_at'] = now
+            app_setting(app_instance_name, 'current_revision', manifest.get('remote', {}).get('revision', "?"))
 
             # Clean hooks and add new ones
             hook_remove(app_instance_name)
             if 'hooks' in os.listdir(extracted_app_folder):
                 for hook in os.listdir(extracted_app_folder + '/hooks'):
                     hook_add(app_instance_name, extracted_app_folder + '/hooks/' + hook)
-
-            # Store app status
-            with open(app_setting_path + '/status.json', 'w+') as f:
-                json.dump(status, f)
 
             # Replace scripts and manifest and conf (if exists)
             os.system('rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"' % (app_setting_path, app_setting_path, app_setting_path, app_setting_path))
@@ -665,14 +642,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
         os.makedirs(INSTALL_TMP)
-
-    status = {
-        'installed_at': int(time.time()),
-        'upgraded_at': None,
-        'remote': {
-            'type': None,
-        },
-    }
 
     def confirm_install(confirm):
         # Ignore if there's nothing for confirm (good quality app), if --force is used
@@ -727,7 +696,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
         raise YunohostError('app_unknown')
-    status['remote'] = manifest.get('remote', {})
 
     # Check ID
     if 'id' not in manifest or '__' in manifest['id']:
@@ -792,9 +760,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     app_settings = {
         'id': app_instance_name,
         'label': label if label else manifest['name'],
+        'install_time': int(time.time()),
+        'current_revision': manifest.get('remote', {}).get('revision', "?")
     }
-    # TODO: Move install_time away from app settings
-    app_settings['install_time'] = status['installed_at']
     _set_app_settings(app_instance_name, app_settings)
 
     # Attempt to patch legacy helpers ...
@@ -926,10 +894,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     if 'hooks' in os.listdir(extracted_app_folder):
         for file in os.listdir(extracted_app_folder + '/hooks'):
             hook_add(app_instance_name, extracted_app_folder + '/hooks/' + file)
-
-    # Store app status
-    with open(app_setting_path + '/status.json', 'w+') as f:
-        json.dump(status, f)
 
     # Clean and set permissions
     shutil.rmtree(extracted_app_folder)
@@ -1914,51 +1878,6 @@ def _set_app_settings(app_id, settings):
     with open(os.path.join(
             APPS_SETTING_PATH, app_id, 'settings.yml'), 'w') as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
-
-
-def _get_app_status(app_id, format_date=False):
-    """
-    Get app status or create it if needed
-
-    Keyword arguments:
-        app_id -- The app id
-        format_date -- Format date fields
-
-    """
-    app_setting_path = APPS_SETTING_PATH + app_id
-    if not os.path.isdir(app_setting_path):
-        raise YunohostError('app_unknown')
-    status = {}
-
-    regen_status = True
-    try:
-        with open(app_setting_path + '/status.json') as f:
-            status = json.loads(str(f.read()))
-        regen_status = False
-    except IOError:
-        logger.debug("status file not found for '%s'", app_id,
-                     exc_info=1)
-    except Exception as e:
-        logger.warning("could not open or decode %s : %s ... regenerating.", app_setting_path + '/status.json', str(e))
-
-    if regen_status:
-        # Create app status
-        status = {
-            'installed_at': app_setting(app_id, 'install_time'),
-            'upgraded_at': app_setting(app_id, 'update_time'),
-            'remote': {'type': None},
-        }
-        with open(app_setting_path + '/status.json', 'w+') as f:
-            json.dump(status, f)
-
-    if format_date:
-        for f in ['installed_at', 'upgraded_at']:
-            v = status.get(f, None)
-            if not v:
-                status[f] = '-'
-            else:
-                status[f] = datetime.utcfromtimestamp(v)
-    return status
 
 
 def _extract_app_from_file(path, remove=False):

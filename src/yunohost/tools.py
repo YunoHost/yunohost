@@ -474,8 +474,11 @@ def _list_upgradable_apps():
 
         if app_dict["upgradable"] == "yes":
 
+            # FIXME : would make more sense for these infos to be computed
+            # directly in app_info and used to check the upgradability of
+            # the app...
             current_version = app_dict.get("version", "?")
-            current_commit = app_dict.get("status", {}).get("remote", {}).get("revision", "?")[:7]
+            current_commit = app_dict.get("settings", {}).get("current_revision", "?")[:7]
             new_version = app_dict.get("manifest",{}).get("version","?")
             new_commit = app_dict.get("git", {}).get("revision", "?")[:7]
 

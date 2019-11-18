@@ -571,10 +571,6 @@ app:
             arguments:
                 app:
                     help: Specific app ID
-                -s:
-                    full: --show-status
-                    help: Show app installation status
-                    action: store_true
                 -r:
                     full: --raw
                     help: Return the full app_dict
