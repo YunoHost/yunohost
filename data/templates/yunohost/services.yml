@@ -1,36 +1,42 @@
-nginx:
-  log: /var/log/nginx
-avahi-daemon:
-  log: /var/log/daemon.log
-dnsmasq:
-  log: /var/log/daemon.log
-fail2ban:
-  log: /var/log/fail2ban.log
+avahi-daemon: {}
+dnsmasq: {}
 dovecot:
   log: [/var/log/mail.log,/var/log/mail.err]
-postfix:
-  log: [/var/log/mail.log,/var/log/mail.err]
-rspamd:
-  log: /var/log/rspamd/rspamd.log
-redis-server:
-  log: /var/log/redis/redis-server.log
-mysql:
-  log: [/var/log/mysql.log,/var/log/mysql.err]
-  alternates: ['mariadb']
-ssh:
-  log: /var/log/auth.log
+  needs_exposed_ports: [993]
+fail2ban:
+  log: /var/log/fail2ban.log
 metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
-slapd:
-  log: /var/log/syslog
+  needs_exposed_ports: [5222, 5269]
+mysql:
+  log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
+  alternates: ['mariadb']
+nginx:
+  log: /var/log/nginx
+  test_conf: nginx -t
+  needs_exposed_ports: [80, 443]
+nslcd: {}
 php7.0-fpm:
   log: /var/log/php7.0-fpm.log
+  test_conf: php-fpm7.0 --test
+postfix:
+  log: [/var/log/mail.log,/var/log/mail.err]
+  test_status: systemctl show postfix@- | grep -q "^SubState=running"
+  needs_exposed_ports: [25, 587]
+redis-server:
+  log: /var/log/redis/redis-server.log
+rspamd:
+  log: /var/log/rspamd/rspamd.log
+slapd: {}
+ssh:
+  log: /var/log/auth.log
+  test_conf: sshd -t
+  needs_exposed_ports: [22]
 yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
 yunohost-firewall:
   need_lock: true
-nslcd:
-  log: /var/log/syslog
+  test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
 glances: null
 nsswitch: null
 ssl: null
