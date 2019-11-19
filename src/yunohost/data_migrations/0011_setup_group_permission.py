@@ -92,6 +92,7 @@ class MyMigration(Migration):
                         {'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh']})
             user_group_create(username, gid=user_info['uidNumber'][0], primary_group=True, sync_perm=False)
             user_group_update(groupname='all_users', add=username, force=True, sync_perm=False)
+            user_group_update(groupname='visitors', add=username, force=True, sync_perm=False)
 
     def migrate_app_permission(self, app=None):
         logger.info(m18n.n("migration_0011_migrate_permission"))

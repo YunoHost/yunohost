@@ -227,7 +227,8 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
-    user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
+    user_group_update(groupname='all_users', add=username, force=True, sync_perm=False)
+    user_group_update(groupname='visitors', add=username, force=True, sync_perm=True)
 
     # TODO: Send a welcome mail to user
     logger.success(m18n.n('user_created'))
@@ -258,6 +259,8 @@ def user_delete(operation_logger, username, purge=False):
     operation_logger.start()
 
     user_group_update("all_users", remove=username, force=True, sync_perm=False)
+    user_group_update("visitors", remove=username, force=True, sync_perm=False)
+
     for group, infos in user_group_list()["groups"].items():
         if group == "all_users":
             continue
