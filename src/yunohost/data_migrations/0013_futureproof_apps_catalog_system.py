@@ -30,6 +30,10 @@ class MyMigration(Migration):
         if os.path.exists(APPS_CATALOG_CACHE):
             shutil.rmtree(APPS_CATALOG_CACHE)
 
+        # and legacy cron
+        if os.path.exists("/etc/cron.daily/yunohost-fetch-appslists"):
+            os.remove("/etc/cron.daily/yunohost-fetch-appslists")
+
         # Backup the legacy file
         try:
             legacy_catalogs = read_json(LEGACY_APPS_CATALOG_CONF)
