@@ -31,7 +31,7 @@ class HttpDiagnoser(Diagnoser):
                 r = requests.post('https://diagnosis.yunohost.org/check-http', json={'domain': domain, "nonce": nonce}, timeout=30).json()
                 if "status" not in r.keys():
                     raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
-                elif r["status"] == "error" and ("code" not in r.keys() or r["code"] not in ["error_http_check_connection_error", "error_http_check_unknown_error"]):
+                elif r["status"] == "error" and ("code" not in r.keys() or not r["code"].startswith("error_http_check_")):
                     if "content" in r.keys():
                         raise Exception(r["content"])
                     else:
@@ -44,9 +44,11 @@ class HttpDiagnoser(Diagnoser):
                            status="SUCCESS",
                            summary=("diagnosis_http_ok", {"domain": domain}))
             else:
+                detail = r["code"].replace("error_http_check", "diagnosis_http") if "code" in r else "diagnosis_http_unknown_error"
                 yield dict(meta={"domain": domain},
                            status="ERROR",
-                           summary=("diagnosis_http_unreachable", {"domain": domain}))
+                           summary=("diagnosis_http_unreachable", {"domain": domain}),
+                           details=[(detail,())])
 
         # In there or idk where else ...
         # try to diagnose hairpinning situation by crafting a request for the
