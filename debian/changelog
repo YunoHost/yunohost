@@ -1,3 +1,15 @@
+yunohost (3.7.0.2) testing; urgency=low
+
+  - [fix] Make sure the users actually exists when migrating legacy custom permissions
+  - [mod] Move debug log dump from ynh_exit_properly to the core after failed app operation (#833)
+  - [enh] Improve app_upgrade error management (#832)
+  - [mod] Refactor group permission (#837)
+  - [enh] Add permission name in permission callback when adding/removing allowed users (#836)
+  - [enh] Improve permission helpers (#840)
+  - [i18n] Improve translations for German, Catalan, Swedish, Spanish, Turkish, Basque, French, Esperanto, Occitan
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 15 Nov 2019 16:45:00  +0000
+
 yunohost (3.7.0.1) testing; urgency=low
 
   - Hotfix to avoid having a shitload of warnings displayed during the permission migration

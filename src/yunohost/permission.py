@@ -473,4 +473,3 @@ def _update_ldap_group_permission(permission, allowed, sync_perm=True):
         hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission])
 
     return new_permission
-    
