@@ -158,6 +158,7 @@
     "diagnosis_found_warnings": "Found {warnings} item(s) that could be improved for {category}.",
     "diagnosis_everything_ok": "Everything looks good for {category}!",
     "diagnosis_failed": "Failed to fetch diagnosis result for category '{category}' : {error}",
+    "diagnosis_no_cache": "No diagnosis cache yet for category '{category}'",
     "diagnosis_ip_connected_ipv4": "The server is connected to the Internet through IPv4 !",
     "diagnosis_ip_no_ipv4": "The server does not have a working IPv4.",
     "diagnosis_ip_connected_ipv6": "The server is connected to the Internet through IPv6 !",

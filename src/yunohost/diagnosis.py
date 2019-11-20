@@ -61,28 +61,37 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
     # Fetch all reports
     all_reports = []
     for category in categories:
-        try:
-            report = Diagnoser.get_cached_report(category)
-        except Exception as e:
-            logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
+        if not os.path.exists(Diagnoser.cache_file(category)):
+            logger.warning(m18n.n("diagnosis_no_cache", category=category))
+            report = {"id": category,
+                      "cached_for": -1,
+                      "timestamp": -1,
+                      "items": []}
+            Diagnoser.i18n(report)
         else:
-            add_ignore_flag_to_issues(report)
-            if not full:
-                del report["timestamp"]
-                del report["cached_for"]
-                report["items"] = [item for item in report["items"] if not item["ignored"]]
-                for item in report["items"]:
-                    del item["meta"]
-                    del item["ignored"]
-                    if "data" in item:
-                        del item["data"]
-            if issues:
-                report["items"] = [item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]]
-                # Ignore this category if no issue was found
-                if not report["items"]:
-                    continue
+            try:
+                report = Diagnoser.get_cached_report(category)
+            except Exception as e:
+                logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
+                continue
 
-            all_reports.append(report)
+        add_ignore_flag_to_issues(report)
+        if not full:
+            del report["timestamp"]
+            del report["cached_for"]
+            report["items"] = [item for item in report["items"] if not item["ignored"]]
+            for item in report["items"]:
+                del item["meta"]
+                del item["ignored"]
+                if "data" in item:
+                    del item["data"]
+        if issues:
+            report["items"] = [item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]]
+            # Ignore this category if no issue was found
+            if not report["items"]:
+                continue
+
+        all_reports.append(report)
 
     if share:
         from yunohost.utils.yunopaste import yunopaste
