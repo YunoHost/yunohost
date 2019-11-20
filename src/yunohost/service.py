@@ -342,6 +342,7 @@ def service_status(names=[]):
             if "test_conf" in services[name]:
                 p = subprocess.Popen(services[name]["test_conf"],
                                      shell=True,
+                                     executable='/bin/bash',
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
 
