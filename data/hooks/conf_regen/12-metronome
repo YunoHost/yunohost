@@ -51,6 +51,7 @@ do_post_regen() {
   # create metronome directories for domains
   for domain in $domain_list; do
     sudo mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
+    sudo chown -R metronome: /var/lib/metronome/${domain//./%2e}/
   done
 
   [[ -z "$regen_conf_files" ]] \
