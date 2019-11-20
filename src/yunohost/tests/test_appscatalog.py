@@ -318,7 +318,7 @@ def test_apps_catalog_migrate_legacy_explicitly():
 
         # Mock the server response with a dummy apps catalog
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-        migration.migrate()
+        migration.run()
 
     # Old conf shouldnt be there anymore (got renamed to .old)
     assert not os.path.exists("/etc/yunohost/appslists.json")

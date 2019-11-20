@@ -21,7 +21,7 @@ class MyMigration(Migration):
 
     "Migrate to the new future-proof apps catalog system"
 
-    def migrate(self):
+    def run(self):
 
         if not os.path.exists(LEGACY_APPS_CATALOG_CONF):
             logger.info("No need to do anything")

@@ -2637,7 +2637,7 @@ def _read_apps_catalog_list():
     if os.path.exists('/etc/yunohost/appslists.json'):
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("futureproof_apps_catalog_system")
-        migration.migrate()
+        migration.run()
 
     try:
         list_ = read_yaml(APPS_CATALOG_CONF)
