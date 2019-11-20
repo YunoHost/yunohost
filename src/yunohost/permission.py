@@ -273,9 +273,8 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
     if allowed:
         if not isinstance(allowed, list):
             to_add = [allowed]
-    # For main permission, we add all users by default
-    elif permission.endswith(".main"):
-        to_add = "all_users"
+        else:
+            to_add = allowed
 
     new_permission = _update_ldap_group_permission(permission=permission, allowed=to_add, sync_perm=sync_perm)
 
@@ -294,6 +293,10 @@ def permission_url(operation_logger, permission, url=None, sync_perm=True):
     """
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
 
     # Fetch existing permission
 
