@@ -425,7 +425,7 @@ def app_change_url(operation_logger, app, domain, path):
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
 
-    permission_update(app, permission="main", add_url=[domain + path], remove_url=[old_domain + old_path], sync_perm=True)
+    app_ssowatconf()
 
     # avoid common mistakes
     if _run_service_command("reload", "nginx") is False:
