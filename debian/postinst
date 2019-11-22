@@ -14,11 +14,14 @@ do_configure() {
       echo "Regenerating configuration, this might take a while..."
       yunohost tools regen-conf --output-as none
 
-      echo "Launching migrations.."
+      echo "Launching migrations..."
       yunohost tools migrations migrate --auto
+
+      echo "Re-diagnosing server health..."
+      yunohost diagnosis run --force
   fi
-  
-  # Change dpkg vendor 
+
+  # Change dpkg vendor
   # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
   readlink -f /etc/dpkg/origins/default | grep -q debian \
     && rm -f /etc/dpkg/origins/default \
