@@ -91,9 +91,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         add            -- List of groups or usernames to add to this permission
         remove         -- List of groups or usernames to remove from to this permission
     """
-    from yunohost.hook import hook_callback
-    from yunohost.utils.ldap import _get_ldap_interface
-    ldap = _get_ldap_interface()
+    from yunohost.user import user_group_list
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -115,10 +113,13 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # Compute new allowed group list (and make sure what we're doing make sense)
 
     new_allowed_groups = copy.copy(current_allowed_groups)
+    all_existing_groups = user_group_list()['groups'].keys()
 
     if add:
         groups_to_add = [add] if not isinstance(add, list) else add
         for group in groups_to_add:
+            if group not in all_existing_groups:
+                raise YunohostError('group_unknown', group=group)
             if group in current_allowed_groups:
                 logger.warning(m18n.n('permission_already_allowed', permission=permission, group=group))
             else:
@@ -170,9 +171,6 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     Keyword argument:
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
     """
-    from yunohost.hook import hook_callback
-    from yunohost.utils.ldap import _get_ldap_interface
-    ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
     if "." not in permission:
@@ -231,6 +229,7 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
     """
 
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.user import user_group_list
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
@@ -258,6 +257,13 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
 
     if url:
         attr_dict['URL'] = url
+
+    # Validate that the groups to add actually exist
+    all_existing_groups = user_group_list()['groups'].keys()
+    allowed_ = [] if allowed is None else [allowed] if not isinstance(allowed, list) else allowed
+    for group in allowed_:
+        if group not in all_existing_groups:
+            raise YunohostError('group_unknown', group=group)
 
     operation_logger.related_to.append(('app', permission.split(".")[0]))
     operation_logger.start()
@@ -404,38 +410,34 @@ def permission_sync_to_user():
     os.system('nscd --invalidate=passwd')
     os.system('nscd --invalidate=group')
 
+
 def _update_ldap_group_permission(permission, allowed, sync_perm=True):
     """
         Internal function that will rewrite user permission
 
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
         allowed    -- A list of group/user to allow for the permission
+
+
+        Assumptions made, that should be checked before calling this function:
+        - the permission does currently exists ...
+        - the 'allowed' list argument is *different* from the current
+          permission state ... otherwise ldap will miserably fail in such
+          case...
+        - the 'allowed' list contains *existing* groups.
     """
 
     from yunohost.hook import hook_callback
-    from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
     # Fetch currently allowed groups for this permission
+    existing_permission = user_permission_list(full=True)["permissions"][permission]
 
-    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
-    if existing_permission is None:
-        raise YunohostError('permission_not_found', permission=permission)
+    if allowed is None:
+        return existing_permission
 
-    all_existing_groups = user_group_list()['groups'].keys()
-
-    if allowed:
-        if not isinstance(allowed, list):
-            allowed = [allowed]
-        for group in allowed:
-            if group not in all_existing_groups:
-                raise YunohostError('group_unknown', group=group)
-    else:
-        if sync_perm:
-            permission_sync_to_user()
-
-        return user_permission_list(full=True)["permissions"][permission]
+    allowed = [allowed] if not isinstance(allowed, list) else allowed
 
     try:
         ldap.update('cn=%s,ou=permission' % permission,
