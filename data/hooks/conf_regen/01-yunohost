@@ -53,6 +53,16 @@ do_pre_regen() {
   else
       sudo cp services.yml /etc/yunohost/services.yml
   fi
+
+  # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
+  # 0 and 10min, meant to avoid every instances running their diagnosis at
+  # exactly the same time, which may overload the diagnosis server.
+  mkdir -p $pending_dir/etc/cron.d/
+  cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
+SHELL=/bin/bash
+0 7,19 * * * root : YunoHost Diagnosis; sleep \$((RANDOM\\%600)); yunohost diagnosis run > /dev/null
+EOF
+
 }
 
 _update_services() {
