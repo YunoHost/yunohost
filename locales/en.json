@@ -176,6 +176,7 @@
     "diagnosis_services_running": "Service {service} is running!",
     "diagnosis_services_conf_broken": "Configuration is broken for service {service}!",
     "diagnosis_services_bad_status": "Service {service} is {status} :(",
+    "diagnosis_services_bad_status_tip": "You can try to restart the service, and if it doesn't work, have a look at the service logs using 'yunohost service log {0}' or through the 'Services' section of the webadmin.",
     "diagnosis_diskusage_verylow": "Storage {mountpoint} (on device {device}) has only {free_abs_GB} GB ({free_percent}%) space remaining. You should really consider cleaning up some space.",
     "diagnosis_diskusage_low": "Storage {mountpoint} (on device {device}) has only {free_abs_GB} GB ({free_percent}%) space remaining. Be careful.",
     "diagnosis_diskusage_ok": "Storage {mountpoint} (on device {device}) still has {free_abs_GB} GB ({free_percent}%) space left!",
