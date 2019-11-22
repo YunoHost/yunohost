@@ -335,8 +335,15 @@ def service_status(names=[]):
 
             # 'test_status' is an optional field to test the status of the service using a custom command
             if "test_status" in services[name]:
-                status = os.system(services[name]["test_status"])
-                result[name]["status"] = "running" if status == 0 else "failed"
+                p = subprocess.Popen(services[name]["test_status"],
+                                     shell=True,
+                                     executable='/bin/bash',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+
+                p.communicate()
+
+                result[name]["status"] = "running" if p.returncode == 0 else "failed"
 
             # 'test_status' is an optional field to test the status of the service using a custom command
             if "test_conf" in services[name]:
