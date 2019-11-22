@@ -33,8 +33,8 @@ def setup_function(function):
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
-    permission_create("wiki.main", url="/", sync_perm=False)
-    permission_create("blog.main", sync_perm=False)
+    permission_create("wiki.main", url="/", allowed=["all_users"] , sync_perm=False)
+    permission_create("blog.main", allowed=["all_users"], sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
 
@@ -217,7 +217,7 @@ def test_permission_list():
 
 def test_permission_create_main(mocker):
     with message(mocker, "permission_created", permission="site.main"):
-        permission_create("site.main")
+        permission_create("site.main", allowed=["all_users"])
 
     res = user_permission_list(full=True)['permissions']
     assert "site.main" in res
@@ -236,7 +236,7 @@ def test_permission_create_extra(mocker):
     assert res['site.test']['corresponding_users'] == []
 
 
-def test_permission_create_with_allowed():
+def test_permission_create_with_specific_user():
     permission_create("site.test", allowed=["alice"])
 
     res = user_permission_list(full=True)['permissions']
