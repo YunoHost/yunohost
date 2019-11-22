@@ -392,7 +392,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     logger.success(m18n.n('yunohost_configured'))
 
-    logger.warning(m18n.n('recommend_to_add_first_user'))
+    logger.warning(m18n.n('yunohost_postinstall_end_tip'))
 
 
 def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,

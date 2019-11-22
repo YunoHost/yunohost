@@ -481,7 +481,6 @@
     "permission_require_account": "Permission {permission} only makes sense for users having an account, and therefore cannot be enabled for visitors.",
     "port_already_closed": "Port {port:d} is already closed for {ip_version:s} connections",
     "port_already_opened": "Port {port:d} is already opened for {ip_version:s} connections",
-    "recommend_to_add_first_user": "The post-install is finished, but YunoHost needs at least one user to work correctly, you should add one using 'yunohost user create <username>' or do it from the admin interface.",
     "regenconf_file_backed_up": "Configuration file '{conf}' backed up to '{backup}'",
     "regenconf_file_copy_failed": "Could not copy the new configuration file '{new}' to '{conf}'",
     "regenconf_file_kept_back": "The configuration file '{conf}' is expected to be deleted by regen-conf (category {category}) but was kept back.",
@@ -603,5 +602,6 @@
     "yunohost_ca_creation_success": "Local certification authority created.",
     "yunohost_configured": "YunoHost is now configured",
     "yunohost_installing": "Installing YunoHost…",
-    "yunohost_not_installed": "YunoHost is not correctly installed. Please run 'yunohost tools postinstall'"
+    "yunohost_not_installed": "YunoHost is not correctly installed. Please run 'yunohost tools postinstall'",
+    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - adding a first user through the 'Users' section of the webadmin (or 'yunohost user create <username>' in command-line) ;\n    - diagnose issues waiting to be solved for your server to be running as smoothly as possible through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line) ;\n    - reading the 'Finalizing your setup' and 'Getting to know Yunohost' parts in the admin documentation : https://yunohost.org/admindoc."
 }
