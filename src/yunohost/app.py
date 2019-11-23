@@ -1525,28 +1525,28 @@ def app_config_show_panel(operation_logger, app):
         for section in tab.get("sections", []):
             section_id = section["id"]
             for option in section.get("options", []):
-                option_name = option["name"]
-                generated_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)).upper()
-                option["name"] = generated_name
-                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_name)
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
+                option["id"] = generated_id
+                logger.debug(" * '%s'.'%s'.'%s' -> %s", tab.get("name"), section.get("name"), option.get("name"), generated_id)
 
-                if generated_name in parsed_values:
+                if generated_id in parsed_values:
                     # code is not adapted for that so we have to mock expected format :/
                     if option.get("type") == "boolean":
-                        if parsed_values[generated_name].lower() in ("true", "1", "y"):
-                            option["default"] = parsed_values[generated_name]
+                        if parsed_values[generated_id].lower() in ("true", "1", "y"):
+                            option["default"] = parsed_values[generated_id]
                         else:
                             del option["default"]
                     else:
-                        option["default"] = parsed_values[generated_name]
+                        option["default"] = parsed_values[generated_id]
 
                     args_dict = _parse_args_in_yunohost_format(
-                        [{option["name"]: parsed_values[generated_name]}],
+                        [{option["id"]: parsed_values[generated_id]}],
                         [option]
                     )
                     option["default"] = args_dict[option["name"]][0]
                 else:
-                    logger.debug("Variable '%s' is not declared by config script, using default", generated_name)
+                    logger.debug("Variable '%s' is not declared by config script, using default", generated_id)
                     # do nothing, we'll use the default if present
 
     return {
@@ -1589,14 +1589,14 @@ def app_config_apply(operation_logger, app, args):
         for section in tab.get("sections", []):
             section_id = section["id"]
             for option in section.get("options", []):
-                option_name = option["name"]
-                generated_name = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)).upper()
+                option_id = option["id"]
+                generated_id = ("YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_id)).upper()
 
-                if generated_name in args:
-                    logger.debug("include into env %s=%s", generated_name, args[generated_name])
-                    env[generated_name] = args[generated_name]
+                if generated_id in args:
+                    logger.debug("include into env %s=%s", generated_id, args[generated_id])
+                    env[generated_id] = args[generated_id]
                 else:
-                    logger.debug("no value for key id %s", generated_name)
+                    logger.debug("no value for key id %s", generated_id)
 
     # for debug purpose
     for key in args:
