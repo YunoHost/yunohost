@@ -464,9 +464,9 @@ def _update_ldap_group_permission(permission, allowed, sync_perm=True):
     effectively_removed_users = old_allowed_users - new_allowed_users
 
     if effectively_added_users:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users, sub_permission)])
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission])
     if effectively_removed_users:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users, sub_permission)])
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission])
 
     return new_permission
 
