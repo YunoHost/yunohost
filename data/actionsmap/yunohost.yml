@@ -548,9 +548,6 @@ app:
             action_help: List apps
             api: GET /apps
             arguments:
-                -f:
-                    full: --filter
-                    help: Name filter of app_id or app_name
                 -r:
                     full: --raw
                     help: Return the full app_dict
@@ -558,10 +555,6 @@ app:
                 -i:
                     full: --installed
                     help: Return only installed apps
-                    action: store_true
-                -b:
-                    full: --with-backup
-                    help: Return only apps with backup feature (force --installed filter)
                     action: store_true
 
         ### app_info()

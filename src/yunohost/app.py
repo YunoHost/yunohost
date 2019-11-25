@@ -71,18 +71,14 @@ re_app_instance_name = re.compile(
 )
 
 
-def app_list(filter=None, raw=False, installed=False, with_backup=False):
+def app_list(raw=False, installed=False):
     """
     List apps
 
     Keyword argument:
-        filter -- Name filter of app_id or app_name
         raw -- Return the full app_dict
         installed -- Return only installed apps
-        with_backup -- Return only apps with backup feature (force --installed filter)
-
     """
-    installed = with_backup or installed
 
     list_dict = {} if raw else []
 
@@ -112,27 +108,16 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
 
         app_info_dict = app_dict[app_id]
 
-        # Apply filter if there's one
-        if (filter and
-           (filter not in app_id) and
-           (filter not in app_info_dict['manifest']['name'])):
-            continue
-
         # Ignore non-installed app if user wants only installed apps
         app_installed = _is_installed(app_id)
         if installed and not app_installed:
             continue
 
-        # Ignore apps which don't have backup/restore script if user wants
-        # only apps with backup features
-        if with_backup and (
-            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') or
-            not os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore')
-        ):
-            continue
-
         if raw:
             app_info_dict['installed'] = app_installed
+            app_info_dict['supports_backup_restore'] = (app_installed and
+                                                        os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') and
+                                                        os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore'))
 
             # dirty: we used to have manifest containing multi_instance value in form of a string
             # but we've switched to bool, this line ensure retrocompatibility
@@ -173,7 +158,7 @@ def app_info(app, raw=False):
     manifest = _get_manifest_of_app(app_setting_path)
 
     if raw:
-        ret = app_list(filter=app, raw=True)[app]
+        ret = app_list(raw=True)[app]
         ret['settings'] = _get_app_settings(app)
 
         # Determine upgradability
