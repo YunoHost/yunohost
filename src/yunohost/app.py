@@ -142,15 +142,10 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
             list_dict[app_id] = app_info_dict
 
         else:
-            label = None
-            if app_installed:
-                app_info_dict_raw = app_info(app=app_id, raw=True)
-                label = app_info_dict_raw['settings']['label']
-
             list_dict.append({
                 'id': app_id,
                 'name': app_info_dict['manifest']['name'],
-                'label': label,
+                'label': _get_app_settings(app_id).get("label", "?") if app_installed else None,
                 'description': _value_for_locale(app_info_dict['manifest']['description']),
                 # FIXME: Temporarly allow undefined license
                 'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
