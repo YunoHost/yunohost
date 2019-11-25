@@ -158,7 +158,7 @@ ynh_add_protected_uris() {
 #
 ynh_app_setting()
 {
-    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python - <<EOF
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python2.7 - <<EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)
