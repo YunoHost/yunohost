@@ -543,35 +543,41 @@ app:
     category_help: Manage apps
     actions:
 
+        catalog:
+            action_help: Show the catalog of installable application
+            api: GET /appscatalog
+            arguments:
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
+                    action: store_true
+
+
         ### app_list()
         list:
-            action_help: List apps
+            action_help: List installed apps
             api: GET /apps
             arguments:
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
-                    action: store_true
-                -i:
-                    full: --installed
-                    help: Return only installed apps
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_info()
         info:
-            action_help: Get information about an installed app
+            action_help: Show infos about a specific installed app
             api: GET /apps/<app>
             arguments:
                 app:
                     help: Specific app ID
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_map()
         map:
-            action_help: List apps by domain
+            action_help: Show the mapping between urls and apps
             api: GET /appsmap
             arguments:
                 -a:

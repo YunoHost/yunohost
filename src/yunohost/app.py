@@ -71,76 +71,41 @@ re_app_instance_name = re.compile(
 )
 
 
-def app_list(raw=False, installed=False):
+def app_catalog(full=False, all=False):
     """
-    List apps
-
-    Keyword argument:
-        raw -- Return the full app_dict
-        installed -- Return only installed apps
+    Return a dict of apps available to installation from Yunohost's app catalog
     """
-
-    list_dict = {} if raw else []
 
     # Get app list from catalog cache
-    app_dict = _load_apps_catalog()
+    catalog = _load_apps_catalog()
+    installed_apps = set(_installed_apps())
 
-    # Get app list from the app settings directory
-    for app in _installed_apps():
-        if app not in app_dict:
-            # Handle multi-instance case like wordpress__2
-            if '__' in app:
-                original_app = app[:app.index('__')]
-                if original_app in app_dict:
-                    app_dict[app] = app_dict[original_app]
-                    continue
-                # FIXME : What if it's not !?!?
+    for app, infos in catalog.items():
+        infos["installed"] = app in installed_apps
 
-            manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-            app_dict[app] = {"manifest": manifest}
+        if not full:
+            catalog[app] = {
+                "description": _value_for_locale(infos['manifest']['description']),
+                "level": infos["level"],
+            }
 
-            app_dict[app]['repository'] = None
-
-    # Sort app list
-    sorted_app_list = sorted(app_dict.keys())
-
-    for app_id in sorted_app_list:
-
-        app_info_dict = app_dict[app_id]
-
-        # Ignore non-installed app if user wants only installed apps
-        app_installed = _is_installed(app_id)
-        if installed and not app_installed:
-            continue
-
-        if raw:
-            app_info_dict['installed'] = app_installed
-            app_info_dict['supports_backup_restore'] = (app_installed and
-                                                        os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/backup') and
-                                                        os.path.isfile(APPS_SETTING_PATH + app_id + '/scripts/restore'))
-
-            # dirty: we used to have manifest containing multi_instance value in form of a string
-            # but we've switched to bool, this line ensure retrocompatibility
-
-            app_info_dict["manifest"]["multi_instance"] = is_true(app_info_dict["manifest"].get("multi_instance", False))
-
-            list_dict[app_id] = app_info_dict
-
-        else:
-            list_dict.append({
-                'id': app_id,
-                'name': app_info_dict['manifest']['name'],
-                'label': _get_app_settings(app_id).get("label", "?") if app_installed else None,
-                'description': _value_for_locale(app_info_dict['manifest']['description']),
-                # FIXME: Temporarly allow undefined license
-                'license': app_info_dict['manifest'].get('license', m18n.n('license_undefined')),
-                'installed': app_installed
-            })
-
-    return {'apps': list_dict} if not raw else list_dict
+    return {"apps": catalog}
 
 
-def app_info(app, raw=False):
+def app_list(full=False):
+    """
+    List installed apps
+    """
+    out = []
+    for app_id in sorted(_installed_apps()):
+        app_info_dict = app_info(app_id, full=full)
+        app_info_dict["id"] = app_id
+        out.append(app_info_dict)
+
+    return {'apps': out}
+
+
+def app_info(app, full=False):
     """
     Get app info
 
@@ -152,39 +117,47 @@ def app_info(app, raw=False):
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
-    app_setting_path = APPS_SETTING_PATH + app
+    local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    settings = _get_app_settings(app)
 
-    # Retrieve manifest and status
-    manifest = _get_manifest_of_app(app_setting_path)
+    ret = {
+        'description': _value_for_locale(local_manifest['description']),
+        'name': local_manifest['name'],
+        'version': local_manifest.get('version', '-'),
+    }
 
-    if raw:
-        ret = app_list(raw=True)[app]
-        ret['settings'] = _get_app_settings(app)
-
-        # Determine upgradability
-        # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
-        local_update_time = ret['settings'].get('update_time', ret['settings'].get('install_time', 0))
-
-        if 'lastUpdate' not in ret or 'git' not in ret:
-            upgradable = "url_required"
-        elif ret['lastUpdate'] > local_update_time:
-            upgradable = "yes"
-        else:
-            upgradable = "no"
-
-        ret['upgradable'] = upgradable
-        ret['change_url'] = os.path.exists(os.path.join(app_setting_path, "scripts", "change_url"))
-        ret['version'] = manifest.get('version', '-')
-
+    if not full:
         return ret
 
-    info = {
-        'name': manifest['name'],
-        'description': _value_for_locale(manifest['description']),
-        'license': manifest.get('license', m18n.n('license_undefined')),
-        'version': manifest.get('version', '-'),
-    }
-    return info
+    ret["manifest"] = local_manifest
+    ret['settings'] = settings
+
+    absolute_app_name = app if "__" not in app else app[:app.index('__')]  # idk this is the name of the app even for multiinstance apps (so wordpress__2 -> wordpress)
+    ret["from_catalog"] = _load_apps_catalog().get(absolute_app_name, {})
+    ret['upgradable'] = _app_upgradable(ret)
+    ret['supports_change_url'] = os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url"))
+    ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
+                                      os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
+    ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
+    return ret
+
+
+def _app_upgradable(app_infos):
+
+    # Determine upgradability
+    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
+
+    if not app_infos.get("from_catalog", None):
+        return "url_required"
+    if not app_infos["from_catalog"].get("lastUpdate") or not app_infos["from_catalog"].get("git"):
+        return "url_required"
+
+    settings = app_infos["settings"]
+    local_update_time = settings.get('update_time', settings.get('install_time', 0))
+    if app_infos["from_catalog"]['lastUpdate'] > local_update_time:
+        return "yes"
+    else:
+        return "no"
 
 
 def app_map(app=None, raw=False, user=None):
@@ -461,7 +434,7 @@ def app_upgrade(app=[], url=None, file=None):
     for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n('app_upgrade_app_name', app=app_instance_name))
 
-        app_dict = app_info(app_instance_name, raw=True)
+        app_dict = app_info(app_instance_name, full=True)
 
         if file and isinstance(file, dict):
             # We use this dirty hack to test chained upgrades in unit/functional tests
@@ -636,7 +609,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             if answer.upper() != "Y":
                 raise YunohostError("aborting")
 
-    raw_app_list = app_list(raw=True)
+    raw_app_list = _load_apps_catalog()
 
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
 
@@ -1292,7 +1265,7 @@ def app_ssowatconf():
         protected_regex += _get_setting(app_settings, 'protected_regex')
 
         # New permission system
-        this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app['id'] + ".")}
+        this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app + ".")}
         for perm_name, perm_info in this_app_perms.items():
 
             # Ignore permissions for which there's no url defined
@@ -2135,17 +2108,16 @@ def _fetch_app_from_git(app):
         else:
             manifest['remote']['revision'] = revision
     else:
-        app_dict = app_list(raw=True)
+        app_dict = _load_apps_catalog()
 
-        if app in app_dict:
-            app_info = app_dict[app]
-            app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
-            manifest = app_info['manifest']
-        else:
+        if app not in app_dict:
             raise YunohostError('app_unknown')
-
-        if 'git' not in app_info:
+        elif 'git' not in app_dict[app]:
             raise YunohostError('app_unsupported_remote_type')
+
+        app_info = app_dict[app]
+        app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
+        manifest = app_info['manifest']
         url = app_info['git']['url']
 
         if 'github.com' in url:
@@ -2242,8 +2214,10 @@ def _is_installed(app):
     """
     return os.path.isdir(APPS_SETTING_PATH + app)
 
+
 def _installed_apps():
     return os.listdir(APPS_SETTING_PATH)
+
 
 def _value_for_locale(values):
     """
@@ -2755,16 +2729,12 @@ def random_password(length=8):
 
 def unstable_apps():
 
-    raw_app_installed = app_list(installed=True, raw=True)
     output = []
 
-    for app, infos in raw_app_installed.items():
+    for infos in app_list(full=True):
 
-        repo = infos.get("repository", None)
-        state = infos.get("state", None)
-
-        if repo is None or state in ["inprogress", "notworking"]:
-            output.append(app)
+        if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in ["inprogress", "notworking"]:
+            output.append(infos["id"])
 
     return output
 
