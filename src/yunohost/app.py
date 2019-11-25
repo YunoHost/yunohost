@@ -90,7 +90,7 @@ def app_list(filter=None, raw=False, installed=False, with_backup=False):
     app_dict = _load_apps_catalog()
 
     # Get app list from the app settings directory
-    for app in os.listdir(APPS_SETTING_PATH):
+    for app in _installed_apps():
         if app not in app_dict:
             # Handle multi-instance case like wordpress__2
             if '__' in app:
@@ -452,19 +452,12 @@ def app_upgrade(app=[], url=None, file=None):
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
-    try:
-        app_list()
-    except YunohostError:
-        raise YunohostError('apps_already_up_to_date')
-
-    not_upgraded_apps = []
-
     apps = app
     # If no app is specified, upgrade all apps
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
         if not url and not file:
-            apps = [app_["id"] for app_ in app_list(installed=True)["apps"]]
+            apps = _installed_apps()
     elif not isinstance(app, list):
         apps = [app]
 
@@ -668,7 +661,10 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         # If we got an url like "https://github.com/foo/bar_ynh, we want to
         # extract "bar" and test if we know this app
         elif ('http://' in app) or ('https://' in app):
-            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh","")
+            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh", "")
+        else:
+            # FIXME : watdo if '@' in app ?
+            app_name_to_test = None
 
         if app_name_to_test in raw_app_list:
 
@@ -1216,8 +1212,7 @@ def app_register_url(app, domain, path):
     # We cannot change the url of an app already installed simply by changing
     # the settings...
 
-    installed = app in app_list(installed=True, raw=True).keys()
-    if installed:
+    if _is_installed(app):
         settings = _get_app_settings(app)
         if "path" in settings.keys() and "domain" in settings.keys():
             raise YunohostError('app_already_installed_cant_change_url')
@@ -1263,19 +1258,13 @@ def app_ssowatconf():
     redirected_regex = {main_domain + '/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
     redirected_urls = {}
 
-    try:
-        apps_list = app_list(installed=True)['apps']
-    except Exception as e:
-        logger.debug("cannot get installed app list because %s", e)
-        apps_list = []
-
     def _get_setting(settings, name):
         s = settings.get(name, None)
         return s.split(',') if s else []
 
-    for app in apps_list:
+    for app in _installed_apps():
 
-        app_settings = read_yaml(APPS_SETTING_PATH + app['id'] + '/settings.yml')
+        app_settings = read_yaml(APPS_SETTING_PATH + app + '/settings.yml')
 
         if 'domain' not in app_settings:
             continue
@@ -1622,8 +1611,7 @@ def _get_all_installed_apps_id():
          * ...'
     """
 
-    all_apps_ids = [x["id"] for x in app_list(installed=True)["apps"]]
-    all_apps_ids = sorted(all_apps_ids)
+    all_apps_ids = sorted(_installed_apps())
 
     all_apps_ids_formatted = "\n * ".join(all_apps_ids)
     all_apps_ids_formatted = "\n * " + all_apps_ids_formatted
@@ -2269,6 +2257,8 @@ def _is_installed(app):
     """
     return os.path.isdir(APPS_SETTING_PATH + app)
 
+def _installed_apps():
+    return os.listdir(APPS_SETTING_PATH)
 
 def _value_for_locale(values):
     """

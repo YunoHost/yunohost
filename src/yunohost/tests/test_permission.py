@@ -3,7 +3,7 @@ import pytest
 
 from conftest import message, raiseYunohostError
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map
+from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map, _installed_apps
 from yunohost.user import user_list, user_create, user_delete, \
                           user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
@@ -163,9 +163,7 @@ def check_permission_for_apps():
 
     app_perms_prefix = set(p.split(".")[0] for p in app_perms)
 
-    installed_apps = {app['id'] for app in app_list(installed=True)['apps']}
-
-    assert installed_apps == app_perms_prefix
+    assert set(_installed_apps()) == app_perms_prefix
 
 
 def can_access_webpage(webpath, logged_as=None):
