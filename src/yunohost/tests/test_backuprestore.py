@@ -500,7 +500,7 @@ def test_backup_and_restore_with_ynh_restore(mocker):
     _test_backup_and_restore_app(mocker, "backup_recommended_app")
 
 @pytest.mark.with_permission_app_installed
-def test_backup_and_restore_permission_app():
+def test_backup_and_restore_permission_app(mocker):
 
     res = user_permission_list(full=True)['permissions']
     assert "permissions_app.main" in res
@@ -514,7 +514,7 @@ def test_backup_and_restore_permission_app():
     assert res['permissions_app.admin']['allowed'] == ["alice"]
     assert res['permissions_app.dev']['allowed'] == []
 
-    _test_backup_and_restore_app("permissions_app")
+    _test_backup_and_restore_app(mocker, "permissions_app")
 
     res = user_permission_list(full=True)['permissions']
     assert "permissions_app.main" in res
