@@ -57,7 +57,7 @@ APP_TMP_FOLDER = INSTALL_TMP + '/from_file'
 APPS_CATALOG_CACHE = '/var/cache/yunohost/repo'
 APPS_CATALOG_CONF = '/etc/yunohost/apps_catalog.yml'
 APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
-APPS_CATALOG_API_VERSION = 1
+APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 re_github_repo = re.compile(
@@ -71,7 +71,7 @@ re_app_instance_name = re.compile(
 )
 
 
-def app_catalog(full=False, all=False):
+def app_catalog(full=False, with_categories=False):
     """
     Return a dict of apps available to installation from Yunohost's app catalog
     """
@@ -80,16 +80,32 @@ def app_catalog(full=False, all=False):
     catalog = _load_apps_catalog()
     installed_apps = set(_installed_apps())
 
-    for app, infos in catalog.items():
+    # Trim info for apps if not using --full
+    for app, infos in catalog["apps"].items():
         infos["installed"] = app in installed_apps
 
+        infos["manifest"]["description"] = _value_for_locale(infos['manifest']['description'])
+
         if not full:
-            catalog[app] = {
-                "description": _value_for_locale(infos['manifest']['description']),
+            catalog["apps"][app] = {
+                "description": infos['manifest']['description'],
                 "level": infos["level"],
             }
 
-    return {"apps": catalog}
+    # Trim info for categories if not using --full
+    for category in catalog["categories"]:
+        category["title"] = _value_for_locale(category["title"])
+        category["description"] = _value_for_locale(category["description"])
+
+    if not full:
+        catalog["categories"] = [{"id": c["id"],
+                                  "description": c["description"]}
+                                 for c in catalog["categories"]]
+
+    if not with_categories:
+        return {"apps": catalog["apps"]}
+    else:
+        return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
 
 def app_list(full=False):
@@ -107,12 +123,7 @@ def app_list(full=False):
 
 def app_info(app, full=False):
     """
-    Get app info
-
-    Keyword argument:
-        app -- Specific app ID
-        raw -- Return the full app_dict
-
+    Get info for a specific app
     """
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
@@ -133,7 +144,7 @@ def app_info(app, full=False):
     ret['settings'] = settings
 
     absolute_app_name = app if "__" not in app else app[:app.index('__')]  # idk this is the name of the app even for multiinstance apps (so wordpress__2 -> wordpress)
-    ret["from_catalog"] = _load_apps_catalog().get(absolute_app_name, {})
+    ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret['upgradable'] = _app_upgradable(ret)
     ret['supports_change_url'] = os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url"))
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
@@ -609,7 +620,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             if answer.upper() != "Y":
                 raise YunohostError("aborting")
 
-    raw_app_list = _load_apps_catalog()
+    raw_app_list = _load_apps_catalog()["apps"]
 
     if app in raw_app_list or ('@' in app) or ('http://' in app) or ('https://' in app):
 
@@ -2108,7 +2119,7 @@ def _fetch_app_from_git(app):
         else:
             manifest['remote']['revision'] = revision
     else:
-        app_dict = _load_apps_catalog()
+        app_dict = _load_apps_catalog()["apps"]
 
         if app not in app_dict:
             raise YunohostError('app_unknown')
@@ -2645,11 +2656,14 @@ def _update_apps_catalog():
 
 def _load_apps_catalog():
     """
-    Read all the apps catalog cache files and build a single dict (app_dict)
-    corresponding to all known apps in all indexes
+    Read all the apps catalog cache files and build a single dict (merged_catalog)
+    corresponding to all known apps and categories
     """
 
-    app_dict = {}
+    merged_catalog = {
+        "apps": {},
+        "categories": []
+    }
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
 
@@ -2672,18 +2686,22 @@ def _load_apps_catalog():
         del apps_catalog_content["from_api_version"]
 
         # Add apps from this catalog to the output
-        for app, info in apps_catalog_content.items():
+        for app, info in apps_catalog_content["apps"].items():
 
             # (N.B. : there's a small edge case where multiple apps catalog could be listing the same apps ...
             #         in which case we keep only the first one found)
-            if app in app_dict:
-                logger.warning("Duplicate app %s found between apps catalog %s and %s" % (app, apps_catalog_id, app_dict[app]['repository']))
+            if app in merged_catalog["apps"]:
+                logger.warning("Duplicate app %s found between apps catalog %s and %s"
+                               % (app, apps_catalog_id, merged_catalog["apps"][app]['repository']))
                 continue
 
             info['repository'] = apps_catalog_id
-            app_dict[app] = info
+            merged_catalog["apps"][app] = info
 
-    return app_dict
+        # Annnnd categories
+        merged_catalog["categories"] += apps_catalog_content["categories"]
+
+    return merged_catalog
 
 #
 # ############################### #

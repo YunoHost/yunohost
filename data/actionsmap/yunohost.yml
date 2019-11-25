@@ -551,7 +551,10 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
-
+                -c:
+                    full: --with-categories
+                    help: Also return a list of app categories
+                    action: store_true
 
         ### app_list()
         list:
