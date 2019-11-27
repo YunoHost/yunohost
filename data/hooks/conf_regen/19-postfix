@@ -20,7 +20,7 @@ do_pre_regen() {
 
   # prepare main.cf conf file
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet | tr '\n' ' ')
+  domain_list=$(yunohost domain list --output-as plain --quiet | tr '\n' ' ')
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
@@ -49,7 +49,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || { sudo service postfix restart && sudo service postsrsd restart; }
+    || { service postfix restart && service postsrsd restart; }
 
 }
 

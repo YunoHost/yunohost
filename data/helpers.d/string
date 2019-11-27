@@ -49,7 +49,7 @@ ynh_replace_string () {
 	match_string=${match_string//${delimit}/"\\${delimit}"}
 	replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
-	sudo sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$target_file"
+	sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$target_file"
 }
 
 # Substitute/replace a special string by another in a file

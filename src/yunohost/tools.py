@@ -180,9 +180,9 @@ def _set_hostname(hostname, pretty_hostname=None):
 
     # Then call hostnamectl
     commands = [
-        "sudo hostnamectl --static    set-hostname".split() + [hostname],
-        "sudo hostnamectl --transient set-hostname".split() + [hostname],
-        "sudo hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
+        "hostnamectl --static    set-hostname".split() + [hostname],
+        "hostnamectl --transient set-hostname".split() + [hostname],
+        "hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
     ]
 
     for command in commands:

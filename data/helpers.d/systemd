@@ -28,7 +28,7 @@ ynh_add_systemd_config () {
 
 	finalsystemdconf="/etc/systemd/system/$service.service"
 	ynh_backup_if_checksum_is_different --file="$finalsystemdconf"
-	sudo cp ../conf/$template "$finalsystemdconf"
+	cp ../conf/$template "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
@@ -40,9 +40,9 @@ ynh_add_systemd_config () {
 	fi
 	ynh_store_file_checksum --file="$finalsystemdconf"
 
-	sudo chown root: "$finalsystemdconf"
-	sudo systemctl enable $service
-	sudo systemctl daemon-reload
+	chown root: "$finalsystemdconf"
+	systemctl enable $service
+	systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config

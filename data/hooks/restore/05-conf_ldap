@@ -5,7 +5,7 @@ if [[ $EUID -ne 0 ]]; then
     # We need to execute this script as root, since the ldap
     # service will be shut down during the operation (and sudo
     # won't be available)
-    sudo /bin/bash $(readlink -f $0) $1
+    /bin/bash $(readlink -f $0) $1
 
 else
 
