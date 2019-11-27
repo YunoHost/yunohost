@@ -44,7 +44,8 @@ class MyMigration(Migration):
         except Exception as e:
             logger.warning("Unable to parse the legacy conf %s (error : %s) ... migrating anyway" % (LEGACY_APPS_CATALOG_CONF, str(e)))
 
-        os.rename(LEGACY_APPS_CATALOG_CONF, LEGACY_APPS_CATALOG_CONF_BACKUP)
+        if os.path.exists(LEGACY_APPS_CATALOG_CONF):
+            os.rename(LEGACY_APPS_CATALOG_CONF, LEGACY_APPS_CATALOG_CONF_BACKUP)
 
         _initialize_apps_catalog_system()
         _update_apps_catalog()
