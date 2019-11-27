@@ -38,25 +38,25 @@ do_pre_regen() {
   if [[ -f $services_path ]]; then
       tmp_services_path="${services_path}-tmp"
       new_services_path="${services_path}-new"
-      sudo cp "$services_path" "$tmp_services_path"
+      cp "$services_path" "$tmp_services_path"
       _update_services "$new_services_path" || {
-        sudo mv "$tmp_services_path" "$services_path"
+        mv "$tmp_services_path" "$services_path"
         exit 1
       }
       if [[ -f $new_services_path ]]; then
           # replace services.yml with new one
-          sudo mv "$new_services_path" "$services_path"
-          sudo mv "$tmp_services_path" "${services_path}-old"
+          mv "$new_services_path" "$services_path"
+          mv "$tmp_services_path" "${services_path}-old"
       else
-          sudo rm -f "$tmp_services_path"
+          rm -f "$tmp_services_path"
       fi
   else
-      sudo cp services.yml /etc/yunohost/services.yml
+      cp services.yml /etc/yunohost/services.yml
   fi
 }
 
 _update_services() {
-  sudo python2 - << EOF
+  python2 - << EOF
 import yaml
 
 

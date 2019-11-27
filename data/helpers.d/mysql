@@ -44,7 +44,7 @@ ynh_mysql_execute_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    ynh_mysql_connect_as --user="root" --password="$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
+    ynh_mysql_connect_as --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" \
         --database="$database" <<< "$sql"
 }
 
@@ -65,7 +65,7 @@ ynh_mysql_execute_file_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    ynh_mysql_connect_as --user="root" --password="$(sudo cat $MYSQL_ROOT_PWD_FILE)" \
+    ynh_mysql_connect_as --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" \
         --database="$database" < "$file"
 }
 
@@ -126,7 +126,7 @@ ynh_mysql_dump_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    mysqldump -u "root" -p"$(sudo cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$database"
+    mysqldump -u "root" -p"$(cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$database"
 }
 
 # Create a user
@@ -223,7 +223,7 @@ ynh_mysql_remove_db () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	local mysql_root_password=$(sudo cat $MYSQL_ROOT_PWD_FILE)
+	local mysql_root_password=$(cat $MYSQL_ROOT_PWD_FILE)
 	if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"; then	# Check if the database exists
 		ynh_mysql_drop_db $db_name	# Remove the database	
 	else

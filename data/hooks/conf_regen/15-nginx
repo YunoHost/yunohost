@@ -45,7 +45,7 @@ do_pre_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
@@ -102,15 +102,15 @@ do_post_regen() {
   [ -z "$regen_conf_files" ] && exit 0
 
   # retrieve variables
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # create NGINX conf directories for domains
   for domain in $domain_list; do
-    sudo mkdir -p "/etc/nginx/conf.d/${domain}.d"
+    mkdir -p "/etc/nginx/conf.d/${domain}.d"
   done
 
   # Reload nginx configuration
-  pgrep nginx && sudo service nginx reload
+  pgrep nginx && service nginx reload
 }
 
 FORCE=${2:-0}

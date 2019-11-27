@@ -13,7 +13,7 @@ ynh_wait_dpkg_free() {
     for try in `seq 1 17`
     do
         # Check if /var/lib/dpkg/lock is used by another process
-        if sudo lsof /var/lib/dpkg/lock > /dev/null
+        if lsof /var/lib/dpkg/lock > /dev/null
         then
             echo "apt is already in use..."
             # Sleep an exponential time at each round

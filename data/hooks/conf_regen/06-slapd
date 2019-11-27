@@ -127,7 +127,7 @@ do_post_regen() {
   # wait a maximum time of 5 minutes
   # yes, force-reload behave like a restart
   number_of_wait=0
-  while ! sudo su admin -c '' && ((number_of_wait < 60))
+  while ! su admin -c '' && ((number_of_wait < 60))
   do
       sleep 5
       ((number_of_wait += 1))
