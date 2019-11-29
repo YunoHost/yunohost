@@ -422,7 +422,7 @@
     "permission_cannot_remove_main": "Removing a main permission is not allowed",
     "permission_created": "Permission '{permission:s}' created",
     "permission_creation_failed": "Could not create permission '{permission}': {error}",
-    "permission_currently_allowed_for_visitors": "This permission is currently granted to visitors in addition to other groups. You probably want to either remove the 'visitors' permission or remove the other groups it is currently granted to.",
+    "permission_allowed_for_visitors_but_not_for_all_users": "Visitors can't be granted if all users is not already granted.",
     "permission_currently_allowed_for_all_users": "This permission is currently granted to all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the other groups it is currently granted to.",
     "permission_deleted": "Permission '{permission:s}' deleted",
     "permission_deletion_failed": "Could not delete permission '{permission}': {error}",

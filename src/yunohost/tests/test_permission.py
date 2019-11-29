@@ -460,13 +460,13 @@ def test_permission_app_propagation_on_ssowat():
                 args="domain=%s&path=%s&is_public=1&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['allowed'] == ["visitors"]
+    assert "visitors" in res['permissions_app.main']['allowed'] and "all_users" in res['permissions_app.main']['allowed']
 
     app_webroot = "https://%s/urlpermissionapp" % maindomain
     assert can_access_webpage(app_webroot, logged_as=None)
     assert can_access_webpage(app_webroot, logged_as="alice")
 
-    user_permission_update("permissions_app.main", remove="visitors", add="bob")
+    user_permission_update("permissions_app.main", remove=["visitors", "all_users"], add="bob")
     res = user_permission_list(full=True)['permissions']
 
     assert not can_access_webpage(app_webroot, logged_as=None)
@@ -491,7 +491,7 @@ def test_permission_legacy_app_propagation_on_ssowat():
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
     res = user_permission_list(full=True)['permissions']
-    assert res['legacy_app.main']['allowed'] == ["visitors"]
+    assert "visitors" in res['legacy_app.main']['allowed'] and "all_users" in res['legacy_app.main']['allowed']
 
     app_webroot = "https://%s/legacy" % maindomain
 
@@ -499,7 +499,7 @@ def test_permission_legacy_app_propagation_on_ssowat():
     assert can_access_webpage(app_webroot, logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent
-    user_permission_update("legacy_app.main", remove="visitors", add="bob")
+    user_permission_update("legacy_app.main", remove=["visitors", "all_users"], add="bob")
 
     assert not can_access_webpage(app_webroot, logged_as=None)
     assert not can_access_webpage(app_webroot, logged_as="alice")

@@ -140,12 +140,14 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # If we end up with something like allowed groups is ["all_users", "volunteers"]
     # we shall warn the users that they should probably choose between one or the other,
     # because the current situation is probably not what they expect / is temporary ?
-
-    if len(new_allowed_groups) > 1:
-        if "all_users" in new_allowed_groups:
+    
+    if "all_users" in new_allowed_groups:
+        if len(new_allowed_groups) > 1 and "visitors" not in new_allowed_groups or len(new_allowed_groups) > 2:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
-        if "visitors" in new_allowed_groups:
-            logger.warning(m18n.n("permission_currently_allowed_for_visitors"))
+    
+    # If visitors are allowed, but not all users, it can break some applications, so we prohibit it.
+    if "visitors" in new_allowed_groups and "all_users" not in new_allowed_groups:
+        raise YunohostError('permission_allowed_for_visitors_but_not_for_all_users')
 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
@@ -257,6 +259,12 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
 
     if url:
         attr_dict['URL'] = url
+
+    if allowed is not None:
+        if "visitors" in allowed and "all_users" not in allowed:
+            if not isinstance(allowed, list):
+                allowed = [allowed]
+            allowed.append("all_users")
 
     # Validate that the groups to add actually exist
     all_existing_groups = user_group_list()['groups'].keys()
