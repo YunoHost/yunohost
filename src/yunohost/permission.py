@@ -138,11 +138,12 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         new_allowed_groups = [g for g in new_allowed_groups if g not in groups_to_remove]
 
     # If we end up with something like allowed groups is ["all_users", "volunteers"]
-    # we shall warn the users that they should probably choose between one or the other,
-    # because the current situation is probably not what they expect / is temporary ?
-
-    if "all_users" in new_allowed_groups:
-        if len(new_allowed_groups) > 1 and "visitors" not in new_allowed_groups or len(new_allowed_groups) > 2:
+    # we shall warn the users that they should probably choose between one or
+    # the other, because the current situation is probably not what they expect
+    # / is temporary ?  Note that it's fine to have ["all_users", "visitors"]
+    # though, but it's not fine to have ["all_users", "visitors", "volunteers"]
+    if "all_users" in new_allowed_groups and len(new_allowed_groups) >= 2:
+        if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
     # If visitors are allowed, but not all users, it can break some applications, so we prohibit it.
