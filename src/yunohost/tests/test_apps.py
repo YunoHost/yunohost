@@ -338,7 +338,8 @@ def test_failed_multiple_app_upgrade(mocker, secondary_domain):
     install_legacy_app(secondary_domain, "/legacy")
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
-    with raiseYunohostError(mocker, 'app_not_upgraded'):
-        app_upgrade(["break_yo_system", "legacy_app"],
-                    file={"break_yo_system": "./tests/apps/break_yo_system_ynh",
-                          "legacy": "./tests/apps/legacy_app_ynh"})
+    with pytest.raises(YunohostError):
+        with message(mocker, "app_not_upgraded"):
+            app_upgrade(["break_yo_system", "legacy_app"],
+                        file={"break_yo_system": "./tests/apps/break_yo_system_ynh",
+                              "legacy": "./tests/apps/legacy_app_ynh"})
