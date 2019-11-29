@@ -140,11 +140,11 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
     # If we end up with something like allowed groups is ["all_users", "volunteers"]
     # we shall warn the users that they should probably choose between one or the other,
     # because the current situation is probably not what they expect / is temporary ?
-    
+
     if "all_users" in new_allowed_groups:
         if len(new_allowed_groups) > 1 and "visitors" not in new_allowed_groups or len(new_allowed_groups) > 2:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
-    
+
     # If visitors are allowed, but not all users, it can break some applications, so we prohibit it.
     if "visitors" in new_allowed_groups and "all_users" not in new_allowed_groups:
         raise YunohostError('permission_allowed_for_visitors_but_not_for_all_users')
@@ -261,15 +261,14 @@ def permission_create(operation_logger, permission, url=None, allowed=None, sync
         attr_dict['URL'] = url
 
     if allowed is not None:
+        if not isinstance(allowed, list):
+            allowed = [allowed]
         if "visitors" in allowed and "all_users" not in allowed:
-            if not isinstance(allowed, list):
-                allowed = [allowed]
             allowed.append("all_users")
 
     # Validate that the groups to add actually exist
     all_existing_groups = user_group_list()['groups'].keys()
-    allowed_ = [] if allowed is None else [allowed] if not isinstance(allowed, list) else allowed
-    for group in allowed_:
+    for group in allowed or []:
         if group not in all_existing_groups:
             raise YunohostError('group_unknown', group=group)
 
