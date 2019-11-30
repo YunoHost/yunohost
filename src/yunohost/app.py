@@ -96,6 +96,8 @@ def app_catalog(full=False, with_categories=False):
     for category in catalog["categories"]:
         category["title"] = _value_for_locale(category["title"])
         category["description"] = _value_for_locale(category["description"])
+        for subtags in category.get("subtags", []):
+            subtags["title"] = _value_for_locale(subtags["title"])
 
     if not full:
         catalog["categories"] = [{"id": c["id"],
