@@ -79,7 +79,16 @@ def service_add(name, description=None, log=None, log_type="file", test_status=N
     if description:
         services[name]['description'] = description
     else:
-        logger.warning("/!\\ Packager ! You added a custom service without specifying a description. Please add --description to explain what the service does in a similar fashion to existing services.")
+        # Try to get the description from systemd service
+        out = subprocess.check_output("systemctl show %s | grep '^Description='" % name, shell=True)
+        out = out.replace("Description=", "")
+        # If the service does not yet exists or if the description is empty,
+        # systemd will anyway return foo.service as default value, so we wanna
+        # make sure there's actually something here.
+        if out == name + ".service":
+            logger.warning("/!\\ Packager ! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
+        else:
+            services[name]['description'] = out
 
     if need_lock:
         services[name]['need_lock'] = True
