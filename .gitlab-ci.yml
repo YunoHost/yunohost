@@ -1,0 +1,86 @@
+stages:
+  - postinstall
+  - tests
+
+.tests:
+  variables:
+    SNAPSHOT_NAME: "after-postinstall"
+  before_script:
+    - apt-get install python-pip -y
+    - pip2 install pytest pytest-sugar pytest-mock requests-mock mock
+    - pushd src/yunohost/tests
+    - git clone https://github.com/YunoHost/test_apps ./apps
+    - cd apps
+    - git pull > /dev/null 2>&1
+    - popd
+    - export PYTEST_ADDOPTS="--color=yes"
+
+
+postinstall:
+  variables:
+    SNAPSHOT_NAME: "before-postinstall"
+  stage: postinstall
+  script:
+    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
+
+root-tests:
+  extends: .tests
+  stage: tests
+  script:
+    - py.test tests
+
+test-apps:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_apps.py
+
+test-appscatalog:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_appscatalog.py
+
+test-appurl:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_appurl.py
+
+test-backuprestore:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_backuprestore.py
+
+test-changeurl:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_changeurl.py
+
+test-permission:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_permission.py
+
+test-settings:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_settings.py
+
+test-user-group:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_user-group.py
