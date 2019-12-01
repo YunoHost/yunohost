@@ -165,9 +165,15 @@ ynh_systemd_action() {
 #
 # usage: ynh_clean_check_starting
 ynh_clean_check_starting () {
-	# Stop the execution of tail.
-	kill -s 15 $pid_tail 2>&1
-	ynh_secure_remove "$templog" 2>&1
+    if [ -n "$pid_tail" ]
+    then
+        # Stop the execution of tail.
+        kill -s 15 $pid_tail 2>&1
+    fi
+    if [ -n "$templog" ]
+    then
+	    ynh_secure_remove "$templog" 2>&1
+    fi
 }
 
 

@@ -41,10 +41,6 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
-  # fix some permissions
-  sudo chown -R metronome: /var/lib/metronome/
-  sudo chown -R metronome: /etc/metronome/conf.d/
-
   # retrieve variables
   domain_list=$(sudo yunohost domain list --output-as plain --quiet)
 
@@ -52,6 +48,10 @@ do_post_regen() {
   for domain in $domain_list; do
     sudo mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
   done
+
+  # fix some permissions
+  sudo chown -R metronome: /var/lib/metronome/
+  sudo chown -R metronome: /etc/metronome/conf.d/
 
   [[ -z "$regen_conf_files" ]] \
     || sudo service metronome restart

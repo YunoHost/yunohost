@@ -2,6 +2,8 @@
 
 set -e
 
+. /usr/share/yunohost/helpers
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -14,11 +16,10 @@ do_pre_regen() {
   cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
   cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
 
-  # prepare dovecot.conf conf file
-  main_domain=$(cat /etc/yunohost/current_host)
-  cat dovecot.conf \
-    | sed "s/{{ main_domain }}/${main_domain}/g" \
-    > "${dovecot_dir}/dovecot.conf"
+  export pop3_enabled="$(yunohost settings get 'pop3.enabled')"
+  export main_domain=$(cat /etc/yunohost/current_host)
+
+  ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
 
   # adapt it for IPv4-only hosts
   if [ ! -f /proc/net/if_inet6 ]; then

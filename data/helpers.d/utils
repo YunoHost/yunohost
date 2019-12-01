@@ -28,43 +28,6 @@ ynh_exit_properly () {
 	# Small tempo to avoid the next message being mixed up with other DEBUG messages
 	sleep 0.5
 
-	ynh_print_err --message="!!\n  $app's script has encountered an error. Its execution was cancelled.\n!!"
-
-	# If the script is executed from the CLI, dump the end of the log that precedes the crash.
-	if [ "$YNH_INTERFACE" == "cli" ]
-	then
-		# Unset xtrace to not spoil the log
-		set +x
-
-		local ynh_log="/var/log/yunohost/yunohost-cli.log"
-
-		# Wait for the log to be fill with the data until the crash.
-		local timeout=0
-		while ! tail --lines=20 "$ynh_log" | grep --quiet "+ ynh_exit_properly"
-		do
-			((timeout++))
-			if [ $timeout -eq 500 ]; then
-				break
-			fi
-		done
-
-		echo -e "\e[34m\e[1mPlease find here an extract of the log before the crash:\e[0m" >&2
-		# Tail the last 30 lines of log of YunoHost
-		# But remove all lines after "ynh_exit_properly"
-		# Remove the timestamp at the beginning of the line
-		# Remove "yunohost.hook..."
-		# Add DEBUG and color it at the beginning of each log line.
-		echo -e "$(tail --lines=30 "$ynh_log" \
-			| sed '1,/+ ynh_exit_properly/!d' \
-			| sed 's/^[[:digit:]: ,-]*//g' \
-			| sed 's/ *yunohost.hook.*\]/ -/g' \
-			| sed 's/^WARNING /&/g' \
-			| sed 's/^DEBUG /&  /g' \
-			| sed 's/^INFO /&   /g' \
-			| sed 's/^/\\e[34m\\e[1m[DEBUG]\\e[0m: /g')" >&2
-		set -x
-	fi
-
 	if type -t ynh_clean_setup > /dev/null; then	# Check if the function exist in the app script.
 		ynh_clean_setup	# Call the function to do specific cleaning for the app.
 	fi
@@ -349,22 +312,23 @@ ynh_secure_remove () {
         ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
     fi
 
-    if [[ "$forbidden_path" =~ "$file" \
+    if [[ -z "$file" ]]
+    then
+        ynh_print_warn --message="ynh_secure_remove called with empty argument, ignoring."
+    else if [[ "$forbidden_path" =~ "$file" \
         # Match all paths or subpaths in $forbidden_path
         || "$file" =~ ^/[[:alnum:]]+$ \
         # Match all first level paths from / (Like /var, /root, etc...)
         || "${file:${#file}-1}" = "/" ]]
         # Match if the path finishes by /. Because it seems there is an empty variable
     then
-        ynh_print_warn --message="Avoid deleting $file."
+        ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
+    else if [ -e "$file" ]
+    then
+        rm -R "$file"
     else
-        if [ -e "$file" ]
-        then
-            sudo rm -R "$file"
-        else
-            ynh_print_info --message="$file wasn't deleted because it doesn't exist."
-        fi
-    fi
+        ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
+    fi fi fi
 }
 
 # Extract a key from a plain command output

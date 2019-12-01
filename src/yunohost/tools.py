@@ -30,24 +30,21 @@ import json
 import subprocess
 import pwd
 import socket
-from xmlrpclib import Fault
 from importlib import import_module
-from collections import OrderedDict
 
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
-from yunohost.app import app_fetchlist, app_info, app_upgrade, app_ssowatconf, app_list, _install_appslist_fetch_cron
-from yunohost.domain import domain_add, domain_list, _get_maindomain, _set_maindomain
+
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list, _initialize_apps_catalog_system
+from yunohost.domain import domain_add, domain_list
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
-from yunohost.service import service_status, service_start, service_enable
+from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
 from yunohost.certificate import _set_permissions
-from yunohost.monitor import monitor_disk, monitor_system
-from yunohost.utils.packages import ynh_packages_version, _dump_sources_list, _list_upgradable_apt_packages
-from yunohost.utils.network import get_public_ip
+from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
 
@@ -173,60 +170,10 @@ def tools_adminpw(new_password, check_strength=True):
         logger.success(m18n.n('admin_password_changed'))
 
 
-@is_unit_operation()
-def tools_maindomain(operation_logger, new_domain=None):
-    """
-    Check the current main domain, or change it
-
-    Keyword argument:
-        new_domain -- The new domain to be set as the main domain
-
-    """
-
-    # If no new domain specified, we return the current main domain
-    if not new_domain:
-        return {'current_main_domain': _get_maindomain()}
-
-    # Check domain exists
-    if new_domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    operation_logger.related_to.append(('domain', new_domain))
-    operation_logger.start()
-
-    # Apply changes to ssl certs
-    ssl_key = "/etc/ssl/private/yunohost_key.pem"
-    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
-    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_domain
-    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_domain
-
-    try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
-            os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
-            os.remove(ssl_crt)
-
-        os.symlink(new_ssl_key, ssl_key)
-        os.symlink(new_ssl_crt, ssl_crt)
-
-        _set_maindomain(new_domain)
-    except Exception as e:
-        logger.warning("%s" % e, exc_info=1)
-        raise YunohostError('maindomain_change_failed')
-
-    _set_hostname(new_domain)
-
-    # Generate SSOwat configuration file
-    app_ssowatconf()
-
-    # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r'):
-            regen_conf()
-    except IOError:
-        pass
-
-    logger.success(m18n.n('maindomain_changed'))
+def tools_maindomain(new_main_domain=None):
+    from yunohost.domain import domain_main_domain
+    logger.warning(m18n.g("deprecated_command_alias", prog="yunohost", old="tools maindomain", new="domain main-domain"))
+    return domain_main_domain(new_main_domain=new_main_domain)
 
 
 def _set_hostname(hostname, pretty_hostname=None):
@@ -290,6 +237,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     """
     from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.domain import domain_main_domain
 
     dyndns_provider = "dyndns.yunohost.org"
 
@@ -366,25 +314,17 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         os.system('hostname yunohost.yunohost.org')
 
     # Add a temporary SSOwat rule to redirect SSO to admin page
-    try:
-        with open('/etc/ssowat/conf.json.persistent') as json_conf:
-            ssowat_conf = json.loads(str(json_conf.read()))
-    except ValueError as e:
-        raise YunohostError('ssowat_persistent_conf_read_error', error=str(e))
-    except IOError:
+    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
         ssowat_conf = {}
+    else:
+        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
     ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
 
-    try:
-        with open('/etc/ssowat/conf.json.persistent', 'w+') as f:
-            json.dump(ssowat_conf, f, sort_keys=True, indent=4)
-    except IOError as e:
-        raise YunohostError('ssowat_persistent_conf_write_error', error=str(e))
-
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -419,7 +359,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # New domain config
     regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
-    tools_maindomain(domain)
+    domain_main_domain(domain)
 
     # Change LDAP admin password
     tools_adminpw(password, check_strength=not force_password)
@@ -427,14 +367,16 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Enable UPnP silently and reload firewall
     firewall_upnp('enable', no_refresh=True)
 
-    # Setup the default apps list with cron job
+    # Initialize the apps catalog system
+    _initialize_apps_catalog_system()
+
+    # Try to update the apps catalog ...
+    # we don't fail miserably if this fails,
+    # because that could be for example an offline installation...
     try:
-        app_fetchlist(name="yunohost",
-                      url="https://app.yunohost.org/apps.json")
+        _update_apps_catalog()
     except Exception as e:
         logger.warning(str(e))
-
-    _install_appslist_fetch_cron()
 
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
@@ -466,7 +408,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     logger.success(m18n.n('yunohost_configured'))
 
-    logger.warning(m18n.n('recommend_to_add_first_user'))
+    logger.warning(m18n.n('yunohost_postinstall_end_tip'))
 
 
 def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
@@ -526,11 +468,10 @@ def tools_update(apps=False, system=False):
 
     upgradable_apps = []
     if apps:
-        logger.info(m18n.n('updating_app_lists'))
         try:
-            app_fetchlist()
+            _update_apps_catalog()
         except YunohostError as e:
-            logger.error(m18n.n('tools_update_failed_to_app_fetchlist'), error=e)
+            logger.error(str(e))
 
         upgradable_apps = list(_list_upgradable_apps())
 
@@ -549,8 +490,11 @@ def _list_upgradable_apps():
 
         if app_dict["upgradable"] == "yes":
 
+            # FIXME : would make more sense for these infos to be computed
+            # directly in app_info and used to check the upgradability of
+            # the app...
             current_version = app_dict.get("version", "?")
-            current_commit = app_dict.get("status", {}).get("remote", {}).get("revision", "?")[:7]
+            current_commit = app_dict.get("settings", {}).get("current_revision", "?")[:7]
             new_version = app_dict.get("manifest",{}).get("version","?")
             new_commit = app_dict.get("git", {}).get("revision", "?")[:7]
 
@@ -632,8 +576,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
 
-        critical_packages_upgradable = [p for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
+        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
@@ -664,8 +608,11 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+            def is_relevant(l):
+                return "Reading database ..." not in l.rstrip()
+
             callbacks = (
-                lambda l: logger.info("+" + l.rstrip() + "\r"),
+                lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
@@ -740,203 +687,6 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         else:
             logger.success(m18n.n('system_upgraded'))
             operation_logger.success()
-
-
-def tools_diagnosis(private=False):
-    """
-    Return global info about current yunohost instance to help debugging
-
-    """
-    diagnosis = OrderedDict()
-
-    # Debian release
-    try:
-        with open('/etc/debian_version', 'r') as f:
-            debian_version = f.read().rstrip()
-    except IOError as e:
-        logger.warning(m18n.n('diagnosis_debian_version_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['host'] = "Debian %s" % debian_version
-
-    # Kernel version
-    try:
-        with open('/proc/sys/kernel/osrelease', 'r') as f:
-            kernel_version = f.read().rstrip()
-    except IOError as e:
-        logger.warning(m18n.n('diagnosis_kernel_version_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['kernel'] = kernel_version
-
-    # Packages version
-    diagnosis['packages'] = ynh_packages_version()
-
-    diagnosis["backports"] = check_output("dpkg -l |awk '/^ii/ && $3 ~ /bpo[6-8]/ {print $2}'").split()
-
-    # Server basic monitoring
-    diagnosis['system'] = OrderedDict()
-    try:
-        disks = monitor_disk(units=['filesystem'], human_readable=True)
-    except (YunohostError, Fault) as e:
-        logger.warning(m18n.n('diagnosis_monitor_disk_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['system']['disks'] = {}
-        for disk in disks:
-            if isinstance(disks[disk], str):
-                diagnosis['system']['disks'][disk] = disks[disk]
-            else:
-                diagnosis['system']['disks'][disk] = 'Mounted on %s, %s (%s free)' % (
-                    disks[disk]['mnt_point'],
-                    disks[disk]['size'],
-                    disks[disk]['avail']
-                )
-
-    try:
-        system = monitor_system(units=['cpu', 'memory'], human_readable=True)
-    except YunohostError as e:
-        logger.warning(m18n.n('diagnosis_monitor_system_error', error=format(e)), exc_info=1)
-    else:
-        diagnosis['system']['memory'] = {
-            'ram': '%s (%s free)' % (system['memory']['ram']['total'], system['memory']['ram']['free']),
-            'swap': '%s (%s free)' % (system['memory']['swap']['total'], system['memory']['swap']['free']),
-        }
-
-    # nginx -t
-    p = subprocess.Popen("nginx -t".split(),
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
-    out, _ = p.communicate()
-    diagnosis["nginx"] = out.strip().split("\n")
-    if p.returncode != 0:
-        logger.error(out)
-
-    # Services status
-    services = service_status()
-    diagnosis['services'] = {}
-
-    for service in services:
-        diagnosis['services'][service] = "%s (%s)" % (services[service]['status'], services[service]['loaded'])
-
-    # YNH Applications
-    try:
-        applications = app_list()['apps']
-    except YunohostError as e:
-        diagnosis['applications'] = m18n.n('diagnosis_no_apps')
-    else:
-        diagnosis['applications'] = {}
-        for application in applications:
-            if application['installed']:
-                diagnosis['applications'][application['id']] = application['label'] if application['label'] else application['name']
-
-    # Private data
-    if private:
-        diagnosis['private'] = OrderedDict()
-
-        # Public IP
-        diagnosis['private']['public_ip'] = {}
-        diagnosis['private']['public_ip']['IPv4'] = get_public_ip(4)
-        diagnosis['private']['public_ip']['IPv6'] = get_public_ip(6)
-
-        # Domains
-        diagnosis['private']['domains'] = domain_list()['domains']
-
-        diagnosis['private']['regen_conf'] = regen_conf(with_diff=True, dry_run=True)
-
-    try:
-        diagnosis['security'] = {
-            "CVE-2017-5754": {
-                "name": "meltdown",
-                "vulnerable": _check_if_vulnerable_to_meltdown(),
-            }
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Unable to check for meltdown vulnerability: %s" % e)
-
-    return diagnosis
-
-
-def _check_if_vulnerable_to_meltdown():
-    # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
-
-    # We use a cache file to avoid re-running the script so many times,
-    # which can be expensive (up to around 5 seconds on ARM)
-    # and make the admin appear to be slow (c.f. the calls to diagnosis
-    # from the webadmin)
-    #
-    # The cache is in /tmp and shall disappear upon reboot
-    # *or* we compare it to dpkg.log modification time
-    # such that it's re-ran if there was package upgrades
-    # (e.g. from yunohost)
-    cache_file = "/tmp/yunohost-meltdown-diagnosis"
-    dpkg_log = "/var/log/dpkg.log"
-    if os.path.exists(cache_file):
-        if not os.path.exists(dpkg_log) or os.path.getmtime(cache_file) > os.path.getmtime(dpkg_log):
-            logger.debug("Using cached results for meltdown checker, from %s" % cache_file)
-            return read_json(cache_file)[0]["VULNERABLE"]
-
-    # script taken from https://github.com/speed47/spectre-meltdown-checker
-    # script commit id is store directly in the script
-    file_dir = os.path.split(__file__)[0]
-    SCRIPT_PATH = os.path.join(file_dir, "./vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh")
-
-    # '--variant 3' corresponds to Meltdown
-    # example output from the script:
-    # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
-    try:
-        logger.debug("Running meltdown vulnerability checker")
-        call = subprocess.Popen("bash %s --batch json --variant 3" %
-                                SCRIPT_PATH, shell=True,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
-        # TODO / FIXME : here we are ignoring error messages ...
-        # in particular on RPi2 and other hardware, the script complains about
-        # "missing some kernel info (see -v), accuracy might be reduced"
-        # Dunno what to do about that but we probably don't want to harass
-        # users with this warning ...
-        output, err = call.communicate()
-        assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
-
-        # If there are multiple lines, sounds like there was some messages
-        # in stdout that are not json >.> ... Try to get the actual json
-        # stuff which should be the last line
-        output = output.strip()
-        if "\n" in output:
-            logger.debug("Original meltdown checker output : %s" % output)
-            output = output.split("\n")[-1]
-
-        CVEs = json.loads(output)
-        assert len(CVEs) == 1
-        assert CVEs[0]["NAME"] == "MELTDOWN"
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
-        raise Exception("Command output for failed meltdown check: '%s'" % output)
-
-    logger.debug("Writing results from meltdown checker to cache file, %s" % cache_file)
-    write_to_json(cache_file, CVEs)
-    return CVEs[0]["VULNERABLE"]
-
-
-def tools_port_available(port):
-    """
-    Check availability of a local port
-
-    Keyword argument:
-        port -- Port to check
-
-    """
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(("localhost", int(port)))
-        s.close()
-    except socket.error:
-        return True
-    else:
-        return False
 
 
 @is_unit_operation()
