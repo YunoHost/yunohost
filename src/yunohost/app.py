@@ -1662,16 +1662,18 @@ def app_ssowatconf():
             # FIXME : gotta handle regex-urls here... meh
             url = _sanitized_absolute_url(perm_info["url"])
             if "visitors" in perm_info["allowed"]:
-                unprotected_urls.append(url)
+                if url not in unprotected_urls:
+                    unprotected_urls.append(url)
 
-                # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
+                # Legacy stuff : we remove now protected-urls that might have been declared as unprotected earlier...
                 protected_urls = [u for u in protected_urls if u != url]
             else:
-                # TODO : small optimization to implement : we don't need to explictly add all the app roots
-                protected_urls.append(url)
+                if url not in protected_urls:
+                    protected_urls.append(url)
 
-                # Legacy stuff : we remove now unprotected-urls that might have been declared as protected earlier...
+                # Legacy stuff : we remove now unprotected-urls / skipped-urls that might have been declared as protected earlier...
                 unprotected_urls = [u for u in unprotected_urls if u != url]
+                skipped_urls = [u for u in skipped_urls if u != url]
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
