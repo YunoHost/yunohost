@@ -1,3 +1,11 @@
+yunohost (3.7.0.4) testing; urgency=low
+
+   - [fix] Also add all_users when allowing visitors (#855)
+   - [fix] Fix handling of skipped_uris (c.f. also SSOwat#149)
+   - [i18n] Improve translations for Catalan
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 2 Dev 2019 20:44:00  +0000
+
 yunohost (3.7.0.3) testing; urgency=low
 
   - [mod] Some refactoring for permissions create/update/reset (#837)
