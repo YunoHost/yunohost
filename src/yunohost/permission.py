@@ -146,9 +146,15 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
-    # If visitors are allowed, but not all users, it can break some applications, so we prohibit it.
-    if "visitors" in new_allowed_groups and "all_users" not in new_allowed_groups:
-        raise YunohostError('permission_allowed_for_visitors_but_not_for_all_users')
+    # If visitors are to be added, we shall make sure that "all_users" are also allowed
+    # (e.g. if visitors are allowed to visit nextcloud, you still want to allow people to log in ...)
+    if add and "visitors" in groups_to_add and "all_users" not in new_allowed_groups:
+        new_allowed_groups.append("all_users")
+        logger.warning(m18n.n("permission_all_users_implicitly_added"))
+    # If all_users are to be added, yet visitors are still to allowed, then we
+    # refuse it (c.f. previous comment...)
+    if remove and "all_users" in groups_to_remove and "visitors" in new_allowed_groups:
+        raise YunohostError('permission_cannot_remove_all_users_while_visitors_allowed')
 
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups):
