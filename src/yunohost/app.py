@@ -959,12 +959,12 @@ def _migrate_legacy_permissions(app):
     # If the current permission says app is protected, but there are legacy rules saying it should be public...
     if app_perm_currently_allowed == ["all_users"] and settings_say_it_should_be_public:
         # Make it public
-        user_permission_update(app + ".main", remove="all_users", add="visitors", sync_perm=False)
+        user_permission_update(app + ".main", add="visitors", sync_perm=False)
 
     # If the current permission says app is public, but there are no setting saying it should be public...
     if app_perm_currently_allowed == ["visitors"] and not settings_say_it_should_be_public:
         # Make is private
-        user_permission_update(app + ".main", remove="visitors", add="all_users", sync_perm=False)
+        user_permission_update(app + ".main", remove="visitors", sync_perm=False)
 
 
 @is_unit_operation()
@@ -1194,7 +1194,7 @@ def app_setting(app, key, value=None, delete=False):
     # We need this because app temporarily set the app as unprotected to configure it with curl...
     if key.startswith("unprotected_") or key.startswith("skipped_") and value == "/":
         from permission import user_permission_update
-        user_permission_update(app + ".main", remove="all_users", add="visitors")
+        user_permission_update(app + ".main", add="visitors")
 
 
 def app_register_url(app, domain, path):

@@ -189,7 +189,7 @@ EOF
     # We need this because app temporarily set the app as unprotected to configure it with curl...
     if [[ "$3" =~ ^(unprotected|skipped)_ ]] && [[ "${4:-}" == "/" ]]
     then
-        ynh_permission_update --permission "main" --remove "all_users" --add "visitors"
+        ynh_permission_update --permission "main" --add "visitors"
     fi
 }
 
