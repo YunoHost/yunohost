@@ -211,7 +211,7 @@ ynh_webpath_available () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	sudo yunohost domain url-available $domain $path_url
+	yunohost domain url-available $domain $path_url
 }
 
 # Register/book a web path for an app
@@ -234,7 +234,7 @@ ynh_webpath_register () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	sudo yunohost app register-url $app $domain $path_url
+	yunohost app register-url $app $domain $path_url
 }
 
 # Create a new permission for the app

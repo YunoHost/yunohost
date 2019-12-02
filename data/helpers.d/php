@@ -28,12 +28,12 @@ ynh_add_fpm_config () {
 	ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
 	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 	ynh_backup_if_checksum_is_different --file="$finalphpconf"
-	sudo cp ../conf/php-fpm.conf "$finalphpconf"
+	cp ../conf/php-fpm.conf "$finalphpconf"
 	ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
 	ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
 	ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
 	ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
-	sudo chown root: "$finalphpconf"
+	chown root: "$finalphpconf"
 	ynh_store_file_checksum --file="$finalphpconf"
 
 	if [ -e "../conf/php-fpm.ini" ]
@@ -41,8 +41,8 @@ ynh_add_fpm_config () {
 		echo "Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead." >&2
 		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
 		ynh_backup_if_checksum_is_different "$finalphpini"
-		sudo cp ../conf/php-fpm.ini "$finalphpini"
-		sudo chown root: "$finalphpini"
+		cp ../conf/php-fpm.ini "$finalphpini"
+		chown root: "$finalphpini"
 		ynh_store_file_checksum "$finalphpini"
 	fi
 	ynh_systemd_action --service_name=$fpm_service --action=reload
