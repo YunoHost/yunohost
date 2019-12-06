@@ -59,7 +59,10 @@ def domain_list(exclude_subdomains=False):
             parent_domain = domain.split(".", 1)[1]
             if parent_domain in result:
                 continue
-        result_list.append(domain)
+        result_list.append(".".join(reversed(domain.split("."))))
+    result_list = sorted(result_list)
+    for i in range(len(result_list)):
+        result_list[i] = ".".join(reversed(result_list[i].split(".")))
 
     return {'domains': result_list}
 
