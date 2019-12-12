@@ -8,7 +8,7 @@ from moulinette.utils.filesystem import read_yaml
 
 from yunohost.tools import Migration
 from yunohost.user import user_list, user_group_create, user_group_update
-from yunohost.app import app_setting, app_list
+from yunohost.app import app_setting, _installed_apps
 from yunohost.regenconf import regen_conf, BACKUP_CONF_DIR
 from yunohost.permission import permission_create, user_permission_update, permission_sync_to_user
 
@@ -96,13 +96,16 @@ class MyMigration(Migration):
     def migrate_app_permission(self, app=None):
         logger.info(m18n.n("migration_0011_migrate_permission"))
 
-        if app:
-            apps = app_list(installed=True, filter=app)['apps']
-        else:
-            apps = app_list(installed=True)['apps']
+        apps = _installed_apps()
 
-        for app_info in apps:
-            app = app_info['id']
+        if app:
+            if app not in apps:
+                logger.error("Can't migrate permission for app %s because it ain't installed..." % app)
+                apps = []
+            else:
+                apps = [app]
+
+        for app in apps:
             permission = app_setting(app, 'allowed_users')
             path = app_setting(app, 'path')
             domain = app_setting(app, 'domain')

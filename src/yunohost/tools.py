@@ -470,17 +470,17 @@ def _list_upgradable_apps():
     app_list_installed = os.listdir(APPS_SETTING_PATH)
     for app_id in app_list_installed:
 
-        app_dict = app_info(app_id, raw=True)
+        app_dict = app_info(app_id, full=True)
 
         if app_dict["upgradable"] == "yes":
 
             # FIXME : would make more sense for these infos to be computed
             # directly in app_info and used to check the upgradability of
             # the app...
-            current_version = app_dict.get("version", "?")
+            current_version = app_dict.get("manifest", {}).get("version", "?")
             current_commit = app_dict.get("settings", {}).get("current_revision", "?")[:7]
-            new_version = app_dict.get("manifest",{}).get("version","?")
-            new_commit = app_dict.get("git", {}).get("revision", "?")[:7]
+            new_version = app_dict.get("from_catalog", {}).get("manifest", {}).get("version", "?")
+            new_commit = app_dict.get("from_catalog", {}).get("git", {}).get("revision", "?")[:7]
 
             if current_version == new_version:
                 current_version += " (" + current_commit + ")"
