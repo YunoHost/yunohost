@@ -698,5 +698,12 @@
     "apps_catalog_obsolete_cache": "La memòria cache del catalòg d’aplicacion es voida o obsolèta.",
     "apps_catalog_update_success": "Lo catalòg d’aplicacions es a jorn !",
     "diagnosis_mail_ougoing_port_25_ok": "Lo pòrt de sortida 25 es pas blocat e lo corrièr electronic pòt partir als autres servidors.",
-    "diagnosis_description_mail": "Corrièl"
+    "diagnosis_description_mail": "Corrièl",
+    "app_upgrade_script_failed": "Una error s’es producha pendent l’execucion de l’script de mesa a nivèl de l’aplicacion",
+    "diagnosis_cant_run_because_of_dep": "Execucion impossibla del diagnostic per {category} mentre que i a de problèmas importants ligats amb {dep}.",
+    "diagnosis_found_errors_and_warnings": "Avèm trobat {errors} problèma(s) important(s) (e {warnings} avis(es)) ligats a  {category} !",
+    "diagnosis_failed": "Recuperacion impossibla dels resultats del diagnostic per la categoria « {category} » : {error}",
+    "diagnosis_ip_broken_dnsresolution": "La resolucion del nom de domeni es copada per una rason… Lo parafuòc bloca las requèstas DNS ?",
+    "diagnosis_no_cache": "I a pas encara de diagnostic de cache per la categoria « {category} »",
+    "apps_catalog_init_success": "Sistèma de catalòg d’aplicacion iniciat !"
 }
