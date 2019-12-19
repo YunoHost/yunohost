@@ -316,7 +316,7 @@
     "certmanager_cert_signing_failed": "Firma del nuovo certificato fallita",
     "good_practices_about_user_password": "Ora stai per impostare una nuova password utente. La password dovrebbe essere di almeno 8 caratteri - anche se è buona pratica utilizzare password più lunghe (es. una sequenza di parole) e/o utilizzare vari tipi di caratteri (maiuscole, minuscole, numeri e simboli).",
     "password_listed": "Questa password è una tra le più utilizzate al mondo. Per favore scegline una più unica.",
-    "password_too_simple_1": "La password deve essere lunga almeno 8 caratteri",
+    "password_too_simple_1": "La password deve contenere almeno 8 caratteri",
     "password_too_simple_2": "La password deve essere lunga almeno 8 caratteri e contenere numeri, maiuscole e minuscole",
     "password_too_simple_3": "La password deve essere lunga almeno 8 caratteri e contenere numeri, maiuscole e minuscole e simboli",
     "password_too_simple_4": "La password deve essere lunga almeno 12 caratteri e contenere numeri, maiuscole e minuscole",
