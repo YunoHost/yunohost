@@ -138,5 +138,6 @@
     "backup_deleted": "Backup werd verwijderd",
     "backup_extracting_archive": "Backup archief uitpakken...",
     "backup_hook_unknown": "backup hook '{hook:s}' onbekend",
-    "backup_nothings_done": "Niets om op te slaan"
+    "backup_nothings_done": "Niets om op te slaan",
+    "password_too_simple_1": "Het wachtwoord moet minimaal 8 tekens lang zijn"
 }
