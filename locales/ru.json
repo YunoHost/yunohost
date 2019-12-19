@@ -42,5 +42,6 @@
     "appslist_retrieve_error": "Невозможно получить список удаленных приложений {appslist:s}: {error:s}",
     "appslist_unknown": "Список приложений {appslist:s} неизвестен.",
     "appslist_url_already_tracked": "Это уже зарегистрированный список приложений с url{url:s}.",
-    "installation_complete": "Установка завершена"
+    "installation_complete": "Установка завершена",
+    "password_too_simple_1": "Пароль должен быть не менее 8 символов"
 }
