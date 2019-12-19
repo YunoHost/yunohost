@@ -77,5 +77,6 @@
     "domain_deleted": "डोमेन डिलीट कर दिया गया है",
     "domain_deletion_failed": "डोमेन डिलीट करने में असमर्थ",
     "domain_dyndns_already_subscribed": "DynDNS डोमेन पहले ही सब्स्क्राइड है",
-    "domain_dyndns_invalid": "DynDNS के साथ इनवैलिड डोमिन इस्तेमाल किया गया"
+    "domain_dyndns_invalid": "DynDNS के साथ इनवैलिड डोमिन इस्तेमाल किया गया",
+    "password_too_simple_1": "पासवर्ड को कम से कम 8 वर्ण लंबा होना चाहिए"
 }
