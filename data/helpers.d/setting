@@ -241,10 +241,12 @@ ynh_webpath_register () {
 #
 # example: ynh_permission_create --permission admin --url /admin --allowed alice bob
 #
-# usage: ynh_permission_create --permission "permission" [--url "url"] [--allowed group1 group2]
+# usage: ynh_permission_create --permission "permission" [--url "url"] [--allowed group1 group2] [--is_protected "true"|"false"]
 # | arg: permission - the name for the permission (by default a permission named "main" already exist)
 # | arg: url - (optional) URL for which access will be allowed/forbidden
 # | arg: allowed - (optional) A list of group/user to allow for the permission
+# | arg: is_protected - (optional) Define if this permission is protected. If it is protected the administrator
+# |                                won't be able to add or remove the visitors group of this permission.  By default it's 'false'
 #
 # If provided, 'url' is assumed to be relative to the app domain/path if they
 # start with '/'.  For example:
@@ -259,10 +261,11 @@ ynh_webpath_register () {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_create() {
-    declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= )
+    declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= [p]=is_protected= )
     local permission
     local url
     local allowed
+    local is_protected
     ynh_handle_getopts_args "$@"
 
     if [[ -n ${url:-} ]]; then
@@ -270,12 +273,18 @@ ynh_permission_create() {
     else
         url="None"
     fi
-
     if [[ -n ${allowed:-} ]]; then
         allowed=",allowed=['${allowed//';'/"','"}']"
     fi
+    if [ -n ${is_protected} ]; then
+        if [ $is_protected == "true" ]; then
+            is_protected=",is_protected=$is_protected=True"
+        else
+            is_protected=",is_protected=$is_protected=False"
+        fi
+    fi
     
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} , sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} ${is_protected:-} , sync_perm=False)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
@@ -333,26 +342,36 @@ ynh_permission_url() {
 
 # Update a permission for the app
 #
-# usage: ynh_permission_update --permission "permission" --add "group" ["group" ...] --remove  "group" ["group" ...]
+# usage: ynh_permission_update --permission "permission" --add "group" ["group" ...] --remove  "group" ["group" ...] [--is_protected "true"|"false"]
 # | arg: permission - the name for the permission (by default a permission named "main" already exist)
 # | arg: add - the list of group or users to enable add to the permission
 # | arg: remove - the list of group or users to remove from the permission
+# | arg: is_protected - (optional) Define if this permission is protected. If it is protected the administrator
+# |                                won't be able to add or remove the visitors group of this permission. By default it's 'false'
 #
 # example: ynh_permission_update --permission admin --add samdoe --remove all_users
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
-    declare -Ar args_array=( [p]=permission= [a]=add= [r]=remove= )
+    declare -Ar args_array=( [p]=permission= [a]=add= [r]=remove= [p]=is_protected= )
     local permission
     local add
     local remove
+    local is_protected
     ynh_handle_getopts_args "$@"
 
     if [[ -n ${add:-} ]]; then
-        add="--add ${add//';'/" "}"
+        add=",add=['${add//';'/"','"}']"
     fi
     if [[ -n ${remove:-} ]]; then
-        remove="--remove ${remove//';'/" "} "
+        remove=",remove=['${remove//';'/"','"}']"
+    fi
+    if [ -n ${is_protected} ]; then
+        if [ $is_protected == "true" ]; then
+            is_protected=",is_protected=$is_protected=True"
+        else
+            is_protected=",is_protected=$is_protected=False"
+        fi
     fi
 
-    yunohost user permission update "$app.$permission" ${add:-} ${remove:-}
+    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission', ${add:-} ${remove} ${is_protected:-} , sync_perm=False)"
 }
