@@ -27,8 +27,8 @@ objectclass ( 1.3.6.1.4.1.17953.9.2.1 NAME 'groupOfNamesYnh'
 objectclass ( 1.3.6.1.4.1.17953.9.2.2 NAME 'permissionYnh'
   DESC 'a Yunohost application'
   SUP top AUXILIARY
-  MUST cn
-  MAY ( groupPermission $ inheritPermission $ URL $ isProtected ) )
+  MUST ( cn $ isProtected )
+  MAY ( groupPermission $ inheritPermission $ URL ) )
 # For User
 objectclass ( 1.3.6.1.4.1.17953.9.2.3 NAME 'userPermissionYnh'
   DESC 'a Yunohost application'
