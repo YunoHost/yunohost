@@ -278,7 +278,7 @@ ynh_permission_create() {
     fi
     if [ -n ${is_protected} ]; then
         if [ $is_protected == "true" ]; then
-            is_protected=",is_protected=$is_protected=True"
+            is_protected=",is_protected=True"
         else
             is_protected=",is_protected=$is_protected=False"
         fi
