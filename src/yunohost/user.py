@@ -718,7 +718,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
 
     new_group_dns = ["uid=" + user + ",ou=users,dc=yunohost,dc=org" for user in new_group]
 
-    if set(new_group) != set(current_group) or True:
+    if set(new_group) != set(current_group):
         operation_logger.start()
         ldap = _get_ldap_interface()
         try:
