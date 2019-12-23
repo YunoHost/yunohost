@@ -82,7 +82,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
     return {'permissions': permissions}
 
 @is_unit_operation()
-def user_permission_update(operation_logger, permission, add=None, remove=None, is_protected=None, force=False, sync_perm=True):
+def user_permission_update(operation_logger, permission, add=None, remove=None, protected=None, force=False, sync_perm=True):
     """
     Allow or Disallow a user or group to a permission for a specific application
 
@@ -90,7 +90,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         permission     -- Name of the permission (e.g. mail or or wordpress or wordpress.editors)
         add            -- List of groups or usernames to add to this permission
         remove         -- List of groups or usernames to remove from to this permission
-        is_protected   -- (optional) Define if the permission can be added/removed to the visitor group
+        protected      -- (optional) Define if the permission can be added/removed to the visitor group
         force          -- (optional) Give the possibility to add/remove access from the visitor group to a protected permission
     """
     from yunohost.user import user_group_list
@@ -174,7 +174,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     operation_logger.start()
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups, is_protected=is_protected, sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups, protected=protected, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_updated', permission=permission))
 
@@ -225,7 +225,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, url=None, allowed=None, is_protected=True, sync_perm=True):
+def permission_create(operation_logger, permission, url=None, allowed=None, protected=True, sync_perm=True):
     """
     Create a new permission for a specific application
 
@@ -233,7 +233,7 @@ def permission_create(operation_logger, permission, url=None, allowed=None, is_p
         permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
         url        -- (optional) URL for which access will be allowed/forbidden
         allowed    -- (optional) A list of group/user to allow for the permission
-        is_protected -- (optional) Define if the permission can be added/removed to the visitor group
+        protected  -- (optional) Define if the permission can be added/removed to the visitor group
 
     If provided, 'url' is assumed to be relative to the app domain/path if they
     start with '/'.  For example:
@@ -297,7 +297,7 @@ def permission_create(operation_logger, permission, url=None, allowed=None, is_p
     except Exception as e:
         raise YunohostError('permission_creation_failed', permission=permission, error=e)
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed=allowed, is_protected=is_protected, sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(permission=permission, allowed=allowed, protected=protected, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_created', permission=permission))
     return new_permission
@@ -435,7 +435,7 @@ def permission_sync_to_user():
     os.system('nscd --invalidate=group')
 
 
-def _update_ldap_group_permission(permission, allowed, is_protected=None, sync_perm=True):
+def _update_ldap_group_permission(permission, allowed, protected=None, sync_perm=True):
     """
         Internal function that will rewrite user permission
 
@@ -463,13 +463,13 @@ def _update_ldap_group_permission(permission, allowed, is_protected=None, sync_p
 
     allowed = [allowed] if not isinstance(allowed, list) else allowed
 
-    if is_protected is None:
-        is_protected = existing_permission["protected"]
+    if protected is None:
+        protected = existing_permission["protected"]
 
     try:
         ldap.update('cn=%s,ou=permission' % permission,
                     {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in allowed],
-                     'isProtected': "TRUE" if is_protected else "FALSE"})
+                     'isProtected': "TRUE" if protected else "FALSE"})
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 
