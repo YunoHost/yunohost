@@ -750,7 +750,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Initialize the main permission for the app
     # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
-    permission_create(app_instance_name+".main", url="/", allowed=["all_users"])
+    permission_create(app_instance_name+".main", url="/", allowed=["all_users"], is_protected=False)
 
     # Execute the app install script
     install_failed = True

@@ -82,7 +82,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
     return {'permissions': permissions}
 
 @is_unit_operation()
-def user_permission_update(operation_logger, permission, add=None, remove=None, is_protected=None, sync_perm=True):
+def user_permission_update(operation_logger, permission, add=None, remove=None, is_protected=None, force=False, sync_perm=True):
     """
     Allow or Disallow a user or group to a permission for a specific application
 
@@ -91,6 +91,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         add            -- List of groups or usernames to add to this permission
         remove         -- List of groups or usernames to remove from to this permission
         is_protected   -- (optional) Define if the permission can be added/removed to the visitor group
+        force          -- (optional) Give the possibility to add/remove access from the visitor group to a protected permission
     """
     from yunohost.user import user_group_list
 
@@ -100,9 +101,14 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
 
     existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
 
+    # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
+        raise YunohostError('permission_require_account', permission=permission)
+
     # Refuse to add "visitors" to protected permission
-    if (add and "visitors" in add and existing_permission["protected"]) or \
-       (remove and "visitors" in remove and existing_permission["protected"]):
+    if ((add and "visitors" in add and existing_permission["protected"]) or \
+       (remove and "visitors" in remove and existing_permission["protected"])) and not force:
         raise YunohostError('permission_protected', permission=permission)
 
     # Fetch currently allowed groups for this permission
@@ -219,7 +225,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, url=None, allowed=None, is_protected=False, sync_perm=True):
+def permission_create(operation_logger, permission, url=None, allowed=None, is_protected=True, sync_perm=True):
     """
     Create a new permission for a specific application
 

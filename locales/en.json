@@ -481,6 +481,7 @@
     "permission_updated": "Permission '{permission:s}' updated",
     "permission_update_nothing_to_do": "No permissions to update",
     "permission_protected": "Permission {permission} protected. You can't modify the visitors group to access to this permission.",
+    "permission_require_account": "Permission {permission} only makes sense for users having an account, and therefore cannot be enabled for visitors.",
     "port_already_closed": "Port {port:d} is already closed for {ip_version:s} connections",
     "port_already_opened": "Port {port:d} is already opened for {ip_version:s} connections",
     "regenconf_file_backed_up": "Configuration file '{conf}' backed up to '{backup}'",

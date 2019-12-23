@@ -246,7 +246,8 @@ ynh_webpath_register () {
 # | arg: url - (optional) URL for which access will be allowed/forbidden
 # | arg: allowed - (optional) A list of group/user to allow for the permission
 # | arg: is_protected - (optional) Define if this permission is protected. If it is protected the administrator
-# |                                won't be able to add or remove the visitors group of this permission.  By default it's 'false'
+# |                                won't be able to add or remove the visitors group of this permission.
+# |                                By default it's 'true' (for the permission different than 'main').
 #
 # If provided, 'url' is assumed to be relative to the app domain/path if they
 # start with '/'.  For example:
@@ -347,7 +348,7 @@ ynh_permission_url() {
 # | arg: add - the list of group or users to enable add to the permission
 # | arg: remove - the list of group or users to remove from the permission
 # | arg: is_protected - (optional) Define if this permission is protected. If it is protected the administrator
-# |                                won't be able to add or remove the visitors group of this permission. By default it's 'false'
+# |                                won't be able to add or remove the visitors group of this permission.
 #
 # example: ynh_permission_update --permission admin --add samdoe --remove all_users
 # Requires YunoHost version 3.7.0 or higher.
@@ -373,5 +374,5 @@ ynh_permission_update() {
         fi
     fi
 
-    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission', ${add:-} ${remove} ${is_protected:-} , sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission', ${add:-} ${remove} ${is_protected:-} , force=True, sync_perm=False)"
 }
