@@ -1250,7 +1250,8 @@ class RestoreManager():
         for permission_name, permission_infos in old_apps_permission.items():
             app_name = permission_name.split(".")[0]
             if _is_installed(app_name):
-                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
+                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"],
+                                  protected=permission_infos["protected"], sync_perm=False)
 
         permission_sync_to_user()
 
@@ -1372,7 +1373,8 @@ class RestoreManager():
                     else:
                         should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
 
-                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed, sync_perm=False)
+                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed,
+                                      protected=permission_infos.get("protected", True), sync_perm=False)
 
                 permission_sync_to_user()
 

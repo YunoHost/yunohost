@@ -116,7 +116,7 @@ class MyMigration(Migration):
                 allowed = [user for user in permission.split(',') if user in known_users]
             else:
                 allowed = ["all_users"]
-            permission_create(app+".main", url=url, allowed=allowed, sync_perm=False)
+            permission_create(app+".main", url=url, allowed=allowed, protected=False, sync_perm=False)
 
             app_setting(app, 'allowed_users', delete=True)
 
