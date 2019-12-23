@@ -6,14 +6,24 @@ stages:
   image: stretch:after-postinstall
   before_script:
     - apt-get install python-pip -y
-    - pip2 install pytest pytest-sugar pytest-mock requests-mock mock
+    - mkdir -p .pip
+    - pip install -U pip
+    - hash -d pip
+    - pip --cache-dir=.pip install pytest pytest-sugar pytest-mock requests-mock mock
     - pushd src/yunohost/tests
-    - git clone https://github.com/YunoHost/test_apps ./apps
+    - >
+       if [ ! -d "./apps" ]; then
+         git clone https://github.com/YunoHost/test_apps ./apps
+       fi
     - cd apps
     - git pull > /dev/null 2>&1
     - popd
     - export PYTEST_ADDOPTS="--color=yes"
-
+  cache:
+    paths: 
+      - .pip
+      - src/yunohost/tests/apps
+    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
 
 postinstall:
   image: stretch:before-postinstall
