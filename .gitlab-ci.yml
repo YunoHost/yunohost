@@ -3,8 +3,7 @@ stages:
   - tests
 
 .tests:
-  variables:
-    SNAPSHOT_NAME: "after-postinstall"
+  image: stretch:after-postinstall
   before_script:
     - apt-get install python-pip -y
     - pip2 install pytest pytest-sugar pytest-mock requests-mock mock
@@ -17,8 +16,7 @@ stages:
 
 
 postinstall:
-  variables:
-    SNAPSHOT_NAME: "before-postinstall"
+  image: stretch:before-postinstall
   stage: postinstall
   script:
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
