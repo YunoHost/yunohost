@@ -271,7 +271,8 @@ def permission_create(operation_logger, permission, url=None, allowed=None, prot
     attr_dict = {
         'objectClass': ['top', 'permissionYnh', 'posixGroup'],
         'cn': str(permission),
-        'gidNumber': gid
+        'gidNumber': gid,
+        'isProtected': 'FALSE' # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
     }
 
     if url:
