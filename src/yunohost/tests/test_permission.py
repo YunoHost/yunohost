@@ -33,8 +33,8 @@ def setup_function(function):
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
-    permission_create("wiki.main", url="/", allowed=["all_users"] , sync_perm=False)
-    permission_create("blog.main", allowed=["all_users"], sync_perm=False)
+    permission_create("wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False)
+    permission_create("blog.main", allowed=["all_users"], protected=False, sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
 
@@ -326,7 +326,7 @@ def test_permission_adding_visitors_implicitly_add_all_users(mocker):
 def test_permission_cant_remove_all_users_if_visitors_allowed(mocker):
 
     with message(mocker, "permission_updated", permission="blog.main"):
-        user_permission_update("blog.main", add=["visitors", "all_users"])
+        user_permission_update("blog.main", add=["visitors", "all_users"], )
 
     with raiseYunohostError(mocker, 'permission_cannot_remove_all_users_while_visitors_allowed'):
         user_permission_update("blog.main", remove="all_users")
