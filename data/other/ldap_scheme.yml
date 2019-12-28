@@ -73,7 +73,7 @@ depends_children:
             - permissionYnh
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
-        isProtected: TRUE
+        isProtected: "TRUE"
     cn=xmpp.main,ou=permission:
         cn: xmpp.main
         gidNumber: "5002"
@@ -82,4 +82,4 @@ depends_children:
             - permissionYnh
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
-        isProtected: TRUE
+        isProtected: "TRUE"
