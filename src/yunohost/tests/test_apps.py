@@ -102,14 +102,14 @@ def check_permission_for_apps_call():
     yield
     check_permission_for_apps()
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def secondary_domain(request):
 
     if "example.test" not in domain_list()["domains"]:
         domain_add("example.test")
 
     def remove_example_domain():
-        domain_remove("example.test", force=True)
+        domain_remove("example.test")
     request.addfinalizer(remove_example_domain)
 
     return "example.test"
