@@ -410,6 +410,9 @@ def test_permission_protected_update(mocker):
     assert res['blog.api']['allowed'] == ["visitors", "all_users"]
 
     user_permission_update("blog.api", remove="visitors", force=True)
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.api']['allowed'] == ["all_users"]
+
     with raiseYunohostError(mocker, "permission_protected"):
         user_permission_update("blog.api", add="visitors")
 
