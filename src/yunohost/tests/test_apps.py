@@ -109,7 +109,7 @@ def secondary_domain(request):
         domain_add("example.test")
 
     def remove_example_domain():
-        domain_remove("example.test")
+        domain_remove("example.test", force=True)
     request.addfinalizer(remove_example_domain)
 
     return "example.test"
