@@ -13,6 +13,7 @@ from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed,
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
+from yunohost.permission import user_permission_list, permission_delete
 
 
 def setup_function(function):
@@ -59,6 +60,33 @@ def clean():
 
     os.system("systemctl reset-failed nginx")  # Reset failed quota for service to avoid running into start-limit rate ?
     os.system("systemctl start nginx")
+
+    # Clean permission
+    for permission_name in user_permission_list(short=True)["permissions"]:
+        if "legacy_app" in permission_name or \
+           "full_domain_app" in permission_name or \
+           "break_yo_system" in permission_name:
+            permission_delete(permission_name, force=True)
+
+    # Clean database
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE legacy_app' \"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER legacy_app@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE legacy_app__2'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER legacy_app__2@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE legacy_app__3'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER legacy_app__3@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE full_domain'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER full_domain@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE full_domain__2'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER full_domain__2@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE full_domain__3'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER full_domain__3@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE break_yo_system'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER break_yo_system@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE break_yo_system__2'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER break_yo_system__2@localhost'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE break_yo_system__3'\"")
+    os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER break_yo_system__3@localhost'\"")
 
 
 @pytest.fixture(autouse=True)
