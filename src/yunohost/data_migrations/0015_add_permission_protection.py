@@ -10,10 +10,6 @@ from yunohost.permission import user_permission_list, SYSTEM_PERMS
 
 logger = getActionLogger('yunohost.migration')
 
-###################################################
-# Tools used also for restoration
-###################################################
-
 class MyMigration(Migration):
     """
         Add protected attribute in LDAP permission
