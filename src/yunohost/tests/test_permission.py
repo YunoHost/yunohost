@@ -3,7 +3,7 @@ import pytest
 
 from conftest import message, raiseYunohostError
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map, _installed_apps
+from yunohost.app import app_install, app_upgrade, app_remove, app_change_url, app_list, app_map, _installed_apps
 from yunohost.user import user_list, user_create, user_delete, \
                           user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
@@ -35,6 +35,7 @@ def setup_function(function):
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
     permission_create("wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False)
     permission_create("blog.main", allowed=["all_users"], protected=False, sync_perm=False)
+    permission_create("blog.api", allowed=["visitors"], protected=True, sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
 
@@ -398,6 +399,23 @@ def test_permission_update_permission_that_doesnt_exist(mocker):
         user_permission_update("doesnt.exist", add="alice")
 
 
+def test_permission_protected_update(mocker):
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.api']['allowed'] == ["visitors", "all_users"]
+
+    with raiseYunohostError(mocker, "permission_protected"):
+        user_permission_update("blog.api", remove="visitors")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.api']['allowed'] == ["visitors", "all_users"]
+
+    user_permission_update("blog.api", remove="visitors", force=True)
+    with raiseYunohostError(mocker, "permission_protected"):
+        user_permission_update("blog.api", add="visitors")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.api']['allowed'] == ["all_users"]
+
 # Permission url management
 
 def test_permission_redefine_url():
@@ -471,6 +489,23 @@ def test_permission_app_change_url():
     assert res['permissions_app.main']['url'] == "/"
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"
+
+
+def test_permission_protection_management_by_helper():
+    app_install("./tests/apps/permissions_app_ynh",
+                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['permissions_app.main']['protected'] == False
+    assert res['permissions_app.admin']['protected'] == True
+    assert res['permissions_app.dev']['protected'] == False
+
+    app_upgrade(["permissions_app"], file="./tests/apps/permissions_app_ynh")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['permissions_app.main']['protected'] == False
+    assert res['permissions_app.admin']['protected'] == False
+    assert res['permissions_app.dev']['protected'] == True
 
 
 def test_permission_app_propagation_on_ssowat():
