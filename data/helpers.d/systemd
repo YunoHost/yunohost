@@ -105,7 +105,7 @@ ynh_systemd_action() {
         # Following the starting of the app in its log
         if [ "$log_path" == "systemd" ] ; then
             # Read the systemd journal
-            journalctl --unit=$service_name --follow --since=-0 --quiet > "$templog" &
+            journalctl --unit=$service_name --follow --since="now" --quiet > "$templog" &
             # Get the PID of the journalctl command
             local pid_tail=$!
         else
