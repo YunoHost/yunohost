@@ -459,11 +459,38 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         elif app_dict["upgradable"] == "url_required":
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif app_dict["upgradable"] == "yes":
+        elif app_dict["upgradable"] == "yes" or force:
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
             logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
             continue
+
+        # Manage upgrade type and avoid any upgrade if there are nothing to do
+        upgrade_type = "UNKNOWN"
+        if manifest.get("upgrade_only_if_version_changes", None) is True:
+            # Get actual_version and new version
+            app_actual_version = manifest["version"]
+            app_new_version = app_dict["version"]
+
+            # do only the upgrade if there are a change
+            if app_actual_version == app_new_version and not force:
+                logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
+                # Save update time
+                now = int(time.time())
+                app_setting(app_instance_name, 'update_time', now)
+                app_setting(app_instance_name, 'current_revision', manifest.get('remote', {}).get('revision', "?"))
+                continue
+            elif app_actual_version == app_new_version:
+                upgrade_type = "UPGRADE_FORCED"
+            elif "~ynh" in app_actual_version and "~ynh" in app_new_version:
+                app_actual_version_upstream, app_actual_version_pkg = app_actual_version.split("~ynh")
+                app_new_version_upstream, app_new_version_pkg = app_new_version.split("~ynh")
+                if app_actual_version_upstream == app_new_version_upstream:
+                    upgrade_type = "UPGRADE_PACKAGE"
+                elif app_actual_version_pkg == app_new_version_pkg:
+                    upgrade_type = "UPGRADE_APP"
+                else:
+                    upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
@@ -483,6 +510,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+        env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
