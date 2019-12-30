@@ -410,7 +410,7 @@ def app_change_url(operation_logger, app, domain, path):
     hook_callback('post_app_change_url', args=args_list, env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None):
+def app_upgrade(app=[], url=None, file=None, force=False):
     """
     Upgrade app
 
