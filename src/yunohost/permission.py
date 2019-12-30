@@ -166,7 +166,8 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         raise YunohostError('permission_cannot_remove_all_users_while_visitors_allowed')
 
     # Don't update LDAP if we update exactly the same values
-    if set(new_allowed_groups) == set(current_allowed_groups) and protected is None:
+    if set(new_allowed_groups) == set(current_allowed_groups) and \
+       (protected is None or protected == existing_permission["protected"]):
         logger.warning(m18n.n("permission_already_up_to_date"))
         return existing_permission
 
