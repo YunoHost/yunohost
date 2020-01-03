@@ -491,7 +491,7 @@
     "tools_upgrade_regular_packages": "Actualitzant els paquets «normals» (no relacionats amb YunoHost)…",
     "tools_upgrade_regular_packages_failed": "No s'han pogut actualitzar els paquets següents: {packages_list}",
     "tools_upgrade_special_packages": "Actualitzant els paquets «especials» (relacionats amb YunoHost)…",
-    "tools_upgrade_special_packages_explanation": "Aquesta acció s'acabarà, però l'actualització especial continuarà en segon pla. No comenceu cap altra acció al servidor en els pròxims ~10 minuts (depèn de la velocitat del maquinari). Un cop acabat, pot ser que us hagueu de tornar a connectar a la interfície d'administració. Els registres de l'actualització estaran disponibles a Eines → Registres (a la interfície d'administració) o amb «yunohost log list» (des de la línia d'ordres).",
+    "tools_upgrade_special_packages_explanation": "Aquesta actualització especial continuarà en segon pla. No comenceu cap altra acció al servidor en els pròxims ~10 minuts (depèn de la velocitat del maquinari). Després d'això, pot ser que us hagueu de tornar a connectar a la interfície d'administració. Els registres de l'actualització estaran disponibles a Eines → Registres (a la interfície d'administració) o utilitzant «yunohost log list» (des de la línia d'ordres).",
     "tools_upgrade_special_packages_completed": "Actualització dels paquets YunoHost acabada.\nPremeu [Enter] per tornar a la línia d'ordres",
     "unbackup_app": "L'aplicació «{app:s}» no serà guardada",
     "unexpected_error": "Hi ha hagut un error inesperat: {error}",
@@ -716,5 +716,8 @@
     "migration_description_0014_remove_app_status_json": "Eliminar els fitxers d'aplicació status.json heretats",
     "diagnosis_services_running": "El servei {service} s'està executant!",
     "diagnosis_services_conf_broken": "La configuració pel servei {service} està trencada!",
-    "diagnosis_ports_needed_by": "És necessari exposar aquest port pel servei {0}"
+    "diagnosis_ports_needed_by": "És necessari exposar aquest port pel servei {0}",
+    "permission_all_users_implicitly_added": "El permís també s'ha donat implícitament a «all_users» ja que és necessari per atorgar-lo al grup «visitors»",
+    "permission_cannot_remove_all_users_while_visitors_allowed": "No podeu retirar el permís a «all_users» mentre encara el tingui el grup «visitors»",
+    "global_settings_setting_pop3_enabled": "Activa el protocol POP3 per al servidor de correu"
 }
