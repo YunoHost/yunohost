@@ -747,7 +747,7 @@
     "diagnosis_services_running": "Le service {service} s'exécute correctement !",
     "diagnosis_services_conf_broken": "La configuration est cassée pour le service {service} !",
     "diagnosis_ports_needed_by": "Rendre ce port accessible est nécessaire pour le service {0}",
-    "diagnosis_ports_forwarding_tip": "Pour résoudre ce problème, vous devez probablement configurer la redirection de port sur votre routeur Internet, comme décrit dans https://yunohost.org/isp_box_config.",
+    "diagnosis_ports_forwarding_tip": "Pour résoudre ce problème, vous devez probablement configurer la redirection de port sur votre routeur Internet comme décrit sur https://yunohost.org/isp_box_config",
     "diagnosis_http_connection_error": "Erreur de connexion : impossible de se connecter au domaine demandé, il est probablement injoignable.",
     "diagnosis_no_cache": "Pas encore de diagnostique de cache pour la catégorie « {category} »",
     "diagnosis_http_unknown_error": "Une erreur est survenue en essayant de joindre votre domaine, il est probablement injoignable.",
@@ -757,5 +757,8 @@
     "diagnosis_services_bad_status_tip": "Vous pouvez essayer de redémarrer le service. Si cela ne fonctionne pas, consultez les journaux de service à l'aide de 'yunohost service log {0}' ou de la section 'Services' de l'administrateur Web.",
     "diagnosis_http_bad_status_code": "N'a pas pu atteindre votre serveur comme prévu, il a renvoyé un code d'état incorrect. Il se peut qu'une autre machine réponde à la place de votre serveur. Vérifiez que vous transférez correctement le port 80, que votre configuration nginx est à jour et qu’un proxy inverse n’interfère pas.",
     "diagnosis_http_timeout": "Expiration du délai en essayant de contacter votre serveur de l'extérieur. Il semble être inaccessible. Vérifiez que vous transférez correctement le port 80, que nginx est en cours d’exécution et qu’un pare-feu n’interfère pas.",
-    "global_settings_setting_pop3_enabled": "Activer le protocole POP3 pour le serveur de messagerie"
+    "global_settings_setting_pop3_enabled": "Activer le protocole POP3 pour le serveur de messagerie",
+    "log_app_action_run": "Lancer l’action de l’application '{}'",
+    "log_app_config_show_panel": "Montrer le panneau de configuration de l’application '{}'",
+    "log_app_config_apply": "Appliquer la configuration à l’application '{}'"
 }
