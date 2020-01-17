@@ -435,5 +435,6 @@
     "migration_0003_not_jessie": "La distribuzione attuale non è Jessie!",
     "migration_0003_system_not_fully_up_to_date": "Il tuo sistema non è completamente aggiornato. Per favore prima esegui un aggiornamento normale prima di migrare a stretch.",
     "this_action_broke_dpkg": "Questa azione ha danneggiato dpkg/apt (i gestori di pacchetti del sistema)… Puoi provare a risolvere questo problema connettendoti via SSH ed eseguendo `sudo dpkg --configure -a`.",
-    "updating_app_lists": "Recupero degli aggiornamenti disponibili per le applicazioni…"
+    "updating_app_lists": "Recupero degli aggiornamenti disponibili per le applicazioni…",
+    "app_action_broke_system": "Questa azione sembra avere roto servizi importanti: {services}"
 }
