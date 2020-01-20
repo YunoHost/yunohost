@@ -1287,6 +1287,7 @@ def app_ssowatconf():
 
             # FIXME : gotta handle regex-urls here... meh
             url = _sanitized_absolute_url(perm_info["url"])
+            perm_info["url"] = url
             if "visitors" in perm_info["allowed"]:
                 if url not in unprotected_urls:
                     unprotected_urls.append(url)
