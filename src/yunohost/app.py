@@ -1771,22 +1771,27 @@ def _get_app_config_panel(app_id):
                               value.items())
 
             for section_key, section_value in sections:
+                def parse_options(section, values):
+                    options = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
+                                 values.items())
+                    for option_key, option_value in options:
+                        option = dict(option_value)
+                        if "ask" not in option:
+                            parse_options(section, option_value)
+                        else:
+                            option["name"] = option_key
+                            option["ask"] = {"en": option["ask"]}
+                            if "help" in option:
+                                option["help"] = {"en": option["help"]}
+                            section["options"].append(option)
+                        
                 section = {
                     "id": section_key,
                     "name": section_value["name"],
                     "options": [],
                 }
-
-                options = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
-                                 section_value.items())
-
-                for option_key, option_value in options:
-                    option = dict(option_value)
-                    option["name"] = option_key
-                    option["ask"] = {"en": option["ask"]}
-                    if "help" in option:
-                        option["help"] = {"en": option["help"]}
-                    section["options"].append(option)
+                
+                parse_options(section, section_value)
 
                 panel["sections"].append(section)
 
