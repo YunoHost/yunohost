@@ -1778,6 +1778,10 @@ def _get_app_actions(app_id):
             action["id"] = key
 
             arguments = []
+            
+            if not isinstance(action["description"], list) or "en" not in action["description"]:
+                action["description"] = {"en": action["description"]}
+
             for argument_name, argument in value.get("arguments", {}).items():
                 argument = dict(**argument)
                 argument["name"] = argument_name
@@ -1901,8 +1905,9 @@ def _get_app_config_panel(app_id):
                 for option_key, option_value in options:
                     option = dict(option_value)
                     option["name"] = option_key
-                    option["ask"] = {"en": option["ask"]}
-                    if "help" in option:
+                    if not isinstance(option["ask"], list) or "en" not in option["ask"]:
+                        option["ask"] = {"en": option["ask"]}
+                    if "help" in option and (not isinstance(option["help"], list) or "en" not in option["help"]):
                         option["help"] = {"en": option["help"]}
                     section["options"].append(option)
 
