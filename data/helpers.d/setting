@@ -158,6 +158,11 @@ ynh_add_protected_uris() {
 #
 ynh_app_setting()
 {
+    if [[ "$1" == "delete" ]] && [[ "$3" =~ ^(unprotected|skipped)_ ]] 
+    then
+        current_value=$(ynh_app_setting_get --app=$app --key=$3)
+    fi
+
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python2.7 - <<EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
@@ -192,7 +197,7 @@ EOF
         if [[ "$1" == "set" ]] && [[ "${4:-}" == "/" ]]
         then
             ynh_permission_update --permission "main" --add "visitors"
-        elif [[ "$1" == "delete" ]]
+        elif [[ "$1" == "delete" ]] && [[ "${current_value:-}" == "/" ]]
         then
             ynh_permission_update --permission "main" --remove "visitors"
         fi
