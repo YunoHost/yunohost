@@ -236,13 +236,13 @@ def app_map(app=None, raw=False, user=None):
 
             return perm_domain, perm_path
 
-        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".")}
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
                 continue
-            if perm_info["url"].startswith("re:"):
+            if perm_info["url"] and perm_info["url"].startswith("re:"):
                 # Here, we have an issue if the chosen url is a regex, because
                 # the url we want to add to the dict is going to be turned into
                 # a clickable link (or analyzed by other parts of yunohost
@@ -268,7 +268,12 @@ def app_map(app=None, raw=False, user=None):
                 logger.error("Permission %s can't be added to the SSOwat configuration because it doesn't support regexes so far..." % perm_name)
                 continue
 
-            perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
+            if perm_info["url"]:
+                perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
+            elif perm_name.endswith(".main"):
+                perm_domain, perm_path = domain, path
+            else:
+                continue
 
             if perm_name.endswith(".main"):
                 perm_label = label
