@@ -674,7 +674,7 @@
     "diagnosis_ip_weird_resolvconf": "La résolution DNS semble fonctionner, mais soyer prudent en utilisant un fichier /etc/resolv.conf personnalisé.",
     "diagnosis_ip_weird_resolvconf_details": "Au lieu de cela, ce fichier devrait être un lien symbolique vers /etc/resolvconf/run/resolv.conf lui-même pointant vers 127.0.0.1 (dnsmasq). Les résolveurs réels doivent être configurés via /etc/resolv.dnsmasq.conf.",
     "diagnosis_dns_missing_record": "Selon la configuration DNS recommandée, vous devez ajouter un enregistrement DNS de type {0}, nom {1} et valeur {2}. Vous pouvez consulter https://yunohost.org/dns_config pour plus d'informations.",
-    "diagnosis_diskusage_ok": "Le stockage {mountpoint} (sur le périphérique {device}) a toujours {espace libre {free_abs_GB} GB ({free_percent}%) !",
+    "diagnosis_diskusage_ok": "Le stockage {mountpoint} (sur le périphérique {device}) a toujours {free_abs_GB} Go ({free_percent}%) d'espace libre !",
     "diagnosis_ram_ok": "Le système dispose toujours de {available_abs_MB} MB ({available_percent}%) de RAM sur {total_abs_MB} MB.",
     "diagnosis_regenconf_allgood": "Tous les fichiers de configuration sont conformes à la configuration recommandée !",
     "diagnosis_security_vulnerable_to_meltdown": "Vous semblez vulnérable à la vulnérabilité de sécurité critique de Meltdown",
