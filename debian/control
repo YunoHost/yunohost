@@ -38,17 +38,6 @@ Recommends: yunohost-admin
  , libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
- , moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
- , apache2, bind9
-Replaces: moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
