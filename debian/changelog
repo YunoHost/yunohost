@@ -1,3 +1,9 @@
+yunohost (4.0.0~alpha) unstable; urgency=low
+
+   - Tmp version for debian builds during experimental/alpha dev for Buster
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 7 Feb 2020 21:15:00  +0000
+
 yunohost (3.8.4.6) stable; urgency=low
 
   - [fix] Bump server_names_hash_bucket_size to 128 to avoid nginx exploding for stupid reasons (b3db4d92)
