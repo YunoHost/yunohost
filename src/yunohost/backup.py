@@ -43,7 +43,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_php5, dump_app_log_extract_for_debugging, _patch_legacy_helpers
+    app_info, _is_installed, _parse_app_instance_name, _patch_legacy_php_versions, dump_app_log_extract_for_debugging, _patch_legacy_helpers, LEGACY_PHP_VERSION_REPLACEMENTS
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -1131,7 +1131,7 @@ class RestoreManager():
             self._postinstall_if_needed()
 
             # Apply dirty patch to redirect php5 file on php7
-            self._patch_backup_csv_file()
+            self._patch_legacy_php_versions_in_csv_file()
 
             self._restore_system()
             self._restore_apps()
@@ -1140,9 +1140,9 @@ class RestoreManager():
         finally:
             self.clean()
 
-    def _patch_backup_csv_file(self):
+    def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 file on php7
+        Apply dirty patch to redirect php5 and php7.0 files to php7.3
         """
 
         backup_csv = os.path.join(self.work_dir, 'backup.csv')
@@ -1150,32 +1150,27 @@ class RestoreManager():
         if not os.path.isfile(backup_csv):
             return
 
-        contains_php5 = False
+        replaced_something = False
         with open(backup_csv) as csvfile:
             reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
             newlines = []
             for row in reader:
-                if 'php5' in row['source']:
-                    contains_php5 = True
-                    row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
-                        .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
-                        .replace('php5', 'php7')
+                for pattern, replace in LEGACY_PHP_VERSION_REPLACEMENTS:
+                    if pattern in row['source']:
+                        replaced_something = True
+                        row['source'] = row['source'].replace(pattern, replace)
 
                 newlines.append(row)
 
-        if not contains_php5:
+        if not replaced_something:
             return
 
-        try:
-            with open(backup_csv, 'w') as csvfile:
-                writer = csv.DictWriter(csvfile,
-                                        fieldnames=['source', 'dest'],
-                                        quoting=csv.QUOTE_ALL)
-                for row in newlines:
-                    writer.writerow(row)
-        except (IOError, OSError, csv.Error) as e:
-            logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
-                                  error=str(e)))
+        with open(backup_csv, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile,
+                                    fieldnames=['source', 'dest'],
+                                    quoting=csv.QUOTE_ALL)
+            for row in newlines:
+                writer.writerow(row)
 
     def _restore_system(self):
         """ Restore user and system parts """
@@ -1324,7 +1319,7 @@ class RestoreManager():
         _patch_legacy_helpers(app_settings_in_archive)
 
         # Apply dirty patch to make php5 apps compatible with php7
-        _patch_php5(app_settings_in_archive)
+        _patch_legacy_php_versions(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, '_common.sh')

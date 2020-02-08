@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly YNH_DEFAULT_PHP_VERSION=7.0
+readonly YNH_DEFAULT_PHP_VERSION=7.3
 # Declare the actual php version to use.
 # A packager willing to use another version of php can override the variable into its _common.sh.
 YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
