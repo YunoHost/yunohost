@@ -106,7 +106,6 @@
     "backup_output_directory_required": "You must provide an output directory for the backup",
     "backup_output_symlink_dir_broken": "Your archive directory '{path:s}' is a broken symlink. Maybe you forgot to re/mount or plug in the storage medium it points to.",
     "backup_permission": "Backup permission for app {app:s}",
-    "backup_php5_to_php7_migration_may_fail": "Could not convert your archive to support PHP 7, you may be unable to restore your PHP apps (reason: {error:s})",
     "backup_running_hooks": "Running backup hooks…",
     "backup_system_part_failed": "Could not backup the '{part:s}' system part",
     "backup_unable_to_organize_files": "Could not use the quick method to organize files in the archive",
