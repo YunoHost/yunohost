@@ -21,9 +21,9 @@ nginx:
   needs_exposed_ports: [80, 443]
   category: web
 nslcd: {}
-php7.0-fpm:
-  log: /var/log/php7.0-fpm.log
-  test_conf: php-fpm7.0 --test
+php7.3-fpm:
+  log: /var/log/php7.3-fpm.log
+  test_conf: php-fpm7.3 --test
   category: web
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
@@ -64,3 +64,4 @@ postgrey: null
 spamassassin: null
 rmilter: null
 php5-fpm: null
+php7.0-fpm: null
