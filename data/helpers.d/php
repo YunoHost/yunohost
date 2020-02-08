@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ "$(ynh_get_debian_release)" == "buster" ]
+then
+	YNH_DEFAULT_PHP_VERSION="7.3"
+else
+	YNH_DEFAULT_PHP_VERSION="7.0"
+fi
+
 # Create a dedicated php-fpm config
 #
 # usage: ynh_add_fpm_config [--phpversion=7.X]
@@ -14,20 +21,17 @@ ynh_add_fpm_config () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	# Configure PHP-FPM 7.0 by default
-	phpversion="${phpversion:-7.0}"
+	# Set the default PHP-FPM version by default
+	phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
 
 	local fpm_config_dir="/etc/php/$phpversion/fpm"
 	local fpm_service="php${phpversion}-fpm"
-	# Configure PHP-FPM 5 on Debian Jessie
-	if [ "$(ynh_get_debian_release)" == "jessie" ]; then
-		fpm_config_dir="/etc/php5/fpm"
-		fpm_service="php5-fpm"
-	fi
+
 	ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
 	ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
 	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 	ynh_backup_if_checksum_is_different --file="$finalphpconf"
+
 	cp ../conf/php-fpm.conf "$finalphpconf"
 	ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
 	ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
@@ -46,6 +50,24 @@ ynh_add_fpm_config () {
 		ynh_store_file_checksum "$finalphpini"
 	fi
 	ynh_systemd_action --service_name=$fpm_service --action=reload
+
+	# Clean other php version config files for this app. Used for migration purpose.
+	if [ -e "/etc/php5/fpm/pool.d/$app.conf" ]
+	then
+		ynh_secure_remove --file="/etc/php5/fpm/pool.d/$app.conf"
+		ynh_systemd_action --service_name=php5-fpm --action=reload
+	fi
+	for i in `seq 0 4`
+	do
+		if [ "$phpversion" != "7.$i" ]
+		then
+			if [ -e "/etc/php/7.$i/fpm/pool.d/$app.conf" ]
+			then
+				ynh_secure_remove --file="/etc/php/7.$i/fpm/pool.d/$app.conf"
+				ynh_systemd_action --service_name=php7.$i-fpm --action=reload
+			fi
+		fi
+	done
 }
 
 # Remove the dedicated php-fpm config
