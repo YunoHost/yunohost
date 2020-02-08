@@ -64,8 +64,16 @@ do_post_regen() {
       systemctl restart resolvconf
   fi
 
-  [[ -z "$regen_conf_files" ]] \
-    || service dnsmasq restart
+  [[ -n "$regen_conf_files" ]] || return
+
+  # Remove / disable services likely to conflict with dnsmasq
+  for SERVICE in systemd-resolved bind9
+  do
+      systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
+      systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
+  done
+
+  systemctl restart dnsmasq
 }
 
 FORCE=${2:-0}
