@@ -1,11 +1,5 @@
 #!/bin/bash
 
-if [ "$(ynh_get_debian_release)" == "buster" ]
-then
-	YNH_DEFAULT_PHP_VERSION="7.3"
-else
-	YNH_DEFAULT_PHP_VERSION="7.0"
-fi
 # Declare the actual php version to use.
 # A packager willing to use another version of php can override the variable into its _common.sh.
 YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
