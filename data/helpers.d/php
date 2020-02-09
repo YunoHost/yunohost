@@ -26,6 +26,7 @@ ynh_add_fpm_config () {
 
 	ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
 	ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
+	ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
 	finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 	ynh_backup_if_checksum_is_different --file="$finalphpconf"
 
@@ -75,10 +76,10 @@ ynh_add_fpm_config () {
 ynh_remove_fpm_config () {
 	local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
 	local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
-	# Assume php version 7 if not set
+	# Assume default php version if not set
 	if [ -z "$fpm_config_dir" ]; then
-		fpm_config_dir="/etc/php/7.3/fpm"
-		fpm_service="php7.3-fpm"
+		fpm_config_dir="/etc/php/$YNH_DEFAULT_PHP_VERSION/fpm"
+		fpm_service="php$YNH_DEFAULT_PHP_VERSION-fpm"
 	fi
 	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini" 2>&1
