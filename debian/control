@@ -11,7 +11,7 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 2.7.1), ssowat (>= 2.7.1)
+ , moulinette (>= 4.0.0~alpha), ssowat (>= 4.0.0~alpha)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-dbus, python-jinja2
  , python-toml
@@ -38,16 +38,6 @@ Recommends: yunohost-admin
  , libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
- , moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
-Replaces: moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
