@@ -719,5 +719,8 @@
     "diagnosis_ports_needed_by": "És necessari exposar aquest port pel servei {0}",
     "permission_all_users_implicitly_added": "El permís també s'ha donat implícitament a «all_users» ja que és necessari per atorgar-lo al grup «visitors»",
     "permission_cannot_remove_all_users_while_visitors_allowed": "No podeu retirar el permís a «all_users» mentre encara el tingui el grup «visitors»",
-    "global_settings_setting_pop3_enabled": "Activa el protocol POP3 per al servidor de correu"
+    "global_settings_setting_pop3_enabled": "Activa el protocol POP3 per al servidor de correu",
+    "log_app_action_run": "Executa l'acció de l'aplicació «{}»",
+    "log_app_config_show_panel": "Mostra el taulell de configuració de l'aplicació «{}»",
+    "log_app_config_apply": "Afegeix la configuració a l'aplicació «{}»"
 }
