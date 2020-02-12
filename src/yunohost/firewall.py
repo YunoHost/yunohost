@@ -40,9 +40,8 @@ UPNP_CRON_JOB = '/etc/cron.d/yunohost-firewall-upnp'
 logger = getActionLogger('yunohost.firewall')
 
 
-# FIXME: restore no_upnp=False when python3 miniupnp is available
 def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
-                   no_upnp=True, no_reload=False):
+                   no_upnp=False, no_reload=False):
     """
     Allow connections on a port
 
@@ -183,8 +182,7 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
     return ret
 
 
-# FIXME: go back to False as default after fixed UPnP library
-def firewall_reload(skip_upnp=True):
+def firewall_reload(skip_upnp=False):
     """
     Reload all firewall rules
 
@@ -205,11 +203,7 @@ def firewall_reload(skip_upnp=True):
 
     # Retrieve firewall rules and UPnP status
     firewall = firewall_list(raw=True)
-    # FIXME: UPnP not available in Python2 for Db10
-    #if skip_upnp:
-    upnp = False
-    #else:
-    #    upnp = firewall_upnp()['enabled']
+    upnp = firewall_upnp()['enabled'] if not skip_upnp else False
 
     # IPv4
     try:
