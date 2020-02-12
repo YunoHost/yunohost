@@ -26,13 +26,7 @@
 import os
 import sys
 import yaml
-
-# FIXME : temporarily (?) disabled by Aleks for now because python-miniupnpc is not available anymore (at least the python 2 version)
-#try:
-#    import miniupnpc
-#except ImportError:
-#    sys.stderr.write('Error: Yunohost CLI Require miniupnpc lib\n')
-#    sys.exit(1)
+import miniupnpc
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
