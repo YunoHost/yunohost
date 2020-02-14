@@ -208,8 +208,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     try:
         # Attempt to create user home folder
-        subprocess.check_call(
-            ['su', '-', username, '-c', "''"])
+        subprocess.check_call(["mkhomedir_helper", username])
     except subprocess.CalledProcessError:
         if not os.path.isdir('/home/{0}'.format(username)):
             logger.warning(m18n.n('user_home_creation_failed'),
