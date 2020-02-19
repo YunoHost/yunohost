@@ -124,8 +124,8 @@ smtpd_helo_restrictions =
 
 # Requirements for the sender address
 smtpd_sender_restrictions =
-    reject_sender_login_mismatch,
     permit_mynetworks,
+    reject_sender_login_mismatch,
     permit_sasl_authenticated,
     reject_non_fqdn_sender,
     reject_unknown_sender_domain,
