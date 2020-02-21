@@ -1151,8 +1151,8 @@ def app_setting(app, key, value=None, delete=False):
         # FIXME: Allow multiple values for some keys?
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
-        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped", "noauth"]):
+            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex/noauth settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
 
         app_settings[key] = value
     _set_app_settings(app, app_settings)
@@ -1222,6 +1222,7 @@ def app_ssowatconf():
 
     skipped_urls = []
     skipped_regex = []
+    noauth_urls = []
     unprotected_urls = []
     unprotected_regex = []
     protected_urls = []
@@ -1266,6 +1267,7 @@ def app_ssowatconf():
         # Skipped
         skipped_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'skipped_uris')]
         skipped_regex += _get_setting(app_settings, 'skipped_regex')
+        noauth_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'noauth_uris')]
 
         # Redirected
         redirected_urls.update(app_settings.get('redirected_urls', {}))
@@ -1298,9 +1300,10 @@ def app_ssowatconf():
                 if url not in protected_urls:
                     protected_urls.append(url)
 
-                # Legacy stuff : we remove now unprotected-urls / skipped-urls that might have been declared as protected earlier...
+                # Legacy stuff : we remove now unprotected-urls / skipped-urls / noauth-urls that might have been declared as protected earlier...
                 unprotected_urls = [u for u in unprotected_urls if u != url]
                 skipped_urls = [u for u in skipped_urls if u != url]
+                noauth_urls = [u for u in noauth_urls if u != url]
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
@@ -1330,6 +1333,7 @@ def app_ssowatconf():
         },
         'domains': domains,
         'skipped_urls': skipped_urls,
+        'noauth_urls': noauth_urls,
         'unprotected_urls': unprotected_urls,
         'protected_urls': protected_urls,
         'skipped_regex': skipped_regex,
