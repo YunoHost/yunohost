@@ -1303,7 +1303,6 @@ def app_ssowatconf():
                 # Legacy stuff : we remove now unprotected-urls / skipped-urls / noauth-urls that might have been declared as protected earlier...
                 unprotected_urls = [u for u in unprotected_urls if u != url]
                 skipped_urls = [u for u in skipped_urls if u != url]
-                noauth_urls = [u for u in noauth_urls if u != url]
 
     for domain in domains:
         skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
