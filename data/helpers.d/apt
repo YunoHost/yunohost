@@ -251,8 +251,8 @@ ynh_install_app_dependencies () {
                 ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(lsb_release -sc) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version
 
                 # Pin this sury repository to prevent sury of doing shit
-                ynh_pin_repo --package="*" --pin="origin \"packages.sury.org\"" 200 --name=extra_php_version
-                ynh_pin_repo --package="php7.0*" --pin="origin \"packages.sury.org\"" 600 --name=extra_php_version --append
+                ynh_pin_repo --package="*" --pin="origin \"packages.sury.org\"" --priority=200 --name=extra_php_version
+                ynh_pin_repo --package="php7.0*" --pin="origin \"packages.sury.org\"" --priority=600 --name=extra_php_version --append
             fi
         fi
     fi
