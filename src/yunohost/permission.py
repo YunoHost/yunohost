@@ -471,15 +471,21 @@ def _update_ldap_group_permission(permission, allowed, sync_perm=True):
     app = permission.split(".")[0]
     sub_permission = permission.split(".")[1]
 
-    old_allowed_users = set(existing_permission["corresponding_users"])
-    new_allowed_users = set(new_permission["corresponding_users"])
+    old_corresponding_users = set(existing_permission["corresponding_users"])
+    new_corresponding_users = set(new_permission["corresponding_users"])
 
-    effectively_added_users = new_allowed_users - old_allowed_users
-    effectively_removed_users = old_allowed_users - new_allowed_users
+    old_allowed_users = set(existing_permission["allowed"])
+    new_allowed_users = set(new_permission["allowed"])
 
-    if effectively_added_users:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission])
-    if effectively_removed_users:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission])
+    effectively_added_users = new_corresponding_users - old_corresponding_users
+    effectively_removed_users = old_corresponding_users - new_corresponding_users
+
+    effectively_added_group = new_allowed_users - old_allowed_users - effectively_added_users
+    effectively_removed_group = old_allowed_users - new_allowed_users - effectively_removed_users
+
+    if effectively_added_users or effectively_added_group:
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission, ','.join(effectively_added_group)])
+    if effectively_removed_users or effectively_removed_group:
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission, ','.join(effectively_removed_group)])
 
     return new_permission
