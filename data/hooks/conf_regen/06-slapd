@@ -3,6 +3,8 @@
 set -e
 
 tmp_backup_dir_file="/tmp/slapd-backup-dir.txt"
+ARCH=$(dpkg-architecture | grep "^DEB_BUILD_ARCH=" | awk -F= '{print $2}')
+CUSTOM_LDAP_LIB="/usr/share/yunohost/ldaplibs"
 
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
@@ -23,7 +25,17 @@ do_init_regen() {
   # regenerate LDAP config directory from slapd.conf
   rm -Rf /etc/ldap/slapd.d
   mkdir /etc/ldap/slapd.d
+
+  # -- begin dirty hack for slaptest...
+  mv /usr/lib/ldap/memberof-2.4.so.2 /usr/lib/ldap/memberof-2.4.so.2.orig
+  ln -s $CUSTOM_LDAP_LIB/memberof-2.4.so.2.10.7.$ARCH /usr/lib/ldap/memberof-2.4.so.2
+
   slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+
+  rm /usr/lib/ldap/memberof-2.4.so.2
+  mv /usr/lib/ldap/memberof-2.4.so.2.orig /usr/lib/ldap/memberof-2.4.so.2
+  # -- end dirty hack for slaptest...
+
   chown -R openldap:openldap /etc/ldap/slapd.d/
 
   service slapd restart
@@ -95,7 +107,17 @@ do_post_regen() {
       echo "Regenerate LDAP config directory and import the database using slapadd"
       sh -c "rm -Rf /etc/ldap/slapd.d;
   mkdir /etc/ldap/slapd.d;
+  
+  # -- begin dirty hack for slaptest...
+  mv /usr/lib/ldap/memberof-2.4.so.2 /usr/lib/ldap/memberof-2.4.so.2.orig;
+  ln -s $CUSTOM_LDAP_LIB/memberof-2.4.so.2.10.7.$ARCH /usr/lib/ldap/memberof-2.4.so.2;
+
   slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
+
+  rm /usr/lib/ldap/memberof-2.4.so.2;
+  mv /usr/lib/ldap/memberof-2.4.so.2.orig /usr/lib/ldap/memberof-2.4.so.2;
+  # -- end dirty hack for slaptest...
+
   chown -R openldap:openldap /etc/ldap/slapd.d;
   slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
     -l '${backup_dir}/dc=yunohost-dc=org.ldif';
@@ -105,7 +127,17 @@ do_post_regen() {
       echo "Regenerate LDAP config directory from slapd.conf"
       rm -Rf /etc/ldap/slapd.d
       mkdir /etc/ldap/slapd.d
+
+      # -- begin dirty hack for slaptest...
+      mv /usr/lib/ldap/memberof-2.4.so.2 /usr/lib/ldap/memberof-2.4.so.2.orig;
+      ln -s $CUSTOM_LDAP_LIB/memberof-2.4.so.2.10.7.$ARCH /usr/lib/ldap/memberof-2.4.so.2;
+
       slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+
+      rm /usr/lib/ldap/memberof-2.4.so.2;
+      mv /usr/lib/ldap/memberof-2.4.so.2.orig /usr/lib/ldap/memberof-2.4.so.2;
+      # -- end dirty hack for slaptest...
+
       chown -R openldap:openldap /etc/ldap/slapd.d/
   fi
 

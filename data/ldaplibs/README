@@ -1,0 +1,6 @@
+# Hopefully this is just a tmp fix due to the fact that slapd / slaptest's
+# memberOf overlay seems to be buggy on buster compared to stretch. More info on
+# the discussion here : https://github.com/YunoHost/issues/issues/1255#issuecomment-589282536 
+
+# This folder + files is used for a dirty workaround - c.f. the regen-conf for slapd
+# where we make the memberof.so lib point to the one from this folder.
