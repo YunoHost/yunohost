@@ -492,7 +492,7 @@ def _list_upgradable_apps():
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, apps=None, system=False):
+def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgrade=True):
     """
     Update apps & package cache, then display changelog
 
@@ -555,7 +555,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
         # Critical packages are packages that we can't just upgrade
         # randomly from yunohost itself... upgrading them is likely to
-        critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
+        critical_packages = ["moulinette", "yunohost", "yunohost-admin", "ssowat"]
 
         critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
         noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
@@ -606,7 +606,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         #
         # Critical packages upgrade
         #
-        if critical_packages_upgradable:
+        if critical_packages_upgradable and allow_yunohost_upgrade:
 
             logger.info(m18n.n("tools_upgrade_special_packages"))
 
