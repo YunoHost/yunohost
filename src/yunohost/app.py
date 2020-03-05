@@ -2648,12 +2648,6 @@ def _read_apps_catalog_list():
     Read the json corresponding to the list of apps catalogs
     """
 
-    # Legacy code - can be removed after moving to buster (if the migration got merged before buster)
-    if os.path.exists('/etc/yunohost/appslists.json'):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("futureproof_apps_catalog_system")
-        migration.run()
-
     try:
         list_ = read_yaml(APPS_CATALOG_CONF)
         # Support the case where file exists but is empty
