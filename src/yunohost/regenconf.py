@@ -62,16 +62,6 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
 
     """
 
-    # Legacy code to automatically run the migration
-    # This is required because regen_conf is called before the migration call
-    # in debian's postinst script
-    if os.path.exists("/etc/yunohost/installed") \
-       and ("conffiles" in read_file("/etc/yunohost/services.yml") \
-            or not os.path.exists(REGEN_CONF_FILE)):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("decouple_regenconf_from_services")
-        migration.run()
-
     result = {}
 
     # Return the list of pending conf
