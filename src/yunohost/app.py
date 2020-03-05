@@ -2754,7 +2754,7 @@ def unstable_apps():
 
     output = []
 
-    for infos in app_list(full=True):
+    for infos in app_list(full=True)["apps"]:
 
         if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in ["inprogress", "notworking"]:
             output.append(infos["id"])
