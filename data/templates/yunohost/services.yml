@@ -15,7 +15,6 @@ nginx:
   log: /var/log/nginx
   test_conf: nginx -t
   needs_exposed_ports: [80, 443]
-nslcd: {}
 php7.3-fpm:
   log: /var/log/php7.3-fpm.log
   test_conf: php-fpm7.3 --test
@@ -52,3 +51,4 @@ spamassassin: null
 rmilter: null
 php5-fpm: null
 php7.0-fpm: null
+nslcd: null
