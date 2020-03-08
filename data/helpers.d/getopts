@@ -80,10 +80,10 @@ ynh_handle_getopts_args () {
                 arguments[arg]="${arguments[arg]//--${args_array[$option_flag]}-/--${args_array[$option_flag]}\\TOBEREMOVED\\-}"
                 # And replace long option (value of the option_flag) by the short option, the option_flag itself
                 # (e.g. for [u]=user, --user will be -u)
-                # Replace long option with = (which is at the beginning of the argument)
-                arguments[arg]="${arguments[arg]/#--${args_array[$option_flag]}/-${option_flag} }"
-                # And long option without = (which is at the end of the arguement)
-                arguments[arg]="${arguments[arg]/%--${args_array[$option_flag]%=}/-${option_flag}}"
+                # Replace long option with = (match the beginning of the argument)
+                arguments[arg]="$(echo ${arguments[arg]} | sed "s/^--${args_array[$option_flag]}/-${option_flag} /")"
+                # And long option without = (match the whole line)
+                arguments[arg]="$(echo ${arguments[arg]} | sed "s/^--${args_array[$option_flag]%=}$/-${option_flag} /")"
             done
         done
 
