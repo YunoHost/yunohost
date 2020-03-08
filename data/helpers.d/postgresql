@@ -46,8 +46,13 @@ ynh_psql_execute_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
+    if [ -n "$database" ]
+    then
+        database="--database=$database"
+    fi
+
     ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        --database="$database" <<<"$sql"
+        $database <<<"$sql"
 }
 
 # Execute a command from a file as root user
@@ -67,8 +72,13 @@ ynh_psql_execute_file_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
+    if [ -n "$database" ]
+    then
+        database="--database=$database"
+    fi
+
     ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        --database="$database" <"$file"
+        $database <"$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
