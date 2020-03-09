@@ -1,6 +1,7 @@
 #!/bin/bash
 
 PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
+PSQL_VERSION=11
 
 # Open a connection as a user
 #
@@ -289,22 +290,18 @@ ynh_psql_test_if_first_run() {
     local psql_root_password="$(ynh_string_random)"
     echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
 
-    if [ -e /etc/postgresql/9.4/ ]
+    if [ ! -e /etc/postgresql/$PSQL_VERSION ]
     then
-        local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
-        local logfile=/var/log/postgresql/postgresql-9.4-main.log
-    elif [ -e /etc/postgresql/9.6/ ]
-    then
-        local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
-        local logfile=/var/log/postgresql/postgresql-9.6-main.log
-    else
-        if dpkg --list | grep -q "ii  postgresql-9."
+        if dpkg --list | grep -q "ii  postgresql-11."
         then
-            ynh_die "It looks like postgresql was not properly configured ? /etc/postgresql/9.* is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
+            ynh_die "It looks like postgresql was not properly configured ? /etc/postgresql/11 is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
         else
-            ynh_die "postgresql shoud be 9.4 or 9.6"
+            ynh_die "Postgresql 11 doesn't seem to be installed..."
         fi
     fi
+
+    local pg_hba=/etc/postgresql/$PSQL_VERSION/main/pg_hba.conf
+    local logfile=/var/log/postgresql/postgresql-$PSQL_VERSION-main.log
 
     ynh_systemd_action --service_name=postgresql --action=start
 
