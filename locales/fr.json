@@ -671,7 +671,7 @@
     "diagnosis_found_errors": "Trouvé {errors} problème(s) significatif(s) lié(s) à {category} !",
     "diagnosis_found_errors_and_warnings": "Trouvé {errors} problème(s) significatif(s) (et {warnings} (avertissement(s)) en relation avec {category} !",
     "diagnosis_ip_not_connected_at_all": "Le serveur ne semble pas du tout connecté à Internet !?",
-    "diagnosis_ip_weird_resolvconf": "La résolution DNS semble fonctionner, mais soyer prudent en utilisant un fichier /etc/resolv.conf personnalisé.",
+    "diagnosis_ip_weird_resolvconf": "La résolution DNS semble fonctionner, mais soyez prudent en utilisant un fichier /etc/resolv.conf personnalisé.",
     "diagnosis_ip_weird_resolvconf_details": "Au lieu de cela, ce fichier devrait être un lien symbolique vers /etc/resolvconf/run/resolv.conf lui-même pointant vers 127.0.0.1 (dnsmasq). Les résolveurs réels doivent être configurés via /etc/resolv.dnsmasq.conf.",
     "diagnosis_dns_missing_record": "Selon la configuration DNS recommandée, vous devez ajouter un enregistrement DNS de type {0}, nom {1} et valeur {2}. Vous pouvez consulter https://yunohost.org/dns_config pour plus d'informations.",
     "diagnosis_diskusage_ok": "Le stockage {mountpoint} (sur le périphérique {device}) a toujours {free_abs_GB} Go ({free_percent}%) d'espace libre !",
