@@ -2856,7 +2856,9 @@ LEGACY_PHP_VERSION_REPLACEMENTS = [
     ("/var/run/php5-fpm", "/var/run/php/php7.3-fpm"),
     ("/var/run/php/php7.0-fpm", "/var/run/php/php7.3-fpm"),
     ("php5", "php7.3"),
-    ("php7.0", "php7.3")
+    ("php7.0", "php7.3"),
+    ('phpversion="${phpversion:-7.0}"', 'phpversion="${phpversion:-7.3}"'),  # Many helpers like the composer ones use 7.0 by default ...
+    ('"$phpversion" == "7.0"', '$(bc <<< "$phpversion >= 7.3") -eq 1')  # patch ynh_install_php to refuse installing/removing php <= 7.3
 ]
 
 def _patch_legacy_php_versions(app_folder):
