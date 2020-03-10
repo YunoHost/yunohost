@@ -269,14 +269,17 @@ ynh_psql_test_if_first_run() {
 		local psql_root_password="$(ynh_string_random)"
 		echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
 
-		if [ -e /etc/postgresql/9.4/ ]; then
+		if [ -e /etc/postgresql/11/ ]; then
+			local pg_hba=/etc/postgresql/11/main/pg_hba.conf
+			local logfile=/var/log/postgresql/postgresql-11-main.log
+		elif [ -e /etc/postgresql/9.4/ ]; then
 			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
 			local logfile=/var/log/postgresql/postgresql-9.4-main.log
 		elif [ -e /etc/postgresql/9.6/ ]; then
 			local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
 			local logfile=/var/log/postgresql/postgresql-9.6-main.log
 		else
-			ynh_die "postgresql shoud be 9.4 or 9.6"
+			ynh_die "postgresql shoud be 11, 9.6 or 9.4"
 		fi
 
 		ynh_systemd_action --service_name=postgresql --action=start
