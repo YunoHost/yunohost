@@ -532,6 +532,7 @@ ynh_pin_repo () {
 	mkdir -p "/etc/apt/preferences.d"
 	echo "Package: $package
 Pin: $pin
-Pin-Priority: $priority" \
+Pin-Priority: $priority
+" \
 	| $append "/etc/apt/preferences.d/$name"
 }
