@@ -67,7 +67,7 @@ re_github_repo = re.compile(
 )
 
 re_app_instance_name = re.compile(
-    r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
+    r'^(?P<appid>[\w\.-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
 
 
@@ -2543,6 +2543,12 @@ def _parse_app_instance_name(app_instance_name):
     >>> _parse_app_instance_name('yolo__23qdqsd') == ('yolo__23qdqsd', 1)
     True
     >>> _parse_app_instance_name('yolo__23qdqsd56') == ('yolo__23qdqsd56', 1)
+    True
+    >>> _parse_app_instance_name('yolo.net') == ('yolo.net', 1)
+    True
+    >>> _parse_app_instance_name('yolo.net__2') == ('yolo.net', 2)
+    True
+    >>> _parse_app_instance_name('yolo.net__1312louise_michel') == ('yolo.net__1312louise_michel', 1)
     True
     """
     match = re_app_instance_name.match(app_instance_name)
