@@ -659,5 +659,8 @@
     "diagnosis_failed": "Malsukcesis preni la diagnozan rezulton por kategorio '{category}': {error}",
     "diagnosis_description_ports": "Ekspoziciaj havenoj",
     "diagnosis_description_http": "HTTP-ekspozicio",
-    "diagnosis_description_mail": "Retpoŝto"
+    "diagnosis_description_mail": "Retpoŝto",
+    "log_app_action_run": "Funkciigu agon de la apliko '{}'",
+    "log_app_config_show_panel": "Montri la agordan panelon de la apliko '{}'",
+    "log_app_config_apply": "Apliki agordon al la apliko '{}'"
 }
