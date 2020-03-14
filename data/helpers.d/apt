@@ -186,7 +186,7 @@ ynh_package_install_from_equivs () {
     (cd "$TMPDIR"
     equivs-build ./control 1> /dev/null
     dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
-    ynh_package_install -f || ynh_die --message="Unable to install dependencies"
+    ynh_package_install -f || { apt-get check 2>&1; ynh_die --message="Unable to install dependencies"; }
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
