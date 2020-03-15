@@ -1,3 +1,11 @@
+yunohost (3.7.0.6) testing; urgency=low
+
+  - [fix] Make sure the group permission update contains unique elements
+
+  Thanks to all contributors <3 ! (Aleks)
+
+ -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 22:34:27 +0000
+
 yunohost (3.7.0.5) testing; urgency=low
 
   - [fix] Permission url (#871)
