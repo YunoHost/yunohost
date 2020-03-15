@@ -1,3 +1,10 @@
+yunohost (3.8.0~alpha) testing; urgency=low
+
+  Placeholder for upcoming 3.8 to avoid funky stuff with version numbers in
+  builds etc.
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
+
 yunohost (3.7.0.6) testing; urgency=low
 
   - [fix] Make sure the group permission update contains unique elements
