@@ -1,10 +1,21 @@
+yunohost (3.7.0.5) testing; urgency=low
+
+  - [fix] Permission url (#871)
+  - [fix] DNS resolver (#859)
+  - [fix] Legacy permission management (#868, #855)
+  - [enh] More informations in hooks permission (#877)
+
+  Thanks to all contributors <3 ! (Bram, ljf, Aleks, Josué Maniac, Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 15:07:24 +0000
+
 yunohost (3.7.0.4) testing; urgency=low
 
    - [fix] Also add all_users when allowing visitors (#855)
    - [fix] Fix handling of skipped_uris (c.f. also SSOwat#149)
    - [i18n] Improve translations for Catalan
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 2 Dev 2019 20:44:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 2 Dec 2019 20:44:00  +0000
 
 yunohost (3.7.0.3) testing; urgency=low
 
