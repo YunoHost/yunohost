@@ -452,6 +452,9 @@ def _update_ldap_group_permission(permission, allowed, sync_perm=True):
         return existing_permission
 
     allowed = [allowed] if not isinstance(allowed, list) else allowed
+    
+    # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
+    allowed = set(allowed)
 
     try:
         ldap.update('cn=%s,ou=permission' % permission,
