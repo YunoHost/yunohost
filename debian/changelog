@@ -5,7 +5,7 @@ yunohost (3.7.0.5) testing; urgency=low
   - [fix] Legacy permission management (#868, #855)
   - [enh] More informations in hooks permission (#877)
 
-  Thanks to all contributors <3 ! (Bram, ljf, Aleks, Josué Maniac, Kay0u)
+  Thanks to all contributors <3 ! (Bram, ljf, Aleks, Josué, Maniack, Kay0u)
 
  -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 15:07:24 +0000
 
