@@ -28,7 +28,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , metronome (>=3.14.0)
- , git, curl, wget, cron, unzip, jq
+ , git, curl, wget, cron, unzip, jq, bc
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois, python-publicsuffix
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
