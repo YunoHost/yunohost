@@ -712,7 +712,7 @@
     "diagnosis_http_timeout": "S'ha exhaurit el temps d'esperar intentant connectar amb el servidor des de l'exterior. Sembla que no s'hi pot accedir. S'hauria de comprovar que el reenviament del port 80 és correcte, que NGINX funciona, i que el tallafocs no està interferint.",
     "diagnosis_http_connection_error": "Error de connexió: no s'ha pogut connectar amb el domini demanat, segurament és inaccessible.",
     "diagnosis_http_unknown_error": "Hi ha hagut un error intentant accedir al domini, segurament és inaccessible.",
-    "yunohost_postinstall_end_tip": "S'ha completat la post-instal·lació. Per acabar la configuració, considereu:\n    - afegir un primer usuari a través de la secció «Usuaris» a la pàgina web d'administració (o emprant «yunohost user create <username>» a la línia d'ordres);\n    - diagnosticar els problemes esperant a ser resolts per un correcte funcionament del servidor a través de la secció «Diagnòstics» a la pàgina web d'administració (o emprant «yunohost diagnosis run» a la línia d'ordres);\n    - llegir les seccions «Finalizing your setup» i «Getting to know Yunohost» a la documentació per administradors: https://yunohost.org/admindoc.",
+    "yunohost_postinstall_end_tip": "S'ha completat la post-instal·lació. Per acabar la configuració, considereu:\n    - afegir un primer usuari a través de la secció «Usuaris» a la pàgina web d'administració (o emprant «yunohost user create <username>» a la línia d'ordres);\n    - diagnosticar possibles problemes a través de la secció «Diagnòstics» a la pàgina web d'administració (o emprant «yunohost diagnosis run» a la línia d'ordres);\n    - llegir les seccions «Finalizing your setup» i «Getting to know Yunohost» a la documentació per administradors: https://yunohost.org/admindoc.",
     "migration_description_0014_remove_app_status_json": "Eliminar els fitxers d'aplicació status.json heretats",
     "diagnosis_services_running": "El servei {service} s'està executant!",
     "diagnosis_services_conf_broken": "La configuració pel servei {service} està trencada!",
@@ -722,5 +722,6 @@
     "global_settings_setting_pop3_enabled": "Activa el protocol POP3 per al servidor de correu",
     "log_app_action_run": "Executa l'acció de l'aplicació «{}»",
     "log_app_config_show_panel": "Mostra el taulell de configuració de l'aplicació «{}»",
-    "log_app_config_apply": "Afegeix la configuració a l'aplicació «{}»"
+    "log_app_config_apply": "Afegeix la configuració a l'aplicació «{}»",
+    "diagnosis_never_ran_yet": "Sembla que el servidor s'ha configurat recentment i encara no hi cap informe de diagnòstic per mostrar. S'ha d'executar un diagnòstic complet primer, ja sigui des de la pàgina web d'administració o utilitzant la comanda «yunohost diagnosis run» al terminal."
 }
