@@ -3,7 +3,7 @@ stages:
   - tests
 
 .tests:
-  image: stretch:after-postinstall
+  image: after-postinstall
   before_script:
     - apt-get install python-pip -y
     - mkdir -p .pip
@@ -26,7 +26,7 @@ stages:
     key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
 
 postinstall:
-  image: stretch:before-postinstall
+  image: before-postinstall
   stage: postinstall
   script:
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
