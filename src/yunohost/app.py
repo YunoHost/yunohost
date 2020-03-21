@@ -2866,6 +2866,7 @@ def _patch_legacy_php_versions(app_folder):
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
     files_to_patch.append("%s/manifest.json" % app_folder)
     files_to_patch.append("%s/manifest.toml" % app_folder)
