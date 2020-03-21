@@ -21,7 +21,8 @@ class PortsDiagnoser(Diagnoser):
         #       443: "nginx"
         #       ... }
         ports = {}
-        for service, infos in _get_services().items():
+        services = _get_services()
+        for service, infos in services.items():
             for port in infos.get("needs_exposed_ports", []):
                 ports[port] = service
 
@@ -39,17 +40,18 @@ class PortsDiagnoser(Diagnoser):
         except Exception as e:
             raise YunohostError("diagnosis_ports_could_not_diagnose", error=e)
 
-        for port, service in ports.items():
+        for port, service in sorted(ports.items()):
+            category = services[service].get("category", "[?]")
             if r["ports"].get(str(port), None) is not True:
                 yield dict(meta={"port": port, "needed_by": service},
                            status="ERROR",
                            summary=("diagnosis_ports_unreachable", {"port": port}),
-                           details=[("diagnosis_ports_needed_by", (service,)), ("diagnosis_ports_forwarding_tip", ())])
+                           details=[("diagnosis_ports_needed_by", (service, category)), ("diagnosis_ports_forwarding_tip", ())])
             else:
                 yield dict(meta={"port": port, "needed_by": service},
                            status="SUCCESS",
                            summary=("diagnosis_ports_ok", {"port": port}),
-                           details=[("diagnosis_ports_needed_by", (service))])
+                           details=[("diagnosis_ports_needed_by", (service, category))])
 
 
 def main(args, env, loggers):

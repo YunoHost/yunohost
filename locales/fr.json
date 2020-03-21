@@ -746,7 +746,7 @@
     "migration_description_0014_remove_app_status_json": "Supprimer les fichiers d'application status.json hérités",
     "diagnosis_services_running": "Le service {service} s'exécute correctement !",
     "diagnosis_services_conf_broken": "La configuration est cassée pour le service {service} !",
-    "diagnosis_ports_needed_by": "Rendre ce port accessible est nécessaire pour le service {0}",
+    "diagnosis_ports_needed_by": "Rendre ce port accessible est nécessaire pour les fonctionnalités de type {1} (service {0})",
     "diagnosis_ports_forwarding_tip": "Pour résoudre ce problème, vous devez probablement configurer la redirection de port sur votre routeur Internet comme décrit sur https://yunohost.org/isp_box_config",
     "diagnosis_http_connection_error": "Erreur de connexion : impossible de se connecter au domaine demandé, il est probablement injoignable.",
     "diagnosis_no_cache": "Pas encore de cache de diagnostique pour la catégorie « {category} »",
