@@ -9,7 +9,7 @@ from yunohost.domain import domain_list
 from yunohost.utils.error import YunohostError
 
 
-class HttpDiagnoser(Diagnoser):
+class WebDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600
@@ -56,4 +56,4 @@ class HttpDiagnoser(Diagnoser):
 
 
 def main(args, env, loggers):
-    return HttpDiagnoser(args, env, loggers).diagnose()
+    return WebDiagnoser(args, env, loggers).diagnose()
