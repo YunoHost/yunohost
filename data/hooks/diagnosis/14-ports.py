@@ -39,7 +39,7 @@ class PortsDiagnoser(Diagnoser):
                 elif r["status"] != "ok" or "ports" not in r.keys() or not isinstance(r["ports"], dict):
                     raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             else:
-                raise Exception("Bad response from the server https://diagnosis.yunohost.org : %s" % str(r.status_code))
+                raise Exception("Bad response from the server https://diagnosis.yunohost.org/check-ports : %s - %s" % (str(r.status_code), r.content))
         except Exception as e:
             raise YunohostError("diagnosis_ports_could_not_diagnose", error=e)
 
