@@ -27,7 +27,10 @@ class PortsDiagnoser(Diagnoser):
                 ports[port] = service
 
         try:
-            r = requests.post('https://diagnosis.yunohost.org/check-ports', json={'ports': ports.keys()}, timeout=30).json()
+            r = requests.post('https://diagnosis.yunohost.org/check-ports', json={'ports': ports.keys()}, timeout=30)
+            if r.status_code != 200:
+                raise Exception("Bad response from the server https://diagnosis.yunohost.org/check-ports : %s - %s" % (str(r.status_code), r.content))
+            r = r.json()
             if "status" not in r.keys():
                 raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             elif r["status"] == "error":
