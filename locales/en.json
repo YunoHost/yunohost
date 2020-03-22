@@ -133,6 +133,7 @@
     "certmanager_domain_http_not_working": "It seems the domain {domain:s} cannot be accessed through HTTP. Check that your DNS and NGINX configuration is correct",
     "certmanager_domain_unknown": "Unknown domain '{domain:s}'",
     "certmanager_error_no_A_record": "No DNS 'A' record found for '{domain:s}'. You need to make your domain name point to your machine to be able to install a Let's Encrypt certificate. (If you know what you are doing, use '--no-checks' to turn off those checks.)",
+    "certmanager_warning_subdomain_dns_record": "Subdomain '{subdomain:s}' does not resolve to the same IP address as '{domain:s}'. Some features will not be available until you fix this and regenerate the certificate.",
     "certmanager_hit_rate_limit": "Too many certificates already issued for this exact set of domains {domain:s} recently. Please try again later. See https://letsencrypt.org/docs/rate-limits/ for more details",
     "certmanager_http_check_timeout": "Timed out when server tried to contact itself through HTTP using a public IP address (domain '{domain:s}' with IP '{ip:s}'). You may be experiencing a hairpinning issue, or the firewall/router ahead of your server is misconfigured.",
     "certmanager_no_cert_file": "Could not read the certificate file for the domain {domain:s} (file: {file:s})",
