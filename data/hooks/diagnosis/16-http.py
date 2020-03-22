@@ -29,17 +29,16 @@ class HttpDiagnoser(Diagnoser):
 
             try:
                 r = requests.post('https://diagnosis.yunohost.org/check-http', json={'domain': domain, "nonce": nonce}, timeout=30)
-                if r.status_code == 200:
-                    r = r.json()
-                    if "status" not in r.keys():
-                        raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
-                    elif r["status"] == "error" and ("code" not in r.keys() or not r["code"].startswith("error_http_check_")):
-                        if "content" in r.keys():
-                            raise Exception(r["content"])
-                        else:
-                            raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
-                else:
+                if r.status_code != 200:
                     raise Exception("Bad response from the server https://diagnosis.yunohost.org/check-http : %s - %s" % (str(r.status_code), r.content))
+                r = r.json()
+                if "status" not in r.keys():
+                    raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
+                elif r["status"] == "error" and ("code" not in r.keys() or not r["code"].startswith("error_http_check_")):
+                    if "content" in r.keys():
+                        raise Exception(r["content"])
+                    else:
+                        raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
             except Exception as e:
                 raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
 
