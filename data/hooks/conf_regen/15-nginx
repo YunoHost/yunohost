@@ -49,6 +49,7 @@ do_pre_regen() {
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
+  ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
   # add domain conf files
   for domain in $domain_list; do
