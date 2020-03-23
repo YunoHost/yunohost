@@ -144,7 +144,7 @@ Component "pubsub.{{ main_domain }}" "pubsub"
 Component "xmpp-upload.{{ main_domain }}" "http_upload"
 	name = "{{ main_domain }} Sharing Service"
 
-	http_file_path = "/var/www/xmpp-upload.{{ main_domain }}/upload"
+	http_file_path = "/var/xmpp-upload/{{ main_domain }}/upload"
 	http_external_url = "https://xmpp-upload.{{ main_domain }}:443"
 	http_file_base_path = "/upload"
 	http_file_size_limit = 6*1024*1024
