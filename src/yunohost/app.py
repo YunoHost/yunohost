@@ -896,7 +896,7 @@ def dump_app_log_extract_for_debugging(operation_logger):
         line = line.strip().split(": ", 1)[1]
         lines_to_display.append(line)
 
-        if line.endswith("+ ynh_exit_properly"):
+        if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
             break
         elif len(lines_to_display) > 20:
             lines_to_display.pop(0)
