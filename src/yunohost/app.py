@@ -1152,7 +1152,7 @@ def app_setting(app, key, value=None, delete=False):
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
         if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex/noauth settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
 
         app_settings[key] = value
     _set_app_settings(app, app_settings)
