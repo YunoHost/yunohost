@@ -14,6 +14,20 @@ from yunohost.domain import _get_maindomain
 maindomain = _get_maindomain()
 dummy_password = "test123Ynh"
 
+# Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
+# Mainly used for 'can_access_webpage' function
+import socket
+dns_cache = {(maindomain, 443, 0, 1): [(2, 1, 6, '', ('127.0.0.1', 443))]}
+prv_getaddrinfo = socket.getaddrinfo
+def new_getaddrinfo(*args):
+    try:
+        return dns_cache[args]
+    except KeyError:
+        res = prv_getaddrinfo(*args)
+        dns_cache[args] = res
+        return res
+socket.getaddrinfo = new_getaddrinfo
+
 
 def clean_user_groups_permission():
     for u in user_list()['users']:

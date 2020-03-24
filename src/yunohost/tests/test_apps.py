@@ -13,6 +13,7 @@ from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed,
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
+from yunohost.permission import user_permission_list, permission_delete
 
 
 def setup_function(function):
@@ -29,37 +30,30 @@ def clean():
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
-    # Gotta first remove break yo system
-    # because some remaining stuff might
-    # make the other app_remove crashs ;P
-    if _is_installed("break_yo_system"):
-        app_remove("break_yo_system")
+    test_apps = ["break_yo_system", "legacy_app", "legacy_app__2", "full_domain_app"]
 
-    if _is_installed("legacy_app"):
-        app_remove("legacy_app")
+    for test_app in test_apps:
 
-    if _is_installed("full_domain_app"):
-        app_remove("full_domain_app")
+        if _is_installed(test_app):
+            app_remove(test_app)
 
-    to_remove = []
-    to_remove += glob.glob("/etc/nginx/conf.d/*.d/*legacy*")
-    to_remove += glob.glob("/etc/nginx/conf.d/*.d/*full_domain*")
-    to_remove += glob.glob("/etc/nginx/conf.d/*.d/*break_yo_system*")
-    for filepath in to_remove:
-        os.remove(filepath)
+        for filepath in glob.glob("/etc/nginx/conf.d/*.d/*%s*" % test_app):
+            os.remove(filepath)
+        for folderpath in glob.glob("/etc/yunohost/apps/*%s*" % test_app):
+            shutil.rmtree(folderpath, ignore_errors=True)
+        for folderpath in glob.glob("/var/www/*%s*" % test_app):
+            shutil.rmtree(folderpath, ignore_errors=True)
 
-    to_remove = []
-    to_remove += glob.glob("/etc/yunohost/apps/*legacy_app*")
-    to_remove += glob.glob("/etc/yunohost/apps/*full_domain_app*")
-    to_remove += glob.glob("/etc/yunohost/apps/*break_yo_system*")
-    to_remove += glob.glob("/var/www/*legacy*")
-    to_remove += glob.glob("/var/www/*full_domain*")
-    for folderpath in to_remove:
-        shutil.rmtree(folderpath, ignore_errors=True)
+        os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE %s' \"" % test_app)
+        os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER %s@localhost'\"" % test_app)
 
     os.system("systemctl reset-failed nginx")  # Reset failed quota for service to avoid running into start-limit rate ?
     os.system("systemctl start nginx")
 
+    # Clean permissions
+    for permission_name in user_permission_list(short=True)["permissions"]:
+        if any(test_app in permission_name for test_app in test_apps):
+            permission_delete(permission_name, force=True)
 
 @pytest.fixture(autouse=True)
 def check_LDAP_db_integrity_call():
@@ -74,7 +68,7 @@ def check_permission_for_apps_call():
     yield
     check_permission_for_apps()
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def secondary_domain(request):
 
     if "example.test" not in domain_list()["domains"]:
