@@ -223,6 +223,7 @@
     "diagnosis_unknown_categories": "The following categories are unknown: {categories}",
     "diagnosis_never_ran_yet": "It looks like this server was setup recently and there's no diagnosis report to show yet. You should start by running a full diagnosis, either from the webadmin or using 'yunohost diagnosis run' from the command line.",
     "domain_cannot_remove_main": "You cannot remove '{domain:s}' since it's the main domain, you first need to set another domain as the main domain using 'yunohost domain main-domain -n <another-domain>'; here is the list of candidate domains: {other_domains:s}",
+    "domain_cannot_add_xmpp_upload": "You cannot add domains starting with 'xmpp-upload.'. This kind of name is reserved for the XMPP upload feature integrated in YunoHost.",
     "domain_cannot_remove_main_add_new_one": "You cannot remove '{domain:s}' since it's the main domain and your only domain, you need to first add another domain using 'yunohost domain add <another-domain.com>', then set is as the main domain using 'yunohost domain main-domain -n <another-domain.com>' and then you can remove the domain '{domain:s}' using 'yunohost domain remove {domain:s}'.'",
     "domain_cert_gen_failed": "Could not generate certificate",
     "domain_created": "Domain created",

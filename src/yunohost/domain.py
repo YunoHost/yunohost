@@ -79,6 +79,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
 
+    if domain.startswith("xmpp-upload."):
+        raise YunohostError("domain_cannot_add_xmpp_upload")
+
     ldap = _get_ldap_interface()
 
     try:
