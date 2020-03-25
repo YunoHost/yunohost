@@ -43,6 +43,7 @@ from yunohost.utils.network import get_public_ip
 
 from moulinette import m18n
 from yunohost.app import app_ssowatconf
+from yunohost.domain import _get_maindomain
 from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -639,14 +640,15 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    # Include xmpp-upload subdomain in subject alternate names
-    subdomain="xmpp-upload." + domain
-    try:
-        _check_domain_is_ready_for_ACME(subdomain)
-        logger.info("Subdmain {} is ready for ACME and will be included in the certificate.".format(subdomain))
-        csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
-    except YunohostError:
-        logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
+    if domain == _get_maindomain():
+        # Include xmpp-upload subdomain in subject alternate names
+        subdomain="xmpp-upload." + domain
+        try:
+            _check_domain_is_ready_for_ACME(subdomain)
+            logger.info("Subdmain {} is ready for ACME and will be included in the certificate.".format(subdomain))
+            csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
+        except YunohostError:
+            logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
 
     # Set the key
     with open(key_file, 'rt') as f:
