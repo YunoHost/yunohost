@@ -29,7 +29,7 @@ class WebDiagnoser(Diagnoser):
 
             try:
                 r = requests.post('https://diagnosis.yunohost.org/check-http', json={'domain': domain, "nonce": nonce}, timeout=30)
-                if r.status_code != 200:
+                if r.status_code not in [200, 400, 418]:
                     raise Exception("Bad response from the server https://diagnosis.yunohost.org/check-http : %s - %s" % (str(r.status_code), r.content))
                 r = r.json()
                 if "status" not in r.keys():

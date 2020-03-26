@@ -28,7 +28,7 @@ class PortsDiagnoser(Diagnoser):
 
         try:
             r = requests.post('https://diagnosis.yunohost.org/check-ports', json={'ports': ports.keys()}, timeout=30)
-            if r.status_code != 200:
+            if r.status_code not in [200, 400, 418]:
                 raise Exception("Bad response from the server https://diagnosis.yunohost.org/check-ports : %s - %s" % (str(r.status_code), r.content))
             r = r.json()
             if "status" not in r.keys():
