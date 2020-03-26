@@ -437,7 +437,7 @@ def app_map(app=None, raw=False, user=None):
                 logger.warning("Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/" % app_id)
                 continue
             main_perm = permissions[app_id + ".main"]
-            if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
+            if user not in main_perm["corresponding_users"]:
                 continue
 
         domain = app_settings['domain']
@@ -461,7 +461,7 @@ def app_map(app=None, raw=False, user=None):
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
-            if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
+            if user and user not in perm_info["corresponding_users"]:
                 continue
             if perm_info["url"].startswith("re:"):
                 # Here, we have an issue if the chosen url is a regex, because

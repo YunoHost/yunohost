@@ -313,27 +313,6 @@ def test_permission_add_and_remove_group(mocker):
     assert res['wiki.main']['corresponding_users'] == ["alice"]
 
 
-def test_permission_adding_visitors_implicitly_add_all_users(mocker):
-
-    res = user_permission_list(full=True)['permissions']
-    assert res['blog.main']['allowed'] == ["alice"]
-
-    with message(mocker, "permission_updated", permission="blog.main"):
-        user_permission_update("blog.main", add="visitors")
-
-    res = user_permission_list(full=True)['permissions']
-    assert set(res['blog.main']['allowed']) == set(["alice", "visitors", "all_users"])
-
-
-def test_permission_cant_remove_all_users_if_visitors_allowed(mocker):
-
-    with message(mocker, "permission_updated", permission="blog.main"):
-        user_permission_update("blog.main", add=["visitors", "all_users"])
-
-    with raiseYunohostError(mocker, 'permission_cannot_remove_all_users_while_visitors_allowed'):
-        user_permission_update("blog.main", remove="all_users")
-
-
 def test_permission_add_group_already_allowed(mocker):
     with message(mocker, "permission_already_allowed", permission="blog.main", group="alice"):
         user_permission_update("blog.main", add="alice")
