@@ -1,7 +1,7 @@
 {
     "action_invalid": "Ongeldige actie '{action:s}'",
     "admin_password": "Administrator wachtwoord",
-    "admin_password_changed": "Het administratie wachtwoord is gewijzigd",
+    "admin_password_changed": "Het administratie wachtwoord werd gewijzigd",
     "app_already_installed": "{app:s} is al geïnstalleerd",
     "app_argument_invalid": "'{name:s}' bevat ongeldige waarde: {error:s}",
     "app_argument_required": "Het '{name:s}' moet ingevuld worden",
@@ -138,5 +138,10 @@
     "backup_deleted": "Backup werd verwijderd",
     "backup_extracting_archive": "Backup archief uitpakken...",
     "backup_hook_unknown": "backup hook '{hook:s}' onbekend",
-    "backup_nothings_done": "Niets om op te slaan"
+    "backup_nothings_done": "Niets om op te slaan",
+    "password_too_simple_1": "Het wachtwoord moet minimaal 8 tekens lang zijn",
+    "already_up_to_date": "Er is niets te doen, alles is al up-to-date.",
+    "admin_password_too_long": "Gelieve een wachtwoord te kiezen met minder dan 127 karakters",
+    "app_action_cannot_be_ran_because_required_services_down": "De volgende diensten moeten actief zijn om deze actie uit te voeren: {services}. Probeer om deze te herstarten om verder te gaan (en om eventueel te onderzoeken waarom ze niet werken).",
+    "aborting": "Annulatie."
 }

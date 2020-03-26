@@ -2,6 +2,7 @@
 
 import os
 
+from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.packages import ynh_packages_version
@@ -15,13 +16,26 @@ class BaseSystemDiagnoser(Diagnoser):
 
     def run(self):
 
+        # Detect virt technology (if not bare metal) and arch
+        # Also possibly the board name
+        virt = check_output("systemd-detect-virt").strip() or "bare-metal"
+        arch = check_output("dpkg --print-architecture").strip()
+        hardware = dict(meta={"test": "hardware"},
+                        status="INFO",
+                        data={"virt": virt, "arch": arch},
+                        summary=("diagnosis_basesystem_hardware", {"virt": virt, "arch": arch}))
+        if os.path.exists("/proc/device-tree/model"):
+            model = read_file('/proc/device-tree/model').strip()
+            hardware["data"]["board"] = model
+            hardware["details"] = [("diagnosis_basesystem_hardware_board", (model,))]
+
+        yield hardware
+
         # Kernel version
         kernel_version = read_file('/proc/sys/kernel/osrelease').strip()
         yield dict(meta={"test": "kernel"},
                    status="INFO",
                    summary=("diagnosis_basesystem_kernel", {"kernel_version": kernel_version}))
-
-        # FIXME / TODO : add virt/vm technology using systemd-detect-virt and/or machine arch
 
         # Debian release
         debian_version = read_file("/etc/debian_version").strip()

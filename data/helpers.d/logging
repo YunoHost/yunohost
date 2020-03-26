@@ -46,10 +46,10 @@ ynh_print_info() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_no_log() {
   local ynh_cli_log=/var/log/yunohost/yunohost-cli.log
-  sudo cp -a ${ynh_cli_log} ${ynh_cli_log}-move
+  cp -a ${ynh_cli_log} ${ynh_cli_log}-move
   eval $@
   local exit_code=$?
-  sudo mv ${ynh_cli_log}-move ${ynh_cli_log}
+  mv ${ynh_cli_log}-move ${ynh_cli_log}
   return $?
 }
 

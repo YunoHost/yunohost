@@ -1,3 +1,37 @@
+yunohost (3.8.0~alpha) testing; urgency=low
+
+  Placeholder for upcoming 3.8 to avoid funky stuff with version numbers in
+  builds etc.
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
+
+yunohost (3.7.0.6) testing; urgency=low
+
+  - [fix] Make sure the group permission update contains unique elements
+
+  Thanks to all contributors <3 ! (Aleks)
+
+ -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 22:34:27 +0000
+
+yunohost (3.7.0.5) testing; urgency=low
+
+  - [fix] Permission url (#871)
+  - [fix] DNS resolver (#859)
+  - [fix] Legacy permission management (#868, #855)
+  - [enh] More informations in hooks permission (#877)
+
+  Thanks to all contributors <3 ! (Bram, ljf, Aleks, Josué, Maniack, Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 15:07:24 +0000
+
+yunohost (3.7.0.4) testing; urgency=low
+
+   - [fix] Also add all_users when allowing visitors (#855)
+   - [fix] Fix handling of skipped_uris (c.f. also SSOwat#149)
+   - [i18n] Improve translations for Catalan
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 2 Dec 2019 20:44:00  +0000
+
 yunohost (3.7.0.3) testing; urgency=low
 
   - [mod] Some refactoring for permissions create/update/reset (#837)

@@ -543,42 +543,44 @@ app:
     category_help: Manage apps
     actions:
 
+        catalog:
+            action_help: Show the catalog of installable application
+            api: GET /appscatalog
+            arguments:
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
+                    action: store_true
+                -c:
+                    full: --with-categories
+                    help: Also return a list of app categories
+                    action: store_true
+
         ### app_list()
         list:
-            action_help: List apps
+            action_help: List installed apps
             api: GET /apps
             arguments:
                 -f:
-                    full: --filter
-                    help: Name filter of app_id or app_name
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
-                    action: store_true
-                -i:
-                    full: --installed
-                    help: Return only installed apps
-                    action: store_true
-                -b:
-                    full: --with-backup
-                    help: Return only apps with backup feature (force --installed filter)
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_info()
         info:
-            action_help: Get information about an installed app
+            action_help: Show infos about a specific installed app
             api: GET /apps/<app>
             arguments:
                 app:
                     help: Specific app ID
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_map()
         map:
-            action_help: List apps by domain
+            action_help: Show the mapping between urls and apps
             api: GET /appsmap
             arguments:
                 -a:

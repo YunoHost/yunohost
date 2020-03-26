@@ -16,7 +16,7 @@ ynh_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    sudo yunohost user list --output-as json | grep -q "\"username\": \"${username}\""
+    yunohost user list --output-as json | grep -q "\"username\": \"${username}\""
 }
 
 # Retrieve a YunoHost user information
@@ -38,7 +38,7 @@ ynh_user_get_info() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    sudo yunohost user info "$username" --output-as plain | ynh_get_plain_key "$key"
+    yunohost user info "$username" --output-as plain | ynh_get_plain_key "$key"
 }
 
 # Get the list of YunoHost users
@@ -50,7 +50,7 @@ ynh_user_get_info() {
 #
 # Requires YunoHost version 2.4.0 or higher.
 ynh_user_list() {
-    sudo yunohost user list --output-as plain --quiet \
+    yunohost user list --output-as plain --quiet \
       | awk '/^##username$/{getline; print}'
 }
 

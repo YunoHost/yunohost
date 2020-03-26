@@ -22,7 +22,7 @@ ynh_add_nginx_config () {
 	finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 	local others_var=${1:-}
 	ynh_backup_if_checksum_is_different --file="$finalnginxconf"
-	sudo cp ../conf/nginx.conf "$finalnginxconf"
+	cp ../conf/nginx.conf "$finalnginxconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty

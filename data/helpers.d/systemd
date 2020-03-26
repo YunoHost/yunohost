@@ -28,7 +28,7 @@ ynh_add_systemd_config () {
 
 	finalsystemdconf="/etc/systemd/system/$service.service"
 	ynh_backup_if_checksum_is_different --file="$finalsystemdconf"
-	sudo cp ../conf/$template "$finalsystemdconf"
+	cp ../conf/$template "$finalsystemdconf"
 
 	# To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
 	# Substitute in a nginx config file only if the variable is not empty
@@ -40,9 +40,9 @@ ynh_add_systemd_config () {
 	fi
 	ynh_store_file_checksum --file="$finalsystemdconf"
 
-	sudo chown root: "$finalsystemdconf"
-	sudo systemctl enable $service
-	sudo systemctl daemon-reload
+	chown root: "$finalsystemdconf"
+	systemctl enable $service
+	systemctl daemon-reload
 }
 
 # Remove the dedicated systemd config
@@ -135,7 +135,7 @@ ynh_systemd_action() {
             # Read the log until the sentence is found, that means the app finished to start. Or run until the timeout
             if grep --quiet "$line_match" "$templog"
             then
-                ynh_print_info --message="The service $service_name has correctly started."
+                ynh_print_info --message="The service $service_name has correctly executed the action ${action}."
                 break
             fi
             if [ $i -eq 3 ]; then
@@ -151,7 +151,7 @@ ynh_systemd_action() {
         fi
         if [ $i -eq $timeout ]
         then
-            ynh_print_warn --message="The service $service_name didn't fully started before the timeout."
+            ynh_print_warn --message="The service $service_name didn't fully executed the action ${action} before the timeout."
             ynh_print_warn --message="Please find here an extract of the end of the log of the service $service_name:"
             journalctl --no-pager --lines=$length -u $service_name >&2
             test -e "$log_path" && echo "--" >&2 && tail --lines=$length "$log_path" >&2

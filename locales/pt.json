@@ -1,8 +1,8 @@
 {
     "action_invalid": "Acção Inválida '{action:s}'",
     "admin_password": "Senha de administração",
-    "admin_password_change_failed": "Não foi possível alterar a senha",
-    "admin_password_changed": "A palavra-passe de administração foi alterada com sucesso",
+    "admin_password_change_failed": "Não é possível alterar a senha",
+    "admin_password_changed": "A senha da administração foi alterada",
     "app_already_installed": "{app:s} já está instalada",
     "app_extraction_failed": "Não foi possível extrair os ficheiros para instalação",
     "app_id_invalid": "A ID da aplicação é inválida",
@@ -193,5 +193,7 @@
     "backup_borg_not_implemented": "O método de backup Borg ainda não foi implementado.",
     "backup_cant_mount_uncompress_archive": "Não foi possível montar em modo leitura o diretorio de arquivos não comprimido",
     "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo",
-    "app_change_url_identical_domains": "O antigo e o novo domínio / url_path são idênticos ('{domain:s}{path:s}'), nada para fazer."
+    "app_change_url_identical_domains": "O antigo e o novo domínio / url_path são idênticos ('{domain:s}{path:s}'), nada para fazer.",
+    "password_too_simple_1": "A senha precisa ter pelo menos 8 caracteres",
+    "admin_password_too_long": "Escolha uma senha que contenha menos de 127 caracteres"
 }

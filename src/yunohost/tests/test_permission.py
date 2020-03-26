@@ -3,7 +3,7 @@ import pytest
 
 from conftest import message, raiseYunohostError
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map
+from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map, _installed_apps
 from yunohost.user import user_list, user_create, user_delete, \
                           user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
@@ -13,6 +13,20 @@ from yunohost.domain import _get_maindomain
 # Get main domain
 maindomain = _get_maindomain()
 dummy_password = "test123Ynh"
+
+# Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
+# Mainly used for 'can_access_webpage' function
+import socket
+dns_cache = {(maindomain, 443, 0, 1): [(2, 1, 6, '', ('127.0.0.1', 443))]}
+prv_getaddrinfo = socket.getaddrinfo
+def new_getaddrinfo(*args):
+    try:
+        return dns_cache[args]
+    except KeyError:
+        res = prv_getaddrinfo(*args)
+        dns_cache[args] = res
+        return res
+socket.getaddrinfo = new_getaddrinfo
 
 
 def clean_user_groups_permission():
@@ -163,9 +177,7 @@ def check_permission_for_apps():
 
     app_perms_prefix = set(p.split(".")[0] for p in app_perms)
 
-    installed_apps = {app['id'] for app in app_list(installed=True)['apps']}
-
-    assert installed_apps == app_perms_prefix
+    assert set(_installed_apps()) == app_perms_prefix
 
 
 def can_access_webpage(webpath, logged_as=None):
@@ -311,6 +323,27 @@ def test_permission_add_and_remove_group(mocker):
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['allowed'] == ["alice"]
     assert res['wiki.main']['corresponding_users'] == ["alice"]
+
+
+def test_permission_adding_visitors_implicitly_add_all_users(mocker):
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['blog.main']['allowed'] == ["alice"]
+
+    with message(mocker, "permission_updated", permission="blog.main"):
+        user_permission_update("blog.main", add="visitors")
+
+    res = user_permission_list(full=True)['permissions']
+    assert set(res['blog.main']['allowed']) == set(["alice", "visitors", "all_users"])
+
+
+def test_permission_cant_remove_all_users_if_visitors_allowed(mocker):
+
+    with message(mocker, "permission_updated", permission="blog.main"):
+        user_permission_update("blog.main", add=["visitors", "all_users"])
+
+    with raiseYunohostError(mocker, 'permission_cannot_remove_all_users_while_visitors_allowed'):
+        user_permission_update("blog.main", remove="all_users")
 
 
 def test_permission_add_group_already_allowed(mocker):
@@ -460,13 +493,14 @@ def test_permission_app_propagation_on_ssowat():
                 args="domain=%s&path=%s&is_public=1&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['allowed'] == ["visitors"]
+    assert "visitors" in res['permissions_app.main']['allowed']
+    assert "all_users" in res['permissions_app.main']['allowed']
 
     app_webroot = "https://%s/urlpermissionapp" % maindomain
     assert can_access_webpage(app_webroot, logged_as=None)
     assert can_access_webpage(app_webroot, logged_as="alice")
 
-    user_permission_update("permissions_app.main", remove="visitors", add="bob")
+    user_permission_update("permissions_app.main", remove=["visitors", "all_users"], add="bob")
     res = user_permission_list(full=True)['permissions']
 
     assert not can_access_webpage(app_webroot, logged_as=None)
@@ -491,7 +525,8 @@ def test_permission_legacy_app_propagation_on_ssowat():
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
     res = user_permission_list(full=True)['permissions']
-    assert res['legacy_app.main']['allowed'] == ["visitors"]
+    assert "visitors" in res['legacy_app.main']['allowed']
+    assert "all_users" in res['legacy_app.main']['allowed']
 
     app_webroot = "https://%s/legacy" % maindomain
 
@@ -499,7 +534,7 @@ def test_permission_legacy_app_propagation_on_ssowat():
     assert can_access_webpage(app_webroot, logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent
-    user_permission_update("legacy_app.main", remove="visitors", add="bob")
+    user_permission_update("legacy_app.main", remove=["visitors", "all_users"], add="bob")
 
     assert not can_access_webpage(app_webroot, logged_as=None)
     assert not can_access_webpage(app_webroot, logged_as="alice")

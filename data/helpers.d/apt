@@ -13,7 +13,7 @@ ynh_wait_dpkg_free() {
     for try in `seq 1 17`
     do
         # Check if /var/lib/dpkg/lock is used by another process
-        if sudo lsof /var/lib/dpkg/lock > /dev/null
+        if lsof /var/lib/dpkg/lock > /dev/null
         then
             echo "apt is already in use..."
             # Sleep an exponential time at each round
@@ -186,7 +186,10 @@ ynh_package_install_from_equivs () {
     (cd "$TMPDIR"
     equivs-build ./control 1> /dev/null
     dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
-    ynh_package_install -f || ynh_die --message="Unable to install dependencies"
+    # If install fails we use "apt-get check" to try to debug and diagnose possible unmet dependencies
+    # Note the use of { } which allows to group commands without starting a subshell (otherwise the ynh_die wouldn't exit the current shell). 
+    # Be careful with the syntax : the semicolon + space at the end is important!
+    ynh_package_install -f || { apt-get check 2>&1; ynh_die --message="Unable to install dependencies"; }
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed

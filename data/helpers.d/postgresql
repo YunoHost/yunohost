@@ -45,7 +45,7 @@ ynh_psql_execute_as_root() {
 	ynh_handle_getopts_args "$@"
 	database="${database:-}"
 
-	ynh_psql_connect_as --user="postgres" --password="$(sudo cat $PSQL_ROOT_PWD_FILE)" \
+	ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
 		--database="$database" <<<"$sql"
 }
 
@@ -66,7 +66,7 @@ ynh_psql_execute_file_as_root() {
 	ynh_handle_getopts_args "$@"
 	database="${database:-}"
 
-	ynh_psql_connect_as --user="postgres" --password="$(sudo cat $PSQL_ROOT_PWD_FILE)" \
+	ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
 		--database="$database" <"$file"
 }
 
@@ -160,7 +160,7 @@ ynh_psql_user_exists() {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user" ; then
+	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user" ; then
 		return 1
 	else
 		return 0
@@ -179,7 +179,7 @@ ynh_psql_database_exists() {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(sudo cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
+	if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
 		return 1
 	else
 		return 0
@@ -243,7 +243,7 @@ ynh_psql_remove_db() {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	local psql_root_password=$(sudo cat $PSQL_ROOT_PWD_FILE)
+	local psql_root_password=$(cat $PSQL_ROOT_PWD_FILE)
 	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
 		ynh_psql_drop_db $db_name # Remove the database
 	else

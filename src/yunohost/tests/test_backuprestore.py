@@ -510,7 +510,8 @@ def test_backup_and_restore_permission_app(mocker):
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"
 
-    assert res['permissions_app.main']['allowed'] == ["visitors"]
+    assert "visitors" in res['permissions_app.main']['allowed']
+    assert "all_users" in res['permissions_app.main']['allowed']
     assert res['permissions_app.admin']['allowed'] == ["alice"]
     assert res['permissions_app.dev']['allowed'] == []
 
@@ -524,7 +525,8 @@ def test_backup_and_restore_permission_app(mocker):
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"
 
-    assert res['permissions_app.main']['allowed'] == ["visitors"]
+    assert "visitors" in res['permissions_app.main']['allowed']
+    assert "all_users" in res['permissions_app.main']['allowed']
     assert res['permissions_app.admin']['allowed'] == ["alice"]
     assert res['permissions_app.dev']['allowed'] == []
 

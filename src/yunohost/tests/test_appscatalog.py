@@ -14,6 +14,7 @@ from yunohost.app import (_initialize_apps_catalog_system,
                           _update_apps_catalog,
                           _actual_apps_catalog_api_url,
                           _load_apps_catalog,
+                          app_catalog,
                           logger,
                           APPS_CATALOG_CACHE,
                           APPS_CATALOG_CONF,
@@ -25,8 +26,14 @@ APPS_CATALOG_DEFAULT_URL_FULL = _actual_apps_catalog_api_url(APPS_CATALOG_DEFAUL
 CRON_FOLDER, CRON_NAME = APPS_CATALOG_CRON_PATH.rsplit("/", 1)
 
 DUMMY_APP_CATALOG = """{
-   "foo": {"id": "foo", "level": 4},
-   "bar": {"id": "bar", "level": 7}
+   "apps": {
+       "foo": {"id": "foo", "level": 4, "category": "yolo", "manifest":{"description": "Foo"}},
+       "bar": {"id": "bar", "level": 7, "category": "swag", "manifest":{"description": "Bar"}}
+   },
+   "categories": [
+       {"id": "yolo", "description": "YoLo", "title": {"en": "Yolo"}},
+       {"id": "swag", "description": "sWaG", "title": {"en": "Swag"}}
+   ]
 }
 """
 
@@ -107,7 +114,7 @@ def test_apps_catalog_emptylist():
     assert not len(apps_catalog_list)
 
 
-def test_apps_catalog_update_success(mocker):
+def test_apps_catalog_update_nominal(mocker):
 
     # Initialize ...
     _initialize_apps_catalog_system()
@@ -130,9 +137,16 @@ def test_apps_catalog_update_success(mocker):
     # Cache shouldn't be empty anymore empty
     assert glob.glob(APPS_CATALOG_CACHE + "/*")
 
-    app_dict = _load_apps_catalog()
-    assert "foo" in app_dict.keys()
-    assert "bar" in app_dict.keys()
+    # And if we load the catalog, we sould find
+    # - foo and bar as apps (unordered),
+    # - yolo and swag as categories (ordered)
+    catalog = app_catalog(with_categories=True)
+
+    assert "apps" in catalog
+    assert set(catalog["apps"].keys()) == set(["foo", "bar"])
+
+    assert "categories" in catalog
+    assert [c["id"] for c in catalog["categories"]] == ["yolo", "swag"]
 
 
 def test_apps_catalog_update_404(mocker):
@@ -219,7 +233,7 @@ def test_apps_catalog_load_with_empty_cache(mocker):
         # Try to load the apps catalog
         # This should implicitly trigger an update in the background
         mocker.spy(m18n, "n")
-        app_dict = _load_apps_catalog()
+        app_dict = _load_apps_catalog()["apps"]
         m18n.n.assert_any_call("apps_catalog_obsolete_cache")
         m18n.n.assert_any_call("apps_catalog_update_success")
 
@@ -252,7 +266,7 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
         # Try to load the apps catalog
         # This should implicitly trigger an update in the background
         mocker.spy(logger, "warning")
-        app_dict = _load_apps_catalog()
+        app_dict = _load_apps_catalog()["apps"]
         logger.warning.assert_any_call(AnyStringWith("Duplicate"))
 
     # Cache shouldn't be empty anymore empty
@@ -291,7 +305,7 @@ def test_apps_catalog_load_with_oudated_api_version(mocker):
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
 
         mocker.spy(m18n, "n")
-        app_dict = _load_apps_catalog()
+        app_dict = _load_apps_catalog()["apps"]
         m18n.n.assert_any_call("apps_catalog_update_success")
 
     assert "foo" in app_dict.keys()
@@ -329,7 +343,7 @@ def test_apps_catalog_migrate_legacy_explicitly():
     assert cron_job_is_there()
 
     # Reading the apps_catalog should work
-    app_dict = _load_apps_catalog()
+    app_dict = _load_apps_catalog()["apps"]
     assert "foo" in app_dict.keys()
     assert "bar" in app_dict.keys()
 
@@ -343,7 +357,7 @@ def test_apps_catalog_migrate_legacy_implicitly():
 
     with requests_mock.Mocker() as m:
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-        app_dict = _load_apps_catalog()
+        app_dict = _load_apps_catalog()["apps"]
 
     assert "foo" in app_dict.keys()
     assert "bar" in app_dict.keys()

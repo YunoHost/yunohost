@@ -22,11 +22,11 @@ do_post_regen() {
   ##
 
   # create DKIM directory with proper permission
-  sudo mkdir -p /etc/dkim
-  sudo chown _rspamd /etc/dkim
+  mkdir -p /etc/dkim
+  chown _rspamd /etc/dkim
 
   # retrieve domain list
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # create DKIM key for domains
   for domain in $domain_list; do
@@ -34,30 +34,30 @@ do_post_regen() {
     [ ! -f "$domain_key" ] && {
       # We use a 1024 bit size because nsupdate doesn't seem to be able to
       # handle 2048...
-      sudo opendkim-genkey --domain="$domain" \
+      opendkim-genkey --domain="$domain" \
           --selector=mail --directory=/etc/dkim -b 1024
-      sudo mv /etc/dkim/mail.private "$domain_key"
-      sudo mv /etc/dkim/mail.txt "/etc/dkim/${domain}.mail.txt"
+      mv /etc/dkim/mail.private "$domain_key"
+      mv /etc/dkim/mail.txt "/etc/dkim/${domain}.mail.txt"
     }
   done
 
   # fix DKIM keys permissions
-  sudo chown _rspamd /etc/dkim/*.mail.key
-  sudo chmod 400 /etc/dkim/*.mail.key
+  chown _rspamd /etc/dkim/*.mail.key
+  chmod 400 /etc/dkim/*.mail.key
 
   regen_conf_files=$1
   [ -z "$regen_conf_files" ] && exit 0
 
   # compile sieve script
   [[ "$regen_conf_files" =~ rspamd\.sieve ]] && {
-    sudo sievec /etc/dovecot/global_script/rspamd.sieve
-    sudo chown -R vmail:mail /etc/dovecot/global_script
-    sudo systemctl restart dovecot
+    sievec /etc/dovecot/global_script/rspamd.sieve
+    chown -R vmail:mail /etc/dovecot/global_script
+    systemctl restart dovecot
   }
 
   # Restart rspamd due to the upgrade
   # https://rspamd.com/announce/2016/08/01/rspamd-1.3.1.html 
-  sudo systemctl -q restart rspamd.service 
+  systemctl -q restart rspamd.service 
 }
 
 FORCE=${2:-0}

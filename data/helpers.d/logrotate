@@ -90,8 +90,8 @@ $logfile {
 	$su_directive
 }
 EOF
-	sudo mkdir -p $(dirname "$logfile")	# Create the log directory, if not exist
-	cat ${app}-logrotate | sudo $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+	mkdir -p $(dirname "$logfile")	# Create the log directory, if not exist
+	cat ${app}-logrotate | $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the existing config file, or replace the whole config file (depending on $customtee)
 }
 
 # Remove the app's logrotate config.
@@ -101,6 +101,6 @@ EOF
 # Requires YunoHost version 2.6.4 or higher.
 ynh_remove_logrotate () {
 	if [ -e "/etc/logrotate.d/$app" ]; then
-		sudo rm "/etc/logrotate.d/$app"
+		rm "/etc/logrotate.d/$app"
 	fi
 }
