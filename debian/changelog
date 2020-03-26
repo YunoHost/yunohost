@@ -5,6 +5,15 @@ yunohost (3.8.0~alpha) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
 
+yunohost (3.7.0.7) stable; urgency=low
+
+  - [fix] Allow public apps with no sso tile (#894)
+  - [fix] Slapd now index permission to avoid log error
+
+  Thanks to all contributors <3 ! (Aleks, Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 26 Mar 2020 21:53:22 +0000
+
 yunohost (3.7.0.6) testing; urgency=low
 
   - [fix] Make sure the group permission update contains unique elements
