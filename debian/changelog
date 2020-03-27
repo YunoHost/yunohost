@@ -1,3 +1,9 @@
+yunohost (3.7.0.11) stable; urgency=low
+
+  - [fix] Mess due to automatic translation tools ~_~
+
+ -- Kay0u <pierre@kayou.io>  Fri, 27 Mar 2020 23:49:45 +0000
+
 yunohost (3.7.0.10) stable; urgency=low
 
   - [fix] On some weird setup, this folder and content ain't readable by group ... gotta make sure to make rx for group other slapd will explode
