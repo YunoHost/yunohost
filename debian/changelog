@@ -1,3 +1,9 @@
+yunohost (3.7.0.10) stable; urgency=low
+
+  - [fix] On some weird setup, this folder and content ain't readable by group ... gotta make sure to make rx for group other slapd will explode
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Mar 2020 21:45:00  +0000
+
 yunohost (3.7.0.9) stable; urgency=low
 
   - [fix] Automatically remove existing system group if it exists when creating primary groups
