@@ -439,13 +439,8 @@
     "log_service_regen_conf": "Regenerar la configuracion sistèma de « {} »",
     "log_user_create": "Ajustar l’utilizaire « {} »",
     "log_user_delete": "Levar l’utilizaire « {} »",
-<<<<<<< HEAD
-    "log_user_update": "Actualizar las informacions a l’utilizaire « {} »",
-    "log_tools_maindomain": "Far venir « {} » lo domeni màger",
-=======
     "log_user_update": "Actualizar las informacions de l’utilizaire « {} »",
-    "log_domain_main_domain": "Far venir « {} » lo domeni màger",
->>>>>>> b968dff2... Translated using Weblate (Occitan)
+    "log_tools_maindomain": "Far venir « {} » lo domeni màger",
     "log_tools_migrations_migrate_forward": "Migrar",
     "log_tools_migrations_migrate_backward": "Tornar en arrièr",
     "log_tools_postinstall": "Realizar la post installacion del servidor YunoHost",
