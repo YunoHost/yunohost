@@ -285,7 +285,7 @@
     "log_user_permission_update": "Update accesses for permission '{}'",
     "log_user_permission_reset": "Reset permission '{}'",
     "log_tools_maindomain": "Make '{}' the main domain",
-    "log_tools_migrations_migrate_forward": "Migrate forward",
+    "log_tools_migrations_migrate_forward": "Run migrations",
     "log_tools_postinstall": "Postinstall your YunoHost server",
     "log_tools_upgrade": "Upgrade system packages",
     "log_tools_shutdown": "Shutdown your server",

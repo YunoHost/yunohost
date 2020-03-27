@@ -455,7 +455,7 @@
     "log_user_delete": "Supprimer l’utilisateur '{}'",
     "log_user_update": "Mettre à jour les informations de l’utilisateur '{}'",
     "log_tools_maindomain": "Faire de '{}' le domaine principal",
-    "log_tools_migrations_migrate_forward": "Migrer vers",
+    "log_tools_migrations_migrate_forward": "Éxecuter les migrations",
     "log_tools_migrations_migrate_backward": "Revenir en arrière",
     "log_tools_postinstall": "Faire la post-installation de votre serveur YunoHost",
     "log_tools_upgrade": "Mettre à jour les paquets du système",
