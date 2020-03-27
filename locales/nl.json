@@ -82,7 +82,7 @@
     "port_available": "Poort {port:d} is beschikbaar",
     "port_unavailable": "Poort {port:d} is niet beschikbaar",
     "restore_app_failed": "De app '{app:s}' kon niet worden terug gezet",
-    "restore_hook_unavailable": "De herstel-hook '{hook:s}' is niet beschikbaar op dit systeem",
+    "restore_hook_unavailable": "De herstel-hook '{part:s}' is niet beschikbaar op dit systeem",
     "service_add_failed": "Kan service '{service:s}' niet toevoegen",
     "service_already_started": "Service '{service:s}' draait al",
     "service_cmd_exec_failed": "Kan '{command:s}' niet uitvoeren",
