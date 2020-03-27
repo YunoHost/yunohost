@@ -155,16 +155,6 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
-    # If visitors are to be added, we shall make sure that "all_users" are also allowed
-    # (e.g. if visitors are allowed to visit nextcloud, you still want to allow people to log in ...)
-    if add and "visitors" in groups_to_add and "all_users" not in new_allowed_groups:
-        new_allowed_groups.append("all_users")
-        logger.warning(m18n.n("permission_all_users_implicitly_added"))
-    # If all_users are to be added, yet visitors are still to allowed, then we
-    # refuse it (c.f. previous comment...)
-    if remove and "all_users" in groups_to_remove and "visitors" in new_allowed_groups:
-        raise YunohostError('permission_cannot_remove_all_users_while_visitors_allowed')
-
     # Don't update LDAP if we update exactly the same values
     if set(new_allowed_groups) == set(current_allowed_groups) and \
        (protected is None or protected == existing_permission["protected"]):
@@ -282,8 +272,6 @@ def permission_create(operation_logger, permission, url=None, allowed=None, prot
     if allowed is not None:
         if not isinstance(allowed, list):
             allowed = [allowed]
-        if "visitors" in allowed and "all_users" not in allowed:
-            allowed.append("all_users")
 
     # Validate that the groups to add actually exist
     all_existing_groups = user_group_list()['groups'].keys()
@@ -464,6 +452,9 @@ def _update_ldap_group_permission(permission, allowed, protected=None, sync_perm
         return existing_permission
 
     allowed = [allowed] if not isinstance(allowed, list) else allowed
+    
+    # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
+    allowed = set(allowed)
 
     if protected is None:
         protected = existing_permission["protected"]
@@ -487,15 +478,21 @@ def _update_ldap_group_permission(permission, allowed, protected=None, sync_perm
     app = permission.split(".")[0]
     sub_permission = permission.split(".")[1]
 
-    old_allowed_users = set(existing_permission["corresponding_users"])
-    new_allowed_users = set(new_permission["corresponding_users"])
+    old_corresponding_users = set(existing_permission["corresponding_users"])
+    new_corresponding_users = set(new_permission["corresponding_users"])
 
-    effectively_added_users = new_allowed_users - old_allowed_users
-    effectively_removed_users = old_allowed_users - new_allowed_users
+    old_allowed_users = set(existing_permission["allowed"])
+    new_allowed_users = set(new_permission["allowed"])
 
-    if effectively_added_users:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission])
-    if effectively_removed_users:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission])
+    effectively_added_users = new_corresponding_users - old_corresponding_users
+    effectively_removed_users = old_corresponding_users - new_corresponding_users
+
+    effectively_added_group = new_allowed_users - old_allowed_users - effectively_added_users
+    effectively_removed_group = old_allowed_users - new_allowed_users - effectively_removed_users
+
+    if effectively_added_users or effectively_added_group:
+        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission, ','.join(effectively_added_group)])
+    if effectively_removed_users or effectively_removed_group:
+        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission, ','.join(effectively_removed_group)])
 
     return new_permission

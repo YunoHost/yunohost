@@ -42,8 +42,10 @@ class DNSRecordsDiagnoser(Diagnoser):
         # Here if there are no AAAA record, we should add something to expect "no" AAAA record
         # to properly diagnose situations where people have a AAAA record but no IPv6
 
-        for category, records in expected_configuration.items():
+        categories = ["basic", "mail", "xmpp", "extra"]
+        for category in categories:
 
+            records = expected_configuration[category]
             discrepancies = []
 
             for r in records:

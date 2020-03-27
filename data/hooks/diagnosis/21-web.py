@@ -9,7 +9,7 @@ from yunohost.domain import domain_list
 from yunohost.utils.error import YunohostError
 
 
-class HttpDiagnoser(Diagnoser):
+class WebDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600
@@ -28,7 +28,10 @@ class HttpDiagnoser(Diagnoser):
             os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % nonce)
 
             try:
-                r = requests.post('https://diagnosis.yunohost.org/check-http', json={'domain': domain, "nonce": nonce}, timeout=30).json()
+                r = requests.post('https://diagnosis.yunohost.org/check-http', json={'domain': domain, "nonce": nonce}, timeout=30)
+                if r.status_code not in [200, 400, 418]:
+                    raise Exception("Bad response from the server https://diagnosis.yunohost.org/check-http : %s - %s" % (str(r.status_code), r.content))
+                r = r.json()
                 if "status" not in r.keys():
                     raise Exception("Bad syntax for response ? Raw json: %s" % str(r))
                 elif r["status"] == "error" and ("code" not in r.keys() or not r["code"].startswith("error_http_check_")):
@@ -56,4 +59,4 @@ class HttpDiagnoser(Diagnoser):
 
 
 def main(args, env, loggers):
-    return HttpDiagnoser(args, env, loggers).diagnose()
+    return WebDiagnoser(args, env, loggers).diagnose()
