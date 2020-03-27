@@ -81,6 +81,7 @@ do_post_regen() {
   chown -R openldap:openldap /etc/ldap/slapd.d/
   chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
   chmod o-rwx /etc/yunohost/certs/yunohost.org/
+  chmod -R g+rx /etc/yunohost/certs/yunohost.org/
 
   [ -z "$regen_conf_files" ] && exit 0
 
