@@ -534,7 +534,7 @@
     "migration_0008_port": "• Vi devos konekti uzante la havenon 22 anstataŭ via nuna kutimo SSH-haveno. Sentu vin libera reconfiguri ĝin;",
     "domain_creation_failed": "Ne eblas krei domajnon {domain}: {error}",
     "certmanager_domain_http_not_working": "Ŝajnas ke la domajno {domain:s} ne atingeblas per HTTP. Kontrolu, ke via DNS kaj NGINX-agordo ĝustas",
-    "domain_cannot_remove_main": "Vi ne povas forigi '{domain:s}' ĉar ĝi estas la ĉefa domajno, vi bezonas unue agordi alian domajnon kiel la ĉefan domajnon per uzado de 'yunohost domain main-domain -n <another-domain>', jen la listo de kandidataj domajnoj. : {other_domainsj:s}",
+    "domain_cannot_remove_main": "Vi ne povas forigi '{domain:s}' ĉar ĝi estas la ĉefa domajno, vi bezonas unue agordi alian domajnon kiel la ĉefan domajnon per uzado de 'yunohost domain main-domain -n <another-domain>', jen la listo de kandidataj domajnoj. : {other_domains:s}",
     "service_reloaded_or_restarted": "La servo '{service:s}' estis reŝarĝita aŭ rekomencita",
     "mysql_db_initialized": "La datumbazo MySQL jam estas pravalorizita",
     "log_domain_add": "Aldonu '{}' domajnon en sisteman agordon",
