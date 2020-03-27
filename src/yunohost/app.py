@@ -1145,8 +1145,9 @@ def app_setting(app, key, value=None, delete=False):
             logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
             return None
 
-    if delete and key in app_settings:
-        del app_settings[key]
+    if delete:
+        if key in app_settings:
+            del app_settings[key]
     else:
         # FIXME: Allow multiple values for some keys?
         if key in ['redirected_urls', 'redirected_regex']:

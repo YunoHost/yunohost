@@ -5,6 +5,12 @@ yunohost (3.8.0~alpha) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
 
+yunohost (3.7.0.8) stable; urgency=low
+
+  - [fix] App_setting delete add if the key doesn't exist
+
+ -- Kay0u <pierre@kayou.io>  Fri, 27 Mar 2020 00:36:46 +0000
+
 yunohost (3.7.0.7) stable; urgency=low
 
   - [fix] Allow public apps with no sso tile (#894)
