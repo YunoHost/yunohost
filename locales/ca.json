@@ -636,7 +636,7 @@
     "diagnosis_security_vulnerable_to_meltdown_details": "Per arreglar-ho, hauríeu d'actualitzar i reiniciar el sistema per tal de carregar el nou nucli de linux (o contactar amb el proveïdor del servidor si no funciona). Vegeu https://meltdownattack.com/ per a més informació.",
     "diagnosis_http_could_not_diagnose": "No s'ha pogut diagnosticar si el domini és accessible des de l'exterior. Error: {error}",
     "domain_cannot_remove_main_add_new_one": "No es pot eliminar «{domain:s}» ja que és el domini principal i únic domini, primer s'ha d'afegir un altre domini utilitzant «yunohost domain add <un-altre-domini.com>», i després fer-lo el domini principal amb «yunohost domain main-domain -n <un-altre-domini.com>» i després es pot eliminar el domini «{domain:s}» utilitzant «yunohost domain remove {domain:s}».",
-    "diagnosis_basesystem_host": "El servidor funciona amb Debian {debian_version}.",
+    "diagnosis_basesystem_host": "El servidor funciona amb Debian {debian_version}",
     "diagnosis_basesystem_kernel": "El servidor funciona amb el nucli de Linux {kernel_version}",
     "diagnosis_basesystem_ynh_single_version": "{0} versió: {1}({2})",
     "diagnosis_basesystem_ynh_inconsistent_versions": "Esteu utilitzant versions inconsistents dels paquets de YunoHost… probablement a causa d'una actualització fallida o parcial.",
@@ -724,5 +724,7 @@
     "log_app_config_show_panel": "Mostra el taulell de configuració de l'aplicació «{}»",
     "log_app_config_apply": "Afegeix la configuració a l'aplicació «{}»",
     "diagnosis_never_ran_yet": "Sembla que el servidor s'ha configurat recentment i encara no hi cap informe de diagnòstic per mostrar. S'ha d'executar un diagnòstic complet primer, ja sigui des de la pàgina web d'administració o utilitzant la comanda «yunohost diagnosis run» al terminal.",
-    "diagnosis_description_web": "Web"
+    "diagnosis_description_web": "Web",
+    "diagnosis_basesystem_hardware_board": "El model de la targeta del servidor és {model}",
+    "diagnosis_basesystem_hardware": "L'arquitectura del maquinari del servidor és {virt} {arch}"
 }
