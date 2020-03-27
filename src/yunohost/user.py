@@ -576,7 +576,11 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
     # Validate uniqueness of groupname in system group
     all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
     if groupname in all_existing_groupnames:
-        raise YunohostError('group_already_exist_on_system', group=groupname)
+        if primary_group:
+            logger.warning('group_already_exist_on_system_but_removing_it', group=groupname)
+            subprocess.check_call("sed --in-place '/^%s:/d' /etc/group" % groupname, shell=True)
+        else:
+            raise YunohostError('group_already_exist_on_system', group=groupname)
 
     if not gid:
         # Get random GID
