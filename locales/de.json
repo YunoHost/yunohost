@@ -308,7 +308,7 @@
     "experimental_feature": "Warnung: Diese Funktion ist experimentell und gilt nicht als stabil. Sie sollten sie nur verwenden, wenn Sie wissen, was Sie tun.",
     "error_when_removing_sftpuser_group": "Fehler beim Versuch, die Gruppe sftpusers zu entfernen",
     "edit_permission_with_group_all_users_not_allowed": "Sie dürfen die Berechtigung für die Gruppe \"all_users\" nicht bearbeiten. Verwenden Sie stattdessen \"yunohost user permission clear APP\" oder \"yunohost user permission add APP -u USER\".",
-    "edit_group_not_allowed": "Du bist nicht berechtigt zum Bearbeiten der Gruppe {group: s}",
+    "edit_group_not_allowed": "Du bist nicht berechtigt zum Bearbeiten der Gruppe {group:s}",
     "dyndns_domain_not_provided": "Der DynDNS-Anbieter {provider:s} kann die Domain(s) {domain:s} nicht bereitstellen.",
     "dyndns_could_not_check_available": "Konnte nicht überprüfen, ob {domain:s} auf {provider:s} verfügbar ist.",
     "dyndns_could_not_check_provide": "Konnte nicht überprüft, ob {provider:s} die Domain(s) {domain:s} bereitstellen kann.",
