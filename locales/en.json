@@ -388,7 +388,7 @@
     "migration_description_0008_ssh_conf_managed_by_yunohost_step2": "Let the SSH configuration be managed by YunoHost (step 2, manual)",
     "migration_description_0009_decouple_regenconf_from_services": "Decouple the regen-conf mechanism from services",
     "migration_description_0010_migrate_to_apps_json": "Remove deprecated apps catalogs and use the new unified 'apps.json' list instead (outdated, replaced by migration 13)",
-    "migration_description_0011_setup_group_permission": "Set up user group and set up permission for apps and services",
+    "migration_description_0011_setup_group_permission": "Set up user groups and permissions for apps and services",
     "migration_description_0012_postgresql_password_to_md5_authentication": "Force PostgreSQL authentication to use MD5 for local connections",
     "migration_description_0013_futureproof_apps_catalog_system": "Migrate to the new future-proof apps catalog system",
     "migration_description_0014_remove_app_status_json": "Remove legacy status.json app files",
