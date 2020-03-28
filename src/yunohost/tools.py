@@ -306,8 +306,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     if 'redirected_urls' not in ssowat_conf:
         ssowat_conf['redirected_urls'] = {}
 
-    ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
-
     write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
