@@ -303,9 +303,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     else:
         ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
-    if 'redirected_urls' not in ssowat_conf:
-        ssowat_conf['redirected_urls'] = {}
-
     write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
