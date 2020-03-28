@@ -192,6 +192,10 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
         'loginShell': '/bin/false'
     }
 
+    # If it is the first user, add some aliases
+    if not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
+        attr_dict['mail'] = [attr_dict['mail']] + aliases
+
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)
     except Exception as e:
