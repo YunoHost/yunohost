@@ -196,18 +196,6 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     if not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
         attr_dict['mail'] = [attr_dict['mail']] + aliases
 
-        # If exists, remove the redirection from the SSO
-        if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-            ssowat_conf = {}
-        else:
-            ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
-
-        if 'redirected_urls' in ssowat_conf and '/' in ssowat_conf['redirected_urls']:
-            del ssowat_conf['redirected_urls']['/']
-
-            write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
-            os.system('chmod 644 /etc/ssowat/conf.json.persistent')
-
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)
     except Exception as e:
