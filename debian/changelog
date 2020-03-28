@@ -1,3 +1,9 @@
+yunohost (3.7.0.12) stable; urgency=low
+
+   - Fix previous buggy hotfix about deleting existing primary groups ...
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 28 Mar 2020 14:52:00  +0000
+
 yunohost (3.7.0.11) stable; urgency=low
 
   - [fix] Mess due to automatic translation tools ~_~
