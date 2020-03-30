@@ -421,7 +421,7 @@ def app_upgrade(app=[], url=None, file=None):
 
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.permission import permission_sync_to_user
+    from yunohost.permission import permission_sync_to_user, user_permission_list
 
     apps = app
     # If no app is specified, upgrade all apps
@@ -483,6 +483,7 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+        env_dict["YNH_APP_LABEL"] = user_permission_list(full=True, ignore_system_perms=True)['permissions'][app_id+".main"]['label']
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -664,6 +665,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         raise YunohostError('app_id_invalid')
 
     app_id = manifest['id']
+    label = label if label else manifest['name']
 
     # Check requirements
     _check_manifest_requirements(manifest, app_id)
@@ -695,6 +697,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+    env_dict["YNH_APP_LABEL"] = label
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
@@ -721,7 +724,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Set initial app settings
     app_settings = {
         'id': app_instance_name,
-        'label': label if label else manifest['name'],
+        'label': label,
         'install_time': int(time.time()),
         'current_revision': manifest.get('remote', {}).get('revision', "?")
     }
@@ -750,7 +753,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Initialize the main permission for the app
     # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
-    permission_create(app_instance_name+".main", url="/", allowed=["all_users"], protected=False)
+    permission_create(app_instance_name+".main", url="/", allowed=["all_users"], label=label, show_tile=True, protected=False)
 
     # Execute the app install script
     install_failed = True
