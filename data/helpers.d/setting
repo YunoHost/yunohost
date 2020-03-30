@@ -250,12 +250,18 @@ ynh_webpath_register () {
 
 # Create a new permission for the app
 #
-# example: ynh_permission_create --permission admin --url /admin --allowed alice bob
+# example: ynh_permission_create --permission admin --url /admin --additional_urls 'domain.tld/otherurl /superadmin' --allowed alice bob --tile_name 'My app admin'
 #
-# usage: ynh_permission_create --permission "permission" [--url "url"] [--allowed group1 group2] [--protected "true"|"false"]
+# usage: ynh_permission_create --permission "permission" [--url "url"] [--additional_urls "second-url" [ "other-url" ]] [--auth_header true|false]
+#                                                        [--allowed group1 [ group2 ]] [--label "label"] [--show_tile true|false]
+#                                                        [--protected true|false]
 # | arg: permission - the name for the permission (by default a permission named "main" already exist)
 # | arg: url - (optional) URL for which access will be allowed/forbidden
+# | arg: additional_urls - (optional) List of additional URL for which access will be allowed/forbidden
+# | arg: auth_header - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
 # | arg: allowed - (optional) A list of group/user to allow for the permission
+# | arg: label - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin. Default is "APP_LABEL permission name".
+# | arg: show_tile - (optional) Define if a tile will be shown in the SSO
 # | arg: protected - (optional) Define if this permission is protected. If it is protected the administrator
 # |                             won't be able to add or remove the visitors group of this permission.
 # |                             By default it's 'true' (for the permission different than 'main').
@@ -273,21 +279,51 @@ ynh_webpath_register () {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_create() {
-    declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= [P]=protected= )
+    declare -Ar args_array=( [p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected= )
     local permission
     local url
+    local additional_urls
+    local auth_header
     local allowed
+    local label
+    local show_tile
     local protected
     ynh_handle_getopts_args "$@"
 
     if [[ -n ${url:-} ]]; then
-        url="'$url'"
-    else
-        url="None"
+        url=",url='$url'"
     fi
+
+    if [[ -n ${additional_urls:-} ]]; then
+        additional_urls=",additional_urls=['${additional_urls//';'/"','"}']"
+    fi
+
+    if [[ -n ${auth_header:-} ]]; then
+        if [ $auth_header == "true" ]; then
+            auth_header=",auth_header=True"
+        else
+            auth_header=",auth_header=False"
+        fi
+    fi
+
     if [[ -n ${allowed:-} ]]; then
         allowed=",allowed=['${allowed//';'/"','"}']"
     fi
+
+    if [[ -n ${label:-} ]]; then
+        label=",label='$label'"
+    else
+        label=",label='$YNH_APP_LABEL $permission'"
+    fi
+
+    if [[ -n ${show_tile:-} ]]; then
+        if [ $show_tile == "true" ]; then
+            show_tile=",show_tile=True"
+        else
+            show_tile=",show_tile=False"
+        fi
+    fi
+
     if [[ -n ${protected:-} ]]; then
         if [ $protected == "true" ]; then
             protected=",protected=True"
@@ -296,7 +332,7 @@ ynh_permission_create() {
         fi
     fi
     
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} ${protected:-} , sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission' ${url:-} ${additional_urls:-} ${auth_header:-} ${allowed:-} ${label:-} ${show_tile:-} ${protected:-} , sync_perm=False)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
@@ -331,43 +367,75 @@ ynh_permission_exists() {
 
 # Redefine the url associated to a permission
 #
-# usage: ynh_permission_url --permission "permission" --url "url"
+# usage: ynh_permission_url --permission "permission" [--url "url"] [--add_url "new-url" [ "other-new-url" ]] [--remove_url "old-url" [ "other-old-url"]] 
+#                                                     [--auth_header true|false][--clear_urls]
 # | arg: permission - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-# | arg: url - (optional) URL for which access will be allowed/forbidden
+# | arg: url - (optional) URL for which access will be allowed/forbidden. Note that if you want to remove url you can pass an empty sting as arguments ("").
+# | arg: add_url - (optional) List of additional url to add for which access will be allowed/forbidden.
+# | arg: remove_url - (optional) List of additional url to remove for which access will be allowed/forbidden
+# | arg: auth_header - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
+# | arg: clear_urls - (optional) Clean all urls (url and additional_urls)
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_url() {
-    declare -Ar args_array=([p]=permission= [u]=url=)
+    declare -Ar args_array=([p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls)
     local permission
     local url
+    local add_url
+    local remove_url
+    local auth_header
+    local clear_urls
     ynh_handle_getopts_args "$@"
 
     if [[ -n ${url:-} ]]; then
-        url="'$url'"
-    else
-        url="None"
+        url=",url='$url'"
     fi
 
-    yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission', url=$url)"
+    if [[ -n ${add_url:-} ]]; then
+        add_url=",add_url=['${add_url//';'/"','"}']"
+    fi
+
+    if [[ -n ${remove_url:-} ]]; then
+        remove_url=",remove_url=['${remove_url//';'/"','"}']"
+    fi
+
+    if [[ -n ${auth_header:-} ]]; then
+        if [ $auth_header == "true" ]; then
+            auth_header=",auth_header=True"
+        else
+            auth_header=",auth_header=False"
+        fi
+    fi
+
+    if [[ -n ${clear_urls:-} ]] && [ $clear_urls -eq 1 ]; then
+        clear_urls=",clear_urls=True"
+    fi
+
+    yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission' ${url:-} ${add_url:-} ${remove_url:-} ${auth_header:-} ${clear_urls:-} )"
 }
 
 
 # Update a permission for the app
 #
-# usage: ynh_permission_update --permission "permission" --add "group" ["group" ...] --remove  "group" ["group" ...] [--protected "true"|"false"]
+# usage: ynh_permission_update --permission "permission" [--add "group" ["group" ...]] [--remove  "group" ["group" ...]]
+#                                                        [--label "label"] [--show_tile true|false] [--protected true|false]
 # | arg: permission - the name for the permission (by default a permission named "main" already exist)
 # | arg: add - the list of group or users to enable add to the permission
 # | arg: remove - the list of group or users to remove from the permission
+# | arg: label - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
+# | arg: show_tile - (optional) Define if a tile will be shown in the SSO
 # | arg: protected - (optional) Define if this permission is protected. If it is protected the administrator
 # |                                won't be able to add or remove the visitors group of this permission.
 #
 # example: ynh_permission_update --permission admin --add samdoe --remove all_users
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
-    declare -Ar args_array=( [p]=permission= [a]=add= [r]=remove= [P]=protected= )
+    declare -Ar args_array=( [p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected= )
     local permission
     local add
     local remove
+    local label
+    local show_tile
     local protected
     ynh_handle_getopts_args "$@"
 
@@ -377,6 +445,19 @@ ynh_permission_update() {
     if [[ -n ${remove:-} ]]; then
         remove=",remove=['${remove//';'/"','"}']"
     fi
+
+    if [[ -n ${label:-} ]]; then
+        label=",label='$label'"
+    fi
+
+    if [[ -n ${show_tile:-} ]]; then
+        if [ $show_tile == "true" ]; then
+            show_tile=",show_tile=True"
+        else
+            show_tile=",show_tile=False"
+        fi
+    fi
+
     if [[ -n ${protected:-} ]]; then
         if [ $protected == "true" ]; then
             protected=",protected=True"
@@ -385,5 +466,5 @@ ynh_permission_update() {
         fi
     fi
 
-    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission' ${add:-} ${remove:-} ${protected:-} , force=True, sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission' ${add:-} ${remove:-} ${label:-} ${show_tile:-} ${protected:-} , force=True, sync_perm=False)"
 }
