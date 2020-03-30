@@ -56,7 +56,8 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
                                     '(objectclass=permissionYnh)',
-                                    ["cn", 'groupPermission', 'inheritPermission', 'URL', 'isProtected'])
+                                    ["cn", 'groupPermission', 'inheritPermission',
+                                     'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
 
@@ -74,6 +75,10 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
         if full:
             permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
             permissions[name]["url"] = infos.get("URL", [None])[0]
+            permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
+            permissions[name]["auth_header"] = False if infos.get("authHeader", [False])[0] == "FALSE" else True
+            permissions[name]["label"] = infos.get("label", [None])[0]
+            permissions[name]["show_tile"] = False if infos.get("showTile", [False])[0] == "FALSE" else True
             permissions[name]["protected"] = False if infos.get("isProtected", [False])[0] == "FALSE" else True
 
     if short:
@@ -82,14 +87,18 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
     return {'permissions': permissions}
 
 @is_unit_operation()
-def user_permission_update(operation_logger, permission, add=None, remove=None, protected=None, force=False, sync_perm=True):
+def user_permission_update(operation_logger, permission, add=None, remove=None,
+                           label=None, show_tile=None,
+                           protected=None, force=False, sync_perm=True):
     """
     Allow or Disallow a user or group to a permission for a specific application
 
     Keyword argument:
         permission     -- Name of the permission (e.g. mail or or wordpress or wordpress.editors)
-        add            -- List of groups or usernames to add to this permission
-        remove         -- List of groups or usernames to remove from to this permission
+        add            -- (optional) List of groups or usernames to add to this permission
+        remove         -- (optional) List of groups or usernames to remove from to this permission
+        label          -- (optional) Define a name for the permission. This label will be shown on the SSO and in the admin
+        show_tile      -- (optional) Define if a tile will be shown in the SSO
         protected      -- (optional) Define if the permission can be added/removed to the visitor group
         force          -- (optional) Give the possibility to add/remove access from the visitor group to a protected permission
     """
@@ -133,8 +142,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
                 logger.warning(m18n.n('permission_already_allowed', permission=permission, group=group))
             else:
                 operation_logger.related_to.append(('group', group))
-
-        new_allowed_groups += groups_to_add
+                new_allowed_groups += [group]
 
     if remove:
         groups_to_remove = [remove] if not isinstance(remove, list) else remove
@@ -155,17 +163,12 @@ def user_permission_update(operation_logger, permission, add=None, remove=None, 
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
-    # Don't update LDAP if we update exactly the same values
-    if set(new_allowed_groups) == set(current_allowed_groups) and \
-       (protected is None or protected == existing_permission["protected"]):
-        logger.warning(m18n.n("permission_already_up_to_date"))
-        return existing_permission
-
     # Commit the new allowed group list
-
     operation_logger.start()
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups, protected=protected, sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups,
+                                                   label=label, show_tile=show_tile,
+                                                   protected=protected, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_updated', permission=permission))
 
@@ -216,15 +219,22 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, url=None, allowed=None, protected=True, sync_perm=True):
+def permission_create(operation_logger, permission, allowed=None, 
+                      url=None, additional_urls=None, auth_header=True,
+                      label=None, show_tile=False, 
+                      protected=True, sync_perm=True):
     """
     Create a new permission for a specific application
 
     Keyword argument:
-        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        url        -- (optional) URL for which access will be allowed/forbidden
-        allowed    -- (optional) A list of group/user to allow for the permission
-        protected  -- (optional) Define if the permission can be added/removed to the visitor group
+        permission      -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
+        allowed         -- (optional) List of group/user to allow for the permission
+        url             -- (optional) URL for which access will be allowed/forbidden
+        additional_urls -- (optional) List of additional URL for which access will be allowed/forbidden
+        auth_header     -- (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
+        label           -- (optional) Define a name for the permission. This label will be shown on the SSO and in the admin. Default is "permission name"
+        show_tile       -- (optional) Define if a tile will be shown in the SSO
+        protected       -- (optional) Define if the permission can be added/removed to the visitor group
 
     If provided, 'url' is assumed to be relative to the app domain/path if they
     start with '/'.  For example:
@@ -263,11 +273,11 @@ def permission_create(operation_logger, permission, url=None, allowed=None, prot
         'objectClass': ['top', 'permissionYnh', 'posixGroup'],
         'cn': str(permission),
         'gidNumber': gid,
-        'isProtected': 'FALSE' # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
+        'authHeader': ['TRUE'],
+        'label': [str(permission)],
+        'showTile': ['FALSE'], # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
+        'isProtected': ['FALSE'] # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
     }
-
-    if url:
-        attr_dict['URL'] = url
 
     if allowed is not None:
         if not isinstance(allowed, list):
@@ -287,20 +297,31 @@ def permission_create(operation_logger, permission, url=None, allowed=None, prot
     except Exception as e:
         raise YunohostError('permission_creation_failed', permission=permission, error=e)
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed=allowed, protected=protected, sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(permission=permission, allowed=allowed,
+                                                   label=label, show_tile=show_tile,
+                                                   protected=protected, sync_perm=False)
+
+    permission_url(permission, url=url, add_url=additional_urls, auth_header=auth_header,
+                   sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_created', permission=permission))
     return new_permission
 
 
 @is_unit_operation()
-def permission_url(operation_logger, permission, url=None, sync_perm=True):
+def permission_url(operation_logger, permission,
+                   url=None, add_url=None, remove_url=None, auth_header=None,
+                   clear_urls=False, sync_perm=True):
     """
     Update urls related to a permission for a specific application
 
     Keyword argument:
-        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        url        -- (optional) URL for which access will be allowed/forbidden
+        permission  -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
+        url         -- (optional) URL for which access will be allowed/forbidden.
+        add_url     -- (optional) List of additional url to add for which access will be allowed/forbidden
+        remove_url  -- (optional) List of additional url to remove for which access will be allowed/forbidden
+        auth_header -- (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
+        clear_urls  -- (optional) Clean all urls (url and additional_urls)
     """
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
@@ -315,12 +336,37 @@ def permission_url(operation_logger, permission, url=None, sync_perm=True):
     if not existing_permission:
         raise YunohostError('permission_not_found', permission=permission)
 
-    # Compute new url list
-    old_url = existing_permission["url"]
+    # TODO -> Check conflict with other app and other URL !!
 
-    if old_url == url:
-        logger.warning(m18n.n('permission_update_nothing_to_do'))
-        return existing_permission
+    if url is None:
+        url = existing_permission["url"]
+
+    current_additional_urls = existing_permission["additional_urls"]
+    new_additional_urls = copy.copy(current_additional_urls)
+
+    if add_url:
+        for url in add_url:
+            if url in current_additional_urls:
+                logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=url))
+            else:
+                new_additional_urls += [url]
+
+    if remove_url:
+        for url in remove_url:
+            if url not in current_additional_urls:
+                logger.warning(m18n.n('additional_urls_already_removed', permission=permission, url=url))
+
+        new_additional_urls = [u for u in new_additional_urls if u not in remove_url]
+
+    if auth_header is None:
+        auth_header = existing_permission['auth_header']
+
+    if clear_urls:
+        url = None
+        new_additional_urls = []
+
+    # Guarantee uniqueness of all values, which would otherwise make ldap.update angry.
+    new_additional_urls = set(new_additional_urls)
 
     # Actually commit the change
 
@@ -328,7 +374,9 @@ def permission_url(operation_logger, permission, url=None, sync_perm=True):
     operation_logger.start()
 
     try:
-        ldap.update('cn=%s,ou=permission' % permission, {'URL': [url]})
+        ldap.update('cn=%s,ou=permission' % permission, {'URL': [url] if url is not None else [],
+                                                         'additionalUrls': new_additional_urls,
+                                                         'authHeader': [str(auth_header).upper()]})
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 
@@ -425,12 +473,17 @@ def permission_sync_to_user():
     os.system('nscd --invalidate=group')
 
 
-def _update_ldap_group_permission(permission, allowed, protected=None, sync_perm=True):
+def _update_ldap_group_permission(permission, allowed,
+                                  label=None, show_tile=None,
+                                  protected=None, sync_perm=True):
     """
         Internal function that will rewrite user permission
 
-        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        allowed    -- A list of group/user to allow for the permission
+        permission      -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
+        allowed         -- (optional) A list of group/user to allow for the permission
+        label           -- (optional) Define a name for the permission. This label will be shown on the SSO and in the admin
+        show_tile       -- (optional) Define if a tile will be shown in the SSO
+        protected       -- (optional) Define if the permission can be added/removed to the visitor group
 
 
         Assumptions made, that should be checked before calling this function:
@@ -449,20 +502,27 @@ def _update_ldap_group_permission(permission, allowed, protected=None, sync_perm
     existing_permission = user_permission_list(full=True)["permissions"][permission]
 
     if allowed is None:
-        return existing_permission
+        allowed = existing_permission['allowed']
 
-    allowed = [allowed] if not isinstance(allowed, list) else allowed
-    
-    # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
-    allowed = set(allowed)
+    if label is None:
+        label = existing_permission["label"]
+
+    if show_tile is None:
+        show_tile = existing_permission["show_tile"]
 
     if protected is None:
         protected = existing_permission["protected"]
 
+    # Guarantee uniqueness of all values, which would otherwise make ldap.update angry.
+    allowed = set(allowed)
+
     try:
         ldap.update('cn=%s,ou=permission' % permission,
                     {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in allowed],
-                     'isProtected': "TRUE" if protected else "FALSE"})
+                     'label': [str(label)] if label != "" else [],
+                     'showTile': [str(show_tile).upper()],
+                     'isProtected': [str(protected).upper()]
+                     })
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 

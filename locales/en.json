@@ -1,6 +1,8 @@
 {
     "aborting": "Aborting.",
     "action_invalid": "Invalid action '{action:s}'",
+    "additional_urls_already_added": "Additionnal url '{url:s} already added in the additional URL for permission {permission:s}'",
+    "additional_urls_already_removed": "Additionnal url '{url:s} already removed in the additional URL for permission {permission:s}'",
     "admin_password": "Administration password",
     "admin_password_change_failed": "Cannot change password",
     "admin_password_changed": "The administration password was changed",
