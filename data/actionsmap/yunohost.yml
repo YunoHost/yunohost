@@ -296,6 +296,15 @@ user:
                             help: Display all info known about each permission, including the full user list of each group it is granted to.
                             action: store_true
 
+                ### user_permission_info()
+                info:
+                    action_help: Get information about a specific permission
+                    api: GET /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Name of the permission to fetch info about
+                            extra:
+                                pattern: *pattern_username
 
                 ### user_permission_update()
                 update:
