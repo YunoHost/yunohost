@@ -318,6 +318,15 @@ user:
                             metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
+                        -l:
+                            full: --label
+                            help: Label for this permission. This label will be shown on the SSO and in the admin
+                        -s:
+                            full: --show_tile
+                            help: Define if a tile will be shown in the SSO
+                            choices:
+                                - 'True'
+                                - 'False'
 
                 ## user_permission_reset()
                 reset:

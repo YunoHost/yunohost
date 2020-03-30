@@ -775,10 +775,11 @@ def user_permission_list(short=False, full=False):
     return yunohost.permission.user_permission_list(short, full)
 
 
-def user_permission_update(permission, add=None, remove=None, sync_perm=True):
+def user_permission_update(permission, add=None, remove=None, label=None, show_tile=None, sync_perm=True):
     import yunohost.permission
     return yunohost.permission.user_permission_update(permission,
                                                       add=add, remove=remove,
+                                                      label=label, show_tile=show_tile,
                                                       sync_perm=sync_perm)
 
 
