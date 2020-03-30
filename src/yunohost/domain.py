@@ -79,6 +79,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
 
+    if domain.startswith("xmpp-upload."):
+        raise YunohostError("domain_cannot_add_xmpp_upload")
+
     ldap = _get_ldap_interface()
 
     try:
@@ -412,6 +415,7 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "CNAME", "name": "muc", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "pubsub", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "vjud", "value": "@", "ttl": 3600}
+            {"type": "CNAME", "name": "xmpp-upload", "value": "@", "ttl": 3600}
         ],
         "mail": [
             {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
@@ -453,6 +457,7 @@ def _build_dns_conf(domain, ttl=3600):
         ["muc", ttl, "CNAME", "@"],
         ["pubsub", ttl, "CNAME", "@"],
         ["vjud", ttl, "CNAME", "@"],
+        ["xmpp-upload", ttl, "CNAME", "@"],
     ]
 
     # SPF record
