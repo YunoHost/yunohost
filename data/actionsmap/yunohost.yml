@@ -303,8 +303,6 @@ user:
                     arguments:
                         permission:
                             help: Name of the permission to fetch info about
-                            extra:
-                                pattern: *pattern_username
 
                 ### user_permission_update()
                 update:
