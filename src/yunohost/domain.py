@@ -32,8 +32,6 @@ from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.certificate
-
 from yunohost.app import app_ssowatconf
 from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
@@ -109,6 +107,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         dyndns_subscribe(domain=domain)
 
     try:
+        import yunohost.certificate
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         attr_dict = {
@@ -302,14 +301,17 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
 
 def domain_cert_status(domain_list, full=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_status(domain_list, full)
 
 
 def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
 def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
