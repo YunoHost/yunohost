@@ -164,10 +164,10 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         if not dry_run:
             operation_logger.related_to.append(('configuration', category))
 
-        logger.debug(m18n.n(
-            'regenconf_pending_applying' if not dry_run else
-            'regenconf_dry_pending_applying',
-            category=category))
+        if dry_run:
+            logger.debug(m18n.n('regenconf_pending_applying', category=category))
+        else:
+            logger.debug(m18n.n('regenconf_dry_pending_applying', category=category))
 
         conf_hashes = _get_conf_hashes(category)
         succeed_regen = {}
@@ -281,10 +281,10 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             logger.debug(m18n.n('regenconf_up_to_date', category=category))
             continue
         elif not failed_regen:
-            logger.success(m18n.n(
-                'regenconf_updated' if not dry_run else
-                'regenconf_would_be_updated',
-                category=category))
+            if not dry_run:
+                logger.success(m18n.n('regenconf_updated', category=category))
+            else:
+                logger.success(m18n.n('regenconf_would_be_updated', category=category))
 
         if succeed_regen and not dry_run:
             _update_conf_hashes(category, conf_hashes)
