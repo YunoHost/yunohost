@@ -384,7 +384,7 @@ ynh_permission_update() {
 # | arg: -p, --permission - the permission to check
 # | arg: -u, --user - the user seek in the permission
 #
-# example: ynh_permission_has_user --permission=nextcloud.main --user=visitors
+# example: ynh_permission_has_user --permission=main --user=visitors
 #
 # Requires YunoHost version 3.7.1 or higher.
 ynh_permission_has_user() {
