@@ -384,16 +384,19 @@ ynh_permission_update() {
 # | arg: -p, --permission - the permission to check
 # | arg: -u, --user - the user seek in the permission
 #
+# example: ynh_permission_has_user --permission=nextcloud.main --user=visitors
+#
 # Requires YunoHost version 3.7.1 or higher.
 ynh_permission_has_user() {
-	# Declare an array to define the options of this helper.
-	local legacy_args=pu
-    declare -Ar args_array=( [p]=permission= [u]=user)
+    local legacy_args=pu
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=( [p]=permission= [u]=user= )
     local permission
     local user
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ! ynh_permission_exists --permission "$permission"
+    if ! ynh_permission_exists --permission=$permission
     then
         return 1
     fi
