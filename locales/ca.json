@@ -272,7 +272,7 @@
     "log_user_delete": "Elimina l'usuari « {} »",
     "log_user_update": "Actualitza la informació de l'usuari « {} »",
     "log_domain_main_domain": "Fes de « {} » el domini principal",
-    "log_tools_migrations_migrate_forward": "Migrar",
+    "log_tools_migrations_migrate_forward": "Executa les migracions",
     "log_tools_migrations_migrate_backward": "Migrar endarrera",
     "log_tools_postinstall": "Fer la post instal·lació del servidor YunoHost",
     "log_tools_upgrade": "Actualitza els paquets del sistema",
@@ -551,7 +551,7 @@
     "log_user_permission_add": "Actualitzar el permís «{}»",
     "log_user_permission_remove": "Actualitzar el permís «{}»",
     "mailbox_disabled": "La bústia de correu està desactivada per al usuari {user:s}",
-    "migration_description_0011_setup_group_permission": "Configurar el grup d'usuaris i els permisos per les aplicacions i els serveis",
+    "migration_description_0011_setup_group_permission": "Configurar els grups d'usuaris i els permisos per les aplicacions i els serveis",
     "migration_0011_backup_before_migration": "Creant una còpia de seguretat de la base de dades LDAP i la configuració de les aplicacions abans d'efectuar la migració.",
     "migration_0011_can_not_backup_before_migration": "No s'ha pogut completar la còpia de seguretat abans de que la migració fallés. Error: {error:s}",
     "migration_0011_create_group": "Creant un grup per a cada usuari…",
@@ -726,5 +726,6 @@
     "diagnosis_never_ran_yet": "Sembla que el servidor s'ha configurat recentment i encara no hi cap informe de diagnòstic per mostrar. S'ha d'executar un diagnòstic complet primer, ja sigui des de la pàgina web d'administració o utilitzant la comanda «yunohost diagnosis run» al terminal.",
     "diagnosis_description_web": "Web",
     "diagnosis_basesystem_hardware_board": "El model de la targeta del servidor és {model}",
-    "diagnosis_basesystem_hardware": "L'arquitectura del maquinari del servidor és {virt} {arch}"
+    "diagnosis_basesystem_hardware": "L'arquitectura del maquinari del servidor és {virt} {arch}",
+    "group_already_exist_on_system_but_removing_it": "El grup {group} ja existeix en els grups del sistema, però YunoHost l'eliminarà…"
 }
