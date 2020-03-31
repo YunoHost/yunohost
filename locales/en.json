@@ -27,6 +27,7 @@
     "app_install_failed": "Could not install {app}: {error}",
     "app_install_script_failed": "An error occurred inside the app installation script",
     "app_make_default_location_already_used": "Can't make the app '{app}' the default on the domain, '{domain}' is already in use by the other app '{other_app}'",
+    "app_label_depreciated": "This command is depreciated !! Please use the new command 'yunohost user permission update' to manage the app label.",
     "app_location_unavailable": "This URL is either unavailable, or conflicts with the already installed app(s):\n{apps:s}",
     "app_manifest_invalid": "Something is wrong with the app manifest: {error}",
     "app_not_upgraded": "The app '{failed_app}' failed to upgrade, and as a consequence the following apps' upgrades have been cancelled: {apps}",

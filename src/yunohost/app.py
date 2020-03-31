@@ -724,7 +724,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Set initial app settings
     app_settings = {
         'id': app_instance_name,
-        'label': label,
         'install_time': int(time.time()),
         'current_revision': manifest.get('remote', {}).get('revision', "?")
     }
@@ -1356,10 +1355,8 @@ def app_change_label(app, new_label):
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
-
-    app_setting(app, "label", value=new_label)
-
-    app_ssowatconf()
+    logger.warning(m18n.n('app_label_depreciated'))
+    user_permission_update(app + ".main", label=new_label)
 
 
 # actions todo list:
