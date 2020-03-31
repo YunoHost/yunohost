@@ -188,7 +188,7 @@ def app_map(app=None, raw=False, user=None):
 
     apps = []
     result = {}
-    permissions = user_permission_list(full=True)["permissions"]
+    permissions = user_permission_list(full=True, full_path=False)["permissions"]
 
     if app is not None:
         if not _is_installed(app):
@@ -483,7 +483,7 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-        env_dict["YNH_APP_LABEL"] = user_permission_list(full=True, ignore_system_perms=True)['permissions'][app_id+".main"]['label']
+        env_dict["YNH_APP_LABEL"] = user_permission_list(full=True, ignore_system_perms=True, full_path=False)['permissions'][app_id+".main"]['label']
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -1221,7 +1221,7 @@ def app_ssowatconf():
 
     main_domain = _get_maindomain()
     domains = domain_list()['domains']
-    all_permissions = user_permission_list(full=True)['permissions']
+    all_permissions = user_permission_list(full=True, full_path=False)['permissions']
 
     skipped_urls = []
     skipped_regex = []

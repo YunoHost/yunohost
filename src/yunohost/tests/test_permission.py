@@ -442,7 +442,7 @@ def test_permission_app_install():
     app_install("./tests/apps/permissions_app_ynh",
                 args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, full_path=False)['permissions']
     assert "permissions_app.main" in res
     assert "permissions_app.admin" in res
     assert "permissions_app.dev" in res
@@ -481,14 +481,14 @@ def test_permission_app_change_url():
                 args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, full_path=False)['permissions']
     assert res['permissions_app.main']['url'] == "/"
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"
 
     app_change_url("permissions_app", maindomain, "/newchangeurl")
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, full_path=False)['permissions']
     assert res['permissions_app.main']['url'] == "/"
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"

@@ -45,13 +45,13 @@ SYSTEM_PERMS = ["mail", "xmpp", "stfp"]
 #
 
 
-def user_permission_list(short=False, full=False, ignore_system_perms=False):
+def user_permission_list(short=False, full=False, ignore_system_perms=False, full_path=True):
     """
     List permissions and corresponding accesses
     """
 
     # Fetch relevant informations
-
+    from yunohost.app import app_setting, app_list
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
@@ -60,6 +60,15 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
                                      'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
+    app_settings = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') for app in app_list()['apps']}
+
+    def complete_url(url, name):
+        if url is None:
+            return None
+        if url.startswith('/'):
+            return app_settings[name.split('.')[0]] + url
+        else:
+            return url
 
     permissions = {}
     for infos in permissions_infos:
@@ -74,12 +83,16 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False):
 
         if full:
             permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
-            permissions[name]["url"] = infos.get("URL", [None])[0]
-            permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
             permissions[name]["auth_header"] = False if infos.get("authHeader", [False])[0] == "FALSE" else True
             permissions[name]["label"] = infos.get("label", [None])[0]
             permissions[name]["show_tile"] = False if infos.get("showTile", [False])[0] == "FALSE" else True
             permissions[name]["protected"] = False if infos.get("isProtected", [False])[0] == "FALSE" else True
+            if full_path and name.split(".")[0] not in SYSTEM_PERMS:
+                permissions[name]["url"] = complete_url(infos.get("URL", [None])[0], name)
+                permissions[name]["additional_urls"] = [complete_url(url, name) for url in infos.get("additionalUrls", [None])]
+            else:
+                permissions[name]["url"] = infos.get("URL", [None])[0]
+                permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
 
     if short:
         permissions = permissions.keys()
@@ -108,7 +121,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
     if "." not in permission:
         permission = permission + ".main"
 
-    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    existing_permission = user_permission_list(full=True, full_path=False)["permissions"].get(permission, None)
 
     # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
     if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
@@ -189,7 +202,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
     # Fetch existing permission
 
-    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    existing_permission = user_permission_list(full=True, full_path=False)["permissions"].get(permission, None)
     if existing_permission is None:
         raise YunohostError('permission_not_found', permission=permission)
 
@@ -331,7 +344,7 @@ def permission_url(operation_logger, permission,
 
     # Fetch existing permission
 
-    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    existing_permission = user_permission_list(full=True, full_path=False)["permissions"].get(permission, None)
     if not existing_permission:
         raise YunohostError('permission_not_found', permission=permission)
 
@@ -438,7 +451,7 @@ def permission_sync_to_user():
     ldap = _get_ldap_interface()
 
     groups = user_group_list(full=True)["groups"]
-    permissions = user_permission_list(full=True)["permissions"]
+    permissions = user_permission_list(full=True, full_path=False)["permissions"]
 
     for permission_name, permission_infos in permissions.items():
 
@@ -498,7 +511,7 @@ def _update_ldap_group_permission(permission, allowed,
     ldap = _get_ldap_interface()
 
     # Fetch currently allowed groups for this permission
-    existing_permission = user_permission_list(full=True)["permissions"][permission]
+    existing_permission = user_permission_list(full=True, full_path=False)["permissions"][permission]
 
     if allowed is None:
         allowed = existing_permission['allowed']
