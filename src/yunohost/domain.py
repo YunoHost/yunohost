@@ -32,8 +32,6 @@ from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.certificate
-
 from yunohost.app import app_ssowatconf
 from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
@@ -79,6 +77,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
 
+    if domain.startswith("xmpp-upload."):
+        raise YunohostError("domain_cannot_add_xmpp_upload")
+
     ldap = _get_ldap_interface()
 
     try:
@@ -106,6 +107,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         dyndns_subscribe(domain=domain)
 
     try:
+        import yunohost.certificate
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         attr_dict = {
@@ -299,14 +301,17 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
 
 def domain_cert_status(domain_list, full=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_status(domain_list, full)
 
 
 def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
 def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
@@ -412,6 +417,7 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "CNAME", "name": "muc", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "pubsub", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "vjud", "value": "@", "ttl": 3600}
+            {"type": "CNAME", "name": "xmpp-upload", "value": "@", "ttl": 3600}
         ],
         "mail": [
             {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
@@ -453,6 +459,7 @@ def _build_dns_conf(domain, ttl=3600):
         ["muc", ttl, "CNAME", "@"],
         ["pubsub", ttl, "CNAME", "@"],
         ["vjud", ttl, "CNAME", "@"],
+        ["xmpp-upload", ttl, "CNAME", "@"],
     ]
 
     # SPF record
