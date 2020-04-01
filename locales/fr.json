@@ -381,7 +381,8 @@
     "migration_0008_dsa": "- La clé DSA sera désactivée. Par conséquent, il se peut que vous ayez besoin d'invalider un avertissement effrayant de votre client SSH afin de revérifier l'empreinte de votre serveur ;",
     "migration_0008_warning": "Si vous comprenez ces avertissements et souhaitez que YunoHost écrase votre configuration actuelle, exécutez la migration. Sinon, vous pouvez également ignorer la migration, bien que cela ne soit pas recommandé.",
     "migration_0008_no_warning": "Remplacer votre configuration SSH devrait être sûr, bien que cela ne puisse être promis! Exécutez la migration pour la remplacer. Sinon, vous pouvez également ignorer la migration, bien que cela ne soit pas recommandé.",
-    "pattern_password_app": "Désolé, les mots de passe ne doivent pas contenir les caractères suivants : {forbidden_chars}",
+    "migrations_success": "Migration {number} {name} réussie !",
+    "pattern_password_app": "Désolé, les mots de passe ne peuvent pas contenir les caractères suivants : {forbidden_chars}",
     "root_password_replaced_by_admin_password": "Votre mot de passe root a été remplacé par votre mot de passe administrateur.",
     "service_reload_failed": "Impossible de recharger le service '{service:s}'.\n\nJournaux historisés récents de ce service : {logs:s}",
     "service_reloaded": "Le service « {service:s} » a été rechargé",
@@ -594,5 +595,8 @@
     "diagnosis_never_ran_yet": "Il apparaît que le serveur a été installé récemment et qu'il n'y a pas encore eu de diagnostic. Vous devriez en lancer un depuis le webmin ou en utilisant 'yunohost diagnosis run' depuis la ligne de commande.",
     "diagnosis_description_web": "Web",
     "diagnosis_basesystem_hardware_board": "Le modèle de carte du serveur est {model}",
-    "diagnosis_basesystem_hardware": "L'architecture du serveur est {virt} {arch}"
+    "diagnosis_basesystem_hardware": "L'architecture du serveur est {virt} {arch}",
+    "group_already_exist_on_system_but_removing_it": "Le groupe {group} est déjà présent dans les groupes du système, mais Yuhonost va le supprimer…",
+    "certmanager_warning_subdomain_dns_record": "Le sous-domaine '{subdomain:s}' ne résout pas vers la même adresse IP que '{domain:s}'. Certaines fonctionnalités seront indisponibles tant que vous n’aurez pas corrigé cela et regénéré le certificat.",
+    "domain_cannot_add_xmpp_upload": "Vous ne pouvez pas ajouter de domaine commençant par 'xmpp-upload.'. Ce type de nom est réservé à la fonctionnalité d’upload XMPP intégrée dans Yunohost."
 }
