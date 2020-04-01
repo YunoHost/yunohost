@@ -85,10 +85,10 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
 
         if full:
             permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
-            permissions[name]["auth_header"] = False if infos.get("authHeader", [False])[0] == "FALSE" else True
+            permissions[name]["auth_header"] = infos.get("authHeader", [False])[0] == "TRUE"
             permissions[name]["label"] = infos.get("label", [None])[0]
-            permissions[name]["show_tile"] = False if infos.get("showTile", [False])[0] == "FALSE" else True
-            permissions[name]["protected"] = False if infos.get("isProtected", [False])[0] == "FALSE" else True
+            permissions[name]["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
+            permissions[name]["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
             if full_path and name.split(".")[0] not in SYSTEM_PERMS:
                 permissions[name]["url"] = _complete_url(infos.get("URL", [None])[0], name)
                 permissions[name]["additional_urls"] = [_complete_url(url, name) for url in infos.get("additionalUrls", [None])]
