@@ -173,7 +173,7 @@ def _app_upgradable(app_infos):
         return "no"
 
 
-def app_map(app=None, raw=False, user=None):
+def app_map(app=None, raw=False, user=None, permission=None):
     """
     List apps by domain
 
@@ -188,7 +188,7 @@ def app_map(app=None, raw=False, user=None):
 
     apps = []
     result = {}
-    permissions = user_permission_list(full=True, full_path=False)["permissions"]
+    permissions = user_permission_list(full=True, full_path=True)["permissions"]
 
     if app is not None:
         if not _is_installed(app):
@@ -219,72 +219,37 @@ def app_map(app=None, raw=False, user=None):
             if user not in main_perm["corresponding_users"]:
                 continue
 
-        domain = app_settings['domain']
-        path = app_settings['path'].rstrip('/')
-        label = app_settings['label']
-
-        def _sanitized_absolute_url(perm_url):
-            # Nominal case : url is relative to the app's path
-            if perm_url.startswith("/"):
-                perm_domain = domain
-                perm_path = path + perm_url.rstrip("/")
-            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
-            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
-            else:
-                perm_domain, perm_path = perm_url.split("/", 1)
-                perm_path = "/" + perm_path.rstrip("/")
-
-            return perm_domain, perm_path
-
         this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"]:
                 continue
-            if perm_info["url"].startswith("re:"):
-                # Here, we have an issue if the chosen url is a regex, because
-                # the url we want to add to the dict is going to be turned into
-                # a clickable link (or analyzed by other parts of yunohost
-                # code...). To put it otherwise : in the current code of ssowat,
-                # you can't give access a user to a regex.
-                #
-                # Instead, as drafted by Josue, we could rework the ssowat logic
-                # about how routes and their permissions are defined. So for example,
-                # have a dict of
-                # {  "/route1": ["visitors", "user1", "user2", ...],  # Public route
-                #    "/route2_with_a_regex$": ["user1", "user2"],     # Private route
-                #    "/route3": None,                                 # Skipped route idk
-                # }
-                # then each time a user try to request and url, we only keep the
-                # longest matching rule and check the user is allowed etc...
-                #
-                # The challenge with this is (beside actually implementing it)
-                # is that it creates a whole new mechanism that ultimately
-                # replace all the existing logic about
-                # protected/unprotected/skipped uris and regexes and we gotta
-                # handle / migrate all the legacy stuff somehow if we don't
-                # want to end up with a total mess in the future idk
-                logger.error("Permission %s can't be added to the SSOwat configuration because it doesn't support regexes so far..." % perm_name)
+            if permission == perm_name:
                 continue
 
-            perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
+            # The challenge with this is (beside actually implementing it)
+            # to migrate all the legacy stuff like
+            # protected/unprotected/skipped uris and regexes
 
-            if perm_name.endswith(".main"):
-                perm_label = label
-            else:
-                # e.g. if perm_name is wordpress.admin, we want "Blog (Admin)" (where Blog is the label of this app)
-                perm_label = "%s (%s)" % (label, perm_name.rsplit(".")[-1].replace("_", " ").title())
+            perm_label = perm_info['label']
 
-            if raw:
-                if domain not in result:
-                    result[perm_domain] = {}
-                result[perm_domain][perm_path] = {
-                    'label': perm_label,
-                    'id': app_id
-                }
-            else:
-                result[perm_domain + perm_path] = perm_label
+            for url in [perm_info["url"]] + perm_info['additional_urls']:
+                if url is None:
+                    # Happend when 'additional_urls' is empty !!
+                    continue
+
+                perm_domain, perm_path = url.split("/", 1)
+                perm_path = '/' + perm_path
+                if raw:
+                    if perm_domain not in result:
+                        result[perm_domain] = {}
+                    result[perm_domain][perm_path] = {
+                        'label': perm_label,
+                        'id': app_id
+                    }
+                else:
+                    result[perm_domain + perm_path] = perm_label
 
     return result
 

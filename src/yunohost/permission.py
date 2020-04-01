@@ -526,6 +526,7 @@ def _update_ldap_group_permission(permission, allowed,
 
     if show_tile is None:
         show_tile = existing_permission["show_tile"]
+    # TODO set show_tile to False if url is regex
 
     if protected is None:
         protected = existing_permission["protected"]
