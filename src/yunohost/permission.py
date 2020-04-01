@@ -336,6 +336,7 @@ def permission_url(operation_logger, permission,
         clear_urls  -- (optional) Clean all urls (url and additional_urls)
     """
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.domain import _check_and_normalize_permission_path
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
@@ -352,20 +353,22 @@ def permission_url(operation_logger, permission,
 
     if url is None:
         url = existing_permission["url"]
+    else:
+        url = _check_and_normalize_permission_path(url)
 
     current_additional_urls = existing_permission["additional_urls"]
     new_additional_urls = copy.copy(current_additional_urls)
 
     if add_url:
-        for url in add_url:
-            if url in current_additional_urls:
+        for ur in add_url:
+            if ur in current_additional_urls:
                 logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=url))
             else:
-                new_additional_urls += [url]
+                new_additional_urls += [_check_and_normalize_permission_path(url)]
 
     if remove_url:
-        for url in remove_url:
-            if url not in current_additional_urls:
+        for ur in remove_url:
+            if ur not in current_additional_urls:
                 logger.warning(m18n.n('additional_urls_already_removed', permission=permission, url=url))
 
         new_additional_urls = [u for u in new_additional_urls if u not in remove_url]

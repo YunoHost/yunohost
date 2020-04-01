@@ -396,6 +396,71 @@ def _normalize_domain_path(domain, path):
     return domain, path
 
 
+def _check_and_normalize_permission_path(url):
+    """
+    Check and normalize the urls passed for all permissions
+    Also check that the Regex is valid
+
+    As documented in the 'ynh_permission_create' helper:
+
+    If provided, 'url' is assumed to be relative to the app domain/path if they
+    start with '/'.  For example:
+       /                             -> domain.tld/app
+       /admin                        -> domain.tld/app/admin
+       domain.tld/app/api            -> domain.tld/app/api
+       domain.tld                    -> domain.tld
+
+    'url' can be later treated as a regex if it starts with "re:".
+    For example:
+       re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
+       re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
+    """
+    import re, sre_constants
+
+    # Uri without domain
+    if url.startwith('re:/'):
+        regex = url[4:]
+        # check regex
+        try:
+            re.compile(regex)
+        except sre_constants.error:
+            raise YunohostError('invalid_regex', regex=regex)
+        return url
+
+    if url.startswith('/'):
+        return "/" + url.strip("/")
+
+    # Uri with domain
+    domains = domain_list()['domains']
+
+    if url.startwith('re:'):
+        if '/' not in url:
+            raise YunohostError('regex_with_only_domain')
+        domain = url[3:].split('/')[0]
+        path = url[3:].split('/', 1)[1]
+
+        if domain not in domains:
+            raise YunohostError('domain_unknown')
+
+        try:
+            re.compile(path)
+        except sre_constants.error:
+            raise YunohostError('invalid_regex', regex=path)
+
+        return 're:' + domain + path
+
+    else:
+        domain = url.split('/')[0]
+        if domain not in domains:
+            raise YunohostError('domain_unknown')
+
+        if '/' in url:
+            path = '/' + url.split('/', 1)[1].strip('/')
+            return domain + path
+        else:
+            return domain
+
+
 def _build_dns_conf(domain, ttl=3600):
     """
     Internal function that will returns a data structure containing the needed
