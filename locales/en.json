@@ -451,7 +451,6 @@
     "migrations_skip_migration": "Skipping migration {id}…",
     "migrations_success_forward": "Migration {id} completed",
     "migrations_to_be_ran_manually":  "Migration {id} has to be run manually. Please go to Tools → Migrations on the webadmin page, or run `yunohost tools migrations migrate`.",
-    "no_internet_connection": "The server is not connected to the Internet",
     "not_enough_disk_space": "Not enough free space on '{path:s}'",
     "operation_interrupted": "The operation was manually interrupted?",
     "packages_upgrade_failed": "Could not upgrade all the packages",
