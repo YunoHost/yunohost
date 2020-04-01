@@ -260,7 +260,7 @@ ynh_webpath_register () {
 # | arg: additional_urls - (optional) List of additional URL for which access will be allowed/forbidden
 # | arg: auth_header - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
 # | arg: allowed - (optional) A list of group/user to allow for the permission
-# | arg: label - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin. Default is "APP_LABEL permission name".
+# | arg: label - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin. Default is "APP_LABEL (permission name)".
 # | arg: show_tile - (optional) Define if a tile will be shown in the SSO
 # | arg: protected - (optional) Define if this permission is protected. If it is protected the administrator
 # |                             won't be able to add or remove the visitors group of this permission.
@@ -313,7 +313,7 @@ ynh_permission_create() {
     if [[ -n ${label:-} ]]; then
         label=",label='$label'"
     else
-        label=",label='$YNH_APP_LABEL $permission'"
+        label=",label='$YNH_APP_LABEL ($permission)'"
     fi
 
     if [[ -n ${show_tile:-} ]]; then
