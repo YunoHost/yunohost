@@ -428,7 +428,7 @@ def _check_and_normalize_permission_path(url):
         return url
 
     if url.startswith('/'):
-        return "/" + url.strip("/")
+        return url.rstrip("/")
 
     # Uri with domain
     domains = domain_list()['domains']
@@ -455,7 +455,7 @@ def _check_and_normalize_permission_path(url):
             raise YunohostError('domain_unknown')
 
         if '/' in url:
-            path = '/' + url.split('/', 1)[1].strip('/')
+            path = url.split('/', 1)[1].rstrip('/')
             return domain + path
         else:
             return domain

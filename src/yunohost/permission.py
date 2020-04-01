@@ -62,11 +62,13 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
     # Parse / organize information to be outputed
     app_settings = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') for app in app_list()['apps']}
 
-    def complete_url(url, name):
+    def _complete_url(url, name):
         if url is None:
             return None
         if url.startswith('/'):
-            return app_settings[name.split('.')[0]] + url
+            return app_settings[name.split('.')[0]] + url.rstrip("/")
+        if url.startswith('re:/'):
+            return 're:' + app_settings[name.split('.')[0]] + url.lstrip('re:/')
         else:
             return url
 
@@ -88,8 +90,8 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             permissions[name]["show_tile"] = False if infos.get("showTile", [False])[0] == "FALSE" else True
             permissions[name]["protected"] = False if infos.get("isProtected", [False])[0] == "FALSE" else True
             if full_path and name.split(".")[0] not in SYSTEM_PERMS:
-                permissions[name]["url"] = complete_url(infos.get("URL", [None])[0], name)
-                permissions[name]["additional_urls"] = [complete_url(url, name) for url in infos.get("additionalUrls", [None])]
+                permissions[name]["url"] = _complete_url(infos.get("URL", [None])[0], name)
+                permissions[name]["additional_urls"] = [_complete_url(url, name) for url in infos.get("additionalUrls", [None])]
             else:
                 permissions[name]["url"] = infos.get("URL", [None])[0]
                 permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
