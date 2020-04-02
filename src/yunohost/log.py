@@ -315,9 +315,9 @@ class RedactingFormatter(Formatter):
         try:
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
-            # For 'key', we require to at least have one word char [a-zA-Z0-9_] before it to avoid catching "--key" used in many helpers
-            match = re.search(r'(pwd|pass|password|secret|\wkey|token)=(\S{3,})$', record.strip())
-            if match and match.group(2) not in self.data_to_redact:
+            # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
+            match = re.search(r'(pwd|pass|password|secret|\w+key|token)=(\S{3,})$', record.strip())
+            if match and match.group(2) not in self.data_to_redact and match.group(1) not in ["key", "manifest_key"]:
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
             logger.warning("Failed to parse line to try to identify data to redact ... : %s" % e)
