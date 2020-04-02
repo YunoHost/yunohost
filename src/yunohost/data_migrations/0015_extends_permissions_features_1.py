@@ -92,12 +92,12 @@ class MyMigration(Migration):
             return s.split(',') if s else []
 
         for app in apps:
-            skipped_urls = [_sanitized_absolute_url(uri) for uri in  app_setting(app, 'skipped_uris')]
-            skipped_urls += ['re:' + regex for regex in  app_setting(app, 'skipped_regex')]
-            unprotected_urls = [_sanitized_absolute_url(uri) for uri in app_setting(app, 'unprotected_uris')]
-            unprotected_urls += ['re:' + regex for regex in  app_setting(app, 'unprotected_regex')]
-            protected_urls = [_sanitized_absolute_url(uri) for uri in  app_setting(app, 'protected_uris')]
-            protected_urls += ['re:' + regex for regex in  app_setting(app, 'protected_regex')]
+            skipped_urls = [_sanitized_absolute_url(uri) for uri in _get_setting(app, 'skipped_uris') if uri != '/']
+            skipped_urls += ['re:' + regex for regex in _get_setting(app, 'skipped_regex')]
+            unprotected_urls = [_sanitized_absolute_url(uri) for uri in _get_setting(app, 'unprotected_uris') if uri != '/']
+            unprotected_urls += ['re:' + regex for regex in _get_setting(app, 'unprotected_regex')]
+            protected_urls = [_sanitized_absolute_url(uri) for uri in _get_setting(app, 'protected_uris') if uri != '/']
+            protected_urls += ['re:' + regex for regex in _get_setting(app, 'protected_regex')]
 
             if skipped_urls != []:
                 permission_create(app+".legacy_skipped_uris", additional_urls=skipped_urls,
