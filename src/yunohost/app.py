@@ -1186,7 +1186,7 @@ def app_ssowatconf():
 
     main_domain = _get_maindomain()
     domains = domain_list()['domains']
-    all_permissions = user_permission_list(full=True, full_path=True)['permissions']
+    all_permissions = user_permission_list(full=True, ignore_system_perms=True, full_path=True)['permissions']
 
     permissions = {
         'core_skipped': {
@@ -1313,7 +1313,7 @@ def app_ssowatconf():
     # New permission system
     for perm_name, perm_info in all_permissions.items():
         # Ignore permissions for which there's no url defined
-        if not perm_info["url"] and not perm_info['additional_urls']:
+        if perm_info["url"] is None and perm_info['additional_urls'] == [None]:
             continue
 
         uris = []
