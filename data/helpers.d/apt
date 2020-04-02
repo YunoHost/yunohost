@@ -94,7 +94,7 @@ ynh_package_version() {
 # Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
-    DEBIAN_FRONTEND=noninteractive apt-get -y $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -y $@
 }
 
 # Update package index files
@@ -184,7 +184,7 @@ ynh_package_install_from_equivs () {
     ynh_wait_dpkg_free
     cp "$controlfile" "${TMPDIR}/control"
     (cd "$TMPDIR"
-    equivs-build ./control 1> /dev/null
+    LC_ALL=C equivs-build ./control 1> /dev/null
     dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
     # If install fails we use "apt-get check" to try to debug and diagnose possible unmet dependencies
     # Note the use of { } which allows to group commands without starting a subshell (otherwise the ynh_die wouldn't exit the current shell). 
