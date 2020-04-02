@@ -243,7 +243,6 @@ ynh_psql_remove_db() {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	local psql_root_password=$(cat $PSQL_ROOT_PWD_FILE)
 	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
 		ynh_psql_drop_db $db_name # Remove the database
 	else
