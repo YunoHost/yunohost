@@ -428,6 +428,8 @@
     "migration_0011_update_LDAP_database": "Updating LDAP database…",
     "migration_0011_update_LDAP_schema": "Updating LDAP schema…",
     "migration_0011_failed_to_remove_stale_object": "Could not remove stale object {dn}: {error}",
+    "migration_0015_add_new_attributes_in_ldap": "Add new attributes for permissions in LDAP database",
+    "migration_0015_migrate_old_app_settings": "Migrate old apps settings 'skipped_uris', 'unprotected_uris', 'protected_uris' in permissions system.",
     "migrations_already_ran": "Those migrations are already done: {ids}",
     "migrations_cant_reach_migration_file": "Could not access migrations files at the path '%s'",
     "migrations_dependencies_not_satisfied": "Run these migrations: '{dependencies_id}', before migration {id}.",

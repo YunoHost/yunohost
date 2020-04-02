@@ -6,8 +6,8 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.app import app_setting, app_ssowatconf
-from yunohost.permission import user_permission_list, SYSTEM_PERMS
+from yunohost.app import app_setting, app_ssowatconf, _installed_apps
+from yunohost.permission import user_permission_list, SYSTEM_PERMS, permission_sync_to_user
 
 logger = getActionLogger('yunohost.migration')
 
@@ -29,10 +29,12 @@ class MyMigration(Migration):
         if ldap_regen_conf_status and ldap_regen_conf_status['slapd']['pending']:
             logger.warning(m18n.n("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
 
+        # Update LDAP schema restart slapd
+        logger.info(m18n.n("migration_0011_update_LDAP_schema"))
         regen_conf(names=['slapd'], force=True)
 
+        logger.info(m18n.n("migration_0015_add_new_attributes_in_ldap"))
         ldap = _get_ldap_interface()
-
         permission_list = user_permission_list(short=True)["permissions"]
 
         for permission in permission_list:
@@ -62,17 +64,12 @@ class MyMigration(Migration):
                     })
                 app_setting(permission.split('.')[0], 'label', delete=True)
 
+
     def run(self):
 
         # FIXME : what do we really want to do here ...
         # Imho we should just force-regen the conf in all case, and maybe
         # just display a warning if we detect that the conf was manually modified
-
-        # Check if the migration can be processed
-        ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
-        # By this we check if the have been customized
-        if ldap_regen_conf_status and ldap_regen_conf_status['slapd']['pending']:
-            logger.warning(m18n.n("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
 
         # Backup LDAP and the apps settings before to do the migration
         logger.info(m18n.n("migration_0011_backup_before_migration"))
@@ -89,10 +86,6 @@ class MyMigration(Migration):
             os.system("systemctl start slapd")
 
         try:
-            # Update LDAP schema restart slapd
-            logger.info(m18n.n("migration_0011_update_LDAP_schema"))
-            regen_conf(names=['slapd'], force=True)
-
             # Update LDAP database
             self.add_new_ldap_attributes()
 
@@ -111,6 +104,3 @@ class MyMigration(Migration):
             raise
         else:
             os.system("rm -r " + backup_folder)
-
-            logger.info(m18n.n("migration_0011_done"))
-
