@@ -55,18 +55,11 @@ def clean():
         for folderpath in glob.glob("/var/www/*%s*" % test_app):
             shutil.rmtree(folderpath, ignore_errors=True)
 
-        os.system(
-            "bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE %s' \""
-            % test_app
-        )
-        os.system(
-            "bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER %s@localhost'\""
-            % test_app
-        )
+        os.system("bash -c \"mysql -B 2>/dev/null <<< 'DROP DATABASE %s' \"" % test_app)
+        os.system("bash -c \"mysql -B 2>/dev/null <<< 'DROP USER %s@localhost'\"" % test_app)
 
-    os.system(
-        "systemctl reset-failed nginx"
-    )  # Reset failed quota for service to avoid running into start-limit rate ?
+    # Reset failed quota for service to avoid running into start-limit rate ?
+    os.system("systemctl reset-failed nginx")
     os.system("systemctl start nginx")
 
     # Clean permissions
