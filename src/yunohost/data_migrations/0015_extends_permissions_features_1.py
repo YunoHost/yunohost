@@ -6,6 +6,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
+from yunohost.app import app_setting
 from yunohost.permission import user_permission_list, SYSTEM_PERMS
 
 logger = getActionLogger('yunohost.migration')
@@ -36,8 +37,27 @@ class MyMigration(Migration):
 
         for permission in permission_list:
             if permission.split('.')[0] in SYSTEM_PERMS:
-                ldap.update('cn=%s,ou=permission' % permission, {'isProtected': "TRUE"})
-            elif permission.endswith(".main"):
-                ldap.update('cn=%s,ou=permission' % permission, {'isProtected': "FALSE"})
+                ldap.update('cn=%s,ou=permission' % permission, {
+                    'authHeader': ["FALSE"],
+                    'label': [permission.split('.')[0]],
+                    'showTile': ["FALSE"],
+                    'isProtected': ["TRUE"],
+                })
             else:
-                ldap.update('cn=%s,ou=permission' % permission, {'isProtected': "TRUE"})
+                label = app_setting(permission.split('.')[0], 'label')
+
+                if permission.endswith(".main"):
+                    ldap.update('cn=%s,ou=permission' % permission, {
+                        'authHeader': ["TRUE"],
+                        'label': [label],
+                        'showTile': ["TRUE"],
+                        'isProtected': ["FALSE"]
+                    })
+                else:
+                    ldap.update('cn=%s,ou=permission' % permission, {
+                        'authHeader': ["TRUE"],
+                        'label': ["%s (%s)" (label, permission.split('.')[1])],
+                        'showTile': ["FALSE"],
+                        'isProtected': ["TRUE"]
+                    })
+                app_setting(permission.split('.')[0], 'label', delete=True)
