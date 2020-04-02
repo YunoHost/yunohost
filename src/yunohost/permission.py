@@ -60,17 +60,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
                                      'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
-    app_settings = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') for app in app_list()['apps']}
-
-    def _complete_url(url, name):
-        if url is None:
-            return None
-        if url.startswith('/'):
-            return app_settings[name.split('.')[0]] + url.rstrip("/")
-        if url.startswith('re:/'):
-            return 're:' + app_settings[name.split('.')[0]] + url.lstrip('re:/')
-        else:
-            return url
+    apps_main_path = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') for app in app_list()['apps']}
 
     permissions = {}
     for infos in permissions_infos:
@@ -90,8 +80,8 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             permissions[name]["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
             permissions[name]["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
             if full_path and name.split(".")[0] not in SYSTEM_PERMS:
-                permissions[name]["url"] = _complete_url(infos.get("URL", [None])[0], name)
-                permissions[name]["additional_urls"] = [_complete_url(url, name) for url in infos.get("additionalUrls", [None])]
+                permissions[name]["url"] = _get_full_url(infos.get("URL", [None])[0], apps_main_path[name.split('.')[0]])
+                permissions[name]["additional_urls"] = [_get_full_url(url, apps_main_path[name.split('.')[0]]) for url in infos.get("additionalUrls", [None])]
             else:
                 permissions[name]["url"] = infos.get("URL", [None])[0]
                 permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
@@ -337,13 +327,17 @@ def permission_url(operation_logger, permission,
         auth_header -- (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
         clear_urls  -- (optional) Clean all urls (url and additional_urls)
     """
+    from yunohost.app import app_setting
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.domain import _check_and_normalize_permission_path
+    from yunohost.domain import _check_and_normalize_permission_path, domain_url_available
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
     if "." not in permission:
         permission = permission + ".main"
+
+    # App main path in setting to manage conflict
+    app_main_path = app_setting(permission.split('.')[0], 'domain') + app_setting(permission.split('.')[0], 'path')
 
     # Fetch existing permission
 
@@ -351,12 +345,24 @@ def permission_url(operation_logger, permission,
     if not existing_permission:
         raise YunohostError('permission_not_found', permission=permission)
 
-    # TODO -> Check conflict with other app and other URL !!
-
     if url is None:
         url = existing_permission["url"]
     else:
         url = _check_and_normalize_permission_path(url)
+        domain, path = _get_full_url(url, app_main_path).split('/', 1)
+        conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.spit('.')[0])
+
+        if conflicts:
+            apps = []
+            for path, app_id, app_label in conflicts:
+                apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                    domain=domain,
+                    path=path,
+                    app_id=app_id,
+                    app_label=app_label,
+                ))
+
+            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
     current_additional_urls = existing_permission["additional_urls"]
     new_additional_urls = copy.copy(current_additional_urls)
@@ -366,7 +372,22 @@ def permission_url(operation_logger, permission,
             if ur in current_additional_urls:
                 logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=url))
             else:
-                new_additional_urls += [_check_and_normalize_permission_path(url)]
+                new_url = _check_and_normalize_permission_path(new_url)
+                domain, path = _get_full_url(new_url, app_main_path).split('/', 1)
+                conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.spit('.')[0])
+
+                if conflicts:
+                    apps = []
+                    for path, app_id, app_label in conflicts:
+                        apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                            domain=domain,
+                            path=path,
+                            app_id=app_id,
+                            app_label=app_label,
+                        ))
+
+                    raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+                new_additional_urls += [new_url]
 
     if remove_url:
         for ur in remove_url:
@@ -574,3 +595,14 @@ def _update_ldap_group_permission(permission, allowed,
         hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission, ','.join(effectively_removed_group)])
 
     return new_permission
+
+
+def _get_full_url(url, app_main_path):
+    if url is None:
+        return None
+    if url.startswith('/'):
+        return app_main_path + url.rstrip("/")
+    if url.startswith('re:/'):
+        return 're:' + app_main_path + url.lstrip('re:/')
+    else:
+        return url
