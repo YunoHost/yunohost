@@ -219,7 +219,7 @@ def app_map(app=None, raw=False, user=None, permission=None):
             if user not in main_perm["corresponding_users"]:
                 continue
 
-        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and (i["url"] or i['additional_urls'] != [None])}
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
