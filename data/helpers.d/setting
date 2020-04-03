@@ -1,7 +1,5 @@
 #!/bin/bash
 
-migrate_to_permission_deprecitated_warning="/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.\n"
-
 # Get an application setting
 #
 # usage: ynh_app_setting_get --app=app --key=key
@@ -18,7 +16,11 @@ ynh_app_setting_get() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_app_setting "get" "$app" "$key"
+    if [[ $key =~ '^(unprotected|protected|skipped)_' ]]; then
+        yunohost app setting $app $key
+    else
+        ynh_app_setting "get" "$app" "$key"
+    fi
 }
 
 # Set an application setting
@@ -39,7 +41,12 @@ ynh_app_setting_set() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_app_setting "set" "$app" "$key" "$value"
+    # Manage old legacy unprotected,protectedskipped
+    if [[ $key =~ '^(unprotected|protected|skipped)_' ]]; then
+        yunohost app setting $app $key $value
+    else
+        ynh_app_setting "set" "$app" "$key" "$value"
+    fi
 }
 
 # Delete an application setting
@@ -58,7 +65,13 @@ ynh_app_setting_delete() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_app_setting "delete" "$app" "$key"
+    # Fucking legacy permission management.
+    # We need this because app temporarily set the app as unprotected to configure it with curl...
+    if [[ "$3" =~ ^(unprotected|skipped|protected)_ ]]; then
+        yunohost app setting $app $key -d
+    else
+        ynh_app_setting "delete" "$app" "$key"
+    fi
 }
 
 # Small "hard-coded" interface to avoid calling "yunohost app" directly each
@@ -68,11 +81,6 @@ ynh_app_setting_delete() {
 #
 ynh_app_setting()
 {
-    if [[ "$1" == "delete" ]] && [[ "$3" =~ ^(unprotected|skipped)_ ]]
-    then
-        current_value=$(ynh_app_setting_get --app=$app --key=$3)
-    fi
-
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python2.7 - <<EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
@@ -97,30 +105,6 @@ else:
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
-
-    # Fucking legacy permission management.
-    # We need this because app temporarily set the app as unprotected to configure it with curl...
-    if [[ "$3" =~ ^(unprotected|skipped)_ ]]
-    then
-        if [[ "$1" == "delete" ]]
-        then
-            if [[ "${current_value:-}" == "/" ]] && [[ -n "$(ynh_app_setting_get --app=$2 --key='is_public' )" ]]
-            then
-                ynh_permission_update --permission "main" --remove "visitors"
-            else
-                if [ "$3" == "skipped_uris" ] && ynh_permission_exists --permission legacy_skipped_uris
-                then
-                    ynh_permission_delete --permission legacy_skipped_uris
-                elif [ "$3" == "unprotected_uris" ] && ynh_permission_exists --permission legacy_unprotected_uris
-                then
-                    ynh_permission_delete --permission legacy_unprotected_uris
-                elif [ "$3" == "protected_uris" ] && ynh_permission_exists --permission legacy_protected_uris
-                then
-                    ynh_permission_delete --permission legacy_protected_uris
-                fi
-            fi
-        fi
-    fi
 }
 
 # Check availability of a web path
