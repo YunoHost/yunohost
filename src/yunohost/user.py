@@ -462,7 +462,7 @@ def user_info(username):
 
         if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
-        elif username not in user_permission_list(full=True, full_path=False)["permissions"]["mail.main"]["corresponding_users"]:
+        elif username not in user_permission_list(full=True)["permissions"]["mail.main"]["corresponding_users"]:
             logger.warning(m18n.n('mailbox_disabled', user=username))
         else:
             cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]

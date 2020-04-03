@@ -418,7 +418,7 @@ def _check_and_normalize_permission_path(url):
     import re, sre_constants
 
     # Uri without domain
-    if url.startwith('re:/'):
+    if url.startswith('re:/'):
         regex = url[4:]
         # check regex
         try:
@@ -433,7 +433,7 @@ def _check_and_normalize_permission_path(url):
     # Uri with domain
     domains = domain_list()['domains']
 
-    if url.startwith('re:'):
+    if url.startswith('re:'):
         if '/' not in url:
             raise YunohostError('regex_with_only_domain')
         domain = url[3:].split('/')[0]

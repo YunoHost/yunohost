@@ -169,7 +169,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
-    if existing_permission['url'].startswith('re:') and show_tile:
+    if existing_permission['url'] and existing_permission['url'].startswith('re:') and show_tile:
         logger.warning(m18n.n('regex_incompatible_with_tile', regex=existing_permission['url'], permission=permission))
 
     # Commit the new allowed group list
@@ -334,7 +334,7 @@ def permission_url(operation_logger, permission,
     """
     from yunohost.app import app_setting
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.domain import _check_and_normalize_permission_path, domain_url_available
+    from yunohost.domain import _check_and_normalize_permission_path, _get_conflicting_apps
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
@@ -359,7 +359,7 @@ def permission_url(operation_logger, permission,
     else:
         url = _check_and_normalize_permission_path(url)
         domain, path = _get_full_url(url, app_main_path).split('/', 1)
-        conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.spit('.')[0])
+        conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
         if url.startswith('re:') and existing_permission['show_tile']:
             logger.warning(m18n.n('regex_incompatible_with_tile', regex=url, permission=permission))
 
@@ -383,9 +383,9 @@ def permission_url(operation_logger, permission,
             if ur in current_additional_urls:
                 logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=url))
             else:
-                new_url = _check_and_normalize_permission_path(new_url)
-                domain, path = _get_full_url(new_url, app_main_path).split('/', 1)
-                conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.spit('.')[0])
+                ur = _check_and_normalize_permission_path(ur)
+                domain, path = _get_full_url(ur, app_main_path).split('/', 1)
+                conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
 
                 if conflicts:
                     apps = []
@@ -398,7 +398,7 @@ def permission_url(operation_logger, permission,
                         ))
 
                     raise YunohostError('app_location_unavailable', apps="\n".join(apps))
-                new_additional_urls += [new_url]
+                new_additional_urls += [ur]
 
     if remove_url:
         for ur in remove_url:
