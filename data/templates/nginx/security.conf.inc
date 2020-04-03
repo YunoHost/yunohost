@@ -1,24 +1,22 @@
-{% if compatibility == "modern" %}
-# Ciphers with modern compatibility
-# https://mozilla.github.io/server-side-tls/ssl-config-generator/?server=nginx-1.6.2&openssl=1.0.1t&hsts=yes&profile=modern
-# The following configuration use modern ciphers, but remove compatibility with some old clients (android < 5.0, Internet Explorer < 10, ...)
-ssl_protocols TLSv1.2;
-ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
-ssl_prefer_server_ciphers on;
-{% else %}
-# As suggested by Mozilla : https://wiki.mozilla.org/Security/Server_Side_TLS and https://en.wikipedia.org/wiki/Curve25519
-ssl_ecdh_curve secp521r1:secp384r1:prime256v1;
-ssl_prefer_server_ciphers on;
+ssl_session_timeout 1d;
+ssl_session_cache shared:SSL:10m;  # about 40000 sessions
+ssl_session_tickets off;
+
+# nginx 1.10 in stretch doesn't support TLS1.3 and Mozilla doesn't have any
+# "modern" config recommendation with it.
+# So until buster the modern conf is same as intermediate
+{% if compatibility == "modern" %} {% else %} {% endif %}
 
 # Ciphers with intermediate compatibility
-# https://mozilla.github.io/server-side-tls/ssl-config-generator/?server=nginx-1.6.2&openssl=1.0.1t&hsts=yes&profile=intermediate
-ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+# generated 2020-04-03, Mozilla Guideline v5.4, nginx 1.10.3, OpenSSL 1.1.1l, intermediate configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.10.3&config=intermediate&openssl=1.1.1l&guideline=5.4
+ssl_protocols TLSv1.2;
+ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+ssl_prefer_server_ciphers off;
 
 # Uncomment the following directive after DH generation
 # > openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048
 #ssl_dhparam /etc/ssl/private/dh2048.pem;
-{% endif %}
 
 # Follows the Web Security Directives from the Mozilla Dev Lab and the Mozilla Obervatory + Partners
 # https://wiki.mozilla.org/Security/Guidelines/Web_Security
