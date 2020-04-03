@@ -167,6 +167,9 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
+    if existing_permission['url'].startswith('re:') and show_tile:
+        logger.warning(m18n.n('regex_incompatible_with_tile', regex=existing_permission['url'], permission=permission))
+
     # Commit the new allowed group list
     operation_logger.start()
 
@@ -351,6 +354,8 @@ def permission_url(operation_logger, permission,
         url = _check_and_normalize_permission_path(url)
         domain, path = _get_full_url(url, app_main_path).split('/', 1)
         conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.spit('.')[0])
+        if url.startswith('re:') and existing_permission['show_tile']:
+            logger.warning(m18n.n('regex_incompatible_with_tile', regex=url, permission=permission))
 
         if conflicts:
             apps = []
@@ -547,7 +552,6 @@ def _update_ldap_group_permission(permission, allowed,
 
     if show_tile is None:
         show_tile = existing_permission["show_tile"]
-    # TODO set show_tile to False if url is regex
 
     if protected is None:
         protected = existing_permission["protected"]

@@ -1325,7 +1325,7 @@ def app_ssowatconf():
         permissions[perm_name] = {
             "users": perm_info['corresponding_users'],
             "label": perm_info['label'],
-            "show_tile": perm_info['show_tile'],
+            "show_tile": perm_info['show_tile'] if not perm_info["url"].startswith('re:') else False,
             "auth_header": perm_info['auth_header'],
             "public": "visitors" in perm_info["allowed"],
             "uris": uris
