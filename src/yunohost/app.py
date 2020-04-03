@@ -1139,7 +1139,7 @@ def app_setting(app, key, value=None, delete=False):
     if value is None and not delete:
         try:
             if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-                logger.warning(legacy_settings_warning
+                logger.warning(legacy_settings_warning)
                 # Well, here there are no solution to manage the root case
                 # so just ignore this case, I don't think that get this setting
                 # The only time that I see this is when we try to migrate to group-permission
@@ -1159,7 +1159,7 @@ def app_setting(app, key, value=None, delete=False):
     if delete:
         if key in app_settings:
             if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-                logger.warning(legacy_settings_warning
+                logger.warning(legacy_settings_warning)
                 from permission import user_permission_list, user_permission_update, permission_delete
 
                 permissions = user_permission_list(full=True, full_path=False)['permissions']
