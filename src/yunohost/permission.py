@@ -341,8 +341,12 @@ def permission_url(operation_logger, permission,
     if "." not in permission:
         permission = permission + ".main"
 
-    # App main path in setting to manage conflict
-    app_main_path = app_setting(permission.split('.')[0], 'domain') + app_setting(permission.split('.')[0], 'path')
+    if url or add_url:
+        if app_setting(permission.split('.')[0], 'domain') is None or app_setting(permission.split('.')[0], 'path') is None:
+            raise YunohostError('unknown_main_domain_path', app=permission.split('.')[0])
+        else:
+            # App main path in setting to manage conflict
+            app_main_path = app_setting(permission.split('.')[0], 'domain') + app_setting(permission.split('.')[0], 'path')
 
     # Fetch existing permission
 
