@@ -60,7 +60,9 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
                                      'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
-    apps_main_path = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') for app in app_list()['apps']}
+    apps_main_path = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') 
+                        for app in app_list()['apps']
+                            if app_setting(app['id'], 'domain') and app_setting(app['id'], 'path')}
 
     permissions = {}
     for infos in permissions_infos:
@@ -79,7 +81,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             permissions[name]["label"] = infos.get("label", [None])[0]
             permissions[name]["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
             permissions[name]["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
-            if full_path and name.split(".")[0] not in SYSTEM_PERMS:
+            if full_path and name.split(".")[0] in apps_main_path:
                 permissions[name]["url"] = _get_full_url(infos.get("URL", [None])[0], apps_main_path[name.split('.')[0]])
                 permissions[name]["additional_urls"] = [_get_full_url(url, apps_main_path[name.split('.')[0]]) for url in infos.get("additionalUrls", [None])]
             else:
