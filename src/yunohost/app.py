@@ -1208,6 +1208,10 @@ def app_ssowatconf():
     redirected_regex = {main_domain + '/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
     redirected_urls = {}
 
+    def _get_setting(settings, name):
+        s = settings.get(name, None)
+        return s.split(',') if s else []
+
     for app in _installed_apps():
 
         app_settings = read_yaml(APPS_SETTING_PATH + app + '/settings.yml')
