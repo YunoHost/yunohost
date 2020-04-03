@@ -197,7 +197,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
     return new_permission
 
 
-def user_permission_info(permission, sync_perm=True):
+def user_permission_info(permission):
     """
     Return informations about a specific permission
 
