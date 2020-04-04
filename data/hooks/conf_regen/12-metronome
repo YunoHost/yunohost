@@ -48,11 +48,11 @@ do_post_regen() {
   # create metronome directories for domains
   for domain in $domain_list; do
     mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
+    # http_upload directory must be writable by metronome and readable by nginx
+    mkdir -p  "/var/xmpp-upload/${domain}/upload"
+    chmod g+s "/var/xmpp-upload/${domain}/upload"
+    chown -R metronome:www-data "/var/xmpp-upload/${domain}"
   done
-  # http_upload directory must be writable by metronome and readable by nginx
-  mkdir -p  "/var/xmpp-upload/${main_domain}/upload"
-  chmod g+s "/var/xmpp-upload/${main_domain}/upload"
-  chown -R metronome:www-data "/var/xmpp-upload/${main_domain}"
 
 
   # fix some permissions
