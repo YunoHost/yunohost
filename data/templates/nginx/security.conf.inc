@@ -8,8 +8,8 @@ ssl_session_tickets off;
 {% if compatibility == "modern" %} {% else %} {% endif %}
 
 # Ciphers with intermediate compatibility
-# generated 2020-04-03, Mozilla Guideline v5.4, nginx 1.10.3, OpenSSL 1.1.1l, intermediate configuration
-# https://ssl-config.mozilla.org/#server=nginx&version=1.10.3&config=intermediate&openssl=1.1.1l&guideline=5.4
+# generated 2020-04-03, Mozilla Guideline v5.4, nginx 1.10.3, OpenSSL 1.1.0l, intermediate configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.10.3&config=intermediate&openssl=1.1.0l&guideline=5.4
 ssl_protocols TLSv1.2;
 ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 ssl_prefer_server_ciphers off;
