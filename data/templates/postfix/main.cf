@@ -19,8 +19,8 @@ readme_directory = no
 
 # -- TLS for incoming connections
 ###############################################################################
-# generated 2020-04-03, Mozilla Guideline v5.4, Postfix 3.1.14, OpenSSL 1.1.1l, intermediate configuration
-# https://ssl-config.mozilla.org/#server=postfix&version=3.1.14&config=intermediate&openssl=1.1.1l&guideline=5.4
+# generated 2020-04-03, Mozilla Guideline v5.4, Postfix 3.1.14, OpenSSL 1.1.0l, intermediate configuration
+# https://ssl-config.mozilla.org/#server=postfix&version=3.1.14&config=intermediate&openssl=1.1.0l&guideline=5.4
 
 # (No modern conf support until we're on buster...)
 # {% if compatibility == "intermediate" %} {% else %} {% endif %}
