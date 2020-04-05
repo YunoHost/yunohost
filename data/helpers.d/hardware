@@ -2,22 +2,22 @@
 
 # Check the amount of available RAM
 #
-# usage: ynh_check_ram [--required=RAM required in Mb] [--no_swap|--only_swap] [--free_ram]
+# usage: ynh_check_ram [--required=RAM required in Mb] [--ignore_swap|--only_swap] [--free_ram]
 # | arg: -r, --required= - Amount of RAM required in Mb. The helper will return 0 is there's enough RAM, or 1 otherwise.
 # If --required isn't set, the helper will print the amount of RAM, in Mb.
-# | arg: -s, --no_swap   - Ignore swap
+# | arg: -s, --ignore_swap - Ignore swap
 # | arg: -o, --only_swap - Ignore real RAM, consider only swap.
 # | arg: -f, --free_ram  - Count only free RAM, not the total amount of RAM available.
-ynh_check_ram () {
+ynh_available_ram () {
 	# Declare an array to define the options of this helper.
-	declare -Ar args_array=( [r]=required= [s]=no_swap [o]=only_swap [f]=free_ram )
+	declare -Ar args_array=( [r]=required= [s]=ignore_swap [o]=only_swap [f]=free_ram )
 	local required
-	local no_swap
+	local ignore_swap
 	local only_swap
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 	required=${required:-}
-	no_swap=${no_swap:-0}
+	ignore_swap=${ignore_swap:-0}
 	only_swap=${only_swap:-0}
 
 	local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
@@ -34,7 +34,7 @@ ynh_check_ram () {
 	then
 		# Use the total amount of free ram
 		ram=$free_ram_swap
-		if [ $no_swap -eq 1 ]
+		if [ $ignore_swap -eq 1 ]
 		then
 			# Use only the amount of free ram
 			ram=$free_ram
@@ -44,7 +44,7 @@ ynh_check_ram () {
 			ram=$free_swap
 		fi
 	else
-		if [ $no_swap -eq 1 ]
+		if [ $ignore_swap -eq 1 ]
 		then
 			# Use only the amount of free ram
 			ram=$total_ram
