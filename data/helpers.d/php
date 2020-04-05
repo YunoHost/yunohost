@@ -309,7 +309,7 @@ ynh_get_scalable_phpfpm () {
     fi
 
     # Get the total of RAM available, except swap.
-    local max_ram=$(ynh_check_ram --no_swap)
+    local max_ram=$(ynh_get_ram --total --ignore_swap)
 
     at_least_one() {
         # Do not allow value below 1
