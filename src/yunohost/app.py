@@ -1574,6 +1574,7 @@ def app_config_apply(operation_logger, app, args):
 
     logger.success("Config updated as expected")
     return {
+        "app": app,
         "logs": operation_logger.success(),
     }
 
