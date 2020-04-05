@@ -103,7 +103,7 @@ ynh_remove_fpm_config () {
 
 	# Remove the dedicated service php-fpm service
 	ynh_remove_systemd_config --service=$fpm_service
-
+	yunohost service remove $fpm_service
 	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini" 2>&1
 }
