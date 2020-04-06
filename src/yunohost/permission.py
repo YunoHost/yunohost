@@ -82,8 +82,8 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             permissions[name]["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
             permissions[name]["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
             if full_path and name.split(".")[0] in apps_main_path:
-                permissions[name]["url"] = _get_full_url(infos.get("URL", [None])[0], apps_main_path[name.split('.')[0]])
-                permissions[name]["additional_urls"] = [_get_full_url(url, apps_main_path[name.split('.')[0]]) for url in infos.get("additionalUrls", [None])]
+                permissions[name]["url"] = _get_full_url(infos["URL"][0], apps_main_path[name.split('.')[0]]) if "URL" in infos else None
+                permissions[name]["additional_urls"] = [_get_full_url(url, apps_main_path[name.split('.')[0]]) for url in infos.get("additionalUrls", [None]) if url]
             else:
                 permissions[name]["url"] = infos.get("URL", [None])[0]
                 permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
@@ -608,8 +608,6 @@ def _update_ldap_group_permission(permission, allowed,
 
 
 def _get_full_url(url, app_main_path):
-    if url is None:
-        return None
     if url.startswith('/'):
         return app_main_path + url.rstrip("/")
     if url.startswith('re:/'):

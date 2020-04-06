@@ -35,7 +35,7 @@ class MyMigration(Migration):
 
         logger.info(m18n.n("migration_0015_add_new_attributes_in_ldap"))
         ldap = _get_ldap_interface()
-        permission_list = user_permission_list(short=True)["permissions"]
+        permission_list = user_permission_list(short=True, full_path=False)["permissions"]
 
         for permission in permission_list:
             if permission.split('.')[0] in SYSTEM_PERMS:
