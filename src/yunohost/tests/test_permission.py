@@ -107,9 +107,9 @@ def setup_function(function):
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
     _permission_create_with_dummy_app(permission="wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False,
                                       domain=maindomain, path='/wiki')
-    _permission_create_with_dummy_app(permission="blog.main", allowed=["all_users"], protected=False, sync_perm=False)
-    _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=False)
-    user_permission_update("blog.main", remove="all_users", add="alice")
+    _permission_create_with_dummy_app(permission="blog.main", allowed=["all_users"], protected=False, sync_perm=False,
+                                      domain=maindomain, path='/blog')
+    _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=True)
 
 
 def teardown_function(function):
@@ -287,8 +287,10 @@ def test_permission_list():
     assert res['blog.main']['allowed'] == ["alice"]
     assert set(res['wiki.main']['corresponding_users']) == set(["alice", "bob"])
     assert res['blog.main']['corresponding_users'] == ["alice"]
-    assert res['wiki.main']['url'] == "/"
+    assert res['wiki.main']['url'] == maindomain + "/wiki"
 
+    res = user_permission_list(full=True, full_path=False)['permissions']
+    assert res['wiki.main']['url'] == "/"
 #
 # Create - Remove functions
 #
@@ -460,30 +462,30 @@ def test_permission_update_permission_that_doesnt_exist(mocker):
 
 def test_permission_protected_update(mocker):
     res = user_permission_list(full=True)['permissions']
-    assert res['blog.api']['allowed'] == ["visitors", "all_users"]
+    assert res['blog.api']['allowed'] == ["visitors"]
 
     with raiseYunohostError(mocker, "permission_protected"):
         user_permission_update("blog.api", remove="visitors")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['blog.api']['allowed'] == ["visitors", "all_users"]
+    assert res['blog.api']['allowed'] == ["visitors"]
 
     user_permission_update("blog.api", remove="visitors", force=True)
     res = user_permission_list(full=True)['permissions']
-    assert res['blog.api']['allowed'] == ["all_users"]
+    assert res['blog.api']['allowed'] == []
 
     with raiseYunohostError(mocker, "permission_protected"):
         user_permission_update("blog.api", add="visitors")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['blog.api']['allowed'] == ["all_users"]
+    assert res['blog.api']['allowed'] == []
 
 # Permission url management
 
 def test_permission_redefine_url():
     permission_url("blog.main", url="/pwet")
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, full_path=False)['permissions']
     assert res["blog.main"]["url"] == "/pwet"
 
 def test_permission_remove_url():
