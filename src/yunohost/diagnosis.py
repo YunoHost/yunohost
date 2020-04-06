@@ -44,6 +44,25 @@ def diagnosis_list():
     return {"categories": all_categories_names}
 
 
+def diagnosis_get(category, item):
+
+    # Get all the categories
+    all_categories = _list_diagnosis_categories()
+    all_categories_names = [c for c, _ in all_categories]
+
+    if category not in all_categories_names:
+        raise YunohostError('diagnosis_unknown_categories', categories=category)
+
+    if isinstance(item, list):
+        if any("=" not in criteria for criteria in item):
+            raise YunohostError("Criterias should be of the form key=value (e.g. domain=yolo.test)")
+
+        # Convert the provided criteria into a nice dict
+        item = {c.split("=")[0]: c.split("=")[1] for c in item}
+
+    return Diagnoser.get_cached_report(category, item=item)
+
+
 def diagnosis_show(categories=[], issues=False, full=False, share=False):
 
     # Get all the categories
@@ -56,7 +75,7 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
     else:
         unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
-            raise YunohostError('diagnosis_unknown_categories', categories=", ".join(categories))
+            raise YunohostError('diagnosis_unknown_categories', categories=", ".join(unknown_categories))
 
     if not os.path.exists(DIAGNOSIS_CACHE):
         logger.warning(m18n.n("diagnosis_never_ran_yet"))
@@ -65,19 +84,14 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
     # Fetch all reports
     all_reports = []
     for category in categories:
-        if not os.path.exists(Diagnoser.cache_file(category)):
-            logger.warning(m18n.n("diagnosis_no_cache", category=category))
-            report = {"id": category,
-                      "cached_for": -1,
-                      "timestamp": -1,
-                      "items": []}
-            Diagnoser.i18n(report)
-        else:
-            try:
-                report = Diagnoser.get_cached_report(category)
-            except Exception as e:
-                logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
-                continue
+
+        try:
+            report = Diagnoser.get_cached_report(category)
+        except Exception as e:
+            logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
+            continue
+
+        Diagnoser.i18n(report)
 
         add_ignore_flag_to_issues(report)
         if not full:
@@ -221,7 +235,7 @@ def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
         if category not in all_categories_names:
             raise YunohostError("%s is not a diagnosis category" % category)
         if any("=" not in criteria for criteria in filter_[1:]):
-            raise YunohostError("Extra criterias should be of the form key=value (e.g. domain=yolo.test)")
+            raise YunohostError("Criterias should be of the form key=value (e.g. domain=yolo.test)")
 
         # Convert the provided criteria into a nice dict
         criterias = {c.split("=")[0]: c.split("=")[1] for c in filter_[1:]}
@@ -356,7 +370,12 @@ class Diagnoser():
 
         for dependency in self.dependencies:
             dep_report = Diagnoser.get_cached_report(dependency)
-            dep_errors = [item for item in dep_report["items"] if item["status"] == "ERROR"]
+
+            if dep_report["timestamp"] == -1:  # No cache yet for this dep
+                dep_errors = True
+            else:
+                dep_errors = [item for item in dep_report["items"] if item["status"] == "ERROR"]
+
             if dep_errors:
                 logger.error(m18n.n("diagnosis_cant_run_because_of_dep", category=self.description, dep=Diagnoser.get_description(dependency)))
                 return 1, {}
@@ -396,12 +415,25 @@ class Diagnoser():
         return os.path.join(DIAGNOSIS_CACHE, "%s.json" % id_)
 
     @staticmethod
-    def get_cached_report(id_):
-        filename = Diagnoser.cache_file(id_)
-        report = read_json(filename)
-        report["timestamp"] = int(os.path.getmtime(filename))
-        Diagnoser.i18n(report)
-        return report
+    def get_cached_report(id_, item=None):
+        cache_file = Diagnoser.cache_file(id_)
+        if not os.path.exists(cache_file):
+            logger.warning(m18n.n("diagnosis_no_cache", category=id_))
+            report = {"id": category,
+                      "cached_for": -1,
+                      "timestamp": -1,
+                      "items": []}
+        else:
+            report = read_json(cache_file)
+            report["timestamp"] = int(os.path.getmtime(cache_file))
+
+        if item:
+            for report_item in report["items"]:
+                if report_item.get("meta") == item:
+                    return report_item
+            return {}
+        else:
+            return report
 
     @staticmethod
     def get_description(id_):

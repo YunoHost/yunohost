@@ -72,13 +72,13 @@ class IPDiagnoser(Diagnoser):
         ipv4 = self.get_public_ip(4) if can_ping_ipv4 else None
         ipv6 = self.get_public_ip(6) if can_ping_ipv6 else None
 
-        yield dict(meta={"test": "ip", "version": 4},
+        yield dict(meta={"test": "ip", "version": '4'},
                    data=ipv4,
                    status="SUCCESS" if ipv4 else "ERROR",
                    summary=("diagnosis_ip_connected_ipv4", {}) if ipv4
                       else ("diagnosis_ip_no_ipv4", {}))
 
-        yield dict(meta={"test": "ip", "version": 6},
+        yield dict(meta={"test": "ip", "version": '6'},
                    data=ipv6,
                    status="SUCCESS" if ipv6 else "WARNING",
                    summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
