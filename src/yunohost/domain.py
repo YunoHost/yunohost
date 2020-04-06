@@ -428,7 +428,7 @@ def _check_and_normalize_permission_path(url):
         return url
 
     if url.startswith('/'):
-        return url.rstrip("/")
+        return '/' + url.strip("/")
 
     # Uri with domain
     domains = domain_list()['domains']
@@ -456,7 +456,7 @@ def _check_and_normalize_permission_path(url):
 
         if '/' in url:
             path = url.split('/', 1)[1].rstrip('/')
-            return domain + path
+            return domain + '/' + path
         else:
             return domain
 
