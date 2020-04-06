@@ -1247,7 +1247,12 @@ class RestoreManager():
         for permission_name, permission_infos in old_apps_permission.items():
             app_name = permission_name.split(".")[0]
             if _is_installed(app_name):
-                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"],
+                permission_create(permission_name, allowed=permission_infos["allowed"],
+                                  url=permission_infos["url"],
+                                  additional_urls=permission_infos['additional_urls'],
+                                  auth_header=permission_infos['auth_header'],
+                                  label=permission_infos['label'],
+                                  show_tile=permission_infos['show_tile'],
                                   protected=permission_infos["protected"], sync_perm=False)
 
         permission_sync_to_user()

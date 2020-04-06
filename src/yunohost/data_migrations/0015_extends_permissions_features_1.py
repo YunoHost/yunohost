@@ -41,7 +41,7 @@ class MyMigration(Migration):
             if permission.split('.')[0] in SYSTEM_PERMS:
                 ldap.update('cn=%s,ou=permission' % permission, {
                     'authHeader': ["FALSE"],
-                    'label': [permission.split('.')[0]],
+                    'label': [permission.split('.')[0].title()],
                     'showTile': ["FALSE"],
                     'isProtected': ["TRUE"],
                 })
