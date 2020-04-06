@@ -15,7 +15,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc, python-dbus, python-jinja2
  , python-toml
- , apt-transport-https
+ , apt, apt-transport-https, lsb-release
  , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
  , ca-certificates, netcat-openbsd, iproute2
  , mariadb-server, php-mysql | php-mysqlnd
