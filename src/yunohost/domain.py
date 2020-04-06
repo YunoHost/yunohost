@@ -153,7 +153,7 @@ def domain_remove(operation_logger, domain, force=False):
     from yunohost.utils.ldap import _get_ldap_interface
 
     if not force and domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_named_unknown', domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -260,7 +260,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     # Check domain exists
     if new_main_domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_named_unknown', domain=new_main_domain)
 
     operation_logger.related_to.append(('domain', new_main_domain))
     operation_logger.start()
@@ -329,7 +329,7 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     # Abort if domain is unknown
     if domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_named_unknown', domain=domain)
 
     # This import cannot be put on top of file because it would create a
     # recursive import...
@@ -440,7 +440,7 @@ def _check_and_normalize_permission_path(url):
         path = url[3:].split('/', 1)[1]
 
         if domain not in domains:
-            raise YunohostError('domain_unknown')
+            raise YunohostError('domain_named_unknown', domain=domain)
 
         try:
             re.compile(path)
@@ -452,7 +452,7 @@ def _check_and_normalize_permission_path(url):
     else:
         domain = url.split('/')[0]
         if domain not in domains:
-            raise YunohostError('domain_unknown')
+            raise YunohostError('domain_named_unknown', domain=domain)
 
         if '/' in url:
             path = url.split('/', 1)[1].rstrip('/')

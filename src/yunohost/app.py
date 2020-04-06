@@ -1065,7 +1065,7 @@ def app_makedefault(operation_logger, app, domain=None):
         domain = app_domain
         operation_logger.related_to.append(('domain', domain))
     elif domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_named_unknown', domain=domain)
 
     operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
