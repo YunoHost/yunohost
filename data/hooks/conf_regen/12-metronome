@@ -43,7 +43,7 @@ do_post_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(yunohost domain list --output-as plain --quiet)
+  domain_list=$(yunohost domain list --exclude-subdomains --output-as plain --quiet)
 
   # create metronome directories for domains
   for domain in $domain_list; do
