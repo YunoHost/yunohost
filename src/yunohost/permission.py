@@ -562,6 +562,8 @@ def _update_ldap_group_permission(permission, allowed,
     if protected is None:
         protected = existing_permission["protected"]
 
+    allowed = [allowed] if not isinstance(allowed, list) else allowed
+
     # Guarantee uniqueness of all values, which would otherwise make ldap.update angry.
     allowed = set(allowed)
 
