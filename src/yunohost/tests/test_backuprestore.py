@@ -9,7 +9,8 @@ from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete, _recursive_umount
 from yunohost.domain import _get_maindomain, domain_list, domain_add, domain_remove
-from yunohost.user import user_permission_list, user_create, user_list, user_delete
+from yunohost.user import user_create, user_list, user_delete
+from yunohost.permission import user_permission_list
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
 # Get main domain

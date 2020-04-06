@@ -107,7 +107,7 @@ def setup_function(function):
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
     _permission_create_with_dummy_app(permission="wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False,
                                       domain=maindomain, path='/wiki')
-    _permission_create_with_dummy_app(permission="blog.main", allowed=["all_users"], protected=False, sync_perm=False,
+    _permission_create_with_dummy_app(permission="blog.main", allowed=["alice"], protected=False, sync_perm=False,
                                       domain=maindomain, path='/blog')
     _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=True)
 
