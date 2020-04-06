@@ -8,7 +8,7 @@ from conftest import message, raiseYunohostError
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
 from yunohost.backup import backup_create, backup_restore, backup_list, backup_info, backup_delete, _recursive_umount
-from yunohost.domain import _get_maindomain
+from yunohost.domain import _get_maindomain, domain_list, domain_add, domain_remove
 from yunohost.user import user_permission_list, user_create, user_list, user_delete
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
 
@@ -31,7 +31,7 @@ def setup_function(function):
 
     assert len(backup_list()["archives"]) == 0
 
-    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
+    markers = {m.name: {'args':m.args, 'kwargs':m.kwargs} for m in function.__dict__.get("pytestmark",[])}
 
     if "with_wordpress_archive_from_2p4" in markers:
         add_archive_wordpress_from_2p4()
@@ -65,6 +65,11 @@ def setup_function(function):
                     "&admin=alice")
         assert app_is_installed("permissions_app")
 
+    if "with_custom_domain" in markers:
+        domain = markers['with_custom_domain']['args'][0]
+        if domain not in domain_list()['domains']:
+            domain_add(domain)
+
 
 def teardown_function(function):
 
@@ -74,7 +79,7 @@ def teardown_function(function):
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
-    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
+    markers = {m.name: {'args':m.args, 'kwargs':m.kwargs} for m in function.__dict__.get("pytestmark",[])}
 
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
@@ -82,6 +87,9 @@ def teardown_function(function):
     if "alice" in user_list()["users"]:
         user_delete("alice")
 
+    if "with_custom_domain" in markers:
+        domain = markers['with_custom_domain']['args'][0]
+        domain_remove(domain)
 
 @pytest.fixture(autouse=True)
 def check_LDAP_db_integrity_call():
@@ -403,6 +411,7 @@ def test_backup_with_no_compress(mocker):
 #
 
 @pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_wordpress_from_Ynh2p4(mocker):
 
     with message(mocker, "restore_complete"):
@@ -411,6 +420,7 @@ def test_restore_app_wordpress_from_Ynh2p4(mocker):
 
 
 @pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_script_failure_handling(monkeypatch, mocker):
 
     def custom_hook_exec(name, *args, **kwargs):
@@ -464,6 +474,7 @@ def test_restore_app_not_in_backup(mocker):
 
 
 @pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_already_installed(mocker):
 
     assert not _is_installed("wordpress")
