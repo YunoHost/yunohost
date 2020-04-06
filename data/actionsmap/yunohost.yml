@@ -1676,7 +1676,7 @@ diagnosis:
                     action: store_true
 
         run:
-            action_help: Show most recents diagnosis results
+            action_help: Run diagnosis
             api: POST /diagnosis/run
             arguments:
                 categories:
@@ -1701,3 +1701,14 @@ diagnosis:
                 --list:
                     help: List active ignore filters
                     action: store_true
+
+        get:
+            action_help: Low-level command to fetch raw data and status about a specific diagnosis test
+            api: GET /diagnosis/item/<category>
+            arguments:
+                category:
+                    help: Diagnosis category to fetch results from
+                item:
+                    help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
+                    metavar: CRITERIA
+                    nargs: "*"
