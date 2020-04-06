@@ -1,17 +1,22 @@
 import requests
 import pytest
+import string
+import os
+import json
+import shutil
 
 from conftest import message, raiseYunohostError
 
-from yunohost.app import app_install, app_upgrade, app_remove, app_change_url, app_list, app_map, _installed_apps
+from yunohost.app import app_install, app_upgrade, app_remove, app_change_url, app_list, app_map, _installed_apps, APPS_SETTING_PATH, _set_app_settings, _get_app_settings
 from yunohost.user import user_list, user_create, user_delete, \
                           user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
                                 permission_create, permission_delete, permission_url
-from yunohost.domain import _get_maindomain
+from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 
 # Get main domain
 maindomain = ""
+other_domains = []
 dummy_password = "test123Ynh"
 
 # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
@@ -19,6 +24,44 @@ dummy_password = "test123Ynh"
 import socket
 
 prv_getaddrinfo = socket.getaddrinfo
+
+def _permission_create_with_dummy_app(permission, allowed=None,
+                                      url=None, additional_urls=None, auth_header=True,
+                                      label=None, show_tile=False,
+                                      protected=True, sync_perm=True,
+                                      domain=None, path=None):
+    app = permission.split('.')[0]
+    if app not in _installed_apps():
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app)
+        if not os.path.exists(app_setting_path):
+            os.makedirs(app_setting_path)
+        settings = {'id': app, 'dummy_permission_app': True}
+        if domain:
+            settings['domain'] = domain
+        if path:
+            settings['path'] = path
+        _set_app_settings(app, settings)
+        
+        with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json'), 'w') as f:
+            json.dump({
+                "name": app,
+                "id": app,
+                "description": {
+                    "en": "Dummy app to test permissions"
+                }
+            }, f)
+    permission_create(permission=permission, allowed=allowed, url=url, additional_urls=additional_urls, auth_header=auth_header,
+                      label=label, show_tile=show_tile, protected=protected, sync_perm=sync_perm)
+
+
+def _clear_dummy_app_settings():
+    # Clean dummy app settings
+    for app in _installed_apps():
+        if _get_app_settings(app).get('dummy_permission_app', False):
+            app_setting_path = os.path.join(APPS_SETTING_PATH, app)
+            if os.path.exists(app_setting_path):
+                shutil.rmtree(app_setting_path)
+
 
 def clean_user_groups_permission():
     for u in user_list()['users']:
@@ -36,9 +79,17 @@ def clean_user_groups_permission():
 
 def setup_function(function):
     clean_user_groups_permission()
+    markers = {m.name: {'args':m.args, 'kwargs':m.kwargs} for m in function.__dict__.get("pytestmark",[])}
 
     global maindomain
+    global other_domains
     maindomain = _get_maindomain()
+
+    if "other_domains" in markers:
+        other_domains = ["domain_%s.dev" % string.ascii_lowercase[number] for number in range(markers['other_domains']['kwargs']['number'])]
+        for domain in other_domains:
+            if domain not in domain_list()['domains']:
+                domain_add(domain)
 
     # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
     # Mainly used for 'can_access_webpage' function
@@ -54,14 +105,22 @@ def setup_function(function):
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
-    permission_create("wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False)
-    permission_create("blog.main", allowed=["all_users"], protected=False, sync_perm=False)
-    permission_create("blog.api", allowed=["visitors"], protected=True, sync_perm=False)
+    _permission_create_with_dummy_app(permission="wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False,
+                                      domain=maindomain, path='/wiki')
+    _permission_create_with_dummy_app(permission="blog.main", allowed=["all_users"], protected=False, sync_perm=False)
+    _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
 
 def teardown_function(function):
     clean_user_groups_permission()
+    global other_domains
+    for domain in other_domains:
+        domain_remove(domain)
+    other_domains = []
+
+    _clear_dummy_app_settings()
+
     try:
         app_remove("permissions_app")
     except:
@@ -438,9 +497,10 @@ def test_permission_remove_url():
 #
 
 
+@pytest.mark.other_domains(number=1)
 def test_permission_app_install():
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True, full_path=False)['permissions']
     assert "permissions_app.main" in res
@@ -466,9 +526,10 @@ def test_permission_app_install():
     assert maindomain + "/urlpermissionapp" in app_map(user="bob").keys()
 
 
+@pytest.mark.other_domains(number=1)
 def test_permission_app_remove():
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
     app_remove("permissions_app")
 
     # Check all permissions for this app got deleted
@@ -476,9 +537,10 @@ def test_permission_app_remove():
     assert not any(p.startswith("permissions_app.") for p in res.keys())
 
 
+@pytest.mark.other_domains(number=1)
 def test_permission_app_change_url():
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&domain_2=%s&path=%s&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
     res = user_permission_list(full=True, full_path=False)['permissions']
@@ -494,9 +556,10 @@ def test_permission_app_change_url():
     assert res['permissions_app.dev']['url'] == "/dev"
 
 
+@pytest.mark.other_domains(number=1)
 def test_permission_protection_management_by_helper():
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&domain_2=%s&path=%s&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
     assert res['permissions_app.main']['protected'] == False
@@ -511,10 +574,11 @@ def test_permission_protection_management_by_helper():
     assert res['permissions_app.dev']['protected'] == True
 
 
+@pytest.mark.other_domains(number=1)
 def test_permission_app_propagation_on_ssowat():
 
     app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&is_public=1&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+                args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
     assert "visitors" in res['permissions_app.main']['allowed']
@@ -541,10 +605,11 @@ def test_permission_app_propagation_on_ssowat():
     assert not can_access_webpage(app_webroot+"/admin", logged_as="bob")
 
 
+@pytest.mark.other_domains(number=1)
 def test_permission_legacy_app_propagation_on_ssowat():
 
     app_install("./tests/apps/legacy_app_ynh",
-                args="domain=%s&path=%s" % (maindomain, "/legacy"), force=True)
+                args="domain=%s&domain_2=%s&path=%s" % (maindomain, other_domains[0], "/legacy"), force=True)
 
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
