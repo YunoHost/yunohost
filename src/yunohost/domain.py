@@ -437,7 +437,7 @@ def _check_and_normalize_permission_path(url):
         if '/' not in url:
             raise YunohostError('regex_with_only_domain')
         domain = url[3:].split('/')[0]
-        path = url[3:].split('/', 1)[1]
+        path = '/' + url[3:].split('/', 1)[1]
 
         if domain not in domains:
             raise YunohostError('domain_named_unknown', domain=domain)
