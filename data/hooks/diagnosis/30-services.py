@@ -22,12 +22,12 @@ class ServicesDiagnoser(Diagnoser):
             if result["status"] != "running":
                 item["status"] = "ERROR"
                 item["summary"] = ("diagnosis_services_bad_status", {"service": service, "status": result["status"]})
-                item["details"] = [("diagnosis_services_bad_status_tip", (service,))]
+                item["details"] = [("diagnosis_services_bad_status_tip", {"service":service})]
 
             elif result["configuration"] == "broken":
                 item["status"] = "WARNING"
                 item["summary"] = ("diagnosis_services_conf_broken", {"service": service})
-                item["details"] = [(d, tuple()) for d in result["configuration-details"]]
+                item["details"] = [(d, {}) for d in result["configuration-details"]]
 
             else:
                 item["status"] = "SUCCESS"
