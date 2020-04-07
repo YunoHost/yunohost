@@ -5,36 +5,13 @@ import os
 import sys
 import argparse
 
-# Either we are in a development environment or not
-IN_DEVEL = False
-
-# Level for which loggers will log
-LOGGERS_LEVEL = 'DEBUG'
-TTY_LOG_LEVEL = 'INFO'
-
-# Handlers that will be used by loggers
-#  - file: log to the file LOG_DIR/LOG_FILE
-#  - tty: log to current tty
-LOGGERS_HANDLERS = ['file', 'tty']
-
-# Directory and file to be used by logging
-LOG_DIR = '/var/log/yunohost'
-LOG_FILE = 'yunohost-cli.log'
-
-# Check and load - as needed - development environment
-if not __file__.startswith('/usr/'):
-    IN_DEVEL = True
-if IN_DEVEL:
-    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-    if os.path.isdir(os.path.join(basedir, 'moulinette')):
-        sys.path.insert(0, basedir)
-    LOG_DIR = os.path.join(basedir, 'log')
-
-
 import moulinette
 from moulinette.actionsmap import ActionsMap
 from moulinette.interfaces.cli import colorize, get_locale
 
+# Directory and file to be used by logging
+LOG_DIR = '/var/log/yunohost'
+LOG_FILE = 'yunohost-cli.log'
 
 # Initialization & helpers functions -----------------------------------
 
@@ -46,10 +23,6 @@ def _die(message, title='Error:'):
 def _parse_cli_args():
     """Parse additional arguments for the cli"""
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--no-cache',
-        action='store_false', default=True, dest='use_cache',
-        help="Don't use actions map cache",
-    )
     parser.add_argument('--output-as',
         choices=['json', 'plain', 'none'], default=None,
         help="Output result in another format",
@@ -90,22 +63,13 @@ def _parse_cli_args():
 
 def _init_moulinette(debug=False, quiet=False):
     """Configure logging and initialize the moulinette"""
-    # Define loggers handlers
-    handlers = set(LOGGERS_HANDLERS)
-    if quiet and 'tty' in handlers:
-        handlers.remove('tty')
-    elif 'tty' not in handlers:
-        handlers.append('tty')
 
-    root_handlers = set(handlers)
-    if not debug and 'tty' in root_handlers:
-        root_handlers.remove('tty')
-
-    # Define loggers level
-    level = LOGGERS_LEVEL
-    tty_level = TTY_LOG_LEVEL
-    if debug:
-        tty_level = 'DEBUG'
+    # Create log directory
+    if not os.path.isdir(LOG_DIR):
+        try:
+            os.makedirs(LOG_DIR, 0750)
+        except os.error as e:
+            _die(str(e))
 
     # Custom logging configuration
     logging = {
@@ -126,7 +90,7 @@ def _init_moulinette(debug=False, quiet=False):
         },
         'handlers': {
             'tty': {
-                'level': tty_level,
+                'level': 'DEBUG' if debug else 'INFO',
                 'class': 'moulinette.interfaces.cli.TTYHandler',
                 'formatter': 'tty-debug' if debug else '',
             },
@@ -139,45 +103,34 @@ def _init_moulinette(debug=False, quiet=False):
         },
         'loggers': {
             'yunohost': {
-                'level': level,
-                'handlers': handlers,
+                'level': 'DEBUG',
+                'handlers': ['file', 'tty'] if not quiet else ['file'],
                 'propagate': False,
             },
             'moulinette': {
-                'level': level,
+                'level': 'DEBUG',
                 'handlers': [],
                 'propagate': True,
             },
             'moulinette.interface': {
-                'level': level,
-                'handlers': handlers,
+                'level': 'DEBUG',
+                'handlers': ['file', 'tty'] if not quiet else ['file'],
                 'propagate': False,
             },
         },
         'root': {
-            'level': level,
-            'handlers': root_handlers,
+            'level': 'DEBUG',
+            'handlers': ['file', 'tty'] if debug else ['file'],
         },
     }
 
-    # Create log directory
-    if not os.path.isdir(LOG_DIR):
-        try:
-            os.makedirs(LOG_DIR, 0750)
-        except os.error as e:
-            _die(str(e))
-
     # Initialize moulinette
-    moulinette.init(logging_config=logging, _from_source=IN_DEVEL)
+    moulinette.init(logging_config=logging)
 
 def _retrieve_namespaces():
     """Return the list of namespaces to load"""
-    ret = ['yunohost']
-    for n in ActionsMap.get_namespaces():
-        # Append YunoHost modules
-        if n.startswith('ynh_'):
-            ret.append(n)
-    return ret
+    extensions = [n for n in ActionsMap.get_namespaces() if n.startswith('ynh_')]
+    return ['yunohost'] + extensions
 
 # Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
 default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -197,10 +150,9 @@ if __name__ == '__main__':
     _init_moulinette(opts.debug, opts.quiet)
 
     # Check that YunoHost is installed
+    allowed_if_not_installed = ['tools postinstall', 'backup restore', 'log display']
     if not os.path.isfile('/etc/yunohost/installed') and \
-       (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
-                          args[0] +' '+ args[1] != 'backup restore' and \
-                          args[0] +' '+ args[1] != 'log display')):
+       (len(args) < 2 or (args[0] +' '+ args[1] not in allowed_if_not_installed)):
 
         from moulinette import m18n
         # Init i18n
@@ -212,9 +164,11 @@ if __name__ == '__main__':
 
     # Execute the action
     ret = moulinette.cli(
-        _retrieve_namespaces(), args,
-        use_cache=opts.use_cache, output_as=opts.output_as,
-        password=opts.password, parser_kwargs={'top_parser': parser},
+        _retrieve_namespaces(),
+        args,
+        output_as=opts.output_as,
+        password=opts.password,
         timeout=opts.timeout,
+        parser_kwargs={'top_parser': parser},
     )
     sys.exit(ret)
