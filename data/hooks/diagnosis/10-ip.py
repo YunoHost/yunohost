@@ -58,7 +58,7 @@ class IPDiagnoser(Diagnoser):
             yield dict(meta={"test": "dnsresolv"},
                        status="WARNING",
                        summary=("diagnosis_ip_weird_resolvconf", {}),
-                       details=[("diagnosis_ip_weird_resolvconf_details", ())])
+                       details=[("diagnosis_ip_weird_resolvconf_details", {})])
         else:
             yield dict(meta={"test": "dnsresolv"},
                        status="SUCCESS",

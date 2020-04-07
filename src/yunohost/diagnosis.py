@@ -458,7 +458,7 @@ class Diagnoser():
             item["summary"] = m18n.n(summary_key, **summary_args)
 
             if "details" in item:
-                item["details"] = [m18n.n(key, *values) for key, values in item["details"]]
+                item["details"] = [m18n.n(key, **values) for key, values in item["details"]]
 
 
 def _list_diagnosis_categories():

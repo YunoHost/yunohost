@@ -49,12 +49,13 @@ class PortsDiagnoser(Diagnoser):
                 yield dict(meta={"port": str(port)},
                            status="ERROR",
                            summary=("diagnosis_ports_unreachable", {"port": port}),
-                           details=[("diagnosis_ports_needed_by", (service, category)), ("diagnosis_ports_forwarding_tip", ())])
+                           details=[("diagnosis_ports_needed_by", {"service": service, "category": category}),
+                                    ("diagnosis_ports_forwarding_tip", {})])
             else:
                 yield dict(meta={"port": str(port)},
                            status="SUCCESS",
                            summary=("diagnosis_ports_ok", {"port": port}),
-                           details=[("diagnosis_ports_needed_by", (service, category))])
+                           details=[("diagnosis_ports_needed_by", {"service": service, "category": category})])
 
 
 def main(args, env, loggers):

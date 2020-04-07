@@ -27,7 +27,7 @@ class BaseSystemDiagnoser(Diagnoser):
         if os.path.exists("/proc/device-tree/model"):
             model = read_file('/proc/device-tree/model').strip()
             hardware["data"]["board"] = model
-            hardware["details"] = [("diagnosis_basesystem_hardware_board", (model,))]
+            hardware["details"] = [("diagnosis_basesystem_hardware_board", {"model": model})]
 
         yield hardware
 
@@ -51,8 +51,12 @@ class BaseSystemDiagnoser(Diagnoser):
         # Here, ynh_core_version is for example "3.5.4.12", so [:3] is "3.5" and we check it's the same for all packages
         ynh_core_version = ynh_packages["yunohost"]["version"]
         consistent_versions = all(infos["version"][:3] == ynh_core_version[:3] for infos in ynh_packages.values())
-        ynh_version_details = [("diagnosis_basesystem_ynh_single_version", (package, infos["version"], infos["repo"]))
-                               for package, infos in ynh_packages.items()]
+        ynh_version_details = [("diagnosis_basesystem_ynh_single_version",
+                                {"package":package,
+                                 "version": infos["version"],
+                                 "repo": infos["repo"]}
+                                )
+                                for package, infos in ynh_packages.items()]
 
         if consistent_versions:
             yield dict(meta={"test": "ynh_versions"},

@@ -22,7 +22,7 @@ class SecurityDiagnoser(Diagnoser):
             yield dict(meta={"test": "meltdown"},
                        status="ERROR",
                        summary=("diagnosis_security_vulnerable_to_meltdown", {}),
-                       details=[("diagnosis_security_vulnerable_to_meltdown_details", ())]
+                       details=[("diagnosis_security_vulnerable_to_meltdown_details", {})]
                        )
         else:
             yield dict(meta={},

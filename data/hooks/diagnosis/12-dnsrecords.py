@@ -52,15 +52,17 @@ class DNSRecordsDiagnoser(Diagnoser):
             discrepancies = []
 
             for r in records:
-                current_value = self.get_current_record(domain, r["name"], r["type"]) or "None"
-                expected_value = r["value"] if r["value"] != "@" else domain + "."
+                r["current"] = self.get_current_record(domain, r["name"], r["type"]) or "None"
+                if r["value"] == "@":
+                    r["value"] = domain + "."
 
-                if current_value == "None":
-                    discrepancies.append(("diagnosis_dns_missing_record", (r["type"], r["name"], expected_value)))
-                elif current_value != expected_value:
-                    discrepancies.append(("diagnosis_dns_discrepancy", (r["type"], r["name"], expected_value, current_value)))
+                if r["current"] == "None":
+                    discrepancies.append(("diagnosis_dns_missing_record", r))
+                elif r["current"] != r["value"]:
+                    discrepancies.append(("diagnosis_dns_discrepancy", r))
 
             if discrepancies:
+                discrepancies = [("diagnosis_dns_point_to_doc", {})] + discrepancies
                 status = "ERROR" if (category == "basic" or (is_main_domain and category != "extra")) else "WARNING"
                 summary = ("diagnosis_dns_bad_conf", {"domain": domain, "category": category})
             else:
