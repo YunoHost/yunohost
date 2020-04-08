@@ -72,7 +72,7 @@ def clean_user_groups_permission():
             user_group_delete(g)
 
     for p in user_permission_list()['permissions']:
-        if any(p.startswith(name) for name in ["wiki", "blog", "site", "permissions_app"]):
+        if any(p.startswith(name) for name in ["wiki", "blog", "site", "web", "permissions_app"]):
             permission_delete(p, force=True, sync_perm=False)
     socket.getaddrinfo = prv_getaddrinfo
 
@@ -105,10 +105,14 @@ def setup_function(function):
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
-    _permission_create_with_dummy_app(permission="wiki.main", url="/", allowed=["all_users"], protected=False, sync_perm=False,
+    _permission_create_with_dummy_app(permission="wiki.main", url="/", additional_urls=['/whatever','/idontnow'], auth_header=False,
+                                      label="Wiki", show_tile=True,
+                                      allowed=["all_users"], protected=False, sync_perm=False,
                                       domain=maindomain, path='/wiki')
-    _permission_create_with_dummy_app(permission="blog.main", allowed=["alice"], protected=False, sync_perm=False,
-                                      domain=maindomain, path='/blog')
+    _permission_create_with_dummy_app(permission="blog.main", url="/", auth_header=True,
+                                      show_tile=False,
+                                      protected=False, sync_perm=False, 
+                                      allowed=["alice"], domain=maindomain, path='/blog')
     _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=True)
 
 
@@ -285,12 +289,35 @@ def test_permission_list():
     assert "xmpp.main" in res
     assert res['wiki.main']['allowed'] == ["all_users"]
     assert res['blog.main']['allowed'] == ["alice"]
+    assert res['blog.api']['allowed'] == ["visitors"]
     assert set(res['wiki.main']['corresponding_users']) == set(["alice", "bob"])
     assert res['blog.main']['corresponding_users'] == ["alice"]
+    assert res['blog.api']['corresponding_users'] == []
     assert res['wiki.main']['url'] == maindomain + "/wiki"
+    assert res['blog.main']['url'] == maindomain + "/blog"
+    assert res['blog.api']['url'] == None
+    assert set(res['wiki.main']['additional_urls']) == set([maindomain + '/wiki/whatever', maindomain + '/wiki/idontnow'])
+    assert res['blog.main']['additional_urls'] == []
+    assert res['blog.api']['additional_urls'] == []
+    assert res['wiki.main']['protected'] == False
+    assert res['blog.main']['protected'] == False
+    assert res['blog.api']['protected'] == True
+    assert res['wiki.main']['label'] == "Wiki"
+    assert res['blog.main']['label'] == "Blog"
+    assert res['blog.api']['label'] == "Blog (api)"
+    assert res['wiki.main']['show_tile'] == True
+    assert res['blog.main']['show_tile'] == False
+    assert res['blog.api']['show_tile'] == False
+    assert res['wiki.main']['auth_header'] == False
+    assert res['blog.main']['auth_header'] == True
+    assert res['blog.api']['auth_header'] == True
 
     res = user_permission_list(full=True, full_path=False)['permissions']
     assert res['wiki.main']['url'] == "/"
+    assert res['blog.main']['url'] == "/"
+    assert set(res['wiki.main']['additional_urls']) == set(['/whatever', '/idontnow'])
+
+
 #
 # Create - Remove functions
 #
@@ -304,6 +331,7 @@ def test_permission_create_main(mocker):
     assert "site.main" in res
     assert res['site.main']['allowed'] == ["all_users"]
     assert set(res['site.main']['corresponding_users']) == set(["alice", "bob"])
+    assert res['site.main']['protected'] == False
 
 
 def test_permission_create_extra(mocker):
@@ -315,6 +343,7 @@ def test_permission_create_extra(mocker):
     # all_users is only enabled by default on .main perms
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
+    assert res['site.test']['protected'] == True
 
 
 def test_permission_create_with_specific_user():
@@ -325,12 +354,95 @@ def test_permission_create_with_specific_user():
     assert res['site.test']['allowed'] == ["alice"]
 
 
+def test_permission_create_with_tile_management(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        permission_create("site.main", allowed=["all_users"],
+                          label="The Site", show_tile=False)
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.main" in res
+    assert res['site.main']['label'] == "The Site"
+    assert res['site.main']['show_tile'] == False
+
+def test_permission_create_with_tile_management_with_main_default_value(mocker):
+    with message(mocker, "permission_created", permission="web.main"):
+        permission_create("web.main", allowed=["all_users"], show_tile=True)
+
+    res = user_permission_list(full=True)['permissions']
+    assert "web.main" in res
+    assert res['web.main']['label'] == "Web"
+    assert res['web.main']['show_tile'] == True
+
+def test_permission_create_with_tile_management_with_not_main_default_value(mocker):
+    with message(mocker, "permission_created", permission="site.api"):
+        permission_create("site.api", allowed=["all_users"], show_tile=True)
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.api" in res
+    assert res['site.api']['label'] == "Site (api)"
+    assert res['site.api']['show_tile'] == True
+
+
+def test_permission_create_with_urls_management_without_url(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app("site.api", allowed=["all_users"],
+                                          domain=maindomain, path='/site')
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.main" in res
+    assert res['site.main']['url'] == None
+    assert res['site.main']['additional_urls'] == []
+    assert res['site.main']['auth_header'] == False
+
+
+def test_permission_create_with_urls_management_simple_domain(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app("site.main", allowed=["all_users"],
+                                          url="/", additional_urls=['/whatever','/idontnow'], auth_header=False,
+                                          domain=maindomain, path='/site')
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.main" in res
+    assert res['site.main']['url'] == maindomain + "/site"
+    assert set(res['site.main']['additional_urls']) == set([maindomain + "/site/whatever", maindomain + "/site/idontnow"])
+    assert res['site.main']['auth_header'] == False
+
+
+@pytest.mark.other_domains(number=2)
+def test_permission_create_with_urls_management_multiple_domain(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app("site.main", allowed=["all_users"],
+                                          url=maindomain + "/site/something",
+                                          additional_urls=[other_domains[0] + "/blabla",
+                                                           other_domains[1] + "/ahh"],
+                                          auth_header=True,
+                                          domain=maindomain, path='/site')
+
+    res = user_permission_list(full=True)['permissions']
+    assert "site.main" in res
+    assert res['site.main']['url'] == maindomain + "/site"
+    assert set(res['site.main']['additional_urls']) == set([other_domains[0] + "/blabla", other_domains[1] + "/ahh"])
+    assert res['site.main']['auth_header'] == True
+
+
 def test_permission_delete(mocker):
     with message(mocker, "permission_deleted", permission="wiki.main"):
         permission_delete("wiki.main", force=True)
 
     res = user_permission_list()['permissions']
     assert "wiki.main" not in res
+
+    with message(mocker, "permission_deleted", permission="blog.main"):
+        permission_delete("blog.main", force=True)
+
+    res = user_permission_list()['permissions']
+    assert "blog.main" not in res
+
+    with message(mocker, "permission_deleted", permission="blog.api"):
+        permission_delete("blog.api", force=False)
+
+    res = user_permission_list()['permissions']
+    assert "blog.api" not in res
 
 #
 # Error on create - remove function
@@ -431,14 +543,46 @@ def test_permission_reset_idempotency():
     assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
 
 
-def test_permission_reset_idempotency():
-    # Reset permission
-    user_permission_reset("blog.main")
-    user_permission_reset("blog.main")
+def test_permission_change_label(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", label="New Wiki")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['blog.main']['allowed'] == ["all_users"]
-    assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
+    assert res['wiki.main']['label'] == "New Wiki"
+    
+    
+def test_permission_change_label_with_same_value(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", label="Wiki")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['label'] == "Wiki"
+
+
+def test_permission_switch_show_tile(mocker):
+    # Note that from the actionmap the value is passed as string, not as bool
+    # Try with lowercase
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", show_tile="false")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['show_tile'] == False
+
+    # Try with uppercase
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", show_tile="TRUE")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['show_tile'] == True
+
+
+def test_permission_switch_show_tile_with_same_value(mocker):
+    # Note that from the actionmap the value is passed as string, not as bool
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", show_tile="True")
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['show_tile'] == True
 
 
 #
@@ -480,7 +624,9 @@ def test_permission_protected_update(mocker):
     res = user_permission_list(full=True)['permissions']
     assert res['blog.api']['allowed'] == []
 
+
 # Permission url management
+
 
 def test_permission_redefine_url():
     permission_url("blog.main", url="/pwet")
@@ -488,11 +634,102 @@ def test_permission_redefine_url():
     res = user_permission_list(full=True, full_path=False)['permissions']
     assert res["blog.main"]["url"] == "/pwet"
 
+
 def test_permission_remove_url():
     permission_url("blog.main", url=None)
 
     res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["url"] is None
+
+
+@pytest.mark.other_domains(number=1)
+def test_permission_add_additional_url():
+    permission_url("wiki.main", add_url=[other_domains[0] + "/heyby", "/myhouse"])
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['url'] == maindomain + "/wiki"
+    assert set(res['wiki.main']['additional_urls']) == set([maindomain + '/wiki/whatever',
+                                                            maindomain + '/wiki/idontnow',
+                                                            other_domains[0] + "/heyby",
+                                                            maindomain + '/wiki/myhouse'])
+
+
+def test_permission_remove_additional_url():
+    permission_url("wiki.main", remove_url=['/whatever'])
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['url'] == maindomain + "/wiki"
+    assert res['wiki.main']['additional_urls'] == [maindomain + '/wiki/idontnow']
+
+
+def test_permssion_add_additional_url_already_exist():
+    permission_url("wiki.main", add_url=['/whatever', "/myhouse"])
+    permission_url("wiki.main", add_url=['/whatever'])
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['url'] == maindomain + "/wiki"
+    assert set(res['wiki.main']['additional_urls']) == set([maindomain + '/wiki/whatever',
+                                                            maindomain + '/wiki/idontnow',
+                                                            maindomain + '/wiki/myhouse'])
+
+
+def test_permission_remove_additional_url_dont_exist():
+    permission_url("wiki.main", remove_url=['/shouldntexist', '/whatever'])
+    permission_url("wiki.main", remove_url=['/shouldntexist'])
+
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['url'] == maindomain + "/wiki"
+    assert res['wiki.main']['additional_urls'] == [maindomain + '/wiki/idontnow']
+
+
+def test_permission_clear_additional_url():
+    permission_url("wiki.main", clear_url=True)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['url'] == None
+    assert res['wiki.main']['additional_urls'] == []
+
+
+def test_permission_switch_auth_header():
+    permission_url("wiki.main", auth_header=True)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['auth_header'] == True
+
+    permission_url("wiki.main", auth_header=False)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['auth_header'] == False
+
+
+def test_permission_switch_auth_header_with_same_value():
+    permission_url("wiki.main", auth_header=False)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['auth_header'] == False
+
+
+# Permission protected
+
+
+def test_permission_switch_protected():
+    permission_update("wiki.main", protected=True)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['protected'] == True
+
+    permission_update("wiki.main", protected=False)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['protected'] == False
+
+
+def test_permission_switch_protected_with_same_value():
+    permission_update("wiki.main", protected=False)
+    
+    res = user_permission_list(full=True)['permissions']
+    assert res['wiki.main']['protected'] == False
+
 
 #
 # Application interaction
