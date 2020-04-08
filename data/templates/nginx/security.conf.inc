@@ -1,5 +1,5 @@
 ssl_session_timeout 1d;
-ssl_session_cache shared:SSL:10m;  # about 40000 sessions
+ssl_session_cache shared:SSL:50m;  # about 200000 sessions
 ssl_session_tickets off;
 
 # nginx 1.10 in stretch doesn't support TLS1.3 and Mozilla doesn't have any
