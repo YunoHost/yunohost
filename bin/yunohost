@@ -39,10 +39,6 @@ def _parse_cli_args():
         type=int, default=None,
         help="Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock",
     )
-    parser.add_argument('--admin-password',
-        default=None, dest='password', metavar='PASSWORD',
-        help="The admin password to use to authenticate",
-    )
     # deprecated arguments
     parser.add_argument('--plain',
         action='store_true', default=False, help=argparse.SUPPRESS
@@ -167,7 +163,6 @@ if __name__ == '__main__':
         _retrieve_namespaces(),
         args,
         output_as=opts.output_as,
-        password=opts.password,
         timeout=opts.timeout,
         parser_kwargs={'top_parser': parser},
     )
