@@ -62,19 +62,18 @@ class DNSRecordsDiagnoser(Diagnoser):
                     discrepancies.append(("diagnosis_dns_discrepancy", r))
 
             if discrepancies:
-                discrepancies = [("diagnosis_dns_point_to_doc", {})] + discrepancies
                 status = "ERROR" if (category == "basic" or (is_main_domain and category != "extra")) else "WARNING"
-                summary = ("diagnosis_dns_bad_conf", {"domain": domain, "category": category})
+                summary = "diagnosis_dns_bad_conf"
             else:
                 status = "SUCCESS"
-                summary = ("diagnosis_dns_good_conf", {"domain": domain, "category": category})
+                summary = "diagnosis_dns_good_conf"
 
             output = dict(meta={"domain": domain, "category": category},
                           status=status,
                           summary=summary)
 
             if discrepancies:
-                output["details"] = discrepancies
+                output["details"] = ["diagnosis_dns_point_to_doc"] + discrepancies
 
             yield output
 

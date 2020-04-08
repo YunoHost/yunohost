@@ -28,7 +28,7 @@ class IPDiagnoser(Diagnoser):
         if not can_ping_ipv4 and not can_ping_ipv6:
             yield dict(meta={"test": "ping"},
                        status="ERROR",
-                       summary=("diagnosis_ip_not_connected_at_all", {}))
+                       summary="diagnosis_ip_not_connected_at_all")
             # Not much else we can do if there's no internet at all
             return
 
@@ -49,20 +49,19 @@ class IPDiagnoser(Diagnoser):
         if not can_resolve_dns:
             yield dict(meta={"test": "dnsresolv"},
                        status="ERROR",
-                       summary=("diagnosis_ip_broken_dnsresolution", {}) if good_resolvconf
-                          else ("diagnosis_ip_broken_resolvconf", {}))
+                       summary="diagnosis_ip_broken_dnsresolution" if good_resolvconf else "diagnosis_ip_broken_resolvconf")
             return
         # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
         # still warn that we're using a weird resolv conf ...
         elif not good_resolvconf:
             yield dict(meta={"test": "dnsresolv"},
                        status="WARNING",
-                       summary=("diagnosis_ip_weird_resolvconf", {}),
-                       details=[("diagnosis_ip_weird_resolvconf_details", {})])
+                       summary="diagnosis_ip_weird_resolvconf",
+                       details=["diagnosis_ip_weird_resolvconf_details"])
         else:
             yield dict(meta={"test": "dnsresolv"},
                        status="SUCCESS",
-                       summary=("diagnosis_ip_dnsresolution_working", {}))
+                       summary="diagnosis_ip_dnsresolution_working")
 
         # ##################################################### #
         # IP DIAGNOSIS : Check that we're actually able to talk #
@@ -72,17 +71,16 @@ class IPDiagnoser(Diagnoser):
         ipv4 = self.get_public_ip(4) if can_ping_ipv4 else None
         ipv6 = self.get_public_ip(6) if can_ping_ipv6 else None
 
-        yield dict(meta={"test": "ip", "version": '4'},
-                   data=ipv4,
+        yield dict(meta={"test": "ipv4"},
+                   data={"global": ipv4},
                    status="SUCCESS" if ipv4 else "ERROR",
-                   summary=("diagnosis_ip_connected_ipv4", {}) if ipv4
-                      else ("diagnosis_ip_no_ipv4", {}))
+                   summary="diagnosis_ip_connected_ipv4" if ipv4 else "diagnosis_ip_no_ipv4")
 
-        yield dict(meta={"test": "ip", "version": '6'},
-                   data=ipv6,
+        yield dict(meta={"test": "ipv6"},
+                   data={"global": ipv6},
                    status="SUCCESS" if ipv6 else "WARNING",
-                   summary=("diagnosis_ip_connected_ipv6", {}) if ipv6
-                      else ("diagnosis_ip_no_ipv6", {}))
+                   summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6")
+
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
 

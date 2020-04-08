@@ -47,15 +47,16 @@ class PortsDiagnoser(Diagnoser):
             category = services[service].get("category", "[?]")
             if r["ports"].get(str(port), None) is not True:
                 yield dict(meta={"port": str(port)},
+                           data={"service": service, "category": category},
                            status="ERROR",
-                           summary=("diagnosis_ports_unreachable", {"port": port}),
-                           details=[("diagnosis_ports_needed_by", {"service": service, "category": category}),
-                                    ("diagnosis_ports_forwarding_tip", {})])
+                           summary="diagnosis_ports_unreachable",
+                           details=["diagnosis_ports_needed_by", "diagnosis_ports_forwarding_tip"])
             else:
                 yield dict(meta={"port": str(port)},
+                           data={"service": service, "category": category},
                            status="SUCCESS",
-                           summary=("diagnosis_ports_ok", {"port": port}),
-                           details=[("diagnosis_ports_needed_by", {"service": service, "category": category})])
+                           summary="diagnosis_ports_ok",
+                           details=["diagnosis_ports_needed_by"])
 
 
 def main(args, env, loggers):

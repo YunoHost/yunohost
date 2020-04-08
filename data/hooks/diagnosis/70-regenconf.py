@@ -22,14 +22,14 @@ class RegenconfDiagnoser(Diagnoser):
         if regenconf_modified_files == []:
             yield dict(meta={"test": "regenconf"},
                        status="SUCCESS",
-                       summary=("diagnosis_regenconf_allgood", {})
+                       summary="diagnosis_regenconf_allgood"
                        )
         else:
             for f in regenconf_modified_files:
                 yield dict(meta={"test": "regenconf", "file": f},
                            status="WARNING",
-                           summary=("diagnosis_regenconf_manually_modified", {"file": f}),
-                           details=[("diagnosis_regenconf_manually_modified_details", {})]
+                           summary="diagnosis_regenconf_manually_modified",
+                           details=["diagnosis_regenconf_manually_modified_details"]
                            )
 
         #for f in debian_modified_files:
