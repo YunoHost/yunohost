@@ -17,11 +17,11 @@ class MailDiagnoser(Diagnoser):
         if os.system('/bin/nc -z -w2 yunohost.org 25') == 0:
             yield dict(meta={"test": "ougoing_port_25"},
                        status="SUCCESS",
-                       summary=("diagnosis_mail_ougoing_port_25_ok",{}))
+                       summary="diagnosis_mail_ougoing_port_25_ok")
         else:
             yield dict(meta={"test": "outgoing_port_25"},
                        status="ERROR",
-                       summary=("diagnosis_mail_ougoing_port_25_blocked",{}))
+                       summary="diagnosis_mail_ougoing_port_25_blocked")
 
 
 

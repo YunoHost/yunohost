@@ -45,13 +45,13 @@ class WebDiagnoser(Diagnoser):
             if r["status"] == "ok":
                 yield dict(meta={"domain": domain},
                            status="SUCCESS",
-                           summary=("diagnosis_http_ok", {"domain": domain}))
+                           summary="diagnosis_http_ok")
             else:
                 detail = r["code"].replace("error_http_check", "diagnosis_http") if "code" in r else "diagnosis_http_unknown_error"
                 yield dict(meta={"domain": domain},
                            status="ERROR",
-                           summary=("diagnosis_http_unreachable", {"domain": domain}),
-                           details=[(detail,{})])
+                           summary="diagnosis_http_unreachable",
+                           details=[detail])
 
         # In there or idk where else ...
         # try to diagnose hairpinning situation by crafting a request for the

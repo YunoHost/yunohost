@@ -453,11 +453,32 @@ class Diagnoser():
 
         report["description"] = Diagnoser.get_description(report["id"])
 
+        def is_tuple_or_list(stuff):
+            return isinstance(stuff, tuple) or isinstance(stuff, list)
+
         for item in report["items"]:
+
+            # For the summary and each details, we want to call
+            # m18n() on the string, with the appropriate data for string
+            # formatting which can come from :
+            # - infos super-specific to the summary/details (if it's a tuple(key,dict_with_info) and not just a string)
+            # - 'meta' info = parameters of the test (e.g. which domain/category for DNS conf record)
+            # - actual 'data' retrieved from the test (e.g. actual global IP, ...)
+
+            meta_data = item.get("meta", {}).copy()
+            meta_data.update(item.get("data", {}))
+
+            if not is_tuple_or_list(item["summary"]):
+                item["summary"] = (item["summary"], {})
             summary_key, summary_args = item["summary"]
+            summary_args.update(meta_data)
+
             item["summary"] = m18n.n(summary_key, **summary_args)
 
             if "details" in item:
+                item["details"] = [(d[0], d[1]) if is_tuple_or_list(d) else (d, {}) for d in item["details"]]
+                for d in item["details"]:
+                    d[1].update(meta_data)
                 item["details"] = [m18n.n(key, **values) for key, values in item["details"]]
 
 

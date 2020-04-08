@@ -21,13 +21,13 @@ class SecurityDiagnoser(Diagnoser):
         if self.is_vulnerable_to_meltdown():
             yield dict(meta={"test": "meltdown"},
                        status="ERROR",
-                       summary=("diagnosis_security_vulnerable_to_meltdown", {}),
-                       details=[("diagnosis_security_vulnerable_to_meltdown_details", {})]
+                       summary="diagnosis_security_vulnerable_to_meltdown",
+                       details=["diagnosis_security_vulnerable_to_meltdown_details"]
                        )
         else:
             yield dict(meta={},
                        status="SUCCESS",
-                       summary=("diagnosis_security_all_good", {})
+                       summary="diagnosis_security_all_good"
                        )
 
 
