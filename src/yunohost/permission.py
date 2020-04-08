@@ -283,7 +283,8 @@ def permission_create(operation_logger, permission, allowed=None,
         'cn': str(permission),
         'gidNumber': gid,
         'authHeader': ['TRUE'],
-        'label': [str(permission)],
+        'label': [permission.split('.')[0].title() if permission.endswith('.main')
+                  else "%s (%s)" % (permission.split('.')[0].title(), permission.split('.')[1])],
         'showTile': ['FALSE'], # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
         'isProtected': ['FALSE'] # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
     }
