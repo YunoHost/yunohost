@@ -58,7 +58,7 @@ class MyMigration(Migration):
                 else:
                     ldap.update('cn=%s,ou=permission' % permission, {
                         'authHeader': ["TRUE"],
-                        'label': ["%s (%s)" (label, permission.split('.')[1])],
+                        'label': ["%s (%s)" % (label, permission.split('.')[1])],
                         'showTile': ["FALSE"],
                         'isProtected': ["TRUE"]
                     })
