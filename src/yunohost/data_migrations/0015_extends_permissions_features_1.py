@@ -37,6 +37,11 @@ class MyMigration(Migration):
         ldap = _get_ldap_interface()
         permission_list = user_permission_list(short=True, full_path=False)["permissions"]
 
+        labels = {}
+        for app in _installed_apps():
+            labels[app] = app_setting(app, 'label')
+            app_setting(app, 'label', delete=True)
+
         for permission in permission_list:
             if permission.split('.')[0] in SYSTEM_PERMS:
                 ldap.update('cn=%s,ou=permission' % permission, {
@@ -46,7 +51,7 @@ class MyMigration(Migration):
                     'isProtected': ["TRUE"],
                 })
             else:
-                label = app_setting(permission.split('.')[0], 'label')
+                label = labels[permission.split('.')[0]]
 
                 if permission.endswith(".main"):
                     ldap.update('cn=%s,ou=permission' % permission, {
@@ -62,7 +67,6 @@ class MyMigration(Migration):
                         'showTile': ["FALSE"],
                         'isProtected': ["TRUE"]
                     })
-                app_setting(permission.split('.')[0], 'label', delete=True)
 
 
     def run(self):
