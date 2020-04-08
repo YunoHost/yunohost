@@ -381,7 +381,7 @@ def permission_url(operation_logger, permission,
     if add_url:
         for ur in add_url:
             if ur in current_additional_urls:
-                logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=url))
+                logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=ur))
             else:
                 ur = _check_and_normalize_permission_path(ur)
                 domain, path = _get_full_url(ur, app_main_path).split('/', 1)
@@ -403,7 +403,7 @@ def permission_url(operation_logger, permission,
     if remove_url:
         for ur in remove_url:
             if ur not in current_additional_urls:
-                logger.warning(m18n.n('additional_urls_already_removed', permission=permission, url=url))
+                logger.warning(m18n.n('additional_urls_already_removed', permission=permission, url=ur))
 
         new_additional_urls = [u for u in new_additional_urls if u not in remove_url]
 
