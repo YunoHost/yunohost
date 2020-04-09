@@ -59,6 +59,7 @@ APPS_CATALOG_CONF = '/etc/yunohost/apps_catalog.yml'
 APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
+APPS_DEFAULT_PHP_VERSION = "7.0"
 
 re_github_repo = re.compile(
     r'^(http[s]?://|git@)github.com[/:]'
@@ -347,6 +348,7 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
 
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
@@ -483,6 +485,7 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+        env_dict["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -695,6 +698,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+    env_dict["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
@@ -803,6 +807,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            env_dict_remove["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
 
             # Execute remove script
             operation_logger_remove = OperationLogger('remove_on_failed_install',
@@ -980,6 +985,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
@@ -1404,6 +1410,7 @@ def app_action_run(operation_logger, app, action, args=None):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
     env_dict["YNH_ACTION"] = action
 
     _, path = tempfile.mkstemp()
@@ -1467,6 +1474,7 @@ def app_config_show_panel(operation_logger, app):
         "YNH_APP_ID": app_id,
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "YNH_DEFAULT_PHP_VERSION": APPS_DEFAULT_PHP_VERSION,
     }
 
     return_code, parsed_values = hook_exec(config_script,
@@ -1540,6 +1548,7 @@ def app_config_apply(operation_logger, app, args):
         "YNH_APP_ID": app_id,
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "YNH_DEFAULT_PHP_VERSION": APPS_DEFAULT_PHP_VERSION,
     }
     args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
