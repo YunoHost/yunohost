@@ -384,6 +384,10 @@ class Diagnoser():
 
         items = list(self.run())
 
+        for item in items:
+            if "details" in item and not item["details"]:
+                del item["details"]
+
         new_report = {"id": self.id_,
                       "cached_for": self.cache_duration,
                       "items": items}
