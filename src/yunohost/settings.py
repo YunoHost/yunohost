@@ -23,15 +23,18 @@ def is_boolean(value):
         arg -- The string to check
 
     Returns:
-        Boolean
+        (is_boolean, boolean_value)
 
     """
     if isinstance(value, bool):
-        return True
+        return True, value
     elif isinstance(value, basestring):
-        return str(value).lower() in ['true', 'on', 'yes', 'false', 'off', 'no']
+        if str(value).lower() in ['true', 'on', 'yes', 'false', 'off', 'no']:
+            return True, str(value).lower() in ['true', 'on', 'yes']
+        else:
+            return False, None
     else:
-        return False
+        return False, None
 
 
 # a settings entry is in the form of:
@@ -114,7 +117,10 @@ def settings_set(key, value):
     key_type = settings[key]["type"]
 
     if key_type == "bool":
-        if not is_boolean(value):
+        boolean_value = is_boolean(value)
+        if boolean_value[0]:
+            value = boolean_value[1]
+        else:
             raise YunohostError('global_settings_bad_type_for_setting', setting=key,
                                 received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "int":

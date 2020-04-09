@@ -11,26 +11,27 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 2.7.1), ssowat (>= 2.7.1)
+ , moulinette (>= 3.7), ssowat (>= 3.7)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc, python-dbus, python-jinja2
  , python-toml
- , apt-transport-https
- , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
- , ca-certificates, netcat-openbsd, iproute2
+ , apt, apt-transport-https
+ , nginx, nginx-extras (>=1.6.2)
+ , php-fpm, php-ldap, php-intl
  , mariadb-server, php-mysql | php-mysqlnd
+ , openssh-server, iptables, fail2ban, dnsutils, bind9utils
+ , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
- , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
- , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
- , dovecot-antispam, fail2ban, iptables
- , nginx-extras (>=1.6.2), php-fpm, php-ldap, php-intl
- , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
+ , dnsmasq, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
+ , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
+ , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
+ , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
+ , redis-server
  , metronome
- , rspamd (>= 1.6.0), redis-server, opendkim-tools
- , haveged, fake-hwclock
- , equivs, lsof
+ , git, curl, wget, cron, unzip, jq
+ , lsb-release, haveged, fake-hwclock, equivs, lsof
 Recommends: yunohost-admin
- , openssh-server, ntp, inetutils-ping | iputils-ping
+ , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
  , php-gd, php-curl, php-gettext, php-mcrypt
  , python-pip
@@ -43,6 +44,7 @@ Conflicts: iptables-persistent
  , yunohost-config-dovecot, yunohost-config-slapd
  , yunohost-config-nginx, yunohost-config-amavis
  , yunohost-config-mysql, yunohost-predepends
+ , apache2, bind9
 Replaces: moulinette-yunohost, yunohost-config
  , yunohost-config-others, yunohost-config-postfix
  , yunohost-config-dovecot, yunohost-config-slapd

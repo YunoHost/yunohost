@@ -11,9 +11,14 @@ from yunohost.permission import user_permission_update, user_permission_list, us
 from yunohost.domain import _get_maindomain
 
 # Get main domain
-maindomain = _get_maindomain()
+maindomain = ""
 dummy_password = "test123Ynh"
 
+# Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
+# Mainly used for 'can_access_webpage' function
+import socket
+
+prv_getaddrinfo = socket.getaddrinfo
 
 def clean_user_groups_permission():
     for u in user_list()['users']:
@@ -26,10 +31,26 @@ def clean_user_groups_permission():
     for p in user_permission_list()['permissions']:
         if any(p.startswith(name) for name in ["wiki", "blog", "site", "permissions_app"]):
             permission_delete(p, force=True, sync_perm=False)
+    socket.getaddrinfo = prv_getaddrinfo
 
 
 def setup_function(function):
     clean_user_groups_permission()
+
+    global maindomain
+    maindomain = _get_maindomain()
+
+    # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
+    # Mainly used for 'can_access_webpage' function
+    dns_cache = {(maindomain, 443, 0, 1): [(2, 1, 6, '', ('127.0.0.1', 443))]}
+    def new_getaddrinfo(*args):
+        try:
+            return dns_cache[args]
+        except KeyError:
+            res = prv_getaddrinfo(*args)
+            dns_cache[args] = res
+            return res
+    socket.getaddrinfo = new_getaddrinfo
 
     user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
@@ -309,27 +330,6 @@ def test_permission_add_and_remove_group(mocker):
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['allowed'] == ["alice"]
     assert res['wiki.main']['corresponding_users'] == ["alice"]
-
-
-def test_permission_adding_visitors_implicitly_add_all_users(mocker):
-
-    res = user_permission_list(full=True)['permissions']
-    assert res['blog.main']['allowed'] == ["alice"]
-
-    with message(mocker, "permission_updated", permission="blog.main"):
-        user_permission_update("blog.main", add="visitors")
-
-    res = user_permission_list(full=True)['permissions']
-    assert set(res['blog.main']['allowed']) == set(["alice", "visitors", "all_users"])
-
-
-def test_permission_cant_remove_all_users_if_visitors_allowed(mocker):
-
-    with message(mocker, "permission_updated", permission="blog.main"):
-        user_permission_update("blog.main", add=["visitors", "all_users"])
-
-    with raiseYunohostError(mocker, 'permission_cannot_remove_all_users_while_visitors_allowed'):
-        user_permission_update("blog.main", remove="all_users")
 
 
 def test_permission_add_group_already_allowed(mocker):

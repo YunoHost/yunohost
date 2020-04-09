@@ -8,7 +8,7 @@ from yunohost.domain import _get_maindomain
 from yunohost.tests.test_permission import check_LDAP_db_integrity
 
 # Get main domain
-maindomain = _get_maindomain()
+maindomain = ""
 
 
 def clean_user_groups():
@@ -23,6 +23,9 @@ def clean_user_groups():
 def setup_function(function):
     clean_user_groups()
 
+    global maindomain
+    maindomain = _get_maindomain()
+    
     user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
     user_create("jack", "Jack", "Black", "jack@" + maindomain, "test123Ynh")

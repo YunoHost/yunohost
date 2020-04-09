@@ -42,12 +42,17 @@ do_post_regen() {
   regen_conf_files=$1
 
   # retrieve variables
+  main_domain=$(cat /etc/yunohost/current_host)
   domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # create metronome directories for domains
   for domain in $domain_list; do
     mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
   done
+  # http_upload directory must be writable by metronome and readable by nginx
+  mkdir -p  "/var/xmpp-upload/${main_domain}/upload"
+  chmod g+s "/var/xmpp-upload/${main_domain}/upload"
+  chown -R metronome:www-data "/var/xmpp-upload/${main_domain}"
 
   # fix some permissions
   chown -R metronome: /var/lib/metronome/

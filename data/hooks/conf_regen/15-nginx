@@ -23,6 +23,7 @@ do_init_regen() {
   rm -f "${nginx_dir}/sites-enabled/default"
 
   export compatibility="intermediate"
+  ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
   # Restart nginx if conf looks good, otherwise display error and exit unhappy
@@ -49,6 +50,7 @@ do_pre_regen() {
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
+  ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
   # add domain conf files
   for domain in $domain_list; do
@@ -108,6 +110,21 @@ do_post_regen() {
   for domain in $domain_list; do
     mkdir -p "/etc/nginx/conf.d/${domain}.d"
   done
+
+  # Get rid of legacy lets encrypt snippets
+  for domain in $domain_list; do
+      # If the legacy letsencrypt / acme-challenge domain-specific snippet is still there
+      if [ -e /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf ]
+      then
+          # And if we're effectively including the new domain-independant snippet now
+          if grep -q "include /etc/nginx/conf.d/acme-challenge.conf.inc;" /etc/nginx/conf.d/${domain}.conf
+          then
+              # Delete the old domain-specific snippet
+              rm /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf
+          fi
+      fi
+  done
+
 
   # Reload nginx configuration
   pgrep nginx && service nginx reload

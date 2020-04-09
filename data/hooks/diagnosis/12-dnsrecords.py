@@ -28,22 +28,27 @@ class DNSRecordsDiagnoser(Diagnoser):
         all_domains = domain_list()["domains"]
         for domain in all_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
-            for report in self.check_domain(domain, domain == main_domain):
+            is_subdomain = domain.split(".",1)[1] in all_domains
+            for report in self.check_domain(domain, domain == main_domain, is_subdomain=is_subdomain):
                 yield report
 
         # FIXME : somewhere, should implement a check for reverse DNS ...
 
         # FIXME / TODO : somewhere, could also implement a check for domain expiring soon
 
-    def check_domain(self, domain, is_main_domain):
+    def check_domain(self, domain, is_main_domain, is_subdomain):
 
         expected_configuration = _build_dns_conf(domain)
 
-        # Here if there are no AAAA record, we should add something to expect "no" AAAA record
+        # FIXME: Here if there are no AAAA record, we should add something to expect "no" AAAA record
         # to properly diagnose situations where people have a AAAA record but no IPv6
+        categories = ["basic", "mail", "xmpp", "extra"]
+        if is_subdomain:
+            categories = ["basic"]
 
-        for category, records in expected_configuration.items():
+        for category in categories:
 
+            records = expected_configuration[category]
             discrepancies = []
 
             for r in records:

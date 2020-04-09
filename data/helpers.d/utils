@@ -198,6 +198,7 @@ ynh_setup_source () {
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
+# For multiple calls, cookies are persisted between each call for the same app
 #
 # $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
@@ -236,9 +237,14 @@ ynh_local_curl () {
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
+    
+    local cookiefile=/tmp/ynh-$app-cookie.txt
+    touch $cookiefile
+    chown root $cookiefile
+    chmod 700 $cookiefile
 
     # Curl the URL
-    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
+    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
 }
 
 # Render templates with Jinja2
