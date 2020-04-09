@@ -1,24 +1,26 @@
 #!/bin/bash
 
-# Check the amount of available RAM
+# Get the total or free amount of RAM+swap on the system
 #
-# usage: ynh_check_ram [--required=RAM required in Mb] [--no_swap|--only_swap] [--free_ram]
-# | arg: -r, --required= - Amount of RAM required in Mb. The helper will return 0 is there's enough RAM, or 1 otherwise.
-# If --required isn't set, the helper will print the amount of RAM, in Mb.
-# | arg: -s, --no_swap   - Ignore swap
-# | arg: -o, --only_swap - Ignore real RAM, consider only swap.
-# | arg: -f, --free_ram  - Count only free RAM, not the total amount of RAM available.
-ynh_check_ram () {
+# usage: ynh_get_ram [--free|--total] [--ignore_swap|--only_swap]
+# | arg: -f, --free  - Count free RAM+swap
+# | arg: -t, --total - Count total RAM+swap
+# | arg: -s, --ignore_swap - Ignore swap, consider only real RAM
+# | arg: -o, --only_swap - Ignore real RAM, consider only swap
+ynh_get_ram () {
 	# Declare an array to define the options of this helper.
-	declare -Ar args_array=( [r]=required= [s]=no_swap [o]=only_swap [f]=free_ram )
-	local required
-	local no_swap
+	local legacy_args=ftso
+	declare -Ar args_array=( [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
+	local free
+	local total
+	local ignore_swap
 	local only_swap
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
-	required=${required:-}
-	no_swap=${no_swap:-0}
+	ignore_swap=${ignore_swap:-0}
 	only_swap=${only_swap:-0}
+	free=${free:-0}
+	total=${total:-0}
 
 	local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
 	local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
@@ -29,12 +31,11 @@ ynh_check_ram () {
 	local free_ram_swap=$(( free_ram + free_swap ))
 
 	# Use the total amount of ram
-	local ram=$total_ram_swap
-	if [ $free_ram -eq 1 ]
+	if [ $free -eq 1 ]
 	then
 		# Use the total amount of free ram
-		ram=$free_ram_swap
-		if [ $no_swap -eq 1 ]
+		local ram=$free_ram_swap
+		if [ $ignore_swap -eq 1 ]
 		then
 			# Use only the amount of free ram
 			ram=$free_ram
@@ -43,8 +44,10 @@ ynh_check_ram () {
 			# Use only the amount of free swap
 			ram=$free_swap
 		fi
-	else
-		if [ $no_swap -eq 1 ]
+	elif [ $total -eq 1 ]
+	then
+		local ram=$total_ram_swap
+		if [ $ignore_swap -eq 1 ]
 		then
 			# Use only the amount of free ram
 			ram=$total_ram
@@ -53,20 +56,47 @@ ynh_check_ram () {
 			# Use only the amount of free swap
 			ram=$total_swap
 		fi
-	fi
-
-	if [ -n "$required" ]
-	then
-		# Return 1 if the amount of ram isn't enough.
-		if [ $ram -lt $required ]
-		then
-			return 1
-		else
-			return 0
-		fi
-
-	# If no RAM is required, return the amount of available ram.
 	else
-		echo $ram
+		ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+		ram=0
 	fi
+
+    echo $ram
+}
+
+# Return 0 or 1 depending if the system has a given amount of RAM+swap free or total
+#
+# usage: ynh_require_ram --required=RAM required in Mb [--free|--total] [--ignore_swap|--only_swap]
+# | arg: -r, --required - The amount to require, in Mb
+# | arg: -f, --free  - Count free RAM+swap
+# | arg: -t, --total - Count total RAM+swap
+# | arg: -s, --ignore_swap - Ignore swap, consider only real RAM
+# | arg: -o, --only_swap - Ignore real RAM, consider only swap
+ynh_require_ram () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=rftso
+    declare -Ar args_array=( [r]=required= [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
+    local required
+    local free
+    local total
+    local ignore_swap
+    local only_swap
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    # Dunno if that's the right way to do, but that's some black magic to be able to
+    # forward the bool args to ynh_get_ram easily?
+    # If the variable $free is not empty, set it to '--free'
+    free=${free:+--free}
+    total=${total:+--total}
+    ignore_swap=${ignore_swap:+--ignore_swap}
+    only_swap=${only_swap:+--only_swap}
+
+    local ram=$(ynh_get_ram $free $total $ignore_swap $only_swap)
+
+    if [ $ram -lt $required ]
+    then
+        return 1
+    else
+        return 0
+    fi
 }

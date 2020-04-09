@@ -316,9 +316,9 @@ ynh_get_scalable_phpfpm () {
     fi
 
     # Get the total of RAM available, except swap.
-    local max_ram=$(ynh_check_ram --no_swap)
+    local max_ram=$(ynh_get_ram --total --ignore_swap)
 
-    less0() {
+    at_least_one() {
         # Do not allow value below 1
         if [ $1 -le 0 ]
         then
@@ -338,7 +338,7 @@ ynh_get_scalable_phpfpm () {
     then
         php_max_children=$(( $php_max_children / 2 ))
     fi
-    php_max_children=$(less0 $php_max_children)
+    php_max_children=$(at_least_one $php_max_children)
 
     # To not overload the proc, limit the number of children to 4 times the number of cores.
     local core_number=$(nproc)
@@ -352,13 +352,13 @@ ynh_get_scalable_phpfpm () {
     then
         # Define pm.start_servers, pm.min_spare_servers and pm.max_spare_servers for a dynamic process manager
         php_min_spare_servers=$(( $php_max_children / 8 ))
-        php_min_spare_servers=$(less0 $php_min_spare_servers)
+        php_min_spare_servers=$(at_least_one $php_min_spare_servers)
 
         php_max_spare_servers=$(( $php_max_children / 2 ))
-        php_max_spare_servers=$(less0 $php_max_spare_servers)
+        php_max_spare_servers=$(at_least_one $php_max_spare_servers)
 
         php_start_servers=$(( $php_min_spare_servers + ( $php_max_spare_servers - $php_min_spare_servers ) /2 ))
-        php_start_servers=$(less0 $php_start_servers)
+        php_start_servers=$(at_least_one $php_start_servers)
     else
         php_min_spare_servers=0
         php_max_spare_servers=0
