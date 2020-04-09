@@ -41,7 +41,7 @@ def _permission_create_with_dummy_app(permission, allowed=None,
         if path:
             settings['path'] = path
         _set_app_settings(app, settings)
-        
+
         with open(os.path.join(APPS_SETTING_PATH, app, 'manifest.json'), 'w') as f:
             json.dump({
                 "name": app,
@@ -114,7 +114,7 @@ def setup_function(function):
                                       domain=maindomain, path='/wiki')
     _permission_create_with_dummy_app(permission="blog.main", url="/", auth_header=True,
                                       show_tile=False,
-                                      protected=False, sync_perm=False, 
+                                      protected=False, sync_perm=False,
                                       allowed=["alice"], domain=maindomain, path='/blog')
     _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=True)
 
@@ -558,8 +558,8 @@ def test_permission_change_label(mocker):
 
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['label'] == "New Wiki"
-    
-    
+
+
 def test_permission_change_label_with_same_value(mocker):
     with message(mocker, "permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", label="Wiki")
