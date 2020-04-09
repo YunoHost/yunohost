@@ -1,3 +1,50 @@
+yunohost (3.8.0) testing; urgency=low
+
+  # Major stuff
+
+  - [enh] New diagnosis system (#534, #872, #919, a416044, a354425, 4ab3653, decb372, e686dc6, b5d18d6, 69bc124, 937d339, cc2288c, aaa9805, 526a3a2)
+  - [enh] App categories (#778, #853)
+  - [enh] Support XMPP http upload (#831)
+  - [enh] Many small improvements in the way we manage services (#838, fa5c0e9, dd92a34, c97a839)
+  - [enh] Add subcategories management in bash completion (#839)
+  - [mod] Add conflict with apache2 and bind9, other minor changes in Depends (#909, 3bd6a7a, 0a482fd)
+  - [enh] Setting to enable POP3 in email stack (#791)
+  - [enh] Better UX for CLI/API to change maindomain (#796)
+
+  # Misc technical
+
+  - Update ciphers for nginx, postfix and dovecot according to new Mozilla recommendation (#913, #914)
+  - Get rid of domain-specific acme-challenge snippet, use a single snippet included in every conf (#917)
+  - [enh] Persist cookies between multiple ynh_local_curl calls for the same app (#884, #903)
+  - [fix] ynh_find_port didn't detect port already used on UDP (#827, #907)
+  - [fix] prevent firefox to mix CA and server certificate (#857)
+  - [enh] add operation logger for config panel (#869)
+  - [fix] psql helpers: Revoke sessions before dropping tables (#895)
+  - [fix] moulinette logs were never displayed #lol (#758)
+
+  # Tests, cleaning, refactoring
+
+  - Add core CI, improve/fix tests (#856, #863, 6eb8efb, c4590ab, 711cc35, 6c24755)
+  - Refactoring (#805, 101d3be, #784)
+  - Drop some very-old deprecated app helpers (though still somewhat supporting them through hacky patching) (#780)
+  - Drop glances and the old monitoring system (#821)
+  - Drop app_debug (#824)
+  - Drop app's status.json (#834)
+  - Drop ynh_add_skipped/(un)protected_uris helpers (#910)
+  - Use a common security.conf.inc instead of having cipher setting in each nginx's domain file (1285776, 4d99cbe, be8427d, 22b9565)
+  - Don't add weird tmp redirected_urls after postinstall (#902)
+  - Don't do weird stuff with yunohost-firewall during debian's postinst (978d9d5)
+
+  # i18n, messaging
+
+  - Unit tests / lint / cleaning for translation files (#901)
+  - Improve message wording, spelling (8b0c9e5, 9fe43b1, f69ab4c, 0decb64, 986f38f, 8d40c73, 8fe343a, 1d84f17)
+  - Improve translations for French, Catalan, Bengali (Bangladesh), Italian, Dutch, Norwegian Bokmål, Chinese, Occitan, Spanish, Esperanto, German, Nepali, Portuguese, Arabic, Russian, Hungarian, Hindi, Polish, Greek
+
+  Thanks to all contributors <3 ! (Aeris One, Aleks, Allan N., Alvaro, Armando F., Arthur L., Augustin T., Bram, ButterflyOfFire, Damien P., Gustavo M., Jeroen F., Jimmy M., Josué, Kay0u, Maniack Crudelis, Mario, Matthew D., Mélanie C., Patrick B., Quentí, Yasss Gurl, amirale qt, Elie G., ljf, pitchum, Romain R., tituspijean, xaloc33, yalh76)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 09 Apr 2020 19:59:18 +0000
+
 yunohost (3.7.1) stable; urgency=low
 
    - [enh] Add ynh_permission_has_user helper (#905)
