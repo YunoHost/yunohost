@@ -305,7 +305,7 @@ def test_permission_list():
     assert res['wiki.main']['url'] == maindomain + "/wiki"
     assert res['blog.main']['url'] == maindomain + "/blog"
     assert res['blog.api']['url'] == None
-    assert set(res['wiki.main']['additional_urls']) == set([maindomain + '/wiki/whatever', maindomain + '/wiki/idontnow'])
+    assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever', maindomain + '/wiki/idontnow'}
     assert res['blog.main']['additional_urls'] == []
     assert res['blog.api']['additional_urls'] == []
     assert res['wiki.main']['protected'] == False
@@ -324,7 +324,7 @@ def test_permission_list():
     res = user_permission_list(full=True, full_path=False)['permissions']
     assert res['wiki.main']['url'] == "/"
     assert res['blog.main']['url'] == "/"
-    assert set(res['wiki.main']['additional_urls']) == set(['/whatever', '/idontnow'])
+    assert set(res['wiki.main']['additional_urls']) == {'/whatever', '/idontnow'}
 
 
 #
@@ -413,7 +413,7 @@ def test_permission_create_with_urls_management_simple_domain(mocker):
     res = user_permission_list(full=True)['permissions']
     assert "site.main" in res
     assert res['site.main']['url'] == maindomain + "/site"
-    assert set(res['site.main']['additional_urls']) == set([maindomain + "/site/whatever", maindomain + "/site/idontnow"])
+    assert set(res['site.main']['additional_urls']) == {maindomain + "/site/whatever", maindomain + "/site/idontnow"}
     assert res['site.main']['auth_header'] == False
 
 
@@ -429,8 +429,8 @@ def test_permission_create_with_urls_management_multiple_domain(mocker):
 
     res = user_permission_list(full=True)['permissions']
     assert "site.main" in res
-    assert res['site.main']['url'] == maindomain + "/site"
-    assert set(res['site.main']['additional_urls']) == set([other_domains[0] + "/blabla", other_domains[1] + "/ahh"])
+    assert res['site.main']['url'] == maindomain + "/site/something"
+    assert set(res['site.main']['additional_urls']) == {other_domains[0] + "/blabla", other_domains[1] + "/ahh"}
     assert res['site.main']['auth_header'] == True
 
 
@@ -677,9 +677,9 @@ def test_permssion_add_additional_url_already_exist():
 
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
-    assert set(res['wiki.main']['additional_urls']) == set([maindomain + '/wiki/whatever',
-                                                            maindomain + '/wiki/idontnow',
-                                                            maindomain + '/wiki/myhouse'])
+    assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever',
+                                                        maindomain + '/wiki/idontnow',
+                                                        maindomain + '/wiki/myhouse'}
 
 
 def test_permission_remove_additional_url_dont_exist():
