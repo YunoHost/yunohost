@@ -23,6 +23,28 @@
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
 #
+#
+# The footprint of the service will be used to defined the maximum footprint we can allow, which is half the maximum RAM.
+# So it will be used to defined 'pm.max_children'
+# A lower value for the footprint will allow more children for 'pm.max_children'. And so for
+#    'pm.start_servers', 'pm.min_spare_servers' and 'pm.max_spare_servers' which are defined from the
+#    value of 'pm.max_children'
+# NOTE: 'pm.max_children' can't exceed 4 times the number of processor's cores.
+#
+# The usage value will defined the way php will handle the children for the pool.
+# A value set as 'low' will set the process manager to 'ondemand'. Children will start only if the
+#   service is used, otherwise no child will stay alive. This config gives the lower footprint when the
+#   service is idle. But will use more proc since it has to start a child as soon it's used.
+# Set as 'medium', the process manager will be at dynamic. If the service is idle, a number of children
+#   equal to pm.min_spare_servers will stay alive. So the service can be quick to answer to any request.
+#   The number of children can grow if needed. The footprint can stay low if the service is idle, but
+#   not null. The impact on the proc is a little bit less than 'ondemand' as there's always a few
+#   children already available.
+# Set as 'high', the process manager will be set at 'static'. There will be always as many children as
+#   'pm.max_children', the footprint is important (but will be set as maximum a quarter of the maximum
+#   RAM) but the impact on the proc is lower. The service will be quick to answer as there's always many
+#   children ready to answer.
+#
 # Requires YunoHost version 2.7.2 or higher.
 ynh_add_fpm_config () {
 	# Declare an array to define the options of this helper.
@@ -232,6 +254,8 @@ ynh_remove_php () {
 
 # Define the values to configure php-fpm
 #
+# [internal]
+#
 # usage: ynh_get_scalable_phpfpm --usage=usage --footprint=footprint [--print]
 # | arg: -f, --footprint      - Memory footprint of the service (low/medium/high).
 # low    - Less than 20Mb of ram by pool.
@@ -247,28 +271,6 @@ ynh_remove_php () {
 # high   - High usage, frequently visited website.
 #
 # | arg: -p, --print - Print the result (intended for debug purpose only when packaging the app)
-#
-#
-# The footprint of the service will be used to defined the maximum footprint we can allow, which is half the maximum RAM.
-# So it will be used to defined 'pm.max_children'
-# A lower value for the footprint will allow more children for 'pm.max_children'. And so for
-#    'pm.start_servers', 'pm.min_spare_servers' and 'pm.max_spare_servers' which are defined from the
-#    value of 'pm.max_children'
-# NOTE: 'pm.max_children' can't exceed 4 times the number of processor's cores.
-#
-# The usage value will defined the way php will handle the children for the pool.
-# A value set as 'low' will set the process manager to 'ondemand'. Children will start only if the
-#   service is used, otherwise no child will stay alive. This config gives the lower footprint when the
-#   service is idle. But will use more proc since it has to start a child as soon it's used.
-# Set as 'medium', the process manager will be at dynamic. If the service is idle, a number of children
-#   equal to pm.min_spare_servers will stay alive. So the service can be quick to answer to any request.
-#   The number of children can grow if needed. The footprint can stay low if the service is idle, but
-#   not null. The impact on the proc is a little bit less than 'ondemand' as there's always a few
-#   children already available.
-# Set as 'high', the process manager will be set at 'static'. There will be always as many children as
-#   'pm.max_children', the footprint is important (but will be set as maximum a quarter of the maximum
-#   RAM) but the impact on the proc is lower. The service will be quick to answer as there's always many
-#   children ready to answer.
 ynh_get_scalable_phpfpm () {
     local legacy_args=ufp
     # Declare an array to define the options of this helper.
