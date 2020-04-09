@@ -1195,7 +1195,7 @@ def app_ssowatconf():
             "label": "Core permissions - skipped",
             "show_tile": False,
             "auth_header": False,
-            "public": False,
+            "public": True,
             "uris": \
                 [domain + '/yunohost/admin' for domain in domains] + \
                 [domain + '/yunohost/api' for domain in domains] + [
