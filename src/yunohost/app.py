@@ -1195,14 +1195,13 @@ def app_ssowatconf():
             "show_tile": False,
             "auth_header": False,
             "public": False,
-            "uris": [
+            "uris": \
                 [domain + '/yunohost/admin' for domain in domains] + \
                 [domain + '/yunohost/api' for domain in domains] + [
                     "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
                     "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
                     "re:^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$"
                 ]
-            ]
         }
     }
     redirected_regex = {main_domain + '/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
@@ -1282,7 +1281,7 @@ def app_ssowatconf():
                 "label": "Legacy permission - skipped_urls for app :" + app,
                 "show_tile": False,
                 "auth_header": False,
-                "public": False,
+                "public": True,
                 "uris": skipped_urls
             }
         if unprotected_urls != []:
@@ -1291,7 +1290,7 @@ def app_ssowatconf():
                 "label": "Legacy permission - unprotected_urls for app :" + app,
                 "show_tile": False,
                 "auth_header": True,
-                "public": False,
+                "public": True,
                 "uris": unprotected_urls
             }
         if protected_urls != []:
@@ -1300,7 +1299,7 @@ def app_ssowatconf():
                 "label": "Legacy permission - protected_urls for app :" + app,
                 "show_tile": False,
                 "auth_header": True,
-                "public": True,
+                "public": False,
                 "uris": protected_urls
             }
 
