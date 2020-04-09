@@ -196,6 +196,28 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
     return new_permission
 
+
+def user_permission_info(permission):
+    """
+    Return informations about a specific permission
+
+    Keyword argument:
+        permission -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
+    """
+
+    # By default, manipulate main permission
+    if "." not in permission:
+        permission = permission + ".main"
+
+    # Fetch existing permission
+
+    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    if existing_permission is None:
+        raise YunohostError('permission_not_found', permission=permission)
+
+    return existing_permission
+
+
 #
 #
 #  The followings methods are *not* directly exposed.

@@ -780,6 +780,11 @@ def user_permission_reset(permission, sync_perm=True):
                                                      sync_perm=sync_perm)
 
 
+def user_permission_info(permission):
+    import yunohost.permission
+    return yunohost.permission.user_permission_info(permission)
+
+
 #
 # SSH subcategory
 #
