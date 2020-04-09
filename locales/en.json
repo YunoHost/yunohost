@@ -120,7 +120,6 @@
     "certmanager_cert_renew_success": "Let's Encrypt certificate renewed for the domain '{domain:s}'",
     "certmanager_cert_signing_failed": "Could not sign the new certificate",
     "certmanager_certificate_fetching_or_enabling_failed": "Trying to use the new certificate for {domain:s} did not work…",
-    "certmanager_conflicting_nginx_file": "Could not prepare domain for ACME challenge: the NGINX configuration file {filepath:s} is conflicting and should be removed first",
     "certmanager_couldnt_fetch_intermediate_cert": "Timed out when trying to fetch intermediate certificate from Let's Encrypt. Certificate installation/renewal aborted—please try again later.",
     "certmanager_domain_cert_not_selfsigned": "The certificate for domain {domain:s} is not self-signed. Are you sure you want to replace it? (Use '--force' to do so.)",
     "certmanager_domain_dns_ip_differs_from_public_ip": "The DNS 'A' record for the domain '{domain:s}' is different from this server's IP. If you recently modified your A record, please wait for it to propagate (some DNS propagation checkers are available online). (If you know what you are doing, use '--no-checks' to turn off those checks.)",
