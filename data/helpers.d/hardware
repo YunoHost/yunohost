@@ -9,6 +9,7 @@
 # | arg: -o, --only_swap - Ignore real RAM, consider only swap
 ynh_get_ram () {
 	# Declare an array to define the options of this helper.
+	local legacy_args=ftso
 	declare -Ar args_array=( [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
 	local free
 	local total
@@ -73,6 +74,7 @@ ynh_get_ram () {
 # | arg: -o, --only_swap - Ignore real RAM, consider only swap
 ynh_require_ram () {
     # Declare an array to define the options of this helper.
+    local legacy_args=rftso
     declare -Ar args_array=( [r]=required= [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
     local required
     local free
