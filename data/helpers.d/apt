@@ -337,7 +337,7 @@ ynh_install_extra_app_dependencies () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 	name="${name:-$app}"
-	key=${key:-0}
+	key=${key:-}
 
 	# Set a key only if asked
 	if [ -n "$key" ]
@@ -377,7 +377,7 @@ ynh_install_extra_repo () {
 	ynh_handle_getopts_args "$@"
 	name="${name:-$app}"
 	append=${append:-0}
-	key=${key:-0}
+	key=${key:-}
 	priority=${priority:-}
 
 	if [ $append -eq 1 ]
