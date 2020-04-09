@@ -642,10 +642,25 @@ def test_permission_redefine_url():
 
 
 def test_permission_remove_url():
-    permission_url("blog.main", url=None)
+    permission_url("blog.main", clear_urls=True)
 
     res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["url"] is None
+
+
+def test_permission_main_url_regex():
+    permission_url("blog.main", url="re:/[a-z]+reboy/.*")
+
+    res = user_permission_list(full=True, full_path=False)['permissions']
+    assert res["blog.main"]["url"] == "re:/[a-z]+reboy/.*"
+
+    res = user_permission_list(full=True, full_path=True)['permissions']
+    assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain
+
+
+def test_permission_main_url_bad_regex(mocker):
+    with raiseYunohostError(mocker, "invalid_regex"):
+        permission_url("blog.main", url="re:/[a-z]++reboy/.*")
 
 
 @pytest.mark.other_domains(number=1)
@@ -654,10 +669,25 @@ def test_permission_add_additional_url():
 
     res = user_permission_list(full=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
-    assert set(res['wiki.main']['additional_urls']) == set([maindomain + '/wiki/whatever',
-                                                            maindomain + '/wiki/idontnow',
-                                                            other_domains[0] + "/heyby",
-                                                            maindomain + '/wiki/myhouse'])
+    assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever',
+                                                        maindomain + '/wiki/idontnow',
+                                                        other_domains[0] + "/heyby",
+                                                        maindomain + '/wiki/myhouse'}
+
+
+def test_permission_add_additional_regex():
+    permission_url("blog.main", add_url=["re:/[a-z]+reboy/.*"])
+
+    res = user_permission_list(full=True, full_path=False)['permissions']
+    assert res["blog.main"]["additional_urls"] == ["re:/[a-z]+reboy/.*"]
+
+    res = user_permission_list(full=True, full_path=True)['permissions']
+    assert res["blog.main"]["additional_urls"] == ["re:%s/blog/[a-z]+reboy/.*" % maindomain]
+
+
+def test_permission_add_additional_bad_regex(mocker):
+    with raiseYunohostError(mocker, "invalid_regex"):
+        permission_url("blog.main", add_url=["re:/[a-z]++reboy/.*"])
 
 
 def test_permission_remove_additional_url():
