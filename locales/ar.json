@@ -162,7 +162,7 @@
     "app_action_broke_system": "يبدو أنّ هذا الإجراء أدّى إلى تحطيم هذه الخدمات المهمة: {services}",
     "diagnosis_basesystem_host": "هذا الخادم يُشغّل ديبيان {debian_version}",
     "diagnosis_basesystem_kernel": "هذا الخادم يُشغّل نواة لينكس {kernel_version}",
-    "diagnosis_basesystem_ynh_single_version": "{0} الإصدار: {1} ({2})",
+    "diagnosis_basesystem_ynh_single_version": "{package} الإصدار: {version} ({repo})",
     "diagnosis_basesystem_ynh_main_version": "هذا الخادم يُشغّل YunoHost {main_version} ({repo})",
     "diagnosis_everything_ok": "كل شيء على ما يرام في {category}!",
     "diagnosis_ip_connected_ipv4": "الخادم مُتّصل بالإنترنت عبر IPv4!",

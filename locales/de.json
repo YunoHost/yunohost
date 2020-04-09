@@ -304,7 +304,7 @@
     "app_upgrade_script_failed": "Es ist ein Fehler im App-Upgrade-Skript aufgetreten",
     "diagnosis_basesystem_host": "Server läuft unter Debian {debian_version}.",
     "diagnosis_basesystem_kernel": "Server läuft unter Linux-Kernel {kernel_version}",
-    "diagnosis_basesystem_ynh_single_version": "{0} Version: {1} ({2})",
+    "diagnosis_basesystem_ynh_single_version": "{package} Version: {version} ({repo})",
     "diagnosis_basesystem_ynh_main_version": "Server läuft YunoHost {main_version} ({repo})",
     "diagnosis_basesystem_ynh_inconsistent_versions": "Sie verwenden inkonsistente Versionen der YunoHost-Pakete... wahrscheinlich wegen eines fehlgeschlagenen oder teilweisen Upgrades.",
     "diagnosis_display_tip_web": "Sie können den Abschnitt Diagnose (im Startbildschirm) aufrufen, um die gefundenen Probleme anzuzeigen.",
