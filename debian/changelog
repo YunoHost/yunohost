@@ -1,10 +1,3 @@
-yunohost (3.8.0~alpha) testing; urgency=low
-
-  Placeholder for upcoming 3.8 to avoid funky stuff with version numbers in
-  builds etc.
-
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
-
 yunohost (3.7.1) stable; urgency=low
 
    - [enh] Add ynh_permission_has_user helper (#905)
@@ -20,7 +13,7 @@ yunohost (3.7.1) stable; urgency=low
 
   Thanks to all contributors <3 ! (Bram, Kay0u, Maniack, Matthew D.)
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 9 April 2020 14:52:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 9 Apr 2020 14:52:00  +0000
 
 yunohost (3.7.0.12) stable; urgency=low
 
