@@ -19,6 +19,7 @@ class WebDiagnoser(Diagnoser):
 
         nonce_digits = "0123456789abcedf"
 
+        at_least_one_domain_ok = False
         all_domains = domain_list()["domains"]
         for domain in all_domains:
 
@@ -52,6 +53,7 @@ class WebDiagnoser(Diagnoser):
                 raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
 
             if r["status"] == "ok":
+                at_least_one_domain_ok = True
                 yield dict(meta={"domain": domain},
                            status="SUCCESS",
                            summary="diagnosis_http_ok")
@@ -62,9 +64,28 @@ class WebDiagnoser(Diagnoser):
                            summary="diagnosis_http_unreachable",
                            details=[detail])
 
-        # In there or idk where else ...
-        # try to diagnose hairpinning situation by crafting a request for the
-        # global ip (from within local network) and seeing if we're getting the right page ?
+        # If at least one domain is correctly exposed to the outside,
+        # attempt to diagnose hairpinning situations. On network with
+        # hairpinning issues, the server may be correctly exposed on the
+        # outside, but from the outside, it will be as if the port forwarding
+        # was not configured... Hence, calling for example
+        # "curl --head the.global.ip" will simply timeout...
+        if at_least_one_domain_ok:
+            ipv4 = Diagnoser.get_cached_report_item("ip", {"test": "ipv4"})
+            global_ipv4 = ipv4.get("data", {}).get("global", {})
+            if global_ipv4:
+                try:
+                    requests.head("http://" + ipv4, timeout=5)
+                except requests.exceptions.Timeout as e:
+                    yield dict(meta={"test": "hairpinning"},
+                               status="WARNING",
+                               summary="diagnosis_http_hairpinning_issue",
+                               details=["diagnosis_http_hairpinning_issue_details"])
+                except:
+                    # Well I dunno what to do if that's another exception
+                    # type... That'll most probably *not* be an hairpinning
+                    # issue but something else super weird ...
+                    pass
 
 
 def main(args, env, loggers):
