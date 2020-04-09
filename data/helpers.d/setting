@@ -105,7 +105,7 @@ EOF
         if [[ "$1" == "set" ]] && [[ "${4:-}" == "/" ]]
         then
             ynh_permission_update --permission "main" --add "visitors"
-        elif [[ "$1" == "delete" ]] && [[ "${current_value:-}" == "/" ]]
+        elif [[ "$1" == "delete" ]] && [[ "${current_value:-}" == "/" ]] && [[ -n "$(ynh_app_setting_get --app=$2 --key='is_public' )" ]]
         then
             ynh_permission_update --permission "main" --remove "visitors"
         fi
