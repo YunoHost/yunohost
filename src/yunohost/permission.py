@@ -362,14 +362,17 @@ def permission_url(operation_logger, permission,
     if not existing_permission:
         raise YunohostError('permission_not_found', permission=permission)
 
+    show_tile = existing_permission['show_tile']
+
     if url is None:
         url = existing_permission["url"]
     else:
         url = _check_and_normalize_permission_path(url)
         domain, path = _get_full_url(url, app_main_path).split('/', 1)
-        conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
+        conflicts = _get_conflicting_apps(domain.lstrip("re:"), path, ignore_app=permission.split('.')[0])
         if url.startswith('re:') and existing_permission['show_tile']:
             logger.warning(m18n.n('regex_incompatible_with_tile', regex=url, permission=permission))
+            show_tile = False
 
         if conflicts:
             apps = []
@@ -393,7 +396,7 @@ def permission_url(operation_logger, permission,
             else:
                 ur = _check_and_normalize_permission_path(ur)
                 domain, path = _get_full_url(ur, app_main_path).split('/', 1)
-                conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
+                conflicts = _get_conflicting_apps(domain.lstrip("re:"), path, ignore_app=permission.split('.')[0])
 
                 if conflicts:
                     apps = []
@@ -630,6 +633,6 @@ def _get_full_url(url, app_main_path):
     if url.startswith('/'):
         return app_main_path + url.rstrip("/")
     if url.startswith('re:/'):
-        return 're:' + app_main_path + url.lstrip('re:/')
+        return 're:' + app_main_path + url.lstrip('re:')
     else:
         return url
