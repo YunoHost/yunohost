@@ -159,6 +159,8 @@
     "diagnosis_ip_no_ipv4": "The server does not have working IPv4.",
     "diagnosis_ip_connected_ipv6": "The server is connected to the Internet through IPv6 !",
     "diagnosis_ip_no_ipv6": "The server does not have working IPv6.",
+    "diagnosis_ip_global": "Global IP: {global}",
+    "diagnosis_ip_local": "Local IP: {local}",
     "diagnosis_ip_not_connected_at_all": "The server does not seem to be connected to the Internet at all!?",
     "diagnosis_ip_dnsresolution_working": "Domain name resolution is working!",
     "diagnosis_ip_broken_dnsresolution": "Domain name resolution seems to be broken for some reason... Is a firewall blocking DNS requests ?",

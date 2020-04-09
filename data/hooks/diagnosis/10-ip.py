@@ -8,7 +8,7 @@ from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
-
+from yunohost.utils.network import get_network_interfaces
 
 class IPDiagnoser(Diagnoser):
 
@@ -71,16 +71,28 @@ class IPDiagnoser(Diagnoser):
         ipv4 = self.get_public_ip(4) if can_ping_ipv4 else None
         ipv6 = self.get_public_ip(6) if can_ping_ipv6 else None
 
+        network_interfaces = get_network_interfaces()
+        def get_local_ip(version):
+            local_ip = {iface:addr[version].split("/")[0]
+                        for iface, addr in network_interfaces.items() if version in addr}
+            if not local_ip:
+                return None
+            elif len(local_ip):
+                return next(iter(local_ip.values()))
+            else:
+                return local_ip
+
         yield dict(meta={"test": "ipv4"},
-                   data={"global": ipv4},
+                   data={"global": ipv4, "local": get_local_ip("ipv4")},
                    status="SUCCESS" if ipv4 else "ERROR",
-                   summary="diagnosis_ip_connected_ipv4" if ipv4 else "diagnosis_ip_no_ipv4")
+                   summary="diagnosis_ip_connected_ipv4" if ipv4 else "diagnosis_ip_no_ipv4",
+                   details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv4 else None)
 
         yield dict(meta={"test": "ipv6"},
-                   data={"global": ipv6},
+                   data={"global": ipv6, "local": get_local_ip("ipv6")},
                    status="SUCCESS" if ipv6 else "WARNING",
-                   summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6")
-
+                   summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
+                   details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv6 else None)
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
 
