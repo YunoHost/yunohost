@@ -201,8 +201,9 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     except Exception as e:
         raise YunohostError('user_creation_failed', user=username, error=e)
 
-    # Invalidate passwd to take user creation into account
+    # Invalidate passwd and group to take user and group creation into account
     subprocess.call(['nscd', '-i', 'passwd'])
+    subprocess.call(['nscd', '-i', 'group'])
 
     try:
         # Attempt to create user home folder
