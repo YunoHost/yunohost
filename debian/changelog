@@ -5,6 +5,35 @@ yunohost (3.8.0~alpha) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
 
+yunohost (3.7.1) stable; urgency=low
+
+   - [enh] Add ynh_permission_has_user helper (#905)
+   - [mod] Change behavior of ynh_setting_delete to try to make migrating away from legacy permissions easier (#906)
+   - [fix] app_config_apply should also return 'app' info (#918)
+   - [fix] uid/gid conflicts in user_create because of inconsistent comparison (#924)
+   - [fix] Ensure metronome owns its directories (1f623830, 031f8a6e)
+   - [mod] Remove useless sudos in helpers (be88a283)
+   - [enh] Improve message wording for services (3c844292)
+   - [enh] Attempt to anonymize data pasted to paste.yunohost.org (f56f4724)
+   - [enh] Lazy load yunohost.certificate to possibly improve perfs (af8981e4)
+   - [fix] Improve logging / debugging (1eef9b67, 7d323814, d17fcaf9, 210d5f3f)
+
+  Thanks to all contributors <3 ! (Bram, Kay0u, Maniack, Matthew D.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 9 April 2020 14:52:00  +0000
+
+yunohost (3.7.0.12) stable; urgency=low
+
+   - Fix previous buggy hotfix about deleting existing primary groups ...
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 28 Mar 2020 14:52:00  +0000
+
+yunohost (3.7.0.11) stable; urgency=low
+
+  - [fix] Mess due to automatic translation tools ~_~
+
+ -- Kay0u <pierre@kayou.io>  Fri, 27 Mar 2020 23:49:45 +0000
+
 yunohost (3.7.0.10) stable; urgency=low
 
   - [fix] On some weird setup, this folder and content ain't readable by group ... gotta make sure to make rx for group other slapd will explode
