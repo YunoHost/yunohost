@@ -79,11 +79,12 @@ def clean_user_groups_permission():
 
 def setup_function(function):
     clean_user_groups_permission()
-    markers = {m.name: {'args':m.args, 'kwargs':m.kwargs} for m in function.__dict__.get("pytestmark",[])}
 
     global maindomain
     global other_domains
     maindomain = _get_maindomain()
+
+    markers = {m.name: {'args':m.args, 'kwargs':m.kwargs} for m in function.__dict__.get("pytestmark",[])}
 
     if "other_domains" in markers:
         other_domains = ["domain_%s.dev" % string.ascii_lowercase[number] for number in range(markers['other_domains']['kwargs']['number'])]
@@ -94,6 +95,8 @@ def setup_function(function):
     # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
     # Mainly used for 'can_access_webpage' function
     dns_cache = {(maindomain, 443, 0, 1): [(2, 1, 6, '', ('127.0.0.1', 443))]}
+    for domain in other_domains:
+        dns_cache[(domain, 443, 0, 1)] = [(2, 1, 6, '', ('127.0.0.1', 443))]
     def new_getaddrinfo(*args):
         try:
             return dns_cache[args]
@@ -133,6 +136,12 @@ def teardown_function(function):
         app_remove("legacy_app")
     except:
         pass
+
+
+def teardown_module(module):
+    global other_domains
+    for domain in other_domains:
+        domain_remove(domain)
 
 
 @pytest.fixture(autouse=True)
