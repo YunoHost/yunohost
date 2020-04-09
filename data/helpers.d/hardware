@@ -10,16 +10,16 @@
 ynh_get_ram () {
 	# Declare an array to define the options of this helper.
 	declare -Ar args_array=( [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
-    local free
-    local total
+	local free
+	local total
 	local ignore_swap
 	local only_swap
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 	ignore_swap=${ignore_swap:-0}
 	only_swap=${only_swap:-0}
-    free=${free:-0}
-    total=${total:-0}
+	free=${free:-0}
+	total=${total:-0}
 
 	local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
 	local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
@@ -43,9 +43,9 @@ ynh_get_ram () {
 			# Use only the amount of free swap
 			ram=$free_swap
 		fi
-    elif [ $total -eq 1 ]
-    then
-	    local ram=$total_ram_swap
+	elif [ $total -eq 1 ]
+	then
+		local ram=$total_ram_swap
 		if [ $ignore_swap -eq 1 ]
 		then
 			# Use only the amount of free ram
@@ -55,9 +55,9 @@ ynh_get_ram () {
 			# Use only the amount of free swap
 			ram=$total_swap
 		fi
-    else
-        echo "Uhoh, you should choose --free or --total when using ynh_get_ram" >&2
-        ram=0
+	else
+		ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+		ram=0
 	fi
 
     echo $ram
@@ -65,25 +65,25 @@ ynh_get_ram () {
 
 # Return 0 or 1 depending if the system has a given amount of RAM+swap free or total
 #
-# usage: ynh_require_ram [--amount=RAM required in Mb] [--free|--total] [--ignore_swap|--only_swap]
-# | arg: -a, --amount - The amount to require, in Mb
+# usage: ynh_require_ram --required=RAM required in Mb [--free|--total] [--ignore_swap|--only_swap]
+# | arg: -r, --required - The amount to require, in Mb
 # | arg: -f, --free  - Count free RAM+swap
 # | arg: -t, --total - Count total RAM+swap
 # | arg: -s, --ignore_swap - Ignore swap, consider only real RAM
 # | arg: -o, --only_swap - Ignore real RAM, consider only swap
 ynh_require_ram () {
     # Declare an array to define the options of this helper.
-	declare -Ar args_array=( [a]=amount= [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
-    local amount
+    declare -Ar args_array=( [r]=required= [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
+    local required
     local free
     local total
-	local ignore_swap
-	local only_swap
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	amount=${amount:-0}
+    local ignore_swap
+    local only_swap
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
     # Dunno if that's the right way to do, but that's some black magic to be able to
     # forward the bool args to ynh_get_ram easily?
+    # If the variable $free is not empty, set it to '--free'
     free=${free:+--free}
     total=${total:+--total}
     ignore_swap=${ignore_swap:+--ignore_swap}
@@ -91,7 +91,7 @@ ynh_require_ram () {
 
     local ram=$(ynh_get_ram $free $total $ignore_swap $only_swap)
 
-    if [ $ram -lt $amount ]
+    if [ $ram -lt $required ]
     then
         return 1
     else
