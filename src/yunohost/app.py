@@ -1779,7 +1779,7 @@ def _get_app_actions(app_id):
 
             arguments = []
             
-            if not isinstance(action["description"], list) or "en" not in action["description"]:
+            if "description" in action and (not isinstance(action["description"], list) or "en" not in action["description"]):
                 action["description"] = {"en": action["description"]}
 
             for argument_name, argument in value.get("arguments", {}).items():
