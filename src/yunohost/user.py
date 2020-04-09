@@ -165,8 +165,8 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     operation_logger.start()
 
     # Get random UID/GID
-    all_uid = {x.pw_uid for x in pwd.getpwall()}
-    all_gid = {x.gr_gid for x in grp.getgrall()}
+    all_uid = {str(x.pw_uid) for x in pwd.getpwall()}
+    all_gid = {str(x.gr_gid) for x in grp.getgrall()}
 
     uid_guid_found = False
     while not uid_guid_found:
@@ -779,6 +779,11 @@ def user_permission_reset(permission, sync_perm=True):
     import yunohost.permission
     return yunohost.permission.user_permission_reset(permission,
                                                      sync_perm=sync_perm)
+
+
+def user_permission_info(permission):
+    import yunohost.permission
+    return yunohost.permission.user_permission_info(permission)
 
 
 #
