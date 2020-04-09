@@ -169,6 +169,13 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
+    # Note that we can get is argument as string we it come from the CLI
+    if isinstance(show_tile, str):
+        if show_tile.lower() == "true":
+            show_tile = True
+        else:
+            show_tile = False
+
     if existing_permission['url'] and existing_permission['url'].startswith('re:') and show_tile:
         logger.warning(m18n.n('regex_incompatible_with_tile', regex=existing_permission['url'], permission=permission))
 
@@ -307,12 +314,12 @@ def permission_create(operation_logger, permission, allowed=None,
     except Exception as e:
         raise YunohostError('permission_creation_failed', permission=permission, error=e)
 
+    permission_url(permission, url=url, add_url=additional_urls, auth_header=auth_header,
+                   sync_perm=False)
+
     new_permission = _update_ldap_group_permission(permission=permission, allowed=allowed,
                                                    label=label, show_tile=show_tile,
-                                                   protected=protected, sync_perm=False)
-
-    permission_url(permission, url=url, add_url=additional_urls, auth_header=auth_header,
-                   sync_perm=sync_perm)
+                                                   protected=protected, sync_perm=sync_perm)
 
     logger.debug(m18n.n('permission_created', permission=permission))
     return new_permission
@@ -414,6 +421,7 @@ def permission_url(operation_logger, permission,
     if clear_urls:
         url = None
         new_additional_urls = []
+        show_tile = False
 
     # Guarantee uniqueness of all values, which would otherwise make ldap.update angry.
     new_additional_urls = set(new_additional_urls)
@@ -426,7 +434,8 @@ def permission_url(operation_logger, permission,
     try:
         ldap.update('cn=%s,ou=permission' % permission, {'URL': [url] if url is not None else [],
                                                          'additionalUrls': new_additional_urls,
-                                                         'authHeader': [str(auth_header).upper()]})
+                                                         'authHeader': [str(auth_header).upper()],
+                                                         'showTile': [str(show_tile).upper()],})
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 
@@ -559,6 +568,13 @@ def _update_ldap_group_permission(permission, allowed,
 
     if show_tile is None:
         show_tile = existing_permission["show_tile"]
+    elif show_tile is True:
+        if not existing_permission['url']:
+            logger.warning(m18n.n('show_tile_cant_be_enabled_for_url_not_defined', permission=permission))
+            show_tile = False
+        elif existing_permission['url'].startswith('re:'):
+            logger.warning(m18n.n('show_tile_cant_be_enabled_for_regex', permission=permission))
+            show_tile = False
 
     if protected is None:
         protected = existing_permission["protected"]
