@@ -22,6 +22,15 @@ class WebDiagnoser(Diagnoser):
         all_domains = domain_list()["domains"]
         for domain in all_domains:
 
+            # If the diagnosis location ain't defined, can't do diagnosis,
+            # probably because nginx conf manually modified...
+            nginx_conf = "/etc/nginx/conf.d/%s.conf" % domain
+            if os.system("grep -q '^.*location .*/.well-known/ynh-diagnosis/' %s" % nginx_conf) != 0:
+                yield dict(meta={"domain": domain},
+                           status="WARNING",
+                           summary="diagnosis_http_nginx_conf_not_up_to_date",
+                           details=["diagnosis_http_nginx_conf_not_up_to_date_details"])
+
             nonce = ''.join(random.choice(nonce_digits) for i in range(16))
             os.system("rm -rf /tmp/.well-known/ynh-diagnosis/")
             os.system("mkdir -p /tmp/.well-known/ynh-diagnosis/")
