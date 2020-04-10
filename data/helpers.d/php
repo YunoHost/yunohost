@@ -13,7 +13,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # -----------------------------------------------------------------------------
 #
 # usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint
-# | arg: -v, --phpversion - Version of php to use.#
+# | arg: -v, --phpversion - Version of php to use.
 # | arg: -f, --footprint      - Memory footprint of the service (low/medium/high).
 # low    - Less than 20Mb of ram by pool.
 # medium - Between 20Mb and 40Mb of ram by pool.
@@ -61,7 +61,7 @@ ynh_add_fpm_config () {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-  # The default behaviour is to use the template.
+	# The default behaviour is to use the template.
 	use_template="${use_template:-1}"
 	usage="${usage:-}"
 	footprint="${footprint:-}"
@@ -71,6 +71,13 @@ ynh_add_fpm_config () {
 
 	# Set the default PHP-FPM version by default
 	phpversion="${phpversion:-$YNH_PHP_VERSION}"
+
+	# If the requested php version is not the default version for YunoHost
+	if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
+	then
+		# Install this specific version of php.
+		ynh_install_php --phpversion=$phpversion
+	fi
 
 	local fpm_config_dir="/etc/php/$phpversion/fpm"
 	local fpm_service="php${phpversion}-fpm"
@@ -87,7 +94,7 @@ ynh_add_fpm_config () {
 
 	if [ $use_template -eq 1 ]
 	then
-        # Usage 1, use the template in ../conf/php-fpm.conf
+                # Usage 1, use the template in ../conf/php-fpm.conf
                 cp ../conf/php-fpm.conf "$finalphpconf"
                 ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
                 ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
@@ -95,7 +102,9 @@ ynh_add_fpm_config () {
                 ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
 
 	else
-        # Usage 2, generate a php-fpm config file with ynh_get_scalable_phpfpm
+                # Usage 2, generate a php-fpm config file with ynh_get_scalable_phpfpm
+
+                # Define the values to use for the configuration of php.
                 ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
                 # Copy the default file
@@ -141,14 +150,12 @@ ynh_add_fpm_config () {
 		fi
 	fi
 
-
-	
 	chown root: "$finalphpconf"
 	ynh_store_file_checksum --file="$finalphpconf"
 
 	if [ -e "../conf/php-fpm.ini" ]
 	then
-		echo "Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead." >&2
+		ynh_print_warn -message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
 		finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
 		ynh_backup_if_checksum_is_different "$finalphpini"
 		cp ../conf/php-fpm.ini "$finalphpini"
@@ -167,17 +174,35 @@ ynh_add_fpm_config () {
 ynh_remove_fpm_config () {
 	local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
 	local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
-	# Assume default php version if not set
+	# Get the version of php used by this app
+	local phpversion=$(ynh_app_setting_get $app phpversion)
+
+	# Assume default PHP-FPM version by default
+	phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
+
+	# Assume default php files if not set
 	if [ -z "$fpm_config_dir" ]; then
 		fpm_config_dir="/etc/php/$YNH_DEFAULT_PHP_VERSION/fpm"
 		fpm_service="php$YNH_DEFAULT_PHP_VERSION-fpm"
 	fi
 	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
 	ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini" 2>&1
-	ynh_systemd_action --service_name=$fpm_service --action=reload
+
+	if ynh_package_is_installed --package="php${phpversion}-fpm"; then
+		ynh_systemd_action --service_name=$fpm_service --action=reload
+	fi
+
+	# If the php version used is not the default version for YunoHost
+	if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
+	then
+		# Remove this specific version of php
+		ynh_remove_php
+	fi
 }
 
 # Install another version of php.
+#
+# [internal]
 #
 # usage: ynh_install_php --phpversion=phpversion [--package=packages]
 # | arg: -v, --phpversion - Version of php to install.
@@ -200,8 +225,15 @@ ynh_install_php () {
 		ynh_die "Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
 	fi
 
-	# Store the ID of this app and the version of php requested for it
-	echo "$YNH_APP_INSTANCE_NAME:$phpversion" | tee --append "/etc/php/ynh_app_version"
+	# Create the file if doesn't exist already
+	touch /etc/php/ynh_app_version
+
+	# Do not add twice the same line
+	if ! grep --quiet "$YNH_APP_INSTANCE_NAME:" "/etc/php/ynh_app_version"
+	then
+		# Store the ID of this app and the version of php requested for it
+		echo "$YNH_APP_INSTANCE_NAME:$phpversion" | tee --append "/etc/php/ynh_app_version"
+	fi
 
 	# Add an extra repository for those packages
 	ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(lsb_release -sc) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version
@@ -216,13 +248,15 @@ ynh_install_php () {
 
 	# Pin this extra repository after packages are installed to prevent sury of doing shit
 	ynh_pin_repo --package="*" --pin="origin \"packages.sury.org\"" --priority=200 --name=extra_php_version
-	ynh_pin_repo --package="php${$YNH_DEFAULT_PHP_VERSION}*" --pin="origin \"packages.sury.org\"" --priority=600 --name=extra_php_version --append
+	ynh_pin_repo --package="php${YNH_DEFAULT_PHP_VERSION}*" --pin="origin \"packages.sury.org\"" --priority=600 --name=extra_php_version --append
 
 	# Advertise service in admin panel
 	yunohost service add php${phpversion}-fpm --log "/var/log/php${phpversion}-fpm.log"
 }
 
 # Remove the specific version of php used by the app.
+#
+# [internal]
 #
 # usage: ynh_install_php
 ynh_remove_php () {
@@ -233,10 +267,13 @@ ynh_remove_php () {
 	then
 		if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
 		then
-			ynh_print_err "Do not use ynh_remove_php to install php$YNH_DEFAULT_PHP_VERSION"
+			ynh_print_err "Do not use ynh_remove_php to remove php$YNH_DEFAULT_PHP_VERSION !"
 		fi
 		return 0
 	fi
+
+	# Create the file if doesn't exist already
+	touch /etc/php/ynh_app_version
 
 	# Remove the line for this app
 	sed --in-place "/$YNH_APP_INSTANCE_NAME:$phpversion/d" "/etc/php/ynh_app_version"
@@ -244,16 +281,13 @@ ynh_remove_php () {
 	# If no other app uses this version of php, remove it.
 	if ! grep --quiet "$phpversion" "/etc/php/ynh_app_version"
 	then
-		# Purge php dependences for this version.
-		ynh_package_autopurge "php$phpversion php${phpversion}-fpm php${phpversion}-common"
 		# Remove the service from the admin panel
-		yunohost service remove php${phpversion}-fpm
-	fi
+		if ynh_package_is_installed --package="php${phpversion}-fpm"; then
+			yunohost service remove php${phpversion}-fpm
+		fi
 
-	# If no other app uses alternate php versions, remove the extra repo for php
-	if [ ! -s "/etc/php/ynh_app_version" ]
-	then
-		ynh_secure_remove /etc/php/ynh_app_version
+		# Purge php dependencies for this version.
+		ynh_package_autopurge "php$phpversion php${phpversion}-fpm php${phpversion}-common"
 	fi
 }
 

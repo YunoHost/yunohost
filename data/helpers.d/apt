@@ -255,7 +255,7 @@ ynh_install_app_dependencies () {
 
                 # Pin this sury repository to prevent sury of doing shit
                 ynh_pin_repo --package="*" --pin="origin \"packages.sury.org\"" --priority=200 --name=extra_php_version
-                ynh_pin_repo --package="php7.0*" --pin="origin \"packages.sury.org\"" --priority=600 --name=extra_php_version --append
+                ynh_pin_repo --package="php${$YNH_DEFAULT_PHP_VERSION}*" --pin="origin \"packages.sury.org\"" --priority=600 --name=extra_php_version --append
             fi
         fi
     fi
