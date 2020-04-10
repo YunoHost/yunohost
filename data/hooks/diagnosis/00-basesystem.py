@@ -17,13 +17,20 @@ class BaseSystemDiagnoser(Diagnoser):
     def run(self):
 
         # Detect virt technology (if not bare metal) and arch
-        # Also possibly the board name
-        virt = check_output("systemd-detect-virt").strip() or "bare-metal"
+        # Gotta have this "|| true" because it systemd-detect-virt return 'none'
+        # with an error code on bare metal ~.~
+        virt = check_output("systemd-detect-virt || true", shell=True).strip()
+        if virt.lower() == "none":
+            virt = "bare-metal"
+
+        # Detect arch
         arch = check_output("dpkg --print-architecture").strip()
         hardware = dict(meta={"test": "hardware"},
                         status="INFO",
                         data={"virt": virt, "arch": arch},
                         summary="diagnosis_basesystem_hardware")
+
+        # Also possibly the board name
         if os.path.exists("/proc/device-tree/model"):
             model = read_file('/proc/device-tree/model').strip()
             hardware["data"]["model"] = model
