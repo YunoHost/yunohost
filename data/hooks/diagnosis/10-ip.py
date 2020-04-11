@@ -41,7 +41,7 @@ class IPDiagnoser(Diagnoser):
 
         # In every case, we can check that resolvconf seems to be okay
         # (symlink managed by resolvconf service + pointing to dnsmasq)
-        good_resolvconf = self.resolvconf_is_symlink() and self.resolvconf_points_to_localhost()
+        good_resolvconf = self.good_resolvconf()
 
         # If we can't resolve domain names at all, that's a pretty big issue ...
         # If it turns out that at the same time, resolvconf is bad, that's probably
@@ -131,13 +131,12 @@ class IPDiagnoser(Diagnoser):
     def can_resolve_dns(self):
         return os.system("dig +short ip.yunohost.org >/dev/null 2>/dev/null") == 0
 
-    def resolvconf_is_symlink(self):
-        return os.path.realpath("/etc/resolv.conf") == "/run/resolvconf/resolv.conf"
-
-    def resolvconf_points_to_localhost(self):
-        file_ = "/etc/resolv.conf"
-        resolvers = [r.split(" ")[1] for r in read_file(file_).split("\n") if r.startswith("nameserver")]
-        return resolvers == ["127.0.0.1"]
+    def good_resolvconf(self):
+        content = read_file(file_).strip().split("\n")
+        # Ignore comments and empty lines
+        content = [l.strip() for l in content if l.strip() and not l.strip().startswith("#")]
+        # We should only find a "nameserver 127.0.0.1"
+        return len(content) == 1 and content.split() == ["nameserver", "127.0.0.1"]
 
     def get_public_ip(self, protocol=4):
 
