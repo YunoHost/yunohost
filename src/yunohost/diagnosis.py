@@ -24,6 +24,7 @@
     Look for possible issues on the server
 """
 
+import re
 import os
 import time
 
@@ -457,9 +458,6 @@ class Diagnoser():
 
         report["description"] = Diagnoser.get_description(report["id"])
 
-        def is_tuple_or_list(stuff):
-            return isinstance(stuff, tuple) or isinstance(stuff, list)
-
         for item in report["items"]:
 
             # For the summary and each details, we want to call
@@ -472,18 +470,21 @@ class Diagnoser():
             meta_data = item.get("meta", {}).copy()
             meta_data.update(item.get("data", {}))
 
-            if not is_tuple_or_list(item["summary"]):
-                item["summary"] = (item["summary"], {})
-            summary_key, summary_args = item["summary"]
-            summary_args.update(meta_data)
+            html_tags = re.compile(r'<[^>]+>')
+            def m18n_(info):
+                if not isinstance(info, tuple) and not isinstance(info, list):
+                    info = (info, {})
+                info[1].update(meta_data)
+                s = m18n.n(info[0], **(info[1]))
+                # In cli, we remove the html tags
+                if msettings.get("interface") != "api":
+                    s = html_tags.sub('', s.replace("<br>","\n"))
+                return s
 
-            item["summary"] = m18n.n(summary_key, **summary_args)
+            item["summary"] = m18n_(item["summary"])
 
             if "details" in item:
-                item["details"] = [(d[0], d[1]) if is_tuple_or_list(d) else (d, {}) for d in item["details"]]
-                for d in item["details"]:
-                    d[1].update(meta_data)
-                item["details"] = [m18n.n(key, **values) for key, values in item["details"]]
+                item["details"] = [m18n_(info) for info in item["details"]]
 
 
 def _list_diagnosis_categories():
