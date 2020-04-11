@@ -347,6 +347,7 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
@@ -467,10 +468,11 @@ def app_upgrade(app=[], url=None, file=None, force=False):
 
         # Manage upgrade type and avoid any upgrade if there are nothing to do
         upgrade_type = "UNKNOWN"
+        # Get actual_version and new version
+        app_new_version = manifest.get("version", "?")
+        app_actual_version = app_dict.get("version", "?")
+
         if manifest.get("upgrade_only_if_version_changes", None) is True:
-            # Get actual_version and new version
-            app_actual_version = manifest["version"]
-            app_new_version = app_dict["version"]
 
             # do only the upgrade if there are a change
             if app_actual_version == app_new_version and not force:
@@ -511,6 +513,8 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
+        env_dict["YNH_APP_MANIFEST_VERSION"] = app_new_version
+        env_dict["YNH_APP_OLD_VERSION"] = app_actual_version
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -723,6 +727,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
@@ -831,6 +836,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
             # Execute remove script
             operation_logger_remove = OperationLogger('remove_on_failed_install',
@@ -1008,6 +1014,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 

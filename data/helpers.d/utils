@@ -405,8 +405,7 @@ ynh_app_upstream_version () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    manifest="${manifest:-../manifest.json}"
-    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    version_key=$YNH_APP_MANIFEST_VERSION
     echo "${version_key/~ynh*/}"
 }
 
@@ -429,8 +428,7 @@ ynh_app_package_version () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    manifest="${manifest:-../manifest.json}"
-    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    version_key=$YNH_APP_MANIFEST_VERSION
     echo "${version_key/*~ynh/}"
 }
 
