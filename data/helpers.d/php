@@ -6,13 +6,14 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 
 # Create a dedicated php-fpm config
 #
-# usage 1: ynh_add_fpm_config [--phpversion=7.X] [--use_template]
+# usage 1: ynh_add_fpm_config [--phpversion=7.X] [--use_template] [--package=packages]
 # | arg: -v, --phpversion - Version of php to use.
 # | arg: -t, --use_template - Use this helper in template mode.
+# | arg: -p, --package - Additionnal php packages to install
 #
 # -----------------------------------------------------------------------------
 #
-# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint
+# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--package=packages]
 # | arg: -v, --phpversion - Version of php to use.
 # | arg: -f, --footprint      - Memory footprint of the service (low/medium/high).
 # low    - Less than 20Mb of ram by pool.
@@ -26,6 +27,8 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # low    - Personal usage, behind the sso.
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
+#
+# | arg: -p, --package - Additionnal php packages to install for a specific version of php
 #
 #
 # The footprint of the service will be used to defined the maximum footprint we can allow, which is half the maximum RAM.
@@ -52,14 +55,16 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # Requires YunoHost version 2.7.2 or higher.
 ynh_add_fpm_config () {
 	# Declare an array to define the options of this helper.
-	local legacy_args=vtuf
-	declare -Ar args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= )
+	local legacy_args=vtufp
+	declare -Ar args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= )
 	local phpversion
 	local use_template
 	local usage
 	local footprint
+	local package
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+	package=${package:-}
 
 	# The default behaviour is to use the template.
 	use_template="${use_template:-1}"
@@ -75,8 +80,18 @@ ynh_add_fpm_config () {
 	# If the requested php version is not the default version for YunoHost
 	if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
 	then
+		# If the argument --package is used, add the packages to ynh_install_php to install them from sury
+		if [ -n "$package" ]; then
+			local additionnal_packages="--package=$package"
+		else
+			local additionnal_packages=""
+		fi
 		# Install this specific version of php.
-		ynh_install_php --phpversion=$phpversion
+		ynh_install_php --phpversion=$phpversion "$additionnal_packages"
+	elif [ -n "$package" ]
+	then
+		# Install the additionnal packages from the default repository
+		ynh_add_app_dependencies --package="$package"
 	fi
 
 	local fpm_config_dir="/etc/php/$phpversion/fpm"
