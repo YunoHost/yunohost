@@ -119,6 +119,10 @@ ynh_add_fpm_config () {
 	else
                 # Usage 2, generate a php-fpm config file with ynh_get_scalable_phpfpm
 
+                # Store settings
+                ynh_app_setting_set --app=$app --key=fpm_footprint --value=$footprint
+                ynh_app_setting_set --app=$app --key=fpm_usage --value=$usage
+
                 # Define the values to use for the configuration of php.
                 ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
