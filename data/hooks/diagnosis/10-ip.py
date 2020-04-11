@@ -132,7 +132,7 @@ class IPDiagnoser(Diagnoser):
         return os.system("dig +short ip.yunohost.org >/dev/null 2>/dev/null") == 0
 
     def good_resolvconf(self):
-        content = read_file(file_).strip().split("\n")
+        content = read_file("/etc/resolv.conf").strip().split("\n")
         # Ignore comments and empty lines
         content = [l.strip() for l in content if l.strip() and not l.strip().startswith("#")]
         # We should only find a "nameserver 127.0.0.1"
