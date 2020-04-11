@@ -1459,6 +1459,11 @@ tools:
                     help: List pending configuration files and exit
                     action: store_true
 
+        ### tools_versions()
+        versions:
+            action_help: Display YunoHost's packages versions
+            api: GET /versions
+
     subcategories:
 
       migrations:
