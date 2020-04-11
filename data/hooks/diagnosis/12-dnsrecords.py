@@ -52,14 +52,15 @@ class DNSRecordsDiagnoser(Diagnoser):
             discrepancies = []
 
             for r in records:
-                r["current"] = self.get_current_record(domain, r["name"], r["type"]) or "None"
+                r["current"] = self.get_current_record(domain, r["name"], r["type"])
                 if r["value"] == "@":
                     r["value"] = domain + "."
 
-                if r["current"] == "None":
-                    discrepancies.append(("diagnosis_dns_missing_record", r))
-                elif r["current"] != r["value"]:
-                    discrepancies.append(("diagnosis_dns_discrepancy", r))
+                if not self.current_record_match_expected(r):
+                    if r["current"] is None:
+                        discrepancies.append(("diagnosis_dns_missing_record", r))
+                    else:
+                        discrepancies.append(("diagnosis_dns_discrepancy", r))
 
             if discrepancies:
                 status = "ERROR" if (category == "basic" or (is_main_domain and category != "extra")) else "WARNING"
@@ -85,10 +86,36 @@ class DNSRecordsDiagnoser(Diagnoser):
         # FIXME : gotta handle case where this command fails ...
         # e.g. no internet connectivity (dependency mechanism to good result from 'ip' diagosis ?)
         # or the resolver is unavailable for some reason
-        output = check_output(command).strip()
-        if output.startswith('"') and output.endswith('"'):
-            output = '"' + ' '.join(output.replace('"', ' ').split()) + '"'
-        return output
+        output = check_output(command).strip().split("\n")
+        if len(output) == 0 or not output[0]:
+            return None
+        elif len(output) == 1:
+            return output[0]
+        else:
+            return output
+
+    def current_record_match_expected(self, r):
+        if r["value"] is not None and r["current"] is None:
+            return False
+        if r["value"] is None and r["current"] is not None:
+            return False
+        elif isinstance(r["current"], list):
+            return False
+
+        if r["type"] == "TXT":
+            # Split expected/current
+            #  from  "v=DKIM1; k=rsa; p=hugekey;"
+            #  to a set like {'v=DKIM1', 'k=rsa', 'p=...'}
+            expected = set(r["value"].strip(' "').strip(";").replace(" ", "").split())
+            current = set(r["current"].strip(' "').strip(";").replace(" ", "").split())
+            return expected == current
+        elif r["type"] ==  "MX":
+            # For MX, we want to ignore the priority
+            expected = r["value"].split()[-1]
+            current = r["current"].split()[-1]
+            return expected == current
+        else:
+            return r["current"] == r["value"]
 
 
 def main(args, env, loggers):
