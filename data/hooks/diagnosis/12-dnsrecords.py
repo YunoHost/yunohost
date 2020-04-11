@@ -38,7 +38,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
     def check_domain(self, domain, is_main_domain, is_subdomain):
 
-        expected_configuration = _build_dns_conf(domain)
+        expected_configuration = _build_dns_conf(domain, include_empty_AAAA_if_no_ipv6=True)
 
         # FIXME: Here if there are no AAAA record, we should add something to expect "no" AAAA record
         # to properly diagnose situations where people have a AAAA record but no IPv6
