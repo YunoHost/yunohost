@@ -62,17 +62,21 @@ class MailDiagnoser(Diagnoser):
 
         # Are IPs blacklisted ?
         self.logger_debug("Running RBL detection")
-        blacklisted_details = tuple(self.check_blacklisted(self.get_public_ip(4)))
-        blacklisted_details += tuple(self.check_blacklisted(self.get_public_ip(6)))
+        ipv4 = Diagnoser.get_cached_report_item("ip", {"test": "ipv4"})
+        global_ipv4 = ipv4.get("data", {}).get("global", {})
+        ipv6 = Diagnoser.get_cached_report_item("ip", {"test": "ipv6"})
+        global_ipv6 = ipv6.get("data", {}).get("global", {})
+        blacklisted_details = tuple(self.check_blacklisted(global_ipv4))
+        blacklisted_details += tuple(self.check_blacklisted(global_ipv6))
         if blacklisted_details:
-            yield dict(meta={},
+            yield dict(meta={"test": "mail_blacklist"},
                        status="ERROR",
-                       summary=("diagnosis_mail_blacklist_nok", {}),
-                       details=blacklisted_details)
+                       summary="diagnosis_mail_blacklist_nok",
+                       details=list(blacklisted_details))
         else:
-            yield dict(meta={},
+            yield dict(meta={"test": "mail_blacklist"},
                        status="SUCCESS",
-                       summary=("diagnosis_mail_blacklist_ok", {}))
+                       summary="diagnosis_mail_blacklist_ok")
 
         # SMTP reachability (c.f. check-smtp to be implemented on yunohost's remote diagnoser)
 
@@ -110,7 +114,7 @@ class MailDiagnoser(Diagnoser):
                 pass
 
             yield ('diagnosis_mail_blacklisted_by',
-                   (ip, blacklist, reason))
+                   {'ip': ip, 'blacklist': blacklist, 'reason': reason})
 
     def get_public_ip(self, protocol=4):
         # TODO we might call this function from another side
