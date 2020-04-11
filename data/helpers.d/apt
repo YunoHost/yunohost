@@ -189,7 +189,16 @@ ynh_package_install_from_equivs () {
     # If install fails we use "apt-get check" to try to debug and diagnose possible unmet dependencies
     # Note the use of { } which allows to group commands without starting a subshell (otherwise the ynh_die wouldn't exit the current shell). 
     # Be careful with the syntax : the semicolon + space at the end is important!
-    ynh_package_install -f || { apt-get check 2>&1; ynh_die --message="Unable to install dependencies"; }
+
+    ynh_package_install -f || \
+        { # If the installation failed
+        # Get the list of dependencies from the deb
+        local dependencies="$(dpkg --info "$TMPDIR/${pkgname}_${pkgversion}_all.deb" | grep Depends | \
+             sed 's/^ Depends: //' | sed 's/,//g')"
+        # Fake an install of those dependencies to see the errors
+        # The sed command here is, Print only from '--fix-broken' to the end.
+        ynh_package_install $dependencies --dry-run | sed -n '/--fix-broken/,$p' >&2
+        ynh_die --message="Unable to install dependencies"; }
     [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
@@ -507,7 +516,7 @@ ynh_add_repo () {
 # | arg: -n, --name - Name for the files for this repo, $app as default value.
 # | arg: -a, --append - Do not overwrite existing files.
 #
-# See https://manpages.debian.org/stretch/apt/apt_preferences.5.en.html for information about pinning.
+# See https://manpages.debian.org/stretch/apt/apt_preferences.5.en.html#How_APT_Interprets_Priorities for information about pinning.
 #
 ynh_pin_repo () {
 	# Declare an array to define the options of this helper.
