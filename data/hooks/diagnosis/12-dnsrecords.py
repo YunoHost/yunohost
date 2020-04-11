@@ -63,7 +63,7 @@ class DNSRecordsDiagnoser(Diagnoser):
                         discrepancies.append(("diagnosis_dns_discrepancy", r))
 
             if discrepancies:
-                status = "ERROR" if (category == "basic" or (is_main_domain and category != "extra")) else "WARNING"
+                status = "ERROR" if (category == "basic" or (is_main_domain and category == "mail")) else "WARNING"
                 summary = "diagnosis_dns_bad_conf"
             else:
                 status = "SUCCESS"
