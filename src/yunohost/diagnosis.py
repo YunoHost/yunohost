@@ -167,7 +167,8 @@ def diagnosis_run(categories=[], force=False):
         try:
             code, report = hook_exec(path, args={"force": force}, env=None)
         except Exception as e:
-            logger.error(m18n.n("diagnosis_failed_for_category", category=category, error=str(e)), exc_info=True)
+            import traceback
+            logger.error(m18n.n("diagnosis_failed_for_category", category=category, error='\n'+traceback.format_exc()))
         else:
             diagnosed_categories.append(category)
             if report != {}:
@@ -424,7 +425,7 @@ class Diagnoser():
         cache_file = Diagnoser.cache_file(id_)
         if not os.path.exists(cache_file):
             logger.warning(m18n.n("diagnosis_no_cache", category=id_))
-            report = {"id": category,
+            report = {"id": id_,
                       "cached_for": -1,
                       "timestamp": -1,
                       "items": []}
