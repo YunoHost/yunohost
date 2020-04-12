@@ -752,7 +752,7 @@ class BackupManager():
 
         for method in self.methods:
             logger.debug(m18n.n('backup_applying_method_' + method.method_name))
-            method.mount_and_backup(self)
+            method.mount_and_backup()
             logger.debug(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def _compute_backup_size(self):
@@ -851,7 +851,7 @@ class RestoreManager():
         self.info = backup_info(name, with_details=True)
         self.archive_path = self.info['path']
         self.name = name
-        self.method = BackupMethod.create(method)
+        self.method = BackupMethod.create(method, self)
         self.targets = BackupRestoreTargetsManager()
 
     #
@@ -956,6 +956,9 @@ class RestoreManager():
         # These are the hooks on the current installation
         available_restore_system_hooks = hook_list("restore")["hooks"]
 
+        custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
+        filesystem.mkdir(custom_restore_hook_folder, 755, parents=True, force=True)
+
         for system_part in target_list:
             # By default, we'll use the restore hooks on the current install
             # if available
@@ -967,24 +970,23 @@ class RestoreManager():
                 continue
 
             # Otherwise, attempt to find it (or them?) in the archive
-            hook_paths = '{:s}/hooks/restore/*-{:s}'.format(self.work_dir, system_part)
-            hook_paths = glob(hook_paths)
 
             # If we didn't find it, we ain't gonna be able to restore it
-            if len(hook_paths) == 0:
+            if system_part not in self.info['system'] or len(self.info['system'][system_part]['paths']) == 0:
                 logger.exception(m18n.n('restore_hook_unavailable', part=system_part))
                 self.targets.set_result("system", system_part, "Skipped")
                 continue
 
+            hook_paths = self.info['system'][system_part]['paths']
+            hook_paths = [ 'hooks/restore/%s' % os.path.basename(p) for p in hook_paths ]
+
             # Otherwise, add it from the archive to the system
             # FIXME: Refactor hook_add and use it instead
-            custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
-            filesystem.mkdir(custom_restore_hook_folder, 755, True)
             for hook_path in hook_paths:
                 logger.debug("Adding restoration script '%s' to the system "
                              "from the backup archive '%s'", hook_path,
                              self.archive_path)
-            shutil.copy(hook_path, custom_restore_hook_folder)
+                self.method.copy(hook_path, custom_restore_hook_folder)
 
     def set_apps_targets(self, apps=[]):
         """
@@ -1044,7 +1046,7 @@ class RestoreManager():
 
         filesystem.mkdir(self.work_dir, parents=True)
 
-        self.method.mount(self)
+        self.method.mount()
 
         self._read_info_files()
 
@@ -1499,19 +1501,19 @@ class BackupMethod(object):
         method_name
 
     Public methods:
-        mount_and_backup(self, backup_manager)
-        mount(self, restore_manager)
+        mount_and_backup(self)
+        mount(self)
         create(cls, method, **kwargs)
 
     Usage:
         method = BackupMethod.create("tar")
-        method.mount_and_backup(backup_manager)
+        method.mount_and_backup()
         #or
         method = BackupMethod.create("copy")
         method.mount(restore_manager)
     """
 
-    def __init__(self, repo=None):
+    def __init__(self, manager, repo=None):
         """
         BackupMethod constructors
 
@@ -1524,6 +1526,7 @@ class BackupMethod(object):
                    BackupRepository object. If None, the default repo is used :
                    /home/yunohost.backup/archives/
         """
+        self.manager = manager
         self.repo = ARCHIVES_PATH if repo is None else repo
 
     @property
@@ -1569,18 +1572,13 @@ class BackupMethod(object):
         """
         return False
 
-    def mount_and_backup(self, backup_manager):
+    def mount_and_backup(self):
         """
         Run the backup on files listed by  the BackupManager instance
 
         This method shouldn't be overrided, prefer overriding self.backup() and
         self.clean()
-
-        Args:
-        backup_manager -- (BackupManager) A backup manager instance that has
-                          already done the files collection step.
         """
-        self.manager = backup_manager
         if self.need_mount():
             self._organize_files()
 
@@ -1589,17 +1587,13 @@ class BackupMethod(object):
         finally:
             self.clean()
 
-    def mount(self, restore_manager):
+    def mount(self):
         """
         Mount the archive from RestoreManager instance in the working directory
 
         This method should be extended.
-
-        Args:
-            restore_manager -- (RestoreManager) A restore manager instance
-                               contains an archive to restore.
         """
-        self.manager = restore_manager
+        pass
 
     def clean(self):
         """
@@ -1781,8 +1775,8 @@ class CopyBackupMethod(BackupMethod):
     could be the inverse for restoring
     """
 
-    def __init__(self, repo=None):
-        super(CopyBackupMethod, self).__init__(repo)
+    def __init__(self, manager, repo=None):
+        super(CopyBackupMethod, self).__init__(manager, repo)
 
     @property
     def method_name(self):
@@ -1836,6 +1830,9 @@ class CopyBackupMethod(BackupMethod):
                         "&&", "umount", "-R", self.work_dir])
         raise YunohostError('backup_cant_mount_uncompress_archive')
 
+    def copy(self, file, target):
+        shutil.copy(file, target)
+
 
 class TarBackupMethod(BackupMethod):
 
@@ -1843,8 +1840,8 @@ class TarBackupMethod(BackupMethod):
     This class compress all files to backup in archive.
     """
 
-    def __init__(self, repo=None):
-        super(TarBackupMethod, self).__init__(repo)
+    def __init__(self, manager, repo=None):
+        super(TarBackupMethod, self).__init__(manager, repo)
 
     @property
     def method_name(self):
@@ -1904,7 +1901,7 @@ class TarBackupMethod(BackupMethod):
         if not os.path.isfile(link):
             os.symlink(self._archive_file, link)
 
-    def mount(self, restore_manager):
+    def mount(self):
         """
         Mount the archive. We avoid copy to be able to restore on system without
         too many space.
@@ -1914,7 +1911,7 @@ class TarBackupMethod(BackupMethod):
         backup_archive_corrupted -- Raised if the archive appears corrupted
         backup_archive_cant_retrieve_info_json -- If the info.json file can't be retrieved
         """
-        super(TarBackupMethod, self).mount(restore_manager)
+        super(TarBackupMethod, self).mount()
 
         # Check the archive can be open
         try:
@@ -1994,6 +1991,11 @@ class TarBackupMethod(BackupMethod):
 
         # FIXME : Don't we want to close the tar archive here or at some point ?
 
+    def copy(self, file, target):
+        tar = tarfile.open(self._archive_file, "r:gz")
+        tar.extract(file, path=target)
+        tar.close()
+
 
 class BorgBackupMethod(BackupMethod):
 
@@ -2011,6 +2013,9 @@ class BorgBackupMethod(BackupMethod):
     def mount(self, mnt_path):
         raise YunohostError('backup_borg_not_implemented')
 
+    def copy(self, file, target):
+        raise YunohostError('backup_borg_not_implemented')
+
 
 class CustomBackupMethod(BackupMethod):
 
@@ -2020,8 +2025,8 @@ class CustomBackupMethod(BackupMethod):
     /etc/yunohost/hooks.d/backup_method/
     """
 
-    def __init__(self, repo=None, method=None, **kwargs):
-        super(CustomBackupMethod, self).__init__(repo)
+    def __init__(self, manager, repo=None, method=None, **kwargs):
+        super(CustomBackupMethod, self).__init__(manager, repo)
         self.args = kwargs
         self.method = method
         self._need_mount = None
@@ -2062,14 +2067,14 @@ class CustomBackupMethod(BackupMethod):
         if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
-    def mount(self, restore_manager):
+    def mount(self):
         """
         Launch a custom script to mount the custom archive
 
         Exceptions:
         backup_custom_mount_error -- Raised if the custom script failed
         """
-        super(CustomBackupMethod, self).mount(restore_manager)
+        super(CustomBackupMethod, self).mount()
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
 
@@ -2160,9 +2165,9 @@ def backup_create(name=None, description=None, methods=[],
 
     # Add backup methods
     if output_directory:
-        methods = BackupMethod.create(methods, output_directory)
+        methods = BackupMethod.create(methods, backup_manager, output_directory)
     else:
-        methods = BackupMethod.create(methods)
+        methods = BackupMethod.create(methods, backup_manager)
 
     for method in methods:
         backup_manager.add(method)
