@@ -1,3 +1,11 @@
+yunohost (3.7.1.1) stable; urgency=low
+
+   - [fix] lxc uid number is limited to 65536 by default (0c9a4509)
+   - [fix] also invalidate group cache when creating users (aaabf8c7)
+   - [fix] Make sure to have a path that include sbin for stupid cron jobs (f03bb82a)
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 12 Apr 2020 23:15:00  +0000
+
 yunohost (3.7.1) stable; urgency=low
 
    - [enh] Add ynh_permission_has_user helper (#905)
@@ -13,7 +21,7 @@ yunohost (3.7.1) stable; urgency=low
 
   Thanks to all contributors <3 ! (Bram, Kay0u, Maniack, Matthew D.)
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 9 April 2020 14:52:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 9 Apr 2020 14:52:00  +0000
 
 yunohost (3.7.0.12) stable; urgency=low
 
