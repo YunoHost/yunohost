@@ -51,6 +51,7 @@ from yunohost.hook import (
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
+from yunohost.app import APPS_DEFAULT_PHP_VERSION
 from functools import reduce
 
 BACKUP_PATH = '/home/yunohost.backup'
@@ -561,6 +562,7 @@ class BackupManager():
             env_var["YNH_APP_ID"] = app_id
             env_var["YNH_APP_INSTANCE_NAME"] = app
             env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            env_var["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
             tmp_app_dir = os.path.join('apps/', app)
             tmp_app_bkp_dir = os.path.join(self.work_dir, tmp_app_dir, 'backup')
             env_var["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
@@ -1411,6 +1413,7 @@ class RestoreManager():
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            env_dict_remove["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
 
             operation_logger = OperationLogger('remove_on_failed_restore',
                                                [('app', app_instance_name)],
@@ -1458,6 +1461,7 @@ class RestoreManager():
             env_var["YNH_APP_ID"] = app_id
             env_var["YNH_APP_INSTANCE_NAME"] = app
             env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            env_var["YNH_DEFAULT_PHP_VERSION"] = APPS_DEFAULT_PHP_VERSION
             env_var["YNH_APP_BACKUP_DIR"] = app_backup_in_archive
 
         return env_var
