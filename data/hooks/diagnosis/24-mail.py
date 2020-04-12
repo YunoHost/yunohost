@@ -4,38 +4,11 @@ import os
 import dns.resolver
 
 from moulinette.utils.network import download_text
+from moulinette.utils.filesystem import read_yaml
 
 from yunohost.diagnosis import Diagnoser
 
-DEFAULT_BLACKLIST = [
-    ('zen.spamhaus.org'             , 'Spamhaus SBL, XBL and PBL'        ),
-    ('dnsbl.sorbs.net'              , 'SORBS aggregated'                 ),
-    ('safe.dnsbl.sorbs.net'         , "'safe' subset of SORBS aggregated"),
-    ('ix.dnsbl.manitu.net'          , 'Heise iX NiX Spam'                ),
-    ('babl.rbl.webiron.net'         , 'Bad Abuse'                        ),
-    ('cabl.rbl.webiron.net'         , 'Chronicly Bad Abuse'              ),
-    ('truncate.gbudb.net'           , 'Exclusively Spam/Malware'         ),
-    ('dnsbl-1.uceprotect.net'       , 'Trapserver Cluster'               ),
-    ('cbl.abuseat.org'              , 'Net of traps'                     ),
-    ('dnsbl.cobion.com'             , 'used in IBM products'             ),
-    ('psbl.surriel.com'             , 'passive list, easy to unlist'     ),
-    ('dnsrbl.org'                   , 'Real-time black list'             ),
-    ('db.wpbl.info'                 , 'Weighted private'                 ),
-    ('bl.spamcop.net'               , 'Based on spamcop users'           ),
-    ('dyna.spamrats.com'            , 'Dynamic IP addresses'             ),
-    ('spam.spamrats.com'            , 'Manual submissions'               ),
-    ('auth.spamrats.com'            , 'Suspicious authentications'       ),
-    ('dnsbl.inps.de'                , 'automated and reported'           ),
-    ('bl.blocklist.de'              , 'fail2ban reports etc.'            ),
-    ('srnblack.surgate.net'         , 'feeders'                          ),
-    ('all.s5h.net'                  , 'traps'                            ),
-    ('rbl.realtimeblacklist.com'    , 'lists ip ranges'                  ),
-    ('b.barracudacentral.org'       , 'traps'                            ),
-    ('hostkarma.junkemailfilter.com', 'Autotected Virus Senders'         ),
-    ('rbl.megarbl.net'              , 'Curated Spamtraps'                ),
-    ('ubl.unsubscore.com'           , 'Collected Opt-Out Addresses'      ),
-    ('0spam.fusionzero.com'         , 'Spam Trap'                        ),
-]
+DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
 
 class MailDiagnoser(Diagnoser):
@@ -57,17 +30,13 @@ class MailDiagnoser(Diagnoser):
                        status="ERROR",
                        summary="diagnosis_mail_ougoing_port_25_blocked")
 
-        # Is Reverse DNS well configured ?
+        # Forward-confirmed reverse DNS (FCrDNS) verification
 
 
-        # Are IPs blacklisted ?
-        self.logger_debug("Running RBL detection")
-        ipv4 = Diagnoser.get_cached_report_item("ip", {"test": "ipv4"})
-        global_ipv4 = ipv4.get("data", {}).get("global", {})
-        ipv6 = Diagnoser.get_cached_report_item("ip", {"test": "ipv6"})
-        global_ipv6 = ipv6.get("data", {}).get("global", {})
-        blacklisted_details = tuple(self.check_blacklisted(global_ipv4))
-        blacklisted_details += tuple(self.check_blacklisted(global_ipv6))
+        # Are IPs listed on a DNSBL ?
+        self.logger_debug("Running DNSBL detection")
+
+        blacklisted_details = self.check_ip_dnsbl()
         if blacklisted_details:
             yield dict(meta={"test": "mail_blacklist"},
                        status="ERROR",
@@ -88,45 +57,54 @@ class MailDiagnoser(Diagnoser):
 
         # check for unusual failed sending attempt being refused in the logs ?
 
-    def check_blacklisted(self, ip):
+    def check_blacklisted(self):
         """ Check with dig onto blacklist DNS server
         """
-        if ip is None:
-            return
+        dns_blacklists = read_yaml(DEFAULT_DNS_BLACKLIST)
+        for ip in self.get_public_ips():
+            for blacklist in dns_blacklists:
+                
+                if "." in ip and not blacklist.ipv4:
+                    continue
 
-        for blacklist, description in DEFAULT_BLACKLIST:
+                if ":" in ip and not blacklist.ipv6:
+                    continue
+                
+                # Determine if we are listed on this RBL
+                try:
+                    rev = dns.reversename.from_address(ip)
+                    query = str(rev.split(3)[0]) + '.' + blacklist.dns_server
+                    # TODO add timeout lifetime
+                    dns.resolver.query(query, "A")
+                except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
+                dns.exception.Timeout):
+                    continue
 
-            # Determine if we are listed on this RBL
-            try:
-                rev = dns.reversename.from_address(ip)
-                query = str(rev.split(3)[0]) + '.' + blacklist
-                # TODO add timeout lifetime
-                dns.resolver.query(query, "A")
-            except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
-            dns.exception.Timeout):
-                continue
+                # Try to get the reason
+                reason = "not explained"
+                try:
+                    reason = str(dns.resolver.query(query, "TXT")[0])
+                except Exception:
+                    pass
 
-            # Try to get the reason
-            reason = "not explained"
-            try:
-                reason = str(dns.resolver.query(query, "TXT")[0])
-            except Exception:
-                pass
+                yield ('diagnosis_mail_blacklisted_by', {
+                    'ip': ip,
+                    'blacklist': blacklist,
+                    'reason': reason})
 
-            yield ('diagnosis_mail_blacklisted_by',
-                   {'ip': ip, 'blacklist': blacklist, 'reason': reason})
-
-    def get_public_ip(self, protocol=4):
-        # TODO we might call this function from another side
-        assert protocol in [4, 6], "Invalid protocol version, it should be either 4 or 6 and was '%s'" % repr(protocol)
-
-        url = 'https://ip%s.yunohost.org' % ('6' if protocol == 6 else '')
-
-        try:
-            return download_text(url, timeout=30).strip()
-        except Exception as e:
-            self.logger_debug("Could not get public IPv%s : %s" % (str(protocol), str(e)))
-            return None
+    def get_public_ips(self):
+        # Todo code a better way to access a data
+        ipv4 = Diagnoser.get_cached_report("ip", {"test": "ipv4"})
+        if ipv4:
+            global_ipv4 = ipv4.get("data", {}).get("global", {})
+            if global_ipv4:
+                yield global_ipv4
+        
+        ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"})
+        if ipv6:
+            global_ipv6 = ipv6.get("data", {}).get("global", {})
+            if global_ipv6:
+                yield global_ipv6
 
 
 def main(args, env, loggers):
