@@ -593,8 +593,7 @@ def test_restore_archive_with_bad_archive(mocker):
 
 def test_backup_binds_are_readonly(mocker, monkeypatch):
 
-    def custom_mount_and_backup(self, backup_manager):
-        self.manager = backup_manager
+    def custom_mount_and_backup(self):
         self._organize_files()
 
         confssh = os.path.join(self.work_dir, "conf/ssh")

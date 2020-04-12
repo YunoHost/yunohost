@@ -219,8 +219,8 @@ class BackupManager():
         backup_manager = BackupManager(name="mybackup", description="bkp things")
 
         # Add backup method to apply
-        backup_manager.add(BackupMethod.create('copy','/mnt/local_fs'))
-        backup_manager.add(BackupMethod.create('tar','/mnt/remote_fs'))
+        backup_manager.add(BackupMethod.create('copy', backup_manager, '/mnt/local_fs'))
+        backup_manager.add(BackupMethod.create('tar', backup_manager, '/mnt/remote_fs'))
 
         # Define targets to be backuped
         backup_manager.set_system_targets(["data"])
@@ -972,7 +972,9 @@ class RestoreManager():
             # Otherwise, attempt to find it (or them?) in the archive
 
             # If we didn't find it, we ain't gonna be able to restore it
-            if system_part not in self.info['system'] or len(self.info['system'][system_part]['paths']) == 0:
+            if system_part not in self.info['system'] or\
+                    'paths' not in self.info['system'][system_part] or\
+                    len(self.info['system'][system_part]['paths']) == 0:
                 logger.exception(m18n.n('restore_hook_unavailable', part=system_part))
                 self.targets.set_result("system", system_part, "Skipped")
                 continue
@@ -1506,11 +1508,11 @@ class BackupMethod(object):
         create(cls, method, **kwargs)
 
     Usage:
-        method = BackupMethod.create("tar")
+        method = BackupMethod.create("tar", backup_manager)
         method.mount_and_backup()
         #or
-        method = BackupMethod.create("copy")
-        method.mount(restore_manager)
+        method = BackupMethod.create("copy", restore_manager)
+        method.mount()
     """
 
     def __init__(self, manager, repo=None):
@@ -1738,7 +1740,7 @@ class BackupMethod(object):
                 shutil.copy(path['source'], dest)
 
     @classmethod
-    def create(cls, method, *args):
+    def create(cls, method, manager, *args):
         """
         Factory method to create instance of BackupMethod
 
@@ -1754,7 +1756,7 @@ class BackupMethod(object):
         if not isinstance(method, basestring):
             methods = []
             for m in method:
-                methods.append(BackupMethod.create(m, *args))
+                methods.append(BackupMethod.create(m, manager, *args))
             return methods
 
         bm_class = {
@@ -1763,9 +1765,9 @@ class BackupMethod(object):
             'borg': BorgBackupMethod
         }
         if method in ["copy", "tar", "borg"]:
-            return bm_class[method](*args)
+            return bm_class[method](manager, *args)
         else:
-            return CustomBackupMethod(method=method, *args)
+            return CustomBackupMethod(manager, method=method, *args)
 
 
 class CopyBackupMethod(BackupMethod):
@@ -1913,7 +1915,8 @@ class TarBackupMethod(BackupMethod):
         """
         super(TarBackupMethod, self).mount()
 
-        # Check the archive can be open
+        # Mount the tarball
+        logger.debug(m18n.n("restore_extracting"))
         try:
             tar = tarfile.open(self._archive_file, "r:gz")
         except:
@@ -1926,15 +1929,7 @@ class TarBackupMethod(BackupMethod):
         except IOError as e:
             raise YunohostError("backup_archive_corrupted", archive=self._archive_file, error=str(e))
 
-        # FIXME : Is this really useful to close the archive just to
-        # reopen it right after this with the same options ...?
-        tar.close()
-
-        # Mount the tarball
-        logger.debug(m18n.n("restore_extracting"))
-        tar = tarfile.open(self._archive_file, "r:gz")
-
-        if "info.json" in files_in_archive:
+        if "info.json" in tar.getnames():
             leading_dot = ""
             tar.extract('info.json', path=self.work_dir)
         elif "./info.json" in files_in_archive:
@@ -1989,7 +1984,7 @@ class TarBackupMethod(BackupMethod):
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
 
-        # FIXME : Don't we want to close the tar archive here or at some point ?
+        tar.close()
 
     def copy(self, file, target):
         tar = tarfile.open(self._archive_file, "r:gz")
