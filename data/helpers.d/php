@@ -2,7 +2,9 @@
 
 # Declare the actual php version to use.
 # A packager willing to use another version of php can override the variable into its _common.sh.
-YNH_PHP_VERSION=${YNH_PHP_VERSION:-${YNH_DEFAULT_PHP_VERSION:-7.0}}
+if [ -n "$YNH_DEFAULT_PHP_VERSION" ]; then
+	YNH_PHP_VERSION=${YNH_PHP_VERSION:-YNH_DEFAULT_PHP_VERSION}
+fi
 
 # Create a dedicated php-fpm config
 #
