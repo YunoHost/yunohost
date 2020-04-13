@@ -1,0 +1,94 @@
+stages:
+  - postinstall
+  - tests
+
+.tests:
+  image: after-postinstall
+  before_script:
+    - apt-get install python-pip -y
+    - mkdir -p .pip
+    - pip install -U pip
+    - hash -d pip
+    - pip --cache-dir=.pip install pytest pytest-sugar pytest-mock requests-mock mock
+    - pushd src/yunohost/tests
+    - >
+       if [ ! -d "./apps" ]; then
+         git clone https://github.com/YunoHost/test_apps ./apps
+       fi
+    - cd apps
+    - git pull > /dev/null 2>&1
+    - popd
+    - export PYTEST_ADDOPTS="--color=yes"
+  cache:
+    paths: 
+      - .pip
+      - src/yunohost/tests/apps
+    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+
+postinstall:
+  image: before-postinstall
+  stage: postinstall
+  script:
+    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
+
+root-tests:
+  extends: .tests
+  stage: tests
+  script:
+    - py.test tests
+
+test-apps:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_apps.py
+
+test-appscatalog:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_appscatalog.py
+
+test-appurl:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_appurl.py
+
+test-backuprestore:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_backuprestore.py
+
+test-changeurl:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_changeurl.py
+
+test-permission:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_permission.py
+
+test-settings:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_settings.py
+
+test-user-group:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_user-group.py

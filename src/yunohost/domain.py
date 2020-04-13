@@ -32,8 +32,6 @@ from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.certificate
-
 from yunohost.app import app_ssowatconf
 from yunohost.regenconf import regen_conf
 from yunohost.utils.network import get_public_ip
@@ -79,6 +77,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
 
+    if domain.startswith("xmpp-upload."):
+        raise YunohostError("domain_cannot_add_xmpp_upload")
+
     ldap = _get_ldap_interface()
 
     try:
@@ -106,6 +107,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         dyndns_subscribe(domain=domain)
 
     try:
+        import yunohost.certificate
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         attr_dict = {
@@ -234,8 +236,7 @@ def domain_dns_conf(domain, ttl=None):
             for record in record_list:
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    is_cli = True if msettings.get('interface') == 'cli' else False
-    if is_cli:
+    if msettings.get('interface') == 'cli':
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
@@ -299,14 +300,17 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
 
 def domain_cert_status(domain_list, full=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_status(domain_list, full)
 
 
 def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
 def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
@@ -401,10 +405,8 @@ def _build_dns_conf(domain, ttl=3600):
         "basic": [
             # if ipv4 available
             {"type": "A", "name": "@", "value": "123.123.123.123", "ttl": 3600},
-            {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
             {"type": "AAAA", "name": "@", "value": "valid-ipv6", "ttl": 3600},
-            {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
         ],
         "xmpp": [
             {"type": "SRV", "name": "_xmpp-client._tcp", "value": "0 5 5222 domain.tld.", "ttl": 3600},
@@ -412,6 +414,7 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "CNAME", "name": "muc", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "pubsub", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "vjud", "value": "@", "ttl": 3600}
+            {"type": "CNAME", "name": "xmpp-upload", "value": "@", "ttl": 3600}
         ],
         "mail": [
             {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
@@ -420,6 +423,10 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
         ],
         "extra": [
+            # if ipv4 available
+            {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
+            # if ipv6 available
+            {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
             {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
         "example_of_a_custom_rule": [
@@ -431,31 +438,21 @@ def _build_dns_conf(domain, ttl=3600):
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 
-    basic = []
+    ###########################
+    # Basic ipv4/ipv6 records #
+    ###########################
 
-    # Basic ipv4/ipv6 records
+    basic = []
     if ipv4:
-        basic += [
-            ["@", ttl, "A", ipv4],
-            ["*", ttl, "A", ipv4],
-        ]
+        basic.append(["@", ttl, "A", ipv4])
 
     if ipv6:
-        basic += [
-            ["@", ttl, "AAAA", ipv6],
-            ["*", ttl, "AAAA", ipv6],
-        ]
+        basic.append(["@", ttl, "AAAA", ipv6])
 
-    # XMPP
-    xmpp = [
-        ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
-        ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain],
-        ["muc", ttl, "CNAME", "@"],
-        ["pubsub", ttl, "CNAME", "@"],
-        ["vjud", ttl, "CNAME", "@"],
-    ]
+    #########
+    # Email #
+    #########
 
-    # SPF record
     spf_record = '"v=spf1 a mx'
     if ipv4:
         spf_record += ' ip4:{ip4}'.format(ip4=ipv4)
@@ -463,7 +460,6 @@ def _build_dns_conf(domain, ttl=3600):
         spf_record += ' ip6:{ip6}'.format(ip6=ipv6)
     spf_record += ' -all"'
 
-    # Email
     mail = [
         ["@", ttl, "MX", "10 %s." % domain],
         ["@", ttl, "TXT", spf_record],
@@ -478,12 +474,36 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
-    # Extra
-    extra = [
-        ["@", ttl, "CAA", '128 issue "letsencrypt.org"']
+    ########
+    # XMPP #
+    ########
+
+    xmpp = [
+        ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
+        ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain],
+        ["muc", ttl, "CNAME", "@"],
+        ["pubsub", ttl, "CNAME", "@"],
+        ["vjud", ttl, "CNAME", "@"],
+        ["xmpp-upload", ttl, "CNAME", "@"],
     ]
 
-    # Official record
+    #########
+    # Extra #
+    #########
+
+    extra = []
+
+    if ipv4:
+        extra.append(["*", ttl, "A", ipv4])
+    if ipv6:
+        extra.append(["*", ttl, "AAAA", ipv6])
+
+    extra.append(["@", ttl, "CAA", '128 issue "letsencrypt.org"'])
+
+    ####################
+    # Standard records #
+    ####################
+
     records = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
@@ -491,7 +511,12 @@ def _build_dns_conf(domain, ttl=3600):
         "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
 
-    # Custom records
+    ##################
+    # Custom records #
+    ##################
+
+    # Defined by custom hooks ships in apps for example ...
+
     hook_results = hook_callback('custom_dns_rules', args=[domain])
     for hook_name, results in hook_results.items():
         #

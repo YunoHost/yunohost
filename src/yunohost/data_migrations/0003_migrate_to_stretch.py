@@ -108,7 +108,7 @@ class MyMigration(Migration):
 
         # Have > 1 Go free space on /var/ ?
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
-            raise YunohostError("migration_0003_not_enough_free_space")
+            raise YunohostError("There is not enough free space in /var/ to run the migration. You need at least 1GB free space")
 
         # Check system is up to date
         # (but we don't if 'stretch' is already in the sources.list ...

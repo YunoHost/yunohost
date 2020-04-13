@@ -59,98 +59,6 @@ ynh_app_setting_delete() {
     ynh_app_setting "delete" "$app" "$key"
 }
 
-# Add skipped_uris urls into the config
-#
-# usage: ynh_add_skipped_uris [--appid=app] --url=url1,url2 [--regex]
-# | arg: -a, --appid - the application id
-# | arg: -u, --url - the urls to add to the sso for this app
-# | arg: -r, --regex - Use the key 'skipped_regex' instead of 'skipped_uris'
-#
-# An URL set with 'skipped_uris' key will be totally ignored by the SSO,
-# which means that the access will be public and the logged-in user information will not be passed to the app.
-#
-# Requires YunoHost version 3.6.0 or higher.
-ynh_add_skipped_uris() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=aur
-    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
-    local appid
-    local url
-    local regex
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    appid={appid:-$app}
-    regex={regex:-0}
-
-    local key=skipped_uris
-    if [ $regex -eq 1 ]; then
-        key=skipped_regex
-    fi
-
-    ynh_app_setting_set --app=$appid --key=$key --value="$url"
-}
-
-# Add unprotected_uris urls into the config
-#
-# usage: ynh_add_unprotected_uris [--appid=app] --url=url1,url2 [--regex]
-# | arg: -a, --appid - the application id
-# | arg: -u, --url - the urls to add to the sso for this app
-# | arg: -r, --regex - Use the key 'unprotected_regex' instead of 'unprotected_uris'
-#
-# An URL set with unprotected_uris key will be accessible publicly, but if an user is logged in,
-# his information will be accessible (through HTTP headers) to the app.
-#
-# Requires YunoHost version 3.6.0 or higher.
-ynh_add_unprotected_uris() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=aur
-    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
-    local appid
-    local url
-    local regex
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    appid={appid:-$app}
-    regex={regex:-0}
-
-    local key=unprotected_uris
-    if [ $regex -eq 1 ]; then
-        key=unprotected_regex
-    fi
-
-    ynh_app_setting_set --app=$appid --key=$key --value="$url"
-}
-
-# Add protected_uris urls into the config
-#
-# usage: ynh_add_protected_uris [--appid=app] --url=url1,url2 [--regex]
-# | arg: -a, --appid - the application id
-# | arg: -u, --url - the urls to add to the sso for this app
-# | arg: -r, --regex - Use the key 'protected_regex' instead of 'protected_uris'
-#
-# An URL set with protected_uris will be blocked by the SSO and accessible only to authenticated and authorized users.
-#
-# Requires YunoHost version 3.6.0 or higher.
-ynh_add_protected_uris() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=aur
-    declare -Ar args_array=( [a]=appid= [u]=url= [r]=regex )
-    local appid
-    local url
-    local regex
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    appid={appid:-$app}
-    regex={regex:-0}
-
-    local key=protected_uris
-    if [ $regex -eq 1 ]; then
-        key=protected_regex
-    fi
-
-    ynh_app_setting_set --app=$appid --key=$key --value="$url"
-}
-
 # Small "hard-coded" interface to avoid calling "yunohost app" directly each
 # time dealing with a setting is needed (which may be so slow on ARM boards)
 #
@@ -158,6 +66,11 @@ ynh_add_protected_uris() {
 #
 ynh_app_setting()
 {
+    if [[ "$1" == "delete" ]] && [[ "$3" =~ ^(unprotected|skipped)_ ]] 
+    then
+        current_value=$(ynh_app_setting_get --app=$app --key=$3)
+    fi
+
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python2.7 - <<EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
@@ -187,9 +100,15 @@ EOF
 
     # Fucking legacy permission management.
     # We need this because app temporarily set the app as unprotected to configure it with curl...
-    if [[ "$3" =~ ^(unprotected|skipped)_ ]] && [[ "${4:-}" == "/" ]]
+    if [[ "$3" =~ ^(unprotected|skipped)_ ]]
     then
-        ynh_permission_update --permission "main" --add "visitors"
+        if [[ "$1" == "set" ]] && [[ "${4:-}" == "/" ]]
+        then
+            ynh_permission_update --permission "main" --add "visitors"
+        elif [[ "$1" == "delete" ]] && [[ "${current_value:-}" == "/" ]] && [[ -n "$(ynh_app_setting_get --app=$2 --key='is_public' )" ]]
+        then
+            ynh_permission_update --permission "main" --remove "visitors"
+        fi
     fi
 }
 
@@ -259,6 +178,8 @@ ynh_webpath_register () {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_create() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=pua
     declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= )
     local permission
     local url
@@ -287,6 +208,8 @@ ynh_permission_create() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_delete() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=p
     declare -Ar args_array=( [p]=permission= )
     local permission
     ynh_handle_getopts_args "$@"
@@ -301,6 +224,8 @@ ynh_permission_delete() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_exists() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=p
     declare -Ar args_array=( [p]=permission= )
     local permission
     ynh_handle_getopts_args "$@"
@@ -316,6 +241,8 @@ ynh_permission_exists() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_url() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=pu
     declare -Ar args_array=([p]=permission= [u]=url=)
     local permission
     local url
@@ -341,6 +268,8 @@ ynh_permission_url() {
 # example: ynh_permission_update --permission admin --add samdoe --remove all_users
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=par
     declare -Ar args_array=( [p]=permission= [a]=add= [r]=remove= )
     local permission
     local add
@@ -355,4 +284,30 @@ ynh_permission_update() {
     fi
 
     yunohost user permission update "$app.$permission" ${add:-} ${remove:-}
+}
+
+# Check if a permission exists
+#
+# usage: ynh_permission_has_user --permission=permission --user=user
+# | arg: -p, --permission - the permission to check
+# | arg: -u, --user - the user seek in the permission
+#
+# example: ynh_permission_has_user --permission=main --user=visitors
+#
+# Requires YunoHost version 3.7.1 or higher.
+ynh_permission_has_user() {
+    local legacy_args=pu
+    # Declare an array to define the options of this helper.
+    declare -Ar args_array=( [p]=permission= [u]=user= )
+    local permission
+    local user
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if ! ynh_permission_exists --permission=$permission
+    then
+        return 1
+    fi
+
+    yunohost user permission info "$app.$permission" | grep -w -q "$user"
 }

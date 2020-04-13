@@ -303,11 +303,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     else:
         ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
 
-    if 'redirected_urls' not in ssowat_conf:
-        ssowat_conf['redirected_urls'] = {}
-
-    ssowat_conf['redirected_urls']['/'] = domain + '/yunohost/admin'
-
     write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
@@ -321,7 +316,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         'touch %s/index.txt' % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
         'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
-        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch' % (ssl_dir, ssl_dir, ssl_dir),
+        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch -subj /CN=%s/O=%s' % (ssl_dir, ssl_dir, ssl_dir, domain, os.path.splitext(domain)[0]),
         'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
         'update-ca-certificates'
     ]

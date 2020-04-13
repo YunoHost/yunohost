@@ -165,8 +165,8 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     operation_logger.start()
 
     # Get random UID/GID
-    all_uid = {x.pw_uid for x in pwd.getpwall()}
-    all_gid = {x.gr_gid for x in grp.getgrall()}
+    all_uid = {str(x.pw_uid) for x in pwd.getpwall()}
+    all_gid = {str(x.gr_gid) for x in grp.getgrall()}
 
     uid_guid_found = False
     while not uid_guid_found:
@@ -195,18 +195,6 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     # If it is the first user, add some aliases
     if not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
         attr_dict['mail'] = [attr_dict['mail']] + aliases
-
-        # If exists, remove the redirection from the SSO
-        if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-            ssowat_conf = {}
-        else:
-            ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
-
-        if 'redirected_urls' in ssowat_conf and '/' in ssowat_conf['redirected_urls']:
-            del ssowat_conf['redirected_urls']['/']
-
-            write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
-            os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)
@@ -576,7 +564,11 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
     # Validate uniqueness of groupname in system group
     all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
     if groupname in all_existing_groupnames:
-        raise YunohostError('group_already_exist_on_system', group=groupname)
+        if primary_group:
+            logger.warning(m18n.n('group_already_exist_on_system_but_removing_it', group=groupname))
+            subprocess.check_call("sed --in-place '/^%s:/d' /etc/group" % groupname, shell=True)
+        else:
+            raise YunohostError('group_already_exist_on_system', group=groupname)
 
     if not gid:
         # Get random GID
@@ -786,6 +778,11 @@ def user_permission_reset(permission, sync_perm=True):
     import yunohost.permission
     return yunohost.permission.user_permission_reset(permission,
                                                      sync_perm=sync_perm)
+
+
+def user_permission_info(permission):
+    import yunohost.permission
+    return yunohost.permission.user_permission_info(permission)
 
 
 #

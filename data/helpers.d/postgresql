@@ -107,9 +107,9 @@ ynh_psql_create_db() {
 ynh_psql_drop_db() {
 	local db=$1
 	# First, force disconnection of all clients connected to the database
-	# https://stackoverflow.com/questions/5408156/how-to-drop-a-postgresql-database-if-there-are-active-connections-to-it
-	# https://dba.stackexchange.com/questions/16426/how-to-drop-all-connections-to-a-specific-database-without-stopping-the-server
-	ynh_psql_execute_as_root --sql="SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db';" --database="$db"
+	# https://stackoverflow.com/questions/17449420/postgresql-unable-to-drop-database-because-of-some-auto-connections-to-db
+	ynh_psql_execute_as_root --sql="REVOKE CONNECT ON DATABASE $db FROM public;" --database="$db"
+	ynh_psql_execute_as_root --sql="SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db' AND pid <> pg_backend_pid();" --database="$db"
 	sudo --login --user=postgres dropdb $db
 }
 
@@ -243,7 +243,6 @@ ynh_psql_remove_db() {
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 
-	local psql_root_password=$(cat $PSQL_ROOT_PWD_FILE)
 	if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
 		ynh_psql_drop_db $db_name # Remove the database
 	else
@@ -265,34 +264,35 @@ ynh_psql_remove_db() {
 ynh_psql_test_if_first_run() {
 	if [ -f "$PSQL_ROOT_PWD_FILE" ]; then
 		echo "PostgreSQL is already installed, no need to create master password"
-	else
-		local psql_root_password="$(ynh_string_random)"
-		echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
+        return
+    fi
 
-		if [ -e /etc/postgresql/9.4/ ]; then
-			local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
-			local logfile=/var/log/postgresql/postgresql-9.4-main.log
-		elif [ -e /etc/postgresql/9.6/ ]; then
-			local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
-			local logfile=/var/log/postgresql/postgresql-9.6-main.log
-		else
-			ynh_die "postgresql shoud be 9.4 or 9.6"
-		fi
+    local psql_root_password="$(ynh_string_random)"
+    echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
 
-		ynh_systemd_action --service_name=postgresql --action=start
+    if [ -e /etc/postgresql/9.4/ ]; then
+        local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
+        local logfile=/var/log/postgresql/postgresql-9.4-main.log
+    elif [ -e /etc/postgresql/9.6/ ]; then
+        local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
+        local logfile=/var/log/postgresql/postgresql-9.6-main.log
+    else
+        ynh_die "postgresql shoud be 9.4 or 9.6"
+    fi
 
-		sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
+    ynh_systemd_action --service_name=postgresql --action=start
 
-		# force all user to connect to local databases using hashed passwords
-		# https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
-		# Note: we can't use peer since YunoHost create users with nologin
-		#  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
-		ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
+    sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
 
-		# Advertise service in admin panel
-		yunohost service add postgresql --log "$logfile"
+    # force all user to connect to local databases using hashed passwords
+    # https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
+    # Note: we can't use peer since YunoHost create users with nologin
+    #  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
+    ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
 
-		systemctl enable postgresql
-		ynh_systemd_action --service_name=postgresql --action=reload
-	fi
+    # Advertise service in admin panel
+    yunohost service add postgresql --log "$logfile"
+
+    systemctl enable postgresql
+    ynh_systemd_action --service_name=postgresql --action=reload
 }

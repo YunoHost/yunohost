@@ -216,7 +216,7 @@ def app_map(app=None, raw=False, user=None):
                 logger.warning("Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/" % app_id)
                 continue
             main_perm = permissions[app_id + ".main"]
-            if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
+            if user not in main_perm["corresponding_users"]:
                 continue
 
         domain = app_settings['domain']
@@ -240,7 +240,7 @@ def app_map(app=None, raw=False, user=None):
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
-            if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
+            if user and user not in perm_info["corresponding_users"]:
                 continue
             if perm_info["url"].startswith("re:"):
                 # Here, we have an issue if the chosen url is a regex, because
@@ -930,7 +930,7 @@ def dump_app_log_extract_for_debugging(operation_logger):
         line = line.strip().split(": ", 1)[1]
         lines_to_display.append(line)
 
-        if line.endswith("+ ynh_exit_properly"):
+        if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
             break
         elif len(lines_to_display) > 20:
             lines_to_display.pop(0)
@@ -1180,8 +1180,9 @@ def app_setting(app, key, value=None, delete=False):
             logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
             return None
 
-    if delete and key in app_settings:
-        del app_settings[key]
+    if delete:
+        if key in app_settings:
+            del app_settings[key]
     else:
         # FIXME: Allow multiple values for some keys?
         if key in ['redirected_urls', 'redirected_regex']:
@@ -1322,6 +1323,7 @@ def app_ssowatconf():
 
             # FIXME : gotta handle regex-urls here... meh
             url = _sanitized_absolute_url(perm_info["url"])
+            perm_info["url"] = url
             if "visitors" in perm_info["allowed"]:
                 if url not in unprotected_urls:
                     unprotected_urls.append(url)
@@ -1607,6 +1609,7 @@ def app_config_apply(operation_logger, app, args):
 
     logger.success("Config updated as expected")
     return {
+        "app": app,
         "logs": operation_logger.success(),
     }
 
@@ -2788,7 +2791,7 @@ def unstable_apps():
 
     output = []
 
-    for infos in app_list(full=True):
+    for infos in app_list(full=True)["apps"]:
 
         if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in ["inprogress", "notworking"]:
             output.append(infos["id"])
