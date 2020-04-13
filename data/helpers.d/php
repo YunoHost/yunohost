@@ -83,6 +83,15 @@ ynh_add_fpm_config () {
 
 	if [ $dedicated_service -eq 1 ]
 	then
+		# Create a dedicated php-fpm.conf for the service
+		local globalphpconf=$fpm_config_dir/php-fpm-$app.conf
+		cp /etc/php/${phpversion}/fpm/php-fpm.conf $globalphpconf
+
+		ynh_replace_string --match_string="^[; ]*pid *=.*" --replace_string="pid = /run/php/php${phpversion}-fpm-$app.pid" --target_file="$globalphpconf"
+		ynh_replace_string --match_string="^[; ]*error_log *=.*" --replace_string="error_log = /var/log/php/fpm-php.$app.log" --target_file="$globalphpconf"
+		ynh_replace_string --match_string="^[; ]*syslog.ident *=.*" --replace_string="syslog.ident = php-fpm-$app" --target_file="$globalphpconf"
+		ynh_replace_string --match_string="^[; ]*include *=.*" --replace_string="include = $finalphpconf" --target_file="$globalphpconf"
+
 		# Create a config for a dedicated php-fpm service for the app
 		echo "[Unit]
 Description=PHP $phpversion FastCGI Process Manager for $app
@@ -91,7 +100,7 @@ After=network.target
 [Service] 
 Type=notify
 PIDFile=/run/php/php${phpversion}-fpm-$app.pid
-ExecStart=/usr/sbin/php-fpm${phpversion} --nodaemonize --fpm-config $finalphpconf --pid /run/php/php${phpversion}-fpm-$app.pid
+ExecStart=/usr/sbin/php-fpm$phpversion --nodaemonize --fpm-config $globalphpconf
 ExecReload=/bin/kill -USR2 \$MAINPID
 
 [Install]
@@ -100,6 +109,10 @@ WantedBy=multi-user.target
 
 		# Create this dedicated php-fpm service
 		ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
+		# Integrate the service in YunoHost admin panel
+		yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --log_type file --description "Php-fpm dedicated to $app"
+		# Configure log rotate
+		ynh_use_logrotate --logfile=/var/log/php
 		# Restart the service, as this service is either stopped or only for this app
 		ynh_systemd_action --service_name=$fpm_service --action=restart
 	else
@@ -128,6 +141,10 @@ ynh_remove_fpm_config () {
 	then
 		# Remove the dedicated service php-fpm service for the app
 		ynh_remove_systemd_config --service=$fpm_service
+		# Remove the global php-fpm conf
+		ynh_secure_remove --file="$fpm_config_dir/php-fpm-$app.conf"
+		# Remove the service from the list of services known by Yunohost
+		yunohost service remove $fpm_service
 	fi
 
 	ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
