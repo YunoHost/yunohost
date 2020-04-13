@@ -136,7 +136,7 @@ class IPDiagnoser(Diagnoser):
         # Ignore comments and empty lines
         content = [l.strip() for l in content if l.strip() and not l.strip().startswith("#")]
         # We should only find a "nameserver 127.0.0.1"
-        return len(content) == 1 and content.split() == ["nameserver", "127.0.0.1"]
+        return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]
 
     def get_public_ip(self, protocol=4):
 
