@@ -355,6 +355,18 @@ ynh_get_scalable_phpfpm () {
         footprint=50
     fi
 
+    # Define the factor to determine min_spare_servers
+    # To not have not enough children ready to start for heavy apps.
+    if [ $footprint -le 20 ]
+    then
+        min_spare_servers_factor=8
+    elif [ $footprint -le 35 ]
+    then
+        min_spare_servers_factor=5
+    else
+        min_spare_servers_factor=3
+    fi
+
     # Define the way the process manager handle child processes.
     if [ "$usage" = "low" ]
     then
@@ -405,7 +417,7 @@ ynh_get_scalable_phpfpm () {
     if [ "$php_pm" = "dynamic" ]
     then
         # Define pm.start_servers, pm.min_spare_servers and pm.max_spare_servers for a dynamic process manager
-        php_min_spare_servers=$(( $php_max_children / 8 ))
+        php_min_spare_servers=$(( $php_max_children / $min_spare_servers_factor ))
         php_min_spare_servers=$(at_least_one $php_min_spare_servers)
 
         php_max_spare_servers=$(( $php_max_children / 2 ))
