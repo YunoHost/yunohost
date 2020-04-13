@@ -188,7 +188,7 @@
     "diagnosis_mail_ougoing_port_25_blocked": "Outgoing port 25 appears to be blocked. You should try to unblock it in your internet service provider (or hosting provider) configuration panel. Meanwhile, the server won't be able to send emails to other servers.",
     "diagnosis_mail_blacklist_ok": "Your server public IP are not listed on email blacklists.",
     "diagnosis_mail_blacklist_nok": "Your server public IPs are listed on email blacklists.",
-    "diagnosis_mail_blacklisted_by": "{ip} is listed on {blacklist.name}. Reason: {reason}. See {blacklist.website}",
+    "diagnosis_mail_blacklisted_by": "{ip} is listed on {blacklist_name}. Reason: {reason}. See {blacklist_website}",
     "diagnosis_regenconf_allgood": "All configurations files are in line with the recommended configuration!",
     "diagnosis_regenconf_manually_modified": "Configuration file <code>{file}</code> appears to have been manually modified.",
     "diagnosis_regenconf_manually_modified_details": "This is probably OK if you know what you're doing! YunoHost will stop updating this file automatically... But beware that YunoHost upgrades could contain important recommended changes. If you want to, you can inspect the differences with <cmd>yunohost tools regen-conf {category} --dry-run --with-diff</cmd> and force the reset to the recommended configuration with <cmd>yunohost tools regen-conf {category} --force</cmd>",

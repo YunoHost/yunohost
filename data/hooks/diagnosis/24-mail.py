@@ -36,12 +36,13 @@ class MailDiagnoser(Diagnoser):
         # Are IPs listed on a DNSBL ?
         self.logger_debug("Running DNSBL detection")
 
-        blacklisted_details = self.check_ip_dnsbl()
+        blacklisted_details = list(self.check_dnsbl(self.get_public_ips()))
+        print(blacklisted_details)
         if blacklisted_details:
             yield dict(meta={"test": "mail_blacklist"},
                        status="ERROR",
                        summary="diagnosis_mail_blacklist_nok",
-                       details=list(blacklisted_details))
+                       details=blacklisted_details)
         else:
             yield dict(meta={"test": "mail_blacklist"},
                        status="SUCCESS",
@@ -57,23 +58,22 @@ class MailDiagnoser(Diagnoser):
 
         # check for unusual failed sending attempt being refused in the logs ?
 
-    def check_blacklisted(self):
+    def check_dnsbl(self, ips):
         """ Check with dig onto blacklist DNS server
         """
         dns_blacklists = read_yaml(DEFAULT_DNS_BLACKLIST)
-        for ip in self.get_public_ips():
+        for ip in ips:
             for blacklist in dns_blacklists:
-                
-                if "." in ip and not blacklist.ipv4:
+                if "." in ip and not blacklist['ipv4']:
                     continue
 
-                if ":" in ip and not blacklist.ipv6:
+                if ":" in ip and not blacklist['ipv6']:
                     continue
                 
                 # Determine if we are listed on this RBL
                 try:
                     rev = dns.reversename.from_address(ip)
-                    query = str(rev.split(3)[0]) + '.' + blacklist.dns_server
+                    query = str(rev.split(3)[0]) + '.' + blacklist['dns_server']
                     # TODO add timeout lifetime
                     dns.resolver.query(query, "A")
                 except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
@@ -89,7 +89,8 @@ class MailDiagnoser(Diagnoser):
 
                 yield ('diagnosis_mail_blacklisted_by', {
                     'ip': ip,
-                    'blacklist': blacklist,
+                    'blacklist_name': blacklist['name'],
+                    'blacklist_website': blacklist['website'],
                     'reason': reason})
 
     def get_public_ips(self):
