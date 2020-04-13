@@ -165,12 +165,13 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     operation_logger.start()
 
     # Get random UID/GID
-    all_uid = {x.pw_uid for x in pwd.getpwall()}
-    all_gid = {x.gr_gid for x in grp.getgrall()}
+    all_uid = {str(x.pw_uid) for x in pwd.getpwall()}
+    all_gid = {str(x.gr_gid) for x in grp.getgrall()}
 
     uid_guid_found = False
     while not uid_guid_found:
-        uid = str(random.randint(200, 99999))
+        # LXC uid number is limited to 65536 by default
+        uid = str(random.randint(200, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
@@ -201,8 +202,9 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     except Exception as e:
         raise YunohostError('user_creation_failed', user=username, error=e)
 
-    # Invalidate passwd to take user creation into account
+    # Invalidate passwd and group to take user and group creation into account
     subprocess.call(['nscd', '-i', 'passwd'])
+    subprocess.call(['nscd', '-i', 'group'])
 
     try:
         # Attempt to create user home folder
@@ -778,6 +780,11 @@ def user_permission_reset(permission, sync_perm=True):
     import yunohost.permission
     return yunohost.permission.user_permission_reset(permission,
                                                      sync_perm=sync_perm)
+
+
+def user_permission_info(permission):
+    import yunohost.permission
+    return yunohost.permission.user_permission_info(permission)
 
 
 #

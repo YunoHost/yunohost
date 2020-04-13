@@ -285,7 +285,6 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
 
             operation_logger.start()
 
-            _configure_for_acme_challenge(domain)
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
             _install_cron(no_checks=no_checks)
 
@@ -466,52 +465,6 @@ Subject: %s
     smtp = smtplib.SMTP("localhost")
     smtp.sendmail(from_, [to_], message)
     smtp.quit()
-
-
-def _configure_for_acme_challenge(domain):
-
-    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
-    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
-
-    nginx_configuration = '''
-location ^~ '/.well-known/acme-challenge/'
-{
-        default_type "text/plain";
-        alias %s;
-}
-    ''' % WEBROOT_FOLDER
-
-    # Check there isn't a conflicting file for the acme-challenge well-known
-    # uri
-    for path in glob.glob('%s/*.conf' % nginx_conf_folder):
-
-        if path == nginx_conf_file:
-            continue
-
-        with open(path) as f:
-            contents = f.read()
-
-        if '/.well-known/acme-challenge' in contents:
-            raise YunohostError('certmanager_conflicting_nginx_file', filepath=path)
-
-    # Write the conf
-    if os.path.exists(nginx_conf_file):
-        logger.debug(
-            "Nginx configuration file for ACME challenge already exists for domain, skipping.")
-        return
-
-    logger.debug(
-        "Adding Nginx configuration file for Acme challenge for domain %s.", domain)
-
-    with open(nginx_conf_file, "w") as f:
-        f.write(nginx_configuration)
-
-    # Assume nginx conf is okay, and reload it
-    # (FIXME : maybe add a check that it is, using nginx -t, haven't found
-    # any clean function already implemented in yunohost to do this though)
-    _run_service_command("reload", "nginx")
-
-    app_ssowatconf()
 
 
 def _check_acme_challenge_configuration(domain):
