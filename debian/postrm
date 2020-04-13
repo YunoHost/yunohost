@@ -1,10 +1,23 @@
 #!/bin/bash
 
+# See https://manpages.debian.org/testing/dpkg-dev/deb-postrm.5.en.html
+# to understand when / how this script is called...
+
 set -e
 
 if [ "$1" = "purge" ]; then
    update-rc.d yunohost-firewall remove >/dev/null
+   rm -f /etc/yunohost/installed
 fi
+
+if [ "$1" = "remove" ]; then
+   rm -f /etc/yunohost/installed
+fi
+
+# Reset dpkg vendor to debian
+# see https://wiki.debian.org/Derivatives/Guidelines#Vendor
+rm -f /etc/dpkg/origins/default
+ln -s /etc/dpkg/origins/debian /etc/dpkg/origins/default
 
 #DEBHELPER#
 

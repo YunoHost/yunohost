@@ -1,12 +1,10 @@
 #!/bin/bash
 
 set -e
+. /usr/share/yunohost/helpers
 
 do_pre_regen() {
   pending_dir=$1
-
-  # source ip helpers
-  . /usr/share/yunohost/helpers.d/ip
 
   cd /usr/share/yunohost/templates/dnsmasq
 
@@ -68,7 +66,7 @@ do_pre_regen() {
   ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
   ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # add domain conf files
   for domain in $domain_list; do
@@ -93,7 +91,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || sudo service dnsmasq restart
+    || service dnsmasq restart
 
   if [ -f /etc/cron.hourly/yunohost-rotate-dns-resolvers ]
   then

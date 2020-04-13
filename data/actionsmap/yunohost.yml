@@ -43,14 +43,8 @@ _global:
                 parameters:
                     uri: ldap://localhost:389
                     base_dn: dc=yunohost,dc=org
-                    user_rdn: cn=admin
-            ldap-anonymous:
-                vendor: ldap
-                parameters:
-                    uri: ldap://localhost:389
-                    base_dn: dc=yunohost,dc=org
-        argument_auth: true
-        lock: true
+                    user_rdn: cn=admin,dc=yunohost,dc=org
+        argument_auth: false
     arguments:
         -v:
             full: --version
@@ -64,38 +58,22 @@ _global:
 #           User            #
 #############################
 user:
-    category_help: Manage users
+    category_help: Manage users and groups
     actions:
 
         ### user_list()
         list:
             action_help: List users
             api: GET /users
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                --fields:
                     help: fields to fetch
                     nargs: "+"
-               -f:
-                    full: --filter
-                    help: LDAP filter used to search
-               -l:
-                    full: --limit
-                    help: Maximum number of user fetched
-                    type: int
-               -o:
-                    full: --offset
-                    help: Starting number for user fetching
-                    type: int
 
         ### user_create()
         create:
             action_help: Create user
             api: POST /users
-            configuration:
-                authenticate: all
             arguments:
                 username:
                     help: The unique username to create
@@ -117,7 +95,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.']{0,3})+$
+                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
@@ -137,6 +115,7 @@ user:
                         pattern: &pattern_password
                             - !!str ^.{3,}$
                             - "pattern_password"
+                        comment: good_practices_about_user_password
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -151,22 +130,19 @@ user:
         delete:
             action_help: Delete user
             api: DELETE /users/<username>
-            configuration:
-                authenticate: all
             arguments:
                 username:
                     help: Username to delete
                     extra:
                         pattern: *pattern_username
                 --purge:
+                    help: Purge user's home and mail directories
                     action: store_true
 
         ### user_update()
         update:
             action_help: Update user informations
             api: PUT /users/<username>
-            configuration:
-                authenticate: all
             arguments:
                 username:
                     help: Username to update
@@ -219,12 +195,204 @@ user:
         info:
             action_help: Get user information
             api: GET /users/<username>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 username:
                     help: Username or email to get information
+
+    subcategories:
+        group:
+            subcategory_help: Manage user groups
+            actions:
+                ### user_group_list()
+                list:
+                    action_help: List existing groups
+                    api: GET /users/groups
+                    arguments:
+                        -s:
+                            full: --short
+                            help: List only the names of groups
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all informations known about each groups
+                            action: store_true
+                        -p:
+                            full: --include-primary-groups
+                            help: Also display primary groups (each user has an eponym group that only contains itself)
+                            action: store_true
+                            default: false
+
+                ### user_group_create()
+                create:
+                    action_help: Create group
+                    api: POST /users/groups
+                    arguments:
+                        groupname:
+                            help: Name of the group to be created
+                            extra:
+                                pattern: &pattern_groupname
+                                    - !!str ^[a-z0-9_]+$
+                                    - "pattern_groupname"
+
+                ### user_group_delete()
+                delete:
+                    action_help: Delete group
+                    api: DELETE /users/groups/<groupname>
+                    arguments:
+                        groupname:
+                            help: Name of the group to be deleted
+                            extra:
+                                pattern: *pattern_groupname
+
+                ### user_group_update()
+                update:
+                    action_help: Update group
+                    api: PUT /users/groups/<groupname>
+                    arguments:
+                        groupname:
+                            help: Name of the group to be updated
+                            extra:
+                                pattern: *pattern_groupname
+                        -a:
+                            full: --add
+                            help: User(s) to add in the group
+                            nargs: "*"
+                            metavar: USERNAME
+                            extra:
+                                pattern: *pattern_username
+                        -r:
+                            full: --remove
+                            help: User(s) to remove in the group
+                            nargs: "*"
+                            metavar: USERNAME
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_group_info()
+                info:
+                    action_help: Get information about a specific group
+                    api: GET /users/groups/<groupname>
+                    arguments:
+                        groupname:
+                            help: Name of the group to fetch info about
+                            extra:
+                                pattern: *pattern_username
+
+        permission:
+            subcategory_help: Manage permissions
+            actions:
+
+                ### user_permission_list()
+                list:
+                    action_help: List permissions and corresponding accesses
+                    api: GET /users/permissions
+                    arguments:
+                        -s:
+                            full: --short
+                            help: Only list permission names
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all info known about each permission, including the full user list of each group it is granted to.
+                            action: store_true
+
+                ### user_permission_info()
+                info:
+                    action_help: Get information about a specific permission
+                    api: GET /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Name of the permission to fetch info about
+
+                ### user_permission_update()
+                update:
+                    action_help: Manage group or user permissions
+                    api: PUT /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                        -a:
+                            full: --add
+                            help: Group or usernames to grant this permission to
+                            nargs: "*"
+                            metavar: GROUP_OR_USER
+                            extra:
+                                pattern: *pattern_username
+                        -r:
+                            full: --remove
+                            help: Group or usernames revoke this permission from
+                            nargs: "*"
+                            metavar: GROUP_OR_USER
+                            extra:
+                                pattern: *pattern_username
+
+                ## user_permission_reset()
+                reset:
+                    action_help: Reset allowed groups to the default (all_users) for a given permission
+                    api: DELETE /users/permissions/<app>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+
+        ssh:
+            subcategory_help: Manage ssh access
+            actions:
+                ### user_ssh_enable()
+                allow:
+                    action_help: Allow the user to uses ssh
+                    api: POST /users/ssh/enable
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_disable()
+                disallow:
+                    action_help: Disallow the user to uses ssh
+                    api: POST /users/ssh/disable
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_keys_list()
+                list-keys:
+                    action_help: Show user's authorized ssh keys
+                    api: GET /users/ssh/keys
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_ssh_keys_add()
+                add-key:
+                    action_help: Add a new authorized ssh key for this user
+                    api: POST /users/ssh/key
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        key:
+                            help: The key to be added
+                        -c:
+                            full: --comment
+                            help: Optionnal comment about the key
+
+                ### user_ssh_keys_remove()
+                remove-key:
+                    action_help: Remove an authorized ssh key for this user
+                    api: DELETE /users/ssh/key
+                    arguments:
+                        username:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        key:
+                            help: The key to be removed
 
 
 #############################
@@ -238,29 +406,11 @@ domain:
         list:
             action_help: List domains
             api: GET /domains
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-            arguments:
-                -f:
-                    full: --filter
-                    help: LDAP filter used to search
-                -l:
-                    full: --limit
-                    help: Maximum number of domain fetched
-                    type: int
-                -o:
-                    full: --offset
-                    help: Starting number for domain fetching
-                    type: int
 
         ### domain_add()
         add:
             action_help: Create a custom domain
             api: POST /domains
-            configuration:
-                lock: false
-                authenticate: all
             arguments:
                 domain:
                     help: Domain name to add
@@ -277,9 +427,6 @@ domain:
         remove:
             action_help: Delete domains
             api: DELETE /domains/<domain>
-            configuration:
-                lock: false
-                authenticate: all
             arguments:
                 domain:
                     help: Domain to delete
@@ -288,12 +435,8 @@ domain:
 
         ### domain_dns_conf()
         dns-conf:
-            action_help: Generate DNS configuration for a domain
+            action_help: Generate sample DNS configuration for a domain
             api: GET /domains/<domain>/dns
-            configuration:
-                lock: false
-                authenticate:
-                    - api
             arguments:
                 domain:
                     help: Target domain
@@ -305,13 +448,25 @@ domain:
                             - !!str ^[0-9]+$
                             - "pattern_positive_number"
 
+        ### domain_maindomain()
+        main-domain:
+            action_help: Check the current main domain, or change it
+            deprecated_alias:
+                - maindomain
+            api:
+                - GET /domains/main
+                - PUT /domains/main
+            arguments:
+                -n:
+                    full: --new-main-domain
+                    help: Change the current main domain
+                    extra:
+                        pattern: *pattern_domain
+
         ### certificate_status()
         cert-status:
             action_help: List status of current certificates (all by default).
             api: GET /domains/cert-status/<domain_list>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain_list:
                     help: Domains to check
@@ -324,9 +479,6 @@ domain:
         cert-install:
             action_help: Install Let's Encrypt certificates for given domains (all by default).
             api: POST /domains/cert-install/<domain_list>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain_list:
                     help: Domains for which to install the certificates
@@ -348,9 +500,6 @@ domain:
         cert-renew:
             action_help: Renew the Let's Encrypt certificates for given domains (all by default).
             api: POST /domains/cert-renew/<domain_list>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain_list:
                     help: Domains for which to renew the certificates
@@ -372,9 +521,6 @@ domain:
         url-available:
             action_help: Check availability of a web path
             api: GET /domain/urlavailable
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 domain:
                     help: The domain for the web path (e.g. your.domain.tld)
@@ -404,78 +550,44 @@ app:
     category_help: Manage apps
     actions:
 
-        ### app_fetchlist()
-        fetchlist:
-            action_help: Fetch application lists from app servers, or register a new one.
-            api: PUT /appslists
+        catalog:
+            action_help: Show the catalog of installable application
+            api: GET /appscatalog
             arguments:
-                -n:
-                    full: --name
-                    help: Name of the list to fetch (fetches all registered lists if empty)
-                    extra:
-                        pattern: &pattern_listname
-                            - !!str ^[a-z0-9_]+$
-                            - "pattern_listname"
-                -u:
-                    full: --url
-                    help: URL of a new application list to register. To be specified with -n.
-
-        ### app_listlists()
-        listlists:
-            action_help: List registered application lists
-            api: GET /appslists
-
-        ### app_removelist()
-        removelist:
-            action_help: Remove and forget about a given application list
-            api: DELETE /appslists
-            arguments:
-                name:
-                    help: Name of the list to remove
-                    extra:
-                        ask: ask_list_to_remove
-                        pattern: *pattern_listname
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
+                    action: store_true
+                -c:
+                    full: --with-categories
+                    help: Also return a list of app categories
+                    action: store_true
 
         ### app_list()
         list:
-            action_help: List apps
+            action_help: List installed apps
             api: GET /apps
             arguments:
                 -f:
-                    full: --filter
-                    help: Name filter of app_id or app_name
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
-                    action: store_true
-                -i:
-                    full: --installed
-                    help: Return only installed apps
-                    action: store_true
-                -b:
-                    full: --with-backup
-                    help: Return only apps with backup feature (force --installed filter)
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_info()
         info:
-            action_help: Get information about an installed app
+            action_help: Show infos about a specific installed app
             api: GET /apps/<app>
             arguments:
                 app:
                     help: Specific app ID
-                -s:
-                    full: --show-status
-                    help: Show app installation status
-                    action: store_true
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_map()
         map:
-            action_help: List apps by domain
+            action_help: Show the mapping between urls and apps
             api: GET /appsmap
             arguments:
                 -a:
@@ -495,10 +607,6 @@ app:
         install:
             action_help: Install apps
             api: POST /apps
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: Name, local path or git URL of the app to install
@@ -512,15 +620,15 @@ app:
                     full: --no-remove-on-failure
                     help: Debug option to avoid removing the app on a failed installation
                     action: store_true
+                -f:
+                    full: --force
+                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
+                    action: store_true
 
         ### app_remove() TODO: Write help
         remove:
             action_help: Remove app
             api: DELETE /apps/<app>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: App(s) to delete
@@ -529,10 +637,6 @@ app:
         upgrade:
             action_help: Upgrade app
             api: PUT /upgrade/apps
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: App(s) to upgrade (default all)
@@ -548,10 +652,6 @@ app:
         change-url:
             action_help: Change app's URL
             api: PUT /apps/<app>/changeurl
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
             arguments:
                 app:
                     help: Target app instance name
@@ -559,14 +659,14 @@ app:
                     full: --domain
                     help: New app domain on which the application will be moved
                     extra:
-                        ask: ask_main_domain
+                        ask: ask_new_domain
                         pattern: *pattern_domain
                         required: True
                 -p:
                     full: --path
                     help: New path at which the application will be moved
                     extra:
-                        ask: ask_path
+                        ask: ask_new_path
                         required: True
 
         ### app_setting()
@@ -586,41 +686,11 @@ app:
                     help: Delete the key
                     action: store_true
 
-        ### app_checkport()
-        checkport:
-            action_help: Check availability of a local port
-            api: GET /tools/checkport
-            deprecated: true
-            arguments:
-                port:
-                    help: Port to check
-                    extra:
-                        pattern: &pattern_port
-                            - !!str ^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$
-                            - "pattern_port"
-
-        ### app_checkurl()
-        checkurl:
-            action_help: Check availability of a web path
-            api: GET /tools/checkurl
-            deprecated: True
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-            arguments:
-                url:
-                    help: Url to check
-                -a:
-                    full: --app
-                    help: Write domain & path to app settings for further checks
 
         ### app_register_url()
         register-url:
             action_help: Book/register a web path for a given app
             api: PUT /tools/registerurl
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 app:
                     help: App which will use the web path
@@ -630,39 +700,10 @@ app:
                     help: The path to be registered (e.g. /coffee)
 
 
-        ### app_initdb()
-        initdb:
-            action_help: Create database and initialize it with optionnal attached script
-            api: POST /tools/initdb
-            deprecated: true
-            arguments:
-                user:
-                    help: Name of the DB user
-                -p:
-                    full: --password
-                    help: Password of the DB (generated unless set)
-                -d:
-                    full: --db
-                    help: DB name (user unless set)
-                -s:
-                    full: --sql
-                    help: Initial SQL file
-
-        ### app_debug()
-        debug:
-            action_help: Display all debug informations for an application
-            api: GET /apps/<app>/debug
-            arguments:
-                app:
-                    help: App name
-
         ### app_makedefault()
         makedefault:
             action_help: Redirect domain root to an app
             api: PUT /apps/<app>/default
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
             arguments:
                 app:
                     help: App name to put on domain root
@@ -674,17 +715,22 @@ app:
         ssowatconf:
             action_help: Regenerate SSOwat configuration file
             api: PUT /ssowatconf
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
+
+        ### app_change_label()
+        change-label:
+            action_help: Change app label
+            api: PUT /apps/<app>/label
+            arguments:
+                app:
+                    help: App ID
+                new_label:
+                    help: New app label
 
         ### app_addaccess() TODO: Write help
         addaccess:
             action_help: Grant access right to users (everyone by default)
             api: PUT /access
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -696,9 +742,7 @@ app:
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
             api: DELETE /access
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -710,12 +754,60 @@ app:
         clearaccess:
             action_help: Reset access rights for the app
             api: POST /access
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
+
+    subcategories:
+
+      action:
+          subcategory_help: Handle apps actions
+          actions:
+
+              ### app_action_list()
+              list:
+                  action_help: List app actions
+                  api: GET /apps/<app>/actions
+                  arguments:
+                    app:
+                        help: App name
+
+              ### app_action_run()
+              run:
+                  action_help: Run app action
+                  api: PUT /apps/<app>/actions/<action>
+                  arguments:
+                    app:
+                        help: App name
+                    action:
+                        help: action id
+                    -a:
+                        full: --args
+                        help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+
+      config:
+          subcategory_help: Applications configuration panel
+          actions:
+
+              ### app_config_show_panel()
+              show-panel:
+                  action_help: show config panel for the application
+                  api: GET /apps/<app>/config-panel
+                  arguments:
+                      app:
+                          help: App name
+
+              ### app_config_apply()
+              apply:
+                  action_help: apply the new configuration
+                  api: POST /apps/<app>/config
+                  arguments:
+                      app:
+                          help: App name
+                      -a:
+                          full: --args
+                          help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
 
 #############################
 #          Backup           #
@@ -726,17 +818,15 @@ backup:
 
         ### backup_create()
         create:
-            action_help: Create a backup local archive
+            action_help: Create a backup local archive. If neither --apps or --system are given, this will backup all apps and all system parts. If only --apps if given, this will only backup apps and no system parts. Similarly, if only --system is given, this will only backup system parts and no apps.
             api: POST /backup
-            configuration:
-                lock: false
             arguments:
                 -n:
                     full: --name
                     help: Name of the backup archive
                     extra:
                         pattern: &pattern_backup_archive_name
-                            - !!str ^[\w\-\._]{1,30}(?<!\.)$
+                            - !!str ^[\w\-\._]{1,50}(?<!\.)$
                             - "pattern_backup_archive_name"
                 -d:
                     full: --description
@@ -752,54 +842,25 @@ backup:
                     help: List of backup methods to apply (copy or tar by default)
                     nargs: "*"
                 --system:
-                    help: List of system parts to backup (all by default)
+                    help: List of system parts to backup (or all if none given).
                     nargs: "*"
                 --apps:
-                    help: List of application names to backup (all by default)
+                    help: List of application names to backup (or all if none given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not backup system
-                    action: store_true
-                --ignore-apps:
-                    help: Do not backup apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
-
 
         ### backup_restore()
         restore:
-            action_help: Restore from a local backup archive
+            action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: POST /backup/restore/<name>
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
             arguments:
                 name:
                     help: Name of the local backup archive
                 --system:
-                    help: List of system parts to restore (all by default)
+                    help: List of system parts to restore (or all if none is given)
                     nargs: "*"
                 --apps:
-                    help: List of application names to restore (all by default)
+                    help: List of application names to restore (or all if none is given)
                     nargs: "*"
-                --hooks:
-                    help: (Deprecated) See --system
-                    nargs: "*"
-                --ignore-system:
-                    help: Do not restore system parts
-                    action: store_true
-                --ignore-apps:
-                    help: Do not restore apps
-                    action: store_true
-                --ignore-hooks:
-                    help: (Deprecated) See --ignore-system
-                    action: store_true
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true
@@ -808,8 +869,6 @@ backup:
         list:
             action_help: List available local backup archives
             api: GET /backup/archives
-            configuration:
-                lock: false
             arguments:
                 -i:
                     full: --with-info
@@ -824,8 +883,6 @@ backup:
         info:
             action_help: Show info about a local backup archive
             api: GET /backup/archives/<name>
-            configuration:
-                lock: false
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -842,154 +899,11 @@ backup:
         delete:
             action_help: Delete a backup archive
             api: DELETE /backup/archives/<name>
-            configuration:
-                lock: false
             arguments:
                 name:
                     help: Name of the archive to delete
                     extra:
                         pattern: *pattern_backup_archive_name
-
-
-#############################
-#          Monitor          #
-#############################
-monitor:
-    category_help: Monitor the server
-    actions:
-
-        ### monitor_disk()
-        disk:
-            action_help: Monitor disk space and usage
-            api: GET /monitor/disk
-            arguments:
-                -f:
-                    full: --filesystem
-                    help: Show filesystem disk space
-                    action: append_const
-                    const: filesystem
-                    dest: units
-                -t:
-                    full: --io
-                    help: Show I/O throughput
-                    action: append_const
-                    const: io
-                    dest: units
-                -m:
-                    full: --mountpoint
-                    help: Monitor only the device mounted on MOUNTPOINT
-                    action: store
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_network()
-        network:
-            action_help: Monitor network interfaces
-            api: GET /monitor/network
-            arguments:
-                -u:
-                    full: --usage
-                    help: Show interfaces bit rates
-                    action: append_const
-                    const: usage
-                    dest: units
-                -i:
-                    full: --infos
-                    help: Show network informations
-                    action: append_const
-                    const: infos
-                    dest: units
-                -c:
-                    full: --check
-                    help: Check network configuration
-                    action: append_const
-                    const: check
-                    dest: units
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_system()
-        system:
-            action_help: Monitor system informations and usage
-            api: GET /monitor/system
-            arguments:
-                -m:
-                    full: --memory
-                    help: Show memory usage
-                    action: append_const
-                    const: memory
-                    dest: units
-                -c:
-                    full: --cpu
-                    help: Show CPU usage and load
-                    action: append_const
-                    const: cpu
-                    dest: units
-                -p:
-                    full: --process
-                    help: Show processes summary
-                    action: append_const
-                    const: process
-                    dest: units
-                -u:
-                    full: --uptime
-                    help: Show the system uptime
-                    action: append_const
-                    const: uptime
-                    dest: units
-                -i:
-                    full: --infos
-                    help: Show system informations
-                    action: append_const
-                    const: infos
-                    dest: units
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_updatestats()
-        update-stats:
-            action_help: Update monitoring statistics
-            api: POST /monitor/stats
-            arguments:
-                period:
-                    help: Time period to update
-                    choices:
-                        - day
-                        - week
-                        - month
-
-        ### monitor_showstats()
-        show-stats:
-            action_help: Show monitoring statistics
-            api: GET /monitor/stats
-            arguments:
-                period:
-                    help: Time period to show
-                    choices:
-                        - day
-                        - week
-                        - month
-
-        ### monitor_enable()
-        enable:
-            action_help: Enable server monitoring
-            api: PUT /monitor
-            arguments:
-                -s:
-                    full: --with-stats
-                    help: Enable monitoring statistics
-                    action: store_true
-
-        ### monitor_disable()
-        disable:
-            api: DELETE /monitor
-            action_help: Disable server monitoring
 
 
 #############################
@@ -1055,17 +969,37 @@ service:
             arguments:
                 name:
                     help: Service name to add
-                -s:
-                    full: --status
-                    help: Custom status command
+                -d:
+                    full: --description
+                    help: Description of the service
                 -l:
                     full: --log
                     help: Absolute path to log file to display
                     nargs: "+"
-                -r:
-                    full: --runlevel
-                    help: Runlevel priority of the service
+                -t:
+                    full: --log_type
+                    help: Type of the log (file or systemd)
+                    nargs: "+"
+                    choices:
+                        - file
+                        - systemd
+                    default: file
+                --test_status:
+                    help: Specify a custom bash command to check the status of the service. Note that it only makes sense to specify this if the corresponding systemd service does not return the proper information already.
+                --test_conf:
+                    help: Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
+                --needs_exposed_ports:
+                    help: A list of ports that needs to be publicly exposed for the service to work as intended.
+                    nargs: "+"
                     type: int
+                    metavar: PORT
+                -n:
+                    full: --need_lock
+                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
+                    action: store_true
+                -s:
+                    full: --status
+                    help: Deprecated, old option. Does nothing anymore. Possibly check the --test_status option.
 
         ### service_remove()
         remove:
@@ -1092,6 +1026,33 @@ service:
             arguments:
                 names:
                     help: Service name to stop
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_reload()
+        reload:
+            action_help: Reload one or more services
+            arguments:
+                names:
+                    help: Service name to reload
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_restart()
+        restart:
+            action_help: Restart one or more services. If the services are not running yet, they will be started.
+            arguments:
+                names:
+                    help: Service name to restart
+                    nargs: "+"
+                    metavar: NAME
+
+        ### service_reload_or_restart()
+        reload_or_restart:
+            action_help: Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
+            arguments:
+                names:
+                    help: Service name to reload or restart
                     nargs: "+"
                     metavar: NAME
 
@@ -1144,8 +1105,6 @@ service:
         regen-conf:
             action_help: Regenerate the configuration file(s) for a service
             api: PUT /services/regenconf
-            configuration:
-                lock: false
             deprecated_alias:
                 - regenconf
             arguments:
@@ -1339,6 +1298,14 @@ dyndns:
                 -i:
                     full: --ipv4
                     help: IP address to send
+                -f:
+                    full: --force
+                    help: Force the update (for debugging only)
+                    action: store_true
+                -D:
+                    full: --dry-run
+                    help: Only display the generated zone
+                    action: store_true
                 -6:
                     full: --ipv6
                     help: IPv6 address to send
@@ -1361,19 +1328,10 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_ldapinit()
-        ldapinit:
-            action_help: YunoHost LDAP initialization
-            api: POST /ldap
-            configuration:
-                authenticate: all
-
         ### tools_adminpw()
         adminpw:
-            action_help: Change admin password
+            action_help: Change password of admin and root users
             api: PUT /adminpw
-            configuration:
-                authenticate: all
             arguments:
                 -n:
                     full: --new-password
@@ -1381,19 +1339,14 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
 
         ### tools_maindomain()
         maindomain:
             action_help: Check the current main domain, or change it
-            api:
-                - GET /domains/main
-                - PUT /domains/main
-            configuration:
-                authenticate: all
-                lock: false
             arguments:
                 -n:
-                    full: --new-domain
+                    full: --new-main-domain
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
@@ -1403,8 +1356,8 @@ tools:
             action_help: YunoHost post-install
             api: POST /postinstall
             configuration:
+                # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
                 authenticate: false
-                lock: false
             arguments:
                 -d:
                     full: --domain
@@ -1420,63 +1373,45 @@ tools:
                         password: ask_new_admin_password
                         pattern: *pattern_password
                         required: True
+                        comment: good_practices_about_admin_password
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
+                    action: store_true
+                --force-password:
+                    help: Use this if you really want to set a weak password
                     action: store_true
 
         ### tools_update()
         update:
             action_help: YunoHost update
             api: PUT /update
-            configuration:
-                lock: false
             arguments:
-                --ignore-apps:
-                    help: Ignore apps cache update and changelog
+                --apps:
+                    help: Fetch the application list to check which apps can be upgraded
                     action: store_true
-                --ignore-packages:
-                    help: Ignore APT cache update and changelog
+                --system:
+                    help: Fetch available system packages upgrades (equivalent to apt update)
                     action: store_true
 
         ### tools_upgrade()
         upgrade:
             action_help: YunoHost upgrade
             api: PUT /upgrade
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
             arguments:
-                --ignore-apps:
-                    help: Ignore apps upgrade
-                    action: store_true
-                --ignore-packages:
-                    help: Ignore APT packages upgrade
+                --apps:
+                    help: List of apps to upgrade (all by default)
+                    nargs: "*"
+                --system:
+                    help: Upgrade only the system packages
                     action: store_true
 
-        ### tools_diagnosis()
-        diagnosis:
-            action_help: YunoHost diagnosis
-            api: GET /diagnosis
-            configuration:
-                authenticate: all
-                authenticator: ldap-anonymous
-                lock: false
+        ### tools_shell()
+        shell:
+            action_help: Launch a development shell
             arguments:
-                -p:
-                    full: --private
-                    help: Show private data (domain, IP)
-                    action: store_true
-
-        ### tools_port_available()
-        port-available:
-            action_help: Check availability of a local port
-            api: GET /tools/portavailable
-            arguments:
-                port:
-                    help: Port to check
-                    extra:
-                        pattern: *pattern_port
+                -c:
+                    help: python command to execute
+                    full: --command
 
         ### tools_shutdown()
         shutdown:
@@ -1498,6 +1433,37 @@ tools:
                     full: --force
                     action: store_true
 
+        ### tools_regen_conf()
+        regen-conf:
+            action_help: Regenerate the configuration file(s)
+            api: PUT /tools/regenconf
+            arguments:
+                names:
+                    help: Categories to regenerate configuration of (all by default)
+                    nargs: "*"
+                    metavar: NAME
+                -d:
+                    full: --with-diff
+                    help: Show differences in case of configuration changes
+                    action: store_true
+                -f:
+                    full: --force
+                    help: Override all manual modifications in configuration files
+                    action: store_true
+                -n:
+                    full: --dry-run
+                    help: Show what would have been regenerated
+                    action: store_true
+                -p:
+                    full: --list-pending
+                    help: List pending configuration files and exit
+                    action: store_true
+
+        ### tools_versions()
+        versions:
+            action_help: Display YunoHost's packages versions
+            api: GET /versions
+
     subcategories:
 
       migrations:
@@ -1508,21 +1474,34 @@ tools:
               list:
                   action_help: List migrations
                   api: GET /migrations
+                  arguments:
+                    --pending:
+                        help: list only pending migrations
+                        action: store_true
+                    --done:
+                        help: list only migrations already performed
+                        action: store_true
 
               ### tools_migrations_migrate()
               migrate:
-                  action_help: Perform migrations
+                  action_help: Run migrations
                   api: POST /migrations/migrate
                   arguments:
-                    -t:
-                        help: target migration number (or 0), latest one by default
-                        type: int
-                        full: --target
-                    -s:
-                        help: skip the migration(s), use it only if you know what you are doing
-                        full: --skip
+                    targets:
+                        help: Migrations to run (all pendings by default)
+                        nargs: "*"
+                    --skip:
+                        help: Skip specified migrations (to be used only if you know what you are doing)
                         action: store_true
-
+                    --force-rerun:
+                        help: Re-run already-ran specified migration (to be used only if you know what you are doing)
+                        action: store_true
+                    --auto:
+                        help: Automatic mode, won't run manual migrations (to be used only if you know what you are doing)
+                        action: store_true
+                    --accept-disclaimer:
+                        help: Accept disclaimers of migrations (please read them before using this option)
+                        action: store_true
 
               ### tools_migrations_state()
               state:
@@ -1626,3 +1605,99 @@ hook:
                 -d:
                     full: --chdir
                     help: The directory from where the script will be executed
+
+#############################
+#            Log            #
+#############################
+log:
+    category_help: Manage debug logs
+    actions:
+
+        ### log_list()
+        list:
+            action_help: List logs
+            api: GET /logs
+            arguments:
+                category:
+                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app
+                    nargs: "*"
+                -l:
+                    full: --limit
+                    help: Maximum number of logs
+                    type: int
+                -d:
+                    full: --with-details
+                    help: Show additional infos (e.g. operation success) but may significantly increase command time. Consider using --limit in combination with this.
+                    action: store_true
+
+        ### log_display()
+        display:
+            action_help: Display a log content
+            api: GET /logs/display
+            arguments:
+                path:
+                    help: Log file which to display the content
+                -n:
+                    full: --number
+                    help: Number of lines to display
+                    default: 50
+                    type: int
+                --share:
+                    help: Share the full log using yunopaste
+                    action: store_true
+
+
+#############################
+#          Diagnosis        #
+#############################
+diagnosis:
+    category_help: Look for possible issues on the server
+    actions:
+
+        list:
+            action_help: List diagnosis categories
+            api: GET /diagnosis/list
+
+        show:
+            action_help: Show most recents diagnosis results
+            api: GET /diagnosis/show
+            arguments:
+                categories:
+                    help: Diagnosis categories to display (all by default)
+                    nargs: "*"
+                --full:
+                    help: Display additional information
+                    action: store_true
+                --issues:
+                    help: Only display issues
+                    action: store_true
+                --share:
+                    help: Share the logs using yunopaste
+                    action: store_true
+
+        run:
+            action_help: Show most recents diagnosis results
+            api: POST /diagnosis/run
+            arguments:
+                categories:
+                    help: Diagnosis categories to run (all by default)
+                    nargs: "*"
+                --force:
+                    help: Ignore the cached report even if it is still 'fresh'
+                    action: store_true
+
+        ignore:
+            action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
+            api: POST /diagnosis/ignore
+            arguments:
+                --add-filter:
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    nargs: "*"
+                    metavar: CRITERIA
+                --remove-filter:
+                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    nargs: "*"
+                    metavar: CRITERIA
+                --list:
+                    help: List active ignore filters
+                    action: store_true

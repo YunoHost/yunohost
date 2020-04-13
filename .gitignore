@@ -32,3 +32,6 @@ pip-log.txt
 
 # moulinette lib
 src/yunohost/locales
+
+# Test
+src/yunohost/tests/apps

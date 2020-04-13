@@ -26,7 +26,6 @@
 import os
 import sys
 import yaml
-import errno
 try:
     import miniupnpc
 except ImportError:
@@ -34,7 +33,7 @@ except ImportError:
     sys.exit(1)
 
 from moulinette import m18n
-from moulinette.core import MoulinetteError
+from yunohost.utils.error import YunohostError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.text import prependlines
@@ -196,6 +195,7 @@ def firewall_reload(skip_upnp=False):
 
     """
     from yunohost.hook import hook_callback
+    from yunohost.service import _run_service_command
 
     reloaded = False
     errors = False
@@ -268,7 +268,7 @@ def firewall_reload(skip_upnp=False):
         reloaded = True
 
     if not reloaded:
-        raise MoulinetteError(errno.ESRCH, m18n.n('firewall_reload_failed'))
+        raise YunohostError('firewall_reload_failed')
 
     hook_callback('post_iptable_rules',
                   args=[upnp, os.path.exists("/proc/net/if_inet6")])
@@ -277,8 +277,7 @@ def firewall_reload(skip_upnp=False):
         # Refresh port forwarding with UPnP
         firewall_upnp(no_refresh=False)
 
-    # TODO: Use service_restart
-    os.system("service fail2ban restart")
+    _run_service_command("reload", "fail2ban")
 
     if errors:
         logger.warning(m18n.n('firewall_rules_cmd_failed'))
@@ -305,7 +304,7 @@ def firewall_upnp(action='status', no_refresh=False):
 
     # Compatibility with previous version
     if action == 'reload':
-        logger.info("'reload' action is deprecated and will be removed")
+        logger.debug("'reload' action is deprecated and will be removed")
         try:
             # Remove old cron job
             os.remove('/etc/cron.d/yunohost-firewall')
@@ -338,7 +337,7 @@ def firewall_upnp(action='status', no_refresh=False):
         if action == 'status':
             no_refresh = True
     else:
-        raise MoulinetteError(errno.EINVAL, m18n.n('action_invalid', action=action))
+        raise YunohostError('action_invalid', action=action)
 
     # Refresh port mapping using UPnP
     if not no_refresh:
@@ -357,7 +356,7 @@ def firewall_upnp(action='status', no_refresh=False):
                 # Select UPnP device
                 upnpc.selectigd()
             except:
-                logger.info('unable to select UPnP device', exc_info=1)
+                logger.debug('unable to select UPnP device', exc_info=1)
                 enabled = False
             else:
                 # Iterate over ports
@@ -374,10 +373,10 @@ def firewall_upnp(action='status', no_refresh=False):
                         try:
                             # Add new port mapping
                             upnpc.addportmapping(port, protocol, upnpc.lanaddr,
-                                port, 'yunohost firewall: port %d' % port, '')
+                                                 port, 'yunohost firewall: port %d' % port, '')
                         except:
-                            logger.info('unable to add port %d using UPnP',
-                                        port, exc_info=1)
+                            logger.debug('unable to add port %d using UPnP',
+                                         port, exc_info=1)
                             enabled = False
 
     if enabled != firewall['uPnP']['enabled']:
@@ -406,7 +405,7 @@ def firewall_upnp(action='status', no_refresh=False):
             firewall_reload(skip_upnp=True)
 
     if action == 'enable' and not enabled:
-        raise MoulinetteError(errno.ENXIO, m18n.n('upnp_port_open_failed'))
+        raise YunohostError('upnp_port_open_failed')
     return {'enabled': enabled}
 
 
@@ -418,7 +417,7 @@ def firewall_stop():
     """
 
     if os.system("iptables -w -P INPUT ACCEPT") != 0:
-        raise MoulinetteError(errno.ESRCH, m18n.n('iptables_unavailable'))
+        raise YunohostError('iptables_unavailable')
 
     os.system("iptables -w -F")
     os.system("iptables -w -X")
@@ -459,6 +458,6 @@ def _update_firewall_file(rules):
 def _on_rule_command_error(returncode, cmd, output):
     """Callback for rules commands error"""
     # Log error and continue commands execution
-    logger.info('"%s" returned non-zero exit status %d:\n%s',
-                cmd, returncode, prependlines(output.rstrip(), '> '))
+    logger.debug('"%s" returned non-zero exit status %d:\n%s',
+                 cmd, returncode, prependlines(output.rstrip(), '> '))
     return True

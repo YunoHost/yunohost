@@ -2,44 +2,49 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7)
+Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7), python-yaml, python-jinja2
 Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: https://yunohost.org/
 
 Package: yunohost
+Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 2.3.5.1)
+ , moulinette (>= 3.7), ssowat (>= 3.7)
  , python-psutil, python-requests, python-dnspython, python-openssl
- , python-apt, python-miniupnpc
- , glances
- , dnsutils, bind9utils, unzip, git, curl, cron
- , ca-certificates, netcat-openbsd, iproute
- , mariadb-server | mysql-server, php5-mysql | php5-mysqlnd
- , slapd, ldap-utils, sudo-ldap, libnss-ldapd, nscd
- , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail
- , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
- , dovecot-antispam, fail2ban
- , nginx-extras (>=1.6.2), php5-fpm, php5-ldap, php5-intl
- , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
- , ssowat, metronome
- , rspamd (>= 1.2.0), rmilter (>=1.7.0), redis-server, opendkim-tools
- , haveged
+ , python-apt, python-miniupnpc, python-dbus, python-jinja2
+ , python-toml
+ , apt, apt-transport-https
+ , nginx, nginx-extras (>=1.6.2)
+ , php-fpm, php-ldap, php-intl
+ , mariadb-server, php-mysql | php-mysqlnd
+ , openssh-server, iptables, fail2ban, dnsutils, bind9utils
+ , openssl, ca-certificates, netcat-openbsd, iproute2
+ , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
+ , dnsmasq, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
+ , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
+ , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
+ , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
+ , redis-server
+ , metronome
+ , git, curl, wget, cron, unzip, jq
+ , lsb-release, haveged, fake-hwclock, equivs, lsof
 Recommends: yunohost-admin
- , openssh-server, ntp, inetutils-ping | iputils-ping
- , bash-completion, rsyslog, etckeeper
- , php5-gd, php5-curl, php-gettext, php5-mcrypt
+ , ntp, inetutils-ping | iputils-ping
+ , bash-completion, rsyslog
+ , php-gd, php-curl, php-gettext, php-mcrypt
  , python-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
-Suggests: htop, vim, rsync, acpi-support-base, udisks2, archivemount
+Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
  , moulinette-yunohost, yunohost-config
  , yunohost-config-others, yunohost-config-postfix
  , yunohost-config-dovecot, yunohost-config-slapd
  , yunohost-config-nginx, yunohost-config-amavis
  , yunohost-config-mysql, yunohost-predepends
+ , apache2, bind9
 Replaces: moulinette-yunohost, yunohost-config
  , yunohost-config-others, yunohost-config-postfix
  , yunohost-config-dovecot, yunohost-config-slapd

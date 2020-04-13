@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# Fetch SSH fingerprints
+i=0
+for key in $(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key.pub 2> /dev/null) ; do 
+    output=$(ssh-keygen -l -f $key)
+    fingerprint[$i]=" - $(echo $output | cut -d' ' -f2) $(echo $output| cut -d' ' -f4)"
+    i=$(($i + 1))
+done
+
+#
+# Build the logo
+#
+
+LOGO=$(cat << 'EOF'
+  __   __  __   __  __    _  _______  __   __  _______  _______  _______
+ |  | |  ||  | |  ||  |  | ||       ||  | |  ||       ||       ||       |
+ |  |_|  ||  | |  ||   |_| ||   _   ||  |_|  ||   _   ||  _____||_     _|
+ |       ||  |_|  ||       ||  | |  ||       ||  | |  || |_____   |   |
+ |_     _||       ||  _    ||  |_|  ||   _   ||  |_|  ||_____  |  |   |
+   |   |  |       || | |   ||       ||  | |  ||       | _____| |  |   |
+   |___|  |_______||_|  |__||_______||__| |__||_______||_______|  |___|
+EOF
+)
+
+# ' Put a quote in comment to make vim happy about syntax highlighting :s
+
+#
+# Build the actual message
+#
+
+sleep 5
+# Get local IP
+# (we do this after the sleep 5 to have
+# better chances that the network is up)
+local_ip=$(hostname --all-ip-address | awk '{print $1}')
+
+LOGO_AND_FINGERPRINTS=$(cat << EOF
+
+$LOGO
+
+ IP: ${local_ip}
+ SSH fingerprints:
+ ${fingerprint[0]}
+ ${fingerprint[1]}
+ ${fingerprint[2]}
+ ${fingerprint[3]}
+ ${fingerprint[4]}
+
+EOF
+)
+
+if [[ -f /etc/yunohost/installed ]]
+then
+    echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
+else
+    chvt 2
+
+    # Formatting
+    [[ -n "$local_ip" ]] && local_ip=$(echo -e "https://$local_ip/") || local_ip="(no ip detected?)"
+
+    echo "$LOGO_AND_FINGERPRINTS"
+    cat << EOF
+===============================================================================
+You should now proceed with Yunohost post-installation. This is where you will
+be asked for :
+  - the main domain of your server ;
+  - the administration password.
+
+You can perform this step :
+  - from your web browser, by accessing : ${local_ip}
+  - or in this terminal by answering 'yes' to the following question
+
+If this is your first time with YunoHost, it is strongly recommended to take
+time to read the administator documentation and in particular the sections
+'Finalizing your setup' and 'Getting to know YunoHost'. It is available at
+the following URL : https://yunohost.org/admindoc
+===============================================================================
+EOF
+
+    read -p "Proceed with post-installation? (y/n) "
+    RESULT=1
+    while [ $RESULT -gt 0 ]; do
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            break
+        fi
+        echo -e "\n"
+        /usr/bin/yunohost tools postinstall
+        let RESULT=$?
+        if [ $RESULT -gt 0 ]; then
+            echo -e "\n"
+            read -p "Retry? (y/n) " -n 1
+        fi
+    done
+    chvt 1
+    exit 0
+fi

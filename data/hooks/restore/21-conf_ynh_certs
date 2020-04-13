@@ -1,8 +1,7 @@
 backup_dir="$1/conf/ynh/certs"
 
-sudo mkdir -p /etc/yunohost/certs/
+mkdir -p /etc/yunohost/certs/
 
-sudo cp -a $backup_dir/. /etc/yunohost/certs/
-sudo yunohost app ssowatconf
-sudo service nginx reload
-sudo service metronome reload
+cp -a $backup_dir/. /etc/yunohost/certs/
+service nginx reload
+service metronome reload

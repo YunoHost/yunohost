@@ -1,56 +1,59 @@
-nginx:
-   status: service
-   log: /var/log/nginx
-avahi-daemon:
-   status: service
-   log: /var/log/daemon.log
-dnsmasq:
-   status: service
-   log: /var/log/daemon.log
-fail2ban:
-    status: service
-    log: /var/log/fail2ban.log
+avahi-daemon: {}
+dnsmasq: {}
 dovecot:
-   status: service
-   log: [/var/log/mail.log,/var/log/mail.err]
-postfix:
-   status: service
-   log: [/var/log/mail.log,/var/log/mail.err]
-rmilter:
-   status: systemctl status rmilter.service
-   log: /var/log/mail.log
-rspamd:
-   status: systemctl status rspamd.service
-   log: /var/log/mail.log
-redis-server:
-   status: service
-   log: /var/log/redis/redis-server.log
-mysql:
-   status: service
-   log: [/var/log/mysql.log,/var/log/mysql.err]
-glances:
-   status: service
-ssh:
-   status: service
-   log: /var/log/auth.log
+  log: [/var/log/mail.log,/var/log/mail.err]
+  needs_exposed_ports: [993]
+  category: email
+fail2ban:
+  log: /var/log/fail2ban.log
+  category: security
 metronome:
-   status: metronomectl status
-   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
+  log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
+  needs_exposed_ports: [5222, 5269]
+  category: xmpp
+mysql:
+  log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
+  alternates: ['mariadb']
+  category: database
+nginx:
+  log: /var/log/nginx
+  test_conf: nginx -t
+  needs_exposed_ports: [80, 443]
+  category: web
+nslcd: {}
+php7.0-fpm:
+  log: /var/log/php7.0-fpm.log
+  test_conf: php-fpm7.0 --test
+  category: web
+postfix:
+  log: [/var/log/mail.log,/var/log/mail.err]
+  test_status: systemctl show postfix@- | grep -q "^SubState=running"
+  needs_exposed_ports: [25, 587]
+  category: email
+redis-server:
+  log: /var/log/redis/redis-server.log
+  category: database
+rspamd:
+  log: /var/log/rspamd/rspamd.log
+  category: email
 slapd:
-   status: service
-   log: /var/log/syslog
-php5-fpm:
-   status: service
-   log: /var/log/php5-fpm.log
+  category: database
+ssh:
+  log: /var/log/auth.log
+  test_conf: sshd -t
+  needs_exposed_ports: [22]
+  category: admin
 yunohost-api:
-   status: service
-   log: /var/log/yunohost/yunohost-api.log
+  log: /var/log/yunohost/yunohost-api.log
+  category: admin
 yunohost-firewall:
-   status: service
-nslcd:
-   status: service
-   log: /var/log/syslog
-nsswitch: {}
+  need_lock: true
+  test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
+  category: security
+glances: null
+nsswitch: null
+ssl: null
+yunohost: null
 bind9: null
 tahoe-lafs: null
 memcached: null
@@ -59,3 +62,5 @@ udisk-glue: null
 amavis: null
 postgrey: null
 spamassassin: null
+rmilter: null
+php5-fpm: null

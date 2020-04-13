@@ -9,16 +9,18 @@ do_pre_regen() {
 
   fail2ban_dir="${pending_dir}/etc/fail2ban"
   mkdir -p "${fail2ban_dir}/filter.d"
+  mkdir -p "${fail2ban_dir}/jail.d"
 
   cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
   cp jail.conf "${fail2ban_dir}/jail.conf"
+  cp yunohost-jails.conf "${fail2ban_dir}/jail.d/"
 }
 
 do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || sudo service fail2ban restart
+    || service fail2ban restart
 }
 
 FORCE=${2:-0}

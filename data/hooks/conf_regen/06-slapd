@@ -15,6 +15,7 @@ do_init_regen() {
   # fix some permissions
   chown root:openldap /etc/ldap/slapd.conf
   chown -R openldap:openldap /etc/ldap/schema/
+  usermod -aG ssl-cert openldap
 
   # check the slapd config file at first
   slaptest -Q -u -f /etc/ldap/slapd.conf
@@ -43,24 +44,24 @@ do_pre_regen() {
     || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
 
   # remove temporary backup file
-  sudo rm -f "$tmp_backup_dir_file"
+  rm -f "$tmp_backup_dir_file"
 
   # retrieve current and new backends
-  curr_backend=$(grep '^database' /etc/ldap/slapd.conf | awk '{print $2}')
+  curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
   new_backend=$(grep '^database' slapd.conf | awk '{print $2}')
 
   # save current database before any conf changes
   if [[ -n "$curr_backend" && "$curr_backend" != "$new_backend" ]]; then
     backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
-    sudo mkdir -p "$backup_dir"
-    sudo slapcat -b dc=yunohost,dc=org \
+    mkdir -p "$backup_dir"
+    slapcat -b dc=yunohost,dc=org \
       -l "${backup_dir}/dc=yunohost-dc=org.ldif"
     echo "$backup_dir" > "$tmp_backup_dir_file"
   fi
 
   # copy configuration files
   cp -a ldap.conf slapd.conf "$ldap_dir"
-  cp -a sudo.schema mailserver.schema "$schema_dir"
+  cp -a sudo.schema mailserver.schema yunohost.schema "$schema_dir"
 
   install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
 }
@@ -69,24 +70,31 @@ do_post_regen() {
   regen_conf_files=$1
 
   # ensure that slapd.d exists
-  sudo mkdir -p /etc/ldap/slapd.d
+  mkdir -p /etc/ldap/slapd.d
 
   # fix some permissions
-  sudo chown root:openldap /etc/ldap/slapd.conf
-  sudo chown -R openldap:openldap /etc/ldap/schema/
-  sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+  echo "Making sure we have the right permissions needed ..."
+  # penldap user should be in the ssl-cert group to let it access the certificate for TLS
+  usermod -aG ssl-cert openldap
+  chown root:openldap /etc/ldap/slapd.conf
+  chown -R openldap:openldap /etc/ldap/schema/
+  chown -R openldap:openldap /etc/ldap/slapd.d/
+  chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
+  chmod o-rwx /etc/yunohost/certs/yunohost.org/
+  chmod -R g+rx /etc/yunohost/certs/yunohost.org/
 
   [ -z "$regen_conf_files" ] && exit 0
 
   # check the slapd config file at first
-  sudo slaptest -Q -u -f /etc/ldap/slapd.conf
+  slaptest -Q -u -f /etc/ldap/slapd.conf
 
   # check if a backup should be restored
   backup_dir=$(cat "$tmp_backup_dir_file" 2>/dev/null || true)
   if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
       # regenerate LDAP config directory and import database as root
       # since the admin user may be unavailable
-      sudo sh -c "rm -Rf /etc/ldap/slapd.d;
+      echo "Regenerate LDAP config directory and import the database using slapadd"
+      sh -c "rm -Rf /etc/ldap/slapd.d;
   mkdir /etc/ldap/slapd.d;
   slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
   chown -R openldap:openldap /etc/ldap/slapd.d;
@@ -95,13 +103,18 @@ do_post_regen() {
   chown -R openldap:openldap /var/lib/ldap" 2>&1
   else
       # regenerate LDAP config directory from slapd.conf
-      sudo rm -Rf /etc/ldap/slapd.d
-      sudo mkdir /etc/ldap/slapd.d
-      sudo slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
-      sudo chown -R openldap:openldap /etc/ldap/slapd.d/
+      echo "Regenerate LDAP config directory from slapd.conf"
+      rm -Rf /etc/ldap/slapd.d
+      mkdir /etc/ldap/slapd.d
+      slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+      chown -R openldap:openldap /etc/ldap/slapd.d/
   fi
 
-  sudo service slapd force-reload
+  echo "Running slapdindex"
+  su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
+
+  echo "Reloading slapd"
+  service slapd force-reload
 
   # on slow hardware/vm this regen conf would exit before the admin user that
   # is stored in ldap is available because ldap seems to slow to restart
@@ -114,7 +127,7 @@ do_post_regen() {
   # wait a maximum time of 5 minutes
   # yes, force-reload behave like a restart
   number_of_wait=0
-  while ! sudo su admin -c '' && ((number_of_wait < 60))
+  while ! su admin -c '' && ((number_of_wait < 60))
   do
       sleep 5
       ((number_of_wait += 1))

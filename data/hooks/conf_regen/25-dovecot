@@ -2,6 +2,8 @@
 
 set -e
 
+. /usr/share/yunohost/helpers
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -14,11 +16,10 @@ do_pre_regen() {
   cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
   cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
 
-  # prepare dovecot.conf conf file
-  main_domain=$(cat /etc/yunohost/current_host)
-  cat dovecot.conf \
-    | sed "s/{{ main_domain }}/${main_domain}/g" \
-    > "${dovecot_dir}/dovecot.conf"
+  export pop3_enabled="$(yunohost settings get 'pop3.enabled')"
+  export main_domain=$(cat /etc/yunohost/current_host)
+
+  ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
 
   # adapt it for IPv4-only hosts
   if [ ! -f /proc/net/if_inet6 ]; then
@@ -35,28 +36,28 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
-  sudo mkdir -p "/etc/dovecot/yunohost.d/pre-ext.d"
-  sudo mkdir -p "/etc/dovecot/yunohost.d/post-ext.d"
+  mkdir -p "/etc/dovecot/yunohost.d/pre-ext.d"
+  mkdir -p "/etc/dovecot/yunohost.d/post-ext.d"
 
   # create vmail user
   id vmail > /dev/null 2>&1 \
-    || sudo adduser --system --ingroup mail --uid 500 vmail
+    || adduser --system --ingroup mail --uid 500 vmail
 
   # fix permissions
-  sudo chown -R vmail:mail /etc/dovecot/global_script
-  sudo chmod 770 /etc/dovecot/global_script
-  sudo chown root:mail /var/mail
-  sudo chmod 1775 /var/mail
+  chown -R vmail:mail /etc/dovecot/global_script
+  chmod 770 /etc/dovecot/global_script
+  chown root:mail /var/mail
+  chmod 1775 /var/mail
 
   [ -z "$regen_conf_files" ] && exit 0
 
   # compile sieve script
   [[ "$regen_conf_files" =~ dovecot\.sieve ]] && {
-    sudo sievec /etc/dovecot/global_script/dovecot.sieve
-    sudo chown -R vmail:mail /etc/dovecot/global_script
+    sievec /etc/dovecot/global_script/dovecot.sieve
+    chown -R vmail:mail /etc/dovecot/global_script
   }
 
-  sudo service dovecot restart
+  service dovecot restart
 }
 
 FORCE=${2:-0}

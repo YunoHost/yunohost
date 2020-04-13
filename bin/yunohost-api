@@ -13,7 +13,8 @@ DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 6787
 
 # Level for which loggers will log
-LOGGERS_LEVEL = 'INFO'
+LOGGERS_LEVEL = 'DEBUG'
+API_LOGGER_LEVEL = 'INFO'
 
 # Handlers that will be used by loggers
 #  - file: log to the file LOG_DIR/LOG_FILE
@@ -97,8 +98,10 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
 
     # Define loggers level
     level = LOGGERS_LEVEL
+    api_level = API_LOGGER_LEVEL
     if debug:
         level = 'DEBUG'
+        api_level = 'DEBUG'
 
     # Custom logging configuration
     logging = {
@@ -119,6 +122,7 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
         },
         'handlers': {
             'api': {
+                'level': api_level,
                 'class': 'moulinette.interfaces.api.APIQueueHandler',
             },
             'file': {
@@ -144,6 +148,11 @@ def _init_moulinette(use_websocket=True, debug=False, verbose=False):
                 'level': level,
                 'handlers': [],
                 'propagate': True,
+            },
+            'gnupg': {
+                'level': 'INFO',
+                'handlers': [],
+                'propagate': False,
             },
         },
         'root': {
@@ -192,12 +201,10 @@ if __name__ == '__main__':
     _init_moulinette(opts.use_websocket, opts.debug, opts.verbose)
 
     # Run the server
-    from yunohost.utils.packages import ynh_packages_version
     ret = moulinette.api(
         _retrieve_namespaces(),
         host=opts.host, port=opts.port, routes={
             ('GET', '/installed'): is_installed,
-            ('GET', '/version'): ynh_packages_version,
         }, use_cache=opts.use_cache, use_websocket=opts.use_websocket
     )
     sys.exit(ret)
