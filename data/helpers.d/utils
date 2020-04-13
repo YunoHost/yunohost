@@ -479,3 +479,52 @@ ynh_check_app_version_changed () {
   fi
   echo $return_value
 }
+
+# Compare the old package version and a other version passer as argument.
+# This is really useful we we need to do some action only for some old package version.
+#
+# example: ynh_compare_package_version --comparaison gt --version 2.3.2~ynh1
+# In word this example will check if the installed version is grater than (gt) the version 2.3.2~ynh1
+#
+# usage: ynh_compare_package_version --comparaision lt|gt|le|ge
+# | arg: --comparaison - comparaison type. Could be : le (lower than), gt (grater than), le (lower or equals), ge (grater or equals)
+# | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like 2.3.1~ynh4)
+#
+# Requires YunoHost version 3.8.0 or higher.
+ynh_compare_package_version() {
+    local legacy_args=cv
+    declare -Ar args_array=( [c]=comparaison= [v]=version= )
+
+    local version
+    local comparaison
+    local old_version=$YNH_APP_OLD_VERSION
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if [[ ! $version =~ '~ynh' ]] || [[ ! $old_version =~ '~ynh' ]]; then
+        ynh_print_warn "Invalid agument for version."
+        return 1
+    fi
+
+    if [ $version == $old_version ]; then
+        if [ $comparaison == ge ] || [ $comparaison == le ]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+
+    if [ $comparaison == ge ] || [ $comparaison == gt ]; then
+        if [ $(printf "$version\n$old_version" | sort -V | tail -n 1) == $old_version ]; then
+            return 0
+        else
+            return 1
+        fi
+    else
+        if [ $(printf "$version\n$old_version" | sort -V | tail -n 1) == $version ]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+}
