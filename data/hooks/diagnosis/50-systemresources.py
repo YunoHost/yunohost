@@ -13,7 +13,7 @@ class SystemResourcesDiagnoser(Diagnoser):
     def run(self):
 
         MB = 1024**2
-        GB = 1024**2
+        GB = MB*1024
 
         #
         # RAM
