@@ -513,7 +513,7 @@ ynh_compare_package_version() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local current_version=$YNH_APP_OLD_VERSION
+    local current_version=$YNH_APP_CURRENT_VERSION
 
     # Check the syntax of the versions
     if [[ ! $version =~ '~ynh' ]] || [[ ! $current_version =~ '~ynh' ]]
