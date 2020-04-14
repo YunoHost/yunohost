@@ -1041,6 +1041,7 @@ service:
         ### service_restart()
         restart:
             action_help: Restart one or more services. If the services are not running yet, they will be started.
+            api: PUT /services/<names>/restart
             arguments:
                 names:
                     help: Service name to restart
