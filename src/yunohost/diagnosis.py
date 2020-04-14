@@ -479,8 +479,10 @@ class Diagnoser():
                 s = m18n.n(info[0], **(info[1]))
                 # In cli, we remove the html tags
                 if msettings.get("interface") != "api":
+                    s = s.replace("<cmd>", "'").replace("</cmd>", "'")
                     s = html_tags.sub('', s.replace("<br>","\n"))
                 else:
+                    s = s.replace("<cmd>", "<code class='cmd'>").replace("</cmd>", "</code>")
                     # Make it so that links open in new tabs
                     s = s.replace("<a href=", "<a target='_blank' rel='noopener noreferrer' href=")
                 return s
