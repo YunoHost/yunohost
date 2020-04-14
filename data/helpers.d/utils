@@ -526,7 +526,6 @@ ynh_compare_current_package_version() {
     # If the version are identical, and the evaluation allows equal versions.
     if [ $version == $current_version ]
     then
-        # manage equals case.
         if [ $comparison == ge ] || [ $comparison == le ]; then
             return 0
         else
