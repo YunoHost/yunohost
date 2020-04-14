@@ -2,11 +2,15 @@
 
 import os
 import dns.resolver
+import smtplib
+import socket
 
+from moulinette.utils.process import check_output
 from moulinette.utils.network import download_text
 from moulinette.utils.filesystem import read_yaml
 
 from yunohost.diagnosis import Diagnoser
+from yunohost.domain import _get_maindomain
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
@@ -18,6 +22,8 @@ class MailDiagnoser(Diagnoser):
     dependencies = ["ip"]
 
     def run(self):
+        
+        ips = self.get_public_ips()
 
         # Is outgoing port 25 filtered somehow ?
         self.logger_debug("Running outgoing 25 port check")
@@ -30,14 +36,56 @@ class MailDiagnoser(Diagnoser):
                        status="ERROR",
                        summary="diagnosis_mail_ougoing_port_25_blocked")
 
-        # Forward-confirmed reverse DNS (FCrDNS) verification
+        # Get HELO and be sure postfix is running
+        # TODO SMTP reachability (c.f. check-smtp to be implemented on yunohost's remote diagnoser)
+        server = None
+        result = dict(meta={"test": "mail_ehlo"},
+                      status="SUCCESS",
+                      summary="diagnosis_mail_service_working")
+        try:
+            server = smtplib.SMTP("127.0.0.1", 25, timeout=10)
+            ehlo = server.ehlo()
+            ehlo_domain = ehlo[1].decode("utf-8").split("\n")[0]
+        except OSError:
+            result = dict(meta={"test": "mail_ehlo"},
+                    status="ERROR",
+                    summary="diagnosis_mail_service_not_working")
+            ehlo_domain = _get_maindomain()
+        if server:
+            server.quit()
+        yield result
 
+        # Forward-confirmed reverse DNS (FCrDNS) verification
+        self.logger_debug("Running Forward-confirmed reverse DNS check")
+        for ip in ips:
+            try:
+                rdns_domain, _, _ = socket.gethostbyaddr(ip)
+            except socket.herror as e:
+                yield dict(meta={"test": "mail_fcrdns"},
+                           data={"ip": ip, "ehlo_domain": ehlo_domain},
+                           status="ERROR",
+                           summary="diagnosis_mail_reverse_dns_missing")
+                continue
+            else:
+                if rdns_domain != ehlo_domain:
+                    yield dict(meta={"test": "mail_fcrdns"},
+                               data={"ip": ip, "ehlo_domain": ehlo_domain,
+                                     "rdns_domain": rdns_domain},
+                               status="ERROR",
+                               summary="diagnosis_mail_rdns_different_from_ehlo_domain")
+                else:
+                    yield dict(meta={"test": "mail_fcrdns"},
+                               data={"ip": ip, "ehlo_domain": ehlo_domain},
+                               status="SUCCESS",
+                               summary="diagnosis_mail_rdns_equal_to_ehlo_domain")
+
+        # TODO Is a A/AAAA and MX Record ?
 
         # Are IPs listed on a DNSBL ?
-        self.logger_debug("Running DNSBL detection")
+        self.logger_debug("Running DNS Blacklist detection")
+        # TODO Test if domain are blacklisted too
 
         blacklisted_details = list(self.check_dnsbl(self.get_public_ips()))
-        print(blacklisted_details)
         if blacklisted_details:
             yield dict(meta={"test": "mail_blacklist"},
                        status="ERROR",
@@ -48,11 +96,29 @@ class MailDiagnoser(Diagnoser):
                        status="SUCCESS",
                        summary="diagnosis_mail_blacklist_ok")
 
-        # SMTP reachability (c.f. check-smtp to be implemented on yunohost's remote diagnoser)
+        # TODO Are outgoing public IPs authorized to send mail by SPF ?
+        
+        # TODO Validate DKIM and dmarc ?
 
-        # ideally, SPF / DMARC / DKIM validation ... (c.f. https://github.com/alexAubin/yunoScripts/blob/master/yunoDKIM.py possibly though that looks horrible)
 
-        # check that the mail queue is not filled with hundreds of email pending
+        # Is mail queue filled with hundreds of email pending ?
+        command = 'postqueue -p | grep -c "^[A-Z0-9]"'
+        output = check_output(command).strip()
+        try:
+            pending_emails = int(output)
+        except ValueError:
+            yield dict(meta={"test": "mail_queue"},
+                       status="ERROR",
+                       summary="diagnosis_mail_cannot_get_queue")
+        else:
+            if pending_emails > 300:
+                yield dict(meta={"test": "mail_queue"},
+                       status="WARNING",
+                       summary="diagnosis_mail_queue_too_many_pending_emails")
+            else:
+                yield dict(meta={"test": "mail_queue"},
+                       status="INFO",
+                       summary="diagnosis_mail_queue_ok")
 
         # check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
 
