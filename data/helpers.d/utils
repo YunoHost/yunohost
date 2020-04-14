@@ -492,6 +492,12 @@ ynh_check_app_version_changed () {
 # example: ynh_compare_package_version --comparison gt --version 2.3.2~ynh1
 # This example will check if the installed version is greater than (gt) the version 2.3.2~ynh1
 #
+# Generally you might probably use it as follow in the upgrade script
+#
+# if ynh_compare_package_version --comparaison gt --version 2.3.2~ynh1; then
+#     # Do something that is needed for the package version older than 2.3.2~ynh1
+# fi
+#
 # usage: ynh_compare_package_version --comparison lt|gt|le|ge
 # | arg: --comparison - Comparison type. Could be : le (lower than), gt (greater than), le (lower or equal), ge (greater or equal)
 # | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like 2.3.1~ynh4)
@@ -519,6 +525,7 @@ ynh_compare_package_version() {
     # If the version are identical, and the evaluation allows equal versions.
     if [ $version == $current_version ]
     then
+        # manage equals case.
         if [ $comparison == ge ] || [ $comparison == le ]; then
             return 0
         else
