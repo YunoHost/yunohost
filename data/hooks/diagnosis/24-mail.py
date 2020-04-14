@@ -113,10 +113,12 @@ class MailDiagnoser(Diagnoser):
         else:
             if pending_emails > 300:
                 yield dict(meta={"test": "mail_queue"},
+                           data={'nb_pending': pending_emails},
                        status="WARNING",
                        summary="diagnosis_mail_queue_too_many_pending_emails")
             else:
                 yield dict(meta={"test": "mail_queue"},
+                           data={'nb_pending': pending_emails},
                        status="INFO",
                        summary="diagnosis_mail_queue_ok")
 
