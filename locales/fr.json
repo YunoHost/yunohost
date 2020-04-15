@@ -487,7 +487,7 @@
     "log_user_permission_reset": "Réinitialiser la permission '{}'",
     "migration_0011_failed_to_remove_stale_object": "Impossible de supprimer un objet périmé {dn}: {error}",
     "permission_already_allowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' activée",
-    "permission_already_disallowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé '",
+    "permission_already_disallowed": "Le groupe '{group}' a déjà l'autorisation '{permission}' désactivé'",
     "permission_cannot_remove_main": "Supprimer une autorisation principale n'est pas autorisé",
     "user_already_exists": "L'utilisateur '{user}' existe déjà",
     "app_full_domain_unavailable": "Désolé, cette application doit être installée sur un domaine qui lui est propre, mais d'autres applications sont déjà installées sur le domaine '{domain}'. Vous pouvez utiliser un sous-domaine dédié à cette application à la place.",
