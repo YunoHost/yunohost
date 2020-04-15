@@ -563,7 +563,7 @@
     "diagnosis_description_regenconf": "Configurations système",
     "diagnosis_description_security": "Contrôles de sécurité",
     "diagnosis_ports_could_not_diagnose": "Impossible de diagnostiquer si les ports sont accessibles de l'extérieur. Erreur: {error}",
-    "apps_catalog_updating": "Mise à jour du catalogue d'applications...",
+    "apps_catalog_updating": "Mise à jour du catalogue d'applications…",
     "apps_catalog_obsolete_cache": "Le cache du catalogue d'applications est vide ou obsolète.",
     "apps_catalog_update_success": "Le catalogue des applications a été mis à jour !",
     "diagnosis_mail_ougoing_port_25_ok": "Le port sortant 25 n'est pas bloqué et le courrier électronique peut être envoyé à d'autres serveurs.",
