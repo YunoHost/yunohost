@@ -156,9 +156,17 @@ def app_info(app, full=False):
 
 
 def _app_upgradable(app_infos):
+    from packaging import version
 
     # Determine upgradability
     # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
+
+    # Firstly use the version to know if an upgrade is available
+    if app_infos["version"] != "-" and app_infos["from_catalog"]["manifest"].get("version", None):
+        if version.parse(app_infos["version"]) < version.parse(app_infos["from_catalog"]["manifest"].get("version", "-")):
+            return "yes"
+        else:
+            return "no"
 
     if not app_infos.get("from_catalog", None):
         return "url_required"
