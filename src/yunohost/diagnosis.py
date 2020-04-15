@@ -58,6 +58,10 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
         if unknown_categories:
             raise YunohostError('diagnosis_unknown_categories', categories=", ".join(categories))
 
+    if not os.path.exists(DIAGNOSIS_CACHE):
+        logger.warning(m18n.n("diagnosis_never_ran_yet"))
+        return
+
     # Fetch all reports
     all_reports = []
     for category in categories:

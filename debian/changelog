@@ -1,17 +1,74 @@
+yunohost (3.8.0~alpha) testing; urgency=low
+
+  Placeholder for upcoming 3.8 to avoid funky stuff with version numbers in
+  builds etc.
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
+
+yunohost (3.7.0.10) stable; urgency=low
+
+  - [fix] On some weird setup, this folder and content ain't readable by group ... gotta make sure to make rx for group other slapd will explode
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Mar 2020 21:45:00  +0000
+
+yunohost (3.7.0.9) stable; urgency=low
+
+  - [fix] Automatically remove existing system group if it exists when creating primary groups
+  - [fix] Require moulinette and ssowat to be at least 3.7 to avoid funky situations where regen-conf fails because moulinette ain't upgraded yet
+  - [i18n] Improve translations for Arabic, Bengali, Catalan, Chinese, Dutch, Esperanto, French, German, Greek, Hindi, Hungarian, Italian, Norwegian Bokmål, Occitan, Polish, Portuguese, Russian, Spanish
+
+  Thanks to all contributors <3 ! (Aeris One, Allan N., Alvaro, amirale qt, Armando F., ButterflyOfFire, Elie G., Gustavo M., Jeroen F., Kayou, Mario, Mélanie C., Patrick B., Quentí, tituspijean, xaloc33, yalh76, Yasss Gurl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Mar 2020 21:00:00  +0000
+
+yunohost (3.7.0.8) stable; urgency=low
+
+  - [fix] App_setting delete add if the key doesn't exist
+
+ -- Kay0u <pierre@kayou.io>  Fri, 27 Mar 2020 00:36:46 +0000
+
+yunohost (3.7.0.7) stable; urgency=low
+
+  - [fix] Allow public apps with no sso tile (#894)
+  - [fix] Slapd now index permission to avoid log error
+
+  Thanks to all contributors <3 ! (Aleks, Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 26 Mar 2020 21:53:22 +0000
+
+yunohost (3.7.0.6) testing; urgency=low
+
+  - [fix] Make sure the group permission update contains unique elements
+
+  Thanks to all contributors <3 ! (Aleks)
+
+ -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 22:34:27 +0000
+
+yunohost (3.7.0.5) testing; urgency=low
+
+  - [fix] Permission url (#871)
+  - [fix] DNS resolver (#859)
+  - [fix] Legacy permission management (#868, #855)
+  - [enh] More informations in hooks permission (#877)
+
+  Thanks to all contributors <3 ! (Bram, ljf, Aleks, Josué, Maniack, Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Sun, 15 Mar 2020 15:07:24 +0000
+
 yunohost (3.7.0.4) testing; urgency=low
 
    - [fix] Also add all_users when allowing visitors (#855)
    - [fix] Fix handling of skipped_uris (c.f. also SSOwat#149)
    - [i18n] Improve translations for Catalan
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 2 Dev 2019 20:44:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 2 Dec 2019 20:44:00  +0000
 
 yunohost (3.7.0.3) testing; urgency=low
 
   - [mod] Some refactoring for permissions create/update/reset (#837)
   - [fix] Fix some edge cases for ynh_secure_remove and ynh_clean_check_starting
   - [i18n] Improve translations for French, Catalan
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 23 Nov 2019 19:30:00  +0000
 
 yunohost (3.7.0.2) testing; urgency=low
@@ -88,9 +145,9 @@ yunohost (3.6.5.2) stable; urgency=low
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 10 Oct 2019 01:00:00  +0000
 
 yunohost (3.6.5.1) stable; urgency=low
-  
+
   - [mod] Change maxretry of fail2ban from 6 to 10 (fe8fd1b)
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 Oct 2019 20:00:00  +0000
 
 yunohost (3.6.5) stable; urgency=low
@@ -195,7 +252,7 @@ yunohost (3.6.1.2) testing; urgency=low
 yunohost (3.6.1.1) testing; urgency=low
 
   - [fix] Weird issue in slapd triggered by indexing uidNumber / gidNumber
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2019 15:10:00  +0000
 
 yunohost (3.6.1) testing; urgency=low
@@ -665,19 +722,19 @@ yunohost (3.0.0~beta1.2) testing; urgency=low
 
   Removing http2 also from yunohost_admin.conf since there still are some
   issues with wordpress ?
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 May 2018 05:52:00 +0000
 
 yunohost (3.0.0~beta1.1) testing; urgency=low
 
   Fixes in the postgresql migration
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 06 May 2018 03:06:00 +0000
 
 yunohost (3.0.0~beta1) testing; urgency=low
 
   Beta release for Stretch
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 03 May 2018 03:04:45 +0000
 
 yunohost (2.7.14) stable; urgency=low
@@ -716,7 +773,7 @@ yunohost (2.7.13.4) testing; urgency=low
   * Increase backup filename length
 
   (Fixes by Bram <3)
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 05 Jun 2018 18:22:00 +0000
 
 yunohost (2.7.13.3) testing; urgency=low
@@ -807,7 +864,7 @@ yunohost (2.7.11) testing; urgency=low
   * [helpers] Allow for 'or' in dependencies (#381)
   * [helpers] Tweak the usage of BACKUP_CORE_ONLY (#398)
   * [helpers] Tweak systemd config helpers (optional service name and template name) (#425)
-  * [i18n] Improve translations for Arabic, French, German, Occitan, Spanish 
+  * [i18n] Improve translations for Arabic, French, German, Occitan, Spanish
 
   Thanks to all contributors (ariasuni, ljf, JimboJoe, frju365, Maniack, J-B Lescher, Josue, Aleks, Bram, jibec) and the several translators (ButterflyOfFire, Eric G., Cedric, J. Keerl, beyercenter, P. Gatzka, Quenti, bjarkan) <3 !
 
@@ -898,11 +955,11 @@ yunohost (2.7.3) testing; urgency=low
   Major changes :
 
   * [fix] Refactor/clean madness related to DynDNS (#353)
-  * [i18n] Improve french translation (#355)   
+  * [i18n] Improve french translation (#355)
   * [fix] Use cryptorandom to generate password (#358)
   * [enh] Support for single app upgrade from the webadmin (#359)
   * [enh] Be able to give lock to son processes detached by systemctl (#367)
-  * [enh] Make MySQL dumps with a single transaction to ensure backup consistency (#370)  
+  * [enh] Make MySQL dumps with a single transaction to ensure backup consistency (#370)
 
   Misc fixes/improvements :
 
@@ -910,7 +967,7 @@ yunohost (2.7.3) testing; urgency=low
   * [fix] Allow dash at the beginning of app settings value (#357)
   * [enh] Handle root path in nginx conf (#361)
   * [enh] Add debugging in ldap init (#365)
-  * [fix] Fix app_upgrade_string with missing key 
+  * [fix] Fix app_upgrade_string with missing key
   * [fix] Fix for change_url path normalizing with root url (#368)
   * [fix] Missing 'ask_path' string (#369)
   * [enh] Remove date from sql dump (#371)
@@ -957,7 +1014,7 @@ yunohost (2.7.1) testing; urgency=low
   * [fix] Make read-only mount bind actually read-only (#343) (ljf)
   ### dyndns
   * Regen dnsmasq conf if it's not up to date :| (Alexandre Aubin)
-  * [fix] timeout on request to avoid blocking process (Laurent Peuch) 
+  * [fix] timeout on request to avoid blocking process (Laurent Peuch)
   * Put request url in an intermediate variable (Alexandre Aubin)
   ### other
   * clean users.py (Laurent Peuch)
@@ -1691,7 +1748,7 @@ yunohost (2.3.12) testing; urgency=low
   * [fix] Check for tty in root_handlers before remove it in bin/yunohost
   * [fix] Use dyndns.yunohost.org instead of dynhost.yunohost.org
   * [fix] Set found private key and don't validate it in dyndns_update
-  * [fix] Update first registered domain with DynDNS instead of current_host 
+  * [fix] Update first registered domain with DynDNS instead of current_host
   * [i18n] Rename app_requirements_failed err named variable
   * [i18n] Update translations from Weblate
 
@@ -1699,7 +1756,7 @@ yunohost (2.3.12) testing; urgency=low
   * [enh] Better message during service regenconf.
   * [enh] Display hook path on error message.
   * [enh] Use named arguments when calling m18n in service.py
-  * [enh] Use named arguments with m18n. 
+  * [enh] Use named arguments with m18n.
   * [enh] Use named arguments for user_unknown string.
 
  -- Jérôme Lebleu <jerome@yunohost.org>  Sat, 09 Apr 2016 12:13:10 +0200

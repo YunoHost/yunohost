@@ -8,11 +8,11 @@ from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 
 # Get main domain
-maindomain = _get_maindomain()
-
+maindomain = ""
 
 def setup_function(function):
-    pass
+    global maindomain
+    maindomain = _get_maindomain()
 
 
 def teardown_function(function):

@@ -198,6 +198,7 @@ ynh_setup_source () {
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
+# For multiple calls, cookies are persisted between each call for the same app
 #
 # $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
@@ -236,9 +237,14 @@ ynh_local_curl () {
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
+    
+    local cookiefile=/tmp/ynh-$app-cookie.txt
+    touch $cookiefile
+    chown root $cookiefile
+    chmod 700 $cookiefile
 
     # Curl the URL
-    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url"
+    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
 }
 
 # Render templates with Jinja2
@@ -405,8 +411,7 @@ ynh_app_upstream_version () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    manifest="${manifest:-../manifest.json}"
-    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    version_key=$YNH_APP_MANIFEST_VERSION
     echo "${version_key/~ynh*/}"
 }
 
@@ -429,8 +434,7 @@ ynh_app_package_version () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    manifest="${manifest:-../manifest.json}"
-    version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    version_key=$YNH_APP_MANIFEST_VERSION
     echo "${version_key/*~ynh/}"
 }
 
@@ -480,4 +484,50 @@ ynh_check_app_version_changed () {
     return_value="UPGRADE_PACKAGE"
   fi
   echo $return_value
+}
+
+# Compare the current package version against another version given as an argument.
+# This is really useful when we need to do some actions only for some old package versions.
+#
+# example: ynh_compare_current_package_version --comparison gt --version 2.3.2~ynh1
+# This example will check if the installed version is greater than (gt) the version 2.3.2~ynh1
+#
+# Generally you might probably use it as follow in the upgrade script
+#
+# if ynh_compare_current_package_version --comparaison lt --version 2.3.2~ynh1
+# then
+#     # Do something that is needed for the package version older than 2.3.2~ynh1
+# fi
+#
+# usage: ynh_compare_current_package_version --comparison lt|le|eq|ne|ge|gt
+# | arg: --comparison - Comparison type. Could be : le (lower than), le (lower or equal),
+# | eq (equal), ne (not equal), ge (greater or equal), gt (greater than)
+# | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like 2.3.1~ynh4)
+#
+# Return 0 if the evaluation is true. 1 if false.
+#
+# Requires YunoHost version 3.8.0 or higher.
+ynh_compare_current_package_version() {
+    local legacy_args=cv
+    declare -Ar args_array=( [c]=comparison= [v]=version= )
+    local version
+    local comparison
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    local current_version=$YNH_APP_CURRENT_VERSION
+
+    # Check the syntax of the versions
+    if [[ ! $version =~ '~ynh' ]] || [[ ! $current_version =~ '~ynh' ]]
+    then
+        ynh_die "Invalid argument for version."
+    fi
+
+    # Check validity of the comparator
+    if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
+        ynh_die "Invialid comparator must be : lt, le, eq, ne, ge, gt"
+    fi
+
+    # Return the return value of dpkg --compare-versions
+    dpkg --compare-versions $current_version $comparison $version
 }

@@ -85,7 +85,7 @@ use_ipv6 = true
 disco_items = {
 	{ "muc.{{ main_domain }}" },
 	{ "pubsub.{{ main_domain }}" },
-	{ "upload.{{ main_domain }}" },
+	{ "xmpp-upload.{{ main_domain }}" },
 	{ "vjud.{{ main_domain }}" }
 };
 
@@ -141,11 +141,16 @@ Component "pubsub.{{ main_domain }}" "pubsub"
 	unrestricted_node_creation = true -- Anyone can create a PubSub node (from any server)
 
 ---Set up a HTTP Upload service
-Component "upload.{{ main_domain }}" "http_upload"
+Component "xmpp-upload.{{ main_domain }}" "http_upload"
 	name = "{{ main_domain }} Sharing Service"
 
+	http_file_path = "/var/xmpp-upload/{{ main_domain }}/upload"
+	http_external_url = "https://xmpp-upload.{{ main_domain }}:443"
+	http_file_base_path = "/upload"
 	http_file_size_limit = 6*1024*1024
 	http_file_quota = 60*1024*1024
+	http_upload_file_size_limit = 100 * 1024 * 1024 -- bytes
+	http_upload_quota = 10 * 1024 * 1024 * 1024 -- bytes
 
 
 ---Set up a VJUD service

@@ -1148,21 +1148,18 @@ class RestoreManager():
         if not os.path.isfile(backup_csv):
             return
 
-        try:
-            contains_php5 = False
-            with open(backup_csv) as csvfile:
-                reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
-                newlines = []
-                for row in reader:
-                    if 'php5' in row['source']:
-                        contains_php5 = True
-                        row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
-                            .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
-                            .replace('php5', 'php7')
+        contains_php5 = False
+        with open(backup_csv) as csvfile:
+            reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
+            newlines = []
+            for row in reader:
+                if 'php5' in row['source']:
+                    contains_php5 = True
+                    row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
+                        .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
+                        .replace('php5', 'php7')
 
-                    newlines.append(row)
-        except (IOError, OSError, csv.Error) as e:
-            raise YunohostError('error_reading_file', file=backup_csv, error=str(e))
+                newlines.append(row)
 
         if not contains_php5:
             return
@@ -1834,11 +1831,12 @@ class CopyBackupMethod(BackupMethod):
                               self.work_dir])
         if ret == 0:
             return
-        else:
-            logger.warning(m18n.n("bind_mouting_disable"))
-            subprocess.call(["mountpoint", "-q", self.work_dir,
-                            "&&", "umount", "-R", self.work_dir])
-            raise YunohostError('backup_cant_mount_uncompress_archive')
+
+        logger.warning("Could not mount the backup in readonly mode with --rbind ... Unmounting")
+        # FIXME : Does this stuff really works ? '&&' is going to be interpreted as an argument for mounpoint here ... Not as a classical '&&' ...
+        subprocess.call(["mountpoint", "-q", self.work_dir,
+                        "&&", "umount", "-R", self.work_dir])
+        raise YunohostError('backup_cant_mount_uncompress_archive')
 
 
 class TarBackupMethod(BackupMethod):

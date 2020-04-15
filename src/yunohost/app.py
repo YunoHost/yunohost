@@ -156,9 +156,17 @@ def app_info(app, full=False):
 
 
 def _app_upgradable(app_infos):
+    from packaging import version
 
     # Determine upgradability
     # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
+
+    # Firstly use the version to know if an upgrade is available
+    if app_infos["version"] != "-" and app_infos["from_catalog"]["manifest"].get("version", None):
+        if version.parse(app_infos["version"]) < version.parse(app_infos["from_catalog"]["manifest"].get("version", "-")):
+            return "yes"
+        else:
+            return "no"
 
     if not app_infos.get("from_catalog", None):
         return "url_required"
@@ -216,7 +224,7 @@ def app_map(app=None, raw=False, user=None):
                 logger.warning("Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/" % app_id)
                 continue
             main_perm = permissions[app_id + ".main"]
-            if user not in main_perm["corresponding_users"] and "visitors" not in main_perm["allowed"]:
+            if user not in main_perm["corresponding_users"]:
                 continue
 
         domain = app_settings['domain']
@@ -240,7 +248,7 @@ def app_map(app=None, raw=False, user=None):
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
-            if user and user not in perm_info["corresponding_users"] and "visitors" not in perm_info["allowed"]:
+            if user and user not in perm_info["corresponding_users"]:
                 continue
             if perm_info["url"].startswith("re:"):
                 # Here, we have an issue if the chosen url is a regex, because
@@ -347,6 +355,7 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
@@ -420,6 +429,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         url -- Git url to fetch for upgrade
 
     """
+    from packaging import version
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
@@ -467,27 +477,30 @@ def app_upgrade(app=[], url=None, file=None, force=False):
 
         # Manage upgrade type and avoid any upgrade if there are nothing to do
         upgrade_type = "UNKNOWN"
-        if manifest.get("upgrade_only_if_version_changes", None) is True:
-            # Get actual_version and new version
-            app_actual_version = manifest["version"]
-            app_new_version = app_dict["version"]
+        # Get current_version and new version
+        app_new_version = manifest.get("version", "?")
+        app_current_version = app_dict.get("version", "?")
+
+        if True or manifest.get('integration', {}).get("upgrade_only_if_version_changes", None) is True:
 
             # do only the upgrade if there are a change
-            if app_actual_version == app_new_version and not force:
+            if version.parse(app_current_version) >= version.parse(app_new_version) and not force:
                 logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
                 # Save update time
                 now = int(time.time())
                 app_setting(app_instance_name, 'update_time', now)
                 app_setting(app_instance_name, 'current_revision', manifest.get('remote', {}).get('revision', "?"))
                 continue
-            elif app_actual_version == app_new_version:
+            elif version.parse(app_current_version) > version.parse(app_new_version):
+                upgrade_type = "DOWNGRADE_FORCED"
+            elif app_current_version == app_new_version:
                 upgrade_type = "UPGRADE_FORCED"
-            elif "~ynh" in app_actual_version and "~ynh" in app_new_version:
-                app_actual_version_upstream, app_actual_version_pkg = app_actual_version.split("~ynh")
+            elif "~ynh" in app_current_version and "~ynh" in app_new_version:
+                app_current_version_upstream, app_current_version_pkg = app_current_version.split("~ynh")
                 app_new_version_upstream, app_new_version_pkg = app_new_version.split("~ynh")
-                if app_actual_version_upstream == app_new_version_upstream:
+                if app_current_version_upstream == app_new_version_upstream:
                     upgrade_type = "UPGRADE_PACKAGE"
-                elif app_actual_version_pkg == app_new_version_pkg:
+                elif app_current_version_pkg == app_new_version_pkg:
                     upgrade_type = "UPGRADE_APP"
                 else:
                     upgrade_type = "UPGRADE_FULL"
@@ -511,6 +524,8 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
+        env_dict["YNH_APP_MANIFEST_VERSION"] = app_new_version
+        env_dict["YNH_APP_CURRENT_VERSION"] = app_current_version
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -723,6 +738,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
@@ -831,6 +847,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
             # Execute remove script
             operation_logger_remove = OperationLogger('remove_on_failed_install',
@@ -924,7 +941,7 @@ def dump_app_log_extract_for_debugging(operation_logger):
         line = line.strip().split(": ", 1)[1]
         lines_to_display.append(line)
 
-        if line.endswith("+ ynh_exit_properly"):
+        if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
             break
         elif len(lines_to_display) > 20:
             lines_to_display.pop(0)
@@ -1008,6 +1025,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
@@ -1173,8 +1191,9 @@ def app_setting(app, key, value=None, delete=False):
             logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
             return None
 
-    if delete and key in app_settings:
-        del app_settings[key]
+    if delete:
+        if key in app_settings:
+            del app_settings[key]
     else:
         # FIXME: Allow multiple values for some keys?
         if key in ['redirected_urls', 'redirected_regex']:
@@ -1315,6 +1334,7 @@ def app_ssowatconf():
 
             # FIXME : gotta handle regex-urls here... meh
             url = _sanitized_absolute_url(perm_info["url"])
+            perm_info["url"] = url
             if "visitors" in perm_info["allowed"]:
                 if url not in unprotected_urls:
                     unprotected_urls.append(url)
@@ -1600,6 +1620,7 @@ def app_config_apply(operation_logger, app, args):
 
     logger.success("Config updated as expected")
     return {
+        "app": app,
         "logs": operation_logger.success(),
     }
 
@@ -2781,7 +2802,7 @@ def unstable_apps():
 
     output = []
 
-    for infos in app_list(full=True):
+    for infos in app_list(full=True)["apps"]:
 
         if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in ["inprogress", "notworking"]:
             output.append(infos["id"])
