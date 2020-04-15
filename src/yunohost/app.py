@@ -472,7 +472,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         app_new_version = manifest.get("version", "?")
         app_current_version = app_dict.get("version", "?")
 
-        if manifest.get("upgrade_only_if_version_changes", None) is True:
+        if manifest.get('integration', {}).get("upgrade_only_if_version_changes", None) is True:
 
             # do only the upgrade if there are a change
             if app_current_version == app_new_version and not force:
