@@ -462,7 +462,7 @@
     "pattern_username": "Must be lower-case alphanumeric and underscore characters only",
     "pattern_password_app": "Sorry, passwords can not contain the following characters: {forbidden_chars}",
     "permission_already_allowed": "Group '{group}' already has permission '{permission}' enabled",
-    "permission_already_disallowed": "Group '{group}' already has permission '{permission}' disabled'",
+    "permission_already_disallowed": "Group '{group}' already has permission '{permission}' disabled",
     "permission_already_exist": "Permission '{permission}' already exists",
     "permission_already_up_to_date": "The permission was not updated because the addition/removal requests already match the current state.",
     "permission_cannot_remove_main": "Removing a main permission is not allowed",
