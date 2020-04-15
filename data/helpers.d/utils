@@ -499,8 +499,9 @@ ynh_check_app_version_changed () {
 #     # Do something that is needed for the package version older than 2.3.2~ynh1
 # fi
 #
-# usage: ynh_compare_current_package_version --comparison lt|gt|le|ge
-# | arg: --comparison - Comparison type. Could be : le (lower than), gt (greater than), le (lower or equal), ge (greater or equal)
+# usage: ynh_compare_current_package_version --comparison lt|le|eq|ne|ge|gt
+# | arg: --comparison - Comparison type. Could be : le (lower than), le (lower or equal),
+# | eq (equal), ne (not equal), ge (greater or equal), gt (greater than)
 # | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like 2.3.1~ynh4)
 #
 # Return 0 if the evaluation is true. 1 if false.
@@ -519,35 +520,14 @@ ynh_compare_current_package_version() {
     # Check the syntax of the versions
     if [[ ! $version =~ '~ynh' ]] || [[ ! $current_version =~ '~ynh' ]]
     then
-        ynh_print_warn "Invalid agument for version."
-        return 1
+        ynh_die "Invalid argument for version."
     fi
 
-    # If the version are identical, and the evaluation allows equal versions.
-    if [ $version == $current_version ]
-    then
-        if [ $comparison == ge ] || [ $comparison == le ]; then
-            return 0
-        else
-            return 1
-        fi
+    # Check validity of the comparator
+    if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
+        ynh_die "Invialid comparator must be : lt, le, eq, ne, ge, gt"
     fi
 
-    # Check if the current version is greater than the one given as argument
-    if [ $comparison == ge ] || [ $comparison == gt ]
-    then
-        if [ $(printf "$version\n$current_version" | sort --version-sort | tail -n 1) == $current_version ]; then
-            return 0
-        else
-            return 1
-        fi
-
-    # Else if the current version is lower than the one given as argument
-    else
-        if [ $(printf "$version\n$current_version" | sort --version-sort | tail -n 1) == $version ]; then
-            return 0
-        else
-            return 1
-        fi
-    fi
+    # Return the return value of dpkg --compare-versions
+    dpkg --compare-versions $current_version $comparison $version
 }
