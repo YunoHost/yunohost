@@ -468,28 +468,28 @@ def app_upgrade(app=[], url=None, file=None, force=False):
 
         # Manage upgrade type and avoid any upgrade if there are nothing to do
         upgrade_type = "UNKNOWN"
-        # Get actual_version and new version
+        # Get current_version and new version
         app_new_version = manifest.get("version", "?")
-        app_actual_version = app_dict.get("version", "?")
+        app_current_version = app_dict.get("version", "?")
 
         if manifest.get("upgrade_only_if_version_changes", None) is True:
 
             # do only the upgrade if there are a change
-            if app_actual_version == app_new_version and not force:
+            if app_current_version == app_new_version and not force:
                 logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
                 # Save update time
                 now = int(time.time())
                 app_setting(app_instance_name, 'update_time', now)
                 app_setting(app_instance_name, 'current_revision', manifest.get('remote', {}).get('revision', "?"))
                 continue
-            elif app_actual_version == app_new_version:
+            elif app_current_version == app_new_version:
                 upgrade_type = "UPGRADE_FORCED"
-            elif "~ynh" in app_actual_version and "~ynh" in app_new_version:
-                app_actual_version_upstream, app_actual_version_pkg = app_actual_version.split("~ynh")
+            elif "~ynh" in app_current_version and "~ynh" in app_new_version:
+                app_current_version_upstream, app_current_version_pkg = app_current_version.split("~ynh")
                 app_new_version_upstream, app_new_version_pkg = app_new_version.split("~ynh")
-                if app_actual_version_upstream == app_new_version_upstream:
+                if app_current_version_upstream == app_new_version_upstream:
                     upgrade_type = "UPGRADE_PACKAGE"
-                elif app_actual_version_pkg == app_new_version_pkg:
+                elif app_current_version_pkg == app_new_version_pkg:
                     upgrade_type = "UPGRADE_APP"
                 else:
                     upgrade_type = "UPGRADE_FULL"
