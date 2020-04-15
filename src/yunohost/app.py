@@ -514,7 +514,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = app_new_version
-        env_dict["YNH_APP_CURRENT_VERSION"] = app_actual_version
+        env_dict["YNH_APP_CURRENT_VERSION"] = app_current_version
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
