@@ -494,7 +494,7 @@ ynh_check_app_version_changed () {
 #
 # Generally you might probably use it as follow in the upgrade script
 #
-# if ynh_compare_current_package_version --comparaison gt --version 2.3.2~ynh1
+# if ynh_compare_current_package_version --comparaison lt --version 2.3.2~ynh1
 # then
 #     # Do something that is needed for the package version older than 2.3.2~ynh1
 # fi
