@@ -489,8 +489,8 @@ ynh_check_app_version_changed () {
 # Compare the current package version against another version given as an argument.
 # This is really useful when we need to do some actions only for some old package versions.
 #
-# example: ynh_compare_current_package_version --comparison gt --version 2.3.2~ynh1
-# This example will check if the installed version is greater than (gt) the version 2.3.2~ynh1
+# example: ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
+# This example will check if the installed version is lower than (lt) the version 2.3.2~ynh1
 #
 # Generally you might probably use it as follow in the upgrade script
 #
@@ -500,7 +500,7 @@ ynh_check_app_version_changed () {
 # fi
 #
 # usage: ynh_compare_current_package_version --comparison lt|le|eq|ne|ge|gt
-# | arg: --comparison - Comparison type. Could be : le (lower than), le (lower or equal),
+# | arg: --comparison - Comparison type. Could be : lt (lower than), le (lower or equal),
 # | eq (equal), ne (not equal), ge (greater or equal), gt (greater than)
 # | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like 2.3.1~ynh4)
 #
