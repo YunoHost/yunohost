@@ -429,6 +429,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         url -- Git url to fetch for upgrade
 
     """
+    from packaging import version
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
 
@@ -483,13 +484,15 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         if manifest.get('integration', {}).get("upgrade_only_if_version_changes", None) is True:
 
             # do only the upgrade if there are a change
-            if app_current_version == app_new_version and not force:
+            if version.parse(app_current_version) >= version.parse(app_new_version) and not force:
                 logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
                 # Save update time
                 now = int(time.time())
                 app_setting(app_instance_name, 'update_time', now)
                 app_setting(app_instance_name, 'current_revision', manifest.get('remote', {}).get('revision', "?"))
                 continue
+            elif version.parse(app_current_version) > version.parse(app_new_version):
+                upgrade_type = "DOWNGRADE_FORCED"
             elif app_current_version == app_new_version:
                 upgrade_type = "UPGRADE_FORCED"
             elif "~ynh" in app_current_version and "~ynh" in app_new_version:
