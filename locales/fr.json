@@ -184,7 +184,7 @@
     "mailbox_used_space_dovecot_down": "Le service de courriel Dovecot doit être démarré si vous souhaitez voir l’espace disque occupé par la messagerie",
     "domains_available": "Domaines disponibles :",
     "backup_archive_broken_link": "Impossible d’accéder à l’archive de sauvegarde (lien invalide vers {path:s})",
-    "certmanager_acme_not_configured_for_domain": "Le certificat du domaine {domain:s} ne semble pas être correctement installé. Veuillez d'abord exécuter cert-install.",
+    "certmanager_acme_not_configured_for_domain": "Le certificat du domaine {domain:s} ne semble pas être correctement installé. Veuillez d'abord exécuter 'yunohost domain cert-install {domain:s}'.",
     "certmanager_http_check_timeout": "Expiration du délai lorsque le serveur a essayé de se contacter lui-même via HTTP en utilisant l'adresse IP public {ip:s} du domaine {domain:s}. Vous rencontrez peut-être un problème d’hairpinning ou alors le pare-feu/routeur en amont de votre serveur est mal configuré.",
     "certmanager_couldnt_fetch_intermediate_cert": "Expiration du délai lors de la tentative de récupération du certificat intermédiaire depuis Let’s Encrypt. L’installation ou le renouvellement du certificat a été annulé. Veuillez réessayer plus tard.",
     "domain_hostname_failed": "Échec de l’utilisation d’un nouveau nom d’hôte. Cela pourrait causer des soucis plus tard (peut-être que ça n’en causera pas).",
