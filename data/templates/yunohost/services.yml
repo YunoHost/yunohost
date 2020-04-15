@@ -13,7 +13,7 @@ metronome:
   category: xmpp
 mysql:
   log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
-  alternates: ['mariadb']
+  actual_systemd_service: mariadb
   category: database
 nginx:
   log: /var/log/nginx
@@ -27,7 +27,7 @@ php7.0-fpm:
   category: web
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
-  test_status: systemctl show postfix@- | grep -q "^SubState=running"
+  actual_systemd_service: postfix@-
   needs_exposed_ports: [25, 587]
   category: email
 redis-server:
