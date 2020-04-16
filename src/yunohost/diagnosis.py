@@ -27,6 +27,8 @@
 import re
 import os
 import time
+import requests
+import socket
 
 from moulinette import m18n, msettings
 from moulinette.utils import log
@@ -39,6 +41,7 @@ logger = log.getActionLogger('yunohost.diagnosis')
 
 DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
 DIAGNOSIS_CONFIG_FILE = '/etc/yunohost/diagnosis.yml'
+DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
 def diagnosis_list():
     all_categories_names = [h for h, _ in _list_diagnosis_categories()]
@@ -491,6 +494,49 @@ class Diagnoser():
 
             if "details" in item:
                 item["details"] = [m18n_(info) for info in item["details"]]
+
+    @staticmethod
+    def remote_diagnosis(uri, data, ipversion, timeout=30):
+
+        # Monkey patch socket.getaddrinfo to force request() to happen in ipv4
+        # or 6 ...
+        # Inspired by https://stackoverflow.com/a/50044152
+        old_getaddrinfo = socket.getaddrinfo
+
+        def getaddrinfo_ipv4_only(*args, **kwargs):
+            responses = old_getaddrinfo(*args, **kwargs)
+            return [response
+                    for response in responses
+                    if response[0] == socket.AF_INET]
+
+        def getaddrinfo_ipv6_only(*args, **kwargs):
+            responses = old_getaddrinfo(*args, **kwargs)
+            return [response
+                    for response in responses
+                    if response[0] == socket.AF_INET6]
+
+        if ipversion == 4:
+            socket.getaddrinfo = getaddrinfo_ipv4_only
+        elif ipversion == 6:
+            socket.getaddrinfo = getaddrinfo_ipv6_only
+
+        url = 'https://%s/%s' % (DIAGNOSIS_SERVER, uri)
+        try:
+            r = requests.post(url, json=data, timeout=timeout)
+        finally:
+            socket.getaddrinfo = old_getaddrinfo
+
+        if r.status_code not in [200, 400]:
+            raise Exception("Bad response from diagnosis server.\nURL: %s\nStatus code: %s\nMessage: %s" % (url, r.status_code, r.content))
+        if r.status_code == 400:
+            raise Exception("Diagnosis request was refused: %s" % r.content)
+
+        try:
+            r = r.json()
+        except Exception as e:
+            raise Exception("Failed to parse json from diagnosis server response.\nError: %s\nOriginal content: %s" % (e, r.content))
+
+        return r
 
 
 def _list_diagnosis_categories():
