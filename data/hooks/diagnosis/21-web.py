@@ -48,15 +48,20 @@ class WebDiagnoser(Diagnoser):
         # is working and therefore we'll do it only if at least one ipv4 domain
         # works.
         self.do_hairpinning_test = False
+
+        ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
         if ipv4.get("status") == "SUCCESS":
-            for item in self.test_http(domains_to_check, ipversion=4):
-                yield item
+            ipversions.append(4)
 
+        # To be discussed: we could also make this check dependent on the
+        # existence of an AAAA record...
         ipv6 = Diagnoser.get_cached_report("ip", item={"test": "ipv6"}) or {}
         if ipv6.get("status") == "SUCCESS":
-            for item in self.test_http(domains_to_check, ipversion=6):
-                yield item
+            ipversions.append(6)
+
+        for item in self.test_http(domains_to_check, ipversions):
+            yield item
 
         # If at least one domain is correctly exposed to the outside,
         # attempt to diagnose hairpinning situations. On network with
@@ -80,32 +85,44 @@ class WebDiagnoser(Diagnoser):
                     # issue but something else super weird ...
                     pass
 
-    def test_http(self, domains, ipversion):
+    def test_http(self, domains, ipversions):
 
-        try:
-            r = Diagnoser.remote_diagnosis('check-http',
-                                           data={'domains': domains,
-                                                 "nonce": self.nonce},
-                                           ipversion=ipversion)
-            results = r["http"]
-        except Exception as e:
-            raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
+        results = {}
+        for ipversion in ipversions:
+            try:
+                r = Diagnoser.remote_diagnosis('check-http',
+                                               data={'domains': domains,
+                                                     "nonce": self.nonce},
+                                               ipversion=ipversion)
+                results[ipversion] = r["http"]
+            except Exception as e:
+                raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
 
-        assert set(results.keys()) == set(domains)
+        for domain in domains:
 
-        for domain, result in results.items():
-
-            if result["status"] == "ok":
-                if ipversion == 4:
+            # If both IPv4 and IPv6 (if applicable) are good
+            if all(results[ipversion][domain]["status"] == "ok" for ipversion in ipversions):
+                if 4 in ipversions:
                     self.do_hairpinning_test = True
                 yield dict(meta={"domain": domain},
                            status="SUCCESS",
                            summary="diagnosis_http_ok")
-            else:
+            # If both IPv4 and IPv6 (if applicable) are failed
+            elif all(results[ipversion][domain]["status"] != "ok" for ipversion in ipversions):
+                detail = results[4 if 4 in ipversions else 6][domain]["status"]
                 yield dict(meta={"domain": domain},
                            status="ERROR",
                            summary="diagnosis_http_unreachable",
-                           details=[result["status"].replace("error_http_check", "diagnosis_http")])
+                           details=[detail.replace("error_http_check", "diagnosis_http")])
+            # If only IPv4 is failed or only IPv6 is failed (if applicable)
+            else:
+                passed, failed = (4, 6) if results[4][domain]["status"] == "ok" else (6, 4)
+                detail = results[failed][domain]["status"]
+                yield dict(meta={"domain": domain},
+                           data={"passed": passed, "failed": failed},
+                           status="ERROR",
+                           summary="diagnosis_http_partially_unreachable",
+                           details=[detail.replace("error_http_check", "diagnosis_http")])
 
 
 def main(args, env, loggers):

@@ -217,6 +217,7 @@
     "diagnosis_http_unknown_error": "An error happened while trying to reach your domain, it's very likely unreachable.",
     "diagnosis_http_bad_status_code": "Timed-out while trying to contact your server from outside. It might be that another machine answered instead of your server.<br>1. The most common cause for this issue is that you did not correctly configure port forwarding for port 80.<br>2. On more complex setups: make sure that a firewall or reverse-proxy is not interfering.",
     "diagnosis_http_unreachable": "Domain {domain} appears unreachable through HTTP from outside the local network.",
+    "diagnosis_http_partiallu_unreachable": "Domain {domain} appears unreachable through HTTP from outside the local network in IPv{failed}, though it works in IPv{passed}.",
     "diagnosis_http_nginx_conf_not_up_to_date": "This domain's nginx configuration appears to have been modified manually, and prevents YunoHost from diagnosing if it's reachable on HTTP.",
     "diagnosis_http_nginx_conf_not_up_to_date_details": "To fix the situation, inspect the difference with the command line using <cmd>yunohost tools regen-conf nginx --dry-run --with-diff</cmd> and if you're ok, apply the changes with <cmd>yunohost tools regen-conf nginx --force</cmd>.",
     "diagnosis_unknown_categories": "The following categories are unknown: {categories}",
