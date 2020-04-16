@@ -17,7 +17,7 @@ class WebDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 3600
-    dependencies = ["ip"]
+    dependencies = ["ip", "dnsrecords"]
 
     def run(self):
 
@@ -118,11 +118,39 @@ class WebDiagnoser(Diagnoser):
             else:
                 passed, failed = (4, 6) if results[4][domain]["status"] == "ok" else (6, 4)
                 detail = results[failed][domain]["status"]
-                yield dict(meta={"domain": domain},
-                           data={"passed": passed, "failed": failed},
-                           status="ERROR",
-                           summary="diagnosis_http_partially_unreachable",
-                           details=[detail.replace("error_http_check", "diagnosis_http")])
+
+                # Failing in ipv4 is critical.
+                # If we failed in IPv6 but there's in fact no AAAA record
+                # It's an acceptable situation and we shall not report an
+                # error
+                def ipv6_is_important_for_this_domain():
+                    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}) or {}
+                    AAAA_status = dnsrecords.get("data", {}).get("AAAA:@")
+
+                    return AAAA_status in ["OK", "WRONG"]
+
+                if failed == 4 or ipv6_is_important_for_this_domain():
+                    yield dict(meta={"domain": domain},
+                               data={"passed": passed, "failed": failed},
+                               status="ERROR",
+                               summary="diagnosis_http_partially_unreachable",
+                               details=[detail.replace("error_http_check", "diagnosis_http")])
+                # So otherwise we report a success (note that this info is
+                # later used to know that ACME challenge is doable)
+                #
+                # And in addition we report an info about the failure in IPv6
+                # *with a different meta* (important to avoid conflicts when
+                # fetching the other info...)
+                else:
+                    self.do_hairpinning_test = True
+                    yield dict(meta={"domain": domain},
+                               status="SUCCESS",
+                               summary="diagnosis_http_ok")
+                    yield dict(meta={"test": "ipv6", "domain": domain},
+                               data={"passed": passed, "failed": failed},
+                               status="INFO",
+                               summary="diagnosis_http_partially_unreachable",
+                               details=[detail.replace("error_http_check", "diagnosis_http")])
 
 
 def main(args, env, loggers):
