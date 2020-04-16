@@ -127,8 +127,12 @@ class DNSRecordsDiagnoser(Diagnoser):
             # Split expected/current
             #  from  "v=DKIM1; k=rsa; p=hugekey;"
             #  to a set like {'v=DKIM1', 'k=rsa', 'p=...'}
-            expected = set(r["value"].strip(' "').strip(";").replace(" ", "").split())
-            current = set(r["current"].strip(' "').strip(";").replace(" ", "").split())
+            expected = set(r["value"].strip(';" ').replace(";", " ").split())
+            current = set(r["current"].strip(';" ').replace(";", " ").split())
+
+            # For SPF, ignore parts starting by ip4: or ip6:
+            if r["name"] == "@":
+                current = {part for part in current if not part.startswith("ip4:") and not part.startswith("ip6:")}
             return expected == current
         elif r["type"] ==  "MX":
             # For MX, we want to ignore the priority
