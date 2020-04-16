@@ -40,9 +40,8 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         expected_configuration = _build_dns_conf(domain, include_empty_AAAA_if_no_ipv6=True)
 
-        # FIXME: Here if there are no AAAA record, we should add something to expect "no" AAAA record
-        # to properly diagnose situations where people have a AAAA record but no IPv6
         categories = ["basic", "mail", "xmpp", "extra"]
+        # For subdomains, we only diagnosis A and AAAA records
         if is_subdomain:
             categories = ["basic"]
 
@@ -50,26 +49,48 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             records = expected_configuration[category]
             discrepancies = []
+            results = {}
 
             for r in records:
+                id_ = r["type"] + ":" + r["name"]
                 r["current"] = self.get_current_record(domain, r["name"], r["type"])
                 if r["value"] == "@":
                     r["value"] = domain + "."
 
-                if not self.current_record_match_expected(r):
+                if self.current_record_match_expected(r):
+                    results[id_] = "OK"
+                else:
                     if r["current"] is None:
+                        results[id_] = "MISSING"
                         discrepancies.append(("diagnosis_dns_missing_record", r))
                     else:
+                        results[id_] = "WRONG"
                         discrepancies.append(("diagnosis_dns_discrepancy", r))
 
+
+            def its_important():
+                # Every mail DNS records are important for main domain
+                # For other domain, we only report it as a warning for now...
+                if is_main_domain and category == "mail":
+                    return True
+                elif category == "basic":
+                    # A bad or missing A record is critical ...
+                    # And so is a wrong AAAA record
+                    # (However, a missing AAAA record is acceptable)
+                    if results["A:@"] != "OK" or results["AAAA:@"] == "WRONG":
+                        return True
+
+                return False
+
             if discrepancies:
-                status = "ERROR" if (category == "basic" or (is_main_domain and category == "mail")) else "WARNING"
+                status = "ERROR" if its_important() else "WARNING"
                 summary = "diagnosis_dns_bad_conf"
             else:
                 status = "SUCCESS"
                 summary = "diagnosis_dns_good_conf"
 
             output = dict(meta={"domain": domain, "category": category},
+                          data=results,
                           status=status,
                           summary=summary)
 
