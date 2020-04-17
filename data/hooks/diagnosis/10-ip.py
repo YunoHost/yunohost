@@ -106,7 +106,7 @@ class IPDiagnoser(Diagnoser):
 
         # If we are indeed connected in ipv4 or ipv6, we should find a default route
         routes = check_output("ip -%s route" % protocol).split("\n")
-        if not [r for r in routes if r.startswith("default")]:
+        if not any(r.startswith("default") for r in routes):
             return False
 
         # We use the resolver file as a list of well-known, trustable (ie not google ;)) IPs that we can ping
