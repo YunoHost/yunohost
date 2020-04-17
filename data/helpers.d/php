@@ -496,6 +496,12 @@ ynh_get_scalable_phpfpm () {
         php_max_children=$max_proc
     fi
 
+    # Get a potential forced value for php_max_children
+    local php_forced_max_children=$(ynh_app_setting_get --app=$app --key=php_forced_max_children)
+    if [ -n "$php_forced_max_children" ]; then
+        php_max_children=$php_forced_max_children
+    fi
+
     if [ "$php_pm" = "dynamic" ]
     then
         # Define pm.start_servers, pm.min_spare_servers and pm.max_spare_servers for a dynamic process manager
