@@ -385,8 +385,6 @@ class Diagnoser():
                 logger.error(m18n.n("diagnosis_cant_run_because_of_dep", category=self.description, dep=Diagnoser.get_description(dependency)))
                 return 1, {}
 
-        self.logger_debug("Running diagnostic for %s" % self.id_)
-
         items = list(self.run())
 
         for item in items:
