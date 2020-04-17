@@ -150,7 +150,7 @@ def service_start(names):
         if _run_service_command('start', name):
             logger.success(m18n.n('service_started', service=name))
         else:
-            if service_status(name)['status'] != 'running':
+            if service_status(name)['status'] not in ['running', 'active']:
                 raise YunohostError('service_start_failed', service=name, logs=_get_journalctl_logs(name))
             logger.debug(m18n.n('service_already_started', service=name))
 
@@ -385,7 +385,11 @@ def _get_service_information_from_systemd(service):
 
     # c.f. https://zignar.net/2014/09/08/getting-started-with-dbus-python-systemd/
     # Very interface, much intuitive, wow
-    service_unit = manager.LoadUnit(service + '.service')
+    service_name, service_extension = os.path.splitext(service)
+    service_extensions = ['.socket', '.device', '.mount', '.automount', '.swap', '.target', '.path', '.timer', '.slice', '.scope']
+    if service_extension not in service_extensions:
+        service = service + '.service'
+    service_unit = manager.LoadUnit(service)
     service_proxy = d.get_object('org.freedesktop.systemd1', str(service_unit))
     properties_interface = dbus.Interface(service_proxy, 'org.freedesktop.DBus.Properties')
 
