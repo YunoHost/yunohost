@@ -572,6 +572,7 @@
     "diagnosis_ports_needed_by": "La apertura de este puerto es requerida para la funcionalidad {category} (service {service})",
     "diagnosis_ports_ok": "El puerto {port} es accesible desde internet.",
     "diagnosis_ports_unreachable": "El puerto {port} no es accesible desde internet.",
+    "diagnosis_ports_could_not_diagnose": "No se puede comprobar si los puertos están accesibles desde el exterior. Error: {error}",
     "diagnosis_description_security": "Validación de seguridad",
     "diagnosis_description_regenconf": "Configuraciones de sistema",
     "diagnosis_description_mail": "Correo electrónico",

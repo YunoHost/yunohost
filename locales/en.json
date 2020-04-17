@@ -203,6 +203,7 @@
     "diagnosis_description_mail": "Email",
     "diagnosis_description_regenconf": "System configurations",
     "diagnosis_description_security": "Security checks",
+    "diagnosis_ports_could_not_diagnose": "Could not diagnose if ports are reachable from outside. Error: {error}",
     "diagnosis_ports_unreachable": "Port {port} is not reachable from outside.",
     "diagnosis_ports_partially_unreachable": "Port {port} is not reachable from outside in IPv{failed}.",
     "diagnosis_ports_ok": "Port {port} is reachable from outside.",

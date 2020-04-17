@@ -555,6 +555,7 @@
     "diagnosis_description_services": "Servo kontrolas staton",
     "diagnosis_description_systemresources": "Rimedaj sistemoj",
     "diagnosis_description_security": "Sekurecaj kontroloj",
+    "diagnosis_ports_could_not_diagnose": "Ne povis diagnozi, ĉu haveblaj havenoj de ekstere. Eraro: {error}",
     "diagnosis_services_bad_status_tip": "Vi povas provi rekomenci la servon, kaj se ĝi ne funkcias, trarigardu la servajn protokolojn uzante 'yunohost service log {service}' aŭ tra la sekcio 'Servoj' de la retadreso.",
     "diagnosis_security_vulnerable_to_meltdown_details": "Por ripari tion, vi devas ĝisdatigi vian sistemon kaj rekomenci por ŝarĝi la novan linux-kernon (aŭ kontaktu vian servilan provizanton se ĉi tio ne funkcias). Vidu https://meltdownattack.com/ por pliaj informoj.",
     "diagnosis_description_basesystem": "Baza sistemo",
