@@ -47,7 +47,7 @@ class PortsDiagnoser(Diagnoser):
                                                ipversion=ipversion)
                 results[ipversion] = r["ports"]
             except Exception as e:
-                raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
+                raise YunohostError("diagnosis_ports_could_not_diagnose", error=e)
 
 
         for port, service in sorted(ports.items()):
