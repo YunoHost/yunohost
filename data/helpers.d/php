@@ -356,7 +356,7 @@ ynh_get_scalable_phpfpm () {
     fi
 
     # Define the factor to determine min_spare_servers
-    # To not have not enough children ready to start for heavy apps.
+    # to avoid having too few children ready to start for heavy apps
     if [ $footprint -le 20 ]
     then
         min_spare_servers_factor=8
