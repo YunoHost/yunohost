@@ -2,10 +2,10 @@
 
 # Create a dedicated systemd config
 #
-# usage: ynh_add_systemd_config [--service=service] [--template=template] "list of others variables to replace"
+# usage: ynh_add_systemd_config [--service=service] [--template=template]  [--others_var="list of others variables to replace"]
 # | arg: -s, --service - Service name (optional, $app by default)
 # | arg: -t, --template - Name of template file (optional, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
-# | arg: -v, --others_var=  - List of others variables to replace separeted by a space. For example : 'var_1 var_2 ...'
+# | arg: -v, --others_var - List of others variables to replace separated by a space. For example: 'var_1 var_2 ...'
 #
 # This will use the template ../conf/<templatename>.service
 # to generate a systemd config, by replacing the following keywords
