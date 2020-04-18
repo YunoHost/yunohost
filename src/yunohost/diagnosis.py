@@ -525,7 +525,7 @@ class Diagnoser():
             socket.getaddrinfo = old_getaddrinfo
 
         if r.status_code not in [200, 400]:
-            raise Exception("The remote diagnosis server failed miserably while trying to diagnose your server. This is most likely an error on Yunohost's infrastructure and not on your side. Please contact the YunoHost team an provide them with the following information.\nURL: <pre>%s</pre>\nStatus code: <pre>%s</pre>" % (url, r.status_code))
+            raise Exception("The remote diagnosis server failed miserably while trying to diagnose your server. This is most likely an error on Yunohost's infrastructure and not on your side. Please contact the YunoHost team an provide them with the following information.<br>URL: <code>%s</code><br>Status code: <code>%s</code>" % (url, r.status_code))
         if r.status_code == 400:
             raise Exception("Diagnosis request was refused: %s" % r.content)
 

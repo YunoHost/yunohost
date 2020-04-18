@@ -13,8 +13,6 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 
-DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
-
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
 

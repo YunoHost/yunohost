@@ -96,7 +96,16 @@ class WebDiagnoser(Diagnoser):
                                                ipversion=ipversion)
                 results[ipversion] = r["http"]
             except Exception as e:
-                raise YunohostError("diagnosis_http_could_not_diagnose", error=e)
+                yield dict(meta={"reason": "remote_diagnosis_failed", "ipversion": ipversion},
+                           data={"error": str(e)},
+                           status="WARNING",
+                           summary="diagnosis_http_could_not_diagnose",
+                           details=["diagnosis_http_could_not_diagnose_details"])
+                continue
+
+        ipversions = results.keys()
+        if not ipversions:
+            return
 
         for domain in domains:
 

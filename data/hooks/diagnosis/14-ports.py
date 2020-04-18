@@ -47,8 +47,16 @@ class PortsDiagnoser(Diagnoser):
                                                ipversion=ipversion)
                 results[ipversion] = r["ports"]
             except Exception as e:
-                raise YunohostError("diagnosis_ports_could_not_diagnose", error=e)
+                yield dict(meta={"reason": "remote_diagnosis_failed", "ipversion": ipversion},
+                           data={"error": str(e)},
+                           status="WARNING",
+                           summary="diagnosis_ports_could_not_diagnose",
+                           details=["diagnosis_ports_could_not_diagnose_details"])
+                continue
 
+        ipversions = results.keys()
+        if not ipversions:
+            return
 
         for port, service in sorted(ports.items()):
             port = str(port)
