@@ -2,15 +2,21 @@
 
 import os
 import dns.resolver
-import smtplib
 import socket
+import re
+
+from subprocess import CalledProcessError
+from types import FunctionType
 
 from moulinette.utils.process import check_output
 from moulinette.utils.network import download_text
 from moulinette.utils.filesystem import read_yaml
 
 from yunohost.diagnosis import Diagnoser
-from yunohost.domain import _get_maindomain
+from yunohost.domain import _get_maindomain, domain_list
+from yunohost.utils.error import YunohostError
+
+DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
@@ -22,126 +28,124 @@ class MailDiagnoser(Diagnoser):
     dependencies = ["ip"]
 
     def run(self):
-        
-        ips = self.get_public_ips()
 
-        # Is outgoing port 25 filtered somehow ?
-        self.logger_debug("Running outgoing 25 port check")
-        if os.system('/bin/nc -z -w2 yunohost.org 25') == 0:
-            yield dict(meta={"test": "ougoing_port_25"},
-                       status="SUCCESS",
-                       summary="diagnosis_mail_ougoing_port_25_ok")
-        else:
-            yield dict(meta={"test": "outgoing_port_25"},
-                       status="ERROR",
-                       summary="diagnosis_mail_ougoing_port_25_blocked")
+        self.ehlo_domain = _get_maindomain()
+        self.mail_domains = domain_list()["domains"]
+        self.ipversions, self.ips = self.get_ips_checked()
 
-        # Get HELO and be sure postfix is running
-        # TODO SMTP reachability (c.f. check-smtp to be implemented on yunohost's remote diagnoser)
-        server = None
-        result = dict(meta={"test": "mail_ehlo"},
-                      status="SUCCESS",
-                      summary="diagnosis_mail_service_working")
-        try:
-            server = smtplib.SMTP("127.0.0.1", 25, timeout=10)
-            ehlo = server.ehlo()
-            ehlo_domain = ehlo[1].decode("utf-8").split("\n")[0]
-        except OSError:
-            result = dict(meta={"test": "mail_ehlo"},
-                    status="ERROR",
-                    summary="diagnosis_mail_service_not_working")
-            ehlo_domain = _get_maindomain()
-        if server:
-            server.quit()
-        yield result
+        # TODO Is a A/AAAA and MX Record ?
+        # TODO Are outgoing public IPs authorized to send mail by SPF ?
+        # TODO Validate DKIM and dmarc ?
+        # TODO check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
+        # TODO check for unusual failed sending attempt being refused in the logs ?
+        checks = [name for name, value in MailDiagnoser.__dict__.items()
+                       if type(value) == FunctionType and name.startswith("check_")]
+        for check in checks:
+            self.logger_debug("Running " + check)
+            for report in getattr(self, check):
+                yield report
+            else:
+                name = checks[6:]
+                yield dict(meta={"test": "mail_" + name},
+                        status="SUCCESS",
+                        summary="diagnosis_mail_" + name + "_ok")
 
-        # Forward-confirmed reverse DNS (FCrDNS) verification
-        self.logger_debug("Running Forward-confirmed reverse DNS check")
-        for ip in ips:
+
+    def check_outgoing_port_25(self):
+        """
+        Check outgoing port 25 is open and not blocked by router
+        This check is ran on IPs we could used to send mail.
+        """
+
+        for ipversion in self.ipversions:
+            cmd = '/bin/nc -{ipversion} -z -w2 yunohost.org 25'.format({
+                  'ipversion': ipversion})
+            if os.system(cmd) != 0:
+                yield dict(meta={"test": "outgoing_port_25", "ipversion": ipversion},
+                           data={},
+                           status="ERROR",
+                           summary="diagnosis_mail_ougoing_port_25_blocked")
+
+
+    def check_ehlo(self):
+        """
+        Check the server is reachable from outside and it's the good one
+        This check is ran on IPs we could used to send mail.
+        """
+
+        for ipversion in self.ipversions:
+            try:
+                r = Diagnoser.remote_diagnosis('check-smtp',
+                                               data={},
+                                               ipversion=ipversion)
+            except Exception as e:
+                yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
+                           data={"error": e},
+                           status="WARNING",
+                           summary="diagnosis_mail_ehlo_could_not_diagnose")
+                continue
+
+            if r["status"] == "error_smtp_unreachable":
+                yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
+                           data={},
+                           status="ERROR",
+                           summary="diagnosis_mail_ehlo_unavailable")
+            elif r["helo"] != self.ehlo_domain:
+                yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
+                           data={"wrong_ehlo": r["helo"], "right_ehlo": self.ehlo_domain},
+                           status="ERROR",
+                           summary="diagnosis_mail_ehlo_wrong")
+
+
+    def check_fcrdns(self):
+        """
+        Check the reverse DNS is well defined by doing a Forward-confirmed
+        reverse DNS check
+        This check is ran on IPs we could used to send mail.
+        """
+
+        for ip in self.ips:
             try:
                 rdns_domain, _, _ = socket.gethostbyaddr(ip)
-            except socket.herror as e:
-                yield dict(meta={"test": "mail_fcrdns"},
-                           data={"ip": ip, "ehlo_domain": ehlo_domain},
+            except socket.herror:
+                yield dict(meta={"test": "mail_fcrdns", "ip": ip},
+                           data={"ehlo_domain": self.ehlo_domain},
                            status="ERROR",
                            summary="diagnosis_mail_reverse_dns_missing")
                 continue
-            else:
-                if rdns_domain != ehlo_domain:
-                    yield dict(meta={"test": "mail_fcrdns"},
-                               data={"ip": ip, "ehlo_domain": ehlo_domain,
-                                     "rdns_domain": rdns_domain},
-                               status="ERROR",
-                               summary="diagnosis_mail_rdns_different_from_ehlo_domain")
-                else:
-                    yield dict(meta={"test": "mail_fcrdns"},
-                               data={"ip": ip, "ehlo_domain": ehlo_domain},
-                               status="SUCCESS",
-                               summary="diagnosis_mail_rdns_equal_to_ehlo_domain")
-
-        # TODO Is a A/AAAA and MX Record ?
-
-        # Are IPs listed on a DNSBL ?
-        self.logger_debug("Running DNS Blacklist detection")
-        # TODO Test if domain are blacklisted too
-
-        blacklisted_details = list(self.check_dnsbl(self.get_public_ips()))
-        if blacklisted_details:
-            yield dict(meta={"test": "mail_blacklist"},
-                       status="ERROR",
-                       summary="diagnosis_mail_blacklist_nok",
-                       details=blacklisted_details)
-        else:
-            yield dict(meta={"test": "mail_blacklist"},
-                       status="SUCCESS",
-                       summary="diagnosis_mail_blacklist_ok")
-
-        # TODO Are outgoing public IPs authorized to send mail by SPF ?
-        
-        # TODO Validate DKIM and dmarc ?
+            if rdns_domain != self.ehlo_domain:
+                yield dict(meta={"test": "mail_fcrdns", "ip": ip},
+                           data={"ehlo_domain": self.ehlo_domain,
+                                 "rdns_domain": rdns_domain},
+                           status="ERROR",
+                           summary="diagnosis_mail_rdns_different_from_ehlo_domain")
 
 
-        # Is mail queue filled with hundreds of email pending ?
-        command = 'postqueue -p | grep -c "^[A-Z0-9]"'
-        output = check_output(command).strip()
-        try:
-            pending_emails = int(output)
-        except ValueError:
-            yield dict(meta={"test": "mail_queue"},
-                       status="ERROR",
-                       summary="diagnosis_mail_cannot_get_queue")
-        else:
-            if pending_emails > 300:
-                yield dict(meta={"test": "mail_queue"},
-                           data={'nb_pending': pending_emails},
-                       status="WARNING",
-                       summary="diagnosis_mail_queue_too_many_pending_emails")
-            else:
-                yield dict(meta={"test": "mail_queue"},
-                           data={'nb_pending': pending_emails},
-                       status="INFO",
-                       summary="diagnosis_mail_queue_ok")
-
-        # check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
-
-        # check for unusual failed sending attempt being refused in the logs ?
-
-    def check_dnsbl(self, ips):
-        """ Check with dig onto blacklist DNS server
+    def check_blacklist(self):
         """
+        Check with dig onto blacklist DNS server
+        This check is ran on IPs and domains we could used to send mail.
+        """
+
         dns_blacklists = read_yaml(DEFAULT_DNS_BLACKLIST)
-        for ip in ips:
+        for item in self.ips + self.mail_domains:
             for blacklist in dns_blacklists:
-                if "." in ip and not blacklist['ipv4']:
+                item_type = "domain"
+                if ":" in item:
+                    item_type = 'ipv6'
+                elif re.match(r'^\d+\.\d+\.\d+\.\d+$', item):
+                    item_type = 'ipv4'
+
+                if not blacklist[item_type]:
                     continue
 
-                if ":" in ip and not blacklist['ipv6']:
-                    continue
-                
                 # Determine if we are listed on this RBL
                 try:
-                    rev = dns.reversename.from_address(ip)
-                    query = str(rev.split(3)[0]) + '.' + blacklist['dns_server']
+                    subdomain = item
+                    if item_type != "domain":
+                        rev = dns.reversename.from_address(item)
+                        subdomain = str(rev.split(3)[0])
+                    query = subdomain + '.' + blacklist['dns_server']
                     # TODO add timeout lifetime
                     dns.resolver.query(query, "A")
                 except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
@@ -149,32 +153,63 @@ class MailDiagnoser(Diagnoser):
                     continue
 
                 # Try to get the reason
-                reason = "not explained"
                 try:
                     reason = str(dns.resolver.query(query, "TXT")[0])
                 except Exception:
-                    pass
+                    reason = "-"
 
-                yield ('diagnosis_mail_blacklisted_by', {
-                    'ip': ip,
-                    'blacklist_name': blacklist['name'],
-                    'blacklist_website': blacklist['website'],
-                    'reason': reason})
+                yield dict(meta={"test": "mail_blacklist", "item": item,
+                                 "blacklist": blacklist["dns_server"]},
+                           data={'blacklist_name': blacklist['name'],
+                                 'blacklist_website': blacklist['website'],
+                                 'reason': reason},
+                           status="ERROR",
+                           summary='diagnosis_mail_blacklist_listed_by')
 
-    def get_public_ips(self):
-        # Todo code a better way to access a data
-        ipv4 = Diagnoser.get_cached_report("ip", {"test": "ipv4"})
-        if ipv4:
+    def check_queue(self):
+        """
+        Check mail queue is not filled with hundreds of email pending
+        """
+
+        command = 'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]"'
+        try:
+            output = check_output(command).strip()
+            pending_emails = int(output)
+        except (ValueError, CalledProcessError) as e:
+            yield dict(meta={"test": "mail_queue"},
+                       data={"error": e},
+                       status="ERROR",
+                       summary="diagnosis_mail_cannot_get_queue")
+        else:
+            if pending_emails > 100:
+                yield dict(meta={"test": "mail_queue"},
+                           data={'nb_pending': pending_emails},
+                       status="WARNING",
+                       summary="diagnosis_mail_queue_too_many_pending_emails")
+            else:
+                yield dict(meta={"test": "mail_queue"},
+                           data={'nb_pending': pending_emails},
+                           status="SUCCESS",
+                           summary="diagnosis_mail_queue_ok")
+
+
+    def get_ips_checked(self):
+        outgoing_ipversions = []
+        outgoing_ips = []
+        ipv4 = Diagnoser.get_cached_report("ip", {"test": "ipv4"}) or {}
+        if ipv4.get("status") == "SUCCESS":
+            outgoing_ipversions.append(4)
             global_ipv4 = ipv4.get("data", {}).get("global", {})
             if global_ipv4:
-                yield global_ipv4
-        
-        ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"})
-        if ipv6:
+                outgoing_ips.append(global_ipv4)
+
+        ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"}) or {}
+        if ipv6.get("status") == "SUCCESS":
+            outgoing_ipversions.append(6)
             global_ipv6 = ipv6.get("data", {}).get("global", {})
             if global_ipv6:
-                yield global_ipv6
-
+                outgoing_ips.append(global_ipv6)
+        return (outgoing_ipversions, outgoing_ips)
 
 def main(args, env, loggers):
     return MailDiagnoser(args, env, loggers).diagnose()
