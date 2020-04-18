@@ -192,7 +192,7 @@ class MailDiagnoser(Diagnoser):
                 yield dict(meta={"test": "mail_queue"},
                            data={'nb_pending': pending_emails},
                        status="WARNING",
-                       summary="diagnosis_mail_queue_too_many_pending_emails")
+                       summary="diagnosis_mail_queue_too_big")
             else:
                 yield dict(meta={"test": "mail_queue"},
                            data={'nb_pending': pending_emails},
