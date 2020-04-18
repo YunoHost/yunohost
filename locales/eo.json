@@ -515,7 +515,7 @@
     "app_upgrade_script_failed": "Eraro okazis en la skripto pri ĝisdatiga programo",
     "diagnosis_diskusage_verylow": "Stokado {mountpoint} (sur aparato {device)) restas nur {free} ({free_percent}%) spaco. Vi vere konsideru purigi iom da spaco.",
     "diagnosis_ram_verylow": "La sistemo nur restas {available} ({available_percent}%) RAM! (el {total})",
-    "diagnosis_mail_ougoing_port_25_blocked": "Eliranta haveno 25 ŝajnas esti blokita. Vi devas provi malŝlosi ĝin en via agorda panelo de provizanto (aŭ gastiganto). Dume la servilo ne povos sendi retpoŝtojn al aliaj serviloj.",
+    "diagnosis_mail_outgoing_port_25_blocked": "Eliranta haveno 25 ŝajnas esti blokita. Vi devas provi malŝlosi ĝin en via agorda panelo de provizanto (aŭ gastiganto). Dume la servilo ne povos sendi retpoŝtojn al aliaj serviloj.",
     "diagnosis_http_bad_status_code": "Ne povis atingi vian servilon kiel atendite, ĝi redonis malbonan statuskodon. Povas esti, ke alia maŝino respondis anstataŭ via servilo. Vi devus kontroli, ke vi ĝuste redonas la havenon 80, ke via nginx-agordo ĝisdatigas kaj ke reverso-prokuro ne interbatalas.",
     "main_domain_changed": "La ĉefa domajno estis ŝanĝita",
     "yunohost_postinstall_end_tip": "La post-instalado finiĝis! Por fini vian agordon, bonvolu konsideri:\n     - aldonado de unua uzanto tra la sekcio 'Uzantoj' de la retadreso (aŭ 'yunohost user create <username>' en komandlinio);\n     - diagnozi problemojn atendantajn solvi por ke via servilo funkciu kiel eble plej glate tra la sekcio 'Diagnosis' de la retadministrado (aŭ 'yunohost diagnosis run' en komandlinio);\n     - legante la partojn 'Finigi vian agordon' kaj 'Ekkoni Yunohost' en la administra dokumentado: https://yunohost.org/admindoc.",

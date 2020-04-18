@@ -554,7 +554,7 @@
     "diagnosis_swap_none": "El sistema no tiene mas espacio de intercambio. Considera agregar por lo menos 256 MB de espacio de intercambio para evitar que el sistema se quede sin memoria.",
     "diagnosis_swap_notsomuch": "Al sistema le queda solamente {total} de espacio de intercambio. Considera agregar al menos 256 MB para evitar que el sistema se quede sin memoria.",
     "diagnosis_mail_ougoing_port_25_ok": "El puerto de salida 25 no esta bloqueado y los correos electrónicos pueden ser enviados a otros servidores.",
-    "diagnosis_mail_ougoing_port_25_blocked": "El puerto de salida 25 parece estar bloqueado. Intenta desbloquearlo con el panel de configuración de tu proveedor de servicios de Internet (o proveedor de halbergue). Mientras tanto, el servidor no podrá enviar correos electrónicos a otros servidores.",
+    "diagnosis_mail_outgoing_port_25_blocked": "El puerto de salida 25 parece estar bloqueado. Intenta desbloquearlo con el panel de configuración de tu proveedor de servicios de Internet (o proveedor de halbergue). Mientras tanto, el servidor no podrá enviar correos electrónicos a otros servidores.",
     "diagnosis_regenconf_allgood": "Todos los archivos de configuración están en linea con la configuración recomendada!",
     "diagnosis_regenconf_manually_modified": "El archivo de configuración {file} fue modificado manualmente.",
     "diagnosis_regenconf_manually_modified_details": "Esto este probablemente BIEN siempre y cuando sepas lo que estas haciendo ;) !",

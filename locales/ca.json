@@ -571,7 +571,7 @@
     "apps_catalog_obsolete_cache": "La memòria cau del catàleg d'aplicacions és buida o obsoleta.",
     "apps_catalog_update_success": "S'ha actualitzat el catàleg d'aplicacions!",
     "diagnosis_mail_ougoing_port_25_ok": "El port de sortida 25 no està bloquejat i els correus es poden enviar a altres servidors.",
-    "diagnosis_mail_ougoing_port_25_blocked": "Sembla que el port de sortida 25 està bloquejat. Hauríeu d'intentar desbloquejar-lo al panell de configuració del proveïdor d'accés a internet (o allotjador). Mentrestant, el servidor no podrà enviar correus a altres servidors.",
+    "diagnosis_mail_outgoing_port_25_blocked": "Sembla que el port de sortida 25 està bloquejat. Hauríeu d'intentar desbloquejar-lo al panell de configuració del proveïdor d'accés a internet (o allotjador). Mentrestant, el servidor no podrà enviar correus a altres servidors.",
     "diagnosis_description_mail": "Correu electrònic",
     "migration_description_0013_futureproof_apps_catalog_system": "Migrar al nou sistema de catàleg d'aplicacions resistent al pas del temps",
     "app_upgrade_script_failed": "Hi ha hagut un error en el script d'actualització de l'aplicació",
