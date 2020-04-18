@@ -6,15 +6,12 @@ import socket
 import re
 
 from subprocess import CalledProcessError
-from types import FunctionType
 
 from moulinette.utils.process import check_output
-from moulinette.utils.network import download_text
 from moulinette.utils.filesystem import read_yaml
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
-from yunohost.utils.error import YunohostError
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
@@ -38,8 +35,8 @@ class MailDiagnoser(Diagnoser):
         # TODO Validate DKIM and dmarc ?
         # TODO check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
         # TODO check for unusual failed sending attempt being refused in the logs ?
-        checks = [name for name, value in MailDiagnoser.__dict__.items()
-                       if type(value) == FunctionType and name.startswith("check_")]
+        checks = ["check_outgoing_port_25", "check_ehlo", "check_fcrdns",
+                  "check_blacklist", "check_queue"]
         for check in checks:
             self.logger_debug("Running " + check)
             reports = list(getattr(self, check)())
@@ -64,7 +61,9 @@ class MailDiagnoser(Diagnoser):
                 yield dict(meta={"test": "outgoing_port_25", "ipversion": ipversion},
                            data={},
                            status="ERROR",
-                           summary="diagnosis_mail_ougoing_port_25_blocked")
+                           summary="diagnosis_mail_ougoing_port_25_blocked",
+                           details=["diagnosis_mail_ougoing_port_25_blocked_details",
+                                    "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"])
 
 
     def check_ehlo(self):
@@ -82,7 +81,8 @@ class MailDiagnoser(Diagnoser):
                 yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
                            data={"error": str(e)},
                            status="WARNING",
-                           summary="diagnosis_mail_ehlo_could_not_diagnose")
+                           summary="diagnosis_mail_ehlo_could_not_diagnose",
+                           details=["diagnosis_mail_ehlo_could_not_diagnose_details"])
                 continue
 
             if r["status"] == "error_smtp_unreachable":
@@ -153,10 +153,14 @@ class MailDiagnoser(Diagnoser):
                     continue
 
                 # Try to get the reason
+                details = []
                 try:
                     reason = str(dns.resolver.query(query, "TXT")[0])
+                    details.append("diagnosis_mail_blacklist_reason")
                 except Exception:
                     reason = "-"
+
+                details.append("diagnosis_mail_blacklist_website")
 
                 yield dict(meta={"test": "mail_blacklist", "item": item,
                                  "blacklist": blacklist["dns_server"]},
@@ -164,14 +168,15 @@ class MailDiagnoser(Diagnoser):
                                  'blacklist_website': blacklist['website'],
                                  'reason': reason},
                            status="ERROR",
-                           summary='diagnosis_mail_blacklist_listed_by')
+                           summary='diagnosis_mail_blacklist_listed_by',
+                           details=details)
 
     def check_queue(self):
         """
         Check mail queue is not filled with hundreds of email pending
         """
 
-        command = 'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]"'
+        command = 'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]" || true'
         try:
             output = check_output(command).strip()
             pending_emails = int(output)
@@ -179,7 +184,8 @@ class MailDiagnoser(Diagnoser):
             yield dict(meta={"test": "mail_queue"},
                        data={"error": str(e)},
                        status="ERROR",
-                       summary="diagnosis_mail_queue_unavailable")
+                       summary="diagnosis_mail_queue_unavailable",
+                       details="diagnosis_mail_queue_unavailable_details")
         else:
             if pending_emails > 100:
                 yield dict(meta={"test": "mail_queue"},
