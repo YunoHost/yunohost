@@ -24,7 +24,7 @@ DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 class MailDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 600
+    cache_duration = 0
     dependencies = ["ip"]
 
     def run(self):
@@ -42,10 +42,11 @@ class MailDiagnoser(Diagnoser):
                        if type(value) == FunctionType and name.startswith("check_")]
         for check in checks:
             self.logger_debug("Running " + check)
-            for report in getattr(self, check):
+            reports = list(getattr(self, check)())
+            for report in reports:
                 yield report
-            else:
-                name = checks[6:]
+            if not reports:
+                name = check[6:]
                 yield dict(meta={"test": "mail_" + name},
                         status="SUCCESS",
                         summary="diagnosis_mail_" + name + "_ok")
@@ -58,8 +59,7 @@ class MailDiagnoser(Diagnoser):
         """
 
         for ipversion in self.ipversions:
-            cmd = '/bin/nc -{ipversion} -z -w2 yunohost.org 25'.format({
-                  'ipversion': ipversion})
+            cmd = '/bin/nc -{ipversion} -z -w2 yunohost.org 25'.format(ipversion=ipversion)
             if os.system(cmd) != 0:
                 yield dict(meta={"test": "outgoing_port_25", "ipversion": ipversion},
                            data={},
@@ -80,7 +80,7 @@ class MailDiagnoser(Diagnoser):
                                                ipversion=ipversion)
             except Exception as e:
                 yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
-                           data={"error": e},
+                           data={"error": str(e)},
                            status="WARNING",
                            summary="diagnosis_mail_ehlo_could_not_diagnose")
                 continue
@@ -111,14 +111,14 @@ class MailDiagnoser(Diagnoser):
                 yield dict(meta={"test": "mail_fcrdns", "ip": ip},
                            data={"ehlo_domain": self.ehlo_domain},
                            status="ERROR",
-                           summary="diagnosis_mail_reverse_dns_missing")
+                           summary="diagnosis_mail_fcrdns_dns_missing")
                 continue
             if rdns_domain != self.ehlo_domain:
                 yield dict(meta={"test": "mail_fcrdns", "ip": ip},
                            data={"ehlo_domain": self.ehlo_domain,
                                  "rdns_domain": rdns_domain},
                            status="ERROR",
-                           summary="diagnosis_mail_rdns_different_from_ehlo_domain")
+                           summary="diagnosis_mail_fcrdns_different_from_ehlo_domain")
 
 
     def check_blacklist(self):
@@ -177,9 +177,9 @@ class MailDiagnoser(Diagnoser):
             pending_emails = int(output)
         except (ValueError, CalledProcessError) as e:
             yield dict(meta={"test": "mail_queue"},
-                       data={"error": e},
+                       data={"error": str(e)},
                        status="ERROR",
-                       summary="diagnosis_mail_cannot_get_queue")
+                       summary="diagnosis_mail_queue_unavailable")
         else:
             if pending_emails > 100:
                 yield dict(meta={"test": "mail_queue"},
