@@ -19,7 +19,7 @@ DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 class MailDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 0
+    cache_duration = 600
     dependencies = ["ip"]
 
     def run(self):
