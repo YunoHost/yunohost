@@ -69,6 +69,10 @@ def diagnosis_get(category, item):
 
 def diagnosis_show(categories=[], issues=False, full=False, share=False):
 
+    if not os.path.exists(DIAGNOSIS_CACHE):
+        logger.warning(m18n.n("diagnosis_never_ran_yet"))
+        return
+
     # Get all the categories
     all_categories = _list_diagnosis_categories()
     all_categories_names = [category for category, _ in all_categories]
@@ -80,10 +84,6 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
         unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
             raise YunohostError('diagnosis_unknown_categories', categories=", ".join(unknown_categories))
-
-    if not os.path.exists(DIAGNOSIS_CACHE):
-        logger.warning(m18n.n("diagnosis_never_ran_yet"))
-        return
 
     # Fetch all reports
     all_reports = []
@@ -146,7 +146,10 @@ def _dump_human_readable_reports(reports):
     return(output)
 
 
-def diagnosis_run(categories=[], force=False):
+def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False):
+
+    if except_if_never_ran_yet and not os.path.exists(DIAGNOSIS_CACHE):
+        return
 
     # Get all the categories
     all_categories = _list_diagnosis_categories()

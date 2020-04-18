@@ -1686,6 +1686,9 @@ diagnosis:
                 --force:
                     help: Ignore the cached report even if it is still 'fresh'
                     action: store_true
+                --except-if-never-ran-yet:
+                    help: Don't run anything if diagnosis never ran yet ... (this is meant to be used by the webadmin)
+                    action: store_true
 
         ignore:
             action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
