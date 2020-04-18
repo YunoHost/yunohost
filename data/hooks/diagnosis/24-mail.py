@@ -59,8 +59,8 @@ class MailDiagnoser(Diagnoser):
                 yield dict(meta={"test": "outgoing_port_25", "ipversion": ipversion},
                            data={},
                            status="ERROR",
-                           summary="diagnosis_mail_ougoing_port_25_blocked",
-                           details=["diagnosis_mail_ougoing_port_25_blocked_details",
+                           summary="diagnosis_mail_outgoing_port_25_blocked",
+                           details=["diagnosis_mail_outgoing_port_25_blocked_details",
                                     "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"])
 
 
@@ -76,18 +76,21 @@ class MailDiagnoser(Diagnoser):
                                                data={},
                                                ipversion=ipversion)
             except Exception as e:
-                yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
+                yield dict(meta={"test": "mail_ehlo", "reason": "remote_server_failed",
+                                 "ipversion": ipversion},
                            data={"error": str(e)},
                            status="WARNING",
                            summary="diagnosis_mail_ehlo_could_not_diagnose",
                            details=["diagnosis_mail_ehlo_could_not_diagnose_details"])
                 continue
 
-            if r["status"] == "error_smtp_unreachable":
+            if r["status"] != "ok":
+                summary = r["status"].replace("error_smtp_", "diagnosis_mail_ehlo_")
                 yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
                            data={},
                            status="ERROR",
-                           summary="diagnosis_mail_ehlo_unavailable")
+                           summary=summary,
+                           details=[summary + "_details"])
             elif r["helo"] != self.ehlo_domain:
                 yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
                            data={"wrong_ehlo": r["helo"], "right_ehlo": self.ehlo_domain},
