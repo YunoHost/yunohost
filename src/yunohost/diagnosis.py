@@ -180,11 +180,8 @@ def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False):
             if report != {}:
                 issues.extend([item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]])
 
-    if issues:
-        if msettings.get("interface") == "api":
-            logger.info(m18n.n("diagnosis_display_tip_web"))
-        else:
-            logger.info(m18n.n("diagnosis_display_tip_cli"))
+    if issues and msettings.get("interface") == "cli":
+        logger.warning(m18n.n("diagnosis_display_tip"))
 
     return
 
