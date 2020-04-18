@@ -568,6 +568,6 @@
     "diagnosis_diskusage_verylow": "Lo lòc d’emmagazinatge {mountpoint} (sul periferic {device}) a solament {free} ({free_percent}%). Deuriatz considerar de liberar un pauc d’espaci.",
     "global_settings_setting_pop3_enabled": "Activar lo protocòl POP3 pel servidor de corrièr",
     "diagnosis_diskusage_ok": "Lo lòc d’emmagazinatge {mountpoint} (sul periferic {device}) a encara {free} ({free_percent}%) de liure !",
-    "diagnosis_swap_none": "Lo sistèma a pas cap de memòria d’escambi. Auriatz de considerar d’ajustar almens 256 Mo d’escambi per evitar las situacions ont lo sistèma manca de memòria.",
-    "diagnosis_swap_notsomuch": "Lo sistèma a solament {total} de memòria d’escambi. Auriatz de considerar d’ajustar almens 256 Mo d’escambi per evitar las situacions ont lo sistèma manca de memòria."
+    "diagnosis_swap_none": "Lo sistèma a pas cap de memòria d’escambi. Auriatz de considerar d’ajustar almens {recommended} d’escambi per evitar las situacions ont lo sistèma manca de memòria.",
+    "diagnosis_swap_notsomuch": "Lo sistèma a solament {total} de memòria d’escambi. Auriatz de considerar d’ajustar almens {recommended} d’escambi per evitar las situacions ont lo sistèma manca de memòria."
 }
