@@ -128,7 +128,7 @@ def find_expected_string_keys():
               "ehlo_unreachable", "ehlo_bad_answer_details",
               "ehlo_unreachable_details", ]
     for check in checks:
-        yield "diagnosis_mail_%" % check
+        yield "diagnosis_mail_%s" % check
 
 ###############################################################################
 #   Load en locale json keys                                                  #
