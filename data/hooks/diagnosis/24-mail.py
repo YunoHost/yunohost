@@ -8,7 +8,7 @@ from yunohost.diagnosis import Diagnoser
 class MailDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 3600
+    cache_duration = 600
     dependencies = ["ip"]
 
     def run(self):

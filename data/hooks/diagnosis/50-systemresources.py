@@ -7,7 +7,7 @@ from yunohost.diagnosis import Diagnoser
 class SystemResourcesDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 3600 * 24
+    cache_duration = 300
     dependencies = []
 
     def run(self):

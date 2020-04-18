@@ -13,7 +13,7 @@ from yunohost.utils.network import get_network_interfaces
 class IPDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 60
+    cache_duration = 600
     dependencies = []
 
     def run(self):
