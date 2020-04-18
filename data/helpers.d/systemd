@@ -16,21 +16,22 @@
 #   __FINALPATH__ by  $final_path
 #
 # And dynamic variables (from the last example) :
-#   __PATH_2__    by $path_2
-#   __PORT_2__    by $port_2
+#   __VAR_1__    by $var_1
+#   __VAR_2__    by $var_2
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_add_systemd_config () {
 	# Declare an array to define the options of this helper.
-	local legacy_args=st
-	declare -Ar args_array=( [s]=service= [t]=template= [v]=others_var=)
+	local legacy_args=stv
+	declare -Ar args_array=( [s]=service= [t]=template= [v]=others_var= )
 	local service
 	local template
+	local others_var
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
-	local service="${service:-$app}"
-	local template="${template:-systemd.service}"
-	local others_var="${others_var:-}"
+	service="${service:-$app}"
+	template="${template:-systemd.service}"
+	others_var="${others_var:-}"
 
 	finalsystemdconf="/etc/systemd/system/$service.service"
 	ynh_backup_if_checksum_is_different --file="$finalsystemdconf"
@@ -44,15 +45,15 @@ ynh_add_systemd_config () {
 	if test -n "${app:-}"; then
 		ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file="$finalsystemdconf"
 	fi
-	
-	# Replace all other variable given as arguments
+
+	# Replace all other variables given as arguments
 	for var_to_replace in $others_var
 	do
 		# ${var_to_replace^^} make the content of the variable on upper-cases
 		# ${!var_to_replace} get the content of the variable named $var_to_replace 
-		ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalnginxconf"
+		ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalsystemdconf"
 	done
-	
+
 	ynh_store_file_checksum --file="$finalsystemdconf"
 
 	chown root: "$finalsystemdconf"
