@@ -54,16 +54,24 @@ class MailDiagnoser(Diagnoser):
         Check outgoing port 25 is open and not blocked by router
         This check is ran on IPs we could used to send mail.
         """
-
+        
+        problem_detected = False
         for ipversion in self.ipversions:
             cmd = '/bin/nc -{ipversion} -z -w2 yunohost.org 25'.format(ipversion=ipversion)
             if os.system(cmd) != 0:
                 yield dict(meta={"test": "outgoing_port_25", "ipversion": ipversion},
                            data={},
                            status="ERROR",
-                           summary="diagnosis_mail_ougoing_port_25_blocked",
-                           details=["diagnosis_mail_ougoing_port_25_blocked_details",
+                           summary="diagnosis_mail_outgoing_port_25_blocked",
+                           details=["diagnosis_mail_outgoing_port_25_blocked_details",
                                     "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"])
+                problem_detected = True
+
+        if not problem_detected:
+            yield dict(meta={"test": "outgoing_port_25"},
+                        data={},
+                        status="SUCCESS",
+                        summary="diagnosis_mail_outgoing_port_25_ok")
 
 
     def check_ehlo(self):
@@ -72,6 +80,7 @@ class MailDiagnoser(Diagnoser):
         This check is ran on IPs we could used to send mail.
         """
 
+        problem_detected = False
         for ipversion in self.ipversions:
             try:
                 r = Diagnoser.remote_diagnosis('check-smtp',
@@ -83,6 +92,7 @@ class MailDiagnoser(Diagnoser):
                            status="WARNING",
                            summary="diagnosis_mail_ehlo_could_not_diagnose",
                            details=["diagnosis_mail_ehlo_could_not_diagnose_details"])
+                problem_detected = True
                 continue
 
             if r["status"] == "error_smtp_unreachable":
@@ -90,11 +100,19 @@ class MailDiagnoser(Diagnoser):
                            data={},
                            status="ERROR",
                            summary="diagnosis_mail_ehlo_unavailable")
+                problem_detected = True
             elif r["helo"] != self.ehlo_domain:
                 yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
                            data={"wrong_ehlo": r["helo"], "right_ehlo": self.ehlo_domain},
                            status="ERROR",
                            summary="diagnosis_mail_ehlo_wrong")
+                problem_detected = True
+
+        if not problem_detected:
+            yield dict(meta={"test": "mail_ehlo"},
+                        data={},
+                        status="SUCCESS",
+                        summary="diagnosis_mail_ehlo_ok")
 
 
     def check_fcrdns(self):
@@ -104,6 +122,7 @@ class MailDiagnoser(Diagnoser):
         This check is ran on IPs we could used to send mail.
         """
 
+        problem_detected = False
         for ip in self.ips:
             try:
                 rdns_domain, _, _ = socket.gethostbyaddr(ip)
@@ -120,6 +139,12 @@ class MailDiagnoser(Diagnoser):
                            status="ERROR",
                            summary="diagnosis_mail_fcrdns_different_from_ehlo_domain")
 
+        if not problem_detected:
+            yield dict(meta={"test": "mail_fcrdns"},
+                        data={},
+                        status="SUCCESS",
+                        summary="diagnosis_mail_fcrdns_ok")
+
 
     def check_blacklist(self):
         """
@@ -128,6 +153,7 @@ class MailDiagnoser(Diagnoser):
         """
 
         dns_blacklists = read_yaml(DEFAULT_DNS_BLACKLIST)
+        problem_detected = False
         for item in self.ips + self.mail_domains:
             for blacklist in dns_blacklists:
                 item_type = "domain"
@@ -152,6 +178,7 @@ class MailDiagnoser(Diagnoser):
                 dns.exception.Timeout):
                     continue
 
+                problem_detected = True
                 # Try to get the reason
                 details = []
                 try:
@@ -170,6 +197,13 @@ class MailDiagnoser(Diagnoser):
                            status="ERROR",
                            summary='diagnosis_mail_blacklist_listed_by',
                            details=details)
+
+        if not problem_detected:
+            yield dict(meta={"test": "mail_blacklist"},
+                    data={},
+                    status="SUCCESS",
+                    summary='diagnosis_mail_blacklist_ok',
+
 
     def check_queue(self):
         """
