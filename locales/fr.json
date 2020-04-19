@@ -521,7 +521,7 @@
     "diagnosis_basesystem_ynh_inconsistent_versions": "Vous exécutez des versions incohérentes des packages YunoHost ... probablement à cause d'une mise à niveau partielle ou échouée.",
     "diagnosis_display_tip_cli": "Vous pouvez exécuter 'yunohost diagnosis show --issues' pour afficher les problèmes détectés.",
     "diagnosis_failed_for_category": "Échec du diagnostic pour la catégorie '{category}': {error}",
-    "diagnosis_cache_still_valid": "(Le cache est toujours valide pour le diagnostic {category}. Pas re-diagnostiquer pour le moment!)",
+    "diagnosis_cache_still_valid": "(Le cache est encore valide pour le diagnostic {category}. Il ne sera pas re-diagnostiqué pour le moment!)",
     "diagnosis_ignored_issues": "(+ {nb_ignored} questions ignorée(s))",
     "diagnosis_found_warnings": "Trouvé {warnings} objet(s) pouvant être amélioré(s) pour {category}.",
     "diagnosis_everything_ok": "Tout semble bien pour {category} !",
