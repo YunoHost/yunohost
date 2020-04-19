@@ -8,7 +8,7 @@
 ynh_die() {
   # Declare an array to define the options of this helper.
   local legacy_args=mc
-  declare -Ar args_array=( [m]=message= [c]=ret_code= )
+  local -A args_array=( [m]=message= [c]=ret_code= )
   local message
   local ret_code
   # Manage arguments with getopts
@@ -26,7 +26,7 @@ ynh_die() {
 ynh_print_info() {
     # Declare an array to define the options of this helper.
     local legacy_args=m
-    declare -Ar args_array=( [m]=message= )
+    local -A args_array=( [m]=message= )
     local message
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -71,7 +71,7 @@ ynh_print_log () {
 ynh_print_warn () {
   # Declare an array to define the options of this helper.
   local legacy_args=m
-  declare -Ar args_array=( [m]=message= )
+  local -A args_array=( [m]=message= )
   local message
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
@@ -88,7 +88,7 @@ ynh_print_warn () {
 ynh_print_err () {
   # Declare an array to define the options of this helper.
   local legacy_args=m
-  declare -Ar args_array=( [m]=message= )
+  local -A args_array=( [m]=message= )
   local message
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
@@ -224,7 +224,7 @@ ynh_script_progression () {
 	set +x
 	# Declare an array to define the options of this helper.
 	local legacy_args=mwtl
-	declare -Ar args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
+	local -A args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
 	local message
 	local weight
 	local time
@@ -320,7 +320,7 @@ ynh_debug () {
 	set +x
 	# Declare an array to define the options of this helper.
 	local legacy_args=mt
-	declare -Ar args_array=( [m]=message= [t]=trace= )
+	local -A args_array=( [m]=message= [t]=trace= )
 	local message
 	local trace
 	# Manage arguments with getopts

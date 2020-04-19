@@ -18,7 +18,7 @@
 ynh_add_systemd_config () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=st
-	declare -Ar args_array=( [s]=service= [t]=template= )
+	local -A args_array=( [s]=service= [t]=template= )
 	local service
 	local template
 	# Manage arguments with getopts
@@ -54,7 +54,7 @@ ynh_add_systemd_config () {
 ynh_remove_systemd_config () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=s
-	declare -Ar args_array=( [s]=service= )
+	local -A args_array=( [s]=service= )
 	local service
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
@@ -81,7 +81,7 @@ ynh_remove_systemd_config () {
 ynh_systemd_action() {
     # Declare an array to define the options of this helper.
     local legacy_args=nalpte
-    declare -Ar args_array=( [n]=service_name= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length= )
+    local -A args_array=( [n]=service_name= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length= )
     local service_name
     local action
     local line_match

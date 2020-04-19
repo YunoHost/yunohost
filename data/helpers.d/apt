@@ -51,7 +51,7 @@ ynh_wait_dpkg_free() {
 ynh_package_is_installed() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    declare -Ar args_array=( [p]=package= )
+    local -A args_array=( [p]=package= )
     local package
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -73,7 +73,7 @@ ynh_package_is_installed() {
 ynh_package_version() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    declare -Ar args_array=( [p]=package= )
+    local -A args_array=( [p]=package= )
     local package
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -295,7 +295,7 @@ EOF
 ynh_add_app_dependencies () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=pr
-	declare -Ar args_array=( [p]=package= [r]=replace)
+	local -A args_array=( [p]=package= [r]=replace)
 	local package
 	local replace
 	# Manage arguments with getopts
@@ -341,7 +341,7 @@ ynh_remove_app_dependencies () {
 ynh_install_extra_app_dependencies () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=rpkn
-	declare -Ar args_array=( [r]=repo= [p]=package= [k]=key= [n]=name= )
+	local -A args_array=( [r]=repo= [p]=package= [k]=key= [n]=name= )
 	local repo
 	local package
 	local key
@@ -379,7 +379,7 @@ ynh_install_extra_app_dependencies () {
 ynh_install_extra_repo () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=rkpna
-	declare -Ar args_array=( [r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append )
+	local -A args_array=( [r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append )
 	local repo
 	local key
 	local priority
@@ -448,7 +448,7 @@ ynh_install_extra_repo () {
 ynh_remove_extra_repo () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=n
-	declare -Ar args_array=( [n]=name= )
+	local -A args_array=( [n]=name= )
 	local name
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
@@ -481,7 +481,7 @@ ynh_remove_extra_repo () {
 ynh_add_repo () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=uscna
-	declare -Ar args_array=( [u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append )
+	local -A args_array=( [u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append )
 	local uri
 	local suite
 	local component
@@ -521,7 +521,7 @@ ynh_add_repo () {
 ynh_pin_repo () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=pirna
-	declare -Ar args_array=( [p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append )
+	local -A args_array=( [p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append )
 	local package
 	local pin
 	local priority

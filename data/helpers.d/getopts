@@ -6,7 +6,7 @@
 #
 # example: function my_helper()
 # {
-#     declare -Ar args_array=( [a]=arg1= [b]=arg2= [c]=arg3 )
+#     local -A args_array=( [a]=arg1= [b]=arg2= [c]=arg3 )
 #     local arg1
 #     local arg2
 #     local arg3
@@ -22,13 +22,13 @@
 # This helper need an array, named "args_array" with all the arguments used by the helper
 # 	that want to use ynh_handle_getopts_args
 # Be carreful, this array has to be an associative array, as the following example:
-# declare -Ar args_array=( [a]=arg1 [b]=arg2= [c]=arg3 )
+# local -A args_array=( [a]=arg1 [b]=arg2= [c]=arg3 )
 # Let's explain this array:
 # a, b and c are short options, -a, -b and -c
 # arg1, arg2 and arg3 are the long options associated to the previous short ones. --arg1, --arg2 and --arg3
 # For each option, a short and long version has to be defined.
 # Let's see something more significant
-# declare -Ar args_array=( [u]=user [f]=finalpath= [d]=database )
+# local -A args_array=( [u]=user [f]=finalpath= [d]=database )
 #
 # NB: Because we're using 'declare' without -g, the array will be declared as a local variable.
 #

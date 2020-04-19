@@ -10,7 +10,7 @@
 ynh_app_setting_get() {
     # Declare an array to define the options of this helper.
     local legacy_args=ak
-    declare -Ar args_array=( [a]=app= [k]=key= )
+    local -A args_array=( [a]=app= [k]=key= )
     local app
     local key
     # Manage arguments with getopts
@@ -30,7 +30,7 @@ ynh_app_setting_get() {
 ynh_app_setting_set() {
     # Declare an array to define the options of this helper.
     local legacy_args=akv
-    declare -Ar args_array=( [a]=app= [k]=key= [v]=value= )
+    local -A args_array=( [a]=app= [k]=key= [v]=value= )
     local app
     local key
     local value
@@ -50,7 +50,7 @@ ynh_app_setting_set() {
 ynh_app_setting_delete() {
     # Declare an array to define the options of this helper.
     local legacy_args=ak
-    declare -Ar args_array=( [a]=app= [k]=key= )
+    local -A args_array=( [a]=app= [k]=key= )
     local app
     local key
     # Manage arguments with getopts
@@ -124,7 +124,7 @@ EOF
 ynh_webpath_available () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=dp
-	declare -Ar args_array=( [d]=domain= [p]=path_url= )
+	local -A args_array=( [d]=domain= [p]=path_url= )
 	local domain
 	local path_url
 	# Manage arguments with getopts
@@ -146,7 +146,7 @@ ynh_webpath_available () {
 ynh_webpath_register () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=adp
-	declare -Ar args_array=( [a]=app= [d]=domain= [p]=path_url= )
+	local -A args_array=( [a]=app= [d]=domain= [p]=path_url= )
 	local app
 	local domain
 	local path_url
@@ -180,7 +180,7 @@ ynh_webpath_register () {
 ynh_permission_create() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=pua
-    declare -Ar args_array=( [p]=permission= [u]=url= [a]=allowed= )
+    local -A args_array=( [p]=permission= [u]=url= [a]=allowed= )
     local permission
     local url
     local allowed
@@ -210,7 +210,7 @@ ynh_permission_create() {
 ynh_permission_delete() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
-    declare -Ar args_array=( [p]=permission= )
+    local -A args_array=( [p]=permission= )
     local permission
     ynh_handle_getopts_args "$@"
 
@@ -226,7 +226,7 @@ ynh_permission_delete() {
 ynh_permission_exists() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
-    declare -Ar args_array=( [p]=permission= )
+    local -A args_array=( [p]=permission= )
     local permission
     ynh_handle_getopts_args "$@"
 
@@ -243,7 +243,7 @@ ynh_permission_exists() {
 ynh_permission_url() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=pu
-    declare -Ar args_array=([p]=permission= [u]=url=)
+    local -A args_array=([p]=permission= [u]=url=)
     local permission
     local url
     ynh_handle_getopts_args "$@"
@@ -270,7 +270,7 @@ ynh_permission_url() {
 ynh_permission_update() {
 	# Declare an array to define the options of this helper.
 	local legacy_args=par
-    declare -Ar args_array=( [p]=permission= [a]=add= [r]=remove= )
+    local -A args_array=( [p]=permission= [a]=add= [r]=remove= )
     local permission
     local add
     local remove
@@ -298,7 +298,7 @@ ynh_permission_update() {
 ynh_permission_has_user() {
     local legacy_args=pu
     # Declare an array to define the options of this helper.
-    declare -Ar args_array=( [p]=permission= [u]=user= )
+    local -A args_array=( [p]=permission= [u]=user= )
     local permission
     local user
     # Manage arguments with getopts

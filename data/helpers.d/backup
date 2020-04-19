@@ -46,7 +46,7 @@ ynh_backup() {
 
     # Declare an array to define the options of this helper.
     local legacy_args=sdbm
-    declare -Ar args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )
+    local -A args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )
     local src_path
     local dest_path
     local is_big
@@ -220,7 +220,7 @@ with open(sys.argv[1], 'r') as backup_file:
 ynh_restore_file () {
     # Declare an array to define the options of this helper.
     local legacy_args=odm
-    declare -Ar args_array=( [o]=origin_path= [d]=dest_path= [m]=not_mandatory )
+    local -A args_array=( [o]=origin_path= [d]=dest_path= [m]=not_mandatory )
     local origin_path
     local archive_path
     local dest_path
@@ -296,7 +296,7 @@ ynh_bind_or_cp() {
 ynh_store_file_checksum () {
     # Declare an array to define the options of this helper.
     local legacy_args=f
-    declare -Ar args_array=( [f]=file= )
+    local -A args_array=( [f]=file= )
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -328,7 +328,7 @@ ynh_store_file_checksum () {
 ynh_backup_if_checksum_is_different () {
     # Declare an array to define the options of this helper.
     local legacy_args=f
-    declare -Ar args_array=( [f]=file= )
+    local -A args_array=( [f]=file= )
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -361,7 +361,7 @@ ynh_backup_if_checksum_is_different () {
 ynh_delete_file_checksum () {
     # Declare an array to define the options of this helper.
     local legacy_args=f
-    declare -Ar args_array=( [f]=file= )
+    local -A args_array=( [f]=file= )
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"

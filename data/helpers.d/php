@@ -59,7 +59,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 ynh_add_fpm_config () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=vtufpd
-	declare -Ar args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service )
+	local -A args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service )
 	local phpversion
 	local use_template
 	local usage
@@ -312,7 +312,7 @@ ynh_remove_fpm_config () {
 ynh_install_php () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=vp
-	declare -Ar args_array=( [v]=phpversion= [p]=package= )
+	local -A args_array=( [v]=phpversion= [p]=package= )
 	local phpversion
 	local package
 	# Manage arguments with getopts
@@ -415,7 +415,7 @@ ynh_remove_php () {
 ynh_get_scalable_phpfpm () {
     local legacy_args=ufp
     # Declare an array to define the options of this helper.
-    declare -Ar args_array=( [u]=usage= [f]=footprint= [p]=print )
+    local -A args_array=( [u]=usage= [f]=footprint= [p]=print )
     local usage
     local footprint
     local print

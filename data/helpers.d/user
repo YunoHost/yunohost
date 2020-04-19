@@ -11,7 +11,7 @@
 ynh_user_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=u
-    declare -Ar args_array=( [u]=username= )
+    local -A args_array=( [u]=username= )
     local username
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -32,7 +32,7 @@ ynh_user_exists() {
 ynh_user_get_info() {
     # Declare an array to define the options of this helper.
     local legacy_args=uk
-    declare -Ar args_array=( [u]=username= [k]=key= )
+    local -A args_array=( [u]=username= [k]=key= )
     local username
     local key
     # Manage arguments with getopts
@@ -63,7 +63,7 @@ ynh_user_list() {
 ynh_system_user_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=u
-    declare -Ar args_array=( [u]=username= )
+    local -A args_array=( [u]=username= )
     local username
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -78,7 +78,7 @@ ynh_system_user_exists() {
 ynh_system_group_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=g
-    declare -Ar args_array=( [g]=group= )
+    local -A args_array=( [g]=group= )
     local group
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -103,7 +103,7 @@ ynh_system_group_exists() {
 ynh_system_user_create () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=uhs
-	declare -Ar args_array=( [u]=username= [h]=home_dir= [s]=use_shell )
+	local -A args_array=( [u]=username= [h]=home_dir= [s]=use_shell )
 	local username
 	local home_dir
 	local use_shell
@@ -137,7 +137,7 @@ ynh_system_user_create () {
 ynh_system_user_delete () {
     # Declare an array to define the options of this helper.
     local legacy_args=u
-    declare -Ar args_array=( [u]=username= )
+    local -A args_array=( [u]=username= )
     local username
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"

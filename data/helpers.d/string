@@ -11,7 +11,7 @@
 ynh_string_random() {
     # Declare an array to define the options of this helper.
     local legacy_args=l
-    declare -Ar args_array=( [l]=length= )
+    local -A args_array=( [l]=length= )
     local length
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -37,7 +37,7 @@ ynh_string_random() {
 ynh_replace_string () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=mrf
-	declare -Ar args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
+	local -A args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
 	local match_string
 	local replace_string
 	local target_file
@@ -66,7 +66,7 @@ ynh_replace_string () {
 ynh_replace_special_string () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=mrf
-	declare -Ar args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
+	local -A args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
 	local match_string
 	local replace_string
 	local target_file
@@ -97,7 +97,7 @@ ynh_replace_special_string () {
 ynh_sanitize_dbid () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=n
-	declare -Ar args_array=( [n]=db_name= )
+	local -A args_array=( [n]=db_name= )
 	local db_name
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
@@ -125,7 +125,7 @@ ynh_sanitize_dbid () {
 ynh_normalize_url_path () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
-	declare -Ar args_array=( [p]=path_url= )
+	local -A args_array=( [p]=path_url= )
 	local path_url
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"

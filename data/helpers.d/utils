@@ -99,7 +99,7 @@ ynh_abort_if_errors () {
 ynh_setup_source () {
     # Declare an array to define the options of this helper.
     local legacy_args=ds
-    declare -Ar args_array=( [d]=dest_dir= [s]=source_id= )
+    local -A args_array=( [d]=dest_dir= [s]=source_id= )
     local dest_dir
     local source_id
     # Manage arguments with getopts
@@ -304,7 +304,7 @@ properly with chmod/chown."
 ynh_secure_remove () {
     # Declare an array to define the options of this helper.
     local legacy_args=f
-    declare -Ar args_array=( [f]=file= )
+    local -A args_array=( [f]=file= )
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -378,7 +378,7 @@ ynh_get_plain_key() {
 ynh_read_manifest () {
 	# Declare an array to define the options of this helper.
         local legacy_args=mk
-        declare -Ar args_array=( [m]=manifest= [k]=manifest_key= )
+        local -A args_array=( [m]=manifest= [k]=manifest_key= )
         local manifest
         local manifest_key
 	# Manage arguments with getopts
@@ -406,7 +406,7 @@ ynh_read_manifest () {
 ynh_app_upstream_version () {
     # Declare an array to define the options of this helper.
     local legacy_args=m
-    declare -Ar args_array=( [m]=manifest= )
+    local -A args_array=( [m]=manifest= )
     local manifest
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -430,7 +430,7 @@ ynh_app_upstream_version () {
 ynh_app_package_version () {
     # Declare an array to define the options of this helper.
     local legacy_args=m
-    declare -Ar args_array=( [m]=manifest= )
+    local -A args_array=( [m]=manifest= )
     local manifest
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"

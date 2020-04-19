@@ -16,7 +16,7 @@ MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
 ynh_mysql_connect_as() {
     # Declare an array to define the options of this helper.
     local legacy_args=upd
-    declare -Ar args_array=( [u]=user= [p]=password= [d]=database= )
+    local -A args_array=( [u]=user= [p]=password= [d]=database= )
     local user
     local password
     local database
@@ -37,7 +37,7 @@ ynh_mysql_connect_as() {
 ynh_mysql_execute_as_root() {
     # Declare an array to define the options of this helper.
     local legacy_args=sd
-    declare -Ar args_array=( [s]=sql= [d]=database= )
+    local -A args_array=( [s]=sql= [d]=database= )
     local sql
     local database
     # Manage arguments with getopts
@@ -58,7 +58,7 @@ ynh_mysql_execute_as_root() {
 ynh_mysql_execute_file_as_root() {
     # Declare an array to define the options of this helper.
     local legacy_args=fd
-    declare -Ar args_array=( [f]=file= [d]=database= )
+    local -A args_array=( [f]=file= [d]=database= )
     local file
     local database
     # Manage arguments with getopts
@@ -121,7 +121,7 @@ ynh_mysql_drop_db() {
 ynh_mysql_dump_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=d
-    declare -Ar args_array=( [d]=database= )
+    local -A args_array=( [d]=database= )
     local database
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -153,7 +153,7 @@ ynh_mysql_user_exists()
 {
    # Declare an array to define the options of this helper.
    local legacy_args=u
-   declare -Ar args_array=( [u]=user= )
+   local -A args_array=( [u]=user= )
    local user
    # Manage arguments with getopts
    ynh_handle_getopts_args "$@"
@@ -192,7 +192,7 @@ ynh_mysql_drop_user() {
 ynh_mysql_setup_db () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=unp
-	declare -Ar args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
+	local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
 	db_pwd=""
@@ -217,7 +217,7 @@ ynh_mysql_setup_db () {
 ynh_mysql_remove_db () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=un
-	declare -Ar args_array=( [u]=db_user= [n]=db_name= )
+	local -A args_array=( [u]=db_user= [n]=db_name= )
 	local db_user
 	local db_name
 	# Manage arguments with getopts

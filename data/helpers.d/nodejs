@@ -68,7 +68,7 @@ ynh_install_nodejs () {
 
 	# Declare an array to define the options of this helper.
 	local legacy_args=n
-	declare -Ar args_array=( [n]=nodejs_version= )
+	local -A args_array=( [n]=nodejs_version= )
 	local nodejs_version
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"

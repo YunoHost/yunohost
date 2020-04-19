@@ -11,7 +11,7 @@
 ynh_find_port () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
-	declare -Ar args_array=( [p]=port= )
+	local -A args_array=( [p]=port= )
 	local port
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
@@ -35,7 +35,7 @@ ynh_find_port () {
 ynh_port_available () {
 	# Declare an array to define the options of this helper.
 	local legacy_args=p
-	declare -Ar args_array=( [p]=port= )
+	local -A args_array=( [p]=port= )
 	local port
 	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
@@ -63,7 +63,7 @@ ynh_validate_ip()
 
   # Declare an array to define the options of this helper.
   local legacy_args=fi
-  declare -Ar args_array=( [f]=family= [i]=ip_address= )
+  local -A args_array=( [f]=family= [i]=ip_address= )
   local family
   local ip_address
   # Manage arguments with getopts
@@ -95,7 +95,7 @@ ynh_validate_ip4()
 {
   # Declare an array to define the options of this helper.
   local legacy_args=i
-  declare -Ar args_array=( [i]=ip_address= )
+  local -A args_array=( [i]=ip_address= )
   local ip_address
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
@@ -116,7 +116,7 @@ ynh_validate_ip6()
 {
   # Declare an array to define the options of this helper.
   local legacy_args=i
-  declare -Ar args_array=( [i]=ip_address= )
+  local -A args_array=( [i]=ip_address= )
   local ip_address
   # Manage arguments with getopts
   ynh_handle_getopts_args "$@"
