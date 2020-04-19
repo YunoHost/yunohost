@@ -539,8 +539,10 @@
     "diagnosis_dns_missing_record": "Segon la configuracion DNS recomandada, vos calriá ajustar un enregistrament DNS\ntipe: {type}\nnom: {name}\nvalor: {value}",
     "diagnosis_dns_discrepancy": "Segon la configuracion DNS recomandada, la valor per l’enregistrament DNS\ntipe: {type}\nnom: {name}\ndeuriá èsser: {current}\nallòc de: {value}",
     "diagnosis_regenconf_manually_modified_debian_details": "Es pas problematic, mas car téner d’agacher...",
-    "diagnosis_ports_could_not_diagnose": "Impossible de diagnosticar se los pòrts son accessibles de l’exterior. Error : {error}",
-    "diagnosis_http_could_not_diagnose": "Impossible de diagnosticar se lo domeni es accessible de l’exterior. Error : {error}",
+    "diagnosis_ports_could_not_diagnose": "Impossible de diagnosticar se los pòrts son accessibles de l’exterior.",
+    "diagnosis_ports_could_not_diagnose_details": "Error : {error}",
+    "diagnosis_http_could_not_diagnose": "Impossible de diagnosticar se lo domeni es accessible de l’exterior.",
+    "diagnosis_http_could_not_diagnose_details": "Error : {error}",
     "apps_catalog_updating": "Actualizacion del catalòg d’aplicacion…",
     "apps_catalog_failed_to_download": "Telecargament impossible del catalòg d’aplicacions {apps_catalog} : {error}",
     "apps_catalog_obsolete_cache": "La memòria cache del catalòg d’aplicacion es voida o obsolèta.",
@@ -568,6 +570,6 @@
     "diagnosis_diskusage_verylow": "Lo lòc d’emmagazinatge {mountpoint} (sul periferic {device}) a solament {free} ({free_percent}%). Deuriatz considerar de liberar un pauc d’espaci.",
     "global_settings_setting_pop3_enabled": "Activar lo protocòl POP3 pel servidor de corrièr",
     "diagnosis_diskusage_ok": "Lo lòc d’emmagazinatge {mountpoint} (sul periferic {device}) a encara {free} ({free_percent}%) de liure !",
-    "diagnosis_swap_none": "Lo sistèma a pas cap de memòria d’escambi. Auriatz de considerar d’ajustar almens 256 Mo d’escambi per evitar las situacions ont lo sistèma manca de memòria.",
-    "diagnosis_swap_notsomuch": "Lo sistèma a solament {total} de memòria d’escambi. Auriatz de considerar d’ajustar almens 256 Mo d’escambi per evitar las situacions ont lo sistèma manca de memòria."
+    "diagnosis_swap_none": "Lo sistèma a pas cap de memòria d’escambi. Auriatz de considerar d’ajustar almens {recommended} d’escambi per evitar las situacions ont lo sistèma manca de memòria.",
+    "diagnosis_swap_notsomuch": "Lo sistèma a solament {total} de memòria d’escambi. Auriatz de considerar d’ajustar almens {recommended} d’escambi per evitar las situacions ont lo sistèma manca de memòria."
 }

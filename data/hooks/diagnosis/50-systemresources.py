@@ -43,11 +43,11 @@ class SystemResourcesDiagnoser(Diagnoser):
 
         swap = psutil.swap_memory()
         item = dict(meta={"test": "swap"},
-                    data={"total": human_size(swap.total)})
+                    data={"total": human_size(swap.total), "recommended": "512 MiB"})
         if swap.total <= 1 * MB:
             item["status"] = "ERROR"
             item["summary"] = "diagnosis_swap_none"
-        elif swap.total <= 256 * MB:
+        elif swap.total <= 512 * MB:
             item["status"] = "WARNING"
             item["summary"] = "diagnosis_swap_notsomuch"
         else:

@@ -457,7 +457,7 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
 
     mail = [
         ["@", ttl, "MX", "10 %s." % domain],
-        ["@", ttl, "TXT", "v=spf1 a mx -all"],
+        ["@", ttl, "TXT", '"v=spf1 a mx -all"'],
     ]
 
     # DKIM/DMARC record
