@@ -27,8 +27,6 @@
 import re
 import os
 import time
-import requests
-import socket
 
 from moulinette import m18n, msettings
 from moulinette.utils import log
@@ -495,6 +493,10 @@ class Diagnoser():
 
     @staticmethod
     def remote_diagnosis(uri, data, ipversion, timeout=30):
+
+        # Lazy loading for performance
+        import requests
+        import socket
 
         # Monkey patch socket.getaddrinfo to force request() to happen in ipv4
         # or 6 ...
