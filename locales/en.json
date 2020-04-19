@@ -192,7 +192,7 @@
     "diagnosis_mail_ehlo_unavailable": "Postfix mail service don't answer to EHLO request on IPv{ipversion}",
     "diagnosis_mail_ehlo_wrong": "A mail server answers {wrong_ehlo} instead {right_ehlo} on IPv{ipversion}",
     "diagnosis_mail_ehlo_could_not_diagnose": "Could not diagnose if postfix mail server is reachable from outside in IPv{ipversion}.",
-    "diagnosis_mail_ehlo_could_not_diagnose_details": "{error}",
+    "diagnosis_mail_ehlo_could_not_diagnose_details": "Error: {error}",
     "diagnosis_mail_fcrdns_ok": "Your reverse DNS is well configured",
     "diagnosis_mail_fcrdns_dns_missing": "No reverse DNS defined for the ip {ip}",
     "diagnosis_mail_fcrdns_different_from_ehlo_domain": "Your reverse DNS {rdns_domain} is different from your EHLO domain {ehlo_domain} on {ip}",
