@@ -12,6 +12,7 @@ from moulinette.utils.filesystem import read_yaml
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
+from yunohost.settings import settings_get
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
@@ -95,7 +96,8 @@ class MailDiagnoser(Diagnoser):
                 yield dict(meta={"test": "mail_ehlo", "ipversion": ipversion},
                            data={"wrong_ehlo": r["helo"], "right_ehlo": self.ehlo_domain},
                            status="ERROR",
-                           summary="diagnosis_mail_ehlo_wrong")
+                           summary="diagnosis_mail_ehlo_wrong",
+                           details=["diagnosis_mail_ehlo_wrong_details"])
 
 
     def check_fcrdns(self):
@@ -106,20 +108,30 @@ class MailDiagnoser(Diagnoser):
         """
 
         for ip in self.ips:
+            if ":" in ip:
+                details = ["diagnosis_mail_fcrdns_nok_details",
+                           "diagnosis_mail_fcrdns_nok_alternatives_6"]
+            else:
+                details = ["diagnosis_mail_fcrdns_nok_details",
+                           "diagnosis_mail_fcrdns_nok_alternatives_4"]
+
             try:
                 rdns_domain, _, _ = socket.gethostbyaddr(ip)
             except socket.herror:
                 yield dict(meta={"test": "mail_fcrdns", "ip": ip},
                            data={"ehlo_domain": self.ehlo_domain},
                            status="ERROR",
-                           summary="diagnosis_mail_fcrdns_dns_missing")
+                           summary="diagnosis_mail_fcrdns_dns_missing",
+                           details=details)
                 continue
             if rdns_domain != self.ehlo_domain:
+                details = ["diagnosis_mail_fcrdns_different_from_ehlo_domain_details"] + details
                 yield dict(meta={"test": "mail_fcrdns", "ip": ip},
                            data={"ehlo_domain": self.ehlo_domain,
                                  "rdns_domain": rdns_domain},
                            status="ERROR",
-                           summary="diagnosis_mail_fcrdns_different_from_ehlo_domain")
+                           summary="diagnosis_mail_fcrdns_different_from_ehlo_domain",
+                           details=details)
 
 
     def check_blacklist(self):
@@ -210,12 +222,13 @@ class MailDiagnoser(Diagnoser):
             if global_ipv4:
                 outgoing_ips.append(global_ipv4)
 
-        ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"}) or {}
-        if ipv6.get("status") == "SUCCESS":
-            outgoing_ipversions.append(6)
-            global_ipv6 = ipv6.get("data", {}).get("global", {})
-            if global_ipv6:
-                outgoing_ips.append(global_ipv6)
+        if settings_get("smtp.ipv6"):
+            ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"}) or {}
+            if ipv6.get("status") == "SUCCESS":
+                outgoing_ipversions.append(6)
+                global_ipv6 = ipv6.get("data", {}).get("global", {})
+                if global_ipv6:
+                    outgoing_ips.append(global_ipv6)
         return (outgoing_ipversions, outgoing_ips)
 
 def main(args, env, loggers):
