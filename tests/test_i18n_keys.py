@@ -120,7 +120,7 @@ def find_expected_string_keys():
         yield "confirm_app_install_%s" % level
 
     for errortype in ["not_found", "error", "warning", "info"]:
-        yield "diagnosis_domain_expiration_" % errortype
+        yield "diagnosis_domain_expiration_%s" % errortype
 
     for errortype in ["bad_status_code", "connection_error", "timeout"]:
         yield "diagnosis_http_%s" % errortype
