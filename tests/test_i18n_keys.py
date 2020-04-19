@@ -49,6 +49,9 @@ def find_expected_string_keys():
     for python_file in glob.glob("data/hooks/diagnosis/*.py"):
         content = open(python_file).read()
         for m in p3.findall(content):
+            if m.endswith("_"):
+                # Ignore some name fragments which are actually concatenated with other stuff..
+                continue
             yield m
         yield "diagnosis_description_" + os.path.basename(python_file)[:-3].split("-")[-1]
 
