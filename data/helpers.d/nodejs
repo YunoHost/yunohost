@@ -35,7 +35,8 @@ SOURCE_SUM=3983fa3f00d4bf85ba8e21f1a590f6e28938093abe0bb950aeea52b1717471fc" > "
 # For example: use `ynh_npm install` instead of `npm install`
 #
 # With `sudo` or `ynh_exec_as`, use instead the fallback variables `$ynh_npm` and `$ynh_node`
-# Exemple: `ynh_exec_as $app $ynh_npm install`
+# And propagate $PATH to sudo with $ynh_node_load_PATH
+# Exemple: `ynh_exec_as $app $ynh_node_load_PATH $ynh_npm install`
 #
 # $PATH contains the path of the requested version of node.
 # However, $PATH is duplicated into $node_PATH to outlast any manipulation of $PATH
