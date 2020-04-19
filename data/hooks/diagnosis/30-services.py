@@ -17,21 +17,22 @@ class ServicesDiagnoser(Diagnoser):
 
         for service, result in sorted(all_result.items()):
 
-            item = dict(meta={"service": service})
+            item = dict(meta={"service": service},
+                        data={"status": result["status"], "configuration": result["configuration"]})
 
             if result["status"] != "running":
                 item["status"] = "ERROR"
-                item["summary"] = ("diagnosis_services_bad_status", {"service": service, "status": result["status"]})
-                item["details"] = [("diagnosis_services_bad_status_tip", (service,))]
+                item["summary"] = "diagnosis_services_bad_status"
+                item["details"] = ["diagnosis_services_bad_status_tip"]
 
             elif result["configuration"] == "broken":
                 item["status"] = "WARNING"
-                item["summary"] = ("diagnosis_services_conf_broken", {"service": service})
-                item["details"] = [(d, tuple()) for d in result["configuration-details"]]
+                item["summary"] = "diagnosis_services_conf_broken"
+                item["details"] = result["configuration-details"]
 
             else:
                 item["status"] = "SUCCESS"
-                item["summary"] = ("diagnosis_services_running", {"service": service, "status": result["status"]})
+                item["summary"] = "diagnosis_services_running"
 
             yield item
 
