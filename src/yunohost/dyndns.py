@@ -259,11 +259,6 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
 
     dns_conf = _build_dns_conf(domain)
 
-    for i, record in enumerate(dns_conf["extra"]):
-        # Ignore CAA record ... not sure why, we could probably enforce it...
-        if record[3] == "CAA":
-            del dns_conf["extra"][i]
-
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)
     for category in dns_conf.keys():

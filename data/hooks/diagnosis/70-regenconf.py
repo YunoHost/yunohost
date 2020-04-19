@@ -4,8 +4,7 @@ import os
 
 import subprocess
 from yunohost.diagnosis import Diagnoser
-from yunohost.regenconf import manually_modified_files
-#from yunohost.regenconf import manually_modified_files, manually_modified_files_compared_to_debian_default
+from yunohost.regenconf import _get_regenconf_infos, _calculate_hash
 
 
 class RegenconfDiagnoser(Diagnoser):
@@ -16,28 +15,27 @@ class RegenconfDiagnoser(Diagnoser):
 
     def run(self):
 
-        regenconf_modified_files = manually_modified_files()
-        #debian_modified_files = manually_modified_files_compared_to_debian_default(ignore_handled_by_regenconf=True)
+        regenconf_modified_files = list(self.manually_modified_files())
 
-        if regenconf_modified_files == []:
+        if not regenconf_modified_files:
             yield dict(meta={"test": "regenconf"},
                        status="SUCCESS",
-                       summary=("diagnosis_regenconf_allgood", {})
+                       summary="diagnosis_regenconf_allgood"
                        )
         else:
             for f in regenconf_modified_files:
-                yield dict(meta={"test": "regenconf", "file": f},
+                yield dict(meta={"test": "regenconf", "category": f['category'], "file": f['path']},
                            status="WARNING",
-                           summary=("diagnosis_regenconf_manually_modified", {"file": f}),
-                           details=[("diagnosis_regenconf_manually_modified_details", {})]
+                           summary="diagnosis_regenconf_manually_modified",
+                           details=["diagnosis_regenconf_manually_modified_details"]
                            )
 
-        #for f in debian_modified_files:
-        #    yield dict(meta={"test": "debian", "file": f},
-        #               status="WARNING",
-        #               summary=("diagnosis_regenconf_manually_modified_debian", {"file": f}),
-        #               details=[("diagnosis_regenconf_manually_modified_debian_details", {})]
-        #               )
+    def manually_modified_files(self):
+
+        for category, infos in _get_regenconf_infos().items():
+            for path, hash_ in infos["conffiles"].items():
+                if hash_ != _calculate_hash(path):
+                    yield {"path": path, "category": category}
 
 
 def main(args, env, loggers):
