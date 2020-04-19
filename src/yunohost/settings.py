@@ -70,7 +70,7 @@ DEFAULTS = OrderedDict([
     ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
         "choices": ["intermediate", "modern"]}),
     ("pop3.enabled", {"type": "bool", "default": False}),
-    ("smtp.ipv6", {"type": "bool", "default": True}),
+    ("smtp.allow_ipv6", {"type": "bool", "default": True}),
 ])
 
 
