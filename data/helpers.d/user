@@ -114,12 +114,14 @@ ynh_system_user_create () {
 
     if ! ynh_system_user_exists "$username"	# Check if the user exists on the system
     then	# If the user doesn't exist
-        if [ -n "$home_dir" ]; then	# If a home dir is mentioned
+        if [ -n "$home_dir" ]
+        then	# If a home dir is mentioned
             local user_home_dir="-d $home_dir"
         else
             local user_home_dir="--no-create-home"
         fi
-        if [ $use_shell -eq 1 ]; then	# If we want a shell for the user
+        if [ $use_shell -eq 1 ]
+        then	# If we want a shell for the user
             local shell="" # Use default shell
         else
             local shell="--shell /usr/sbin/nologin"

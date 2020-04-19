@@ -87,7 +87,8 @@ ynh_add_fpm_config () {
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
     then
         # If the argument --package is used, add the packages to ynh_install_php to install them from sury
-        if [ -n "$package" ]; then
+        if [ -n "$package" ]
+        then
             local additionnal_packages="--package=$package"
         else
             local additionnal_packages=""
@@ -109,7 +110,8 @@ ynh_add_fpm_config () {
         local fpm_config_dir="/etc/php/$phpversion/fpm"
     fi
     # Configure PHP-FPM 5 on Debian Jessie
-    if [ "$(ynh_get_debian_release)" == "jessie" ]; then
+    if [ "$(ynh_get_debian_release)" == "jessie" ]
+    then
         fpm_config_dir="/etc/php5/fpm"
         fpm_service="php5-fpm"
     fi
@@ -274,7 +276,8 @@ ynh_remove_fpm_config () {
     phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
 
     # Assume default php files if not set
-    if [ -z "$fpm_config_dir" ]; then
+    if [ -z "$fpm_config_dir" ]
+    then
         fpm_config_dir="/etc/php/$YNH_DEFAULT_PHP_VERSION/fpm"
         fpm_service="php$YNH_DEFAULT_PHP_VERSION-fpm"
     fi
@@ -524,18 +527,22 @@ ynh_get_scalable_phpfpm () {
         ynh_debug --message="Footprint=${footprint}Mb by pool."
         ynh_debug --message="Process manager=$php_pm"
         ynh_debug --message="Max RAM=${max_ram}Mb"
-        if [ "$php_pm" != "static" ]; then
+        if [ "$php_pm" != "static" ]
+        then
             ynh_debug --message="\nMax estimated footprint=$(( $php_max_children * $footprint ))"
             ynh_debug --message="Min estimated footprint=$(( $php_min_spare_servers * $footprint ))"
         fi
-        if [ "$php_pm" = "dynamic" ]; then
+        if [ "$php_pm" = "dynamic" ]
+        then
             ynh_debug --message="Estimated average footprint=$(( $php_max_spare_servers * $footprint ))"
-        elif [ "$php_pm" = "static" ]; then
+        elif [ "$php_pm" = "static" ]
+        then
             ynh_debug --message="Estimated footprint=$(( $php_max_children * $footprint ))"
         fi
         ynh_debug --message="\nRaw php-fpm values:"
         ynh_debug --message="pm.max_children = $php_max_children"
-        if [ "$php_pm" = "dynamic" ]; then
+        if [ "$php_pm" = "dynamic" ]
+        then
             ynh_debug --message="pm.start_servers = $php_start_servers"
             ynh_debug --message="pm.min_spare_servers = $php_min_spare_servers"
             ynh_debug --message="pm.max_spare_servers = $php_max_spare_servers"

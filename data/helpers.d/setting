@@ -186,7 +186,8 @@ ynh_permission_create() {
     local allowed
     ynh_handle_getopts_args "$@"
 
-    if [[ -n ${url:-} ]]; then
+    if [[ -n ${url:-} ]]
+    then
         url="'$url'"
     else
         url="None"
@@ -248,7 +249,8 @@ ynh_permission_url() {
     local url
     ynh_handle_getopts_args "$@"
 
-    if [[ -n ${url:-} ]]; then
+    if [[ -n ${url:-} ]]
+    then
         url="'$url'"
     else
         url="None"

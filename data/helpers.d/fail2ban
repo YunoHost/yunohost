@@ -96,7 +96,8 @@ ynh_add_fail2ban_config () {
         fi
 
         # Replace all other variable given as arguments
-        for var_to_replace in ${others_var:-}; do
+        for var_to_replace in ${others_var:-}
+        do
             # ${var_to_replace^^} make the content of the variable on upper-cases
             # ${!var_to_replace} get the content of the variable named $var_to_replace
             ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalfail2banjailconf"
@@ -104,11 +105,11 @@ ynh_add_fail2ban_config () {
         done
 
     else
-    # Usage 1, no template. Build a config file from scratch.
-    test -n "$logpath" || ynh_die "ynh_add_fail2ban_config expects a logfile path as first argument and received nothing."
-    test -n "$failregex" || ynh_die "ynh_add_fail2ban_config expects a failure regex as second argument and received nothing."
+        # Usage 1, no template. Build a config file from scratch.
+        test -n "$logpath" || ynh_die "ynh_add_fail2ban_config expects a logfile path as first argument and received nothing."
+        test -n "$failregex" || ynh_die "ynh_add_fail2ban_config expects a failure regex as second argument and received nothing."
 
-    tee $finalfail2banjailconf <<EOF
+        tee $finalfail2banjailconf <<EOF
 [$app]
 enabled = true
 port = $ports
@@ -133,7 +134,8 @@ EOF
     ynh_systemd_action --service_name=fail2ban --action=reload
 
     local fail2ban_error="$(journalctl -u fail2ban | tail -n50 | grep "WARNING.*$app.*")"
-    if [[ -n "$fail2ban_error" ]]; then
+    if [[ -n "$fail2ban_error" ]]
+    then
         ynh_print_err --message="Fail2ban failed to load the jail for $app"
         ynh_print_warn --message="${fail2ban_error#*WARNING}"
     fi

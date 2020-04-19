@@ -85,7 +85,8 @@ ynh_mysql_create_db() {
     local sql="CREATE DATABASE ${db};"
 
     # grant all privilegies to user
-    if [[ $# -gt 1 ]]; then
+    if [[ $# -gt 1 ]]
+    then
         sql+=" GRANT ALL PRIVILEGES ON ${db}.* TO '${2}'@'localhost'"
         [[ -n ${3:-} ]] && sql+=" IDENTIFIED BY '${3}'"
         sql+=" WITH GRANT OPTION;"
@@ -224,7 +225,8 @@ ynh_mysql_remove_db () {
     ynh_handle_getopts_args "$@"
 
     local mysql_root_password=$(cat $MYSQL_ROOT_PWD_FILE)
-    if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"; then	# Check if the database exists
+    if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"
+    then	# Check if the database exists
         ynh_mysql_drop_db $db_name	# Remove the database	
     else
         ynh_print_warn --message="Database $db_name not found"

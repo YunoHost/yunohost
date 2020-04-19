@@ -129,7 +129,7 @@ ynh_setup_source () {
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
-    if [ "$src_filename" = "" ] ; then
+    if [ "$src_filename" = "" ]; then
         src_filename="${source_id}.${src_format}"
     fi
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
@@ -155,7 +155,8 @@ ynh_setup_source () {
     then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
-        if $src_in_subdir ; then
+        if $src_in_subdir
+        then
             local tmp_dir=$(mktemp -d)
             unzip -quo $src_filename -d "$tmp_dir"
             cp -a $tmp_dir/*/. "$dest_dir"
@@ -167,14 +168,16 @@ ynh_setup_source () {
         local strip=""
         if [ "$src_in_subdir" != "false" ]
         then
-            if [ "$src_in_subdir" == "true" ]; then
+            if [ "$src_in_subdir" == "true" ]
+            then
                 local sub_dirs=1
             else
                 local sub_dirs="$src_in_subdir"
             fi
             strip="--strip-components $sub_dirs"
         fi
-        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]] ; then
+        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]]
+        then
             tar -xf $src_filename -C "$dest_dir" $strip
         else
             ynh_die --message="Archive format unrecognized."
@@ -321,7 +324,7 @@ ynh_secure_remove () {
     if [[ -z "$file" ]]
     then
         ynh_print_warn --message="ynh_secure_remove called with empty argument, ignoring."
-    else if [[ "$forbidden_path" =~ "$file" \
+    elif [[ "$forbidden_path" =~ "$file" \
         # Match all paths or subpaths in $forbidden_path
         || "$file" =~ ^/[[:alnum:]]+$ \
         # Match all first level paths from / (Like /var, /root, etc...)
@@ -329,12 +332,12 @@ ynh_secure_remove () {
         # Match if the path finishes by /. Because it seems there is an empty variable
     then
         ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
-    else if [ -e "$file" ]
+    elif [ -e "$file" ]
     then
         rm -R "$file"
     else
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
-    fi fi fi
+    fi
 }
 
 # Extract a key from a plain command output
@@ -352,12 +355,16 @@ ynh_get_plain_key() {
     # an info to be redacted by the core
     local key_=$1
     shift
-    while read line; do
-        if [[ "$founded" == "1" ]] ; then
+    while read line
+    do
+        if [[ "$founded" == "1" ]]
+        then
             [[ "$line" =~ ^${prefix}[^#] ]] && return
             echo $line
-        elif [[ "$line" =~ ^${prefix}${key_}$ ]]; then
-            if [[ -n "${1:-}" ]]; then
+        elif [[ "$line" =~ ^${prefix}${key_}$ ]]
+        then
+            if [[ -n "${1:-}" ]]
+            then
                 prefix+="#"
                 key_=$1
                 shift
@@ -469,7 +476,8 @@ ynh_check_app_version_changed () {
     local update_version=$(ynh_read_manifest --manifest="../manifest.json" --manifest_key="version" || echo 1.0)
     local update_upstream_version="$(ynh_app_upstream_version)"
 
-    if [ "$current_version" == "$update_version" ] ; then
+    if [ "$current_version" == "$update_version" ]
+    then
         # Complete versions are the same
         if [ "$force_upgrade" != "0" ]
         then
@@ -481,7 +489,8 @@ ynh_check_app_version_changed () {
         else
             ynh_die "Up-to-date, nothing to do" 0
         fi
-    elif [ "$current_upstream_version" == "$update_upstream_version" ] ; then
+    elif [ "$current_upstream_version" == "$update_upstream_version" ]
+    then
         # Upstream versions are the same, only YunoHost package versions differ
         return_value="UPGRADE_PACKAGE"
     fi

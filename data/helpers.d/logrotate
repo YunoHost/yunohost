@@ -31,18 +31,22 @@ ynh_use_logrotate () {
     local specific_user="${specific_user:-}"
 
     # LEGACY CODE - PRE GETOPTS
-    if [ $# -gt 0 ] && [ "$1" == "--non-append" ]; then
+    if [ $# -gt 0 ] && [ "$1" == "--non-append" ]
+    then
         nonappend=1
         # Destroy this argument for the next command.
         shift
-    elif [ $# -gt 1 ] && [ "$2" == "--non-append" ]; then
+    elif [ $# -gt 1 ] && [ "$2" == "--non-append" ]
+    then
         nonappend=1
     fi
 
-    if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]; then
+    if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]
+    then
         # If the given logfile parameter already exists as a file, or if it ends up with ".log",
         # we just want to manage a single file
-        if [ -f "$1" ] || [ "$(echo ${1##*.})" == "log" ]; then
+        if [ -f "$1" ] || [ "$(echo ${1##*.})" == "log" ]
+        then
             local logfile=$1
         # Otherwise we assume we want to manage a directory and all its .log file inside
         else
@@ -64,7 +68,8 @@ ynh_use_logrotate () {
         logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
     fi
     local su_directive=""
-    if [[ -n $specific_user ]]; then
+    if [[ -n $specific_user ]]
+    then
         su_directive="	# Run logorotate as specific user - group
     su ${specific_user%/*} ${specific_user#*/}"
     fi

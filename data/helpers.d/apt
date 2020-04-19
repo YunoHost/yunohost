@@ -78,7 +78,8 @@ ynh_package_version() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ynh_package_is_installed "$package"; then
+    if ynh_package_is_installed "$package"
+    then
         dpkg-query -W -f '${Version}' "$package" 2>/dev/null
     else
         echo ''
@@ -251,7 +252,7 @@ ynh_install_app_dependencies () {
     # https://github.com/YunoHost/issues/issues/1407
     # 
     # If we require to install php dependency
-    if echo $dependencies | grep -q 'php';
+    if echo $dependencies | grep -q 'php'
     then
         # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
         if dpkg --list | grep "php7.0" | grep -q -v "7.0.33-0+deb9"

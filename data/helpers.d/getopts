@@ -126,7 +126,8 @@ ynh_handle_getopts_args () {
 
                         # If the first argument is longer than 2 characters,
                         # There's a value attached to the option, in the same array cell
-                        if [ ${#all_args[0]} -gt 2 ]; then
+                        if [ ${#all_args[0]} -gt 2 ]
+                        then
                             # Remove the option and the space, so keep only the value itself.
                             all_args[0]="${all_args[0]#-${parameter} }"
                             # Reduce the value of shift, because the option has been removed manually
@@ -193,7 +194,8 @@ ynh_handle_getopts_args () {
                 getopts_parameters=${legacy_args:-${getopts_parameters//:}}
                 # Get the option_flag from getopts_parameters, by using the option_flag according to the position of the argument.
                 option_flag=${getopts_parameters:$i:1}
-                if [ -z "$option_flag" ]; then
+                if [ -z "$option_flag" ]
+                then
                         ynh_print_warn --message="Too many arguments ! \"${arguments[$i]}\" will be ignored."
                         continue
                 fi

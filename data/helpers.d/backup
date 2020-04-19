@@ -64,7 +64,8 @@ ynh_backup() {
     # don't backup big data items
     if [ $is_big -eq 1 ] && ( [ ${do_not_backup_data:-0} -eq 1 ] || [ $BACKUP_CORE_ONLY -eq 1 ] ) 
     then
-        if [ $BACKUP_CORE_ONLY -eq 1 ]; then
+        if [ $BACKUP_CORE_ONLY -eq 1 ]
+        then
             ynh_print_warn --message="$src_path will not be saved, because 'BACKUP_CORE_ONLY' is set."
         else
             ynh_print_warn --message="$src_path will not be saved, because 'do_not_backup_data' is set."
@@ -100,12 +101,13 @@ ynh_backup() {
     # If there is no destination path, initialize it with the source path
     # relative to "/".
     # eg: src_path=/etc/yunohost -> dest_path=etc/yunohost
-    if [[ -z "$dest_path" ]]; then
-
+    if [[ -z "$dest_path" ]]
+    then
         dest_path="${src_path#/}"
 
     else
-        if [[ "${dest_path:0:1}" == "/" ]]; then
+        if [[ "${dest_path:0:1}" == "/" ]]
+        then
 
             # If the destination path is an absolute path, transform it as a path
             # relative to the current working directory ($YNH_CWD)
@@ -165,7 +167,8 @@ ynh_restore () {
 
     # For each destination path begining by $REL_DIR
     cat ${YNH_BACKUP_CSV} | tr -d $'\r' | grep -ohP "^\".*\",\"$REL_DIR.*\"$" | \
-    while read line; do
+    while read line
+    do
         local ORIGIN_PATH=$(echo "$line" | grep -ohP "^\"\K.*(?=\",\".*\"$)")
         local ARCHIVE_PATH=$(echo "$line" | grep -ohP "^\".*\",\"$REL_DIR\K.*(?=\"$)")
         ynh_restore_file --origin_path="$ARCHIVE_PATH" --dest_path="$ORIGIN_PATH"
@@ -234,7 +237,8 @@ ynh_restore_file () {
     local not_mandatory="${not_mandatory:-0}"
 
     # If archive_path doesn't exist, search for a corresponding path in CSV
-    if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]; then
+    if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]
+    then
         if [ "$not_mandatory" == "0" ]
         then
             archive_path="$YNH_BACKUP_DIR/$(_get_archive_path \"$origin_path\")"
@@ -261,8 +265,10 @@ ynh_restore_file () {
     mkdir -p $(dirname "$dest_path")
 
     # Do a copy if it's just a mounting point
-    if mountpoint -q $YNH_BACKUP_DIR; then
-        if [[ -d "${archive_path}" ]]; then
+    if mountpoint -q $YNH_BACKUP_DIR
+    then
+        if [[ -d "${archive_path}" ]]
+        then
             archive_path="${archive_path}/."
             mkdir -p "$dest_path"
         fi

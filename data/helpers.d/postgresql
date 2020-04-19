@@ -160,7 +160,8 @@ ynh_psql_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user" ; then
+    if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user"
+    then
         return 1
     else
         return 0
@@ -179,7 +180,8 @@ ynh_psql_database_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
+    if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"
+    then
         return 1
     else
         return 0
@@ -243,14 +245,16 @@ ynh_psql_remove_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
+    if ynh_psql_database_exists --database=$db_name
+    then # Check if the database exists
         ynh_psql_drop_db $db_name # Remove the database
     else
         ynh_print_warn --message="Database $db_name not found"
     fi
 
     # Remove psql user if it exists
-    if ynh_psql_user_exists --user=$db_user; then
+    if ynh_psql_user_exists --user=$db_user
+    then
         ynh_psql_drop_user $db_user
     else
         ynh_print_warn --message="User $db_user not found"
@@ -262,7 +266,8 @@ ynh_psql_remove_db() {
 #
 # usage: ynh_psql_test_if_first_run
 ynh_psql_test_if_first_run() {
-    if [ -f "$PSQL_ROOT_PWD_FILE" ]; then
+    if [ -f "$PSQL_ROOT_PWD_FILE" ]
+    then
         echo "PostgreSQL is already installed, no need to create master password"
         return
     fi
@@ -270,10 +275,12 @@ ynh_psql_test_if_first_run() {
     local psql_root_password="$(ynh_string_random)"
     echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
 
-    if [ -e /etc/postgresql/9.4/ ]; then
+    if [ -e /etc/postgresql/9.4/ ]
+    then
         local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
         local logfile=/var/log/postgresql/postgresql-9.4-main.log
-    elif [ -e /etc/postgresql/9.6/ ]; then
+    elif [ -e /etc/postgresql/9.6/ ]
+    then
         local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
         local logfile=/var/log/postgresql/postgresql-9.6-main.log
     else
