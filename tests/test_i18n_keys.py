@@ -125,6 +125,13 @@ def find_expected_string_keys():
     yield "password_listed"
     for i in [1, 2, 3, 4]:
         yield "password_too_simple_%s" % i
+    
+    checks = ["outgoing_port_25_ok", "ehlo_ok", "fcrdns_ok",
+              "blacklist_ok", "queue_ok", "ehlo_bad_answer",
+              "ehlo_unreachable", "ehlo_bad_answer_details",
+              "ehlo_unreachable_details", ]
+    for check in checks:
+        yield "diagnosis_mail_%s" % check
 
 ###############################################################################
 #   Load en locale json keys                                                  #
