@@ -50,6 +50,21 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
+  # Fuck it, those domain/search entries from dhclient are usually annoying
+  # lying shit from the ISP trying to MiTM
+  if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf
+  then
+      if grep -q -E "^ *(domain|search)" /run/resolvconf/interface/*.dhclient 2>/dev/null
+      then
+        sed -E "s/^(domain|search)/#\1/g" -i /run/resolvconf/interface/*.dhclient
+      fi
+
+      grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >> /etc/dhcp/dhclient.conf
+      grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >> /etc/dhcp/dhclient.conf
+      grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >> /etc/dhcp/dhclient.conf
+      systemctl restart resolvconf
+  fi
+
   [[ -z "$regen_conf_files" ]] \
     || service dnsmasq restart
 }

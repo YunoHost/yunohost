@@ -35,7 +35,8 @@ do_pre_regen() {
     > "${default_dir}/postsrsd"
 
   # adapt it for IPv4-only hosts
-  if [ ! -f /proc/net/if_inet6 ]; then
+  ipv6="$(yunohost settings get 'smtp.allow_ipv6')"
+  if [ "$ipv6" == "False" ] || [ ! -f /proc/net/if_inet6 ]; then
     sed -i \
       's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
       "${postfix_dir}/main.cf"
