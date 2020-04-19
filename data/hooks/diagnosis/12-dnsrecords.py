@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 import os
+import re
+
+from datetime import datetime, timedelta
+from subprocess import Popen, PIPE
 
 from moulinette.utils.filesystem import read_file
 
@@ -8,6 +12,7 @@ from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
+SMALL_SUFFIX_LIST = ['noho.st', 'nohost.me', 'ynh.fr', 'netlib.re']
 
 class DNSRecordsDiagnoser(Diagnoser):
 
@@ -31,10 +36,12 @@ class DNSRecordsDiagnoser(Diagnoser):
             is_subdomain = domain.split(".",1)[1] in all_domains
             for report in self.check_domain(domain, domain == main_domain, is_subdomain=is_subdomain):
                 yield report
-
-        # FIXME : somewhere, should implement a check for reverse DNS ...
-
-        # FIXME / TODO : somewhere, could also implement a check for domain expiring soon
+        
+        # Check if a domain buy by the user will expire soon
+        domains_from_registrar = ['.'.join(domain.split('.')[-2:]) for domain in all_domains]
+        domains_from_registrar = set(domains_from_registrar) - set(SMALL_SUFFIX_LIST)
+        for report in self.check_expiration_date(domains_from_registrar):
+            yield report
 
     def check_domain(self, domain, is_main_domain, is_subdomain):
 
@@ -136,6 +143,70 @@ class DNSRecordsDiagnoser(Diagnoser):
         else:
             return r["current"] == r["value"]
 
+
+    def check_expiration_date(self, domains):
+        """
+        Alert if expiration date of a domain is soon
+        """
+
+        # FIXME find a way to ignore a specific domain without 
+        # create a report by domain each time. We need something small
+        details = {
+            "not_found": [],
+            "error": [],
+            "warning": [],
+            "info": []
+        }
+
+        for domain in domains:
+            expire_date = self.get_domain_expiration(domain)
+
+            if not expire_date:
+                details["not_found"].append((
+                    "diagnosis_domain_expiration_date_not_found",
+                    {"domain": domain}))
+                continue
+
+            expire_in = expire_date - datetime.now()
+
+            alert_type = "info"
+            if expire_in <= timedelta(7):
+                alert_type = "error"
+            elif expire_in <= timedelta(30):
+                alert_type = "warning"
+
+            args = {
+                "domain": domain,
+                "days": expire_in.days - 1,
+                "expire_date": str(expire_date)
+            }
+            details[alert_type].append(("diagnosis_domain_expires_in", args))
+
+        for alert_type in ["error", "warning", "not_found", "info"]:
+            if details[alert_type]:
+                yield dict(meta={"category": "expiration"},
+                           data={},
+                           status=alert_type.upper() if alert_type != "not_found" else "INFO",
+                           summary="diagnosis_domain_expiration_" + alert_type,
+                           details=details[alert_type])
+
+    def get_domain_expiration(self, domain):
+        """
+        Return the expiration datetime of a domain or None
+        """
+
+        p1 = Popen(['whois', domain], stdout=PIPE)
+        p2 = Popen(['grep', 'Expir'], stdin=p1.stdout, stdout=PIPE)
+        out, err = p2.communicate()
+        out = out.decode("utf-8").split('\n')
+        p1.terminate()
+        #p2.terminate()
+
+        for line in out:
+            match = re.search(r'\d{4}-\d{2}-\d{2}', line)
+            if match is not None:
+                return datetime.strptime(match.group(), '%Y-%m-%d')
+        return None
 
 def main(args, env, loggers):
     return DNSRecordsDiagnoser(args, env, loggers).diagnose()
