@@ -18,8 +18,8 @@ ynh_string_random() {
     length=${length:-24}
 
     dd if=/dev/urandom bs=1 count=1000 2> /dev/null \
-      | tr -c -d 'A-Za-z0-9' \
-      | sed -n 's/\(.\{'"$length"'\}\).*/\1/p'
+        | tr -c -d 'A-Za-z0-9' \
+        | sed -n 's/\(.\{'"$length"'\}\).*/\1/p'
 }
 
 # Substitute/replace a string (or expression) by another in a file
@@ -35,21 +35,21 @@ ynh_string_random() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_replace_string () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=mrf
-	local -A args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
-	local match_string
-	local replace_string
-	local target_file
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=mrf
+    local -A args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
+    local match_string
+    local replace_string
+    local target_file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	local delimit=@
-	# Escape the delimiter if it's in the string.
-	match_string=${match_string//${delimit}/"\\${delimit}"}
-	replace_string=${replace_string//${delimit}/"\\${delimit}"}
+    local delimit=@
+    # Escape the delimiter if it's in the string.
+    match_string=${match_string//${delimit}/"\\${delimit}"}
+    replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
-	sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$target_file"
+    sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$target_file"
 }
 
 # Substitute/replace a special string by another in a file
@@ -64,24 +64,24 @@ ynh_replace_string () {
 #
 # Requires YunoHost version 2.7.7 or higher.
 ynh_replace_special_string () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=mrf
-	local -A args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
-	local match_string
-	local replace_string
-	local target_file
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=mrf
+    local -A args_array=( [m]=match_string= [r]=replace_string= [f]=target_file= )
+    local match_string
+    local replace_string
+    local target_file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	# Escape any backslash to preserve them as simple backslash.
-	match_string=${match_string//\\/"\\\\"}
-	replace_string=${replace_string//\\/"\\\\"}
+    # Escape any backslash to preserve them as simple backslash.
+    match_string=${match_string//\\/"\\\\"}
+    replace_string=${replace_string//\\/"\\\\"}
 
-	# Escape the & character, who has a special function in sed.
-	match_string=${match_string//&/"\&"}
-	replace_string=${replace_string//&/"\&"}
+    # Escape the & character, who has a special function in sed.
+    match_string=${match_string//&/"\&"}
+    replace_string=${replace_string//&/"\&"}
 
-	ynh_replace_string --match_string="$match_string" --replace_string="$replace_string" --target_file="$target_file"
+    ynh_replace_string --match_string="$match_string" --replace_string="$replace_string" --target_file="$target_file"
 }
 
 # Sanitize a string intended to be the name of a database
@@ -95,15 +95,15 @@ ynh_replace_special_string () {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_sanitize_dbid () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=n
-	local -A args_array=( [n]=db_name= )
-	local db_name
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=n
+    local -A args_array=( [n]=db_name= )
+    local db_name
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	# We should avoid having - and . in the name of databases. They are replaced by _
-	echo ${db_name//[-.]/_}
+    # We should avoid having - and . in the name of databases. They are replaced by _
+    echo ${db_name//[-.]/_}
 }
 
 # Normalize the url path syntax
@@ -123,19 +123,19 @@ ynh_sanitize_dbid () {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_normalize_url_path () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=p
-	local -A args_array=( [p]=path_url= )
-	local path_url
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    local -A args_array=( [p]=path_url= )
+    local path_url
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	test -n "$path_url" || ynh_die --message="ynh_normalize_url_path expect a URL path as first argument and received nothing."
-	if [ "${path_url:0:1}" != "/" ]; then    # If the first character is not a /
-		path_url="/$path_url"    # Add / at begin of path variable
-	fi
-	if [ "${path_url:${#path_url}-1}" == "/" ] && [ ${#path_url} -gt 1 ]; then    # If the last character is a / and that not the only character.
-		path_url="${path_url:0:${#path_url}-1}"	# Delete the last character
-	fi
-	echo $path_url
+    test -n "$path_url" || ynh_die --message="ynh_normalize_url_path expect a URL path as first argument and received nothing."
+    if [ "${path_url:0:1}" != "/" ]; then    # If the first character is not a /
+        path_url="/$path_url"    # Add / at begin of path variable
+    fi
+    if [ "${path_url:${#path_url}-1}" == "/" ] && [ ${#path_url} -gt 1 ]; then    # If the last character is a / and that not the only character.
+        path_url="${path_url:0:${#path_url}-1}"	# Delete the last character
+    fi
+    echo $path_url
 }

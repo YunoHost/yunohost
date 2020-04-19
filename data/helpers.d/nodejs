@@ -13,16 +13,16 @@ export N_PREFIX="$n_install_dir"
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_install_n () {
-	ynh_print_info --message="Installation of N - Node.js version management"
-	# Build an app.src for n
-	mkdir -p "../conf"
-	echo "SOURCE_URL=https://github.com/tj/n/archive/v4.1.0.tar.gz
+    ynh_print_info --message="Installation of N - Node.js version management"
+    # Build an app.src for n
+    mkdir -p "../conf"
+    echo "SOURCE_URL=https://github.com/tj/n/archive/v4.1.0.tar.gz
 SOURCE_SUM=3983fa3f00d4bf85ba8e21f1a590f6e28938093abe0bb950aeea52b1717471fc" > "../conf/n.src"
-	# Download and extract n
-	ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
-	# Install n
-	(cd "$n_install_dir/git"
-	PREFIX=$N_PREFIX make install 2>&1)
+    # Download and extract n
+    ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
+    # Install n
+    (cd "$n_install_dir/git"
+    PREFIX=$N_PREFIX make install 2>&1)
 }
 
 # Load the version of node for an app, and set variables.
@@ -41,15 +41,15 @@ SOURCE_SUM=3983fa3f00d4bf85ba8e21f1a590f6e28938093abe0bb950aeea52b1717471fc" > "
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_use_nodejs () {
-	nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
+    nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
-	nodejs_use_version="echo \"Deprecated command, should be removed\""
+    nodejs_use_version="echo \"Deprecated command, should be removed\""
 
-	# Get the absolute path of this version of node
-	nodejs_path="$node_version_path/$nodejs_version/bin"
+    # Get the absolute path of this version of node
+    nodejs_path="$node_version_path/$nodejs_version/bin"
 
-	# Load the path of this version of node in $PATH
-	[[ :$PATH: == *":$nodejs_path"* ]] || PATH="$nodejs_path:$PATH"
+    # Load the path of this version of node in $PATH
+    [[ :$PATH: == *":$nodejs_path"* ]] || PATH="$nodejs_path:$PATH"
 }
 
 # Install a specific version of nodejs
@@ -64,72 +64,72 @@ ynh_use_nodejs () {
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_install_nodejs () {
-	# Use n, https://github.com/tj/n to manage the nodejs versions
+    # Use n, https://github.com/tj/n to manage the nodejs versions
 
-	# Declare an array to define the options of this helper.
-	local legacy_args=n
-	local -A args_array=( [n]=nodejs_version= )
-	local nodejs_version
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=n
+    local -A args_array=( [n]=nodejs_version= )
+    local nodejs_version
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	# Create $n_install_dir
-	mkdir -p "$n_install_dir"
+    # Create $n_install_dir
+    mkdir -p "$n_install_dir"
 
-	# Load n path in PATH
-	CLEAR_PATH="$n_install_dir/bin:$PATH"
-	# Remove /usr/local/bin in PATH in case of node prior installation
-	PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
+    # Load n path in PATH
+    CLEAR_PATH="$n_install_dir/bin:$PATH"
+    # Remove /usr/local/bin in PATH in case of node prior installation
+    PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
 
-	# Move an existing node binary, to avoid to block n.
-	test -x /usr/bin/node && mv /usr/bin/node /usr/bin/node_n
-	test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
+    # Move an existing node binary, to avoid to block n.
+    test -x /usr/bin/node && mv /usr/bin/node /usr/bin/node_n
+    test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
 
-	# If n is not previously setup, install it
-	if ! test $(n --version > /dev/null 2>&1)
-	then
-		ynh_install_n
-	fi
+    # If n is not previously setup, install it
+    if ! test $(n --version > /dev/null 2>&1)
+    then
+        ynh_install_n
+    fi
 
-	# Modify the default N_PREFIX in n script
-	ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
+    # Modify the default N_PREFIX in n script
+    ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
 
-	# Restore /usr/local/bin in PATH
-	PATH=$CLEAR_PATH
+    # Restore /usr/local/bin in PATH
+    PATH=$CLEAR_PATH
 
-	# And replace the old node binary.
-	test -x /usr/bin/node_n && mv /usr/bin/node_n /usr/bin/node
-	test -x /usr/bin/npm_n && mv /usr/bin/npm_n /usr/bin/npm
+    # And replace the old node binary.
+    test -x /usr/bin/node_n && mv /usr/bin/node_n /usr/bin/node
+    test -x /usr/bin/npm_n && mv /usr/bin/npm_n /usr/bin/npm
 
-	# Install the requested version of nodejs
-	uname=$(uname -m)
-	if [[ $uname =~ aarch64 || $uname =~ arm64 ]]
-	then
-		n $nodejs_version --arch=arm64
-	else
-		n $nodejs_version
-	fi
+    # Install the requested version of nodejs
+    uname=$(uname -m)
+    if [[ $uname =~ aarch64 || $uname =~ arm64 ]]
+    then
+        n $nodejs_version --arch=arm64
+    else
+        n $nodejs_version
+    fi
 
-	# Find the last "real" version for this major version of node.
-	real_nodejs_version=$(find $node_version_path/$nodejs_version* -maxdepth 0 | sort --version-sort | tail --lines=1)
-	real_nodejs_version=$(basename $real_nodejs_version)
+    # Find the last "real" version for this major version of node.
+    real_nodejs_version=$(find $node_version_path/$nodejs_version* -maxdepth 0 | sort --version-sort | tail --lines=1)
+    real_nodejs_version=$(basename $real_nodejs_version)
 
-	# Create a symbolic link for this major version if the file doesn't already exist
-	if [ ! -e "$node_version_path/$nodejs_version" ]
-	then
-		ln --symbolic --force --no-target-directory $node_version_path/$real_nodejs_version $node_version_path/$nodejs_version
-	fi
+    # Create a symbolic link for this major version if the file doesn't already exist
+    if [ ! -e "$node_version_path/$nodejs_version" ]
+    then
+        ln --symbolic --force --no-target-directory $node_version_path/$real_nodejs_version $node_version_path/$nodejs_version
+    fi
 
-	# Store the ID of this app and the version of node requested for it
-	echo "$YNH_APP_INSTANCE_NAME:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
+    # Store the ID of this app and the version of node requested for it
+    echo "$YNH_APP_INSTANCE_NAME:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
 
-	# Store nodejs_version into the config of this app
-	ynh_app_setting_set --app=$app --key=nodejs_version --value=$nodejs_version
+    # Store nodejs_version into the config of this app
+    ynh_app_setting_set --app=$app --key=nodejs_version --value=$nodejs_version
 
-	# Build the update script and set the cronjob
-	ynh_cron_upgrade_node
+    # Build the update script and set the cronjob
+    ynh_cron_upgrade_node
 
-	ynh_use_nodejs
+    ynh_use_nodejs
 }
 
 # Remove the version of node used by the app.
@@ -142,25 +142,25 @@ ynh_install_nodejs () {
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_remove_nodejs () {
-	nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
+    nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
-	# Remove the line for this app
-	sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
+    # Remove the line for this app
+    sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
 
-	# If no other app uses this version of nodejs, remove it.
-	if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"
-	then
-		$n_install_dir/bin/n rm $nodejs_version
-	fi
+    # If no other app uses this version of nodejs, remove it.
+    if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"
+    then
+        $n_install_dir/bin/n rm $nodejs_version
+    fi
 
-	# If no other app uses n, remove n
-	if [ ! -s "$n_install_dir/ynh_app_version" ]
-	then
-		ynh_secure_remove --file="$n_install_dir"
-		ynh_secure_remove --file="/usr/local/n"
-		sed --in-place "/N_PREFIX/d" /root/.bashrc
-		rm -f /etc/cron.daily/node_update
-	fi
+    # If no other app uses n, remove n
+    if [ ! -s "$n_install_dir/ynh_app_version" ]
+    then
+        ynh_secure_remove --file="$n_install_dir"
+        ynh_secure_remove --file="/usr/local/n"
+        sed --in-place "/N_PREFIX/d" /root/.bashrc
+        rm -f /etc/cron.daily/node_update
+    fi
 }
 
 # Set a cron design to update your node versions
@@ -173,8 +173,8 @@ ynh_remove_nodejs () {
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_cron_upgrade_node () {
-	# Build the update script
-	cat > "$n_install_dir/node_update.sh" << EOF
+    # Build the update script
+    cat > "$n_install_dir/node_update.sh" << EOF
 #!/bin/bash
 
 version_path="$node_version_path"
@@ -195,26 +195,26 @@ all_real_version=\$(echo "\$all_real_version" | sort --unique)
 # Read each major version
 while read version
 do
-	echo "Update of the version \$version"
-	sudo \$n_install_dir/bin/n \$version
+    echo "Update of the version \$version"
+    sudo \$n_install_dir/bin/n \$version
 
-	# Find the last "real" version for this major version of node.
-	real_nodejs_version=\$(find \$version_path/\$version* -maxdepth 0 | sort --version-sort | tail --lines=1)
-	real_nodejs_version=\$(basename \$real_nodejs_version)
+    # Find the last "real" version for this major version of node.
+    real_nodejs_version=\$(find \$version_path/\$version* -maxdepth 0 | sort --version-sort | tail --lines=1)
+    real_nodejs_version=\$(basename \$real_nodejs_version)
 
-	# Update the symbolic link for this version
-	sudo ln --symbolic --force --no-target-directory \$version_path/\$real_nodejs_version \$version_path/\$version
+    # Update the symbolic link for this version
+    sudo ln --symbolic --force --no-target-directory \$version_path/\$real_nodejs_version \$version_path/\$version
 done <<< "\$(echo "\$all_real_version")"
 EOF
 
-	chmod +x "$n_install_dir/node_update.sh"
+    chmod +x "$n_install_dir/node_update.sh"
 
-	# Build the cronjob
-	cat > "/etc/cron.daily/node_update" << EOF
+    # Build the cronjob
+    cat > "/etc/cron.daily/node_update" << EOF
 #!/bin/bash
 
 $n_install_dir/node_update.sh >> $n_install_dir/node_update.log
 EOF
 
-	chmod +x "/etc/cron.daily/node_update"
+    chmod +x "/etc/cron.daily/node_update"
 }

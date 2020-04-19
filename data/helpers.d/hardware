@@ -8,58 +8,58 @@
 # | arg: -s, --ignore_swap - Ignore swap, consider only real RAM
 # | arg: -o, --only_swap - Ignore real RAM, consider only swap
 ynh_get_ram () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=ftso
-	local -A args_array=( [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
-	local free
-	local total
-	local ignore_swap
-	local only_swap
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	ignore_swap=${ignore_swap:-0}
-	only_swap=${only_swap:-0}
-	free=${free:-0}
-	total=${total:-0}
+    # Declare an array to define the options of this helper.
+    local legacy_args=ftso
+    local -A args_array=( [f]=free [t]=total [s]=ignore_swap [o]=only_swap )
+    local free
+    local total
+    local ignore_swap
+    local only_swap
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    ignore_swap=${ignore_swap:-0}
+    only_swap=${only_swap:-0}
+    free=${free:-0}
+    total=${total:-0}
 
-	local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
-	local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
-	local total_ram_swap=$(( total_ram + total_swap ))
+    local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
+    local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
+    local total_ram_swap=$(( total_ram + total_swap ))
 
-	local free_ram=$(vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
-	local free_swap=$(vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
-	local free_ram_swap=$(( free_ram + free_swap ))
+    local free_ram=$(vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
+    local free_swap=$(vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
+    local free_ram_swap=$(( free_ram + free_swap ))
 
-	# Use the total amount of ram
-	if [ $free -eq 1 ]
-	then
-		# Use the total amount of free ram
-		local ram=$free_ram_swap
-		if [ $ignore_swap -eq 1 ]
-		then
-			# Use only the amount of free ram
-			ram=$free_ram
-		elif [ $only_swap -eq 1 ]
-		then
-			# Use only the amount of free swap
-			ram=$free_swap
-		fi
-	elif [ $total -eq 1 ]
-	then
-		local ram=$total_ram_swap
-		if [ $ignore_swap -eq 1 ]
-		then
-			# Use only the amount of free ram
-			ram=$total_ram
-		elif [ $only_swap -eq 1 ]
-		then
-			# Use only the amount of free swap
-			ram=$total_swap
-		fi
-	else
-		ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
-		ram=0
-	fi
+    # Use the total amount of ram
+    if [ $free -eq 1 ]
+    then
+        # Use the total amount of free ram
+        local ram=$free_ram_swap
+        if [ $ignore_swap -eq 1 ]
+        then
+            # Use only the amount of free ram
+            ram=$free_ram
+        elif [ $only_swap -eq 1 ]
+        then
+            # Use only the amount of free swap
+            ram=$free_swap
+        fi
+    elif [ $total -eq 1 ]
+    then
+        local ram=$total_ram_swap
+        if [ $ignore_swap -eq 1 ]
+        then
+            # Use only the amount of free ram
+            ram=$total_ram
+        elif [ $only_swap -eq 1 ]
+        then
+            # Use only the amount of free swap
+            ram=$total_swap
+        fi
+    else
+        ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+        ram=0
+    fi
 
     echo $ram
 }
