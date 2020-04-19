@@ -21,6 +21,7 @@
 import os
 import re
 import logging
+import dns.resolver
 
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
@@ -82,6 +83,24 @@ def get_gateway():
 
     addr = _extract_inet(m.group(1), True)
     return addr.popitem()[1] if len(addr) == 1 else None
+
+
+def dig(qname, rdtype="A", timeout=5, resolvers=["127.0.0.1"], edns_size=1500):
+    """
+    Do a quick DNS request and avoid the "search" trap inside /etc/resolv.conf
+    """
+
+    resolver = dns.resolver.Resolver(configure=False)
+    resolver.use_edns(0, 0, edns_size)
+    resolver.nameservers = resolvers
+    resolver.timeout = timeout
+    try:
+        answers = resolver.query(qname, rdtype)
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
+    dns.exception.Timeout) as e:
+        return ("nok", e.__class__.__name__, e)
+
+    return ("ok", [(answer.to_text(), answer) for answer in answers])
 
 
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):
