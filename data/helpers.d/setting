@@ -231,7 +231,7 @@ ynh_permission_exists() {
     local permission
     ynh_handle_getopts_args "$@"
 
-    yunohost user permission list -s | grep -w -q "$app.$permission"
+    yunohost user permission list --short | grep --word-regexp --quiet "$app.$permission"
 }
 
 # Redefine the url associated to a permission
@@ -311,5 +311,5 @@ ynh_permission_has_user() {
         return 1
     fi
 
-    yunohost user permission info "$app.$permission" | grep -w -q "$user"
+    yunohost user permission info "$app.$permission" | grep --word-regexp --quiet "$user"
 }

@@ -117,7 +117,7 @@ ynh_add_fpm_config () {
     fi
 
     # Create the directory for fpm pools
-    mkdir -p "$fpm_config_dir/pool.d"
+    mkdir --parents "$fpm_config_dir/pool.d"
 
     ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
     ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
@@ -341,7 +341,7 @@ ynh_install_php () {
     fi
 
     # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(lsb_release -sc) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version
+    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version
 
     # Install requested dependencies from this extra repository.
     # Install php-fpm first, otherwise php will install apache as a dependency.

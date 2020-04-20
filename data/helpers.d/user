@@ -16,7 +16,7 @@ ynh_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user list --output-as json | grep -q "\"username\": \"${username}\""
+    yunohost user list --output-as json | grep --quiet "\"username\": \"${username}\""
 }
 
 # Retrieve a YunoHost user information
@@ -116,7 +116,7 @@ ynh_system_user_create () {
     then	# If the user doesn't exist
         if [ -n "$home_dir" ]
         then	# If a home dir is mentioned
-            local user_home_dir="-d $home_dir"
+            local user_home_dir="--home-dir $home_dir"
         else
             local user_home_dir="--no-create-home"
         fi

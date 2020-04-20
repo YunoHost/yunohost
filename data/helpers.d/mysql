@@ -24,7 +24,7 @@ ynh_mysql_connect_as() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
-    mysql -u "$user" --password="$password" -B "$database"
+    mysql --user="$user" --password="$password" --batch "$database"
 }
 
 # Execute a command as root user
@@ -127,7 +127,7 @@ ynh_mysql_dump_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    mysqldump -u "root" -p"$(cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$database"
+    mysqldump --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$database"
 }
 
 # Create a user
@@ -225,7 +225,7 @@ ynh_mysql_remove_db () {
     ynh_handle_getopts_args "$@"
 
     local mysql_root_password=$(cat $MYSQL_ROOT_PWD_FILE)
-    if mysqlshow -u root -p$mysql_root_password | grep -q "^| $db_name"
+    if mysqlshow --user=root --password=$mysql_root_password | grep --quiet "^| $db_name"
     then	# Check if the database exists
         ynh_mysql_drop_db $db_name	# Remove the database	
     else

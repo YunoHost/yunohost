@@ -17,7 +17,7 @@ ynh_find_port () {
     ynh_handle_getopts_args "$@"
 
     test -n "$port" || ynh_die --message="The argument of ynh_find_port must be a valid port."
-    while ss -nltu | awk '{print$5}' | grep -q -E ":$port$"       # Check if the port is free
+    while ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ":$port$"       # Check if the port is free
     do
         port=$((port+1))	# Else, pass to next port
     done
@@ -40,7 +40,7 @@ ynh_port_available () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ss -nltu | grep -q -w :$port
+    if ss --numeric --listening --tcp --udp | grep --quiet --word-regexp :$port
     then
         return 1
     else

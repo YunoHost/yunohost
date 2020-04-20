@@ -46,7 +46,7 @@ ynh_print_info() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_no_log() {
     local ynh_cli_log=/var/log/yunohost/yunohost-cli.log
-    cp -a ${ynh_cli_log} ${ynh_cli_log}-move
+    cp --archive ${ynh_cli_log} ${ynh_cli_log}-move
     eval $@
     local exit_code=$?
     mv ${ynh_cli_log}-move ${ynh_cli_log}
@@ -221,7 +221,7 @@ base_time=$(date +%s)
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_script_progression () {
-    set +x
+    set +o xtrace # set +x
     # Declare an array to define the options of this helper.
     local legacy_args=mwtl
     local -A args_array=( [m]=message= [w]=weight= [t]=time [l]=last )
@@ -231,7 +231,7 @@ ynh_script_progression () {
     local last
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    set +x
+    set +o xtrace # set +x
     weight=${weight:-1}
     time=${time:-0}
     last=${last:-0}
@@ -295,7 +295,7 @@ ynh_script_progression () {
     fi
 
     ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
-    set -x
+    set -o xtrace # set -x
 }
 
 # Return data to the Yunohost core for later processing
@@ -317,7 +317,7 @@ ynh_return () {
 # Requires YunoHost version 3.5.0 or higher.
 ynh_debug () {
     # Disable set xtrace for the helper itself, to not pollute the debug log
-    set +x
+    set +o xtrace # set +x
     # Declare an array to define the options of this helper.
     local legacy_args=mt
     local -A args_array=( [m]=message= [t]=trace= )
@@ -326,7 +326,7 @@ ynh_debug () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     # Redisable xtrace, ynh_handle_getopts_args set it back
-    set +x
+    set +o xtrace # set +x
     message=${message:-}
     trace=${trace:-}
 
@@ -338,7 +338,7 @@ ynh_debug () {
     if [ "$trace" == "1" ]
     then
         ynh_debug --message="Enable debugging"
-        set +x
+        set +o xtrace # set +x
         # Get the current file descriptor of xtrace
         old_bash_xtracefd=$BASH_XTRACEFD
         # Add the current file name and the line number of any command currently running while tracing.
@@ -351,14 +351,14 @@ ynh_debug () {
     if [ "$trace" == "0" ]
     then
         ynh_debug --message="Disable debugging"
-        set +x
+        set +o xtrace # set +x
         # Put xtrace back to its original fild descriptor
         BASH_XTRACEFD=$old_bash_xtracefd
         # Restore stdout
         exec 1>&1
     fi
     # Renable set xtrace
-    set -x
+    set -o xtrace # set -x
 }
 
 # Execute a command and print the result as debug

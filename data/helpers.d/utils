@@ -23,7 +23,9 @@ ynh_exit_properly () {
     fi
 
     trap '' EXIT	# Ignore new exit signals
-    set +eu	# Do not exit anymore if a command fail or if a variable is empty
+    # Do not exit anymore if a command fail or if a variable is empty
+    set +o errexit  # set +e
+    set +o nounset  # set +u
 
     # Small tempo to avoid the next message being mixed up with other DEBUG messages
     sleep 0.5
@@ -46,7 +48,8 @@ ynh_exit_properly () {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_abort_if_errors () {
-    set -eu	# Exit if a command fail, and if a variable is used unset.
+    set -o errexit  # set -e; Exit if a command fail
+    set -o nounset  # set -u; And if a variable is used unset
     trap ynh_exit_properly EXIT	# Capturing exit signals on shell script
 }
 
@@ -115,13 +118,13 @@ ynh_setup_source () {
 
     # Load value from configuration file (see above for a small doc about this file
     # format)
-    local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut -d= -f2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut -d= -f2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut -d= -f2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut -d= -f2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut -d= -f2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut -d= -f2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut -d= -f2-)
+    local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -138,15 +141,15 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
-        local out=`wget -nv -O $src_filename $src_url 2>&1` || ynh_print_err --message="$out"
+        local out=`wget --no-verbose --output-document=$src_filename $src_url 2>&1` || ynh_print_err --message="$out"
     fi
 
     # Check the control sum
-    echo "${src_sum} ${src_filename}" | ${src_sumprg} -c --status \
+    echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
         || ynh_die --message="Corrupt source"
 
     # Extract source into the app dir
-    mkdir -p "$dest_dir"
+    mkdir --parents "$dest_dir"
 
     if ! "$src_extract"
     then
@@ -157,9 +160,9 @@ ynh_setup_source () {
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir
         then
-            local tmp_dir=$(mktemp -d)
+            local tmp_dir=$(mktemp --directory)
             unzip -quo $src_filename -d "$tmp_dir"
-            cp -a $tmp_dir/*/. "$dest_dir"
+            cp --archive $tmp_dir/*/. "$dest_dir"
             ynh_secure_remove --file="$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
@@ -178,7 +181,7 @@ ynh_setup_source () {
         fi
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]]
         then
-            tar -xf $src_filename -C "$dest_dir" $strip
+            tar --extract --file=$src_filename --directory="$dest_dir" $strip
         else
             ynh_die --message="Archive format unrecognized."
         fi
@@ -196,7 +199,7 @@ ynh_setup_source () {
 
     # Add supplementary files
     if test -e "$YNH_CWD/../sources/extra_files/${source_id}"; then
-        cp -a $YNH_CWD/../sources/extra_files/$source_id/. "$dest_dir"
+        cp --archive $YNH_CWD/../sources/extra_files/$source_id/. "$dest_dir"
     fi
 }
 
@@ -247,7 +250,7 @@ ynh_local_curl () {
     chmod 700 $cookiefile
 
     # Curl the URL
-    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
 }
 
 # Render templates with Jinja2
@@ -290,7 +293,7 @@ ynh_mkdir_tmp() {
     ynh_print_warn --message="The helper ynh_mkdir_tmp is deprecated."
     ynh_print_warn --message="You should use 'mktemp -d' instead and manage permissions \
 properly with chmod/chown."
-    local TMP_DIR=$(mktemp -d)
+    local TMP_DIR=$(mktemp --directory)
 
     # Give rights to other users could be a security risk.
     # But for retrocompatibility we need it. (This helpers is deprecated)
@@ -334,7 +337,7 @@ ynh_secure_remove () {
         ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
     elif [ -e "$file" ]
     then
-        rm -R "$file"
+        rm --recursive "$file"
     else
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
     fi

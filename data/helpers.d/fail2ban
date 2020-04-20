@@ -133,7 +133,7 @@ EOF
 
     ynh_systemd_action --service_name=fail2ban --action=reload
 
-    local fail2ban_error="$(journalctl -u fail2ban | tail -n50 | grep "WARNING.*$app.*")"
+    local fail2ban_error="$(journalctl --unit=fail2ban | tail --lines=50 | grep "WARNING.*$app.*")"
     if [[ -n "$fail2ban_error" ]]
     then
         ynh_print_err --message="Fail2ban failed to load the jail for $app"

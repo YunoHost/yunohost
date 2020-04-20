@@ -15,7 +15,7 @@ export N_PREFIX="$n_install_dir"
 ynh_install_n () {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
-    mkdir -p "../conf"
+    mkdir --parents "../conf"
     echo "SOURCE_URL=https://github.com/tj/n/archive/v4.1.0.tar.gz
 SOURCE_SUM=3983fa3f00d4bf85ba8e21f1a590f6e28938093abe0bb950aeea52b1717471fc" > "../conf/n.src"
     # Download and extract n
@@ -74,7 +74,7 @@ ynh_install_nodejs () {
     ynh_handle_getopts_args "$@"
 
     # Create $n_install_dir
-    mkdir -p "$n_install_dir"
+    mkdir --parents "$n_install_dir"
 
     # Load n path in PATH
     CLEAR_PATH="$n_install_dir/bin:$PATH"
@@ -102,7 +102,7 @@ ynh_install_nodejs () {
     test -x /usr/bin/npm_n && mv /usr/bin/npm_n /usr/bin/npm
 
     # Install the requested version of nodejs
-    uname=$(uname -m)
+    uname=$(uname --machine)
     if [[ $uname =~ aarch64 || $uname =~ arm64 ]]
     then
         n $nodejs_version --arch=arm64
@@ -159,7 +159,7 @@ ynh_remove_nodejs () {
         ynh_secure_remove --file="$n_install_dir"
         ynh_secure_remove --file="/usr/local/n"
         sed --in-place "/N_PREFIX/d" /root/.bashrc
-        rm -f /etc/cron.daily/node_update
+        rm --force /etc/cron.daily/node_update
     fi
 }
 
