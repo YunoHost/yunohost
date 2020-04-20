@@ -255,6 +255,8 @@ ynh_local_curl () {
 
 # Render templates with Jinja2
 #
+# [internal]
+#
 # Attention : Variables should be exported before calling this helper to be
 # accessible inside templates.
 #
@@ -344,6 +346,8 @@ ynh_secure_remove () {
 }
 
 # Extract a key from a plain command output
+#
+# [internal]
 #
 # example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
 #

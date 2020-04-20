@@ -108,6 +108,8 @@ ynh_sanitize_dbid () {
 
 # Normalize the url path syntax
 #
+# [internal]
+#
 # Handle the slash at the beginning of path and its absence at ending
 # Return a normalized url path
 #

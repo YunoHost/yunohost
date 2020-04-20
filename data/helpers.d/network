@@ -51,6 +51,8 @@ ynh_port_available () {
 
 # Validate an IP address
 #
+# [internal]
+#
 # usage: ynh_validate_ip --family=family --ip_address=ip_address
 # | ret: 0 for valid ip addresses, 1 otherwise
 #

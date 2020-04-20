@@ -288,8 +288,6 @@ EOF
 
 # Add dependencies to install with ynh_install_app_dependencies
 #
-# [internal]
-#
 # usage: ynh_add_app_dependencies --package=phpversion [--replace]
 # | arg: -p, --package - Packages to add as dependencies for the app.
 # | arg: -r, --replace - Replace dependencies instead of adding to existing ones.
