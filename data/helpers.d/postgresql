@@ -268,7 +268,7 @@ ynh_psql_remove_db() {
 ynh_psql_test_if_first_run() {
     if [ -f "$PSQL_ROOT_PWD_FILE" ]
     then
-        echo "PostgreSQL is already installed, no need to create master password"
+        ynh_print_info --message="PostgreSQL is already installed, no need to create master password"
         return
     fi
 
