@@ -3,10 +3,11 @@
 # Get the total or free amount of RAM+swap on the system
 #
 # usage: ynh_get_ram [--free|--total] [--ignore_swap|--only_swap]
-# | arg: -f, --free  - Count free RAM+swap
-# | arg: -t, --total - Count total RAM+swap
-# | arg: -s, --ignore_swap - Ignore swap, consider only real RAM
-# | arg: -o, --only_swap - Ignore real RAM, consider only swap
+# | arg: -f, --free         - Count free RAM+swap
+# | arg: -t, --total        - Count total RAM+swap
+# | arg: -s, --ignore_swap  - Ignore swap, consider only real RAM
+# | arg: -o, --only_swap    - Ignore real RAM, consider only swap
+# | ret: the amount of free ram
 ynh_get_ram () {
     # Declare an array to define the options of this helper.
     local legacy_args=ftso
@@ -67,11 +68,12 @@ ynh_get_ram () {
 # Return 0 or 1 depending if the system has a given amount of RAM+swap free or total
 #
 # usage: ynh_require_ram --required=RAM required in Mb [--free|--total] [--ignore_swap|--only_swap]
-# | arg: -r, --required - The amount to require, in Mb
-# | arg: -f, --free  - Count free RAM+swap
-# | arg: -t, --total - Count total RAM+swap
-# | arg: -s, --ignore_swap - Ignore swap, consider only real RAM
-# | arg: -o, --only_swap - Ignore real RAM, consider only swap
+# | arg: -r, --required=    - The amount to require, in Mb
+# | arg: -f, --free         - Count free RAM+swap
+# | arg: -t, --total        - Count total RAM+swap
+# | arg: -s, --ignore_swap  - Ignore swap, consider only real RAM
+# | arg: -o, --only_swap    - Ignore real RAM, consider only swap
+# | exit: Return 1 if the ram is under the requirement, 0 otherwise.
 ynh_require_ram () {
     # Declare an array to define the options of this helper.
     local legacy_args=rftso

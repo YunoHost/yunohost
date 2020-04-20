@@ -54,13 +54,13 @@ ynh_use_nodejs () {
 
 # Install a specific version of nodejs
 #
-# n (Node version management) uses the PATH variable to store the path of the version of node it is going to use.
-# That's how it changes the version
-#
 # ynh_install_nodejs will install the version of node provided as argument by using n.
 #
 # usage: ynh_install_nodejs --nodejs_version=nodejs_version
-# | arg: -n, --nodejs_version - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0). The crontab will then handle the update of minor versions when needed.
+# | arg: -n, --nodejs_version=      - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0). The crontab will then handle the update of minor versions when needed.
+#
+# n (Node version management) uses the PATH variable to store the path of the version of node it is going to use.
+# That's how it changes the version
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_install_nodejs () {

@@ -5,6 +5,7 @@
 # [internal]
 #
 # usage: ynh_wait_dpkg_free
+# | exit: Return 1 if dpkg is broken
 #
 # Requires YunoHost version 3.3.1 or higher.
 ynh_wait_dpkg_free() {
@@ -45,7 +46,7 @@ ynh_wait_dpkg_free() {
 # example: ynh_package_is_installed --package=yunohost && echo "ok"
 #
 # usage: ynh_package_is_installed --package=name
-# | arg: -p, --package - the package name to check
+# | arg: -p, --package=     - the package name to check
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
@@ -66,7 +67,7 @@ ynh_package_is_installed() {
 # example: version=$(ynh_package_version --package=yunohost)
 #
 # usage: ynh_package_version --package=name
-# | arg: -p, --package - the package name to get version
+# | arg: -p, --package=     - the package name to get version
 # | ret: the version or an empty string
 #
 # Requires YunoHost version 2.2.4 or higher.
@@ -289,8 +290,8 @@ EOF
 # Add dependencies to install with ynh_install_app_dependencies
 #
 # usage: ynh_add_app_dependencies --package=phpversion [--replace]
-# | arg: -p, --package - Packages to add as dependencies for the app.
-# | arg: -r, --replace - Replace dependencies instead of adding to existing ones.
+# | arg: -p, --package=     - Packages to add as dependencies for the app.
+# | arg: -r, --replace      - Replace dependencies instead of adding to existing ones.
 ynh_add_app_dependencies () {
     # Declare an array to define the options of this helper.
     local legacy_args=pr
@@ -333,10 +334,10 @@ ynh_remove_app_dependencies () {
 # Install packages from an extra repository properly.
 #
 # usage: ynh_install_extra_app_dependencies --repo="repo" --package="dep1 dep2" [--key=key_url] [--name=name]
-# | arg: -r, --repo - Complete url of the extra repository.
-# | arg: -p, --package - The packages to install from this extra repository
-# | arg: -k, --key - url to get the public key.
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
+# | arg: -r, --repo=    - Complete url of the extra repository.
+# | arg: -p, --package= - The packages to install from this extra repository
+# | arg: -k, --key=     - url to get the public key.
+# | arg: -n, --name=    - Name for the files for this repo, $app as default value.
 ynh_install_extra_app_dependencies () {
     # Declare an array to define the options of this helper.
     local legacy_args=rpkn
@@ -370,11 +371,11 @@ ynh_install_extra_app_dependencies () {
 # [internal]
 #
 # usage: ynh_install_extra_repo --repo="repo" [--key=key_url] [--priority=priority_value] [--name=name] [--append]
-# | arg: -r, --repo - Complete url of the extra repository.
-# | arg: -k, --key - url to get the public key.
-# | arg: -p, --priority - Priority for the pin
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
-# | arg: -a, --append - Do not overwrite existing files.
+# | arg: -r, --repo=        - Complete url of the extra repository.
+# | arg: -k, --key=         - url to get the public key.
+# | arg: -p, --priority=    - Priority for the pin
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
 ynh_install_extra_repo () {
     # Declare an array to define the options of this helper.
     local legacy_args=rkpna
@@ -443,7 +444,7 @@ ynh_install_extra_repo () {
 # [internal]
 #
 # usage: ynh_remove_extra_repo [--name=name]
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
+# | arg: -n, --name=    - Name for the files for this repo, $app as default value.
 ynh_remove_extra_repo () {
     # Declare an array to define the options of this helper.
     local legacy_args=n
@@ -467,11 +468,11 @@ ynh_remove_extra_repo () {
 # [internal]
 #
 # usage: ynh_add_repo --uri=uri --suite=suite --component=component [--name=name] [--append]
-# | arg: -u, --uri - Uri of the repository.
-# | arg: -s, --suite - Suite of the repository.
-# | arg: -c, --component - Component of the repository.
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
-# | arg: -a, --append - Do not overwrite existing files.
+# | arg: -u, --uri=         - Uri of the repository.
+# | arg: -s, --suite=       - Suite of the repository.
+# | arg: -c, --component=   - Component of the repository.
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
 #
 # Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
 #                             uri                               suite   component
@@ -509,11 +510,11 @@ ynh_add_repo () {
 # [internal]
 #
 # usage: ynh_pin_repo --package=packages --pin=pin_filter [--priority=priority_value] [--name=name] [--append]
-# | arg: -p, --package - Packages concerned by the pin. Or all, *.
-# | arg: -i, --pin - Filter for the pin.
-# | arg: -p, --priority - Priority for the pin
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
-# | arg: -a, --append - Do not overwrite existing files.
+# | arg: -p, --package=     - Packages concerned by the pin. Or all, *.
+# | arg: -i, --pin=         - Filter for the pin.
+# | arg: -p, --priority=    - Priority for the pin
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
 #
 # See https://manpages.debian.org/stretch/apt/apt_preferences.5.en.html#How_APT_Interprets_Priorities for information about pinning.
 #

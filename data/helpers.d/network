@@ -5,7 +5,8 @@
 # example: port=$(ynh_find_port --port=8080)
 #
 # usage: ynh_find_port --port=begin_port
-# | arg: -p, --port - port to start to search
+# | arg: -p, --port=    - port to start to search
+# | ret: the port number
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_find_port () {
@@ -29,7 +30,8 @@ ynh_find_port () {
 # example: ynh_port_available --port=1234 || ynh_die "Port 1234 is needs to be available for this app"
 #
 # usage: ynh_find_port --port=XYZ
-# | arg: -p, --port - port to check
+# | arg: -p, --port=    - port to check
+# | exit: Return 1 if the port is already used by another process.
 #
 # Requires YunoHost version 3.7.x or higher.
 ynh_port_available () {
@@ -90,6 +92,7 @@ EOF
 # example: ynh_validate_ip4 111.222.333.444
 #
 # usage: ynh_validate_ip4 --ip_address=ip_address
+# | arg: -i, --ip_address=     - the ipv4 address to check
 # | ret: 0 for valid ipv4 addresses, 1 otherwise
 #
 # Requires YunoHost version 2.2.4 or higher.
@@ -111,6 +114,7 @@ ynh_validate_ip4()
 # example: ynh_validate_ip6 2000:dead:beef::1
 #
 # usage: ynh_validate_ip6 --ip_address=ip_address
+# | arg: -i, --ip_address=     - the ipv6 address to check
 # | ret: 0 for valid ipv6 addresses, 1 otherwise
 #
 # Requires YunoHost version 2.2.4 or higher.

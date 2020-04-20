@@ -4,19 +4,19 @@ CAN_BIND=${CAN_BIND:-1}
 
 # Add a file or a directory to the list of paths to backup
 #
+# usage: ynh_backup --src_path=src_path [--dest_path=dest_path] [--is_big] [--not_mandatory]
+# | arg: -s, --src_path=        - file or directory to bind or symlink or copy. it shouldn't be in the backup dir.
+# | arg: -d, --dest_path=       - destination file or directory inside the backup dir
+# | arg: -b, --is_big           - Indicate data are big (mail, video, image ...)
+# | arg: -m, --not_mandatory    - Indicate that if the file is missing, the backup can ignore it.
+# | arg: arg - Deprecated arg
+#
 # This helper can be used both in a system backup hook, and in an app backup script
 #
 # Details: ynh_backup writes SRC and the relative DEST into a CSV file. And it
 # creates the parent destination directory
 #
 # If DEST is ended by a slash it complete this path with the basename of SRC.
-#
-# usage: ynh_backup --src_path=src_path [--dest_path=dest_path] [--is_big] [--not_mandatory]
-# | arg: -s, --src_path - file or directory to bind or symlink or copy. it shouldn't be in the backup dir.
-# | arg: -d, --dest_path - destination file or directory inside the backup dir
-# | arg: -b, --is_big - Indicate data are big (mail, video, image ...)
-# | arg: -m, --not_mandatory - Indicate that if the file is missing, the backup can ignore it.
-# | arg: arg - Deprecated arg
 #
 # Example in the context of a wordpress app
 #
@@ -206,9 +206,9 @@ with open(sys.argv[1], 'r') as backup_file:
 # the right place.
 #
 # usage: ynh_restore_file --origin_path=origin_path [--dest_path=dest_path] [--not_mandatory]
-# | arg: -o, --origin_path - Path where was located the file or the directory before to be backuped or relative path to $YNH_CWD where it is located in the backup archive
-# | arg: -d, --dest_path - Path where restore the file or the dir, if unspecified, the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in the archive, the destination will be searched into backup.csv
-# | arg: -m, --not_mandatory - Indicate that if the file is missing, the restore process can ignore it.
+# | arg: -o, --origin_path=     - Path where was located the file or the directory before to be backuped or relative path to $YNH_CWD where it is located in the backup archive
+# | arg: -d, --dest_path=       - Path where restore the file or the dir, if unspecified, the destination will be ORIGIN_PATH or if the ORIGIN_PATH doesn't exist in the archive, the destination will be searched into backup.csv
+# | arg: -m, --not_mandatory    - Indicate that if the file is missing, the restore process can ignore it.
 #
 # examples:
 #     ynh_restore_file "/etc/nginx/conf.d/$domain.d/$app.conf"
@@ -297,10 +297,10 @@ ynh_bind_or_cp() {
 
 # Calculate and store a file checksum into the app settings
 #
-# $app should be defined when calling this helper
-#
 # usage: ynh_store_file_checksum --file=file
-# | arg: -f, --file - The file on which the checksum will performed, then stored.
+# | arg: -f, --file=    - The file on which the checksum will performed, then stored.
+#
+# $app should be defined when calling this helper
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_store_file_checksum () {
@@ -331,7 +331,7 @@ ynh_store_file_checksum () {
 # modified config files.
 #
 # usage: ynh_backup_if_checksum_is_different --file=file
-# | arg: -f, --file - The file on which the checksum test will be perfomed.
+# | arg: -f, --file=    - The file on which the checksum test will be perfomed.
 # | ret: the name of a backup file, or nothing
 #
 # Requires YunoHost version 2.6.4 or higher.
@@ -362,10 +362,10 @@ ynh_backup_if_checksum_is_different () {
 
 # Delete a file checksum from the app settings
 #
-# $app should be defined when calling this helper
+# usage: ynh_delete_file_checksum --file=file
+# | arg: -f, --file=    - The file for which the checksum will be deleted
 #
-# usage: ynh_remove_file_checksum file
-# | arg: -f, --file= - The file for which the checksum will be deleted
+# $app should be defined when calling this helper
 #
 # Requires YunoHost version 3.3.1 or higher.
 ynh_delete_file_checksum () {
@@ -383,11 +383,11 @@ ynh_delete_file_checksum () {
 # Make a backup in case of failed upgrade
 #
 # usage:
-# ynh_backup_before_upgrade
-# ynh_clean_setup () {
-#     ynh_restore_upgradebackup
-# }
-# ynh_abort_if_errors
+#   ynh_backup_before_upgrade
+#   ynh_clean_setup () {
+#       ynh_restore_upgradebackup
+#   }
+#   ynh_abort_if_errors
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_backup_before_upgrade () {
@@ -432,11 +432,11 @@ ynh_backup_before_upgrade () {
 # Restore a previous backup if the upgrade process failed
 #
 # usage:
-# ynh_backup_before_upgrade
-# ynh_clean_setup () {
-#     ynh_restore_upgradebackup
-# }
-# ynh_abort_if_errors
+#   ynh_backup_before_upgrade
+#   ynh_clean_setup () {
+#       ynh_restore_upgradebackup
+#   }
+#   ynh_abort_if_errors
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_restore_upgradebackup () {

@@ -3,9 +3,9 @@
 # Use logrotate to manage the logfile
 #
 # usage: ynh_use_logrotate [--logfile=/log/file] [--nonappend] [--specific_user=user/group]
-# | arg: -l, --logfile - absolute path of logfile
-# | arg: -n, --nonappend - (optional) Replace the config file instead of appending this new config.
-# | arg: -u, --specific_user : run logrotate as the specified user and group. If not specified logrotate is runned as root.
+# | arg: -l, --logfile=         - absolute path of logfile
+# | arg: -n, --nonappend        - (optional) Replace the config file instead of appending this new config.
+# | arg: -u, --specific_user=   - run logrotate as the specified user and group. If not specified logrotate is runned as root.
 #
 # If no --logfile is provided, /var/log/${app} will be used as default.
 # logfile can be just a directory, or a full path to a logfile :

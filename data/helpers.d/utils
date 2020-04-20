@@ -55,6 +55,10 @@ ynh_abort_if_errors () {
 
 # Download, check integrity, uncompress and patch the source from app.src
 #
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
+# | arg: -d, --dest_dir=    - Directory where to setup sources
+# | arg: -s, --source_id=   - Name of the app, if the package contains more than one app
+#
 # The file conf/app.src need to contains:
 #
 # SOURCE_URL=Address to download the app archive
@@ -92,11 +96,6 @@ ynh_abort_if_errors () {
 #
 # Finally, patches named sources/patches/${src_id}-*.patch and extra files in
 # sources/extra_files/$src_id will be applied to dest_dir
-#
-#
-# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
-# | arg: -d, --dest_dir  - Directory where to setup sources
-# | arg: -s, --source_id - Name of the app, if the package contains more than one app
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source () {
@@ -204,9 +203,6 @@ ynh_setup_source () {
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
-# For multiple calls, cookies are persisted between each call for the same app
-#
-# $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
 # example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
 #
@@ -215,6 +211,10 @@ ynh_setup_source () {
 # | arg: key1=value1 - (Optionnal) POST key and corresponding value
 # | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
 # | arg: ...         - (Optionnal) More POST keys and values
+#
+# For multiple calls, cookies are persisted between each call for the same app
+#
+# $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_local_curl () {
@@ -306,7 +306,7 @@ properly with chmod/chown."
 # Remove a file or a directory securely
 #
 # usage: ynh_secure_remove --file=path_to_remove
-# | arg: -f, --file - File or directory to remove
+# | arg: -f, --file=    - File or directory to remove
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_secure_remove () {
@@ -384,9 +384,10 @@ ynh_get_plain_key() {
 
 # Read the value of a key in a ynh manifest file
 #
-# usage: ynh_read_manifest manifest key
-# | arg: -m, --manifest= - Path of the manifest to read
-# | arg: -k, --key= - Name of the key to find
+# usage: ynh_read_manifest --manifest="manifest.json" --key="key"
+# | arg: -m, --manifest=    - Path of the manifest to read
+# | arg: -k, --key=         - Name of the key to find
+# | ret: the value associate to that key
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_read_manifest () {
@@ -408,13 +409,14 @@ ynh_read_manifest () {
 
 # Read the upstream version from the manifest
 #
+# usage: ynh_app_upstream_version [--manifest="manifest.json"]
+# | arg: -m, --manifest=    - Path of the manifest to read
+# | ret: the version number of the upstream app
+#
 # The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
 # For example : 4.3-2~ynh3
 # This include the number before ~ynh
 # In the last example it return 4.3-2
-#
-# usage: ynh_app_upstream_version [-m manifest]
-# | arg: -m, --manifest= - Path of the manifest to read
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_upstream_version () {
@@ -432,13 +434,14 @@ ynh_app_upstream_version () {
 
 # Read package version from the manifest
 #
+# usage: ynh_app_package_version [--manifest="manifest.json"]
+# | arg: -m, --manifest=    - Path of the manifest to read
+# | ret: the version number of the package
+#
 # The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
 # For example : 4.3-2~ynh3
 # This include the number after ~ynh
 # In the last example it return 3
-#
-# usage: ynh_app_package_version [-m manifest]
-# | arg: -m, --manifest= - Path of the manifest to read
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_package_version () {
