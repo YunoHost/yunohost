@@ -1,6 +1,6 @@
 {
     "admin_password_change_failed": "Ne eblas ŝanĝi pasvorton",
-    "admin_password_changed": "La pasvorto de administrado ŝanĝiĝis",
+    "admin_password_changed": "La pasvorto de administrado estis ŝanĝita",
     "app_already_installed": "{app:s} estas jam instalita",
     "app_already_up_to_date": "{app:s} estas jam ĝisdata",
     "app_argument_required": "Parametro {name:s} estas bezonata",
@@ -81,7 +81,7 @@
     "backup_archive_name_exists": "Rezerva arkivo kun ĉi tiu nomo jam ekzistas.",
     "backup_applying_method_tar": "Krei la rezervan TAR-ar archiveivon …",
     "backup_method_custom_finished": "Propra rezerva metodo '{method:s}' finiĝis",
-    "app_already_installed_cant_change_url": "Ĉi tiu app estas jam instalita. La URL ne povas esti ŝanĝita nur per ĉi tiu funkcio. Rigardu \"app changeurl\" se ĝi haveblas.",
+    "app_already_installed_cant_change_url": "Ĉi tiu app estas jam instalita. La URL ne povas esti ŝanĝita nur per ĉi tiu funkcio. Kontrolu en `app changeurl` se ĝi haveblas.",
     "app_not_correctly_installed": "{app:s} ŝajnas esti malĝuste instalita",
     "app_removed": "{app:s} forigita",
     "backup_delete_error": "Ne povis forigi '{path:s}'",
