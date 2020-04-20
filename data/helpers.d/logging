@@ -15,9 +15,10 @@ ynh_die() {
     local ret_code
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    ret_code=${ret_code:-1}
 
     echo "$message" 1>&2
-    exit "${ret_code:-1}"
+    exit "$ret_code"
 }
 
 # Display a message in the 'INFO' logging category

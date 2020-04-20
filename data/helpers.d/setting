@@ -185,19 +185,21 @@ ynh_permission_create() {
     local url
     local allowed
     ynh_handle_getopts_args "$@"
+    url=${url:-}
+    allowed=${allowed:-}
 
-    if [[ -n ${url:-} ]]
+    if [[ -n $url ]]
     then
         url="'$url'"
     else
         url="None"
     fi
 
-    if [[ -n ${allowed:-} ]]; then
+    if [[ -n $allowed ]]; then
         allowed=",allowed=['${allowed//';'/"','"}']"
     fi
     
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url ${allowed:-} , sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url $allowed , sync_perm=False)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
@@ -249,8 +251,9 @@ ynh_permission_url() {
     local permission
     local url
     ynh_handle_getopts_args "$@"
+    url=${url:-}
 
-    if [[ -n ${url:-} ]]
+    if [[ -n $url ]]
     then
         url="'$url'"
     else
@@ -279,15 +282,17 @@ ynh_permission_update() {
     local add
     local remove
     ynh_handle_getopts_args "$@"
+    add=${add:-}
+    remove=${remove:-}
 
-    if [[ -n ${add:-} ]]; then
+    if [[ -n $add ]]; then
         add="--add ${add//';'/" "}"
     fi
-    if [[ -n ${remove:-} ]]; then
+    if [[ -n $remove ]]; then
         remove="--remove ${remove//';'/" "} "
     fi
 
-    yunohost user permission update "$app.$permission" ${add:-} ${remove:-}
+    yunohost user permission update "$app.$permission" $add $remove
 }
 
 # Check if a permission has an user

@@ -89,18 +89,17 @@ ynh_systemd_action() {
     local length
     local log_path
     local timeout
-
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-
-    local service_name="${service_name:-$app}"
-    local action=${action:-start}
-    local log_path="${log_path:-/var/log/$service_name/$service_name.log}"
-    local length=${length:-20}
-    local timeout=${timeout:-300}
+    service_name="${service_name:-$app}"
+    action=${action:-start}
+    line_match=${line_match:-}
+    length=${length:-20}
+    log_path="${log_path:-/var/log/$service_name/$service_name.log}"
+    timeout=${timeout:-300}
 
     # Start to read the log
-    if [[ -n "${line_match:-}" ]]
+    if [[ -n "$line_match" ]]
     then
         local templog="$(mktemp)"
         # Following the starting of the app in its log

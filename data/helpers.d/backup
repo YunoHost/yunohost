@@ -53,9 +53,9 @@ ynh_backup() {
     local not_mandatory
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    local dest_path="${dest_path:-}"
-    local is_big="${is_big:-0}"
-    local not_mandatory="${not_mandatory:-0}"
+    dest_path="${dest_path:-}"
+    is_big="${is_big:-0}"
+    not_mandatory="${not_mandatory:-0}"
 
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
     test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get --app=$app --key=do_not_backup_data)
@@ -229,17 +229,16 @@ ynh_restore_file () {
     local legacy_args=odm
     local -A args_array=( [o]=origin_path= [d]=dest_path= [m]=not_mandatory )
     local origin_path
-    local archive_path
     local dest_path
     local not_mandatory
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    local origin_path="/${origin_path#/}"
-    local archive_path="$YNH_CWD${origin_path}"
+    origin_path="/${origin_path#/}"
     # Default value for dest_path = /$origin_path
-    local dest_path="${dest_path:-$origin_path}"
-    local not_mandatory="${not_mandatory:-0}"
+    dest_path="${dest_path:-$origin_path}"
+    not_mandatory="${not_mandatory:-0}"
 
+    local archive_path="$YNH_CWD${origin_path}"
     # If archive_path doesn't exist, search for a corresponding path in CSV
     if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]
     then

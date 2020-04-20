@@ -74,9 +74,10 @@ ynh_add_fail2ban_config () {
     local use_template
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    use_template="${use_template:-0}"
     max_retry=${max_retry:-3}
     ports=${ports:-http,https}
+    others_var=${others_var:-}
+    use_template="${use_template:-0}"
 
     finalfail2banjailconf="/etc/fail2ban/jail.d/$app.conf"
     finalfail2banfilterconf="/etc/fail2ban/filter.d/$app.conf"
@@ -96,7 +97,7 @@ ynh_add_fail2ban_config () {
         fi
 
         # Replace all other variable given as arguments
-        for var_to_replace in ${others_var:-}
+        for var_to_replace in $others_var
         do
             # ${var_to_replace^^} make the content of the variable on upper-cases
             # ${!var_to_replace} get the content of the variable named $var_to_replace

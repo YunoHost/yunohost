@@ -26,9 +26,9 @@ ynh_use_logrotate () {
     local specific_user
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    local logfile="${logfile:-}"
-    local nonappend="${nonappend:-0}"
-    local specific_user="${specific_user:-}"
+    logfile="${logfile:-}"
+    nonappend="${nonappend:-0}"
+    specific_user="${specific_user:-}"
 
     # LEGACY CODE - PRE GETOPTS
     if [ $# -gt 0 ] && [ "$1" == "--non-append" ]
