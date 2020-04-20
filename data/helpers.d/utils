@@ -188,13 +188,13 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${source_id}-*.patch" 2> /dev/null | wc -l) > "0" )); then
-        local old_dir=$(pwd)
-        (cd "$dest_dir" \
-            && for p in $YNH_CWD/../sources/patches/${source_id}-*.patch; do \
-                patch -p1 < $p; done) \
-            || ynh_die --message="Unable to apply patches"
-        cd $old_dir
+    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
+    then
+        (cd "$dest_dir"
+        for p in $YNH_CWD/../sources/patches/${source_id}-*.patch
+        do
+            patch --strip=1 < $p
+        done) || ynh_die --message="Unable to apply patches"
     fi
 
     # Add supplementary files

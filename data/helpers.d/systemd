@@ -32,10 +32,10 @@ ynh_add_systemd_config () {
 
     # To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
     # Substitute in a nginx config file only if the variable is not empty
-    if test -n "${final_path:-}"; then
+    if [ -n "${final_path:-}" ]; then
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalsystemdconf"
     fi
-    if test -n "${app:-}"; then
+    if [ -n "${app:-}" ]; then
         ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file="$finalsystemdconf"
     fi
     ynh_store_file_checksum --file="$finalsystemdconf"
@@ -123,10 +123,20 @@ ynh_systemd_action() {
         action="reload-or-restart"
     fi
 
-    systemctl $action $service_name \
-        || ( journalctl --no-pager --lines=$length -u $service_name >&2 \
-        ; test -e "$log_path" && echo "--" >&2 && tail --lines=$length "$log_path" >&2 \
-        ; false )
+    # If the service fails to perform the action
+    if ! systemctl $action $service_name
+    then
+        # Show syslog for this service
+        ynh_exec_err journalctl --no-pager --lines=$length --unit=$service_name
+        # If a log is specified for this service, show also the content of this log
+        if [ -e "$log_path" ]
+        then
+            ynh_print_err --message="--"
+            ynh_exec_err tail --lines=$length "$log_path"
+        fi
+        # Fail the app script, since the service failed.
+        false
+    fi
 
     # Start the timeout and try to find line_match
     if [[ -n "${line_match:-}" ]]
@@ -155,8 +165,12 @@ ynh_systemd_action() {
         then
             ynh_print_warn --message="The service $service_name didn't fully executed the action ${action} before the timeout."
             ynh_print_warn --message="Please find here an extract of the end of the log of the service $service_name:"
-            journalctl --no-pager --lines=$length -u $service_name >&2
-            test -e "$log_path" && echo "--" >&2 && tail --lines=$length "$log_path" >&2
+            ynh_exec_warn journalctl --no-pager --lines=$length --unit=$service_name
+            if [ -e "$log_path" ]
+            then
+                ynh_print_warn --message="--"
+                ynh_exec_warn tail --lines=$length "$log_path"
+            fi
         fi
         ynh_clean_check_starting
     fi
