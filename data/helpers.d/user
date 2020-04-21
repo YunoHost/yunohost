@@ -78,6 +78,8 @@ ynh_system_user_exists() {
 # usage: ynh_system_group_exists --group=group
 # | arg: -g, --group=   - the group to check
 # | exit: Return 1 if the group doesn't exist, 0 otherwise
+#
+# Requires YunoHost version 3.5.0.2 or higher.
 ynh_system_group_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=g

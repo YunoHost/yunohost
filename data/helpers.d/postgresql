@@ -153,6 +153,8 @@ ynh_psql_create_user() {
 # usage: ynh_psql_user_exists --user=user
 # | arg: -u, --user=    - the user for which to check existence
 # | exit: Return 1 if the user doesn't exist, 0 otherwise
+#
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_user_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=u
@@ -174,6 +176,8 @@ ynh_psql_user_exists() {
 # usage: ynh_psql_database_exists --database=database
 # | arg: -d, --database=    - the database for which to check existence
 # | exit: Return 1 if the database doesn't exist, 0 otherwise
+#
+# Requires YunoHost version 3.5.0 or higher.
 ynh_psql_database_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=d
@@ -212,6 +216,7 @@ ynh_psql_drop_user() {
 # After executing this helper, the password of the created database will be available in $db_pwd
 # It will also be stored as "psqlpwd" into the app settings.
 #
+# Requires YunoHost version 2.7.13 or higher.
 ynh_psql_setup_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=unp
@@ -239,6 +244,8 @@ ynh_psql_setup_db() {
 # usage: ynh_psql_remove_db --db_user=user --db_name=name
 # | arg: -u, --db_user=     - Owner of the database
 # | arg: -n, --db_name=     - Name of the database
+#
+# Requires YunoHost version 2.7.13 or higher.
 ynh_psql_remove_db() {
     # Declare an array to define the options of this helper.
     local legacy_args=un
@@ -268,6 +275,8 @@ ynh_psql_remove_db() {
 # Please always call this script in install and restore scripts
 #
 # usage: ynh_psql_test_if_first_run
+#
+# Requires YunoHost version 2.7.13 or higher.
 ynh_psql_test_if_first_run() {
     if [ -f "$PSQL_ROOT_PWD_FILE" ]
     then

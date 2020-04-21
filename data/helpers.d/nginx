@@ -19,6 +19,7 @@
 #   __PORT_2__    by $port_2
 #
 # Requires YunoHost version 2.7.2 or higher.
+# Requires YunoHost version 2.7.13 or higher for dynamic variables
 ynh_add_nginx_config () {
     finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
     local others_var=${1:-}

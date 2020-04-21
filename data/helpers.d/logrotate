@@ -16,6 +16,7 @@
 # the same logrotate config file.  Unless you use the option --non-append
 #
 # Requires YunoHost version 2.6.4 or higher.
+# Requires YunoHost version 3.2.0 or higher for the argument --specific_user
 ynh_use_logrotate () {
     # Declare an array to define the options of this helper.
     local legacy_args=lnuya

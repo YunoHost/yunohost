@@ -16,6 +16,7 @@
 #
 # It prints a warning to inform that the script was failed, and execute the ynh_clean_setup function if used in the app script
 #
+# Requires YunoHost version 2.6.4 or higher.
 ynh_exit_properly () {
     local exit_code=$?
     if [ "$exit_code" -eq 0 ]; then

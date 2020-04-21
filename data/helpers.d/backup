@@ -41,6 +41,7 @@ CAN_BIND=${CAN_BIND:-1}
 # # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
 #
 # Requires YunoHost version 2.4.0 or higher.
+# Requires YunoHost version 3.5.0 or higher for the argument --not_mandatory
 ynh_backup() {
     # TODO find a way to avoid injection by file strange naming !
 
@@ -224,6 +225,7 @@ with open(sys.argv[1], 'r') as backup_file:
 # /etc/nginx/conf.d/$domain.d/$app.conf
 #
 # Requires YunoHost version 2.6.4 or higher.
+# Requires YunoHost version 3.5.0 or higher for the argument --not_mandatory
 ynh_restore_file () {
     # Declare an array to define the options of this helper.
     local legacy_args=odm
