@@ -96,7 +96,7 @@ ynh_add_fpm_config () {
             local additionnal_packages=""
         fi
         # Install this specific version of php.
-        ynh_install_php --phpversion=$phpversion "$additionnal_packages"
+        ynh_install_php --phpversion="$phpversion" "$additionnal_packages"
     elif [ -n "$package" ]
     then
         # Install the additionnal packages from the default repository

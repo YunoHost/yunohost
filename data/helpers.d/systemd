@@ -169,7 +169,7 @@ ynh_systemd_action() {
             ynh_exec_warn journalctl --no-pager --lines=$length --unit=$service_name
             if [ -e "$log_path" ]
             then
-                ynh_print_warn --message="--"
+                ynh_print_warn --message="\-\-\-"
                 ynh_exec_warn tail --lines=$length "$log_path"
             fi
         fi
@@ -187,7 +187,7 @@ ynh_clean_check_starting () {
     if [ -n "$pid_tail" ]
     then
         # Stop the execution of tail.
-        kill --signal 15 $pid_tail 2>&1
+        kill -SIGTERM $pid_tail 2>&1
     fi
     if [ -n "$templog" ]
     then
