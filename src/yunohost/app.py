@@ -866,8 +866,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         permission_url(app_instance_name + ".main", url='/', sync_perm=False)
     user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
 
-    _migrate_legacy_permissions(app_instance_name)
-
     permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
@@ -900,34 +898,6 @@ def dump_app_log_extract_for_debugging(operation_logger):
     logger.warning("Here's an extract of the logs before the crash. It might help debugging the error:")
     for line in lines_to_display:
         logger.info(line)
-
-
-def _migrate_legacy_permissions(app):
-
-    from yunohost.permission import user_permission_list, user_permission_update
-
-    # Check if app is apparently using the legacy permission management, defined by the presence of something like
-    # ynh_app_setting_set on unprotected_uris (or yunohost app setting)
-    install_script_path = os.path.join(APPS_SETTING_PATH, app, 'scripts/install')
-    install_script_content = open(install_script_path, "r").read()
-    if not re.search(r"(yunohost app setting|ynh_app_setting_set) .*(unprotected|skipped)_uris", install_script_content):
-        return
-
-    app_settings = _get_app_settings(app)
-    app_perm_currently_allowed = user_permission_list()["permissions"][app + ".main"]["allowed"]
-
-    settings_say_it_should_be_public = (app_settings.get("unprotected_uris", None) == "/"
-                                        or app_settings.get("skipped_uris", None) == "/")
-
-    # If the current permission says app is protected, but there are legacy rules saying it should be public...
-    if app_perm_currently_allowed == ["all_users"] and settings_say_it_should_be_public:
-        # Make it public
-        user_permission_update(app + ".main", add="visitors", sync_perm=False)
-
-    # If the current permission says app is public, but there are no setting saying it should be public...
-    if app_perm_currently_allowed == ["visitors"] and not settings_say_it_should_be_public:
-        # Make is private
-        user_permission_update(app + ".main", remove="visitors", sync_perm=False)
 
 
 @is_unit_operation()
