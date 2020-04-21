@@ -463,6 +463,18 @@ def _update_conf_hashes(category, hashes):
     _save_regenconf_infos(categories)
 
 
+def _force_clear_hashes(paths):
+
+    categories = _get_regenconf_infos()
+    for path in paths:
+        for category in categories.keys():
+            if path in categories[category]['conffiles']:
+                logger.debug("force-clearing old conf hash for %s in category %s" % (path, category))
+                del categories[category]['conffiles'][path]
+
+    _save_regenconf_infos(categories)
+
+
 def _process_regen_conf(system_conf, new_conf=None, save=True):
     """Regenerate a given system configuration file
 
