@@ -16,7 +16,7 @@ ynh_app_setting_get() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if [[ $key =~ '^(unprotected|protected|skipped)_' ]]; then
+    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
         yunohost app setting $app $key
     else
         ynh_app_setting "get" "$app" "$key"
@@ -42,8 +42,8 @@ ynh_app_setting_set() {
     ynh_handle_getopts_args "$@"
 
     # Manage old legacy unprotected,protectedskipped
-    if [[ $key =~ '^(unprotected|protected|skipped)_' ]]; then
-        yunohost app setting $app $key $value
+    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
+        yunohost app setting $app $key -v $value
     else
         ynh_app_setting "set" "$app" "$key" "$value"
     fi
@@ -67,7 +67,7 @@ ynh_app_setting_delete() {
 
     # Fucking legacy permission management.
     # We need this because app temporarily set the app as unprotected to configure it with curl...
-    if [[ "$3" =~ ^(unprotected|skipped|protected)_ ]]; then
+    if [[ "$key" =~ (unprotected|skipped|protected)_ ]]; then
         yunohost app setting $app $key -d
     else
         ynh_app_setting "delete" "$app" "$key"
