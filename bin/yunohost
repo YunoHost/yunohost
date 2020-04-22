@@ -4,9 +4,9 @@
 import os
 import sys
 import argparse
+import glob
 
 import moulinette
-from moulinette.actionsmap import ActionsMap
 from moulinette.interfaces.cli import colorize, get_locale
 
 # Directory and file to be used by logging
@@ -117,13 +117,6 @@ def _init_moulinette(debug=False, quiet=False):
     # Initialize moulinette
     moulinette.init(logging_config=logging)
 
-
-def _retrieve_namespaces():
-    """Return the list of namespaces to load"""
-    extensions = [n for n in ActionsMap.get_namespaces() if n.startswith('ynh_')]
-    return ['yunohost'] + extensions
-
-
 # Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
@@ -150,9 +143,11 @@ if __name__ == '__main__':
         print(colorize(m18n.g('error'), 'red') + " " + m18n.n('yunohost_not_installed'))
         sys.exit(1)
 
+    extensions = [f.split('/')[-1][:-4] for f in glob.glob("/usr/share/moulinette/actionsmap/ynh_*.yml")]
+
     # Execute the action
     ret = moulinette.cli(
-        _retrieve_namespaces(),
+        ['yunohost'] + extensions,
         args,
         output_as=opts.output_as,
         timeout=opts.timeout,
