@@ -604,7 +604,7 @@ class BackupManager():
         ret_succeed = {hook: [path for path, result in infos.items() if result["state"] == "succeed"]
                        for hook, infos in ret.items()
                        if any(result["state"] == "succeed" for result in infos.values())}
-        ret_failed = {hook: [path for path, result in infos.items.items() if result["state"] == "failed"]
+        ret_failed = {hook: [path for path, result in infos.items() if result["state"] == "failed"]
                       for hook, infos in ret.items()
                       if any(result["state"] == "failed" for result in infos.values())}
 

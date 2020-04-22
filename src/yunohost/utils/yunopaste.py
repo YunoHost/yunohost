@@ -37,10 +37,18 @@ def yunopaste(data):
 
 def anonymize(data):
 
+    def anonymize_domain(data, domain, redact):
+        data = data.replace(domain, redact)
+        # This stuff appears sometimes because some folder in
+        # /var/lib/metronome/ have some folders named this way
+        data = data.replace(domain.replace(".", "%2e"), redact.replace(".", "%2e"))
+        return data
+
+
     # First, let's replace every occurence of the main domain by "domain.tld"
     # This should cover a good fraction of the info leaked
     main_domain = _get_maindomain()
-    data = data.replace(main_domain, "maindomain.tld")
+    data = anonymize_domain(data, main_domain, "maindomain.tld")
 
     # Next, let's replace other domains. We do this in increasing lengths,
     # because e.g. knowing that the domain is a sub-domain of another domain may
@@ -55,7 +63,7 @@ def anonymize(data):
     for domain in domains:
         if domain not in data:
             continue
-        data = data.replace(domain, "domain%s.tld" % count)
+        data = anonymize_domain(data, domain, "domain%s.tld" % count)
         count += 1
 
     # We also want to anonymize the ips

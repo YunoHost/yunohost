@@ -12,6 +12,7 @@
 #   __PORT__      by  $port
 #   __NAME__      by  $app
 #   __FINALPATH__ by  $final_path
+#   __PHPVERSION__ by  $YNH_PHP_VERSION ($YNH_PHP_VERSION is either the default php version or the version defined for the app)
 #
 #  And dynamic variables (from the last example) :
 #   __PATH_2__    by $path_2
@@ -44,6 +45,7 @@ ynh_add_nginx_config () {
 	if test -n "${final_path:-}"; then
 		ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalnginxconf"
 	fi
+	ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$YNH_PHP_VERSION" --target_file="$finalnginxconf"
 
 	# Replace all other variable given as arguments
 	for var_to_replace in $others_var

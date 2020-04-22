@@ -147,26 +147,30 @@ ynh_handle_getopts_args () {
 									break
 								fi
 							else
-								# Else, add this value to this option
-								# Each value will be separated by ';'
-								if [ -n "${!option_var}" ]
-								then
-									# If there's already another value for this option, add a ; before adding the new value
-									eval ${option_var}+="\;"
-								fi
+                                # Ignore empty parameters
+                                if [ -n "${all_args[$i]}" ]
+                                then
+                                    # Else, add this value to this option
+                                    # Each value will be separated by ';'
+                                    if [ -n "${!option_var}" ]
+                                    then
+                                        # If there's already another value for this option, add a ; before adding the new value
+                                        eval ${option_var}+="\;"
+                                    fi
 
-								# Remove the \ that escape - at beginning of values.
-								all_args[i]="${all_args[i]//\\TOBEREMOVED\\/}"
+                                    # Remove the \ that escape - at beginning of values.
+                                    all_args[i]="${all_args[i]//\\TOBEREMOVED\\/}"
 
-								# For the record.
-								# We're using eval here to get the content of the variable stored itself as simple text in $option_var...
-								# Other ways to get that content would be to use either ${!option_var} or declare -g ${option_var}
-								# But... ${!option_var} can't be used as left part of an assignation.
-								# declare -g ${option_var} will create a local variable (despite -g !) and will not be available for the helper itself.
-								# So... Stop fucking arguing each time that eval is evil... Go find an other working solution if you can find one!
+                                    # For the record.
+                                    # We're using eval here to get the content of the variable stored itself as simple text in $option_var...
+                                    # Other ways to get that content would be to use either ${!option_var} or declare -g ${option_var}
+                                    # But... ${!option_var} can't be used as left part of an assignation.
+                                    # declare -g ${option_var} will create a local variable (despite -g !) and will not be available for the helper itself.
+                                    # So... Stop fucking arguing each time that eval is evil... Go find an other working solution if you can find one!
 
-								eval ${option_var}+='"${all_args[$i]}"'
-								shift_value=$(( shift_value + 1 ))
+                                    eval ${option_var}+='"${all_args[$i]}"'
+                                fi
+                                shift_value=$(( shift_value + 1 ))
 							fi
 						done
 					fi

@@ -116,7 +116,11 @@ def app_list(full=False):
     """
     out = []
     for app_id in sorted(_installed_apps()):
-        app_info_dict = app_info(app_id, full=full)
+        try:
+            app_info_dict = app_info(app_id, full=full)
+        except Exception as e:
+            logger.error("Failed to read info for %s : %s" % (app_id, e))
+            continue
         app_info_dict["id"] = app_id
         out.append(app_info_dict)
 
@@ -131,6 +135,7 @@ def app_info(app, full=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+
     settings = _get_app_settings(app)
 
     ret = {
@@ -2027,7 +2032,7 @@ def _get_manifest_of_app(path):
     elif os.path.exists(os.path.join(path, "manifest.json")):
         return read_json(os.path.join(path, "manifest.json"))
     else:
-        return None
+        raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
