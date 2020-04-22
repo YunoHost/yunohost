@@ -639,13 +639,15 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    # Include xmpp-upload subdomain in subject alternate names
-    subdomain="xmpp-upload." + domain
-    try:
-        _dns_ip_match_public_ip(get_public_ip(), subdomain)
-        csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
-    except YunohostError:
-        logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
+    from yunohost.domain import domain_list
+    # For "parent" domains, include xmpp-upload subdomain in subject alternate names
+    if domain in domain_list(exclude_subdomains=True)["domains"]:
+        subdomain="xmpp-upload." + domain
+        try:
+            _dns_ip_match_public_ip(get_public_ip(), subdomain)
+            csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
+        except YunohostError:
+            logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
 
     # Set the key
     with open(key_file, 'rt') as f:
