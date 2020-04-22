@@ -1,22 +1,15 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 import argparse
-import glob
 
-import moulinette
+sys.path.insert(0, "/usr/lib/moulinette/")
+import yunohost
 
 # Default server configuration
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 6787
-
-# Directory and file to be used by logging
-LOG_DIR = '/var/log/yunohost'
-LOG_FILE = 'yunohost-api.log'
-
-# Initialization & helpers functions -----------------------------------
 
 
 def _parse_api_args():
@@ -45,86 +38,7 @@ def _parse_api_args():
     return parser.parse_args()
 
 
-def init_api(debug=False, logfile='%s/%s' % (LOG_DIR, LOG_FILE)):
-
-    logdir = os.path.dirname(logfile)
-    if not os.path.isdir(logdir):
-        os.makedirs(logdir, 0750)
-
-    moulinette.init(logging_config={
-        'version': 1,
-        'disable_existing_loggers': True,
-        'formatters': {
-            'console': {
-                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
-            },
-            'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
-            },
-        },
-        'filters': {
-            'action': {
-                '()': 'moulinette.utils.log.ActionFilter',
-            },
-        },
-        'handlers': {
-            'api': {
-                'level': 'DEBUG' if debug else 'INFO',
-                'class': 'moulinette.interfaces.api.APIQueueHandler',
-            },
-            'file': {
-                'class': 'logging.handlers.WatchedFileHandler',
-                'formatter': 'precise',
-                'filename': logfile,
-                'filters': ['action'],
-            },
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'console',
-                'stream': 'ext://sys.stdout',
-                'filters': ['action'],
-            },
-        },
-        'loggers': {
-            'yunohost': {
-                'level': 'DEBUG',
-                'handlers': ['file', 'api'] + ['console'] if debug else [],
-                'propagate': False,
-            },
-            'moulinette': {
-                'level': 'DEBUG',
-                'handlers': [],
-                'propagate': True,
-            },
-        },
-        'root': {
-            'level': 'DEBUG',
-            'handlers': ['file'] + ['console'] if debug else [],
-        },
-    })
-
-# Callbacks for additional routes --------------------------------------
-
-
-def is_installed():
-    """ Check whether YunoHost is installed or not """
-    return {'installed': os.path.isfile('/etc/yunohost/installed')}
-
-
-# Main action ----------------------------------------------------------
-
 if __name__ == '__main__':
     opts = _parse_api_args()
-    init_api(opts.debug)
-
-    extensions = [f.split('/')[-1][:-4] for f in glob.glob("/usr/share/moulinette/actionsmap/ynh_*.yml")]
-
     # Run the server
-    ret = moulinette.api(
-        ['yunohost'] + extensions,
-        host=opts.host,
-        port=opts.port,
-        routes={('GET', '/installed'): is_installed},
-        use_websocket=True
-    )
-    sys.exit(ret)
+    yunohost.api(debug=opts.debug, host=opts.host, port=opts.port)
