@@ -1155,16 +1155,14 @@ def app_setting(app, key, value=None, delete=False):
 
             if urls == '/':
                 if key.startswith("unprotected_") or key.startswith("skipped_"):
+                    permission_url(app + ".main", url='/', sync_perm=False)
                     user_permission_update(app + ".main", add="visitors")
                 else:
                     user_permission_update(app + ".main", remove="visitors")
             else:
-                # Add re: in case of regex, as we distingish regex by this since the permission
+                # Add re: in case of regex, as we distingish regex by this since the new permission system
                 if key.endswith('_regex'):
-                    if urls.startswith('/'):
-                        urls = 're:' + urls
-                    else:
-                        urls = 're:/' + urls
+                    urls = 're:' + urls
 
                 permissions = user_permission_list(full=True, full_path=False)['permissions']
                 if permission_name in permissions:
@@ -1179,15 +1177,15 @@ def app_setting(app, key, value=None, delete=False):
 
                     new_urls = urls.split(',') + actuals_urls_or_regex
                     # We need to clear urls because in the old setting the new setting override the old one and dont just add some urls
-                    permission_url(clear_url=True, sync_perm=False)
-                    permission_url(add_url=new_urls)
+                    permission_url(permission_name, clear_urls=True, sync_perm=False)
+                    permission_url(permission_name, add_url=new_urls)
                 else:
                    # Let's create a "special" permission for the legacy settings
-                    permission_create(permission=permission,
+                    permission_create(permission=permission_name,
                                       # FIXME find a way to limit to only the user allowed to the main permission
                                       allowed=['all_users'] if key.startswith('protected_') else ['all_users', 'visitors'], 
                                       url=None,
-                                      additional_urls=url.split(','),
+                                      additional_urls=urls.split(','),
                                       auth_header=not key.startswith('skipped_'),
                                       label="Legacy permission - %s_uris/regex for app : %s" % (key.split('_')[0], app),
                                       show_tile=False, 
