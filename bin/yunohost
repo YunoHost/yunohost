@@ -7,18 +7,12 @@ import argparse
 import glob
 
 import moulinette
-from moulinette.interfaces.cli import colorize, get_locale
 
 # Directory and file to be used by logging
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-cli.log'
 
-# Create log directory
-if not os.path.isdir(LOG_DIR):
-    os.makedirs(LOG_DIR, 0750)
-
 # Initialization & helpers functions -----------------------------------
-
 
 def _parse_cli_args():
     """Parse additional arguments for the cli"""
@@ -58,11 +52,13 @@ def _parse_cli_args():
     return (parser, opts, args)
 
 
-def _init_moulinette(debug=False, quiet=False):
-    """Configure logging and initialize the moulinette"""
+def init(debug=False, quiet=False, logfile='%s/%s' % (LOG_DIR, LOG_FILE)):
 
-    # Custom logging configuration
-    logging = {
+    logdir = os.path.dirname(logfile)
+    if not os.path.isdir(logdir):
+        os.makedirs(logdir, 0750)
+
+    moulinette.init(logging_config={
         'version': 1,
         'disable_existing_loggers': True,
         'formatters': {
@@ -87,7 +83,7 @@ def _init_moulinette(debug=False, quiet=False):
             'file': {
                 'class': 'logging.FileHandler',
                 'formatter': 'precise',
-                'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+                'filename': logfile,
                 'filters': ['action'],
             },
         },
@@ -112,10 +108,8 @@ def _init_moulinette(debug=False, quiet=False):
             'level': 'DEBUG',
             'handlers': ['file', 'tty'] if debug else ['file'],
         },
-    }
+    })
 
-    # Initialize moulinette
-    moulinette.init(logging_config=logging)
 
 
 def _retrieve_namespaces():
@@ -139,7 +133,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
-    _init_moulinette(opts.debug, opts.quiet)
+    init(debug=opts.debug, quiet=opts.quiet)
 
     # Check that YunoHost is installed
     allowed_if_not_installed = ['tools postinstall', 'backup restore', 'log display']
@@ -147,6 +141,8 @@ if __name__ == '__main__':
        (len(args) < 2 or (args[0] + ' ' + args[1] not in allowed_if_not_installed)):
 
         from moulinette import m18n
+        from moulinette.interfaces.cli import colorize, get_locale
+
         # Init i18n
         m18n.load_namespace('yunohost')
         m18n.set_locale(get_locale())
