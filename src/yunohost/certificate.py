@@ -34,16 +34,14 @@ import glob
 
 from datetime import datetime
 
-from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
-
-from yunohost.utils.error import YunohostError
+from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
+from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
+from yunohost.utils.error import YunohostError
 from yunohost.utils.network import get_public_ip
 
-from moulinette import m18n
-from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -597,7 +595,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from yunohost.domain import _get_maindomain
     if domain == _get_maindomain():
         # Include xmpp-upload subdomain in subject alternate names
-        subdomain="xmpp-upload." + domain
+        subdomain = "xmpp-upload." + domain
         try:
             _dns_ip_match_public_ip(get_public_ip(), subdomain)
             csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
