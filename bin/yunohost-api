@@ -16,10 +16,6 @@ DEFAULT_PORT = 6787
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-api.log'
 
-# Create log directory
-if not os.path.isdir(LOG_DIR):
-    os.makedirs(LOG_DIR, 0750)
-
 # Initialization & helpers functions -----------------------------------
 
 
@@ -49,11 +45,13 @@ def _parse_api_args():
     return parser.parse_args()
 
 
-def _init_moulinette(debug=False):
-    """Configure logging and initialize the moulinette"""
+def init_api(debug=False, logfile='%s/%s' % (LOG_DIR, LOG_FILE)):
 
-    # Custom logging configuration
-    logging = {
+    logdir = os.path.dirname(logfile)
+    if not os.path.isdir(logdir):
+        os.makedirs(logdir, 0750)
+
+    moulinette.init(logging_config={
         'version': 1,
         'disable_existing_loggers': True,
         'formatters': {
@@ -77,7 +75,7 @@ def _init_moulinette(debug=False):
             'file': {
                 'class': 'logging.handlers.WatchedFileHandler',
                 'formatter': 'precise',
-                'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
+                'filename': logfile,
                 'filters': ['action'],
             },
             'console': {
@@ -103,10 +101,7 @@ def _init_moulinette(debug=False):
             'level': 'DEBUG',
             'handlers': ['file'] + ['console'] if debug else [],
         },
-    }
-
-    # Initialize moulinette
-    moulinette.init(logging_config=logging)
+    })
 
 # Callbacks for additional routes --------------------------------------
 
@@ -120,7 +115,7 @@ def is_installed():
 
 if __name__ == '__main__':
     opts = _parse_api_args()
-    _init_moulinette(opts.debug)
+    init_api(opts.debug)
 
     extensions = [f.split('/')[-1][:-4] for f in glob.glob("/usr/share/moulinette/actionsmap/ynh_*.yml")]
 
