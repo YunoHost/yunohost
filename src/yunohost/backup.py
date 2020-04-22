@@ -1375,7 +1375,9 @@ class RestoreManager():
                     else:
                         should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
 
-                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed,
+                    permission_create(permission_name, allowed=should_be_allowed,
+                                      url=permission_infos.get("url", None), additional_urls=permission_infos.get("additional_urls", None), auth_header=permission_infos.get("auth_header", None),
+                                      label=permission_infos.get("label", None), show_tile=permission_infos.get("show_tile", None),
                                       protected=permission_infos.get("protected", True), sync_perm=False)
 
                 permission_sync_to_user()
