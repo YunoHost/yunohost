@@ -364,7 +364,7 @@ def permission_url(operation_logger, permission,
     """
     from yunohost.app import app_setting
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.domain import _check_and_normalize_permission_path, _get_conflicting_apps
+    from yunohost.domain import _check_and_sanitize_permission_path, _get_conflicting_apps
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
@@ -389,25 +389,11 @@ def permission_url(operation_logger, permission,
     if url is None:
         url = existing_permission["url"]
     else:
-        url = _check_and_normalize_permission_path(url)
-        domain, path = _get_full_url(url, app_main_path).split('/', 1)
-        domain = domain[3:] if domain.startswith("re:") else domain
-        conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
+        url = _check_and_sanitize_permission_path(url, app_main_path, permission)
+
         if url.startswith('re:') and existing_permission['show_tile']:
             logger.warning(m18n.n('regex_incompatible_with_tile', regex=url, permission=permission))
             show_tile = False
-
-        if conflicts:
-            apps = []
-            for path, app_id, app_label in conflicts:
-                apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                    domain=domain,
-                    path=path,
-                    app_id=app_id,
-                    app_label=app_label,
-                ))
-
-            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
     current_additional_urls = existing_permission["additional_urls"]
     new_additional_urls = copy.copy(current_additional_urls)
@@ -417,22 +403,7 @@ def permission_url(operation_logger, permission,
             if ur in current_additional_urls:
                 logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=ur))
             else:
-                ur = _check_and_normalize_permission_path(ur)
-                domain, path = _get_full_url(ur, app_main_path).split('/', 1)
-                domain = domain[3:] if domain.startswith("re:") else domain
-                conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
-
-                if conflicts:
-                    apps = []
-                    for path, app_id, app_label in conflicts:
-                        apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                            domain=domain,
-                            path=path,
-                            app_id=app_id,
-                            app_label=app_label,
-                        ))
-
-                    raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+                ur = _check_and_sanitize_permission_path(ur, app_main_path, permission)
                 new_additional_urls += [ur]
 
     if remove_url:
@@ -657,6 +628,6 @@ def _get_full_url(url, app_main_path):
     if url.startswith('/'):
         return app_main_path + url.rstrip("/")
     if url.startswith('re:/'):
-        return 're:' + app_main_path + url[3:]
+        return 're:' + app_main_path.replace('.', '\\.') + url[3:]
     else:
         return url

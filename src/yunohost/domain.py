@@ -395,7 +395,7 @@ def _normalize_domain_path(domain, path):
     return domain, path
 
 
-def _check_and_normalize_permission_path(url):
+def _check_and_sanitize_permission_path(url, app_main_path, permission):
     """
     Check and normalize the urls passed for all permissions
     Also check that the Regex is valid
@@ -416,48 +416,77 @@ def _check_and_normalize_permission_path(url):
     """
     import re, sre_constants
 
-    # Uri without domain
-    if url.startswith('re:/'):
-        regex = url[4:]
-        # check regex
-        try:
-            re.compile(regex)
-        except sre_constants.error:
-            raise YunohostError('invalid_regex', regex=regex)
-        return url
-
-    if url.startswith('/'):
-        return '/' + url.strip("/")
-
     # Uri with domain
     domains = domain_list()['domains']
 
+    # regex without domain
+    if url.startswith('re:/'):
+        regex = url[4:]
+        # check regex if it's a PCRE regex, if it's a lua regex just print a warning
+        # I don't how how to validate a regex
+        if '%' in regex:
+            logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
+        else:
+            try:
+                re.compile(regex)
+            except sre_constants.error:
+                raise YunohostError('invalid_regex', regex=regex)
+        return url
+
+    # regex with domain
     if url.startswith('re:'):
         if '/' not in url:
             raise YunohostError('regex_with_only_domain')
         domain = url[3:].split('/')[0]
         path = '/' + url[3:].split('/', 1)[1]
 
-        if domain not in domains:
+        if domain.replace('%', '').replace('\\', '') not in domains:
             raise YunohostError('domain_named_unknown', domain=domain)
 
-        try:
-            re.compile(path)
-        except sre_constants.error:
-            raise YunohostError('invalid_regex', regex=path)
+        if '%' in path:
+            logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
+        else:
+            try:
+                re.compile(path)
+            except sre_constants.error:
+                raise YunohostError('invalid_regex', regex=path)
 
         return 're:' + domain + path
 
+    # uris without domain
+    if url.startswith('/'):
+        sanitized_url = '/' + url.strip("/")
+        domain = app_main_path.split('/')[0]
+        path = ('/' + app_main_path.split('/')[1]) if '/' in app_main_path else '/'
+
+    # uris with domain
     else:
         domain = url.split('/')[0]
         if domain not in domains:
             raise YunohostError('domain_named_unknown', domain=domain)
 
         if '/' in url:
-            path = url.split('/', 1)[1].rstrip('/')
-            return domain + '/' + path
+            path = '/' + url.split('/', 1)[1].rstrip('/')
+            sanitized_url = domain + path
         else:
-            return domain
+            sanitized_url = domain
+            path = '/'
+
+    conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
+
+    if conflicts:
+        apps = []
+        for path, app_id, app_label in conflicts:
+            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                domain=domain,
+                path=path,
+                app_id=app_id,
+                app_label=app_label,
+            ))
+
+        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+
+    return sanitized_url
 
 
 def _build_dns_conf(domain, ttl=3600):
