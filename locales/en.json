@@ -110,7 +110,7 @@
     "backup_unable_to_organize_files": "Could not use the quick method to organize files in the archive",
     "backup_with_no_backup_script_for_app": "The app '{app:s}' has no backup script. Ignoring.",
     "backup_with_no_restore_script_for_app": "The '{app:s}' has no restoration script, you will not be able to automatically restore the backup of this app.",
-    "certmanager_acme_not_configured_for_domain": "Certificate for the domain '{domain:s}' does not appear to be correctly installed. Please run 'cert-install' for this domain first.",
+    "certmanager_acme_not_configured_for_domain": "The ACME challenge cannot be ran for this domain right now because you are missing a code snippet in nginx conf... Please make sure that your nginx configuration is up to date using `yunohost tools regen-conf nginx --dry-run --with-diff`.",
     "certmanager_attempt_to_renew_nonLE_cert": "The certificate for the domain '{domain:s}' is not issued by Let's Encrypt. Cannot renew it automatically!",
     "certmanager_attempt_to_renew_valid_cert": "The certificate for the domain '{domain:s}' is not about to expire! (You may use --force if you know what you're doing)",
     "certmanager_attempt_to_replace_valid_cert": "You are attempting to overwrite a good and valid certificate for domain {domain:s}! (Use --force to bypass)",

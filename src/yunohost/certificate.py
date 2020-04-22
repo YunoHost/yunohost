@@ -38,6 +38,7 @@ from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 
 from yunohost.utils.network import get_public_ip
 
@@ -468,14 +469,15 @@ Subject: %s
 
 
 def _check_acme_challenge_configuration(domain):
-    # Check nginx conf file exists
-    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
-    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
 
-    if not os.path.exists(nginx_conf_file):
-        return False
-    else:
+    domain_conf = "/etc/nginx/conf.d/%s.conf" % domain
+    if "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf):
         return True
+    else:
+        # This is for legacy setups which haven't updated their domain conf to
+        # the new conf that include the acme snippet...
+        legacy_acme_conf = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
+        return os.path.exists(legacy_acme_conf)
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
