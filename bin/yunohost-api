@@ -4,10 +4,9 @@
 import os
 import sys
 import argparse
+import glob
 
 import moulinette
-from moulinette.actionsmap import ActionsMap
-from moulinette.interfaces.cli import colorize
 
 # Default server configuration
 DEFAULT_HOST = 'localhost'
@@ -22,6 +21,7 @@ if not os.path.isdir(LOG_DIR):
     os.makedirs(LOG_DIR, 0750)
 
 # Initialization & helpers functions -----------------------------------
+
 
 def _parse_api_args():
     """Parse main arguments for the api"""
@@ -47,6 +47,7 @@ def _parse_api_args():
     )
 
     return parser.parse_args()
+
 
 def _init_moulinette(debug=False):
     """Configure logging and initialize the moulinette"""
@@ -107,31 +108,28 @@ def _init_moulinette(debug=False):
     # Initialize moulinette
     moulinette.init(logging_config=logging)
 
-def _retrieve_namespaces():
-    """Return the list of namespaces to load"""
-    extensions = [n for n in ActionsMap.get_namespaces() if n.startswith('ynh_')]
-    return ['yunohost'] + extensions
-
-
 # Callbacks for additional routes --------------------------------------
+
 
 def is_installed():
     """ Check whether YunoHost is installed or not """
-    return { 'installed': os.path.isfile('/etc/yunohost/installed') }
+    return {'installed': os.path.isfile('/etc/yunohost/installed')}
 
 
 # Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
     opts = _parse_api_args()
-    _init_moulinette(opts.use_websocket, opts.debug, opts.verbose)
+    _init_moulinette(opts.debug)
+
+    extensions = [f.split('/')[-1][:-4] for f in glob.glob("/usr/share/moulinette/actionsmap/ynh_*.yml")]
 
     # Run the server
     ret = moulinette.api(
-        _retrieve_namespaces(),
+        ['yunohost'] + extensions,
         host=opts.host,
         port=opts.port,
-        routes={ ('GET', '/installed'): is_installed, },
+        routes={('GET', '/installed'): is_installed},
         use_websocket=True
     )
     sys.exit(ret)
