@@ -13,12 +13,12 @@ from moulinette.interfaces.cli import colorize, get_locale
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-cli.log'
 
+# Create log directory
+if not os.path.isdir(LOG_DIR):
+    os.makedirs(LOG_DIR, 0750)
+
 # Initialization & helpers functions -----------------------------------
 
-def _die(message, title='Error:'):
-    """Print error message and exit"""
-    print('%s %s' % (colorize(title, 'red'), message))
-    sys.exit(1)
 
 def _parse_cli_args():
     """Parse additional arguments for the cli"""
@@ -57,15 +57,9 @@ def _parse_cli_args():
 
     return (parser, opts, args)
 
+
 def _init_moulinette(debug=False, quiet=False):
     """Configure logging and initialize the moulinette"""
-
-    # Create log directory
-    if not os.path.isdir(LOG_DIR):
-        try:
-            os.makedirs(LOG_DIR, 0750)
-        except os.error as e:
-            _die(str(e))
 
     # Custom logging configuration
     logging = {
@@ -123,6 +117,7 @@ def _init_moulinette(debug=False, quiet=False):
     # Initialize moulinette
     moulinette.init(logging_config=logging)
 
+
 def _retrieve_namespaces():
     """Return the list of namespaces to load"""
     extensions = [n for n in ActionsMap.get_namespaces() if n.startswith('ynh_')]
@@ -138,7 +133,7 @@ if os.environ["PATH"] != default_path:
 if __name__ == '__main__':
     if os.geteuid() != 0:
         # since moulinette isn't initialized, we can't use m18n here
-        sys.stderr.write("\033[1;31mError:\033[0m yunohost command must be " \
+        sys.stderr.write("\033[1;31mError:\033[0m yunohost command must be "
                          "run as root or with sudo.\n")
         sys.exit(1)
 
@@ -148,7 +143,7 @@ if __name__ == '__main__':
     # Check that YunoHost is installed
     allowed_if_not_installed = ['tools postinstall', 'backup restore', 'log display']
     if not os.path.isfile('/etc/yunohost/installed') and \
-       (len(args) < 2 or (args[0] +' '+ args[1] not in allowed_if_not_installed)):
+       (len(args) < 2 or (args[0] + ' ' + args[1] not in allowed_if_not_installed)):
 
         from moulinette import m18n
         # Init i18n
@@ -156,7 +151,8 @@ if __name__ == '__main__':
         m18n.set_locale(get_locale())
 
         # Print error and exit
-        _die(m18n.n('yunohost_not_installed'), m18n.g('error'))
+        print(colorize(m18n.g('error'), 'red') + " " + m18n.n('yunohost_not_installed'))
+        sys.exit(1)
 
     # Execute the action
     ret = moulinette.cli(

@@ -17,12 +17,11 @@ DEFAULT_PORT = 6787
 LOG_DIR = '/var/log/yunohost'
 LOG_FILE = 'yunohost-api.log'
 
-# Initialization & helpers functions -----------------------------------
+# Create log directory
+if not os.path.isdir(LOG_DIR):
+    os.makedirs(LOG_DIR, 0750)
 
-def _die(message, title='Error:'):
-    """Print error message and exit"""
-    print('%s %s' % (colorize(title, 'red'), message))
-    sys.exit(1)
+# Initialization & helpers functions -----------------------------------
 
 def _parse_api_args():
     """Parse main arguments for the api"""
@@ -51,13 +50,6 @@ def _parse_api_args():
 
 def _init_moulinette(debug=False):
     """Configure logging and initialize the moulinette"""
-
-    # Create log directory
-    if not os.path.isdir(LOG_DIR):
-        try:
-            os.makedirs(LOG_DIR, 0750)
-        except os.error as e:
-            _die(str(e))
 
     # Custom logging configuration
     logging = {
