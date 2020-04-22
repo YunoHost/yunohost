@@ -86,7 +86,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
                 permissions[name]["additional_urls"] = [_get_full_url(url, apps_main_path[name.split('.')[0]]) for url in infos.get("additionalUrls", [None]) if url]
             else:
                 permissions[name]["url"] = infos.get("URL", [None])[0]
-                permissions[name]["additional_urls"] = infos.get("additionalUrls", [None])
+                permissions[name]["additional_urls"] = infos.get("additionalUrls", [])
 
     if short:
         permissions = permissions.keys()
