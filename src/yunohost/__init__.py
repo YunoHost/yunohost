@@ -6,8 +6,9 @@ import sys
 import glob
 
 import moulinette
+from moulinette import m18n
 from moulinette.utils.log import configure_logging
-
+from moulinette.interfaces.cli import colorize, get_locale
 
 def is_installed():
     return os.path.isfile('/etc/yunohost/installed')
@@ -66,18 +67,16 @@ def check_command_is_valid_before_postinstall(args):
                                     'log display']
 
     if (len(args) < 2 or (args[0] + ' ' + args[1] not in allowed_if_not_postinstalled)):
-
-        # This function is called before m18n is initialized, so we only initialized
-        # the specific bit to be able to call m18n.n/g()...
-        from moulinette import m18n
-        from moulinette.interfaces.cli import colorize, get_locale
-
-        # Init i18n
-        m18n.load_namespace('yunohost')
-        m18n.set_locale(get_locale())
-
+        init_i18n()
         print(colorize(m18n.g('error'), 'red') + " " + m18n.n('yunohost_not_installed'))
         sys.exit(1)
+
+
+def init_i18n():
+    # This should only be called when not willing to go through moulinette.cli
+    # or moulinette.api but still willing to call m18n.n/g...
+    m18n.load_namespace('yunohost')
+    m18n.set_locale(get_locale())
 
 
 def init_logging(interface="cli",
