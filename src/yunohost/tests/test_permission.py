@@ -655,7 +655,7 @@ def test_permission_main_url_regex():
     assert res["blog.main"]["url"] == "re:/[a-z]+reboy/.*"
 
     res = user_permission_list(full=True, full_path=True)['permissions']
-    assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain
+    assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', '\.')
 
 
 def test_permission_main_url_bad_regex(mocker):
@@ -682,7 +682,7 @@ def test_permission_add_additional_regex():
     assert res["blog.main"]["additional_urls"] == ["re:/[a-z]+reboy/.*"]
 
     res = user_permission_list(full=True, full_path=True)['permissions']
-    assert res["blog.main"]["additional_urls"] == ["re:%s/blog/[a-z]+reboy/.*" % maindomain]
+    assert res["blog.main"]["additional_urls"] == ["re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', '\.')]
 
 
 def test_permission_add_additional_bad_regex(mocker):
