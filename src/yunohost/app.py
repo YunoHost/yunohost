@@ -2843,29 +2843,46 @@ def _patch_legacy_helpers(app_folder):
         #    sudo yunohost app initdb $db_user -p $db_pwd
         # by
         #    ynh_mysql_setup_db --db_user=$db_user --db_name=$db_user --db_pwd=$db_pwd
-        "yunohost app initdb": (
-            r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
-            r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3"),
+        "yunohost app initdb": {
+            "pattern": r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
+            "replace": r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3",
+            "important": True
+        },
         # Replace
         #    sudo yunohost app checkport whaterver
         # by
         #    ynh_port_available whatever
-        "yunohost app checkport": (
-            r"(sudo )?yunohost app checkport",
-            r"ynh_port_available"),
+        "yunohost app checkport": {
+            "pattern": r"(sudo )?yunohost app checkport",
+            "replace": r"ynh_port_available",
+            "important": True
+        },
         # We can't migrate easily port-available
         # .. but at the time of writing this code, only two non-working apps are using it.
-        "yunohost tools port-available": (None, None),
+        "yunohost tools port-available": {"important":True},
         # Replace
         #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
         # by
         #    ynh_webpath_register --app=${app} --domain=${domain} --path_url=${path_url}
-        "yunohost app checkurl": (
-            r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
-            r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3"),
+        "yunohost app checkurl": {
+            "pattern": r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
+            "replace": r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3",
+            "important": True
+        },
+        # Remove
+        #    Automatic diagnosis data from YunoHost
+        #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"
+        #
+        "yunohost tools diagnosis": {
+            "pattern": r"(Automatic diagnosis data from YunoHost( *\n)*)? *(__\w+__)? *\$\(yunohost tools diagnosis.*\)(__\w+__)?",
+            "replace": r"",
+            "important": False
+        }
     }
 
-    stuff_to_replace_compiled = {h: (re.compile(r[0]), r[1]) if r[0] else (None,None) for h, r in stuff_to_replace.items()}
+    for helper, infos in stuff_to_replace.items():
+        infos["pattern"] = re.compile(infos["pattern"]) if infos.get("pattern") else None
+        infos["replace"] = infos.get("replace")
 
     for filename in files_to_patch:
 
@@ -2875,18 +2892,20 @@ def _patch_legacy_helpers(app_folder):
 
         content = read_file(filename)
         replaced_stuff = False
+        show_warning = False
 
-        for helper, regexes in stuff_to_replace_compiled.items():
-            pattern, replace = regexes
+        for helper, infos in stuff_to_replace.items():
             # If helper is used, attempt to patch the file
-            if helper in content and pattern != "":
-                content = pattern.sub(replace, content)
+            if helper in content and infos["pattern"]:
+                content = infos["pattern"].sub(infos["replace"], content)
                 replaced_stuff = True
+                if infos["important"]:
+                    show_warning = True
 
             # If the helpert is *still* in the content, it means that we
             # couldn't patch the deprecated helper in the previous lines.  In
             # that case, abort the install or whichever step is performed
-            if helper in content:
+            if helper in content and infos["important"]:
                 raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.")
 
         if replaced_stuff:
@@ -2902,5 +2921,7 @@ def _patch_legacy_helpers(app_folder):
 
             # Actually write the new content in the file
             write_to_file(filename, content)
+
+        if show_warning:
             # And complain about those damn deprecated helpers
             logger.error("/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ...")
