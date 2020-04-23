@@ -74,7 +74,7 @@ depends_children:
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
         authHeader: "FALSE"
-        label: "Mail"
+        label: "E-mail"
         showTile: "FALSE"
         isProtected: "TRUE"
     cn=xmpp.main,ou=permission:

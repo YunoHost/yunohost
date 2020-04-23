@@ -43,15 +43,22 @@ class MyMigration(Migration):
             app_setting(app, 'label', delete=True)
 
         for permission in permission_list:
-            if permission.split('.')[0] in SYSTEM_PERMS:
+            if permission.split('.')[0] == 'mail':
                 ldap.update('cn=%s,ou=permission' % permission, {
                     'authHeader': ["FALSE"],
-                    'label': [permission.split('.')[0].title()],
+                    'label': 'E-mail',
+                    'showTile': ["FALSE"],
+                    'isProtected': ["TRUE"],
+                })
+            elif permission.split('.')[0] == 'xmpp':
+                ldap.update('cn=%s,ou=permission' % permission, {
+                    'authHeader': ["FALSE"],
+                    'label': 'XMPP',
                     'showTile': ["FALSE"],
                     'isProtected': ["TRUE"],
                 })
             else:
-                label = labels[permission.split('.')[0]]
+                label = labels[permission.split('.')[0]].title()
 
                 if permission.endswith(".main"):
                     ldap.update('cn=%s,ou=permission' % permission, {
