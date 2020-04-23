@@ -28,6 +28,7 @@ import os
 import re
 import yaml
 import collections
+import glob
 
 from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
@@ -350,6 +351,8 @@ class OperationLogger(object):
     This class record logs and metadata like context or start time/end time.
     """
 
+    _instances = []
+
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
         self.operation = operation
@@ -360,6 +363,8 @@ class OperationLogger(object):
         self.logger = None
         self._name = None
         self.data_to_redact = []
+        self.parent = self.parent_logger()
+        self._instances.append(self)
 
         for filename in ["/etc/yunohost/mysql", "/etc/yunohost/psql"]:
             if os.path.exists(filename):
@@ -369,6 +374,50 @@ class OperationLogger(object):
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
+
+    def parent_logger(self):
+
+        # If there are other operation logger instances
+        for instance in reversed(self._instances):
+            # Is one of these operation logger started but not yet done ?
+            if instance.started_at is not None and instance.ended_at is None:
+                # We are a child of the first one we found
+                return instance.name
+
+        locks = read_file("/var/run/moulinette_yunohost.lock").strip().split("\n")
+        # If we're the process with the lock, we're the root logger
+        if locks == [] or str(os.getpid()) in locks:
+            return None
+
+        # If we get here, we are in a yunohost command called by a yunohost
+        # (maybe indirectly from an app script for example...)
+        #
+        # The strategy is :
+        # 1. list 20 most recent log files
+        # 2. iterate over the PID of parent processes
+        # 3. see if parent process has some log file open (being actively
+        # written in)
+        # 4. if among those file, there's an operation log file, we use the id
+        # of the most recent file
+
+        recent_operation_logs = sorted(glob.iglob("/var/log/yunohost/categories/operation/*.log"), key=os.path.getctime, reverse=True)[:20]
+
+        import psutil
+        proc = psutil.Process().parent()
+        while proc is not None:
+            # We use proc.open_files() to list files opened / actively used by this proc
+            # We only keep files matching a recent yunohost operation log
+            active_logs = sorted([f.path for f in proc.open_files() if f.path in recent_operation_logs], key=os.path.getctime, reverse=True)
+            if active_logs != []:
+                # extra the log if from the full path
+                return os.path.basename(active_logs[0])[:-4]
+            else:
+                proc = proc.parent()
+                continue
+
+        # If nothing found, assume we're the root operation logger
+        return None
+
 
     def start(self):
         """
@@ -456,6 +505,7 @@ class OperationLogger(object):
         data = {
             'started_at': self.started_at,
             'operation': self.operation,
+            'parent': self.parent,
         }
         if self.related_to is not None:
             data['related_to'] = self.related_to
@@ -491,8 +541,10 @@ class OperationLogger(object):
         self.ended_at = datetime.utcnow()
         self._error = error
         self._success = error is None
+
         if self.logger is not None:
             self.logger.removeHandler(self.file_handler)
+            self.file_handler.close()
 
         is_api = msettings.get('interface') == 'api'
         desc = _get_description_from_name(self.name)
