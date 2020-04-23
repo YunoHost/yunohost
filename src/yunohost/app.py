@@ -489,16 +489,16 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
-        # Start register change on system
-        related_to = [('app', app_instance_name)]
-        operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
-        operation_logger.start()
-
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(extracted_app_folder)
+
+        # Start register change on system
+        related_to = [('app', app_instance_name)]
+        operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
+        operation_logger.start()
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -695,6 +695,12 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Validate domain / path availability for webapps
     _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
 
+    # Attempt to patch legacy helpers ...
+    _patch_legacy_helpers(extracted_app_folder)
+
+    # Apply dirty patch to make php5 apps compatible with php7
+    _patch_php5(extracted_app_folder)
+
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
     env_dict["YNH_APP_ID"] = app_id
@@ -731,12 +737,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         'current_revision': manifest.get('remote', {}).get('revision', "?")
     }
     _set_app_settings(app_instance_name, app_settings)
-
-    # Attempt to patch legacy helpers ...
-    _patch_legacy_helpers(extracted_app_folder)
-
-    # Apply dirty patch to make php5 apps compatible with php7
-    _patch_php5(extracted_app_folder)
 
     os.system('chown -R admin: ' + extracted_app_folder)
 
