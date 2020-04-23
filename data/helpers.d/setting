@@ -158,7 +158,7 @@ ynh_webpath_register () {
 
 # Create a new permission for the app
 #
-# example: ynh_permission_create --permission admin --url /admin --additional_urls 'domain.tld/otherurl /superadmin' --allowed alice bob --tile_name 'My app admin'
+# example: ynh_permission_create --permission admin --url /admin --additional_urls 'domain.tld/otherurl /superadmin' --allowed alice bob --label 'My app admin'
 #
 # usage: ynh_permission_create --permission "permission" [--url "url"] [--additional_urls "second-url" [ "other-url" ]] [--auth_header true|false]
 #                                                        [--allowed group1 [ group2 ]] [--label "label"] [--show_tile true|false]
