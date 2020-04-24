@@ -113,7 +113,7 @@ ynh_systemd_action() {
             local pid_tail=$!
         else
             # Read the specified log file
-            tail --follow --retry --lines=0 "$log_path" > "$templog" 2>&1 &
+            tail --follow=name --retry --lines=0 "$log_path" > "$templog" 2>&1 &
             # Get the PID of the tail command
             local pid_tail=$!
         fi
@@ -194,5 +194,4 @@ ynh_clean_check_starting () {
         ynh_secure_remove "$templog" 2>&1
     fi
 }
-
 
