@@ -105,7 +105,7 @@ ynh_validate_ip4()
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_validate_ip 4 $ip_address
+    ynh_validate_ip --family=4 --ip_address=$ip_address
 }
 
 
