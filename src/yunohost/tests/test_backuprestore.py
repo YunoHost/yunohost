@@ -574,8 +574,19 @@ def test_restore_archive_with_no_json(mocker):
 
     assert "badbackup" in backup_list()["archives"]
 
-    with raiseYunohostError(mocker, 'backup_invalid_archive'):
+    with raiseYunohostError(mocker, 'backup_archive_cant_retrieve_info_json'):
         backup_restore(name="badbackup", force=True)
+
+@pytest.mark.with_wordpress_archive_from_2p4
+def test_restore_archive_with_bad_archive(mocker):
+
+    # Break the archive
+    os.system("head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz > /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
+
+    assert "backup_wordpress_from_2p4" in backup_list()["archives"]
+
+    with raiseYunohostError(mocker, 'backup_archive_open_failed'):
+        backup_restore(name="backup_wordpress_from_2p4", force=True)
 
 
 def test_backup_binds_are_readonly(mocker, monkeypatch):
