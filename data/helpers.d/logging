@@ -325,7 +325,7 @@ ynh_debug () {
     local trace
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    # Redisable xtrace, ynh_handle_getopts_args set it back
+    # Re-disable xtrace, ynh_handle_getopts_args set it back
     set +o xtrace # set +x
     message=${message:-}
     trace=${trace:-}
