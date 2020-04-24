@@ -136,7 +136,7 @@ ynh_systemd_action() {
             ynh_exec_err tail --lines=$length "$log_path"
         fi
         # Fail the app script, since the service failed.
-        false
+        ynh_die
     fi
 
     # Start the timeout and try to find line_match
