@@ -230,6 +230,7 @@ ynh_script_progression () {
     local last
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # Re-disable xtrace, ynh_handle_getopts_args set it back
     set +o xtrace # set +x
     weight=${weight:-1}
     time=${time:-0}
