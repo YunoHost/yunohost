@@ -46,9 +46,6 @@ def domain_list(exclude_subdomains=False):
     List domains
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for domain fetching
-        limit -- Maximum number of domain fetched
         exclude_subdomains -- Filter out domains that are subdomains of other declared domains
 
     """
