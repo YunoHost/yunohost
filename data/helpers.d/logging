@@ -54,7 +54,7 @@ ynh_no_log() {
     eval $@
     local exit_code=$?
     mv ${ynh_cli_log}-move ${ynh_cli_log}
-    return $?
+    return $exit_code
 }
 
 # Main printer, just in case in the future we have to change anything about that.
