@@ -127,5 +127,5 @@ ynh_validate_ip6()
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_validate_ip 6 $ip_address
+    ynh_validate_ip --family=6 --ip_address=$ip_address
 }
