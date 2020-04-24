@@ -35,9 +35,9 @@ import tempfile
 from datetime import datetime
 from glob import glob
 from collections import OrderedDict
+from functools import reduce
 
 from moulinette import msignals, m18n, msettings
-from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
@@ -51,7 +51,8 @@ from yunohost.hook import (
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
-from functools import reduce
+from yunohost.utils.error import YunohostError
+from yunohost.utils.packages import ynh_packages_version
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -282,7 +283,8 @@ class BackupManager():
             'size': self.size,
             'size_details': self.size_details,
             'apps': self.apps_return,
-            'system': self.system_return
+            'system': self.system_return,
+            'from_yunohost_version': ynh_packages_version()["yunohost"]["version"]
         }
 
     @property
