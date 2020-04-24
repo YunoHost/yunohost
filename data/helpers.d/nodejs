@@ -49,7 +49,9 @@ ynh_use_nodejs () {
     nodejs_path="$node_version_path/$nodejs_version/bin"
 
     # Load the path of this version of node in $PATH
-    [[ :$PATH: == *":$nodejs_path"* ]] || PATH="$nodejs_path:$PATH"
+    if [[ :$PATH: != *":$nodejs_path"* ]]; then
+        PATH="$nodejs_path:$PATH"
+    fi
 }
 
 # Install a specific version of nodejs
