@@ -162,9 +162,13 @@ def _app_upgradable(app_infos):
     # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
 
     # Firstly use the version to know if an upgrade is available
-    if app_infos["manifest"].get('integration', {}).get("upgrade_only_if_version_changes", None) is True and \
-       '~ynh' in app_infos["version"] and app_infos["from_catalog"]["manifest"].get("version", None):
-        if version.parse(app_infos["version"]) < version.parse(app_infos["from_catalog"]["manifest"].get("version", "-")):
+    app_is_in_catalog = bool(app_infos.get("from_catalog"))
+    upgrade_only_if_version_changes = app_infos["manifest"].get('integration', {}).get("upgrade_only_if_version_changes", None) is True
+    installed_version = version.parse(app_infos["version"])
+    version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
+    
+    if app_is_in_catalog and '~ynh' in app_infos["version"]:
+        if upgrade_only_if_version_changes and installed_version < version_in_catalog:
             return "yes"
         else:
             return "no"
