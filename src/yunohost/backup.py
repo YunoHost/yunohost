@@ -1922,7 +1922,6 @@ class TarBackupMethod(BackupMethod):
 
         try:
             files_in_archive = tar.getnames()
-            print(files_in_archive)
         except IOError as e:
             raise YunohostError("backup_archive_corrupted", archive=self._archive_file, error=str(e))
 
