@@ -52,6 +52,8 @@ do_pre_regen() {
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
   ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
+  cert_status=$(yunohost domain cert-status --json)
+
   # add domain conf files
   for domain in $domain_list; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
@@ -61,7 +63,7 @@ do_pre_regen() {
 
     # NGINX server configuration
     export domain
-    export domain_cert_ca=$(yunohost domain cert-status $domain --json \
+    export domain_cert_ca=$(echo $cert_status \
                             | jq ".certificates.\"$domain\".CA_type" \
                             | tr -d '"')
 
