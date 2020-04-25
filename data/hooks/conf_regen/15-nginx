@@ -46,7 +46,6 @@ do_pre_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
@@ -55,7 +54,7 @@ do_pre_regen() {
   cert_status=$(yunohost domain cert-status --json)
 
   # add domain conf files
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
     mkdir -p "$domain_conf_dir"
     mail_autoconfig_dir="${pending_dir}/var/www/.well-known/${domain}/autoconfig/mail/"
@@ -83,7 +82,7 @@ do_pre_regen() {
                  | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
   for file in $conf_files; do
     domain=${file%.conf}
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || touch "${nginx_conf_dir}/${file}"
   done
 
@@ -91,7 +90,7 @@ do_pre_regen() {
   autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2>/dev/null || true)
   for file in $autoconfig_files; do
     domain=$(basename $(readlink -f $(dirname $file)/../..))
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || (mkdir -p "$(dirname ${pending_dir}/${file})" && touch "${pending_dir}/${file}")
   done
 
@@ -105,16 +104,13 @@ do_post_regen() {
 
   [ -z "$regen_conf_files" ] && exit 0
 
-  # retrieve variables
-  domain_list=$(yunohost domain list --output-as plain --quiet)
-
   # create NGINX conf directories for domains
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
     mkdir -p "/etc/nginx/conf.d/${domain}.d"
   done
 
   # Get rid of legacy lets encrypt snippets
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
       # If the legacy letsencrypt / acme-challenge domain-specific snippet is still there
       if [ -e /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf ]
       then

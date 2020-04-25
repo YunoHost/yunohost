@@ -141,7 +141,14 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
     if "glances" in names:
         names.remove("glances")
 
-    pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
+    # [Optimization] We compute and feed the domain list to the conf regen
+    # hooks to avoid having to call "yunohost domain list" so many times which
+    # ends up in wasted time (about 3~5 seconds per call on a RPi2)
+    from yunohost.domain import domain_list
+    env = {}
+    env["YNH_DOMAINS"] = " ".join(domain_list()["domains"])
+
+    pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call, env=env)
 
     # Keep only the hook names with at least one success
     names = [hook for hook, infos in pre_result.items()
@@ -310,7 +317,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             regen_conf_files = ''
         return post_args + [regen_conf_files, ]
 
-    hook_callback('conf_regen', names, pre_callback=_pre_call)
+    hook_callback('conf_regen', names, pre_callback=_pre_call, env=env)
 
     operation_logger.success()
 
