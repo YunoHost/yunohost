@@ -146,7 +146,12 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
     # ends up in wasted time (about 3~5 seconds per call on a RPi2)
     from yunohost.domain import domain_list
     env = {}
-    env["YNH_DOMAINS"] = " ".join(domain_list()["domains"])
+    # Well we can only do domain_list() if postinstall is done ...
+    # ... but hooks that effectively need the domain list are only
+    # called only after the 'installed' flag is set so that's all good,
+    # though kinda tight-coupled to the postinstall logic :s
+    if os.path.exists("/etc/yunohost/installed"):
+        env["YNH_DOMAINS"] = " ".join(domain_list()["domains"])
 
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call, env=env)
 
