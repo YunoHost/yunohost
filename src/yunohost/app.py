@@ -239,7 +239,7 @@ def app_map(app=None, raw=False, user=None):
                 perm_domain, perm_path = perm_url.split("/", 1)
                 perm_path = "/" + perm_path.rstrip("/")
 
-            perm_path = perm_path if perm_path != "" else "/"
+            perm_path = perm_path if perm_path.strip() != "" else "/"
 
             return perm_domain, perm_path
 
@@ -1269,7 +1269,7 @@ def app_ssowatconf():
                 perm_domain, perm_path = perm_url.split("/", 1)
                 perm_path = "/" + perm_path.rstrip("/")
 
-            perm_path = perm_path if perm_path != "" else "/"
+            perm_path = perm_path if perm_path.strip() != "" else "/"
 
             return perm_domain + perm_path
 
