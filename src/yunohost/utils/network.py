@@ -21,7 +21,9 @@
 import os
 import re
 import logging
+import time
 
+from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 
@@ -29,14 +31,24 @@ logger = logging.getLogger('yunohost.utils.network')
 
 
 def get_public_ip(protocol=4):
-    """Retrieve the public IP address from ip.yunohost.org"""
 
-    if protocol == 4:
-        url = 'https://ip.yunohost.org'
-    elif protocol == 6:
-        url = 'https://ip6.yunohost.org'
+    assert protocol in [4, 6], "Invalid protocol version for get_public_ip: %s, expected 4 or 6" % protocol
+
+    cache_file = "/var/cache/yunohost/ipv%s" % protocol
+    cache_duration = 120  # 2 min
+    if os.path.exists(cache_file) and abs(os.path.getctime(cache_file) - time.time()) < cache_duration:
+        ip = read_file(cache_file).strip()
+        ip = ip if ip else None  # Empty file (empty string) means there's no IP
+        logger.debug("Reusing IPv%s from cache: %s" % (protocol, ip))
     else:
-        raise ValueError("invalid protocol version")
+        ip = get_public_ip_from_remote_server(protocol)
+        logger.debug("IP fetched: %s" % ip)
+        write_to_file(cache_file, ip or "")
+    return ip
+
+
+def get_public_ip_from_remote_server(protocol=4):
+    """Retrieve the public IP address from ip.yunohost.org"""
 
     # We can know that ipv6 is not available directly if this file does not exists
     if protocol == 6 and not os.path.exists("/proc/net/if_inet6"):
@@ -48,6 +60,9 @@ def get_public_ip(protocol=4):
     if not any(r.startswith("default") for r in routes):
         logger.debug("No default route for IPv%s, so assuming there's no IP address for that version" % protocol)
         return None
+
+    url = 'https://ip%s.yunohost.org' % (protocol if protocol != 4 else '')
+    logger.debug("Fetching IP from %s " % url)
 
     try:
         return download_text(url, timeout=30).strip()
