@@ -122,7 +122,7 @@ def log_list(category=[], limit=None, with_details=False):
     return result
 
 
-def log_display(path, number=None, share=False):
+def log_display(path, number=None, share=False, filter_irrelevant=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -202,9 +202,24 @@ def log_display(path, number=None, share=False):
 
     # Display logs if exist
     if os.path.exists(log_path):
+
+        if filter_irrelevant:
+            filters = [
+                r"set [+-]x$",
+                r"local \w+$",
+                r"local legacy_args=.*$",
+                r".*Helper used in legacy mode.*",
+                r"args_array=.*$",
+                r"declare -Ar args_array$",
+                r"ynh_handle_getopts_args",
+                r"ynh_script_progression"
+            ]
+        else:
+            filters = []
+
         from yunohost.service import _tail
         if number:
-            logs = _tail(log_path, int(number))
+            logs = _tail(log_path, int(number), filters=filters)
         else:
             logs = read_file(log_path)
         infos['log_path'] = log_path
