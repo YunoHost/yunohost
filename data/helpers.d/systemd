@@ -121,6 +121,8 @@ ynh_systemd_action() {
         action="reload-or-restart"
     fi
 
+    # Workaround for https://github.com/YunoHost/issues/issues/1573
+    sleep 2
     systemctl $action $service_name \
         || ( journalctl --no-pager --lines=$length -u $service_name >&2 \
         ; test -e "$log_path" && echo "--" >&2 && tail --lines=$length "$log_path" >&2 \
