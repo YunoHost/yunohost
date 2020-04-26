@@ -110,12 +110,34 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
 
-def app_list(full=False):
+
+# Old legacy function...
+def app_fetchlist():
+    logger.warning("'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead")
+    from yunohost.tools import tools_update
+    tools_update(apps=True)
+
+
+def app_list(full=False, installed=False, filter=None):
     """
     List installed apps
     """
+
+    # Old legacy argument ... app_list was a combination of app_list and
+    # app_catalog before 3.8 ...
+    if installed:
+        logger.warning("Argument --installed ain't needed anymore when using 'yunohost app list'. It directly returns the list of installed apps..")
+
+    # Filter is a deprecated option...
+    if filter:
+        logger.warning("Using -f $appname in 'yunohost app list' is deprecated. Just use 'yunohost app list | grep -q 'id: $appname' to check a specific app is installed")
+
     out = []
     for app_id in sorted(_installed_apps()):
+
+        if filter and not app_id.startswith(filter):
+            continue
+
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
