@@ -164,7 +164,7 @@ class MailDiagnoser(Diagnoser):
                 query = subdomain + '.' + blacklist['dns_server']
 
                 # Do the DNS Query
-                status, answers = dig(query, 'A')
+                status, _ = dig(query, 'A')
                 if status != 'ok':
                     continue
 
