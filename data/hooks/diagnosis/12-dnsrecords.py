@@ -4,15 +4,16 @@ import os
 import re
 
 from datetime import datetime, timedelta
-from subprocess import Popen, PIPE
+from publicsuffix import PublicSuffixList
 
 from moulinette.utils.filesystem import read_file
 
 from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
+from yunohost.utils.network import dig
 
-SMALL_SUFFIX_LIST = ['noho.st', 'nohost.me', 'ynh.fr', 'netlib.re']
+PENDING_SUFFIX_LIST = ['ynh.fr', 'netlib.re']
 
 
 class DNSRecordsDiagnoser(Diagnoser):
@@ -39,8 +40,11 @@ class DNSRecordsDiagnoser(Diagnoser):
                 yield report
 
         # Check if a domain buy by the user will expire soon
-        domains_from_registrar = ['.'.join(domain.split('.')[-2:]) for domain in all_domains]
-        domains_from_registrar = set(domains_from_registrar) - set(SMALL_SUFFIX_LIST)
+        psl = PublicSuffixList()
+        all_domains = ["grimaud.me", "reflexlibre.net", "netlib.re", "noho.st", "nohost.me", "ynh.fr", "test.noho.st", "hub.netlib.re", "sans-nuage.fr", "yunohost.org", "yunohost.local", "free.fr"]
+        domains_from_registrar = [psl.get_public_suffix(domain) for domain in all_domains]
+        domains_from_registrar = [domain for domain in domains_from_registrar if "." in domain]
+        domains_from_registrar = set(domains_from_registrar) - set(PENDING_SUFFIX_LIST)
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
@@ -159,9 +163,12 @@ class DNSRecordsDiagnoser(Diagnoser):
             expire_date = self.get_domain_expiration(domain)
 
             if isinstance(expire_date, str):
-                details["not_found"].append((
-                    "diagnosis_%s_details" % (expire_date),
-                    {"domain": domain}))
+                status_ns, _ = dig(domain, "NS", resolvers="force_external")
+                status_a, _ = dig(domain, "A", resolvers="force_external")
+                if "ok" not in [status_ns, status_a]:
+                    details["not_found"].append((
+                        "diagnosis_domain_%s_details" % (expire_date),
+                        {"domain": domain}))
                 continue
 
             expire_in = expire_date - datetime.now()
@@ -199,19 +206,26 @@ class DNSRecordsDiagnoser(Diagnoser):
         """
         Return the expiration datetime of a domain or None
         """
-        # "echo failed" avoid to trigger CalledProcessError
-        command = "whois -H %s || echo failed" % (domain)
+        command = "whois -H %s" % (domain)
+
+        # Reduce output to determine if whois answer is equivalent to NOT FOUND
         out = check_output(command).strip().split("\n")
+        filtered_out = [line for line in out
+               if re.search(r'^\w{4,25}:', line, re.IGNORECASE) and
+               not re.match(r'>>> Last update of whois', line, re.IGNORECASE) and
+               not re.match(r'^NOTICE:', line, re.IGNORECASE) and
+               not re.match(r'^%%', line, re.IGNORECASE) and
+               not re.match(r'"https?:"', line, re.IGNORECASE)]
 
         # If there is less 5 lines, it's NOT FOUND response
-        if len(out) <= 4:
-            return "domain_not_found"
+        if len(filtered_out) <= 6:
+            return "not_found"
 
         for line in out:
-            match = re.search(r'Expir.+(\d{4}-\d{2}-\d{2})', line)
+            match = re.search(r'Expir.+(\d{4}-\d{2}-\d{2})', line, re.IGNORECASE)
             if match is not None:
                 return datetime.strptime(match.group(1), '%Y-%m-%d')
-        return "domain_expiration_not_found"
+        return "expiration_not_found"
 
 
 def main(args, env, loggers):

@@ -29,7 +29,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , redis-server
  , metronome
  , git, curl, wget, cron, unzip, jq
- , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
+ , lsb-release, haveged, fake-hwclock, equivs, lsof, whois, python-publicsuffix
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog

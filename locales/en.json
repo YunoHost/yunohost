@@ -173,7 +173,7 @@
     "diagnosis_dns_discrepancy": "The following DNS record does not seem to follow the recommended configuration:<br>Type: <code>{type}</code><br>Name: <code>{name}</code><br>Current value: <code>{current}</code><br>Excepted value: <code>{value}</code>",
     "diagnosis_dns_point_to_doc": "Please check the documentation at <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a> if you need help about configuring DNS records.",
     "diagnosis_domain_expiration_not_found": "Unable to check the expiration date of some domains",
-    "diagnosis_domain_not_found_details": "The domain {domain} doesn't exist in WHOIS database !",
+    "diagnosis_domain_not_found_details": "The domain {domain} doesn't exist in WHOIS database or is expired !",
     "diagnosis_domain_expiration_not_found_details": "The WHOIS returns some info about the domain {domain} but we are not able to found the expiration date inside those info.",
     "diagnosis_domain_expiration_info": "Domains expiration dates",
     "diagnosis_domain_expiration_warning": "Some domains expire in less than a month",
