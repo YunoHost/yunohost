@@ -3,6 +3,7 @@
 import os
 import re
 
+from subprocess import CalledProcessError
 from datetime import datetime, timedelta
 from publicsuffix import PublicSuffixList
 
@@ -161,13 +162,15 @@ class DNSRecordsDiagnoser(Diagnoser):
         for domain in domains:
             expire_date = self.get_domain_expiration(domain)
 
-            if isinstance(expire_date, str):
+            if isinstance(expire_date, str) and expire_date != "not_working":
                 status_ns, _ = dig(domain, "NS", resolvers="force_external")
                 status_a, _ = dig(domain, "A", resolvers="force_external")
                 if "ok" not in [status_ns, status_a]:
                     details["not_found"].append((
                         "diagnosis_domain_%s_details" % (expire_date),
                         {"domain": domain}))
+                else:
+                    self.logger_debug("Dyndns domain: %s" % (domain))
                 continue
 
             expire_in = expire_date - datetime.now()
@@ -207,8 +210,13 @@ class DNSRecordsDiagnoser(Diagnoser):
         """
         command = "whois -H %s" % (domain)
 
+        try:
+            out = check_output(command).strip().split("\n")
+        except CalledProcessError as e:
+            self.logger_warning("Unable to get whois data for %s . Could be due to a rate limit on whois. Error: %s" % (domain, str(e)))
+            return "not_working"
+
         # Reduce output to determine if whois answer is equivalent to NOT FOUND
-        out = check_output(command).strip().split("\n")
         filtered_out = [line for line in out
                if re.search(r'^[a-zA-Z0-9 ]{4,25}:', line, re.IGNORECASE) and
                not re.match(r'>>> Last update of whois', line, re.IGNORECASE) and
@@ -216,7 +224,7 @@ class DNSRecordsDiagnoser(Diagnoser):
                not re.match(r'^%%', line, re.IGNORECASE) and
                not re.match(r'"https?:"', line, re.IGNORECASE)]
 
-        # If there is less 5 lines, it's NOT FOUND response
+        # If there is less than 7 lines, it's NOT FOUND response
         if len(filtered_out) <= 6:
             return "not_found"
 
