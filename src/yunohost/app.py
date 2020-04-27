@@ -173,7 +173,7 @@ def _app_upgradable(app_infos):
         else:
             return "no"
 
-    if not app_infos.get("from_catalog", None):
+    if not app_is_in_catalog:
         return "url_required"
     if not app_infos["from_catalog"].get("lastUpdate") or not app_infos["from_catalog"].get("git"):
         return "url_required"
