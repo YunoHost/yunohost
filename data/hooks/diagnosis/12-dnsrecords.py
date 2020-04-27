@@ -40,7 +40,6 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         # Check if a domain buy by the user will expire soon
         domains_from_registrar = ['.'.join(domain.split('.')[-2:]) for domain in all_domains]
-        domains_from_registrar = ['ynh.local', 'grimaud.me', 'netlib.re', 'arn-fai.net']
         domains_from_registrar = set(domains_from_registrar) - set(SMALL_SUFFIX_LIST)
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
