@@ -81,14 +81,6 @@ http_interfaces = { "127.0.0.1", "::1" }
 -- Enable IPv6
 use_ipv6 = true
 
--- Discovery items
-disco_items = {
-	{ "muc.{{ main_domain }}" },
-	{ "pubsub.{{ main_domain }}" },
-	{ "xmpp-upload.{{ main_domain }}" },
-	{ "vjud.{{ main_domain }}" }
-};
-
 -- BOSH configuration (mod_bosh)
 consider_bosh_secure = true
 cross_domain_bosh = true
@@ -118,45 +110,6 @@ log = {
 ---Set up a local BOSH service
 Component "localhost" "http"
 	modules_enabled = { "bosh" }
-
----Set up a MUC (multi-user chat) room server
-Component "muc.{{ main_domain }}" "muc"
-	name = "{{ main_domain }} Chatrooms"
-
-	modules_enabled = {
-		"muc_limits";
-		"muc_log";
-		"muc_log_mam";
-		"muc_log_http";
-		"muc_vcard";
-    }
-
-	muc_event_rate = 0.5
-	muc_burst_factor = 10
-
----Set up a PubSub server
-Component "pubsub.{{ main_domain }}" "pubsub"
-	name = "{{ main_domain }} Publish/Subscribe"
-
-	unrestricted_node_creation = true -- Anyone can create a PubSub node (from any server)
-
----Set up a HTTP Upload service
-Component "xmpp-upload.{{ main_domain }}" "http_upload"
-	name = "{{ main_domain }} Sharing Service"
-
-	http_file_path = "/var/xmpp-upload/{{ main_domain }}/upload"
-	http_external_url = "https://xmpp-upload.{{ main_domain }}:443"
-	http_file_base_path = "/upload"
-	http_file_size_limit = 6*1024*1024
-	http_file_quota = 60*1024*1024
-	http_upload_file_size_limit = 100 * 1024 * 1024 -- bytes
-	http_upload_quota = 10 * 1024 * 1024 * 1024 -- bytes
-
-
----Set up a VJUD service
-Component "vjud.{{ main_domain }}" "vjud"
-	ud_disco_name = "{{ main_domain }} User Directory"
-
 
 ----------- Virtual hosts -----------
 -- You need to add a VirtualHost entry for each domain you wish Metronome to serve.

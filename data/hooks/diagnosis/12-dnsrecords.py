@@ -2,9 +2,9 @@
 
 import os
 
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
 
+from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
@@ -100,20 +100,14 @@ class DNSRecordsDiagnoser(Diagnoser):
             yield output
 
     def get_current_record(self, domain, name, type_):
-        if name == "@":
-            command = "dig +short @%s %s %s" % (self.resolver, type_, domain)
-        else:
-            command = "dig +short @%s %s %s.%s" % (self.resolver, type_, name, domain)
-        # FIXME : gotta handle case where this command fails ...
-        # e.g. no internet connectivity (dependency mechanism to good result from 'ip' diagosis ?)
-        # or the resolver is unavailable for some reason
-        output = check_output(command).strip().split("\n")
-        if len(output) == 0 or not output[0]:
+
+        query = "%s.%s" % (name, domain) if name != "@" else domain
+        success, answers = dig(query, type_, resolvers="force_external")
+
+        if success != "ok":
             return None
-        elif len(output) == 1:
-            return output[0]
         else:
-            return output
+            return answers[0] if len(answers) == 1 else answers
 
     def current_record_match_expected(self, r):
         if r["value"] is not None and r["current"] is None:
