@@ -261,6 +261,8 @@ def app_map(app=None, raw=False, user=None):
                 perm_domain, perm_path = perm_url.split("/", 1)
                 perm_path = "/" + perm_path.rstrip("/")
 
+            perm_path = perm_path if perm_path.strip() != "" else "/"
+
             return perm_domain, perm_path
 
         this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
@@ -296,7 +298,6 @@ def app_map(app=None, raw=False, user=None):
                 continue
 
             perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
-
             if perm_name.endswith(".main"):
                 perm_label = label
             else:
@@ -1127,10 +1128,11 @@ def app_makedefault(operation_logger, app, domain=None):
     elif domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
-    operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
                             other_app=app_map(raw=True)[domain]["/"]["id"])
+
+    operation_logger.start()
 
     # TODO / FIXME : current trick is to add this to conf.json.persisten
     # This is really not robust and should be improved
@@ -1288,6 +1290,8 @@ def app_ssowatconf():
             else:
                 perm_domain, perm_path = perm_url.split("/", 1)
                 perm_path = "/" + perm_path.rstrip("/")
+
+            perm_path = perm_path if perm_path.strip() != "" else "/"
 
             return perm_domain + perm_path
 

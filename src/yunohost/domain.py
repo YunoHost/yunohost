@@ -33,7 +33,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.app import app_ssowatconf
-from yunohost.regenconf import regen_conf
+from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
@@ -124,6 +124,17 @@ def domain_add(operation_logger, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
+            # Sometime we have weird issues with the regenconf where some files
+            # appears as manually modified even though they weren't touched ...
+            # There are a few ideas why this happens (like backup/restore nginx
+            # conf ... which we shouldnt do ...). This in turns creates funky
+            # situation where the regenconf may refuse to re-create the conf
+            # (when re-creating a domain..)
+            # So here we force-clear the has out of the regenconf if it exists.
+            # This is a pretty ad hoc solution and only applied to nginx
+            # because it's one of the major service, but in the long term we
+            # should identify the root of this bug...
+            _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
             regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
             app_ssowatconf()
 
@@ -187,6 +198,25 @@ def domain_remove(operation_logger, domain, force=False):
         raise YunohostError('domain_deletion_failed', domain=domain, error=e)
 
     os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+
+    # Sometime we have weird issues with the regenconf where some files
+    # appears as manually modified even though they weren't touched ...
+    # There are a few ideas why this happens (like backup/restore nginx
+    # conf ... which we shouldnt do ...). This in turns creates funky
+    # situation where the regenconf may refuse to re-create the conf
+    # (when re-creating a domain..)
+    #
+    # So here we force-clear the has out of the regenconf if it exists.
+    # This is a pretty ad hoc solution and only applied to nginx
+    # because it's one of the major service, but in the long term we
+    # should identify the root of this bug...
+    _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+    # And in addition we even force-delete the file Otherwise, if the file was
+    # manually modified, it may not get removed by the regenconf which leads to
+    # catastrophic consequences of nginx breaking because it can't load the
+    # cert file which disappeared etc..
+    if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
+        _process_regen_conf("/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True)
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
