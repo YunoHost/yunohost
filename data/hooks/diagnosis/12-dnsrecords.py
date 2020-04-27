@@ -163,7 +163,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             if not expire_date:
                 details["not_found"].append((
-                    "diagnosis_domain_expiration_date_not_found",
+                    "diagnosis_domain_expiration_not_found",
                     {"domain": domain}))
                 continue
 
