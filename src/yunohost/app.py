@@ -167,7 +167,7 @@ def _app_upgradable(app_infos):
     installed_version = version.parse(app_infos.get("version", "0~ynh0"))
     version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
     
-    if app_is_in_catalog and '~ynh' in app_infos["version"]:
+    if app_is_in_catalog and '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
         if upgrade_only_if_version_changes and installed_version < version_in_catalog:
             return "yes"
         else:
