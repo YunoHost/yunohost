@@ -210,7 +210,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
                 r"local legacy_args=.*$",
                 r".*Helper used in legacy mode.*",
                 r"args_array=.*$",
-                r"declare -Ar args_array$",
+                r"local -A args_array$",
                 r"ynh_handle_getopts_args",
                 r"ynh_script_progression"
             ]
