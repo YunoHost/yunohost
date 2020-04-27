@@ -2,9 +2,9 @@
 
 import os
 
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
 
+from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
@@ -12,7 +12,7 @@ from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 class DNSRecordsDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 3600 * 24
+    cache_duration = 600
     dependencies = ["ip"]
 
     def run(self):
@@ -38,11 +38,10 @@ class DNSRecordsDiagnoser(Diagnoser):
 
     def check_domain(self, domain, is_main_domain, is_subdomain):
 
-        expected_configuration = _build_dns_conf(domain)
+        expected_configuration = _build_dns_conf(domain, include_empty_AAAA_if_no_ipv6=True)
 
-        # FIXME: Here if there are no AAAA record, we should add something to expect "no" AAAA record
-        # to properly diagnose situations where people have a AAAA record but no IPv6
         categories = ["basic", "mail", "xmpp", "extra"]
+        # For subdomains, we only diagnosis A and AAAA records
         if is_subdomain:
             categories = ["basic"]
 
@@ -50,44 +49,92 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             records = expected_configuration[category]
             discrepancies = []
+            results = {}
 
             for r in records:
-                current_value = self.get_current_record(domain, r["name"], r["type"]) or "None"
-                expected_value = r["value"] if r["value"] != "@" else domain + "."
+                id_ = r["type"] + ":" + r["name"]
+                r["current"] = self.get_current_record(domain, r["name"], r["type"])
+                if r["value"] == "@":
+                    r["value"] = domain + "."
 
-                if current_value == "None":
-                    discrepancies.append(("diagnosis_dns_missing_record", (r["type"], r["name"], expected_value)))
-                elif current_value != expected_value:
-                    discrepancies.append(("diagnosis_dns_discrepancy", (r["type"], r["name"], expected_value, current_value)))
+                if self.current_record_match_expected(r):
+                    results[id_] = "OK"
+                else:
+                    if r["current"] is None:
+                        results[id_] = "MISSING"
+                        discrepancies.append(("diagnosis_dns_missing_record", r))
+                    else:
+                        results[id_] = "WRONG"
+                        discrepancies.append(("diagnosis_dns_discrepancy", r))
+
+
+            def its_important():
+                # Every mail DNS records are important for main domain
+                # For other domain, we only report it as a warning for now...
+                if is_main_domain and category == "mail":
+                    return True
+                elif category == "basic":
+                    # A bad or missing A record is critical ...
+                    # And so is a wrong AAAA record
+                    # (However, a missing AAAA record is acceptable)
+                    if results["A:@"] != "OK" or results["AAAA:@"] == "WRONG":
+                        return True
+
+                return False
 
             if discrepancies:
-                status = "ERROR" if (category == "basic" or (is_main_domain and category != "extra")) else "WARNING"
-                summary = ("diagnosis_dns_bad_conf", {"domain": domain, "category": category})
+                status = "ERROR" if its_important() else "WARNING"
+                summary = "diagnosis_dns_bad_conf"
             else:
                 status = "SUCCESS"
-                summary = ("diagnosis_dns_good_conf", {"domain": domain, "category": category})
+                summary = "diagnosis_dns_good_conf"
 
             output = dict(meta={"domain": domain, "category": category},
+                          data=results,
                           status=status,
                           summary=summary)
 
             if discrepancies:
-                output["details"] = discrepancies
+                output["details"] = ["diagnosis_dns_point_to_doc"] + discrepancies
 
             yield output
 
     def get_current_record(self, domain, name, type_):
-        if name == "@":
-            command = "dig +short @%s %s %s" % (self.resolver, type_, domain)
+
+        query = "%s.%s" % (name, domain) if name != "@" else domain
+        success, answers = dig(query, type_, resolvers="force_external")
+
+        if success != "ok":
+            return None
         else:
-            command = "dig +short @%s %s %s.%s" % (self.resolver, type_, name, domain)
-        # FIXME : gotta handle case where this command fails ...
-        # e.g. no internet connectivity (dependency mechanism to good result from 'ip' diagosis ?)
-        # or the resolver is unavailable for some reason
-        output = check_output(command).strip()
-        if output.startswith('"') and output.endswith('"'):
-            output = '"' + ' '.join(output.replace('"', ' ').split()) + '"'
-        return output
+            return answers[0] if len(answers) == 1 else answers
+
+    def current_record_match_expected(self, r):
+        if r["value"] is not None and r["current"] is None:
+            return False
+        if r["value"] is None and r["current"] is not None:
+            return False
+        elif isinstance(r["current"], list):
+            return False
+
+        if r["type"] == "TXT":
+            # Split expected/current
+            #  from  "v=DKIM1; k=rsa; p=hugekey;"
+            #  to a set like {'v=DKIM1', 'k=rsa', 'p=...'}
+            expected = set(r["value"].strip(';" ').replace(";", " ").split())
+            current = set(r["current"].strip(';" ').replace(";", " ").split())
+
+            # For SPF, ignore parts starting by ip4: or ip6:
+            if r["name"] == "@":
+                current = {part for part in current if not part.startswith("ip4:") and not part.startswith("ip6:")}
+            return expected == current
+        elif r["type"] ==  "MX":
+            # For MX, we want to ignore the priority
+            expected = r["value"].split()[-1]
+            current = r["current"].split()[-1]
+            return expected == current
+        else:
+            return r["current"] == r["value"]
 
 
 def main(args, env, loggers):

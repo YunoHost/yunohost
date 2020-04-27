@@ -92,3 +92,10 @@ test-user-group:
   script:
     - cd src/yunohost
     - py.test tests/test_user-group.py
+    
+test-regenconf:
+  extends: .tests
+  stage: tests
+  script:
+    - cd src/yunohost
+    - py.test tests/test_regenconf.py

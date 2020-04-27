@@ -35,9 +35,9 @@ import tempfile
 from datetime import datetime
 from glob import glob
 from collections import OrderedDict
+from functools import reduce
 
 from moulinette import msignals, m18n, msettings
-from yunohost.utils.error import YunohostError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
@@ -51,7 +51,8 @@ from yunohost.hook import (
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
-from functools import reduce
+from yunohost.utils.error import YunohostError
+from yunohost.utils.packages import ynh_packages_version
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -282,7 +283,8 @@ class BackupManager():
             'size': self.size,
             'size_details': self.size_details,
             'apps': self.apps_return,
-            'system': self.system_return
+            'system': self.system_return,
+            'from_yunohost_version': ynh_packages_version()["yunohost"]["version"]
         }
 
     @property
@@ -604,7 +606,7 @@ class BackupManager():
         ret_succeed = {hook: [path for path, result in infos.items() if result["state"] == "succeed"]
                        for hook, infos in ret.items()
                        if any(result["state"] == "succeed" for result in infos.values())}
-        ret_failed = {hook: [path for path, result in infos.items.items() if result["state"] == "failed"]
+        ret_failed = {hook: [path for path, result in infos.items() if result["state"] == "failed"]
                       for hook, infos in ret.items()
                       if any(result["state"] == "failed" for result in infos.values())}
 
@@ -870,7 +872,7 @@ class RestoreManager():
         Read the info file from inside an archive
 
         Exceptions:
-        backup_invalid_archive -- Raised if we can't read the info
+        backup_archive_cant_retrieve_info_json -- Raised if we can't read the info
         """
         # Retrieve backup info
         info_file = os.path.join(self.work_dir, "info.json")
@@ -883,7 +885,7 @@ class RestoreManager():
                 self.info["system"] = self.info["hooks"]
         except IOError:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_archive_cant_retrieve_info_json', archive=self.archive_path)
         else:
             logger.debug("restoring from backup '%s' created on %s", self.name,
                          datetime.utcfromtimestamp(self.info['created_at']))
@@ -891,10 +893,6 @@ class RestoreManager():
     def _postinstall_if_needed(self):
         """
         Post install yunohost if needed
-
-        Exceptions:
-        backup_invalid_archive -- Raised if the current_host isn't in the
-        archive
         """
         # Check if YunoHost is installed
         if not os.path.isfile('/etc/yunohost/installed'):
@@ -906,7 +904,7 @@ class RestoreManager():
                 logger.debug("unable to retrieve current_host from the backup",
                              exc_info=1)
                 # FIXME include the current_host by default ?
-                raise YunohostError('backup_invalid_archive')
+                raise YunohostError("The main domain name cannot be retrieved from inside the archive, and is needed to perform the postinstall", raw_msg=True)
 
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'Yunohost', True)
@@ -1913,6 +1911,8 @@ class TarBackupMethod(BackupMethod):
 
         Exceptions:
         backup_archive_open_failed -- Raised if the archive can't be open
+        backup_archive_corrupted -- Raised if the archive appears corrupted
+        backup_archive_cant_retrieve_info_json -- If the info.json file can't be retrieved
         """
         super(TarBackupMethod, self).mount(restore_manager)
 
@@ -1924,6 +1924,11 @@ class TarBackupMethod(BackupMethod):
                          self._archive_file, exc_info=1)
             raise YunohostError('backup_archive_open_failed')
 
+        try:
+            files_in_archive = tar.getnames()
+        except IOError as e:
+            raise YunohostError("backup_archive_corrupted", archive=self._archive_file, error=str(e))
+
         # FIXME : Is this really useful to close the archive just to
         # reopen it right after this with the same options ...?
         tar.close()
@@ -1932,21 +1937,21 @@ class TarBackupMethod(BackupMethod):
         logger.debug(m18n.n("restore_extracting"))
         tar = tarfile.open(self._archive_file, "r:gz")
 
-        if "info.json" in tar.getnames():
+        if "info.json" in files_in_archive:
             leading_dot = ""
             tar.extract('info.json', path=self.work_dir)
-        elif "./info.json" in tar.getnames():
+        elif "./info.json" in files_in_archive:
             leading_dot = "./"
             tar.extract('./info.json', path=self.work_dir)
         else:
             logger.debug("unable to retrieve 'info.json' inside the archive",
                          exc_info=1)
             tar.close()
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_archive_cant_retrieve_info_json', archive=self._archive_file)
 
-        if "backup.csv" in tar.getnames():
+        if "backup.csv" in files_in_archive:
             tar.extract('backup.csv', path=self.work_dir)
-        elif "./backup.csv" in tar.getnames():
+        elif "./backup.csv" in files_in_archive:
             tar.extract('./backup.csv', path=self.work_dir)
         else:
             # Old backup archive have no backup.csv file
@@ -2288,7 +2293,7 @@ def backup_list(with_info=False, human_readable=False):
             try:
                 d[a] = backup_info(a, human_readable=human_readable)
             except YunohostError as e:
-                logger.warning('%s: %s' % (a, e.strerror))
+                logger.warning(str(e))
 
         result = d
 
@@ -2325,17 +2330,23 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.exists(info_file):
         tar = tarfile.open(archive_file, "r:gz")
         info_dir = info_file + '.d'
+
         try:
-            if "info.json" in tar.getnames():
+            files_in_archive = tar.getnames()
+        except IOError as e:
+            raise YunohostError("backup_archive_corrupted", archive=archive_file, error=str(e))
+
+        try:
+            if "info.json" in files_in_archive:
                 tar.extract('info.json', path=info_dir)
-            elif "./info.json" in tar.getnames():
+            elif "./info.json" in files_in_archive:
                 tar.extract('./info.json', path=info_dir)
             else:
                 raise KeyError
         except KeyError:
             logger.debug("unable to retrieve '%s' inside the archive",
                          info_file, exc_info=1)
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_archive_cant_retrieve_info_json', archive=archive_file)
         else:
             shutil.move(os.path.join(info_dir, 'info.json'), info_file)
         finally:
@@ -2348,7 +2359,7 @@ def backup_info(name, with_details=False, human_readable=False):
             info = json.load(f)
     except:
         logger.debug("unable to load '%s'", info_file, exc_info=1)
-        raise YunohostError('backup_invalid_archive')
+        raise YunohostError('backup_archive_cant_retrieve_info_json', archive=archive_file)
 
     # Retrieve backup size
     size = info.get('size', 0)

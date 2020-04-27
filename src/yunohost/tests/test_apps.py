@@ -9,7 +9,7 @@ from conftest import message, raiseYunohostError
 from moulinette import m18n
 from moulinette.utils.filesystem import mkdir
 
-from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed, app_upgrade
+from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed, app_upgrade, app_map
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
@@ -142,6 +142,12 @@ def test_legacy_app_install_main_domain():
 
     install_legacy_app(main_domain, "/legacy")
 
+    app_map_ = app_map(raw=True)
+    assert main_domain in app_map_
+    assert '/legacy' in app_map_[main_domain]
+    assert 'id' in app_map_[main_domain]['/legacy']
+    assert app_map_[main_domain]['/legacy']['id'] == 'legacy_app'
+
     assert app_is_installed(main_domain, "legacy_app")
     assert app_is_exposed_on_http(main_domain, "/legacy", "This is a dummy app")
 
@@ -165,6 +171,12 @@ def test_legacy_app_install_secondary_domain(secondary_domain):
 def test_legacy_app_install_secondary_domain_on_root(secondary_domain):
 
     install_legacy_app(secondary_domain, "/")
+
+    app_map_ = app_map(raw=True)
+    assert secondary_domain in app_map_
+    assert '/' in app_map_[secondary_domain]
+    assert 'id' in app_map_[secondary_domain]['/']
+    assert app_map_[secondary_domain]['/']['id'] == 'legacy_app'
 
     assert app_is_installed(secondary_domain, "legacy_app")
     assert app_is_exposed_on_http(secondary_domain, "/", "This is a dummy app")

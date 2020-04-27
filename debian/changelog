@@ -1,3 +1,32 @@
+yunohost (3.8.1.1) testing; urgency=low
+
+  - [fix] Stupid issue about path in debian/install ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 19 Apr 2020 07:04:00  +0000
+
+yunohost (3.8.1) testing; urgency=low
+
+  ## Helpers (PHP, apt)
+
+  - New helpers for extra apt repo, PHP version install, and PHP fpm (#881, #928, #929)
+  - Pave the way to migration to php7.3 and future ones (#880, #926)
+  - Option in PHP helper to use a dedicated php service (#915)
+
+  ## Diagnosis
+
+  - Many improvements in diagnosis mechanism (#923, #921, #940)
+
+  ## Misc fixes, improvements
+  - custom_portal and custom_overlay redirect (#925)
+  - Improve systemd settings for slapd (#933)
+  - Spelling and typo corrections (#931)
+  - Improve translations for French, German, Catalan
+
+  Thanks to all contributors <3 ! (Kay0u, Maniack Crudelis, ljf, E.Gaspar,
+  xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 19 Apr 2020 06:20:00  +0000
+
 yunohost (3.8.0) testing; urgency=low
 
   # Major stuff
@@ -45,12 +74,23 @@ yunohost (3.8.0) testing; urgency=low
 
  -- Kay0u <pierre@kayou.io>  Thu, 09 Apr 2020 19:59:18 +0000
 
+yunohost (3.7.1.2) stable; urgency=low
+
+   - [fix] Be more robust against some situation where some archives are corrupted 
+   - [fix] Make nginx regen-conf more robust against broken config or service failing to start, show info to help debugging 
+   - [fix] Force-flush the regen-conf for nginx domain conf when adding/removing a domain... 
+   - [fix] app_map : Make sure to return / and not empty string for stuff on domain root 
+   - [fix] Improve ynh_systemd_action to wait for fail2ban to reload 
+   - [fix] Improper use of logger.exception in app.py leading to infamous weird "KeyError: label"
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 27 Apr 2020 23:50:00  +0000
+
 yunohost (3.7.1.1) stable; urgency=low
 
    - [fix] lxc uid number is limited to 65536 by default (0c9a4509)
    - [fix] also invalidate group cache when creating users (aaabf8c7)
    - [fix] Make sure to have a path that include sbin for stupid cron jobs (f03bb82a)
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 12 Apr 2020 23:15:00  +0000
 
 yunohost (3.7.1) stable; urgency=low
@@ -73,7 +113,7 @@ yunohost (3.7.1) stable; urgency=low
 yunohost (3.7.0.12) stable; urgency=low
 
    - Fix previous buggy hotfix about deleting existing primary groups ...
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 28 Mar 2020 14:52:00  +0000
 
 yunohost (3.7.0.11) stable; urgency=low
@@ -85,7 +125,7 @@ yunohost (3.7.0.11) stable; urgency=low
 yunohost (3.7.0.10) stable; urgency=low
 
   - [fix] On some weird setup, this folder and content ain't readable by group ... gotta make sure to make rx for group other slapd will explode
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Mar 2020 21:45:00  +0000
 
 yunohost (3.7.0.9) stable; urgency=low

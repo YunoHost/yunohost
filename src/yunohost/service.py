@@ -80,7 +80,7 @@ def service_add(name, description=None, log=None, log_type="file", test_status=N
         services[name]['description'] = description
     else:
         # Try to get the description from systemd service
-        out = subprocess.check_output("systemctl show %s | grep '^Description='" % name, shell=True)
+        out = subprocess.check_output("systemctl show %s | grep '^Description='" % name, shell=True).strip()
         out = out.replace("Description=", "")
         # If the service does not yet exists or if the description is empty,
         # systemd will anyway return foo.service as default value, so we wanna
@@ -295,16 +295,11 @@ def service_status(names=[]):
         if services[name].get("status", "") is None:
             continue
 
-        status = _get_service_information_from_systemd(name)
-
-        # try to get status using alternative version if they exists
-        # this is for mariadb/mysql but is generic in case of
-        alternates = services[name].get("alternates", [])
-        while status is None and alternates:
-            status = _get_service_information_from_systemd(alternates.pop())
+        systemd_service = services[name].get("actual_systemd_service", name)
+        status = _get_service_information_from_systemd(systemd_service)
 
         if status is None:
-            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % name)
+            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % systemd_service)
             result[name] = {
                 'status': "unknown",
                 'start_on_boot': "unknown",
@@ -338,6 +333,8 @@ def service_status(names=[]):
             # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
             if result[name]["start_on_boot"] == "generated":
                 result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+            elif os.path.exists("/etc/systemd/system/multi-user.target.wants/%s.service" % name):
+                result[name]["start_on_boot"] = "enabled"
 
             if "StateChangeTimestamp" in status:
                 result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
@@ -408,6 +405,7 @@ def service_log(name, number=50):
 
     """
     services = _get_services()
+    number = int(number)
 
     if name not in services.keys():
         raise YunohostError('service_unknown', service=name)
@@ -423,11 +421,7 @@ def service_log(name, number=50):
     result = {}
 
     # First we always add the logs from journalctl / systemd
-    result["journalctl"] = _get_journalctl_logs(name, int(number)).splitlines()
-
-    # Mysql and journalctl are fucking annoying, we gotta explictly fetch mariadb ...
-    if name == "mysql":
-        result["journalctl"] = _get_journalctl_logs("mariadb", int(number)).splitlines()
+    result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
 
     for index, log_path in enumerate(log_list):
         log_type = log_type_list[index]
@@ -435,7 +429,7 @@ def service_log(name, number=50):
         if log_type == "file":
             # log is a file, read it
             if not os.path.isdir(log_path):
-                result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
+                result[log_path] = _tail(log_path, number) if os.path.exists(log_path) else []
                 continue
 
             for log_file in os.listdir(log_path):
@@ -447,10 +441,11 @@ def service_log(name, number=50):
                 if not log_file.endswith(".log"):
                     continue
 
-                result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+                result[log_file_path] = _tail(log_file_path, number) if os.path.exists(log_file_path) else []
         else:
+            # N.B. : this is legacy code that can probably be removed ... to be confirmed
             # get log with journalctl
-            result[log_path] = _get_journalctl_logs(log_path, int(number)).splitlines()
+            result[log_path] = _get_journalctl_logs(log_path, number).splitlines()
 
     return result
 
@@ -572,14 +567,22 @@ def _get_services():
             services = yaml.load(f)
     except:
         return {}
-    else:
-        # some services are marked as None to remove them from YunoHost
-        # filter this
-        for key, value in services.items():
-            if value is None:
-                del services[key]
 
-        return services
+    # some services are marked as None to remove them from YunoHost
+    # filter this
+    for key, value in services.items():
+        if value is None:
+            del services[key]
+
+    # Stupid hack for postgresql which ain't an official service ... Can't
+    # really inject that info otherwise. Real service we want to check for
+    # status and log is in fact postgresql@x.y-main (x.y being the version)
+    if "postgresql" in services:
+        if "description" in services["postgresql"]:
+            del services["postgresql"]["description"]
+        services["postgresql"]["actual_systemd_service"] = "postgresql@9.6-main"
+
+    return services
 
 
 def _save_services(services):
@@ -674,8 +677,10 @@ def _find_previous_log_file(file):
 
 
 def _get_journalctl_logs(service, number="all"):
+    services = _get_services()
+    systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(service, number), shell=True)
+        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(systemd_service, number), shell=True)
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
