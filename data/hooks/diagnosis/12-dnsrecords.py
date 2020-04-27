@@ -7,11 +7,11 @@ from datetime import datetime, timedelta
 from publicsuffix import PublicSuffixList
 
 from moulinette.utils.filesystem import read_file
+from moulinette.utils.process import check_output
 
 from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
-from yunohost.utils.network import dig
 
 PENDING_SUFFIX_LIST = ['ynh.fr', 'netlib.re']
 
@@ -41,7 +41,6 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         # Check if a domain buy by the user will expire soon
         psl = PublicSuffixList()
-        all_domains = ["grimaud.me", "reflexlibre.net", "netlib.re", "noho.st", "nohost.me", "ynh.fr", "test.noho.st", "hub.netlib.re", "sans-nuage.fr", "yunohost.org", "yunohost.local", "free.fr"]
         domains_from_registrar = [psl.get_public_suffix(domain) for domain in all_domains]
         domains_from_registrar = [domain for domain in domains_from_registrar if "." in domain]
         domains_from_registrar = set(domains_from_registrar) - set(PENDING_SUFFIX_LIST)
@@ -211,7 +210,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         # Reduce output to determine if whois answer is equivalent to NOT FOUND
         out = check_output(command).strip().split("\n")
         filtered_out = [line for line in out
-               if re.search(r'^\w{4,25}:', line, re.IGNORECASE) and
+               if re.search(r'^[a-zA-Z0-9 ]{4,25}:', line, re.IGNORECASE) and
                not re.match(r'>>> Last update of whois', line, re.IGNORECASE) and
                not re.match(r'^NOTICE:', line, re.IGNORECASE) and
                not re.match(r'^%%', line, re.IGNORECASE) and
@@ -225,6 +224,11 @@ class DNSRecordsDiagnoser(Diagnoser):
             match = re.search(r'Expir.+(\d{4}-\d{2}-\d{2})', line, re.IGNORECASE)
             if match is not None:
                 return datetime.strptime(match.group(1), '%Y-%m-%d')
+
+            match = re.search(r'Expir.+(\d{2}-\w{3}-\d{4})', line, re.IGNORECASE)
+            if match is not None:
+                return datetime.strptime(match.group(1), '%d-%b-%Y')
+
         return "expiration_not_found"
 
 
