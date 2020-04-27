@@ -164,7 +164,7 @@ def _app_upgradable(app_infos):
     # Firstly use the version to know if an upgrade is available
     app_is_in_catalog = bool(app_infos.get("from_catalog"))
     upgrade_only_if_version_changes = app_infos["manifest"].get('integration', {}).get("upgrade_only_if_version_changes", None) is True
-    installed_version = version.parse(app_infos["version"])
+    installed_version = version.parse(app_infos.get("version", "0~ynh0"))
     version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
     
     if app_is_in_catalog and '~ynh' in app_infos["version"]:
