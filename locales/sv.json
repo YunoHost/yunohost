@@ -1,0 +1,11 @@
+{
+    "password_too_simple_1": "Lösenordet måste bestå av minst åtta tecken",
+    "app_action_broke_system": "Åtgärden verkar ha fått följande viktiga tjänster att haverera: {services}",
+    "already_up_to_date": "Ingenting att göra. Allt är redan uppdaterat.",
+    "admin_password": "Administratörslösenord",
+    "admin_password_too_long": "Välj gärna ett lösenord som inte innehåller fler än 127 tecken",
+    "admin_password_change_failed": "Kan inte byta lösenord",
+    "action_invalid": "Ej tillåten åtgärd '{action:s}'",
+    "admin_password_changed": "Administratörskontots lösenord ändrades",
+    "aborting": "Avbryter."
+}

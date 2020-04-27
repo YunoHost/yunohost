@@ -14,7 +14,9 @@ class MyMigration(Migration):
 
     "Migrate DBs from Postgresql 9.4 to 9.6 after migrating to Stretch"
 
-    def migrate(self):
+    dependencies = ["migrate_to_stretch"]
+
+    def run(self):
 
         if not self.package_is_installed("postgresql-9.4"):
             logger.warning(m18n.n("migration_0005_postgresql_94_not_installed"))
@@ -32,12 +34,8 @@ class MyMigration(Migration):
         subprocess.check_call("pg_dropcluster --stop 9.4 main", shell=True)
         subprocess.check_call("service postgresql start", shell=True)
 
-    def backward(self):
-
-        pass
-
     def package_is_installed(self, package_name):
 
-        p = subprocess.Popen("dpkg --list | grep -q -w {}".format(package_name), shell=True)
+        p = subprocess.Popen("dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name), shell=True)
         p.communicate()
         return p.returncode == 0

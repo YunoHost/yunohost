@@ -7,6 +7,11 @@
 %:
 	dh ${@} --with=python2,systemd
 
+override_dh_auto_build:
+	# Generate bash completion file
+	python data/actionsmap/yunohost_completion.py
+	python doc/generate_manpages.py --gzip --output doc/yunohost.8.gz
+
 override_dh_installinit:
 	dh_installinit -pyunohost --name=yunohost-api --restart-after-upgrade
 	dh_installinit -pyunohost --name=yunohost-firewall --noscripts

@@ -23,8 +23,10 @@ do_init_regen() {
   mkdir -p "${ssl_dir}/"{ca,certs,crl,newcerts}
 
   # initialize some files
+  # N.B. : the weird RANDFILE thing comes from:
+  # https://stackoverflow.com/questions/94445/using-openssl-what-does-unable-to-write-random-state-mean
   [[ -f "${ssl_dir}/serial" ]] \
-    || openssl rand -hex 19 > "${ssl_dir}/serial"
+    || RANDFILE=.rnd openssl rand -hex 19 > "${ssl_dir}/serial"
   [[ -f "${ssl_dir}/index.txt" ]] \
     || touch "${ssl_dir}/index.txt"
 
@@ -76,6 +78,9 @@ do_init_regen() {
       ln -sf "$ynh_crt" /etc/ssl/certs/yunohost_crt.pem
       ln -sf "$ynh_key" /etc/ssl/private/yunohost_key.pem
   fi
+
+  chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
+  chmod o-rwx /etc/yunohost/certs/yunohost.org/
 }
 
 do_pre_regen() {
@@ -94,13 +99,13 @@ do_post_regen() {
   [[ -f "${index_txt}" ]] || {
     if [[ -f "${index_txt}.saved" ]]; then
       # use saved database from 2.2
-      sudo cp "${index_txt}.saved" "${index_txt}"
+      cp "${index_txt}.saved" "${index_txt}"
     elif [[ -f "${index_txt}.old" ]]; then
       # ... or use the state-1 database
-      sudo cp "${index_txt}.old" "${index_txt}"
+      cp "${index_txt}.old" "${index_txt}"
     else
       # ... or create an empty one
-      sudo touch "${index_txt}"
+      touch "${index_txt}"
     fi
   }
 

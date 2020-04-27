@@ -1,5 +1,7 @@
 backup_dir="$1/conf/ynh/mysql"
-MYSQL_PKG="mariadb-server-10.1"
+MYSQL_PKG="$(dpkg --list | sed -ne 's/^ii  \(mariadb-server-[[:digit:].]\+\) .*$/\1/p')"
+
+. /usr/share/yunohost/helpers
 
 # ensure that mysql is running
 service mysql status >/dev/null 2>&1 \
@@ -7,17 +9,15 @@ service mysql status >/dev/null 2>&1 \
 
 # retrieve current and new password
 [ -f /etc/yunohost/mysql ] \
-  && curr_pwd=$(sudo cat /etc/yunohost/mysql)
-new_pwd=$(sudo cat "${backup_dir}/root_pwd" || sudo cat "${backup_dir}/mysql")
+  && curr_pwd=$(cat /etc/yunohost/mysql)
+new_pwd=$(cat "${backup_dir}/root_pwd" || cat "${backup_dir}/mysql")
 [ -z "$curr_pwd" ] && curr_pwd="yunohost"
 [ -z "$new_pwd" ] && {
-    . /usr/share/yunohost/helpers.d/string
     new_pwd=$(ynh_string_random 10)
 }
 
 # attempt to change it
-sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
-  . /usr/share/yunohost/helpers.d/package
+mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
 
   echo "It seems that you have already configured MySQL." \
     "YunoHost needs to have a root access to MySQL to runs its" \
@@ -25,18 +25,18 @@ sudo mysqladmin -s -u root -p"$curr_pwd" password "$new_pwd" || {
     "You can find this new password in /etc/yunohost/mysql." >&2
 
   # set new password with debconf
-  sudo debconf-set-selections << EOF
+  debconf-set-selections << EOF
 $MYSQL_PKG mysql-server/root_password password $new_pwd
 $MYSQL_PKG mysql-server/root_password_again password $new_pwd
 EOF
 
   # reconfigure Debian package
-  sudo dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
+  dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
 }
 
 # store new root password
-echo "$new_pwd" | sudo tee /etc/yunohost/mysql
-sudo chmod 400 /etc/yunohost/mysql
+echo "$new_pwd" | tee /etc/yunohost/mysql
+chmod 400 /etc/yunohost/mysql
 
 # reload the grant tables
-sudo mysqladmin -s -u root -p"$new_pwd" reload
+mysqladmin -s -u root -p"$new_pwd" reload

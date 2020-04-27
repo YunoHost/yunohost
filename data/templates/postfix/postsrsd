@@ -12,7 +12,7 @@ SRS_DOMAIN={{ main_domain }}
 # the domain itself. Separate multiple domains by space or comma.
 # We have to put some "dummy" stuff at start and end... see this comment :
 # https://github.com/roehling/postsrsd/issues/64#issuecomment-284003762
-SRS_EXCLUDE_DOMAINS=dummy {{ domain_list }} dummy
+SRS_EXCLUDE_DOMAINS="dummy {{ domain_list }} dummy"
 
 # First separator character after SRS0 or SRS1.
 # Can be one of: -+=

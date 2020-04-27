@@ -1,5 +1,5 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Source: https://github.com/YunoHost/moulinette-yunohost
+Source: https://github.com/YunoHost/yunohost
 
 Files: *
 Copyright: 2015 YUNOHOST.ORG

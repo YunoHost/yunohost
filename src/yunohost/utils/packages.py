@@ -19,6 +19,7 @@
 
 """
 import re
+import os
 import logging
 from collections import OrderedDict
 
@@ -31,36 +32,6 @@ logger = logging.getLogger('yunohost.utils.packages')
 
 
 # Exceptions -----------------------------------------------------------------
-
-class PackageException(Exception):
-
-    """Base exception related to a package
-
-    Represent an exception related to the package named `pkgname`. If no
-    `message` is provided, it will first try to use the translation key
-    `message_key` if defined by the derived class. Otherwise, a standard
-    message will be used.
-
-    """
-    message_key = 'package_unexpected_error'
-
-    def __init__(self, pkgname, message=None):
-        super(PackageException, self).__init__(
-            message or m18n.n(self.message_key, pkgname=pkgname))
-        self.pkgname = pkgname
-
-
-class UnknownPackage(PackageException):
-
-    """The package is not found in the cache."""
-    message_key = 'package_unknown'
-
-
-class UninstalledPackage(PackageException):
-
-    """The package is not installed."""
-    message_key = 'package_not_installed'
-
 
 class InvalidSpecifier(ValueError):
 
@@ -401,42 +372,42 @@ def get_installed_version(*pkgnames, **kwargs):
     """Get the installed version of package(s)
 
     Retrieve one or more packages named `pkgnames` and return their installed
-    version as a dict or as a string if only one is requested and `as_dict` is
-    `False`. If `strict` is `True`, an exception will be raised if a package
-    is unknown or not installed.
+    version as a dict or as a string if only one is requested.
 
     """
     versions = OrderedDict()
     cache = apt.Cache()
 
     # Retrieve options
-    as_dict = kwargs.get('as_dict', False)
-    strict = kwargs.get('strict', False)
     with_repo = kwargs.get('with_repo', False)
 
     for pkgname in pkgnames:
         try:
             pkg = cache[pkgname]
         except KeyError:
-            if strict:
-                raise UnknownPackage(pkgname)
             logger.warning(m18n.n('package_unknown', pkgname=pkgname))
+            if with_repo:
+                versions[pkgname] = {
+                    "version": None,
+                    "repo": None,
+                }
+            else:
+                versions[pkgname] = None
             continue
 
         try:
             version = pkg.installed.version
         except AttributeError:
-            if strict:
-                raise UninstalledPackage(pkgname)
             version = None
 
         try:
             # stable, testing, unstable
             repo = pkg.installed.origins[0].component
         except AttributeError:
-            if strict:
-                raise UninstalledPackage(pkgname)
             repo = ""
+
+        if repo == "now":
+            repo = "local"
 
         if with_repo:
             versions[pkgname] = {
@@ -448,7 +419,7 @@ def get_installed_version(*pkgnames, **kwargs):
         else:
             versions[pkgname] = version
 
-    if len(pkgnames) == 1 and not as_dict:
+    if len(pkgnames) == 1:
         return versions[pkgnames[0]]
     return versions
 
@@ -470,3 +441,58 @@ def ynh_packages_version(*args, **kwargs):
         'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
         with_repo=True
     )
+
+
+def dpkg_is_broken():
+    # If dpkg is broken, /var/lib/dpkg/updates
+    # will contains files like 0001, 0002, ...
+    # ref: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
+    if not os.path.isdir("/var/lib/dpkg/updates/"):
+        return False
+    return any(re.match("^[0-9]+$", f)
+               for f in os.listdir("/var/lib/dpkg/updates/"))
+
+def dpkg_lock_available():
+    return os.system("lsof /var/lib/dpkg/lock >/dev/null") != 0
+
+def _list_upgradable_apt_packages():
+
+    from moulinette.utils.process import check_output
+
+    # List upgradable packages
+    # LC_ALL=C is here to make sure the results are in english
+    upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
+
+    # Dirty parsing of the output
+    upgradable_raw = [l.strip() for l in upgradable_raw.split("\n") if l.strip()]
+    for line in upgradable_raw:
+
+        # Remove stupid warning and verbose messages >.>
+        if "apt does not have a stable CLI interface" in line or "Listing..." in line:
+            continue
+
+        # line should look like :
+        # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
+        line = line.split()
+        if len(line) != 6:
+            logger.warning("Failed to parse this line : %s" % ' '.join(line))
+            continue
+
+        yield {
+            "name": line[0].split("/")[0],
+            "new_version": line[1],
+            "current_version": line[5].strip("]"),
+        }
+
+
+def _dump_sources_list():
+
+    from glob import glob
+
+    filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")
+    for filename in filenames:
+        with open(filename, "r") as f:
+            for line in f.readlines():
+                if line.startswith("#") or not line.strip():
+                    continue
+                yield filename.replace("/etc/apt/", "") + ":" + line.strip()

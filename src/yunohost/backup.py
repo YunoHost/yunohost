@@ -35,24 +35,24 @@ import tempfile
 from datetime import datetime
 from glob import glob
 from collections import OrderedDict
+from functools import reduce
 
-from moulinette import msignals, m18n
-from yunohost.utils.error import YunohostError
+from moulinette import msignals, m18n, msettings
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_php5
+    app_info, _is_installed, _parse_app_instance_name, _patch_php5, dump_app_log_extract_for_debugging, _patch_legacy_helpers
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
 )
-from yunohost.monitor import binary_to_human
 from yunohost.tools import tools_postinstall
-from yunohost.service import service_regen_conf
+from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
-from functools import reduce
+from yunohost.utils.error import YunohostError
+from yunohost.utils.packages import ynh_packages_version
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -283,7 +283,8 @@ class BackupManager():
             'size': self.size,
             'size_details': self.size_details,
             'apps': self.apps_return,
-            'system': self.system_return
+            'system': self.system_return,
+            'from_yunohost_version': ynh_packages_version()["yunohost"]["version"]
         }
 
     @property
@@ -326,10 +327,19 @@ class BackupManager():
         if not os.path.isdir(self.work_dir):
             filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
         elif self.is_tmp_work_dir:
-            logger.debug("temporary directory for backup '%s' already exists",
+
+            logger.debug("temporary directory for backup '%s' already exists... attempting to clean it",
                          self.work_dir)
-            # FIXME May be we should clean the workdir here
-            raise YunohostError('backup_output_directory_not_empty')
+
+            # Try to recursively unmount stuff (from a previously failed backup ?)
+            if not _recursive_umount(self.work_dir):
+                raise YunohostError('backup_output_directory_not_empty')
+            else:
+                # If umount succeeded, remove the directory (we checked that
+                # we're in /home/yunohost.backup/tmp so that should be okay...
+                # c.f. method clean() which also does this)
+                filesystem.rm(self.work_dir, recursive=True, force=True)
+                filesystem.mkdir(self.work_dir, 0o750, parents=True, uid='admin')
 
     #
     # Backup target management                                              #
@@ -593,8 +603,15 @@ class BackupManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        if ret["succeed"] != []:
-            self.system_return = ret["succeed"]
+        ret_succeed = {hook: [path for path, result in infos.items() if result["state"] == "succeed"]
+                       for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())}
+        ret_failed = {hook: [path for path, result in infos.items() if result["state"] == "failed"]
+                      for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())}
+
+        if ret_succeed.keys() != []:
+            self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
         # files to backup
@@ -610,7 +627,7 @@ class BackupManager():
 
         restore_hooks = hook_list("restore")["hooks"]
 
-        for part in ret['succeed'].keys():
+        for part in ret_succeed.keys():
             if part in restore_hooks:
                 part_restore_hooks = hook_info("restore", part)["hooks"]
                 for hook in part_restore_hooks:
@@ -620,7 +637,7 @@ class BackupManager():
                 logger.warning(m18n.n('restore_hook_unavailable', hook=part))
                 self.targets.set_result("system", part, "Warning")
 
-        for part in ret['failed'].keys():
+        for part in ret_failed.keys():
             logger.error(m18n.n('backup_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
 
@@ -661,6 +678,8 @@ class BackupManager():
         backup_app_failed -- Raised at the end if the app backup script
                              execution failed
         """
+        from yunohost.permission import user_permission_list
+
         app_setting_path = os.path.join('/etc/yunohost/apps/', app)
 
         # Prepare environment
@@ -668,7 +687,7 @@ class BackupManager():
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
         settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
-        logger.debug(m18n.n('backup_running_app_script', app=app))
+        logger.info(m18n.n("app_start_backup", app=app))
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0o750, True, uid='admin')
@@ -682,9 +701,16 @@ class BackupManager():
             subprocess.call(['install', '-Dm555', app_script, tmp_script])
 
             hook_exec(tmp_script, args=[tmp_app_bkp_dir, app],
-                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)
+                      raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict)[0]
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
+
+            # backup permissions
+            logger.debug(m18n.n('backup_permission', app=app))
+            permissions = user_permission_list(full=True)["permissions"]
+            this_app_permissions = {name: infos for name, infos in permissions.items() if name.startswith(app + ".")}
+            write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
+
         except:
             abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
@@ -846,7 +872,7 @@ class RestoreManager():
         Read the info file from inside an archive
 
         Exceptions:
-        backup_invalid_archive -- Raised if we can't read the info
+        backup_archive_cant_retrieve_info_json -- Raised if we can't read the info
         """
         # Retrieve backup info
         info_file = os.path.join(self.work_dir, "info.json")
@@ -859,7 +885,7 @@ class RestoreManager():
                 self.info["system"] = self.info["hooks"]
         except IOError:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_archive_cant_retrieve_info_json', archive=self.archive_path)
         else:
             logger.debug("restoring from backup '%s' created on %s", self.name,
                          datetime.utcfromtimestamp(self.info['created_at']))
@@ -867,10 +893,6 @@ class RestoreManager():
     def _postinstall_if_needed(self):
         """
         Post install yunohost if needed
-
-        Exceptions:
-        backup_invalid_archive -- Raised if the current_host isn't in the
-        archive
         """
         # Check if YunoHost is installed
         if not os.path.isfile('/etc/yunohost/installed'):
@@ -882,29 +904,28 @@ class RestoreManager():
                 logger.debug("unable to retrieve current_host from the backup",
                              exc_info=1)
                 # FIXME include the current_host by default ?
-                raise YunohostError('backup_invalid_archive')
+                raise YunohostError("The main domain name cannot be retrieved from inside the archive, and is needed to perform the postinstall", raw_msg=True)
 
             logger.debug("executing the post-install...")
-            tools_postinstall(domain, 'yunohost', True)
+            tools_postinstall(domain, 'Yunohost', True)
+
 
     def clean(self):
         """
         End a restore operations by cleaning the working directory and
         regenerate ssowat conf (if some apps were restored)
         """
+        from permission import permission_sync_to_user
 
         successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
-        if successfull_apps != []:
-            # Quickfix: the old app_ssowatconf(auth) instruction failed due to
-            # ldap restore hooks
-            os.system('sudo yunohost app ssowatconf')
+        permission_sync_to_user()
 
         if os.path.ismount(self.work_dir):
             ret = subprocess.call(["umount", self.work_dir])
             if ret != 0:
                 logger.warning(m18n.n('restore_cleaning_failed'))
-        filesystem.rm(self.work_dir, True, True)
+        filesystem.rm(self.work_dir, recursive=True, force=True)
 
     #
     # Restore target manangement                                            #
@@ -1110,6 +1131,8 @@ class RestoreManager():
 
             self._restore_system()
             self._restore_apps()
+        except Exception as e:
+            raise YunohostError("The following critical error happened during restoration: %s" % e)
         finally:
             self.clean()
 
@@ -1123,21 +1146,18 @@ class RestoreManager():
         if not os.path.isfile(backup_csv):
             return
 
-        try:
-            contains_php5 = False
-            with open(backup_csv) as csvfile:
-                reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
-                newlines = []
-                for row in reader:
-                    if 'php5' in row['source']:
-                        contains_php5 = True
-                        row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
-                            .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
-                            .replace('php5', 'php7')
+        contains_php5 = False
+        with open(backup_csv) as csvfile:
+            reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
+            newlines = []
+            for row in reader:
+                if 'php5' in row['source']:
+                    contains_php5 = True
+                    row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
+                        .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
+                        .replace('php5', 'php7')
 
-                    newlines.append(row)
-        except (IOError, OSError, csv.Error) as e:
-            raise YunohostError('error_reading_file', file=backup_csv, error=str(e))
+                newlines.append(row)
 
         if not contains_php5:
             return
@@ -1162,6 +1182,13 @@ class RestoreManager():
         if system_targets == []:
             return
 
+        from yunohost.user import user_group_list
+        from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list, permission_sync_to_user
+
+        # Backup old permission for apps
+        # We need to do that because in case of an app is installed we can't remove the permission for this app
+        old_apps_permission = user_permission_list(ignore_system_perms=True, full=True)["permissions"]
+
         # Start register change on system
         operation_logger = OperationLogger('backup_restore_system')
         operation_logger.start()
@@ -1177,21 +1204,51 @@ class RestoreManager():
                             env=env_dict,
                             chdir=self.work_dir)
 
-        for part in ret['succeed'].keys():
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+
+        for part in ret_succeed:
             self.targets.set_result("system", part, "Success")
 
         error_part = []
-        for part in ret['failed'].keys():
+        for part in ret_failed:
             logger.error(m18n.n('restore_system_part_failed', part=part))
             self.targets.set_result("system", part, "Error")
             error_part.append(part)
 
-        if ret['failed']:
+        if ret_failed:
             operation_logger.error(m18n.n('restore_system_part_failed', part=', '.join(error_part)))
         else:
             operation_logger.success()
 
-        service_regen_conf()
+        regen_conf()
+
+        # Check that at least a group exists (all_users) to know if we need to
+        # do the migration 0011 : setup group and permission
+        #
+        # Legacy code
+        if not "all_users" in user_group_list()["groups"].keys():
+            from yunohost.tools import _get_migration_by_name
+            setup_group_permission = _get_migration_by_name("setup_group_permission")
+            # Update LDAP schema restart slapd
+            logger.info(m18n.n("migration_0011_update_LDAP_schema"))
+            regen_conf(names=['slapd'], force=True)
+            setup_group_permission.migrate_LDAP_db()
+
+        # Remove all permission for all app which is still in the LDAP
+        for permission_name in user_permission_list(ignore_system_perms=True)["permissions"].keys():
+            permission_delete(permission_name, force=True, sync_perm=False)
+
+        # Restore permission for the app which is installed
+        for permission_name, permission_infos in old_apps_permission.items():
+            app_name = permission_name.split(".")[0]
+            if _is_installed(app_name):
+                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
+
+        permission_sync_to_user()
+
 
     def _restore_apps(self):
         """Restore all apps targeted"""
@@ -1228,6 +1285,9 @@ class RestoreManager():
                                         name already exists
         restore_app_failed -- Raised if the restore bash script failed
         """
+        from yunohost.user import user_group_list
+        from yunohost.permission import permission_create, permission_delete, user_permission_list, user_permission_update, permission_sync_to_user
+
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):
                 s = os.path.join(src, item)
@@ -1242,6 +1302,8 @@ class RestoreManager():
         operation_logger = OperationLogger('backup_restore_app', related_to)
         operation_logger.start()
 
+        logger.info(m18n.n("app_start_restore", app=app_instance_name))
+
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
             logger.error(m18n.n('restore_already_installed_app',
@@ -1253,6 +1315,9 @@ class RestoreManager():
         app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
         app_settings_in_archive = os.path.join(app_dir_in_archive, 'settings')
         app_scripts_in_archive = os.path.join(app_settings_in_archive, 'scripts')
+
+        # Attempt to patch legacy helpers...
+        _patch_legacy_helpers(app_settings_in_archive)
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(app_settings_in_archive)
@@ -1288,6 +1353,32 @@ class RestoreManager():
             filesystem.chown(tmp_folder_for_app_restore, 'admin', None, True)
             restore_script = os.path.join(tmp_folder_for_app_restore, 'restore')
 
+            # Restore permissions
+            if os.path.isfile('%s/permissions.yml' % app_settings_new_path):
+
+                permissions = read_yaml('%s/permissions.yml' % app_settings_new_path)
+                existing_groups = user_group_list()['groups']
+
+                for permission_name, permission_infos in permissions.items():
+
+                    if "allowed" not in permission_infos:
+                        logger.warning("'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself." % (permission_name, app_instance_name))
+                        should_be_allowed = ["all_users"]
+                    else:
+                        should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
+
+                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed, sync_perm=False)
+
+                permission_sync_to_user()
+
+                os.remove('%s/permissions.yml' % app_settings_new_path)
+            else:
+                # Otherwise, we need to migrate the legacy permissions of this
+                # app (included in its settings.yml)
+                from yunohost.tools import _get_migration_by_name
+                setup_group_permission = _get_migration_by_name("setup_group_permission")
+                setup_group_permission.migrate_app_permission(app=app_instance_name)
+
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
 
@@ -1299,11 +1390,14 @@ class RestoreManager():
                       args=[app_backup_in_archive, app_instance_name],
                       chdir=app_backup_in_archive,
                       raise_on_error=True,
-                      env=env_dict)
+                      env=env_dict)[0]
         except:
             msg = m18n.n('restore_app_failed', app=app_instance_name)
             logger.exception(msg)
             operation_logger.error(msg)
+
+            if msettings.get('interface') != 'api':
+                dump_app_log_extract_for_debugging(operation_logger)
 
             self.targets.set_result("apps", app_instance_name, "Error")
 
@@ -1322,9 +1416,8 @@ class RestoreManager():
             operation_logger.start()
 
             # Execute remove script
-            # TODO: call app_remove instead
             if hook_exec(remove_script, args=[app_instance_name],
-                         env=env_dict_remove) != 0:
+                         env=env_dict_remove)[0] != 0:
                 msg = m18n.n('app_not_properly_removed', app=app_instance_name)
                 logger.warning(msg)
                 operation_logger.error(msg)
@@ -1333,6 +1426,11 @@ class RestoreManager():
 
             # Cleaning app directory
             shutil.rmtree(app_settings_new_path, ignore_errors=True)
+
+            # Remove all permission in LDAP for this app
+            for permission_name in user_permission_list()["permissions"].keys():
+                if permission_name.startswith(app_instance_name+"."):
+                    permission_delete(permission_name, force=True)
 
             # TODO Cleaning app hooks
         else:
@@ -1512,33 +1610,11 @@ class BackupMethod(object):
                                   directories of the working directories
         """
         if self.need_mount():
-            if self._recursive_umount(self.work_dir) > 0:
+            if not _recursive_umount(self.work_dir):
                 raise YunohostError('backup_cleaning_failed')
 
         if self.manager.is_tmp_work_dir:
             filesystem.rm(self.work_dir, True, True)
-
-    def _recursive_umount(self, directory):
-        """
-        Recursively umount sub directories of a directory
-
-        Args:
-            directory -- a directory path
-        """
-        mount_lines = subprocess.check_output("mount").split("\n")
-
-        points_to_umount = [line.split(" ")[2]
-                            for line in mount_lines
-                            if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
-        ret = 0
-        for point in reversed(points_to_umount):
-            ret = subprocess.call(["umount", point])
-            if ret != 0:
-                ret = 1
-                logger.warning(m18n.n('backup_cleaning_failed', point))
-                continue
-
-        return ret
 
     def _check_is_enough_free_space(self):
         """
@@ -1619,9 +1695,18 @@ class BackupMethod(object):
                     # 'NUMBER OF HARD LINKS > 1' see #1043
                     cron_path = os.path.abspath('/etc/cron') + '.'
                     if not os.path.abspath(src).startswith(cron_path):
-                        os.link(src, dest)
-                        # Success, go to next file to organize
-                        continue
+                        try:
+                            os.link(src, dest)
+                        except Exception as e:
+                            # This kind of situation may happen when src and dest are on different
+                            # logical volume ... even though the st_dev check previously match...
+                            # E.g. this happens when running an encrypted hard drive
+                            # where everything is mapped to /dev/mapper/some-stuff
+                            # yet there are different devices behind it or idk ...
+                            logger.warning("Could not link %s to %s (%s) ... falling back to regular copy." % (src, dest, str(e)))
+                        else:
+                            # Success, go to next file to organize
+                            continue
 
             # If mountbind or hardlink couldnt be created,
             # prepare a list of files that need to be copied
@@ -1744,11 +1829,12 @@ class CopyBackupMethod(BackupMethod):
                               self.work_dir])
         if ret == 0:
             return
-        else:
-            logger.warning(m18n.n("bind_mouting_disable"))
-            subprocess.call(["mountpoint", "-q", dest,
-                            "&&", "umount", "-R", dest])
-            raise YunohostError('backup_cant_mount_uncompress_archive')
+
+        logger.warning("Could not mount the backup in readonly mode with --rbind ... Unmounting")
+        # FIXME : Does this stuff really works ? '&&' is going to be interpreted as an argument for mounpoint here ... Not as a classical '&&' ...
+        subprocess.call(["mountpoint", "-q", self.work_dir,
+                        "&&", "umount", "-R", self.work_dir])
+        raise YunohostError('backup_cant_mount_uncompress_archive')
 
 
 class TarBackupMethod(BackupMethod):
@@ -1802,10 +1888,11 @@ class TarBackupMethod(BackupMethod):
                 # Add the "source" into the archive and transform the path into
                 # "dest"
                 tar.add(path['source'], arcname=path['dest'])
-            tar.close()
         except IOError:
-            logger.error(m18n.n('backup_archive_writing_error'), exc_info=1)
+            logger.error(m18n.n('backup_archive_writing_error', source=path['source'], archive=self._archive_file, dest=path['dest']), exc_info=1)
             raise YunohostError('backup_creation_failed')
+        finally:
+            tar.close()
 
         # Move info file
         shutil.copy(os.path.join(self.work_dir, 'info.json'),
@@ -1824,6 +1911,8 @@ class TarBackupMethod(BackupMethod):
 
         Exceptions:
         backup_archive_open_failed -- Raised if the archive can't be open
+        backup_archive_corrupted -- Raised if the archive appears corrupted
+        backup_archive_cant_retrieve_info_json -- If the info.json file can't be retrieved
         """
         super(TarBackupMethod, self).mount(restore_manager)
 
@@ -1834,16 +1923,37 @@ class TarBackupMethod(BackupMethod):
             logger.debug("cannot open backup archive '%s'",
                          self._archive_file, exc_info=1)
             raise YunohostError('backup_archive_open_failed')
+
+        try:
+            files_in_archive = tar.getnames()
+        except IOError as e:
+            raise YunohostError("backup_archive_corrupted", archive=self._archive_file, error=str(e))
+
+        # FIXME : Is this really useful to close the archive just to
+        # reopen it right after this with the same options ...?
         tar.close()
 
         # Mount the tarball
         logger.debug(m18n.n("restore_extracting"))
         tar = tarfile.open(self._archive_file, "r:gz")
-        tar.extract('info.json', path=self.work_dir)
 
-        try:
+        if "info.json" in files_in_archive:
+            leading_dot = ""
+            tar.extract('info.json', path=self.work_dir)
+        elif "./info.json" in files_in_archive:
+            leading_dot = "./"
+            tar.extract('./info.json', path=self.work_dir)
+        else:
+            logger.debug("unable to retrieve 'info.json' inside the archive",
+                         exc_info=1)
+            tar.close()
+            raise YunohostError('backup_archive_cant_retrieve_info_json', archive=self._archive_file)
+
+        if "backup.csv" in files_in_archive:
             tar.extract('backup.csv', path=self.work_dir)
-        except KeyError:
+        elif "./backup.csv" in files_in_archive:
+            tar.extract('./backup.csv', path=self.work_dir)
+        else:
             # Old backup archive have no backup.csv file
             pass
 
@@ -1865,12 +1975,12 @@ class TarBackupMethod(BackupMethod):
                 system_part = system_part.replace("_", "/") + "/"
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith(system_part)
+                if tarinfo.name.startswith(leading_dot+system_part)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
         subdir_and_files = [
             tarinfo for tarinfo in tar.getmembers()
-            if tarinfo.name.startswith("hooks/restore/")
+            if tarinfo.name.startswith(leading_dot+"hooks/restore/")
         ]
         tar.extractall(members=subdir_and_files, path=self.work_dir)
 
@@ -1878,9 +1988,11 @@ class TarBackupMethod(BackupMethod):
         for app in apps_targets:
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith("apps/" + app)
+                if tarinfo.name.startswith(leading_dot+"apps/" + app)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
+
+        # FIXME : Don't we want to close the tar archive here or at some point ?
 
 
 class BorgBackupMethod(BackupMethod):
@@ -1929,8 +2041,9 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('need_mount'))
-
-        self._need_mount = True if ret['succeed'] else False
+        ret_succeed = [hook for hook, infos in ret.items()
+                       if any(result["state"] == "succeed" for result in infos.values())]
+        self._need_mount = True if ret_succeed else False
         return self._need_mount
 
     def backup(self):
@@ -1943,7 +2056,10 @@ class CustomBackupMethod(BackupMethod):
 
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('backup'))
-        if ret['failed']:
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
     def mount(self, restore_manager):
@@ -1956,7 +2072,10 @@ class CustomBackupMethod(BackupMethod):
         super(CustomBackupMethod, self).mount(restore_manager)
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
-        if ret['failed']:
+
+        ret_failed = [hook for hook, infos in ret.items()
+                      if any(result["state"] == "failed" for result in infos.values())]
+        if ret_failed:
             raise YunohostError('backup_custom_mount_error')
 
     def _get_args(self, action):
@@ -2008,6 +2127,7 @@ def backup_create(name=None, description=None, methods=[],
         # Check that output directory is empty
         if os.path.isdir(output_directory) and no_compress and \
                 os.listdir(output_directory):
+
             raise YunohostError('backup_output_directory_not_empty')
     elif no_compress:
         raise YunohostError('backup_output_directory_required')
@@ -2059,6 +2179,7 @@ def backup_create(name=None, description=None, methods=[],
     backup_manager.collect_files()
 
     # Apply backup methods on prepared files
+    logger.info(m18n.n("backup_actually_backuping"))
     backup_manager.backup()
 
     logger.success(m18n.n('backup_created'))
@@ -2070,7 +2191,7 @@ def backup_create(name=None, description=None, methods=[],
     }
 
 
-def backup_restore(auth, name, system=[], apps=[], force=False):
+def backup_restore(name, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -2127,6 +2248,7 @@ def backup_restore(auth, name, system=[], apps=[], force=False):
     # Mount the archive then call the restore for each system part / app    #
     #
 
+    logger.info(m18n.n("backup_mount_archive_for_restore"))
     restore_manager.mount()
     restore_manager.restore()
 
@@ -2171,7 +2293,7 @@ def backup_list(with_info=False, human_readable=False):
             try:
                 d[a] = backup_info(a, human_readable=human_readable)
             except YunohostError as e:
-                logger.warning('%s: %s' % (a, e.strerror))
+                logger.warning(str(e))
 
         result = d
 
@@ -2208,12 +2330,23 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.exists(info_file):
         tar = tarfile.open(archive_file, "r:gz")
         info_dir = info_file + '.d'
+
         try:
-            tar.extract('info.json', path=info_dir)
+            files_in_archive = tar.getnames()
+        except IOError as e:
+            raise YunohostError("backup_archive_corrupted", archive=archive_file, error=str(e))
+
+        try:
+            if "info.json" in files_in_archive:
+                tar.extract('info.json', path=info_dir)
+            elif "./info.json" in files_in_archive:
+                tar.extract('./info.json', path=info_dir)
+            else:
+                raise KeyError
         except KeyError:
             logger.debug("unable to retrieve '%s' inside the archive",
                          info_file, exc_info=1)
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_archive_cant_retrieve_info_json', archive=archive_file)
         else:
             shutil.move(os.path.join(info_dir, 'info.json'), info_file)
         finally:
@@ -2226,7 +2359,7 @@ def backup_info(name, with_details=False, human_readable=False):
             info = json.load(f)
     except:
         logger.debug("unable to load '%s'", info_file, exc_info=1)
-        raise YunohostError('backup_invalid_archive')
+        raise YunohostError('backup_archive_cant_retrieve_info_json', archive=archive_file)
 
     # Retrieve backup size
     size = info.get('size', 0)
@@ -2251,6 +2384,27 @@ def backup_info(name, with_details=False, human_readable=False):
         if "hooks" in info.keys():
             system_key = "hooks"
 
+        if "size_details" in info.keys():
+            for category in ["apps", "system"]:
+                for name, key_info in info[category].items():
+
+                    if category == "system":
+                        # Stupid legacy fix for weird format between 3.5 and 3.6
+                        if isinstance(key_info, dict):
+                            key_info = key_info.keys()
+                        info[category][name] = key_info = {"paths": key_info}
+                    else:
+                        info[category][name] = key_info
+
+                    if name in info["size_details"][category].keys():
+                        key_info["size"] = info["size_details"][category][name]
+                        if human_readable:
+                            key_info["size"] = binary_to_human(key_info["size"]) + 'B'
+                    else:
+                        key_info["size"] = -1
+                        if human_readable:
+                            key_info["size"] = "?"
+
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
     return result
@@ -2273,7 +2427,14 @@ def backup_delete(name):
     archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
-    for backup_file in [archive_file, info_file]:
+    files_to_delete = [archive_file, info_file]
+
+    # To handle the case where archive_file is in fact a symlink
+    if os.path.islink(archive_file):
+        actual_archive = os.path.realpath(archive_file)
+        files_to_delete.append(actual_archive)
+
+    for backup_file in files_to_delete:
         try:
             os.remove(backup_file)
         except:
@@ -2295,7 +2456,9 @@ def _create_archive_dir():
         if os.path.lexists(ARCHIVES_PATH):
             raise YunohostError('backup_output_symlink_dir_broken', path=ARCHIVES_PATH)
 
-        os.mkdir(ARCHIVES_PATH, 0o750)
+        # Create the archive folder, with 'admin' as owner, such that
+        # people can scp archives out of the server
+        mkdir(ARCHIVES_PATH, mode=0o750, parents=True, uid="admin", gid="root")
 
 
 def _call_for_each_path(self, callback, csv_path=None):
@@ -2306,6 +2469,30 @@ def _call_for_each_path(self, callback, csv_path=None):
         backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
         for row in backup_csv:
             callback(self, row['source'], row['dest'])
+
+
+def _recursive_umount(directory):
+    """
+    Recursively umount sub directories of a directory
+
+    Args:
+        directory -- a directory path
+    """
+    mount_lines = subprocess.check_output("mount").split("\n")
+
+    points_to_umount = [line.split(" ")[2]
+                        for line in mount_lines
+                        if len(line) >= 3 and line.split(" ")[2].startswith(directory)]
+
+    everything_went_fine = True
+    for point in reversed(points_to_umount):
+        ret = subprocess.call(["umount", point])
+        if ret != 0:
+            everything_went_fine = False
+            logger.warning(m18n.n('backup_cleaning_failed', point))
+            continue
+
+    return everything_went_fine
 
 
 def free_space_in_directory(dirpath):
@@ -2319,3 +2506,23 @@ def disk_usage(path):
 
     du_output = subprocess.check_output(['du', '-sb', path])
     return int(du_output.split()[0].decode('utf-8'))
+
+
+def binary_to_human(n, customary=False):
+    """
+    Convert bytes or bits into human readable format with binary prefix
+    Keyword argument:
+        n -- Number to convert
+        customary -- Use customary symbol instead of IEC standard
+    """
+    symbols = ('Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi')
+    if customary:
+        symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    prefix = {}
+    for i, s in enumerate(symbols):
+        prefix[s] = 1 << (i + 1) * 10
+    for s in reversed(symbols):
+        if n >= prefix[s]:
+            value = float(n) / prefix[s]
+            return '%.1f%s' % (value, s)
+    return "%s" % n

@@ -14,7 +14,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || sudo service nslcd restart
+    || service nslcd restart
 }
 
 FORCE=${2:-0}

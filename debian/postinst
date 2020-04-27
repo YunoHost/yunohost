@@ -12,17 +12,20 @@ do_configure() {
       bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
   else
       echo "Regenerating configuration, this might take a while..."
-      yunohost service regen-conf --output-as none
+      yunohost tools regen-conf --output-as none
 
-      echo "Launching migrations.."
+      echo "Launching migrations..."
       yunohost tools migrations migrate --auto
 
-      # restart yunohost-firewall if it's running
-      service yunohost-firewall status >/dev/null \
-        && restart_yunohost_firewall \
-        || echo "yunohost-firewall service is not running, you should " \
-            "consider to start it by doing 'service yunohost-firewall start'."
+      echo "Re-diagnosing server health..."
+      yunohost diagnosis run --force
   fi
+
+  # Change dpkg vendor
+  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
+  readlink -f /etc/dpkg/origins/default | grep -q debian \
+    && rm -f /etc/dpkg/origins/default \
+    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
 
   # Yunoprompt
   systemctl enable yunoprompt.service
@@ -31,24 +34,6 @@ do_configure() {
   [[ ! -f /usr/share/pam-configs/my_mkhomedir ]] \
     || rm /usr/share/pam-configs/my_mkhomedir
   pam-auth-update --package
-}
-
-restart_yunohost_firewall() {
-  echo "Restarting YunoHost firewall..."
-
-  deb-systemd-helper unmask yunohost-firewall.service >/dev/null || true
-  if deb-systemd-helper --quiet was-enabled yunohost-firewall.service; then
-      deb-systemd-helper enable yunohost-firewall.service >/dev/null || true
-  else
-      deb-systemd-helper update-state yunohost-firewall.service >/dev/null || true
-  fi
-
-  if [ -x /etc/init.d/yunohost-firewall ]; then
-      update-rc.d yunohost-firewall enable >/dev/null
-      if [ -n "$2" ]; then
-          invoke-rc.d yunohost-firewall restart >/dev/null || exit $?
-      fi
-  fi
 }
 
 # summary of how this script can be called:

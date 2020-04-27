@@ -4,7 +4,12 @@ import os
 import glob
 import datetime
 
-def render(data):
+def render(helpers):
+
+    data = { "helpers": helpers,
+             "date": datetime.datetime.now().strftime("%m/%d/%Y"),
+             "version": open("../debian/changelog").readlines()[0].split()[1].strip("()")
+           }
 
     from jinja2 import Template
     from ansi2html import Ansi2HTMLConverter
@@ -43,7 +48,7 @@ class Parser():
                           "code": [] }
 
         for i, line in enumerate(self.file):
- 
+
             if line.startswith("#!/bin/bash"):
                continue
 
@@ -65,6 +70,18 @@ class Parser():
                     # We're still in a comment bloc
                     assert line.startswith("# ") or line == "#", malformed_error(i)
                     current_block["comments"].append(line[2:])
+                elif line.strip() == "":
+                    # Well eh that was not an actual helper definition ... start over ?
+                    current_reading = "void"
+                    current_block = { "name": None,
+                                     "line": -1,
+                                     "comments": [],
+                                     "code": []
+                                     }
+                elif not (line.endswith("{") or line.endswith("()")):
+                    # Well we're not actually entering a function yet eh
+                    # (c.f. global vars)
+                    pass
                 else:
                     # We're getting out of a comment bloc, we should find
                     # the name of the function
@@ -73,8 +90,6 @@ class Parser():
                     current_block["name"] = line.split()[0].strip("(){")
                     # Then we expect to read the function
                     current_reading = "code"
-
-                continue
 
             elif current_reading == "code":
 
@@ -92,7 +107,6 @@ class Parser():
                                       "code": [] }
                 else:
                     current_block["code"].append(line)
-                    pass
 
                 continue
 
@@ -103,7 +117,6 @@ class Parser():
         b["usage"] = ""
         b["args"] = []
         b["ret"] = ""
-        b["example"] = ""
 
         subblocks = '\n'.join(b["comments"]).split("\n\n")
 
@@ -114,17 +127,29 @@ class Parser():
                 b["brief"] = subblock
                 continue
 
-            elif subblock.startswith("example"):
+            elif subblock.startswith("example:"):
                 b["example"] = " ".join(subblock.split()[1:])
+                continue
+
+            elif subblock.startswith("examples:"):
+                b["examples"] = subblock.split("\n")[1:]
                 continue
 
             elif subblock.startswith("usage"):
                 for line in subblock.split("\n"):
 
                     if line.startswith("| arg"):
-                        argname = line.split()[2]
-                        argdescr = " ".join(line.split()[4:])
-                        b["args"].append((argname, argdescr))
+                        linesplit = line.split()
+                        argname = linesplit[2]
+                        # Detect that there's a long argument version (-f, --foo - Some description)
+                        if argname.endswith(",") and linesplit[3].startswith("--"):
+                            argname = argname.strip(",")
+                            arglongname = linesplit[3]
+                            argdescr = " ".join(linesplit[5:])
+                            b["args"].append((argname, arglongname, argdescr))
+                        else:
+                            argdescr = " ".join(linesplit[4:])
+                            b["args"].append((argname, argdescr))
                     elif line.startswith("| ret"):
                         b["ret"] = " ".join(line.split()[2:])
                     else:
@@ -136,9 +161,17 @@ class Parser():
             elif subblock.startswith("| arg"):
                 for line in subblock.split("\n"):
                     if line.startswith("| arg"):
-                        argname = line.split()[2]
-                        argdescr = line.split()[4:]
-                        b["args"].append((argname, argdescr))
+                        linesplit = line.split()
+                        argname = linesplit[2]
+                        # Detect that there's a long argument version (-f, --foo - Some description)
+                        if argname.endswith(",") and linesplit[3].startswith("--"):
+                            argname = argname.strip(",")
+                            arglongname = linesplit[3]
+                            argdescr = " ".join(linesplit[5:])
+                            b["args"].append((argname, arglongname, argdescr))
+                        else:
+                            argdescr = " ".join(linesplit[4:])
+                            b["args"].append((argname, argdescr))
                 continue
 
             else:

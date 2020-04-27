@@ -179,6 +179,10 @@ def _retrieve_namespaces():
             ret.append(n)
     return ret
 
+# Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
+default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+if os.environ["PATH"] != default_path:
+    os.environ["PATH"] = default_path + ":" + os.environ["PATH"]
 
 # Main action ----------------------------------------------------------
 
@@ -195,7 +199,8 @@ if __name__ == '__main__':
     # Check that YunoHost is installed
     if not os.path.isfile('/etc/yunohost/installed') and \
        (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
-                          args[0] +' '+ args[1] != 'backup restore')):
+                          args[0] +' '+ args[1] != 'backup restore' and \
+                          args[0] +' '+ args[1] != 'log display')):
 
         from moulinette import m18n
         # Init i18n

@@ -38,28 +38,35 @@ do_pre_regen() {
   if [[ -f $services_path ]]; then
       tmp_services_path="${services_path}-tmp"
       new_services_path="${services_path}-new"
-      sudo cp "$services_path" "$tmp_services_path"
+      cp "$services_path" "$tmp_services_path"
       _update_services "$new_services_path" || {
-        sudo mv "$tmp_services_path" "$services_path"
+        mv "$tmp_services_path" "$services_path"
         exit 1
       }
       if [[ -f $new_services_path ]]; then
           # replace services.yml with new one
-          sudo mv "$new_services_path" "$services_path"
-          sudo mv "$tmp_services_path" "${services_path}-old"
+          mv "$new_services_path" "$services_path"
+          mv "$tmp_services_path" "${services_path}-old"
       else
-          sudo rm -f "$tmp_services_path"
+          rm -f "$tmp_services_path"
       fi
   else
-      sudo cp services.yml /etc/yunohost/services.yml
+      cp services.yml /etc/yunohost/services.yml
   fi
 
-  mkdir -p "$pending_dir"/etc/etckeeper/
-  cp etckeeper.conf "$pending_dir"/etc/etckeeper/
+  # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
+  # 0 and 10min, meant to avoid every instances running their diagnosis at
+  # exactly the same time, which may overload the diagnosis server.
+  mkdir -p $pending_dir/etc/cron.d/
+  cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
+SHELL=/bin/bash
+0 7,19 * * * root : YunoHost Diagnosis; sleep \$((RANDOM\\%600)); yunohost diagnosis run > /dev/null
+EOF
+
 }
 
 _update_services() {
-  sudo python2 - << EOF
+  python2 - << EOF
 import yaml
 
 
@@ -104,6 +111,12 @@ for service, conf in new_services.items():
         if conffiles:
             services[service]['conffiles'] = conffiles
 
+        # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
+        # because they are too general. Instead, now the journalctl log is
+        # returned by default which is more relevant.
+        if "log" in services[service]:
+            if services[service]["log"] in ["/var/log/syslog", "/var/log/daemon.log"]:
+                del services[service]["log"]
 
 if updated:
     with open('/etc/yunohost/services.yml-new', 'w') as f:

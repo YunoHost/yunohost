@@ -27,14 +27,16 @@ class YunohostError(MoulinetteError):
 
     """
     Yunohost base exception
-    
+
     The (only?) main difference with MoulinetteError being that keys
     are translated via m18n.n (namespace) instead of m18n.g (global?)
     """
 
-    def __init__(self, key, __raw_msg__=False, *args, **kwargs):
-        if __raw_msg__:
+    def __init__(self, key, raw_msg=False, *args, **kwargs):
+        self.key = key # Saving the key is useful for unit testing
+        self.kwargs = kwargs # Saving the key is useful for unit testing
+        if raw_msg:
             msg = key
         else:
             msg = m18n.n(key, *args, **kwargs)
-        super(YunohostError, self).__init__(msg, __raw_msg__=True)
+        super(YunohostError, self).__init__(msg, raw_msg=True)
