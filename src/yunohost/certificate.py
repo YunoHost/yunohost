@@ -34,15 +34,14 @@ import glob
 
 from datetime import datetime
 
-from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
-
-from yunohost.utils.error import YunohostError
+from moulinette import m18n
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 
+from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
+from yunohost.utils.error import YunohostError
 from yunohost.utils.network import get_public_ip
 
-from moulinette import m18n
-from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -468,14 +467,15 @@ Subject: %s
 
 
 def _check_acme_challenge_configuration(domain):
-    # Check nginx conf file exists
-    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
-    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
 
-    if not os.path.exists(nginx_conf_file):
-        return False
-    else:
+    domain_conf = "/etc/nginx/conf.d/%s.conf" % domain
+    if "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf):
         return True
+    else:
+        # This is for legacy setups which haven't updated their domain conf to
+        # the new conf that include the acme snippet...
+        legacy_acme_conf = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
+        return os.path.exists(legacy_acme_conf)
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
@@ -592,10 +592,10 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    from yunohost.domain import _get_maindomain
-    if domain == _get_maindomain():
-        # Include xmpp-upload subdomain in subject alternate names
-        subdomain="xmpp-upload." + domain
+    from yunohost.domain import domain_list
+    # For "parent" domains, include xmpp-upload subdomain in subject alternate names
+    if domain in domain_list(exclude_subdomains=True)["domains"]:
+        subdomain = "xmpp-upload." + domain
         try:
             _dns_ip_match_public_ip(get_public_ip(), subdomain)
             csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
