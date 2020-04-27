@@ -25,6 +25,7 @@ import dns.resolver
 
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
+from moulinette.utils.filesystem import read_file
 
 logger = logging.getLogger('yunohost.utils.network')
 
@@ -85,10 +86,33 @@ def get_gateway():
     return addr.popitem()[1] if len(addr) == 1 else None
 
 
-def dig(qname, rdtype="A", timeout=5, resolvers=["127.0.0.1"], edns_size=1500):
+# Lazy dev caching to avoid re-reading the file multiple time when calling
+# dig() often during same yunohost operation
+external_resolvers_ = []
+
+
+def external_resolvers():
+
+    global external_resolvers_
+
+    if not external_resolvers_:
+        resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
+        external_resolvers_ = [r.split(" ")[1] for r in resolv_dnsmasq_conf if r.startswith("nameserver")]
+
+    return external_resolvers_
+
+
+def dig(qname, rdtype="A", timeout=5, resolvers="local", edns_size=1500, full_answers=False):
     """
     Do a quick DNS request and avoid the "search" trap inside /etc/resolv.conf
     """
+
+    if resolvers == "local":
+        resolvers = ["127.0.0.1"]
+    elif resolvers == "force_external":
+        resolvers = external_resolvers()
+    else:
+        assert isinstance(resolvers, list)
 
     resolver = dns.resolver.Resolver(configure=False)
     resolver.use_edns(0, 0, edns_size)
@@ -96,11 +120,16 @@ def dig(qname, rdtype="A", timeout=5, resolvers=["127.0.0.1"], edns_size=1500):
     resolver.timeout = timeout
     try:
         answers = resolver.query(qname, rdtype)
-    except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
-    dns.exception.Timeout) as e:
-        return ("nok", e.__class__.__name__, e)
+    except (dns.resolver.NXDOMAIN,
+            dns.resolver.NoNameservers,
+            dns.resolver.NoAnswer,
+            dns.exception.Timeout) as e:
+        return ("nok", (e.__class__.__name__, e))
 
-    return ("ok", [(answer.to_text(), answer) for answer in answers])
+    if not full_answers:
+        answers = [answer.to_text() for answer in answers]
+
+    return ("ok", answers)
 
 
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):
