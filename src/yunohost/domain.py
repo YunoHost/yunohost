@@ -397,7 +397,7 @@ def _normalize_domain_path(domain, path):
     return domain, path
 
 
-def _build_dns_conf(domain, ttl=3600):
+def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -450,21 +450,16 @@ def _build_dns_conf(domain, ttl=3600):
 
     if ipv6:
         basic.append(["@", ttl, "AAAA", ipv6])
+    elif include_empty_AAAA_if_no_ipv6:
+        basic.append(["@", ttl, "AAAA", None])
 
     #########
     # Email #
     #########
 
-    spf_record = '"v=spf1 a mx'
-    if ipv4:
-        spf_record += ' ip4:{ip4}'.format(ip4=ipv4)
-    if ipv6:
-        spf_record += ' ip6:{ip6}'.format(ip6=ipv6)
-    spf_record += ' -all"'
-
     mail = [
         ["@", ttl, "MX", "10 %s." % domain],
-        ["@", ttl, "TXT", spf_record],
+        ["@", ttl, "TXT", '"v=spf1 a mx -all"'],
     ]
 
     # DKIM/DMARC record
@@ -497,8 +492,11 @@ def _build_dns_conf(domain, ttl=3600):
 
     if ipv4:
         extra.append(["*", ttl, "A", ipv4])
+
     if ipv6:
         extra.append(["*", ttl, "AAAA", ipv6])
+    elif include_empty_AAAA_if_no_ipv6:
+        extra.append(["*", ttl, "AAAA", None])
 
     extra.append(["@", ttl, "CAA", '128 issue "letsencrypt.org"'])
 

@@ -110,13 +110,39 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
 
-def app_list(full=False):
+
+# Old legacy function...
+def app_fetchlist():
+    logger.warning("'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead")
+    from yunohost.tools import tools_update
+    tools_update(apps=True)
+
+
+def app_list(full=False, installed=False, filter=None):
     """
     List installed apps
     """
+
+    # Old legacy argument ... app_list was a combination of app_list and
+    # app_catalog before 3.8 ...
+    if installed:
+        logger.warning("Argument --installed ain't needed anymore when using 'yunohost app list'. It directly returns the list of installed apps..")
+
+    # Filter is a deprecated option...
+    if filter:
+        logger.warning("Using -f $appname in 'yunohost app list' is deprecated. Just use 'yunohost app list | grep -q 'id: $appname' to check a specific app is installed")
+
     out = []
     for app_id in sorted(_installed_apps()):
-        app_info_dict = app_info(app_id, full=full)
+
+        if filter and not app_id.startswith(filter):
+            continue
+
+        try:
+            app_info_dict = app_info(app_id, full=full)
+        except Exception as e:
+            logger.error("Failed to read info for %s : %s" % (app_id, e))
+            continue
         app_info_dict["id"] = app_id
         out.append(app_info_dict)
 
@@ -131,6 +157,7 @@ def app_info(app, full=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+
     settings = _get_app_settings(app)
 
     ret = {
@@ -507,7 +534,7 @@ def app_upgrade(app=[], url=None, file=None):
             upgrade_failed = True if upgrade_retcode != 0 else False
             if upgrade_failed:
                 error = m18n.n('app_upgrade_script_failed')
-                logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
+                logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
                 failure_message_with_debug_instructions = operation_logger.error(error)
                 if msettings.get('interface') != 'api':
                     dump_app_log_extract_for_debugging(operation_logger)
@@ -515,13 +542,13 @@ def app_upgrade(app=[], url=None, file=None):
         except (KeyboardInterrupt, EOFError):
             upgrade_retcode = -1
             error = m18n.n('operation_interrupted')
-            logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
+            logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
             error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
-            logger.exception(m18n.n("app_install_failed", app=app_instance_name, error=error))
+            logger.error(m18n.n("app_install_failed", app=app_instance_name, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Whatever happened (install success or failure) we check if it broke the system
@@ -531,7 +558,7 @@ def app_upgrade(app=[], url=None, file=None):
                 _assert_system_is_sane_for_app(manifest, "post")
             except Exception as e:
                 broke_the_system = True
-                logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
+                logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
 
             # If upgrade failed or broke the system,
@@ -763,20 +790,20 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         install_failed = True if install_retcode != 0 else False
         if install_failed:
             error = m18n.n('app_install_script_failed')
-            logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+            logger.error(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
             if msettings.get('interface') != 'api':
                 dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
         error = m18n.n('operation_interrupted')
-        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
     except Exception as e:
         import traceback
         error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
-        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
         # Whatever happened (install success or failure) we check if it broke the system
@@ -786,7 +813,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             _assert_system_is_sane_for_app(manifest, "post")
         except Exception as e:
             broke_the_system = True
-            logger.exception(m18n.n("app_install_failed", app=app_id, error=str(e)))
+            logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
             failure_message_with_debug_instructions = operation_logger.error(str(e))
 
         # If the install failed or broke the system, we remove it
@@ -823,7 +850,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             except (KeyboardInterrupt, EOFError, Exception):
                 remove_retcode = -1
                 import traceback
-                logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+                logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
@@ -994,7 +1021,7 @@ def app_remove(operation_logger, app):
     except (KeyboardInterrupt, EOFError, Exception):
         ret = -1
         import traceback
-        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
     if ret == 0:
         logger.success(m18n.n('app_removed', app=app))
@@ -1820,7 +1847,7 @@ def _get_app_settings(app_id):
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
-        logger.exception(m18n.n('app_not_correctly_installed',
+        logger.error(m18n.n('app_not_correctly_installed',
                                 app=app_id))
     return {}
 
@@ -2026,7 +2053,7 @@ def _get_manifest_of_app(path):
     elif os.path.exists(os.path.join(path, "manifest.json")):
         return read_json(os.path.join(path, "manifest.json"))
     else:
-        return None
+        raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):

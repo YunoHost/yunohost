@@ -237,9 +237,14 @@ ynh_local_curl () {
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
+    
+    local cookiefile=/tmp/ynh-$app-cookie.txt
+    touch $cookiefile
+    chown root $cookiefile
+    chmod 700 $cookiefile
 
     # Curl the URL
-    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar /tmp/ynh-$app-cookie.txt --cookie /tmp/ynh-$app-cookie.txt
+    curl --silent --show-error -kL -H "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
 }
 
 # Render templates with Jinja2

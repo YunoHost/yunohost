@@ -296,6 +296,13 @@ user:
                             help: Display all info known about each permission, including the full user list of each group it is granted to.
                             action: store_true
 
+                ### user_permission_info()
+                info:
+                    action_help: Get information about a specific permission
+                    api: GET /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Name of the permission to fetch info about
 
                 ### user_permission_update()
                 update:
@@ -560,6 +567,9 @@ app:
                     help: Also return a list of app categories
                     action: store_true
 
+        fetchlist:
+            deprecated: true
+
         ### app_list()
         list:
             action_help: List installed apps
@@ -569,6 +579,12 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
+                -i:
+                    full: --installed
+                    help: Dummy argument, does nothing anymore (still there only for backward compatibility)
+                    action: store_true
+                filter:
+                    nargs: '?'
 
         ### app_info()
         info:
@@ -1038,6 +1054,7 @@ service:
         ### service_restart()
         restart:
             action_help: Restart one or more services. If the services are not running yet, they will be started.
+            api: PUT /services/<names>/restart
             arguments:
                 names:
                     help: Service name to restart
@@ -1456,6 +1473,11 @@ tools:
                     help: List pending configuration files and exit
                     action: store_true
 
+        ### tools_versions()
+        versions:
+            action_help: Display YunoHost's packages versions
+            api: GET /versions
+
     subcategories:
 
       migrations:
@@ -1668,7 +1690,7 @@ diagnosis:
                     action: store_true
 
         run:
-            action_help: Show most recents diagnosis results
+            action_help: Run diagnosis
             api: POST /diagnosis/run
             arguments:
                 categories:
@@ -1676,6 +1698,9 @@ diagnosis:
                     nargs: "*"
                 --force:
                     help: Ignore the cached report even if it is still 'fresh'
+                    action: store_true
+                --except-if-never-ran-yet:
+                    help: Don't run anything if diagnosis never ran yet ... (this is meant to be used by the webadmin)
                     action: store_true
 
         ignore:
@@ -1693,3 +1718,14 @@ diagnosis:
                 --list:
                     help: List active ignore filters
                     action: store_true
+
+        get:
+            action_help: Low-level command to fetch raw data and status about a specific diagnosis test
+            api: GET /diagnosis/item/<category>
+            arguments:
+                category:
+                    help: Diagnosis category to fetch results from
+                item:
+                    help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
+                    metavar: CRITERIA
+                    nargs: "*"

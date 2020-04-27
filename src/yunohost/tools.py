@@ -43,7 +43,7 @@ from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
-from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages
+from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages, ynh_packages_version
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
 
@@ -53,6 +53,8 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger('yunohost.tools')
 
+def tools_versions():
+    return ynh_packages_version()
 
 def tools_ldapinit():
     """
@@ -316,7 +318,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         'touch %s/index.txt' % ssl_dir,
         'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
         'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
-        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch' % (ssl_dir, ssl_dir, ssl_dir),
+        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch -subj /CN=%s/O=%s' % (ssl_dir, ssl_dir, ssl_dir, domain, os.path.splitext(domain)[0]),
         'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
         'update-ca-certificates'
     ]

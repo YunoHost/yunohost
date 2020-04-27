@@ -1,14 +1,120 @@
-yunohost (3.8.0~alpha) testing; urgency=low
+yunohost (3.8.1.1) testing; urgency=low
 
-  Placeholder for upcoming 3.8 to avoid funky stuff with version numbers in
-  builds etc.
+  - [fix] Stupid issue about path in debian/install ...
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 16 Mar 2020 01:00:00  +0000
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 19 Apr 2020 07:04:00  +0000
+
+yunohost (3.8.1) testing; urgency=low
+
+  ## Helpers (PHP, apt)
+
+  - New helpers for extra apt repo, PHP version install, and PHP fpm (#881, #928, #929)
+  - Pave the way to migration to php7.3 and future ones (#880, #926)
+  - Option in PHP helper to use a dedicated php service (#915)
+
+  ## Diagnosis
+
+  - Many improvements in diagnosis mechanism (#923, #921, #940)
+
+  ## Misc fixes, improvements
+  - custom_portal and custom_overlay redirect (#925)
+  - Improve systemd settings for slapd (#933)
+  - Spelling and typo corrections (#931)
+  - Improve translations for French, German, Catalan
+
+  Thanks to all contributors <3 ! (Kay0u, Maniack Crudelis, ljf, E.Gaspar,
+  xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 19 Apr 2020 06:20:00  +0000
+
+yunohost (3.8.0) testing; urgency=low
+
+  # Major stuff
+
+  - [enh] New diagnosis system (#534, #872, #919, a416044, a354425, 4ab3653, decb372, e686dc6, b5d18d6, 69bc124, 937d339, cc2288c, aaa9805, 526a3a2)
+  - [enh] App categories (#778, #853)
+  - [enh] Support XMPP http upload (#831)
+  - [enh] Many small improvements in the way we manage services (#838, fa5c0e9, dd92a34, c97a839)
+  - [enh] Add subcategories management in bash completion (#839)
+  - [mod] Add conflict with apache2 and bind9, other minor changes in Depends (#909, 3bd6a7a, 0a482fd)
+  - [enh] Setting to enable POP3 in email stack (#791)
+  - [enh] Better UX for CLI/API to change maindomain (#796)
+
+  # Misc technical
+
+  - Update ciphers for nginx, postfix and dovecot according to new Mozilla recommendation (#913, #914)
+  - Get rid of domain-specific acme-challenge snippet, use a single snippet included in every conf (#917)
+  - [enh] Persist cookies between multiple ynh_local_curl calls for the same app (#884, #903)
+  - [fix] ynh_find_port didn't detect port already used on UDP (#827, #907)
+  - [fix] prevent firefox to mix CA and server certificate (#857)
+  - [enh] add operation logger for config panel (#869)
+  - [fix] psql helpers: Revoke sessions before dropping tables (#895)
+  - [fix] moulinette logs were never displayed #lol (#758)
+
+  # Tests, cleaning, refactoring
+
+  - Add core CI, improve/fix tests (#856, #863, 6eb8efb, c4590ab, 711cc35, 6c24755)
+  - Refactoring (#805, 101d3be, #784)
+  - Drop some very-old deprecated app helpers (though still somewhat supporting them through hacky patching) (#780)
+  - Drop glances and the old monitoring system (#821)
+  - Drop app_debug (#824)
+  - Drop app's status.json (#834)
+  - Drop ynh_add_skipped/(un)protected_uris helpers (#910)
+  - Use a common security.conf.inc instead of having cipher setting in each nginx's domain file (1285776, 4d99cbe, be8427d, 22b9565)
+  - Don't add weird tmp redirected_urls after postinstall (#902)
+  - Don't do weird stuff with yunohost-firewall during debian's postinst (978d9d5)
+
+  # i18n, messaging
+
+  - Unit tests / lint / cleaning for translation files (#901)
+  - Improve message wording, spelling (8b0c9e5, 9fe43b1, f69ab4c, 0decb64, 986f38f, 8d40c73, 8fe343a, 1d84f17)
+  - Improve translations for French, Catalan, Bengali (Bangladesh), Italian, Dutch, Norwegian Bokmål, Chinese, Occitan, Spanish, Esperanto, German, Nepali, Portuguese, Arabic, Russian, Hungarian, Hindi, Polish, Greek
+
+  Thanks to all contributors <3 ! (Aeris One, Aleks, Allan N., Alvaro, Armando F., Arthur L., Augustin T., Bram, ButterflyOfFire, Damien P., Gustavo M., Jeroen F., Jimmy M., Josué, Kay0u, Maniack Crudelis, Mario, Matthew D., Mélanie C., Patrick B., Quentí, Yasss Gurl, amirale qt, Elie G., ljf, pitchum, Romain R., tituspijean, xaloc33, yalh76)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 09 Apr 2020 19:59:18 +0000
+
+yunohost (3.7.1.1) stable; urgency=low
+
+   - [fix] lxc uid number is limited to 65536 by default (0c9a4509)
+   - [fix] also invalidate group cache when creating users (aaabf8c7)
+   - [fix] Make sure to have a path that include sbin for stupid cron jobs (f03bb82a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 12 Apr 2020 23:15:00  +0000
+
+yunohost (3.7.1) stable; urgency=low
+
+   - [enh] Add ynh_permission_has_user helper (#905)
+   - [mod] Change behavior of ynh_setting_delete to try to make migrating away from legacy permissions easier (#906)
+   - [fix] app_config_apply should also return 'app' info (#918)
+   - [fix] uid/gid conflicts in user_create because of inconsistent comparison (#924)
+   - [fix] Ensure metronome owns its directories (1f623830, 031f8a6e)
+   - [mod] Remove useless sudos in helpers (be88a283)
+   - [enh] Improve message wording for services (3c844292)
+   - [enh] Attempt to anonymize data pasted to paste.yunohost.org (f56f4724)
+   - [enh] Lazy load yunohost.certificate to possibly improve perfs (af8981e4)
+   - [fix] Improve logging / debugging (1eef9b67, 7d323814, d17fcaf9, 210d5f3f)
+
+  Thanks to all contributors <3 ! (Bram, Kay0u, Maniack, Matthew D.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 9 Apr 2020 14:52:00  +0000
+
+yunohost (3.7.0.12) stable; urgency=low
+
+   - Fix previous buggy hotfix about deleting existing primary groups ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 28 Mar 2020 14:52:00  +0000
+
+yunohost (3.7.0.11) stable; urgency=low
+
+  - [fix] Mess due to automatic translation tools ~_~
+
+ -- Kay0u <pierre@kayou.io>  Fri, 27 Mar 2020 23:49:45 +0000
 
 yunohost (3.7.0.10) stable; urgency=low
 
   - [fix] On some weird setup, this folder and content ain't readable by group ... gotta make sure to make rx for group other slapd will explode
- 
+
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Mar 2020 21:45:00  +0000
 
 yunohost (3.7.0.9) stable; urgency=low

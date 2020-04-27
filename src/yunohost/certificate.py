@@ -34,15 +34,14 @@ import glob
 
 from datetime import datetime
 
-from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
-
-from yunohost.utils.error import YunohostError
+from moulinette import m18n
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 
+from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
+from yunohost.utils.error import YunohostError
 from yunohost.utils.network import get_public_ip
 
-from moulinette import m18n
-from yunohost.app import app_ssowatconf
 from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -285,7 +284,6 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
 
             operation_logger.start()
 
-            _configure_for_acme_challenge(domain)
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
             _install_cron(no_checks=no_checks)
 
@@ -468,61 +466,16 @@ Subject: %s
     smtp.quit()
 
 
-def _configure_for_acme_challenge(domain):
-
-    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
-    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
-
-    nginx_configuration = '''
-location ^~ '/.well-known/acme-challenge/'
-{
-        default_type "text/plain";
-        alias %s;
-}
-    ''' % WEBROOT_FOLDER
-
-    # Check there isn't a conflicting file for the acme-challenge well-known
-    # uri
-    for path in glob.glob('%s/*.conf' % nginx_conf_folder):
-
-        if path == nginx_conf_file:
-            continue
-
-        with open(path) as f:
-            contents = f.read()
-
-        if '/.well-known/acme-challenge' in contents:
-            raise YunohostError('certmanager_conflicting_nginx_file', filepath=path)
-
-    # Write the conf
-    if os.path.exists(nginx_conf_file):
-        logger.debug(
-            "Nginx configuration file for ACME challenge already exists for domain, skipping.")
-        return
-
-    logger.debug(
-        "Adding Nginx configuration file for Acme challenge for domain %s.", domain)
-
-    with open(nginx_conf_file, "w") as f:
-        f.write(nginx_configuration)
-
-    # Assume nginx conf is okay, and reload it
-    # (FIXME : maybe add a check that it is, using nginx -t, haven't found
-    # any clean function already implemented in yunohost to do this though)
-    _run_service_command("reload", "nginx")
-
-    app_ssowatconf()
-
-
 def _check_acme_challenge_configuration(domain):
-    # Check nginx conf file exists
-    nginx_conf_folder = "/etc/nginx/conf.d/%s.d" % domain
-    nginx_conf_file = "%s/000-acmechallenge.conf" % nginx_conf_folder
 
-    if not os.path.exists(nginx_conf_file):
-        return False
-    else:
+    domain_conf = "/etc/nginx/conf.d/%s.conf" % domain
+    if "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf):
         return True
+    else:
+        # This is for legacy setups which haven't updated their domain conf to
+        # the new conf that include the acme snippet...
+        legacy_acme_conf = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
+        return os.path.exists(legacy_acme_conf)
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
@@ -642,7 +595,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from yunohost.domain import domain_list
     # For "parent" domains, include xmpp-upload subdomain in subject alternate names
     if domain in domain_list(exclude_subdomains=True)["domains"]:
-        subdomain="xmpp-upload." + domain
+        subdomain = "xmpp-upload." + domain
         try:
             _dns_ip_match_public_ip(get_public_ip(), subdomain)
             csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])

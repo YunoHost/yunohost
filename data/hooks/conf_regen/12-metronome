@@ -54,7 +54,6 @@ do_post_regen() {
     chown -R metronome:www-data "/var/xmpp-upload/${domain}"
   done
 
-
   # fix some permissions
   chown -R metronome: /var/lib/metronome/
   chown -R metronome: /etc/metronome/conf.d/
