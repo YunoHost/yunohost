@@ -406,6 +406,10 @@ domain:
         list:
             action_help: List domains
             api: GET /domains
+            arguments:
+                --exclude-subdomains:
+                    help: Filter out domains that are obviously subdomains of other declared domains
+                    action: store_true
 
         ### domain_add()
         add:

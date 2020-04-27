@@ -592,9 +592,9 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    from yunohost.domain import _get_maindomain
-    if domain == _get_maindomain():
-        # Include xmpp-upload subdomain in subject alternate names
+    from yunohost.domain import domain_list
+    # For "parent" domains, include xmpp-upload subdomain in subject alternate names
+    if domain in domain_list(exclude_subdomains=True)["domains"]:
         subdomain = "xmpp-upload." + domain
         try:
             _dns_ip_match_public_ip(get_public_ip(), subdomain)

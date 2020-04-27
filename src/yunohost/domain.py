@@ -41,24 +41,26 @@ from yunohost.hook import hook_callback
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list():
+def domain_list(exclude_subdomains=False):
     """
     List domains
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for domain fetching
-        limit -- Maximum number of domain fetched
+        exclude_subdomains -- Filter out domains that are subdomains of other declared domains
 
     """
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
-    result = ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
+    result = [entry['virtualdomain'][0] for entry in ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])]
 
     result_list = []
     for domain in result:
-        result_list.append(domain['virtualdomain'][0])
+        if exclude_subdomains:
+            parent_domain = domain.split(".", 1)[1]
+            if parent_domain in result:
+                continue
+        result_list.append(domain)
 
     return {'domains': result_list}
 
