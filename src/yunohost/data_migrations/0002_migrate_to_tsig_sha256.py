@@ -19,11 +19,7 @@ class MyMigration(Migration):
 
     "Migrate Dyndns stuff from MD5 TSIG to SHA512 TSIG"
 
-    def backward(self):
-        # Not possible because that's a non-reversible operation ?
-        pass
-
-    def migrate(self, dyn_host="dyndns.yunohost.org", domain=None, private_key_path=None):
+    def run(self, dyn_host="dyndns.yunohost.org", domain=None, private_key_path=None):
 
         if domain is None or private_key_path is None:
             try:

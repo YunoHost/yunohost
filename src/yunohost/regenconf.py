@@ -70,7 +70,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             or not os.path.exists(REGEN_CONF_FILE)):
         from yunohost.tools import _get_migration_by_name
         migration = _get_migration_by_name("decouple_regenconf_from_services")
-        migration.migrate()
+        migration.run()
 
     result = {}
 
@@ -131,6 +131,16 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                           show_info=False)['hooks']
         names.remove('ssh')
 
+    # Dirty hack for legacy code : avoid attempting to regen the conf for
+    # glances because it got removed ...  This is only needed *once*
+    # during the upgrade from 3.7 to 3.8 because Yunohost will attempt to
+    # regen glance's conf *before* it gets automatically removed from
+    # services.yml (which will happens only during the regen-conf of
+    # 'yunohost', so at the very end of the regen-conf cycle) Anyway,
+    # this can be safely removed once we're in >= 4.0
+    if "glances" in names:
+        names.remove("glances")
+
     pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
 
     # Keep only the hook names with at least one success
@@ -154,10 +164,10 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         if not dry_run:
             operation_logger.related_to.append(('configuration', category))
 
-        logger.debug(m18n.n(
-            'regenconf_pending_applying' if not dry_run else
-            'regenconf_dry_pending_applying',
-            category=category))
+        if dry_run:
+            logger.debug(m18n.n('regenconf_pending_applying', category=category))
+        else:
+            logger.debug(m18n.n('regenconf_dry_pending_applying', category=category))
 
         conf_hashes = _get_conf_hashes(category)
         succeed_regen = {}
@@ -271,10 +281,10 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             logger.debug(m18n.n('regenconf_up_to_date', category=category))
             continue
         elif not failed_regen:
-            logger.success(m18n.n(
-                'regenconf_updated' if not dry_run else
-                'regenconf_would_be_updated',
-                category=category))
+            if not dry_run:
+                logger.success(m18n.n('regenconf_updated', category=category))
+            else:
+                logger.success(m18n.n('regenconf_would_be_updated', category=category))
 
         if succeed_regen and not dry_run:
             _update_conf_hashes(category, conf_hashes)
@@ -463,6 +473,18 @@ def _update_conf_hashes(category, hashes):
     _save_regenconf_infos(categories)
 
 
+def _force_clear_hashes(paths):
+
+    categories = _get_regenconf_infos()
+    for path in paths:
+        for category in categories.keys():
+            if path in categories[category]['conffiles']:
+                logger.debug("force-clearing old conf hash for %s in category %s" % (path, category))
+                del categories[category]['conffiles'][path]
+
+    _save_regenconf_infos(categories)
+
+
 def _process_regen_conf(system_conf, new_conf=None, save=True):
     """Regenerate a given system configuration file
 
@@ -525,31 +547,32 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
 def manually_modified_files():
 
-    # We do this to have --quiet, i.e. don't throw a whole bunch of logs
-    # just to fetch this...
-    # Might be able to optimize this by looking at what the regen conf does
-    # and only do the part that checks file hashes...
-    cmd = "yunohost tools regen-conf --dry-run --output-as json --quiet"
-    j = json.loads(subprocess.check_output(cmd.split()))
-
-    # j is something like :
-    # {"postfix": {"applied": {}, "pending": {"/etc/postfix/main.cf": {"status": "modified"}}}
-
     output = []
-    for app, actions in j.items():
-        for action, files in actions.items():
-            for filename, infos in files.items():
-                if infos["status"] == "modified":
-                    output.append(filename)
+    regenconf_categories = _get_regenconf_infos()
+    for category, infos in regenconf_categories.items():
+        conffiles = infos["conffiles"]
+        for path, hash_ in conffiles.items():
+            if hash_ != _calculate_hash(path):
+                output.append(path)
 
     return output
 
 
-def manually_modified_files_compared_to_debian_default():
+def manually_modified_files_compared_to_debian_default(ignore_handled_by_regenconf=False):
 
     # from https://serverfault.com/a/90401
-    r = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
-                                | awk 'OFS=\"  \"{print $2,$1}' \
-                                | md5sum -c 2>/dev/null \
-                                | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
-    return r.strip().split("\n")
+    files = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
+                                   | awk 'OFS=\"  \"{print $2,$1}' \
+                                   | md5sum -c 2>/dev/null \
+                                   | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
+    files = files.strip().split("\n")
+
+    if ignore_handled_by_regenconf:
+        regenconf_categories = _get_regenconf_infos()
+        regenconf_files = []
+        for infos in regenconf_categories.values():
+            regenconf_files.extend(infos["conffiles"].keys())
+
+        files = [f for f in files if f not in regenconf_files]
+
+    return files

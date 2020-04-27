@@ -33,7 +33,9 @@ class MyMigration(Migration):
     shown - and the user may also choose to skip this migration.
     """
 
-    def migrate(self):
+    dependencies = ["ssh_conf_managed_by_yunohost_step1"]
+
+    def run(self):
         settings_set("service.ssh.allow_deprecated_dsa_hostkey", False)
         regen_conf(names=['ssh'], force=True)
 
@@ -41,10 +43,6 @@ class MyMigration(Migration):
         # admin can scp archives out of the server
         if os.path.isdir(ARCHIVES_PATH):
             chown(ARCHIVES_PATH, uid="admin", gid="root")
-
-    def backward(self):
-
-        raise YunohostError("migration_0008_backward_impossible")
 
     @property
     def mode(self):

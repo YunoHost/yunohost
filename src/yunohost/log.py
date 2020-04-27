@@ -33,9 +33,10 @@ from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
 
 from moulinette import m18n, msettings
+from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, read_yaml
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
@@ -43,7 +44,7 @@ CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service',
               'app']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
-RELATED_CATEGORIES = ['app', 'domain', 'service', 'user']
+RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
 
 logger = getActionLogger('yunohost.log')
 
@@ -102,13 +103,13 @@ def log_list(category=[], limit=None, with_details=False):
                 entry["started_at"] = log_datetime
 
             if with_details:
-                with open(md_path, "r") as md_file:
-                    try:
-                        metadata = yaml.safe_load(md_file)
-                    except yaml.YAMLError:
-                        logger.warning(m18n.n('log_corrupted_md_file', file=md_path))
-
-                    entry["success"] = metadata.get("success", "?") if metadata else "?"
+                try:
+                    metadata = read_yaml(md_path)
+                except Exception as e:
+                    # If we can't read the yaml for some reason, report an error and ignore this entry...
+                    logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
+                    continue
+                entry["success"] = metadata.get("success", "?") if metadata else "?"
 
             result[category].append(entry)
 
@@ -121,7 +122,7 @@ def log_list(category=[], limit=None, with_details=False):
     return result
 
 
-def log_display(path, number=50, share=False):
+def log_display(path, number=None, share=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -184,31 +185,35 @@ def log_display(path, number=50, share=False):
 
     # Display metadata if exist
     if os.path.exists(md_path):
-        with open(md_path, "r") as md_file:
-            try:
-                metadata = yaml.safe_load(md_file)
-                infos['metadata_path'] = md_path
-                infos['metadata'] = metadata
-                if 'log_path' in metadata:
-                    log_path = metadata['log_path']
-            except yaml.YAMLError:
-                error = m18n.n('log_corrupted_md_file', file=md_path)
-                if os.path.exists(log_path):
-                    logger.warning(error)
-                else:
-                    raise YunohostError(error)
+        try:
+            metadata = read_yaml(md_path)
+        except MoulinetteError as e:
+            error = m18n.n('log_corrupted_md_file', md_file=md_path, error=e)
+            if os.path.exists(log_path):
+                logger.warning(error)
+            else:
+                raise YunohostError(error)
+        else:
+            infos['metadata_path'] = md_path
+            infos['metadata'] = metadata
+
+            if 'log_path' in metadata:
+                log_path = metadata['log_path']
 
     # Display logs if exist
     if os.path.exists(log_path):
         from yunohost.service import _tail
-        logs = _tail(log_path, int(number))
+        if number:
+            logs = _tail(log_path, int(number))
+        else:
+            logs = read_file(log_path)
         infos['log_path'] = log_path
         infos['logs'] = logs
 
     return infos
 
 
-def is_unit_operation(entities=['app', 'domain', 'service', 'user'],
+def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
                       exclude=['password'], operation_key=None):
     """
     Configure quickly a unit operation
@@ -310,8 +315,9 @@ class RedactingFormatter(Formatter):
         try:
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
-            match = re.search(r'(pwd|pass|password|secret|key)=(\S{3,})$', record.strip())
-            if match and match.group(2) not in self.data_to_redact:
+            # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
+            match = re.search(r'(pwd|pass|password|secret|\w+key|token)=(\S{3,})$', record.strip())
+            if match and match.group(2) not in self.data_to_redact and match.group(1) not in ["key", "manifest_key"]:
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
             logger.warning("Failed to parse line to try to identify data to redact ... : %s" % e)
@@ -396,7 +402,8 @@ class OperationLogger(object):
 
         dump = yaml.safe_dump(self.metadata, default_flow_style=False)
         for data in self.data_to_redact:
-            dump = dump.replace(data, "**********")
+            # N.B. : we need quotes here, otherwise yaml isn't happy about loading the yml later
+            dump = dump.replace(data, "'**********'")
         with open(self.md_path, 'w') as outfile:
             outfile.write(dump)
 
@@ -496,7 +503,10 @@ class OperationLogger(object):
         The missing of the message below could help to see an electrical
         shortage.
         """
-        self.error(m18n.n('log_operation_unit_unclosed_properly'))
+        if self.ended_at is not None or self.started_at is None:
+            return
+        else:
+            self.error(m18n.n('log_operation_unit_unclosed_properly'))
 
 
 def _get_description_from_name(name):
