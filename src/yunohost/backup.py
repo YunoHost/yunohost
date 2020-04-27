@@ -1909,6 +1909,8 @@ class TarBackupMethod(BackupMethod):
 
         Exceptions:
         backup_archive_open_failed -- Raised if the archive can't be open
+        backup_archive_corrupted -- Raised if the archive appears corrupted
+        backup_archive_cant_retrieve_info_json -- If the info.json file can't be retrieved
         """
         super(TarBackupMethod, self).mount(restore_manager)
 
