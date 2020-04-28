@@ -25,14 +25,13 @@
 """
 import os
 import re
-import yaml
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import app_ssowatconf
+from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -180,15 +179,9 @@ def domain_remove(operation_logger, domain, force=False):
             raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
-    for app in os.listdir('/etc/yunohost/apps/'):
-        with open('/etc/yunohost/apps/' + app + '/settings.yml') as f:
-            try:
-                app_domain = yaml.load(f)['domain']
-            except:
-                continue
-            else:
-                if app_domain == domain:
-                    raise YunohostError('domain_uninstall_app_first')
+    app_settings = [_get_app_settings(app) for app in _installed_apps()]
+    if any(s["domain"] == domain for s in app_settings):
+        raise YunohostError('domain_uninstall_app_first')
 
     operation_logger.start()
     ldap = _get_ldap_interface()
