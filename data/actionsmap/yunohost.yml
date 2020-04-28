@@ -415,6 +415,10 @@ domain:
         list:
             action_help: List domains
             api: GET /domains
+            arguments:
+                --exclude-subdomains:
+                    help: Filter out domains that are obviously subdomains of other declared domains
+                    action: store_true
 
         ### domain_add()
         add:
@@ -572,6 +576,9 @@ app:
                     help: Also return a list of app categories
                     action: store_true
 
+        fetchlist:
+            deprecated: true
+
         ### app_list()
         list:
             action_help: List installed apps
@@ -581,6 +588,12 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
+                -i:
+                    full: --installed
+                    help: Dummy argument, does nothing anymore (still there only for backward compatibility)
+                    action: store_true
+                filter:
+                    nargs: '?'
 
         ### app_info()
         info:

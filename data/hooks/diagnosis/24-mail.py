@@ -13,6 +13,7 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get
+from yunohost.utils.network import dig
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
@@ -155,26 +156,25 @@ class MailDiagnoser(Diagnoser):
                 if not blacklist[item_type]:
                     continue
 
-                # Determine if we are listed on this RBL
-                try:
-                    subdomain = item
-                    if item_type != "domain":
-                        rev = dns.reversename.from_address(item)
-                        subdomain = str(rev.split(3)[0])
-                    query = subdomain + '.' + blacklist['dns_server']
-                    # TODO add timeout lifetime
-                    dns.resolver.query(query, "A")
-                except (dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.NoAnswer,
-                dns.exception.Timeout):
+                # Build the query for DNSBL
+                subdomain = item
+                if item_type != "domain":
+                    rev = dns.reversename.from_address(item)
+                    subdomain = str(rev.split(3)[0])
+                query = subdomain + '.' + blacklist['dns_server']
+
+                # Do the DNS Query
+                status, _ = dig(query, 'A')
+                if status != 'ok':
                     continue
 
                 # Try to get the reason
                 details = []
-                try:
-                    reason = str(dns.resolver.query(query, "TXT")[0])
+                status, answers = dig(query, 'TXT')
+                reason = "-"
+                if status == 'ok':
+                    reason = ', '.join(answers)
                     details.append("diagnosis_mail_blacklist_reason")
-                except Exception:
-                    reason = "-"
 
                 details.append("diagnosis_mail_blacklist_website")
 
