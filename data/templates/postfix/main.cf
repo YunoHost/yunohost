@@ -191,10 +191,4 @@ smtp_sasl_auth_enable = yes
 smtp_sasl_security_options = noanonymous
 # where to find sasl_passwd
 smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
-{% if relay_port == "587" %}
-# Enable STARTTLS encryption
-smtp_use_tls = yes
-{% endif %}
-# where to find CA certificates
-smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
 {% endif %}
