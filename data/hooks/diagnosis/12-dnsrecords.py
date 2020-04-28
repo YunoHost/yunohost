@@ -14,6 +14,8 @@ from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
+# We put here domains we know has dyndns provider, but that are not yet 
+# registered in the public suffix list
 PENDING_SUFFIX_LIST = ['ynh.fr', 'netlib.re']
 
 
