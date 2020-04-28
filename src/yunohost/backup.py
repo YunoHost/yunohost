@@ -1988,7 +1988,10 @@ class TarBackupMethod(BackupMethod):
 
     def copy(self, file, target):
         tar = tarfile.open(self._archive_file, "r:gz")
-        tar.extract(file, path=target)
+        file_to_extract = tar.getmember(file)
+        # Remove the path
+        file_to_extract.name = os.path.basename(file_to_extract.name)
+        tar.extract(file_to_extract, path=target)
         tar.close()
 
 
