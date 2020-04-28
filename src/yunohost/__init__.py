@@ -34,7 +34,7 @@ def cli(debug, quiet, output_as, timeout, args, parser):
 
 def api(debug, host, port):
 
-    init_logging(debug=debug)
+    init_logging(interface="api", debug=debug)
 
     def is_installed_api():
         return {'installed': is_installed()}
