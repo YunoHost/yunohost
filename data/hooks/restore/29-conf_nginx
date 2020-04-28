@@ -1,7 +1,7 @@
 backup_dir="$1/conf/nginx"
 
 # Copy all conf except apps specific conf located in DOMAIN.d
-sudo find $backup_dir/ -mindepth 1 -maxdepth 1 -name '*.d' -or -exec sudo cp -a {} /etc/nginx/conf.d/ \;
+find $backup_dir/ -mindepth 1 -maxdepth 1 -name '*.d' -or -exec cp -a {} /etc/nginx/conf.d/ \;
 
 # Restart to use new conf and certs
-sudo service nginx restart
+service nginx restart

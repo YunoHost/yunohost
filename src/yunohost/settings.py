@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 
 from datetime import datetime
 from collections import OrderedDict
@@ -14,6 +15,28 @@ logger = getActionLogger('yunohost.settings')
 SETTINGS_PATH = "/etc/yunohost/settings.json"
 SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
+def is_boolean(value):
+    """
+    Ensure a string value is intended as a boolean
+
+    Keyword arguments:
+        arg -- The string to check
+
+    Returns:
+        (is_boolean, boolean_value)
+
+    """
+    if isinstance(value, bool):
+        return True, value
+    elif isinstance(value, basestring):
+        if str(value).lower() in ['true', 'on', 'yes', 'false', 'off', 'no']:
+            return True, str(value).lower() in ['true', 'on', 'yes']
+        else:
+            return False, None
+    else:
+        return False, None
+
+
 # a settings entry is in the form of:
 # namespace.subnamespace.name: {type, value, default, description, [choices]}
 # choices is only for enum
@@ -27,7 +50,7 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 # * bool
 # * int
 # * string
-# * enum (in form a python list)
+# * enum (in the form of a python list)
 
 DEFAULTS = OrderedDict([
     ("example.bool", {"type": "bool", "default": True}),
@@ -46,6 +69,8 @@ DEFAULTS = OrderedDict([
         "choices": ["intermediate", "modern"]}),
     ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
         "choices": ["intermediate", "modern"]}),
+    ("pop3.enabled", {"type": "bool", "default": False}),
+    ("smtp.allow_ipv6", {"type": "bool", "default": True}),
 ])
 
 
@@ -93,7 +118,10 @@ def settings_set(key, value):
     key_type = settings[key]["type"]
 
     if key_type == "bool":
-        if not isinstance(value, bool):
+        boolean_value = is_boolean(value)
+        if boolean_value[0]:
+            value = boolean_value[1]
+        else:
             raise YunohostError('global_settings_bad_type_for_setting', setting=key,
                                 received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "int":
@@ -126,8 +154,6 @@ def settings_set(key, value):
     settings[key]["value"] = value
     _save_settings(settings)
 
-    # TODO : whatdo if the old value is the same as
-    # the new value...
     try:
         trigger_post_change_hook(key, old_value, value)
     except Exception as e:
@@ -295,7 +321,34 @@ def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['ssh'])
 
+@post_change_hook("smtp.allow_ipv6")
 @post_change_hook("security.postfix.compatibility")
-def reconfigure_ssh(setting_name, old_value, new_value):
+def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['postfix'])
+
+@post_change_hook("pop3.enabled")
+def reconfigure_dovecot(setting_name, old_value, new_value):
+    dovecot_package = 'dovecot-pop3d'
+
+    environment = os.environ.copy()
+    environment.update({'DEBIAN_FRONTEND': 'noninteractive'})
+
+    if new_value == "True":
+        command = [
+            'apt-get',
+            '-y',
+            '--no-remove',
+            '-o Dpkg::Options::=--force-confdef',
+            '-o Dpkg::Options::=--force-confold',
+            'install',
+            dovecot_package,
+        ]
+        subprocess.call(command, env=environment)
+        if old_value != new_value:
+            service_regen_conf(names=['dovecot'])
+    else:
+        if old_value != new_value:
+            service_regen_conf(names=['dovecot'])
+        command = ['apt-get', '-y', 'remove', dovecot_package]
+        subprocess.call(command, env=environment)

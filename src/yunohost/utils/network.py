@@ -18,10 +18,14 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
-import logging
+import os
 import re
-import subprocess
+import logging
+import dns.resolver
+
 from moulinette.utils.network import download_text
+from moulinette.utils.process import check_output
+from moulinette.utils.filesystem import read_file
 
 logger = logging.getLogger('yunohost.utils.network')
 
@@ -36,6 +40,17 @@ def get_public_ip(protocol=4):
     else:
         raise ValueError("invalid protocol version")
 
+    # We can know that ipv6 is not available directly if this file does not exists
+    if protocol == 6 and not os.path.exists("/proc/net/if_inet6"):
+        logger.debug("IPv6 appears not at all available on the system, so assuming there's no IP address for that version")
+        return None
+
+    # If we are indeed connected in ipv4 or ipv6, we should find a default route
+    routes = check_output("ip -%s route" % protocol).split("\n")
+    if not any(r.startswith("default") for r in routes):
+        logger.debug("No default route for IPv%s, so assuming there's no IP address for that version" % protocol)
+        return None
+
     try:
         return download_text(url, timeout=30).strip()
     except Exception as e:
@@ -47,7 +62,7 @@ def get_network_interfaces():
 
     # Get network devices and their addresses (raw infos from 'ip addr')
     devices_raw = {}
-    output = subprocess.check_output('ip addr show'.split())
+    output = check_output('ip addr show')
     for d in re.split(r'^(?:[0-9]+: )', output, flags=re.MULTILINE):
         # Extract device name (1) and its addresses (2)
         m = re.match(r'([^\s@]+)(?:@[\S]+)?: (.*)', d, flags=re.DOTALL)
@@ -62,13 +77,59 @@ def get_network_interfaces():
 
 def get_gateway():
 
-    output = subprocess.check_output('ip route show'.split())
+    output = check_output('ip route show')
     m = re.search(r'default via (.*) dev ([a-z]+[0-9]?)', output)
     if not m:
         return None
 
     addr = _extract_inet(m.group(1), True)
     return addr.popitem()[1] if len(addr) == 1 else None
+
+
+# Lazy dev caching to avoid re-reading the file multiple time when calling
+# dig() often during same yunohost operation
+external_resolvers_ = []
+
+
+def external_resolvers():
+
+    global external_resolvers_
+
+    if not external_resolvers_:
+        resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
+        external_resolvers_ = [r.split(" ")[1] for r in resolv_dnsmasq_conf if r.startswith("nameserver")]
+
+    return external_resolvers_
+
+
+def dig(qname, rdtype="A", timeout=5, resolvers="local", edns_size=1500, full_answers=False):
+    """
+    Do a quick DNS request and avoid the "search" trap inside /etc/resolv.conf
+    """
+
+    if resolvers == "local":
+        resolvers = ["127.0.0.1"]
+    elif resolvers == "force_external":
+        resolvers = external_resolvers()
+    else:
+        assert isinstance(resolvers, list)
+
+    resolver = dns.resolver.Resolver(configure=False)
+    resolver.use_edns(0, 0, edns_size)
+    resolver.nameservers = resolvers
+    resolver.timeout = timeout
+    try:
+        answers = resolver.query(qname, rdtype)
+    except (dns.resolver.NXDOMAIN,
+            dns.resolver.NoNameservers,
+            dns.resolver.NoAnswer,
+            dns.exception.Timeout) as e:
+        return ("nok", (e.__class__.__name__, e))
+
+    if not full_answers:
+        answers = [answer.to_text() for answer in answers]
+
+    return ("ok", answers)
 
 
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):

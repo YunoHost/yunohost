@@ -3,7 +3,7 @@ Simple automated generation of a bash_completion file
 for yunohost command from the actionsmap.
 
 Generates a bash completion file assuming the structure
-`yunohost domain action`
+`yunohost category action`
 adds `--help` at the end if one presses [tab] again.
 
 author: Christophe Vuillot
@@ -15,18 +15,39 @@ THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/yunohost.yml'
 BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + '/../bash-completion.d/yunohost'
 
+def get_dict_actions(OPTION_SUBTREE, category):
+    ACTIONS = [action for action in OPTION_SUBTREE[category]["actions"].keys()
+                if not action.startswith('_')]
+    ACTIONS_STR = '{}'.format(' '.join(ACTIONS))
+
+    DICT = { "actions_str": ACTIONS_STR }
+
+    return DICT
+
 with open(ACTIONSMAP_FILE, 'r') as stream:
 
-    # Getting the dictionary containning what actions are possible per domain
+    # Getting the dictionary containning what actions are possible per category
     OPTION_TREE = yaml.load(stream)
-    DOMAINS = [str for str in OPTION_TREE.keys() if not str.startswith('_')]
-    DOMAINS_STR = '"{}"'.format(' '.join(DOMAINS))
+
+    CATEGORY = [category for category in OPTION_TREE.keys() if not category.startswith('_')]
+
+    CATEGORY_STR = '{}'.format(' '.join(CATEGORY))
     ACTIONS_DICT = {}
-    for domain in DOMAINS:
-        ACTIONS = [str for str in OPTION_TREE[domain]['actions'].keys()
-                   if not str.startswith('_')]
-        ACTIONS_STR = '"{}"'.format(' '.join(ACTIONS))
-        ACTIONS_DICT[domain] = ACTIONS_STR
+    for category in CATEGORY:
+        ACTIONS_DICT[category] = get_dict_actions(OPTION_TREE, category)
+
+        ACTIONS_DICT[category]["subcategories"] = {}
+        ACTIONS_DICT[category]["subcategories_str"] = ""
+
+        if "subcategories" in OPTION_TREE[category].keys():
+            SUBCATEGORIES = [ subcategory for subcategory in OPTION_TREE[category]["subcategories"].keys() ]
+
+            SUBCATEGORIES_STR = '{}'.format(' '.join(SUBCATEGORIES))
+            
+            ACTIONS_DICT[category]["subcategories_str"] = SUBCATEGORIES_STR
+
+            for subcategory in SUBCATEGORIES:
+                ACTIONS_DICT[category]["subcategories"][subcategory] = get_dict_actions(OPTION_TREE[category]["subcategories"], subcategory)
 
     with open(BASH_COMPLETION_FILE, 'w') as generated_file:
 
@@ -47,31 +68,49 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
         generated_file.write('\tnarg=${#COMP_WORDS[@]}\n\n')
         generated_file.write('\t# the current word being typed\n')
         generated_file.write('\tcur="${COMP_WORDS[COMP_CWORD]}"\n\n')
-        generated_file.write('\t# the last typed word\n')
-        generated_file.write('\tprev="${COMP_WORDS[COMP_CWORD-1]}"\n\n')
 
-        # If one is currently typing a domain then match with the domain list
-        generated_file.write('\t# If one is currently typing a domain,\n')
-        generated_file.write('\t# match with domains\n')
+        # If one is currently typing a category then match with the category list
+        generated_file.write('\t# If one is currently typing a category,\n')
+        generated_file.write('\t# match with categorys\n')
         generated_file.write('\tif [[ $narg == 2 ]]; then\n')
-        generated_file.write('\t\topts={}\n'.format(DOMAINS_STR))
+        generated_file.write('\t\topts="{}"\n'.format(CATEGORY_STR))
         generated_file.write('\tfi\n\n')
 
         # If one is currently typing an action then match with the action list
-        # of the previously typed domain
-        generated_file.write('\t# If one already typed a domain,\n')
-        generated_file.write('\t# match the actions of that domain\n')
+        # of the previously typed category
+        generated_file.write('\t# If one already typed a category,\n')
+        generated_file.write('\t# match the actions or the subcategories of that category\n')
         generated_file.write('\tif [[ $narg == 3 ]]; then\n')
-        for domain in DOMAINS:
-            generated_file.write('\t\tif [[ $prev == "{}" ]]; then\n'.format(domain))
-            generated_file.write('\t\t\topts={}\n'.format(ACTIONS_DICT[domain]))
+        generated_file.write('\t\t# the category typed\n')
+        generated_file.write('\t\tcategory="${COMP_WORDS[1]}"\n\n')
+        for category in CATEGORY:
+            generated_file.write('\t\tif [[ $category == "{}" ]]; then\n'.format(category))
+            generated_file.write('\t\t\topts="{} {}"\n'.format(ACTIONS_DICT[category]["actions_str"], ACTIONS_DICT[category]["subcategories_str"]))
             generated_file.write('\t\tfi\n')
         generated_file.write('\tfi\n\n')
 
-        # If both domain and action have been typed or the domain
+        generated_file.write('\t# If one already typed an action or a subcategory,\n')
+        generated_file.write('\t# match the actions of that subcategory\n')
+        generated_file.write('\tif [[ $narg == 4 ]]; then\n')
+        generated_file.write('\t\t# the category typed\n')
+        generated_file.write('\t\tcategory="${COMP_WORDS[1]}"\n\n')
+        generated_file.write('\t\t# the action or the subcategory typed\n')
+        generated_file.write('\t\taction_or_subcategory="${COMP_WORDS[2]}"\n\n')
+        for category in CATEGORY:
+            if len(ACTIONS_DICT[category]["subcategories"]):
+                generated_file.write('\t\tif [[ $category == "{}" ]]; then\n'.format(category))
+                for subcategory in ACTIONS_DICT[category]["subcategories"]:
+                    generated_file.write('\t\t\tif [[ $action_or_subcategory == "{}" ]]; then\n'.format(subcategory))
+                    generated_file.write('\t\t\t\topts="{}"\n'.format(ACTIONS_DICT[category]["subcategories"][subcategory]["actions_str"]))
+                    generated_file.write('\t\t\tfi\n')
+                generated_file.write('\t\tfi\n')
+        generated_file.write('\tfi\n\n')
+
+        # If both category and action have been typed or the category
         # was not recognized propose --help (only once)
         generated_file.write('\t# If no options were found propose --help\n')
         generated_file.write('\tif [ -z "$opts" ]; then\n')
+        generated_file.write('\t\tprev="${COMP_WORDS[COMP_CWORD-1]}"\n\n')
         generated_file.write('\t\tif [[ $prev != "--help" ]]; then\n')
         generated_file.write('\t\t\topts=( --help )\n')
         generated_file.write('\t\tfi\n')

@@ -40,25 +40,24 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = log.getActionLogger('yunohost.service')
 
 
-def service_add(name, status=None, log=None, runlevel=None, need_lock=False, description=None, log_type="file"):
+def service_add(name, description=None, log=None, log_type="file", test_status=None, test_conf=None, needs_exposed_ports=None, need_lock=False, status=None):
     """
     Add a custom service
 
     Keyword argument:
         name -- Service name to add
-        status -- Custom status command
-        log -- Absolute path to log file to display
-        runlevel -- Runlevel priority of the service
-        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
         description -- description of the service
-        log_type -- Precise if the corresponding log is a file or a systemd log
+        log -- Absolute path to log file to display
+        log_type -- Specify if the corresponding log is a file or a systemd log
+        test_status -- Specify a custom bash command to check the status of the service. N.B. : it only makes sense to specify this if the corresponding systemd service does not return the proper information.
+        test_conf -- Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
+        needs_exposed_ports -- A list of ports that needs to be publicly exposed for the service to work as intended.
+        need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
+        status -- Deprecated, doesn't do anything anymore. Use test_status instead.
     """
     services = _get_services()
 
-    if not status:
-        services[name] = {'status': 'service'}
-    else:
-        services[name] = {'status': status}
+    services[name] = {}
 
     if log is not None:
         if not isinstance(log, list):
@@ -77,15 +76,31 @@ def service_add(name, status=None, log=None, runlevel=None, need_lock=False, des
         else:
             raise YunohostError('service_add_failed', service=name)
 
-
-    if runlevel is not None:
-        services[name]['runlevel'] = runlevel
+    if description:
+        services[name]['description'] = description
+    else:
+        # Try to get the description from systemd service
+        out = subprocess.check_output("systemctl show %s | grep '^Description='" % name, shell=True).strip()
+        out = out.replace("Description=", "")
+        # If the service does not yet exists or if the description is empty,
+        # systemd will anyway return foo.service as default value, so we wanna
+        # make sure there's actually something here.
+        if out == name + ".service":
+            logger.warning("/!\\ Packager ! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
+        else:
+            services[name]['description'] = out
 
     if need_lock:
         services[name]['need_lock'] = True
 
-    if description is not None:
-        services[name]['description'] = description
+    if test_status:
+        services[name]["test_status"] = test_status
+
+    if test_conf:
+        services[name]["test_conf"] = test_conf
+
+    if needs_exposed_ports:
+        services[name]["needs_exposed_ports"] = needs_exposed_ports
 
     try:
         _save_services(services)
@@ -277,26 +292,20 @@ def service_status(names=[]):
         # the hack was to add fake services...
         # we need to extract regenconf from service at some point, also because
         # some app would really like to use it
-        if "status" in services[name] and services[name]["status"] is None:
+        if services[name].get("status", "") is None:
             continue
 
-        status = _get_service_information_from_systemd(name)
-
-        # try to get status using alternative version if they exists
-        # this is for mariadb/mysql but is generic in case of
-        alternates = services[name].get("alternates", [])
-        while status is None and alternates:
-            status = _get_service_information_from_systemd(alternates.pop())
+        systemd_service = services[name].get("actual_systemd_service", name)
+        status = _get_service_information_from_systemd(systemd_service)
 
         if status is None:
-            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % name)
+            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % systemd_service)
             result[name] = {
                 'status': "unknown",
-                'loaded': "unknown",
-                'active': "unknown",
-                'active_at': "unknown",
+                'start_on_boot': "unknown",
+                'last_state_change': "unknown",
                 'description': "Error: failed to get information for this service, it doesn't exists for systemd",
-                'service_file_path': "unknown",
+                'configuration': "unknown",
             }
 
         else:
@@ -314,21 +323,48 @@ def service_status(names=[]):
 
             result[name] = {
                 'status': str(status.get("SubState", "unknown")),
-                'loaded': str(status.get("UnitFileState", "unknown")),
-                'active': str(status.get("ActiveState", "unknown")),
+                'start_on_boot': str(status.get("UnitFileState", "unknown")),
+                'last_state_change': "unknown",
                 'description': description,
-                'service_file_path': str(status.get("FragmentPath", "unknown")),
+                'configuration': "unknown",
             }
 
             # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
             # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
-            if result[name]["loaded"] == "generated":
-                result[name]["loaded"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+            if result[name]["start_on_boot"] == "generated":
+                result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+            elif os.path.exists("/etc/systemd/system/multi-user.target.wants/%s.service" % name):
+                result[name]["start_on_boot"] = "enabled"
 
-            if "ActiveEnterTimestamp" in status:
-                result[name]['active_at'] = datetime.utcfromtimestamp(status["ActiveEnterTimestamp"] / 1000000)
-            else:
-                result[name]['active_at'] = "unknown"
+            if "StateChangeTimestamp" in status:
+                result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
+
+            # 'test_status' is an optional field to test the status of the service using a custom command
+            if "test_status" in services[name]:
+                p = subprocess.Popen(services[name]["test_status"],
+                                     shell=True,
+                                     executable='/bin/bash',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+
+                p.communicate()
+
+                result[name]["status"] = "running" if p.returncode == 0 else "failed"
+
+            # 'test_status' is an optional field to test the status of the service using a custom command
+            if "test_conf" in services[name]:
+                p = subprocess.Popen(services[name]["test_conf"],
+                                     shell=True,
+                                     executable='/bin/bash',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT)
+
+                out, _ = p.communicate()
+                if p.returncode == 0:
+                    result[name]["configuration"] = "valid"
+                else:
+                    result[name]["configuration"] = "broken"
+                    result[name]["configuration-details"] = out.strip().split("\n")
 
     if len(names) == 1:
         return result[names[0]]
@@ -369,14 +405,12 @@ def service_log(name, number=50):
 
     """
     services = _get_services()
+    number = int(number)
 
     if name not in services.keys():
         raise YunohostError('service_unknown', service=name)
 
-    if 'log' not in services[name]:
-        raise YunohostError('service_no_log', service=name)
-
-    log_list = services[name]['log']
+    log_list = services[name].get('log', [])
     log_type_list = services[name].get('log_type', [])
 
     if not isinstance(log_list, list):
@@ -386,13 +420,16 @@ def service_log(name, number=50):
 
     result = {}
 
+    # First we always add the logs from journalctl / systemd
+    result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
+
     for index, log_path in enumerate(log_list):
         log_type = log_type_list[index]
 
         if log_type == "file":
             # log is a file, read it
             if not os.path.isdir(log_path):
-                result[log_path] = _tail(log_path, int(number)) if os.path.exists(log_path) else []
+                result[log_path] = _tail(log_path, number) if os.path.exists(log_path) else []
                 continue
 
             for log_file in os.listdir(log_path):
@@ -404,10 +441,11 @@ def service_log(name, number=50):
                 if not log_file.endswith(".log"):
                     continue
 
-                result[log_file_path] = _tail(log_file_path, int(number)) if os.path.exists(log_file_path) else []
+                result[log_file_path] = _tail(log_file_path, number) if os.path.exists(log_file_path) else []
         else:
+            # N.B. : this is legacy code that can probably be removed ... to be confirmed
             # get log with journalctl
-            result[log_path] = _get_journalctl_logs(log_path, int(number)).splitlines()
+            result[log_path] = _get_journalctl_logs(log_path, number).splitlines()
 
     return result
 
@@ -529,14 +567,22 @@ def _get_services():
             services = yaml.load(f)
     except:
         return {}
-    else:
-        # some services are marked as None to remove them from YunoHost
-        # filter this
-        for key, value in services.items():
-            if value is None:
-                del services[key]
 
-        return services
+    # some services are marked as None to remove them from YunoHost
+    # filter this
+    for key, value in services.items():
+        if value is None:
+            del services[key]
+
+    # Stupid hack for postgresql which ain't an official service ... Can't
+    # really inject that info otherwise. Real service we want to check for
+    # status and log is in fact postgresql@x.y-main (x.y being the version)
+    if "postgresql" in services:
+        if "description" in services["postgresql"]:
+            del services["postgresql"]["description"]
+        services["postgresql"]["actual_systemd_service"] = "postgresql@9.6-main"
+
+    return services
 
 
 def _save_services(services):
@@ -631,8 +677,10 @@ def _find_previous_log_file(file):
 
 
 def _get_journalctl_logs(service, number="all"):
+    services = _get_services()
+    systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(service, number), shell=True)
+        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(systemd_service, number), shell=True)
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()

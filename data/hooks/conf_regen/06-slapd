@@ -63,6 +63,9 @@ do_pre_regen() {
   cp -a ldap.conf slapd.conf "$ldap_dir"
   cp -a sudo.schema mailserver.schema yunohost.schema "$schema_dir"
 
+  mkdir -p ${pending_dir}/etc/systemd/system/slapd.service.d/
+  cp systemd-override.conf ${pending_dir}/etc/systemd/system/slapd.service.d/ynh-override.conf
+
   install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
 }
 
@@ -81,6 +84,14 @@ do_post_regen() {
   chown -R openldap:openldap /etc/ldap/slapd.d/
   chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
   chmod o-rwx /etc/yunohost/certs/yunohost.org/
+  chmod -R g+rx /etc/yunohost/certs/yunohost.org/
+
+  # If we changed the systemd ynh-override conf
+  if echo "$regen_conf_files" | sed 's/,/\n/g' | grep -q "^/etc/systemd/system/slapd.service.d/ynh-override.conf$"
+  then
+      systemctl daemon-reload
+      systemctl restart slapd
+  fi
 
   [ -z "$regen_conf_files" ] && exit 0
 
@@ -126,7 +137,7 @@ do_post_regen() {
   # wait a maximum time of 5 minutes
   # yes, force-reload behave like a restart
   number_of_wait=0
-  while ! sudo su admin -c '' && ((number_of_wait < 60))
+  while ! su admin -c '' && ((number_of_wait < 60))
   do
       sleep 5
       ((number_of_wait += 1))

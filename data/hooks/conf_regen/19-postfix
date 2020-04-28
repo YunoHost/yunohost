@@ -20,7 +20,7 @@ do_pre_regen() {
 
   # prepare main.cf conf file
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet | tr '\n' ' ')
+  domain_list=$(yunohost domain list --output-as plain --quiet | tr '\n' ' ')
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
@@ -35,7 +35,8 @@ do_pre_regen() {
     > "${default_dir}/postsrsd"
 
   # adapt it for IPv4-only hosts
-  if [ ! -f /proc/net/if_inet6 ]; then
+  ipv6="$(yunohost settings get 'smtp.allow_ipv6')"
+  if [ "$ipv6" == "False" ] || [ ! -f /proc/net/if_inet6 ]; then
     sed -i \
       's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
       "${postfix_dir}/main.cf"
@@ -49,7 +50,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || { sudo service postfix restart && sudo service postsrsd restart; }
+    || { service postfix restart && service postsrsd restart; }
 
 }
 

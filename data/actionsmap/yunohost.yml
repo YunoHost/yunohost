@@ -201,24 +201,34 @@ user:
 
     subcategories:
         group:
-            subcategory_help: Manage group
+            subcategory_help: Manage user groups
             actions:
                 ### user_group_list()
                 list:
-                    action_help: List group
+                    action_help: List existing groups
                     api: GET /users/groups
                     arguments:
-                        --fields:
-                            help: fields to fetch
-                            nargs: "+"
+                        -s:
+                            full: --short
+                            help: List only the names of groups
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all informations known about each groups
+                            action: store_true
+                        -p:
+                            full: --include-primary-groups
+                            help: Also display primary groups (each user has an eponym group that only contains itself)
+                            action: store_true
+                            default: false
 
-                ### user_group_add()
-                add:
+                ### user_group_create()
+                create:
                     action_help: Create group
                     api: POST /users/groups
                     arguments:
                         groupname:
-                            help: The unique group name to add
+                            help: Name of the group to be created
                             extra:
                                 pattern: &pattern_groupname
                                     - !!str ^[a-z0-9_]+$
@@ -230,7 +240,7 @@ user:
                     api: DELETE /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Username to delete
+                            help: Name of the group to be deleted
                             extra:
                                 pattern: *pattern_groupname
 
@@ -240,19 +250,19 @@ user:
                     api: PUT /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Username to update
+                            help: Name of the group to be updated
                             extra:
                                 pattern: *pattern_groupname
                         -a:
-                            full: --add-user
-                            help: User to add in group
+                            full: --add
+                            help: User(s) to add in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
                         -r:
-                            full: --remove-user
-                            help: User to remove in group
+                            full: --remove
+                            help: User(s) to remove in the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
@@ -260,112 +270,69 @@ user:
 
                 ### user_group_info()
                 info:
-                    action_help: Get group information
+                    action_help: Get information about a specific group
                     api: GET /users/groups/<groupname>
                     arguments:
                         groupname:
-                            help: Groupname to get information
+                            help: Name of the group to fetch info about
                             extra:
                                 pattern: *pattern_username
 
         permission:
-            subcategory_help: Manage user permission
+            subcategory_help: Manage permissions
             actions:
+
                 ### user_permission_list()
                 list:
-                    action_help: List access to user and group
-                    api: GET /users/permissions/<app>
+                    action_help: List permissions and corresponding accesses
+                    api: GET /users/permissions
                     arguments:
+                        -s:
+                            full: --short
+                            help: Only list permission names
+                            action: store_true
+                        -f:
+                            full: --full
+                            help: Display all info known about each permission, including the full user list of each group it is granted to.
+                            action: store_true
+
+                ### user_permission_info()
+                info:
+                    action_help: Get information about a specific permission
+                    api: GET /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Name of the permission to fetch info about
+
+                ### user_permission_update()
+                update:
+                    action_help: Manage group or user permissions
+                    api: PUT /users/permissions/<permission>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
                         -a:
-                            full: --app
-                            help: Application to manage the permission
+                            full: --add
+                            help: Group or usernames to grant this permission to
                             nargs: "*"
-                            metavar: APP
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
-                        -g:
-                            full: --group
-                            help: Group name
-                            nargs: "*"
-                            metavar: GROUP
-
-                ### user_permission_add()
-                add:
-                    action_help: Grant access right to users and group
-                    api: POST /users/permissions/<app>
-                    arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
+                            metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
-                        -g:
-                            full: --group
-                            help: Group name
+                        -r:
+                            full: --remove
+                            help: Group or usernames revoke this permission from
                             nargs: "*"
-                            metavar: GROUP
+                            metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
 
-                ### user_permission_remove()
-                remove:
-                    action_help: Revoke access right to users and group
-                    api: PUT /users/permissions/<app>
-                    arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
-                        -u:
-                            full: --username
-                            help: Username
-                            nargs: "*"
-                            metavar: USER
-                            extra:
-                                pattern: *pattern_username
-                        -g:
-                            full: --group
-                            help: Group name
-                            nargs: "*"
-                            metavar: GROUP
-                            extra:
-                                pattern: *pattern_username
-
-                ## user_permission_clear()
-                clear:
-                    action_help: Reset access rights for the app
+                ## user_permission_reset()
+                reset:
+                    action_help: Reset allowed groups to the default (all_users) for a given permission
                     api: DELETE /users/permissions/<app>
                     arguments:
-                        app:
-                            help: Application to manage the permission
-                            nargs: "+"
-                        -p:
-                            full: --permission
-                            help: Name of permission (main by default)
-                            nargs: "*"
-                            metavar: PERMISSION
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
 
         ssh:
             subcategory_help: Manage ssh access
@@ -439,6 +406,10 @@ domain:
         list:
             action_help: List domains
             api: GET /domains
+            arguments:
+                --exclude-subdomains:
+                    help: Filter out domains that are obviously subdomains of other declared domains
+                    action: store_true
 
         ### domain_add()
         add:
@@ -480,6 +451,21 @@ domain:
                         pattern:
                             - !!str ^[0-9]+$
                             - "pattern_positive_number"
+
+        ### domain_maindomain()
+        main-domain:
+            action_help: Check the current main domain, or change it
+            deprecated_alias:
+                - maindomain
+            api:
+                - GET /domains/main
+                - PUT /domains/main
+            arguments:
+                -n:
+                    full: --new-main-domain
+                    help: Change the current main domain
+                    extra:
+                        pattern: *pattern_domain
 
         ### certificate_status()
         cert-status:
@@ -568,78 +554,53 @@ app:
     category_help: Manage apps
     actions:
 
-        ### app_fetchlist()
+        catalog:
+            action_help: Show the catalog of installable application
+            api: GET /appscatalog
+            arguments:
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
+                    action: store_true
+                -c:
+                    full: --with-categories
+                    help: Also return a list of app categories
+                    action: store_true
+
         fetchlist:
-            action_help: Fetch application lists from app servers, or register a new one.
-            api: PUT /appslists
-            arguments:
-                -n:
-                    full: --name
-                    help: Name of the list to fetch (fetches all registered lists if empty)
-                    extra:
-                        pattern: &pattern_listname
-                            - !!str ^[a-z0-9_]+$
-                            - "pattern_listname"
-                -u:
-                    full: --url
-                    help: URL of a new application list to register. To be specified with -n.
-
-        ### app_listlists()
-        listlists:
-            action_help: List registered application lists
-            api: GET /appslists
-
-        ### app_removelist()
-        removelist:
-            action_help: Remove and forget about a given application list
-            api: DELETE /appslists
-            arguments:
-                name:
-                    help: Name of the list to remove
-                    extra:
-                        ask: ask_list_to_remove
-                        pattern: *pattern_listname
+            deprecated: true
 
         ### app_list()
         list:
-            action_help: List apps
+            action_help: List installed apps
             api: GET /apps
             arguments:
                 -f:
-                    full: --filter
-                    help: Name filter of app_id or app_name
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
                 -i:
                     full: --installed
-                    help: Return only installed apps
+                    help: Dummy argument, does nothing anymore (still there only for backward compatibility)
                     action: store_true
-                -b:
-                    full: --with-backup
-                    help: Return only apps with backup feature (force --installed filter)
-                    action: store_true
+                filter:
+                    nargs: '?'
 
         ### app_info()
         info:
-            action_help: Get information about an installed app
+            action_help: Show infos about a specific installed app
             api: GET /apps/<app>
             arguments:
                 app:
                     help: Specific app ID
-                -s:
-                    full: --show-status
-                    help: Show app installation status
-                    action: store_true
-                -r:
-                    full: --raw
-                    help: Return the full app_dict
+                -f:
+                    full: --full
+                    help: Display all details, including the app manifest and various other infos
                     action: store_true
 
         ### app_map()
         map:
-            action_help: List apps by domain
+            action_help: Show the mapping between urls and apps
             api: GET /appsmap
             arguments:
                 -a:
@@ -738,30 +699,6 @@ app:
                     help: Delete the key
                     action: store_true
 
-        ### app_checkport()
-        checkport:
-            action_help: Check availability of a local port
-            api: GET /tools/checkport
-            deprecated: true
-            arguments:
-                port:
-                    help: Port to check
-                    extra:
-                        pattern: &pattern_port
-                            - !!str ^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$
-                            - "pattern_port"
-
-        ### app_checkurl()
-        checkurl:
-            action_help: Check availability of a web path
-            api: GET /tools/checkurl
-            deprecated: True
-            arguments:
-                url:
-                    help: Url to check
-                -a:
-                    full: --app
-                    help: Write domain & path to app settings for further checks
 
         ### app_register_url()
         register-url:
@@ -775,32 +712,6 @@ app:
                 path:
                     help: The path to be registered (e.g. /coffee)
 
-
-        ### app_initdb()
-        initdb:
-            action_help: Create database and initialize it with optionnal attached script
-            api: POST /tools/initdb
-            deprecated: true
-            arguments:
-                user:
-                    help: Name of the DB user
-                -p:
-                    full: --password
-                    help: Password of the DB (generated unless set)
-                -d:
-                    full: --db
-                    help: DB name (user unless set)
-                -s:
-                    full: --sql
-                    help: Initial SQL file
-
-        ### app_debug()
-        debug:
-            action_help: Display all debug informations for an application
-            api: GET /apps/<app>/debug
-            arguments:
-                app:
-                    help: App name
 
         ### app_makedefault()
         makedefault:
@@ -832,6 +743,7 @@ app:
         addaccess:
             action_help: Grant access right to users (everyone by default)
             api: PUT /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -843,6 +755,7 @@ app:
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
             api: DELETE /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -854,6 +767,7 @@ app:
         clearaccess:
             action_help: Reset access rights for the app
             api: POST /access
+            deprecated: true
             arguments:
                 apps:
                     nargs: "+"
@@ -1006,147 +920,6 @@ backup:
 
 
 #############################
-#          Monitor          #
-#############################
-monitor:
-    category_help: Monitor the server
-    actions:
-
-        ### monitor_disk()
-        disk:
-            action_help: Monitor disk space and usage
-            api: GET /monitor/disk
-            arguments:
-                -f:
-                    full: --filesystem
-                    help: Show filesystem disk space
-                    action: append_const
-                    const: filesystem
-                    dest: units
-                -t:
-                    full: --io
-                    help: Show I/O throughput
-                    action: append_const
-                    const: io
-                    dest: units
-                -m:
-                    full: --mountpoint
-                    help: Monitor only the device mounted on MOUNTPOINT
-                    action: store
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_network()
-        network:
-            action_help: Monitor network interfaces
-            api: GET /monitor/network
-            arguments:
-                -u:
-                    full: --usage
-                    help: Show interfaces bit rates
-                    action: append_const
-                    const: usage
-                    dest: units
-                -i:
-                    full: --infos
-                    help: Show network informations
-                    action: append_const
-                    const: infos
-                    dest: units
-                -c:
-                    full: --check
-                    help: Check network configuration
-                    action: append_const
-                    const: check
-                    dest: units
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_system()
-        system:
-            action_help: Monitor system informations and usage
-            api: GET /monitor/system
-            arguments:
-                -m:
-                    full: --memory
-                    help: Show memory usage
-                    action: append_const
-                    const: memory
-                    dest: units
-                -c:
-                    full: --cpu
-                    help: Show CPU usage and load
-                    action: append_const
-                    const: cpu
-                    dest: units
-                -p:
-                    full: --process
-                    help: Show processes summary
-                    action: append_const
-                    const: process
-                    dest: units
-                -u:
-                    full: --uptime
-                    help: Show the system uptime
-                    action: append_const
-                    const: uptime
-                    dest: units
-                -i:
-                    full: --infos
-                    help: Show system informations
-                    action: append_const
-                    const: infos
-                    dest: units
-                -H:
-                    full: --human-readable
-                    help: Print sizes in human readable format
-                    action: store_true
-
-        ### monitor_updatestats()
-        update-stats:
-            action_help: Update monitoring statistics
-            api: POST /monitor/stats
-            arguments:
-                period:
-                    help: Time period to update
-                    choices:
-                        - day
-                        - week
-                        - month
-
-        ### monitor_showstats()
-        show-stats:
-            action_help: Show monitoring statistics
-            api: GET /monitor/stats
-            arguments:
-                period:
-                    help: Time period to show
-                    choices:
-                        - day
-                        - week
-                        - month
-
-        ### monitor_enable()
-        enable:
-            action_help: Enable server monitoring
-            api: PUT /monitor
-            arguments:
-                -s:
-                    full: --with-stats
-                    help: Enable monitoring statistics
-                    action: store_true
-
-        ### monitor_disable()
-        disable:
-            api: DELETE /monitor
-            action_help: Disable server monitoring
-
-
-#############################
 #         Settings          #
 #############################
 settings:
@@ -1209,24 +982,13 @@ service:
             arguments:
                 name:
                     help: Service name to add
-                -s:
-                    full: --status
-                    help: Custom status command
+                -d:
+                    full: --description
+                    help: Description of the service
                 -l:
                     full: --log
                     help: Absolute path to log file to display
                     nargs: "+"
-                -r:
-                    full: --runlevel
-                    help: Runlevel priority of the service
-                    type: int
-                -n:
-                    full: --need_lock
-                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
-                    action: store_true
-                -d:
-                    full: --description
-                    help: Description of the service
                 -t:
                     full: --log_type
                     help: Type of the log (file or systemd)
@@ -1235,6 +997,22 @@ service:
                         - file
                         - systemd
                     default: file
+                --test_status:
+                    help: Specify a custom bash command to check the status of the service. Note that it only makes sense to specify this if the corresponding systemd service does not return the proper information already.
+                --test_conf:
+                    help: Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
+                --needs_exposed_ports:
+                    help: A list of ports that needs to be publicly exposed for the service to work as intended.
+                    nargs: "+"
+                    type: int
+                    metavar: PORT
+                -n:
+                    full: --need_lock
+                    help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
+                    action: store_true
+                -s:
+                    full: --status
+                    help: Deprecated, old option. Does nothing anymore. Possibly check the --test_status option.
 
         ### service_remove()
         remove:
@@ -1276,6 +1054,7 @@ service:
         ### service_restart()
         restart:
             action_help: Restart one or more services. If the services are not running yet, they will be started.
+            api: PUT /services/<names>/restart
             arguments:
                 names:
                     help: Service name to restart
@@ -1579,12 +1358,9 @@ tools:
         ### tools_maindomain()
         maindomain:
             action_help: Check the current main domain, or change it
-            api:
-                - GET /domains/main
-                - PUT /domains/main
             arguments:
                 -n:
-                    full: --new-domain
+                    full: --new-main-domain
                     help: Change the current main domain
                     extra:
                         pattern: *pattern_domain
@@ -1643,26 +1419,6 @@ tools:
                     help: Upgrade only the system packages
                     action: store_true
 
-        ### tools_diagnosis()
-        diagnosis:
-            action_help: YunoHost diagnosis
-            api: GET /diagnosis
-            arguments:
-                -p:
-                    full: --private
-                    help: Show private data (domain, IP)
-                    action: store_true
-
-        ### tools_port_available()
-        port-available:
-            action_help: Check availability of a local port
-            api: GET /tools/portavailable
-            arguments:
-                port:
-                    help: Port to check
-                    extra:
-                        pattern: *pattern_port
-
         ### tools_shell()
         shell:
             action_help: Launch a development shell
@@ -1716,6 +1472,11 @@ tools:
                     full: --list-pending
                     help: List pending configuration files and exit
                     action: store_true
+
+        ### tools_versions()
+        versions:
+            action_help: Display YunoHost's packages versions
+            api: GET /versions
 
     subcategories:
 
@@ -1872,7 +1633,7 @@ log:
             api: GET /logs
             arguments:
                 category:
-                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app 
+                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app
                     nargs: "*"
                 -l:
                     full: --limit
@@ -1898,3 +1659,73 @@ log:
                 --share:
                     help: Share the full log using yunopaste
                     action: store_true
+
+
+#############################
+#          Diagnosis        #
+#############################
+diagnosis:
+    category_help: Look for possible issues on the server
+    actions:
+
+        list:
+            action_help: List diagnosis categories
+            api: GET /diagnosis/list
+
+        show:
+            action_help: Show most recents diagnosis results
+            api: GET /diagnosis/show
+            arguments:
+                categories:
+                    help: Diagnosis categories to display (all by default)
+                    nargs: "*"
+                --full:
+                    help: Display additional information
+                    action: store_true
+                --issues:
+                    help: Only display issues
+                    action: store_true
+                --share:
+                    help: Share the logs using yunopaste
+                    action: store_true
+
+        run:
+            action_help: Run diagnosis
+            api: POST /diagnosis/run
+            arguments:
+                categories:
+                    help: Diagnosis categories to run (all by default)
+                    nargs: "*"
+                --force:
+                    help: Ignore the cached report even if it is still 'fresh'
+                    action: store_true
+                --except-if-never-ran-yet:
+                    help: Don't run anything if diagnosis never ran yet ... (this is meant to be used by the webadmin)
+                    action: store_true
+
+        ignore:
+            action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
+            api: POST /diagnosis/ignore
+            arguments:
+                --add-filter:
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    nargs: "*"
+                    metavar: CRITERIA
+                --remove-filter:
+                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    nargs: "*"
+                    metavar: CRITERIA
+                --list:
+                    help: List active ignore filters
+                    action: store_true
+
+        get:
+            action_help: Low-level command to fetch raw data and status about a specific diagnosis test
+            api: GET /diagnosis/item/<category>
+            arguments:
+                category:
+                    help: Diagnosis category to fetch results from
+                item:
+                    help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
+                    metavar: CRITERIA
+                    nargs: "*"

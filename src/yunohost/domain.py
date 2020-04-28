@@ -25,16 +25,14 @@
 """
 import os
 import re
-import yaml
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-import yunohost.certificate
-
-from yunohost.regenconf import regen_conf
+from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings
+from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
@@ -42,24 +40,26 @@ from yunohost.hook import hook_callback
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list():
+def domain_list(exclude_subdomains=False):
     """
     List domains
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for domain fetching
-        limit -- Maximum number of domain fetched
+        exclude_subdomains -- Filter out domains that are subdomains of other declared domains
 
     """
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
-    result = ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
+    result = [entry['virtualdomain'][0] for entry in ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])]
 
     result_list = []
     for domain in result:
-        result_list.append(domain['virtualdomain'][0])
+        if exclude_subdomains:
+            parent_domain = domain.split(".", 1)[1]
+            if parent_domain in result:
+                continue
+        result_list.append(domain)
 
     return {'domains': result_list}
 
@@ -77,6 +77,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
+
+    if domain.startswith("xmpp-upload."):
+        raise YunohostError("domain_cannot_add_xmpp_upload")
 
     ldap = _get_ldap_interface()
 
@@ -105,6 +108,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         dyndns_subscribe(domain=domain)
 
     try:
+        import yunohost.certificate
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         attr_dict = {
@@ -112,11 +116,24 @@ def domain_add(operation_logger, domain, dyndns=False):
             'virtualdomain': domain,
         }
 
-        if not ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict):
-            raise YunohostError('domain_creation_failed')
+        try:
+            ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict)
+        except Exception as e:
+            raise YunohostError('domain_creation_failed', domain=domain, error=e)
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
+            # Sometime we have weird issues with the regenconf where some files
+            # appears as manually modified even though they weren't touched ...
+            # There are a few ideas why this happens (like backup/restore nginx
+            # conf ... which we shouldnt do ...). This in turns creates funky
+            # situation where the regenconf may refuse to re-create the conf
+            # (when re-creating a domain..)
+            # So here we force-clear the has out of the regenconf if it exists.
+            # This is a pretty ad hoc solution and only applied to nginx
+            # because it's one of the major service, but in the long term we
+            # should identify the root of this bug...
+            _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
             regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
             app_ssowatconf()
 
@@ -152,25 +169,47 @@ def domain_remove(operation_logger, domain, force=False):
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
-        raise YunohostError('domain_cannot_remove_main')
+        other_domains = domain_list()["domains"]
+        other_domains.remove(domain)
+
+        if other_domains:
+            raise YunohostError('domain_cannot_remove_main',
+                                domain=domain, other_domains="\n * " + ("\n * ".join(other_domains)))
+        else:
+            raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
-    for app in os.listdir('/etc/yunohost/apps/'):
-        with open('/etc/yunohost/apps/' + app + '/settings.yml') as f:
-            try:
-                app_domain = yaml.load(f)['domain']
-            except:
-                continue
-            else:
-                if app_domain == domain:
-                    raise YunohostError('domain_uninstall_app_first')
+    app_settings = [_get_app_settings(app) for app in _installed_apps()]
+    if any(s["domain"] == domain for s in app_settings):
+        raise YunohostError('domain_uninstall_app_first')
 
     operation_logger.start()
     ldap = _get_ldap_interface()
-    if ldap.remove('virtualdomain=' + domain + ',ou=domains') or force:
-        os.system('rm -rf /etc/yunohost/certs/%s' % domain)
-    else:
-        raise YunohostError('domain_deletion_failed')
+    try:
+        ldap.remove('virtualdomain=' + domain + ',ou=domains')
+    except Exception as e:
+        raise YunohostError('domain_deletion_failed', domain=domain, error=e)
+
+    os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+
+    # Sometime we have weird issues with the regenconf where some files
+    # appears as manually modified even though they weren't touched ...
+    # There are a few ideas why this happens (like backup/restore nginx
+    # conf ... which we shouldnt do ...). This in turns creates funky
+    # situation where the regenconf may refuse to re-create the conf
+    # (when re-creating a domain..)
+    #
+    # So here we force-clear the has out of the regenconf if it exists.
+    # This is a pretty ad hoc solution and only applied to nginx
+    # because it's one of the major service, but in the long term we
+    # should identify the root of this bug...
+    _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+    # And in addition we even force-delete the file Otherwise, if the file was
+    # manually modified, it may not get removed by the regenconf which leads to
+    # catastrophic consequences of nginx breaking because it can't load the
+    # cert file which disappeared etc..
+    if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
+        _process_regen_conf("/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True)
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
@@ -222,22 +261,81 @@ def domain_dns_conf(domain, ttl=None):
             for record in record_list:
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    is_cli = True if msettings.get('interface') == 'cli' else False
-    if is_cli:
+    if msettings.get('interface') == 'cli':
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
 
 
+@is_unit_operation()
+def domain_main_domain(operation_logger, new_main_domain=None):
+    """
+    Check the current main domain, or change it
+
+    Keyword argument:
+        new_main_domain -- The new domain to be set as the main domain
+
+    """
+    from yunohost.tools import _set_hostname
+
+    # If no new domain specified, we return the current main domain
+    if not new_main_domain:
+        return {'current_main_domain': _get_maindomain()}
+
+    # Check domain exists
+    if new_main_domain not in domain_list()['domains']:
+        raise YunohostError('domain_unknown')
+
+    operation_logger.related_to.append(('domain', new_main_domain))
+    operation_logger.start()
+
+    # Apply changes to ssl certs
+    ssl_key = "/etc/ssl/private/yunohost_key.pem"
+    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
+    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_main_domain
+    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_main_domain
+
+    try:
+        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
+            os.remove(ssl_key)
+        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
+            os.remove(ssl_crt)
+
+        os.symlink(new_ssl_key, ssl_key)
+        os.symlink(new_ssl_crt, ssl_crt)
+
+        _set_maindomain(new_main_domain)
+    except Exception as e:
+        logger.warning("%s" % e, exc_info=1)
+        raise YunohostError('main_domain_change_failed')
+
+    _set_hostname(new_main_domain)
+
+    # Generate SSOwat configuration file
+    app_ssowatconf()
+
+    # Regen configurations
+    try:
+        with open('/etc/yunohost/installed', 'r'):
+            regen_conf()
+    except IOError:
+        pass
+
+    logger.success(m18n.n('main_domain_changed'))
+
+
 def domain_cert_status(domain_list, full=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_status(domain_list, full)
 
 
 def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
 def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+    import yunohost.certificate
     return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
@@ -322,7 +420,7 @@ def _normalize_domain_path(domain, path):
     return domain, path
 
 
-def _build_dns_conf(domain, ttl=3600):
+def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -332,10 +430,8 @@ def _build_dns_conf(domain, ttl=3600):
         "basic": [
             # if ipv4 available
             {"type": "A", "name": "@", "value": "123.123.123.123", "ttl": 3600},
-            {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
             {"type": "AAAA", "name": "@", "value": "valid-ipv6", "ttl": 3600},
-            {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
         ],
         "xmpp": [
             {"type": "SRV", "name": "_xmpp-client._tcp", "value": "0 5 5222 domain.tld.", "ttl": 3600},
@@ -343,6 +439,7 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "CNAME", "name": "muc", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "pubsub", "value": "@", "ttl": 3600},
             {"type": "CNAME", "name": "vjud", "value": "@", "ttl": 3600}
+            {"type": "CNAME", "name": "xmpp-upload", "value": "@", "ttl": 3600}
         ],
         "mail": [
             {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
@@ -351,6 +448,10 @@ def _build_dns_conf(domain, ttl=3600):
             {"type": "TXT", "name": "_dmarc", "value": "\"v=DMARC1; p=none\"", "ttl": 3600}
         ],
         "extra": [
+            # if ipv4 available
+            {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
+            # if ipv6 available
+            {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
             {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
         "example_of_a_custom_rule": [
@@ -362,42 +463,26 @@ def _build_dns_conf(domain, ttl=3600):
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 
+    ###########################
+    # Basic ipv4/ipv6 records #
+    ###########################
+
     basic = []
-
-    # Basic ipv4/ipv6 records
     if ipv4:
-        basic += [
-            ["@", ttl, "A", ipv4],
-            ["*", ttl, "A", ipv4],
-        ]
+        basic.append(["@", ttl, "A", ipv4])
 
     if ipv6:
-        basic += [
-            ["@", ttl, "AAAA", ipv6],
-            ["*", ttl, "AAAA", ipv6],
-        ]
+        basic.append(["@", ttl, "AAAA", ipv6])
+    elif include_empty_AAAA_if_no_ipv6:
+        basic.append(["@", ttl, "AAAA", None])
 
-    # XMPP
-    xmpp = [
-        ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
-        ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain],
-        ["muc", ttl, "CNAME", "@"],
-        ["pubsub", ttl, "CNAME", "@"],
-        ["vjud", ttl, "CNAME", "@"],
-    ]
+    #########
+    # Email #
+    #########
 
-    # SPF record
-    spf_record = '"v=spf1 a mx'
-    if ipv4:
-        spf_record += ' ip4:{ip4}'.format(ip4=ipv4)
-    if ipv6:
-        spf_record += ' ip6:{ip6}'.format(ip6=ipv6)
-    spf_record += ' -all"'
-
-    # Email
     mail = [
         ["@", ttl, "MX", "10 %s." % domain],
-        ["@", ttl, "TXT", spf_record],
+        ["@", ttl, "TXT", '"v=spf1 a mx -all"'],
     ]
 
     # DKIM/DMARC record
@@ -409,12 +494,39 @@ def _build_dns_conf(domain, ttl=3600):
             ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
         ]
 
-    # Extra
-    extra = [
-        ["@", ttl, "CAA", '128 issue "letsencrypt.org"']
+    ########
+    # XMPP #
+    ########
+
+    xmpp = [
+        ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
+        ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain],
+        ["muc", ttl, "CNAME", "@"],
+        ["pubsub", ttl, "CNAME", "@"],
+        ["vjud", ttl, "CNAME", "@"],
+        ["xmpp-upload", ttl, "CNAME", "@"],
     ]
 
-    # Official record
+    #########
+    # Extra #
+    #########
+
+    extra = []
+
+    if ipv4:
+        extra.append(["*", ttl, "A", ipv4])
+
+    if ipv6:
+        extra.append(["*", ttl, "AAAA", ipv6])
+    elif include_empty_AAAA_if_no_ipv6:
+        extra.append(["*", ttl, "AAAA", None])
+
+    extra.append(["@", ttl, "CAA", '128 issue "letsencrypt.org"'])
+
+    ####################
+    # Standard records #
+    ####################
+
     records = {
         "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
         "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
@@ -422,7 +534,12 @@ def _build_dns_conf(domain, ttl=3600):
         "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
     }
 
-    # Custom records
+    ##################
+    # Custom records #
+    ##################
+
+    # Defined by custom hooks ships in apps for example ...
+
     hook_results = hook_callback('custom_dns_rules', args=[domain])
     for hook_name, results in hook_results.items():
         #
