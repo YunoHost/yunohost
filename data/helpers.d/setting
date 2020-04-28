@@ -170,7 +170,7 @@ ynh_webpath_register () {
 # | arg: -a, allowed=           - (optional) A list of group/user to allow for the permission
 # | arg: -l, label=             - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
 # |                                     Default is "APP_LABEL (permission name)".
-# | arg: -t, show_tile=         - (optional) Define if a tile will be shown in the SSO
+# | arg: -t, show_tile=         - (optional) Define if a tile will be shown in the SSO. Default is false (for the permission different than 'main').
 # | arg: -P, protected=         - (optional) Define if this permission is protected. If it is protected the administrator
 # |                             won't be able to add or remove the visitors group of this permission.
 # |                             By default it's 'true' (for the permission different than 'main').
@@ -215,7 +215,13 @@ ynh_permission_create() {
 
     if [[ -n $additional_urls ]]
     then
-        additional_urls=",additional_urls=['${additional_urls//';'/"','"}']"
+        # Convert a list from getopts to python list
+        # Note that getopts separate the args with ';'
+        # By example:
+        # --additional_urls /urlA /urlB
+        # will be:
+        # additional_urls=['/urlA', '/urlB']
+        additional_urls=",additional_urls=['${additional_urls//;/\',\'}']"
     fi
 
     if [[ -n $auth_header ]]
@@ -228,8 +234,15 @@ ynh_permission_create() {
         fi
     fi
 
-    if [[ -n $allowed ]]; then
-        allowed=",allowed=['${allowed//';'/"','"}']"
+    if [[ -n $allowed ]]
+    then
+        # Convert a list from getopts to python list
+        # Note that getopts separate the args with ';'
+        # By example:
+        # --additional_urls /urlA /urlB
+        # will be:
+        # additional_urls=['/urlA', '/urlB']
+        allowed=",allowed=['${allowed//;/\',\'}']"
     fi
 
     if [[ -n ${label:-} ]]; then
@@ -238,16 +251,20 @@ ynh_permission_create() {
         label=",label='$YNH_APP_LABEL ($permission)'"
     fi
 
-    if [[ -n ${show_tile:-} ]]; then
-        if [ $show_tile == "true" ]; then
+    if [[ -n ${show_tile:-} ]]
+    then
+        if [ $show_tile == "true" ]
+        then
             show_tile=",show_tile=True"
         else
             show_tile=",show_tile=False"
         fi
     fi
 
-    if [[ -n ${protected:-} ]]; then
-        if [ $protected == "true" ]; then
+    if [[ -n ${protected:-} ]]
+    then
+        if [ $protected == "true" ]
+        then
             protected=",protected=True"
         else
             protected=",protected=False"
@@ -329,15 +346,30 @@ ynh_permission_url() {
 
     if [[ -n $add_url ]]
     then
-        add_url=",add_url=['${add_url//';'/"','"}']"
+        # Convert a list from getopts to python list
+        # Note that getopts separate the args with ';'
+        # By example:
+        # --additional_urls /urlA /urlB
+        # will be:
+        # additional_urls=['/urlA', '/urlB']
+        add_url=",add_url=['${add_url//;/\',\'}']"
     fi
 
-    if [[ -n $remove_url ]]; then
-        remove_url=",remove_url=['${remove_url//';'/"','"}']"
+    if [[ -n $remove_url ]]
+    then
+        # Convert a list from getopts to python list
+        # Note that getopts separate the args with ';'
+        # By example:
+        # --additional_urls /urlA /urlB
+        # will be:
+        # additional_urls=['/urlA', '/urlB']
+        remove_url=",remove_url=['${remove_url//;/\',\'}']"
     fi
 
-    if [[ -n $auth_header ]]; then
-        if [ $auth_header == "true" ]; then
+    if [[ -n $auth_header ]]
+    then
+        if [ $auth_header == "true" ]
+        then
             auth_header=",auth_header=True"
         else
             auth_header=",auth_header=False"
@@ -385,10 +417,22 @@ ynh_permission_update() {
 
     if [[ -n $add ]]
     then
+        # Convert a list from getopts to python list
+        # Note that getopts separate the args with ';'
+        # By example:
+        # --additional_urls /urlA /urlB
+        # will be:
+        # additional_urls=['/urlA', '/urlB']
         add=",add=['${add//';'/"','"}']"
     fi
     if [[ -n $remove ]]
     then
+        # Convert a list from getopts to python list
+        # Note that getopts separate the args with ';'
+        # By example:
+        # --additional_urls /urlA /urlB
+        # will be:
+        # additional_urls=['/urlA', '/urlB']
         remove=",remove=['${remove//';'/"','"}']"
     fi
 
@@ -397,8 +441,10 @@ ynh_permission_update() {
         label=",label='$label'"
     fi
 
-    if [[ -n $show_tile ]]; then
-        if [ $show_tile == "true" ]; then
+    if [[ -n $show_tile ]]
+    then
+        if [ $show_tile == "true" ]
+        then
             show_tile=",show_tile=True"
         else
             show_tile=",show_tile=False"
@@ -406,7 +452,8 @@ ynh_permission_update() {
     fi
 
     if [[ -n $protected ]]; then
-        if [ $protected == "true" ]; then
+        if [ $protected == "true" ]
+        then
             protected=",protected=True"
         else
             protected=",protected=False"
