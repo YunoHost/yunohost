@@ -279,6 +279,7 @@ ynh_psql_remove_db() {
 #
 # Requires YunoHost version 2.7.13 or higher.
 ynh_psql_test_if_first_run() {
+
     if [ -f "$PSQL_ROOT_PWD_FILE" ]
     then
         ynh_print_info --message="PostgreSQL is already installed, no need to create master password"
@@ -297,7 +298,12 @@ ynh_psql_test_if_first_run() {
         local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
         local logfile=/var/log/postgresql/postgresql-9.6-main.log
     else
-        ynh_die "postgresql shoud be 9.4 or 9.6"
+        if dpkg --list | grep -q "ii  postgresql-9."
+        then
+            ynh_die "It looks like postgresql was not properly configured ? /etc/postgresql/9.* is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
+        else
+            ynh_die "postgresql shoud be 9.4 or 9.6"
+        fi
     fi
 
     ynh_systemd_action --service_name=postgresql --action=start
