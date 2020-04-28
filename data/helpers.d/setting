@@ -201,7 +201,12 @@ ynh_permission_create() {
     local protected
     ynh_handle_getopts_args "$@"
     url=${url:-}
+    additional_urls=${additional_urls:-}
+    auth_header=${auth_header:-}
     allowed=${allowed:-}
+    label=${label:-}
+    show_tile=${show_tile:-}
+    protected=${protected:-}
 
     if [[ -n $url ]]
     then
@@ -312,6 +317,10 @@ ynh_permission_url() {
     local clear_urls
     ynh_handle_getopts_args "$@"
     url=${url:-}
+    add_url=${add_url:-}
+    remove_url=${remove_url:-}
+    auth_header=${auth_header:-}
+    clear_urls=${clear_urls:-}
 
     if [[ -n $url ]]
     then
@@ -370,6 +379,9 @@ ynh_permission_update() {
     ynh_handle_getopts_args "$@"
     add=${add:-}
     remove=${remove:-}
+    label=${label:-}
+    show_tile=${show_tile:-}
+    protected=${protected:-}
 
     if [[ -n $add ]]
     then
