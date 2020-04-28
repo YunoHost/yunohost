@@ -31,8 +31,8 @@ do_pre_regen() {
     export relay_port="$(yunohost settings get 'smtp.relay.port')"
     export relay_user="$(yunohost settings get 'smtp.relay.user')"
     relay_password="$(yunohost settings get 'smtp.relay.password')"
-    echo "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > /etc/postfix/sasl_passwd
-    postmap /etc/postfix/sasl_passwd
+    echo "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
+    postmap ${postfix_dir}/sasl_passwd
   fi
   export main_domain
   export domain_list="$YNH_DOMAINS"
