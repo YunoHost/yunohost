@@ -158,20 +158,20 @@ ynh_webpath_register () {
 
 # Create a new permission for the app
 #
-# example: ynh_permission_create --permission admin --url /admin --additional_urls 'domain.tld/otherurl /superadmin' --allowed alice bob --label 'My app admin'
+# example: ynh_permission_create --permission=admin --url=/admin --additional_urls=domain.tld/otherurl /superadmin --allowed=alice bob --label="My app admin"
 #
-# usage: ynh_permission_create --permission "permission" [--url "url"] [--additional_urls "second-url" [ "other-url" ]] [--auth_header true|false]
-#                                                        [--allowed group1 [ group2 ]] [--label "label"] [--show_tile true|false]
-#                                                        [--protected true|false]
-# | arg: permission - the name for the permission (by default a permission named "main" already exist)
-# | arg: url                - (optional) URL for which access will be allowed/forbidden
-# | arg: additional_urls    - (optional) List of additional URL for which access will be allowed/forbidden
-# | arg: auth_header        - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
-# | arg: allowed            - (optional) A list of group/user to allow for the permission
-# | arg: label              - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
-# |                                      Default is "APP_LABEL (permission name)".
-# | arg: show_tile          - (optional) Define if a tile will be shown in the SSO
-# | arg: protected          - (optional) Define if this permission is protected. If it is protected the administrator
+# usage: ynh_permission_create --permission="permission" [--url="url"] [--additional_urls="second-url" [ "third-url" ]] [--auth_header=true|false]
+#                                                        [--allowed=group1 [ group2 ]] [--label="label"] [--show_tile=true|false]
+#                                                        [--protected=true|false]
+# | arg: -p, permission=        - the name for the permission (by default a permission named "main" already exist)
+# | arg: -u, url=               - (optional) URL for which access will be allowed/forbidden
+# | arg: -A, additional_urls=   - (optional) List of additional URL for which access will be allowed/forbidden
+# | arg: -h, auth_header=       - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
+# | arg: -a, allowed=           - (optional) A list of group/user to allow for the permission
+# | arg: -l, label=             - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
+# |                                     Default is "APP_LABEL (permission name)".
+# | arg: -t, show_tile=         - (optional) Define if a tile will be shown in the SSO
+# | arg: -P, protected=         - (optional) Define if this permission is protected. If it is protected the administrator
 # |                             won't be able to add or remove the visitors group of this permission.
 # |                             By default it's 'true' (for the permission different than 'main').
 #
@@ -190,7 +190,7 @@ ynh_webpath_register () {
 ynh_permission_create() {
     # Declare an array to define the options of this helper.
     local legacy_args=puAhaltP
-    declare -A args_array=( [p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected= )
+    local -A args_array=( [p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected= )
     local permission
     local url
     local additional_urls
@@ -294,21 +294,21 @@ ynh_permission_exists() {
 
 # Redefine the url associated to a permission
 #
-# usage: ynh_permission_url --permission "permission" [--url "url"] [--add_url "new-url" [ "other-new-url" ]] [--remove_url "old-url" [ "other-old-url"]] 
-#                                                     [--auth_header true|false][--clear_urls]
-# | arg: permission         - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-# | arg: url                - (optional) URL for which access will be allowed/forbidden.
+# usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]] 
+#                                                     [--auth_header=true|false] [--clear_urls]
+# | arg: -p, permission=        - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
+# | arg: -u, url=               - (optional) URL for which access will be allowed/forbidden.
 # |                                      Note that if you want to remove url you can pass an empty sting as arguments ("").
-# | arg: add_url            - (optional) List of additional url to add for which access will be allowed/forbidden.
-# | arg: remove_url         - (optional) List of additional url to remove for which access will be allowed/forbidden
-# | arg: auth_header        - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
-# | arg: clear_urls         - (optional) Clean all urls (url and additional_urls)
+# | arg: -a, add_url=           - (optional) List of additional url to add for which access will be allowed/forbidden.
+# | arg: -r, remove_url=        - (optional) List of additional url to remove for which access will be allowed/forbidden
+# | arg: -h, auth_header=       - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
+# | arg: -c, clear_urls         - (optional) Clean all urls (url and additional_urls)
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_url() {
     # Declare an array to define the options of this helper.
     local legacy_args=puarhc
-    declare -A args_array=([p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls)
+    local -A args_array=( [p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls )
     local permission
     local url
     local add_url
@@ -355,21 +355,21 @@ ynh_permission_url() {
 
 # Update a permission for the app
 #
-# usage: ynh_permission_update --permission "permission" [--add "group" ["group" ...]] [--remove  "group" ["group" ...]]
-#                                                        [--label "label"] [--show_tile true|false] [--protected true|false]
-# | arg: permission         - the name for the permission (by default a permission named "main" already exist)
-# | arg: add                - the list of group or users to enable add to the permission
-# | arg: remove             - the list of group or users to remove from the permission
-# | arg: label              - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
-# | arg: show_tile          - (optional) Define if a tile will be shown in the SSO
-# | arg: protected          - (optional) Define if this permission is protected. If it is protected the administrator
+# usage: ynh_permission_update --permission "permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
+#                                                        [--label="label"] [--show_tile=true|false] [--protected=true|false]
+# | arg: -p, permission=        - the name for the permission (by default a permission named "main" already exist)
+# | arg: -a, add=               - the list of group or users to enable add to the permission
+# | arg: -r, remove=            - the list of group or users to remove from the permission
+# | arg: -l, label=             - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
+# | arg: -t, show_tile=         - (optional) Define if a tile will be shown in the SSO
+# | arg: -P, protected=         - (optional) Define if this permission is protected. If it is protected the administrator
 # |                                      won't be able to add or remove the visitors group of this permission.
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
     # Declare an array to define the options of this helper.
-    local legacy_args=parlsp
-    declare -A args_array=( [p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected= )
+    local legacy_args=parltP
+    local -A args_array=( [p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected= )
     local permission
     local add
     local remove
