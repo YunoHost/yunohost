@@ -162,7 +162,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         for domain in domains:
             expire_date = self.get_domain_expiration(domain)
 
-            if isinstance(expire_date, str) and expire_date != "not_working":
+            if isinstance(expire_date, str):
                 status_ns, _ = dig(domain, "NS", resolvers="force_external")
                 status_a, _ = dig(domain, "A", resolvers="force_external")
                 if "ok" not in [status_ns, status_a]:
@@ -208,13 +208,8 @@ class DNSRecordsDiagnoser(Diagnoser):
         """
         Return the expiration datetime of a domain or None
         """
-        command = "whois -H %s" % (domain)
-
-        try:
-            out = check_output(command).strip().split("\n")
-        except CalledProcessError as e:
-            self.logger_warning("Unable to get whois data for %s . Could be due to a rate limit on whois. Error: %s" % (domain, str(e)))
-            return "not_working"
+        command = "whois -H %s || echo failed" % (domain)
+        out = check_output(command).strip().split("\n")
 
         # Reduce output to determine if whois answer is equivalent to NOT FOUND
         filtered_out = [line for line in out
