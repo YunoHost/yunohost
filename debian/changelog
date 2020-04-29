@@ -74,6 +74,23 @@ yunohost (3.8.0) testing; urgency=low
 
  -- Kay0u <pierre@kayou.io>  Thu, 09 Apr 2020 19:59:18 +0000
 
+yunohost (3.7.1.3) stable; urgency=low
+
+   - [fix] Fix the hotfix about trailing slash, it was breaking access to app installed on domain root..
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 28 Apr 2020 19:00:00  +0000
+
+yunohost (3.7.1.2) stable; urgency=low
+
+   - [fix] Be more robust against some situation where some archives are corrupted 
+   - [fix] Make nginx regen-conf more robust against broken config or service failing to start, show info to help debugging 
+   - [fix] Force-flush the regen-conf for nginx domain conf when adding/removing a domain... 
+   - [fix] app_map : Make sure to return / and not empty string for stuff on domain root 
+   - [fix] Improve ynh_systemd_action to wait for fail2ban to reload 
+   - [fix] Improper use of logger.exception in app.py leading to infamous weird "KeyError: label"
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 27 Apr 2020 23:50:00  +0000
+
 yunohost (3.7.1.1) stable; urgency=low
 
    - [fix] lxc uid number is limited to 65536 by default (0c9a4509)

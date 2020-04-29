@@ -5,6 +5,7 @@
 # [internal]
 #
 # usage: ynh_wait_dpkg_free
+# | exit: Return 1 if dpkg is broken
 #
 # Requires YunoHost version 3.3.1 or higher.
 ynh_wait_dpkg_free() {
@@ -27,7 +28,7 @@ ynh_wait_dpkg_free() {
             while read dpkg_file <&9
             do
                 # Check if the name of this file contains only numbers.
-                if echo "$dpkg_file" | grep -Pq "^[[:digit:]]+$"
+                if echo "$dpkg_file" | grep --perl-regexp --quiet "^[[:digit:]]+$"
                 then
                     # If so, that a remaining of dpkg.
                     ynh_print_err "E: dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
@@ -45,20 +46,20 @@ ynh_wait_dpkg_free() {
 # example: ynh_package_is_installed --package=yunohost && echo "ok"
 #
 # usage: ynh_package_is_installed --package=name
-# | arg: -p, --package - the package name to check
+# | arg: -p, --package=     - the package name to check
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    declare -Ar args_array=( [p]=package= )
+    local -A args_array=( [p]=package= )
     local package
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
     ynh_wait_dpkg_free
-    dpkg-query -W -f '${Status}' "$package" 2>/dev/null \
-        | grep -c "ok installed" &>/dev/null
+    dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null \
+        | grep --count "ok installed" &>/dev/null
 }
 
 # Get the version of an installed package
@@ -66,20 +67,21 @@ ynh_package_is_installed() {
 # example: version=$(ynh_package_version --package=yunohost)
 #
 # usage: ynh_package_version --package=name
-# | arg: -p, --package - the package name to get version
+# | arg: -p, --package=     - the package name to get version
 # | ret: the version or an empty string
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_version() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    declare -Ar args_array=( [p]=package= )
+    local -A args_array=( [p]=package= )
     local package
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ynh_package_is_installed "$package"; then
-        dpkg-query -W -f '${Version}' "$package" 2>/dev/null
+    if ynh_package_is_installed "$package"
+    then
+        dpkg-query --show --showformat='${Version}' "$package" 2>/dev/null
     else
         echo ''
     fi
@@ -94,7 +96,7 @@ ynh_package_version() {
 # Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
-    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get -y $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes $@
 }
 
 # Update package index files
@@ -113,8 +115,8 @@ ynh_package_update() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_install() {
-    ynh_apt --no-remove -o Dpkg::Options::=--force-confdef \
-            -o Dpkg::Options::=--force-confold install $@
+    ynh_apt --no-remove --option Dpkg::Options::=--force-confdef \
+        --option Dpkg::Options::=--force-confold install $@
 }
 
 # Remove package(s)
@@ -163,8 +165,8 @@ ynh_package_install_from_equivs () {
     local controlfile=$1
 
     # retrieve package information
-    local pkgname=$(grep '^Package: ' $controlfile | cut -d' ' -f 2)	# Retrieve the name of the debian package
-    local pkgversion=$(grep '^Version: ' $controlfile | cut -d' ' -f 2)	# And its version number
+    local pkgname=$(grep '^Package: ' $controlfile | cut --delimiter=' ' --fields=2)	# Retrieve the name of the debian package
+    local pkgversion=$(grep '^Version: ' $controlfile | cut --delimiter=' ' --fields=2)	# And its version number
     [[ -z "$pkgname" || -z "$pkgversion" ]] \
         && ynh_die --message="Invalid control file"	# Check if this 2 variables aren't empty.
 
@@ -172,7 +174,7 @@ ynh_package_install_from_equivs () {
     ynh_package_update
 
     # Build and install the package
-    local TMPDIR=$(mktemp -d)
+    local TMPDIR=$(mktemp --directory)
 
     # Force the compatibility level at 10, levels below are deprecated 
     echo 10 > /usr/share/equivs/template/debian/compat
@@ -185,21 +187,19 @@ ynh_package_install_from_equivs () {
     cp "$controlfile" "${TMPDIR}/control"
     (cd "$TMPDIR"
     LC_ALL=C equivs-build ./control 1> /dev/null
-    dpkg --force-depends -i "./${pkgname}_${pkgversion}_all.deb" 2>&1)
-    # If install fails we use "apt-get check" to try to debug and diagnose possible unmet dependencies
-    # Note the use of { } which allows to group commands without starting a subshell (otherwise the ynh_die wouldn't exit the current shell). 
-    # Be careful with the syntax : the semicolon + space at the end is important!
+    dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1)
 
-    ynh_package_install -f || \
-        { # If the installation failed
+    ynh_package_install --fix-broken || \
+        { # If the installation failed 
+        # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
         # Get the list of dependencies from the deb
         local dependencies="$(dpkg --info "$TMPDIR/${pkgname}_${pkgversion}_all.deb" | grep Depends | \
-             sed 's/^ Depends: //' | sed 's/,//g')"
+            sed 's/^ Depends: //' | sed 's/,//g')"
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from '--fix-broken' to the end.
-        ynh_package_install $dependencies --dry-run | sed -n '/--fix-broken/,$p' >&2
+        ynh_package_install $dependencies --dry-run | sed --quiet '/--fix-broken/,$p' >&2
         ynh_die --message="Unable to install dependencies"; }
-    [[ -n "$TMPDIR" ]] && rm -rf $TMPDIR	# Remove the temp dir.
+    [[ -n "$TMPDIR" ]] && rm --recursive --force $TMPDIR	# Remove the temp dir.
 
     # check if the package is actually installed
     ynh_package_is_installed "$pkgname"
@@ -222,10 +222,10 @@ ynh_install_app_dependencies () {
     local dependencies=${dependencies//|/ | }
     local manifest_path="../manifest.json"
     if [ ! -e "$manifest_path" ]; then
-    	manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
+        manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
     fi
 
-    local version=$(grep '\"version\": ' "$manifest_path" | cut -d '"' -f 4)	# Retrieve the version number in the manifest file.
+    local version=$(grep '\"version\": ' "$manifest_path" | cut --delimiter='"' --fields=4)	# Retrieve the version number in the manifest file.
     if [ ${#version} -eq 0 ]; then
         version="1.0"
     fi
@@ -251,16 +251,16 @@ ynh_install_app_dependencies () {
     # https://github.com/YunoHost/issues/issues/1407
     # 
     # If we require to install php dependency
-    if echo $dependencies | grep -q 'php';
+    if echo $dependencies | grep --quiet 'php'
     then
         # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
-        if dpkg --list | grep "php7.0" | grep -q -v "7.0.33-0+deb9"
+        if dpkg --list | grep "php7.0" | grep --quiet --invert-match "7.0.33-0+deb9"
         then
             # And sury ain't already installed
-            if ! grep -nrq "sury" /etc/apt/sources.list*
+            if ! grep --line-number --recursive --quiet "sury" /etc/apt/sources.list*
             then
                 # Re-add sury
-                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(lsb_release -sc) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version
+                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version
 
                 # Pin this sury repository to prevent sury of doing shit
                 ynh_pin_repo --package="*" --pin="origin \"packages.sury.org\"" --priority=200 --name=extra_php_version
@@ -287,34 +287,34 @@ EOF
 
 # Add dependencies to install with ynh_install_app_dependencies
 #
-# [internal]
-#
 # usage: ynh_add_app_dependencies --package=phpversion [--replace]
-# | arg: -p, --package - Packages to add as dependencies for the app.
-# | arg: -r, --replace - Replace dependencies instead of adding to existing ones.
+# | arg: -p, --package=     - Packages to add as dependencies for the app.
+# | arg: -r, --replace      - Replace dependencies instead of adding to existing ones.
+#
+# Requires YunoHost version 3.8.1 or higher.
 ynh_add_app_dependencies () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=pr
-	declare -Ar args_array=( [p]=package= [r]=replace)
-	local package
-	local replace
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	replace=${replace:-0}
+    # Declare an array to define the options of this helper.
+    local legacy_args=pr
+    local -A args_array=( [p]=package= [r]=replace)
+    local package
+    local replace
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    replace=${replace:-0}
 
-	local current_dependencies=""
-	if [ $replace -eq 0 ]
-	then
-		local dep_app=${app//_/-}	# Replace all '_' by '-'
-		if ynh_package_is_installed --package="${dep_app}-ynh-deps"
-		then
-			current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
-		fi
+    local current_dependencies=""
+    if [ $replace -eq 0 ]
+    then
+        local dep_app=${app//_/-}	# Replace all '_' by '-'
+        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
+        then
+            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
+        fi
 
-		current_dependencies=${current_dependencies// | /|}
-	fi
+        current_dependencies=${current_dependencies// | /|}
+    fi
 
-	ynh_install_app_dependencies "${current_dependencies}${package}"
+    ynh_install_app_dependencies "${current_dependencies}${package}"
 }
 
 # Remove fake package and its dependencies
@@ -334,36 +334,38 @@ ynh_remove_app_dependencies () {
 # Install packages from an extra repository properly.
 #
 # usage: ynh_install_extra_app_dependencies --repo="repo" --package="dep1 dep2" [--key=key_url] [--name=name]
-# | arg: -r, --repo - Complete url of the extra repository.
-# | arg: -p, --package - The packages to install from this extra repository
-# | arg: -k, --key - url to get the public key.
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
+# | arg: -r, --repo=    - Complete url of the extra repository.
+# | arg: -p, --package= - The packages to install from this extra repository
+# | arg: -k, --key=     - url to get the public key.
+# | arg: -n, --name=    - Name for the files for this repo, $app as default value.
+#
+# Requires YunoHost version 3.8.1 or higher.
 ynh_install_extra_app_dependencies () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=rpkn
-	declare -Ar args_array=( [r]=repo= [p]=package= [k]=key= [n]=name= )
-	local repo
-	local package
-	local key
-	local name
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	name="${name:-$app}"
-	key=${key:-}
+    # Declare an array to define the options of this helper.
+    local legacy_args=rpkn
+    local -A args_array=( [r]=repo= [p]=package= [k]=key= [n]=name= )
+    local repo
+    local package
+    local key
+    local name
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+    key=${key:-}
 
-	# Set a key only if asked
-	if [ -n "$key" ]
-	then
-		key="--key=$key"
-	fi
-	# Add an extra repository for those packages
-	ynh_install_extra_repo --repo="$repo" $key --priority=995 --name=$name
+    # Set a key only if asked
+    if [ -n "$key" ]
+    then
+        key="--key=$key"
+    fi
+    # Add an extra repository for those packages
+    ynh_install_extra_repo --repo="$repo" $key --priority=995 --name=$name
 
-	# Install requested dependencies from this extra repository.
-	ynh_add_app_dependencies --package="$package"
+    # Install requested dependencies from this extra repository.
+    ynh_add_app_dependencies --package="$package"
 
-	# Remove this extra repository after packages are installed
-	ynh_remove_extra_repo --name=$app
+    # Remove this extra repository after packages are installed
+    ynh_remove_extra_repo --name=$app
 }
 
 # Add an extra repository correctly, pin it and get the key.
@@ -371,72 +373,74 @@ ynh_install_extra_app_dependencies () {
 # [internal]
 #
 # usage: ynh_install_extra_repo --repo="repo" [--key=key_url] [--priority=priority_value] [--name=name] [--append]
-# | arg: -r, --repo - Complete url of the extra repository.
-# | arg: -k, --key - url to get the public key.
-# | arg: -p, --priority - Priority for the pin
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
-# | arg: -a, --append - Do not overwrite existing files.
+# | arg: -r, --repo=        - Complete url of the extra repository.
+# | arg: -k, --key=         - url to get the public key.
+# | arg: -p, --priority=    - Priority for the pin
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
+#
+# Requires YunoHost version 3.8.1 or higher.
 ynh_install_extra_repo () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=rkpna
-	declare -Ar args_array=( [r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append )
-	local repo
-	local key
-	local priority
-	local name
-	local append
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	name="${name:-$app}"
-	append=${append:-0}
-	key=${key:-}
-	priority=${priority:-}
+    # Declare an array to define the options of this helper.
+    local legacy_args=rkpna
+    local -A args_array=( [r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append )
+    local repo
+    local key
+    local priority
+    local name
+    local append
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+    append=${append:-0}
+    key=${key:-}
+    priority=${priority:-}
 
-	if [ $append -eq 1 ]
-	then
-		append="--append"
-		wget_append="tee -a"
-	else
-		append=""
-		wget_append="tee"
-	fi
+    if [ $append -eq 1 ]
+    then
+        append="--append"
+        wget_append="tee --append"
+    else
+        append=""
+        wget_append="tee"
+    fi
 
-	# Split the repository into uri, suite and components.
-	# Remove "deb " at the beginning of the repo.
-	repo="${repo#deb }"
+    # Split the repository into uri, suite and components.
+    # Remove "deb " at the beginning of the repo.
+    repo="${repo#deb }"
 
-	# Get the uri
-	local uri="$(echo "$repo" | awk '{ print $1 }')"
+    # Get the uri
+    local uri="$(echo "$repo" | awk '{ print $1 }')"
 
-	# Get the suite
-	local suite="$(echo "$repo" | awk '{ print $2 }')"
+    # Get the suite
+    local suite="$(echo "$repo" | awk '{ print $2 }')"
 
-	# Get the components
-	local component="${repo##$uri $suite }"
+    # Get the components
+    local component="${repo##$uri $suite }"
 
-	# Add the repository into sources.list.d
-	ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append
+    # Add the repository into sources.list.d
+    ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append
 
-	# Pin the new repo with the default priority, so it won't be used for upgrades.
-	# Build $pin from the uri without http and any sub path
-	local pin="${uri#*://}"
-	pin="${pin%%/*}"
-	# Set a priority only if asked
-	if [ -n "$priority" ]
-	then
-		priority="--priority=$priority"
-	fi
-	ynh_pin_repo --package="*" --pin="origin \"$pin\"" $priority --name="$name" $append
+    # Pin the new repo with the default priority, so it won't be used for upgrades.
+    # Build $pin from the uri without http and any sub path
+    local pin="${uri#*://}"
+    pin="${pin%%/*}"
+    # Set a priority only if asked
+    if [ -n "$priority" ]
+    then
+        priority="--priority=$priority"
+    fi
+    ynh_pin_repo --package="*" --pin="origin \"$pin\"" $priority --name="$name" $append
 
-	# Get the public key for the repo
-	if [ -n "$key" ]
-	then
-		mkdir -p "/etc/apt/trusted.gpg.d"
-		wget -q "$key" -O - | gpg --dearmor | $wget_append /etc/apt/trusted.gpg.d/$name.gpg > /dev/null
-	fi
+    # Get the public key for the repo
+    if [ -n "$key" ]
+    then
+        mkdir --parents "/etc/apt/trusted.gpg.d"
+        wget --quiet "$key" --output-document=- | gpg --dearmor | $wget_append /etc/apt/trusted.gpg.d/$name.gpg > /dev/null
+    fi
 
-	# Update the list of package with the new repo
-	ynh_package_update
+    # Update the list of package with the new repo
+    ynh_package_update
 }
 
 # Remove an extra repository and the assiociated configuration.
@@ -444,23 +448,25 @@ ynh_install_extra_repo () {
 # [internal]
 #
 # usage: ynh_remove_extra_repo [--name=name]
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
+# | arg: -n, --name=    - Name for the files for this repo, $app as default value.
+#
+# Requires YunoHost version 3.8.1 or higher.
 ynh_remove_extra_repo () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=n
-	declare -Ar args_array=( [n]=name= )
-	local name
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	name="${name:-$app}"
+    # Declare an array to define the options of this helper.
+    local legacy_args=n
+    local -A args_array=( [n]=name= )
+    local name
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
 
-	ynh_secure_remove "/etc/apt/sources.list.d/$name.list"
-	ynh_secure_remove "/etc/apt/preferences.d/$name"
-	ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg"
-	ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc"
+    ynh_secure_remove "/etc/apt/sources.list.d/$name.list"
+    ynh_secure_remove "/etc/apt/preferences.d/$name"
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg"
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc"
 
-	# Update the list of package to exclude the old repo
-	ynh_package_update
+    # Update the list of package to exclude the old repo
+    ynh_package_update
 }
 
 # Add a repository.
@@ -468,41 +474,42 @@ ynh_remove_extra_repo () {
 # [internal]
 #
 # usage: ynh_add_repo --uri=uri --suite=suite --component=component [--name=name] [--append]
-# | arg: -u, --uri - Uri of the repository.
-# | arg: -s, --suite - Suite of the repository.
-# | arg: -c, --component - Component of the repository.
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
-# | arg: -a, --append - Do not overwrite existing files.
+# | arg: -u, --uri=         - Uri of the repository.
+# | arg: -s, --suite=       - Suite of the repository.
+# | arg: -c, --component=   - Component of the repository.
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
 #
 # Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
 #                             uri                               suite   component
 # ynh_add_repo --uri=http://forge.yunohost.org/debian/ --suite=stretch --component=stable
 #
+# Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=uscna
-	declare -Ar args_array=( [u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append )
-	local uri
-	local suite
-	local component
-	local name
-	local append
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	name="${name:-$app}"
-	append=${append:-0}
+    # Declare an array to define the options of this helper.
+    local legacy_args=uscna
+    local -A args_array=( [u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append )
+    local uri
+    local suite
+    local component
+    local name
+    local append
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+    append=${append:-0}
 
-	if [ $append -eq 1 ]
-	then
-		append="tee -a"
-	else
-		append="tee"
-	fi
+    if [ $append -eq 1 ]
+    then
+        append="tee --append"
+    else
+        append="tee"
+    fi
 
-	mkdir -p "/etc/apt/sources.list.d"
-	# Add the new repo in sources.list.d
-	echo "deb $uri $suite $component" \
-		| $append "/etc/apt/sources.list.d/$name.list"
+    mkdir --parents "/etc/apt/sources.list.d"
+    # Add the new repo in sources.list.d
+    echo "deb $uri $suite $component" \
+        | $append "/etc/apt/sources.list.d/$name.list"
 }
 
 # Pin a repository.
@@ -510,41 +517,42 @@ ynh_add_repo () {
 # [internal]
 #
 # usage: ynh_pin_repo --package=packages --pin=pin_filter [--priority=priority_value] [--name=name] [--append]
-# | arg: -p, --package - Packages concerned by the pin. Or all, *.
-# | arg: -i, --pin - Filter for the pin.
-# | arg: -p, --priority - Priority for the pin
-# | arg: -n, --name - Name for the files for this repo, $app as default value.
-# | arg: -a, --append - Do not overwrite existing files.
+# | arg: -p, --package=     - Packages concerned by the pin. Or all, *.
+# | arg: -i, --pin=         - Filter for the pin.
+# | arg: -p, --priority=    - Priority for the pin
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
 #
 # See https://manpages.debian.org/stretch/apt/apt_preferences.5.en.html#How_APT_Interprets_Priorities for information about pinning.
 #
+# Requires YunoHost version 3.8.1 or higher.
 ynh_pin_repo () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=pirna
-	declare -Ar args_array=( [p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append )
-	local package
-	local pin
-	local priority
-	local name
-	local append
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
-	package="${package:-*}"
-	priority=${priority:-50}
-	name="${name:-$app}"
-	append=${append:-0}
+    # Declare an array to define the options of this helper.
+    local legacy_args=pirna
+    local -A args_array=( [p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append )
+    local package
+    local pin
+    local priority
+    local name
+    local append
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    package="${package:-*}"
+    priority=${priority:-50}
+    name="${name:-$app}"
+    append=${append:-0}
 
-	if [ $append -eq 1 ]
-	then
-		append="tee -a"
-	else
-		append="tee"
-	fi
+    if [ $append -eq 1 ]
+    then
+        append="tee --append"
+    else
+        append="tee"
+    fi
 
-	mkdir -p "/etc/apt/preferences.d"
-	echo "Package: $package
+    mkdir --parents "/etc/apt/preferences.d"
+    echo "Package: $package
 Pin: $pin
 Pin-Priority: $priority
 " \
-	| $append "/etc/apt/preferences.d/$name"
+    | $append "/etc/apt/preferences.d/$name"
 }

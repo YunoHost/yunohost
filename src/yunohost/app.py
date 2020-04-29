@@ -110,12 +110,34 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
 
-def app_list(full=False):
+
+# Old legacy function...
+def app_fetchlist():
+    logger.warning("'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead")
+    from yunohost.tools import tools_update
+    tools_update(apps=True)
+
+
+def app_list(full=False, installed=False, filter=None):
     """
     List installed apps
     """
+
+    # Old legacy argument ... app_list was a combination of app_list and
+    # app_catalog before 3.8 ...
+    if installed:
+        logger.warning("Argument --installed ain't needed anymore when using 'yunohost app list'. It directly returns the list of installed apps..")
+
+    # Filter is a deprecated option...
+    if filter:
+        logger.warning("Using -f $appname in 'yunohost app list' is deprecated. Just use 'yunohost app list | grep -q 'id: $appname' to check a specific app is installed")
+
     out = []
     for app_id in sorted(_installed_apps()):
+
+        if filter and not app_id.startswith(filter):
+            continue
+
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
@@ -239,6 +261,10 @@ def app_map(app=None, raw=False, user=None):
                 perm_domain, perm_path = perm_url.split("/", 1)
                 perm_path = "/" + perm_path.rstrip("/")
 
+            # N.B. : having '/' instead of empty string is needed in app_map
+            # but should *not* be done in app_ssowatconf (yeah :[)
+            perm_path = perm_path if perm_path.strip() != "" else "/"
+
             return perm_domain, perm_path
 
         this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
@@ -274,7 +300,6 @@ def app_map(app=None, raw=False, user=None):
                 continue
 
             perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
-
             if perm_name.endswith(".main"):
                 perm_label = label
             else:
@@ -1105,10 +1130,11 @@ def app_makedefault(operation_logger, app, domain=None):
     elif domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
-    operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
                             other_app=app_map(raw=True)[domain]["/"]["id"])
+
+    operation_logger.start()
 
     # TODO / FIXME : current trick is to add this to conf.json.persisten
     # This is really not robust and should be improved

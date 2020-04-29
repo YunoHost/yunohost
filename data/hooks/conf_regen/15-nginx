@@ -27,7 +27,8 @@ do_init_regen() {
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
   # Restart nginx if conf looks good, otherwise display error and exit unhappy
-  nginx -t 2>/dev/null && service nginx restart || (nginx -t && exit 1)
+  nginx -t 2>/dev/null || { nginx -t; exit 1; }
+  systemctl restart nginx || { journalctl --no-pager --lines=10 -u nginx >&2; exit 1; }
 
   exit 0
 }
@@ -123,9 +124,9 @@ do_post_regen() {
       fi
   done
 
-
-  # Reload nginx configuration
-  pgrep nginx && service nginx reload
+  # Reload nginx if conf looks good, otherwise display error and exit unhappy
+  nginx -t 2>/dev/null || { nginx -t; exit 1; }
+  pgrep nginx && systemctl reload nginx || { journalctl --no-pager --lines=10 -u nginx >&2; exit 1; }
 }
 
 FORCE=${2:-0}

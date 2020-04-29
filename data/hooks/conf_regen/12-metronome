@@ -42,15 +42,19 @@ do_post_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
+  
+  # FIXME : small optimization to do to avoid calling a yunohost command ... 
+  # maybe another env variable like YNH_MAIN_DOMAINS idk
+  domain_list=$(yunohost domain list --exclude-subdomains --output-as plain --quiet)
 
   # create metronome directories for domains
-  for domain in $YNH_DOMAINS; do
+  for domain in $domain_list; do
     mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
+    # http_upload directory must be writable by metronome and readable by nginx
+    mkdir -p  "/var/xmpp-upload/${domain}/upload"
+    chmod g+s "/var/xmpp-upload/${domain}/upload"
+    chown -R metronome:www-data "/var/xmpp-upload/${domain}"
   done
-  # http_upload directory must be writable by metronome and readable by nginx
-  mkdir -p  "/var/xmpp-upload/${main_domain}/upload"
-  chmod g+s "/var/xmpp-upload/${main_domain}/upload"
-  chown -R metronome:www-data "/var/xmpp-upload/${main_domain}"
 
   # fix some permissions
   chown -R metronome: /var/lib/metronome/
