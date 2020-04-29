@@ -14,7 +14,6 @@ do_pre_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # install main conf file
   cat metronome.cfg.lua \
@@ -22,7 +21,7 @@ do_pre_regen() {
     > "${metronome_dir}/metronome.cfg.lua"
 
   # add domain conf files
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
     cat domain.tpl.cfg.lua \
       | sed "s/{{ domain }}/${domain}/g" \
       > "${metronome_conf_dir}/${domain}.cfg.lua"
@@ -33,7 +32,7 @@ do_pre_regen() {
                  | awk '/^[^\.]+\.[^\.]+.*\.cfg\.lua$/ { print $1 }')
   for file in $conf_files; do
     domain=${file%.cfg.lua}
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || touch "${metronome_conf_dir}/${file}"
   done
 }
@@ -43,6 +42,9 @@ do_post_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
+  
+  # FIXME : small optimization to do to avoid calling a yunohost command ... 
+  # maybe another env variable like YNH_MAIN_DOMAINS idk
   domain_list=$(yunohost domain list --exclude-subdomains --output-as plain --quiet)
 
   # create metronome directories for domains
