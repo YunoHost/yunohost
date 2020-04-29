@@ -27,7 +27,6 @@ import dns.resolver
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
-from moulinette.utils.filesystem import read_file
 
 logger = logging.getLogger('yunohost.utils.network')
 
@@ -113,6 +112,10 @@ def external_resolvers():
     if not external_resolvers_:
         resolv_dnsmasq_conf = read_file("/etc/resolv.dnsmasq.conf").split("\n")
         external_resolvers_ = [r.split(" ")[1] for r in resolv_dnsmasq_conf if r.startswith("nameserver")]
+        # We keep only ipv4 resolvers, otherwise on IPv4-only instances, IPv6
+        # will be tried anyway resulting in super-slow dig requests that'll wait
+        # until timeout...
+        external_resolvers_ = [r for r in external_resolvers_ if ":" not in r]
 
     return external_resolvers_
 
