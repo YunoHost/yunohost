@@ -188,12 +188,10 @@ ynh_package_install_from_equivs () {
     (cd "$TMPDIR"
     LC_ALL=C equivs-build ./control 1> /dev/null
     dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1)
-    # If install fails we use "apt-get check" to try to debug and diagnose possible unmet dependencies
-    # Note the use of { } which allows to group commands without starting a subshell (otherwise the ynh_die wouldn't exit the current shell). 
-    # Be careful with the syntax : the semicolon + space at the end is important!
 
     ynh_package_install --fix-broken || \
-        { # If the installation failed
+        { # If the installation failed 
+        # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
         # Get the list of dependencies from the deb
         local dependencies="$(dpkg --info "$TMPDIR/${pkgname}_${pkgversion}_all.deb" | grep Depends | \
             sed 's/^ Depends: //' | sed 's/,//g')"
