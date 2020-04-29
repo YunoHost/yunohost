@@ -67,8 +67,8 @@ do_pre_regen() {
 
 do_post_regen() {
   regen_conf_files=$1
-    chmod o=--- /etc/postfix/sasl_passwd
-    chmod o=--- /etc/postfix/sasl_passwd.db
+    chmod o=--- /etc/postfix/sasl_passwd*
+    chown postfix /etc/postfix/sasl_passwd*
 
   [[ -z "$regen_conf_files" ]] \
     || { service postfix restart && service postsrsd restart; }
