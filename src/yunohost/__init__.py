@@ -72,6 +72,19 @@ def check_command_is_valid_before_postinstall(args):
         sys.exit(1)
 
 
+def init(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
+    """
+    This is a small util function ONLY meant to be used to initialize a Yunohost
+    context when ran from tests or from scripts.
+    """
+    init_logging(interface=interface, debug=debug, quiet=quiet, logdir=logdir)
+    init_i18n()
+    from moulinette.core import MoulinetteLock
+    lock = MoulinetteLock("yunohost", timeout=30)
+    lock.acquire()
+    return lock
+
+
 def init_i18n():
     # This should only be called when not willing to go through moulinette.cli
     # or moulinette.api but still willing to call m18n.n/g...
