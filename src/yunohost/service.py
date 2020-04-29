@@ -35,7 +35,7 @@ from datetime import datetime
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, append_to_file, write_to_file
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
@@ -546,7 +546,7 @@ def _give_lock(action, service, p):
         # Append the PID to the lock file
         logger.debug("Giving a lock to PID %s for service %s !"
                      % (str(son_PID), service))
-        filesystem.append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
+        append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
 
     return son_PID
 
@@ -556,7 +556,7 @@ def _remove_lock(PID_to_remove):
 
     PIDs = read_file(MOULINETTE_LOCK).split("\n")
     PIDs_to_keep = [PID for PID in PIDs if int(PID) != PID_to_remove]
-    filesystem.write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
+    write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
 
 
 def _get_services():
