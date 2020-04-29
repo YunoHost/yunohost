@@ -260,7 +260,7 @@ def user_permission_info(permission):
 def permission_create(operation_logger, permission, allowed=None, 
                       url=None, additional_urls=None, auth_header=True,
                       label=None, show_tile=False, 
-                      protected=True, sync_perm=True):
+                      protected=False, sync_perm=True):
     """
     Create a new permission for a specific application
 

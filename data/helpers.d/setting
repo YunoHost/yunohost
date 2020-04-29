@@ -193,7 +193,7 @@ ynh_webpath_register () {
 # |                                     Default is false (for the permission different than 'main').
 # | arg: -P, protected=         - (optional) Define if this permission is protected. If it is protected the administrator
 # |                             won't be able to add or remove the visitors group of this permission.
-# |                             By default it's 'true' (for the permission different than 'main').
+# |                             By default it's 'false'
 #
 # If provided, 'url' or 'additional_urls' is assumed to be relative to the app domain/path if they
 # start with '/'.  For example:

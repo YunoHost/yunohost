@@ -352,7 +352,7 @@ def test_permission_create_extra(mocker):
     # all_users is only enabled by default on .main perms
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
-    assert res['site.test']['protected'] == True
+    assert res['site.test']['protected'] == False
 
 
 def test_permission_create_with_specific_user():
