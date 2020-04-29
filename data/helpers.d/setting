@@ -274,9 +274,9 @@ ynh_permission_create() {
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
-        # --additional_urls /urlA /urlB
+        # --allowed alice bob
         # will be:
-        # additional_urls=['/urlA', '/urlB']
+        # allowed=['alice', 'bob']
         allowed=",allowed=['${allowed//;/\',\'}']"
     fi
 
@@ -384,9 +384,9 @@ ynh_permission_url() {
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
-        # --additional_urls /urlA /urlB
+        # --add_url /urlA /urlB
         # will be:
-        # additional_urls=['/urlA', '/urlB']
+        # add_url=['/urlA', '/urlB']
         add_url=",add_url=['${add_url//;/\',\'}']"
     fi
 
@@ -395,9 +395,9 @@ ynh_permission_url() {
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
-        # --additional_urls /urlA /urlB
+        # --remove_url /urlA /urlB
         # will be:
-        # additional_urls=['/urlA', '/urlB']
+        # remove_url=['/urlA', '/urlB']
         remove_url=",remove_url=['${remove_url//;/\',\'}']"
     fi
 
@@ -455,9 +455,9 @@ ynh_permission_update() {
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
-        # --additional_urls /urlA /urlB
+        # --add alice bob
         # will be:
-        # additional_urls=['/urlA', '/urlB']
+        # add=['alice', 'bob']
         add=",add=['${add//';'/"','"}']"
     fi
     if [[ -n $remove ]]
@@ -465,9 +465,9 @@ ynh_permission_update() {
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
-        # --additional_urls /urlA /urlB
+        # --remove alice bob
         # will be:
-        # additional_urls=['/urlA', '/urlB']
+        # remove=['alice', 'bob']
         remove=",remove=['${remove//';'/"','"}']"
     fi
 
