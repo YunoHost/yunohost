@@ -35,12 +35,9 @@ do_pre_regen() {
     # Avoid to display "Relay account paswword" to other users
     touch ${postfix_dir}/sasl_passwd
     chmod o=--- ${postfix_dir}/sasl_passwd
-    touch ${postfix_dir}/sasl_passwd.db
-    chmod o=--- ${postfix_dir}/sasl_passwd.db
     # Avoid "postmap: warning: removing zero-length database file"
     chown postfix ${pending_dir}/etc/postfix
     chown postfix ${pending_dir}/etc/postfix/sasl_passwd
-    chown postfix ${pending_dir}/etc/postfix/sasl_passwd.db
 
     cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
     postmap ${postfix_dir}/sasl_passwd
