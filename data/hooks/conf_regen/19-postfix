@@ -31,8 +31,21 @@ do_pre_regen() {
     export relay_port="$(yunohost settings get 'smtp.relay.port')"
     export relay_user="$(yunohost settings get 'smtp.relay.user')"
     relay_password="$(yunohost settings get 'smtp.relay.password')"
-    echo "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
+    
+    # Avoid to display "Relay account paswword" to other users
+    touch ${postfix_dir}/sasl_passwd
+    chmod o=--- ${postfix_dir}/sasl_passwd
+    touch ${postfix_dir}/sasl_passwd.db
+    chmod o=--- ${postfix_dir}/sasl_passwd.db
+    # Avoid "postmap: warning: removing zero-length database file"
+    chown postfix ${pending_dir}/etc/postfix
+    chown postfix ${pending_dir}/etc/postfix/sasl_passwd
+    chown postfix ${pending_dir}/etc/postfix/sasl_passwd.db
+
+    cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
     postmap ${postfix_dir}/sasl_passwd
+    
+
   fi
   export main_domain
   export domain_list="$YNH_DOMAINS"
@@ -57,6 +70,8 @@ do_pre_regen() {
 
 do_post_regen() {
   regen_conf_files=$1
+    chmod o=--- /etc/postfix/sasl_passwd
+    chmod o=--- /etc/postfix/sasl_passwd.db
 
   [[ -z "$regen_conf_files" ]] \
     || { service postfix restart && service postsrsd restart; }
