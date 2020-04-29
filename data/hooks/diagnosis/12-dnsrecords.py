@@ -170,9 +170,9 @@ class DNSRecordsDiagnoser(Diagnoser):
             expire_in = expire_date - datetime.now()
 
             alert_type = "success"
-            if expire_in <= timedelta(7):
+            if expire_in <= timedelta(15):
                 alert_type = "error"
-            elif expire_in <= timedelta(30):
+            elif expire_in <= timedelta(45):
                 alert_type = "warning"
 
             args = {
