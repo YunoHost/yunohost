@@ -150,7 +150,7 @@ class DNSRecordsDiagnoser(Diagnoser):
             "not_found": [],
             "error": [],
             "warning": [],
-            "info": []
+            "success": []
         }
 
         for domain in domains:
@@ -169,7 +169,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             expire_in = expire_date - datetime.now()
 
-            alert_type = "info"
+            alert_type = "success"
             if expire_in <= timedelta(7):
                 alert_type = "error"
             elif expire_in <= timedelta(30):
@@ -182,15 +182,14 @@ class DNSRecordsDiagnoser(Diagnoser):
             }
             details[alert_type].append(("diagnosis_domain_expires_in", args))
 
-        for alert_type in ["error", "warning", "not_found", "info"]:
+        for alert_type in ["success", "error", "warning", "not_found"]:
             if details[alert_type]:
                 if alert_type == "not_found":
                     meta = {"test": "domain_not_found"}
                 else:
                     meta = {"test": "domain_expiration"}
-                # Allow to ignor specifically a single domain
+                # Allow to ignore specifically a single domain
                 if len(details[alert_type]) == 1:
-                    meta["domain"] = details[alert_type][0][1]["domain"]
                     meta["domain"] = details[alert_type][0][1]["domain"]
                 yield dict(meta=meta,
                            data={},

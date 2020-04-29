@@ -119,7 +119,7 @@ def find_expected_string_keys():
     for level in ["danger", "thirdparty", "warning"]:
         yield "confirm_app_install_%s" % level
 
-    for errortype in ["not_found", "error", "warning", "info", "not_found_details"]:
+    for errortype in ["not_found", "error", "warning", "success", "not_found_details"]:
         yield "diagnosis_domain_expiration_%s" % errortype
     yield "diagnosis_domain_not_found_details"
 
