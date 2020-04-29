@@ -326,6 +326,10 @@ def reconfigure_ssh(setting_name, old_value, new_value):
         service_regen_conf(names=['ssh'])
 
 @post_change_hook("smtp.allow_ipv6")
+@post_change_hook("smtp.relay.host")
+@post_change_hook("smtp.relay.port")
+@post_change_hook("smtp.relay.user")
+@post_change_hook("smtp.relay.password")
 @post_change_hook("security.postfix.compatibility")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
