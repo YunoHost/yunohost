@@ -581,6 +581,14 @@ def _get_services():
     if len(ssh_port_line) == 1:
         services["ssh"]["needs_exposed_ports"] = [int(ssh_port_line[0])]
 
+    # Dirty hack to check the status of ynh-vpnclient
+    if "ynh-vpnclient" in services:
+        status_check = "systemctl is-active openvpn@client.service"
+        if "test_status" not in services["ynh-vpnclient"]:
+            services["ynh-vpnclient"]["test_status"] = status_check
+        if "log" not in services["ynh-vpnclient"]:
+            services["ynh-vpnclient"]["log"] = ["/var/log/ynh-vpnclient.log"]
+
     # Stupid hack for postgresql which ain't an official service ... Can't
     # really inject that info otherwise. Real service we want to check for
     # status and log is in fact postgresql@x.y-main (x.y being the version)
