@@ -1,3 +1,38 @@
+yunohost (3.8.2) testing; urgency=low
+
+  ### Diagnosis
+
+  - [fix] Some DNS queries triggered false negatives about CNAME/A record and email blacklisting (#943)
+  - [enh] Add a check about domain expiration (#944)
+  - [enh] Dirty hack to automatically find custom SSH port and diagnose it instead of 22 (b78d722)
+  - [enh] Add a tip / explanation when IPv6 ain't working / available (426d938)
+  - [fix] Small false-negative about not having IPv6 when it's actually working (822c731)
+
+  ### Helpers
+
+  - [fix] When setting up a new db, corresponding user should be declared as owner (#813)
+  - [enh] Add dynamic variables to systemd helper (#937)
+  - [enh] Clean helpers (#947)
+  - [fix] getopts behaved in weird way when fed empty parameters (#948)
+  - [fix] Use ynh_port_available in ynh_find_port (#957)
+
+  ### Others
+
+  - [enh] Setup all XMPP components for each "parent" domains (#916)
+  - [fix] Previous change in Postfix ciphers broke TLS (#949)
+  - [fix] Update ACME snippet detection following previous change (#950)
+  - [fix] Trying to install apps with unpatchable legacy helpers was breaking stuff (#954)
+  - [fix] Patch usage of old 'yunohost tools diagnosis' (#954)
+  - [enh] Misc optimizations to speed up regen-conf and other things (#958)
+  - [enh] When sharing logs, also anonymize folder name containing %2e instead of dot (b392efd)
+  - [enh] Keep track of yunohost version a backup was made from (54cc684)
+  - [fix] Re-add 'app fetchlist', 'app list -i', 'app list' filter for backward compatibility... (69938c3)
+  - [i18n] Improve translations for Catalan, German, French, Esperanto, Spanish, Greek, Nepali, Occitan
+
+  Thanks to all contributors <3 ! (Bram, C. Wehrli, Kay0u, Maniack C., Quentí, Zeik0s, amirale qt, ljf, pitchum, tituspijean, xaloc33, Éric G.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 29 Apr 2020 23:15:00  +0000
+
 yunohost (3.8.1.1) testing; urgency=low
 
   - [fix] Stupid issue about path in debian/install ...
