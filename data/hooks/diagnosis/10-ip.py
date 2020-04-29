@@ -73,7 +73,7 @@ class IPDiagnoser(Diagnoser):
 
         network_interfaces = get_network_interfaces()
         def get_local_ip(version):
-            local_ip = {iface:addr[version].split("/")[0]
+            local_ip = {iface: addr[version].split("/")[0]
                         for iface, addr in network_interfaces.items() if version in addr}
             if not local_ip:
                 return None
@@ -92,7 +92,7 @@ class IPDiagnoser(Diagnoser):
                    data={"global": ipv6, "local": get_local_ip("ipv6")},
                    status="SUCCESS" if ipv6 else "WARNING",
                    summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
-                   details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv6 else None)
+                   details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv6 else ["diagnosis_ip_no_ipv6_tip"])
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
 
