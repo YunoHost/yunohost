@@ -201,7 +201,7 @@ ynh_webpath_register () {
 #    /admin                        -> domain.tld/app/admin
 #    domain.tld/app/api            -> domain.tld/app/api
 #
-# 'url' or 'additional_urls' can be treated as a PCRE (lua) regex if it starts with "re:".
+# 'url' or 'additional_urls' can be treated as a PCRE (not lua) regex if it starts with "re:".
 # For example:
 #    re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
 #    re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
