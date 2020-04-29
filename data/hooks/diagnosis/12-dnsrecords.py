@@ -3,18 +3,16 @@
 import os
 import re
 
-from subprocess import CalledProcessError
 from datetime import datetime, timedelta
 from publicsuffix import PublicSuffixList
 
-from moulinette.utils.filesystem import read_file
 from moulinette.utils.process import check_output
 
 from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
-# We put here domains we know has dyndns provider, but that are not yet 
+# We put here domains we know has dyndns provider, but that are not yet
 # registered in the public suffix list
 PENDING_SUFFIX_LIST = ['ynh.fr', 'netlib.re']
 
@@ -27,12 +25,6 @@ class DNSRecordsDiagnoser(Diagnoser):
 
     def run(self):
 
-        resolvers = read_file("/etc/resolv.dnsmasq.conf").split("\n")
-        ipv4_resolvers = [r.split(" ")[1] for r in resolvers if r.startswith("nameserver") and ":" not in r]
-        # FIXME some day ... handle ipv4-only and ipv6-only servers. For now we assume we have at least ipv4
-        assert ipv4_resolvers != [], "Uhoh, need at least one IPv4 DNS resolver ..."
-
-        self.resolver = ipv4_resolvers[0]
         main_domain = _get_maindomain()
 
         all_domains = domain_list()["domains"]
