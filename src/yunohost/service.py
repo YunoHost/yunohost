@@ -24,6 +24,7 @@
     Manage services
 """
 import os
+import re
 import time
 import yaml
 import subprocess
@@ -33,11 +34,12 @@ from datetime import datetime
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
-from moulinette.utils import log, filesystem
+from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
-logger = log.getActionLogger('yunohost.service')
+logger = getActionLogger('yunohost.service')
 
 
 def service_add(name, description=None, log=None, log_type="file", test_status=None, test_conf=None, needs_exposed_ports=None, need_lock=False, status=None):
@@ -552,7 +554,7 @@ def _give_lock(action, service, p):
 def _remove_lock(PID_to_remove):
     # FIXME ironically not concurrency safe because it's not atomic...
 
-    PIDs = filesystem.read_file(MOULINETTE_LOCK).split("\n")
+    PIDs = read_file(MOULINETTE_LOCK).split("\n")
     PIDs_to_keep = [PID for PID in PIDs if int(PID) != PID_to_remove]
     filesystem.write_to_file(MOULINETTE_LOCK, '\n'.join(PIDs_to_keep))
 
@@ -573,6 +575,11 @@ def _get_services():
     for key, value in services.items():
         if value is None:
             del services[key]
+
+    # Dirty hack to automatically find custom SSH port ...
+    ssh_port_line = re.findall(r"\bPort *([0-9]{2,5})\b", read_file("/etc/ssh/sshd_config"))
+    if len(ssh_port_line) == 1:
+        services["ssh"]["needs_exposed_ports"] = [int(ssh_port_line[0])]
 
     # Stupid hack for postgresql which ain't an official service ... Can't
     # really inject that info otherwise. Real service we want to check for
@@ -654,8 +661,6 @@ def _find_previous_log_file(file):
     """
     Find the previous log file
     """
-    import re
-
     splitext = os.path.splitext(file)
     if splitext[1] == '.gz':
         file = splitext[0]
