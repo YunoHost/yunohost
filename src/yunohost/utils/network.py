@@ -131,6 +131,12 @@ def dig(qname, rdtype="A", timeout=5, resolvers="local", edns_size=1500, full_an
     Do a quick DNS request and avoid the "search" trap inside /etc/resolv.conf
     """
 
+    # It's very important to do the request with a qname ended by .
+    # If we don't and the domain fail, dns resolver try a second request
+    # by concatenate the qname with the end of the "hostname"
+    if not qname.endswith("."):
+        qname += "."
+
     if resolvers == "local":
         resolvers = ["127.0.0.1"]
     elif resolvers == "force_external":
