@@ -108,20 +108,22 @@ test-regenconf:
   image: before-postinstall
   stage: lint
   before_script:
-    - apt-get install python3-pip -y
-    - mkdir -p .pip3
-    - pip3 install -U pip
-    - hash -d pip3
-    - pip3 --cache-dir=.pip3 install flake8 # black
+    - apt-get install python-pip -y
+    - mkdir -p .pip
+    - pip install -U pip
+    - hash -d pip
+    - pip --cache-dir=.pip install tox
   cache:
     paths: 
-      - .pip3
+      - .pip
+      - .tox
     key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
 
 lint:
   extends: .lint-stage
+  allow_failure: true
   script:
-    - flake8
+    - tox -e lint
 
 # Disabled, waiting for buster
 #format-check:
