@@ -112,7 +112,7 @@ test-regenconf:
     - mkdir -p .pip3
     - pip3 install -U pip
     - hash -d pip3
-    - pip3 --cache-dir=.pip3 install flake8 black
+    - pip3 --cache-dir=.pip3 install flake8 # black
   cache:
     paths: 
       - .pip3
@@ -123,7 +123,8 @@ lint:
   script:
     - flake8 src tests data
 
-format-check:
-  extends: .lint-stage
-  script:
-    - black {posargs:--check --diff} src tests data
+# Disabled, waiting for buster
+#format-check:
+#  extends: .lint-stage
+#  script:
+#    - black {posargs:--check --diff} src tests data
