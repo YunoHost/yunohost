@@ -1,3 +1,13 @@
+yunohost (3.8.2.1) testing; urgency=low
+
+  - [fix] Make sure DNS queries are dong using absolute names to avoid stupid issues
+  - [fix] More reliable way to fetch PTR record / reverse DNS
+  - [fix] Propagate IPv6 default route check to ip diagnoser code as well
+
+  Thanks to ljf for the tests and fixes !
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 30 Apr 2020 17:30:00  +0000
+
 yunohost (3.8.2) testing; urgency=low
 
   ### Diagnosis
