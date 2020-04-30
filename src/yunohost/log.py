@@ -206,6 +206,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
         if filter_irrelevant:
             filters = [
                 r"set [+-]x$",
+                r"set [+-]o xtrace$",
                 r"local \w+$",
                 r"local legacy_args=.*$",
                 r".*Helper used in legacy mode.*",

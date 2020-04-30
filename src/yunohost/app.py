@@ -916,6 +916,7 @@ def dump_app_log_extract_for_debugging(operation_logger):
 
     filters = [
         r"set [+-]x$",
+        r"set [+-]o xtrace$",
         r"local \w+$",
         r"local legacy_args=.*$",
         r".*Helper used in legacy mode.*",
