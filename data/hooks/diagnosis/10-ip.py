@@ -106,8 +106,15 @@ class IPDiagnoser(Diagnoser):
 
         # If we are indeed connected in ipv4 or ipv6, we should find a default route
         routes = check_output("ip -%s route" % protocol).split("\n")
-        if not any(r.startswith("default") for r in routes):
-            return False
+        def is_default_route(r):
+            # Typically the default route starts with "default"
+            # But of course IPv6 is more complex ... e.g. on internet cube there's
+            # no default route but a /3 which acts as a default-like route...
+            # e.g. 2000:/3 dev tun0 ...
+            return r.startswith("default") or (":" in r and re.match(r".*/[0-3]$", r.split()[0]))
+        if not any(is_default_route(r) for r in routes):
+            logger.debug("No default route for IPv%s, so assuming there's no IP address for that version" % protocol)
+            return None
 
         # We use the resolver file as a list of well-known, trustable (ie not google ;)) IPs that we can ping
         resolver_file = "/usr/share/yunohost/templates/dnsmasq/plain/resolv.dnsmasq.conf"
