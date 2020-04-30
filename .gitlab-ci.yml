@@ -121,10 +121,10 @@ test-regenconf:
 lint:
   extends: .lint-stage
   script:
-    - flake8 src tests data
+    - flake8
 
 # Disabled, waiting for buster
 #format-check:
 #  extends: .lint-stage
 #  script:
-#    - black {posargs:--check --diff} src tests data
+#    - black --check --diff
