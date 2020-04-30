@@ -135,7 +135,9 @@ class MailDiagnoser(Diagnoser):
                            details=details)
                 continue
 
-            rdns_domain = value[0] if len(value) > 0 else ''
+            rdns_domain = ''
+            if len(value) > 0:
+                rdns_domain = value[0][:-1] if value[0].endswith('.') else value[0]
             if rdns_domain != self.ehlo_domain:
                 details = ["diagnosis_mail_fcrdns_different_from_ehlo_domain_details"] + details
                 yield dict(meta={"test": "mail_fcrdns", "ipversion": ipversion},
