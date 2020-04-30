@@ -47,7 +47,7 @@ class SystemResourcesDiagnoser(Diagnoser):
         if swap.total <= 1 * MB:
             item["status"] = "ERROR"
             item["summary"] = "diagnosis_swap_none"
-        elif swap.total <= 512 * MB:
+        elif swap.total < 500 * MB:
             item["status"] = "WARNING"
             item["summary"] = "diagnosis_swap_notsomuch"
         else:
