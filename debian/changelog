@@ -1,3 +1,9 @@
+yunohost (3.8.2.2) testing; urgency=low
+
+   Aleks broke everything /again/ *.*
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 30 Apr 2020 18:05:00  +0000
+
 yunohost (3.8.2.1) testing; urgency=low
 
   - [fix] Make sure DNS queries are dong using absolute names to avoid stupid issues
