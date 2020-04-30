@@ -1659,7 +1659,7 @@ log:
                 --share:
                     help: Share the full log using yunopaste
                     action: store_true
-                -f:
+                -i:
                     full: --filter-irrelevant
                     help: Do not show some lines deemed not relevant (like set +x or helper argument parsing)
                     action: store_true
