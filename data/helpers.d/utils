@@ -35,7 +35,7 @@ ynh_exit_properly () {
         ynh_clean_setup	# Call the function to do specific cleaning for the app.
     fi
 
-    ynh_die	# Exit with error status
+    exit 1  # Exit with error status
 }
 
 # Exits if an error occurs during the execution of the script.
