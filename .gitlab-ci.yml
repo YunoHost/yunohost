@@ -108,15 +108,14 @@ test-regenconf:
   image: before-postinstall
   stage: lint
   before_script:
-    - apt-get install python-pip -y
-    - mkdir -p .pip
-    - pip install -U pip
-    - hash -d pip
-    - pip --cache-dir=.pip install flake8 blake
+    - apt-get install python3-pip -y
+    - mkdir -p .pip3
+    - pip3 install -U pip
+    - hash -d pip3
+    - pip3 --cache-dir=.pip3 install flake8 black
   cache:
     paths: 
-      - .pip
-      - src/yunohost/tests/apps
+      - .pip3
     key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
 
 lint:
