@@ -3,12 +3,12 @@
 
 import os
 import sys
-import glob
 
 import moulinette
 from moulinette import m18n
 from moulinette.utils.log import configure_logging
 from moulinette.interfaces.cli import colorize, get_locale
+
 
 def is_installed():
     return os.path.isfile('/etc/yunohost/installed')
@@ -23,11 +23,10 @@ def cli(debug, quiet, output_as, timeout, args, parser):
         check_command_is_valid_before_postinstall(args)
 
     ret = moulinette.cli(
-        ['yunohost'] + extensions(),
         args,
         output_as=output_as,
         timeout=timeout,
-        parser_kwargs={'top_parser': parser},
+        top_parser=parser
     )
     sys.exit(ret)
 
@@ -43,19 +42,11 @@ def api(debug, host, port):
     # postinstall already done ...
 
     ret = moulinette.api(
-        ['yunohost'] + extensions(),
         host=host,
         port=port,
         routes={('GET', '/installed'): is_installed_api},
-        use_websocket=True
     )
     sys.exit(ret)
-
-
-def extensions():
-    # This is probably not used anywhere, but the actionsmap and code can be
-    # extended by creating such files that contain bits of actionmap...
-    return [f.split('/')[-1][:-4] for f in glob.glob("/usr/share/moulinette/actionsmap/ynh_*.yml")]
 
 
 def check_command_is_valid_before_postinstall(args):
