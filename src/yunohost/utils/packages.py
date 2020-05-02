@@ -21,15 +21,12 @@
 import re
 import os
 import logging
-from collections import OrderedDict
 
-import apt
-from apt_pkg import version_compare
-
-from moulinette import m18n
+from moulinette.utils.process import check_output
 
 logger = logging.getLogger('yunohost.utils.packages')
 
+YUNOHOST_PACKAGES = ['yunohost', 'yunohost-admin', 'moulinette', 'ssowat']
 
 # Exceptions -----------------------------------------------------------------
 
@@ -368,66 +365,29 @@ class SpecifierSet(object):
 
 # Packages and cache helpers -------------------------------------------------
 
-def get_installed_version(*pkgnames, **kwargs):
-    """Get the installed version of package(s)
+def get_ynh_package_version(package):
 
-    Retrieve one or more packages named `pkgnames` and return their installed
-    version as a dict or as a string if only one is requested.
+    # Returns the installed version and release version ('stable' or 'testing'
+    # or 'unstable')
 
-    """
-    versions = OrderedDict()
-    cache = apt.Cache()
+    # NB: this is designed for yunohost packages only !
+    # Not tested for any arbitrary packages that
+    # may handle changelog differently !
 
-    # Retrieve options
-    with_repo = kwargs.get('with_repo', False)
-
-    for pkgname in pkgnames:
-        try:
-            pkg = cache[pkgname]
-        except KeyError:
-            logger.warning(m18n.n('package_unknown', pkgname=pkgname))
-            if with_repo:
-                versions[pkgname] = {
-                    "version": None,
-                    "repo": None,
-                }
-            else:
-                versions[pkgname] = None
-            continue
-
-        try:
-            version = pkg.installed.version
-        except AttributeError:
-            version = None
-
-        try:
-            # stable, testing, unstable
-            repo = pkg.installed.origins[0].component
-        except AttributeError:
-            repo = ""
-
-        if repo == "now":
-            repo = "local"
-
-        if with_repo:
-            versions[pkgname] = {
-                "version": version,
-                # when we don't have component it's because it's from a local
-                # install or from an image (like in vagrant)
-                "repo": repo if repo else "local",
-            }
-        else:
-            versions[pkgname] = version
-
-    if len(pkgnames) == 1:
-        return versions[pkgnames[0]]
-    return versions
-
+    changelog = "/usr/share/doc/%s/changelog.gz" % package
+    cmd = "gzip -cd %s | head -n1" % changelog
+    if not os.path.exists(changelog):
+        return {"version": "?", "repo": "?"}
+    out = check_output(cmd).split()
+    # Output looks like : "yunohost (1.2.3) testing; urgency=medium"
+    return {"version": out[1].strip("()"),
+            "repo": out[2].strip(";")}
 
 def meets_version_specifier(pkgname, specifier):
     """Check if a package installed version meets specifier"""
-    spec = SpecifierSet(specifier)
-    return get_installed_version(pkgname) in spec
+    # In practice, this function is only used to check the yunohost version installed
+    assert pkgname in YUNOHOST_PACKAGES
+    return get_ynh_package_version(pkgname) in SpecifierSet(specifier)
 
 
 # YunoHost related methods ---------------------------------------------------
@@ -437,10 +397,11 @@ def ynh_packages_version(*args, **kwargs):
     # (Namespace(_callbacks=deque([]), _tid='_global', _to_return={}), []) {}
     # they don't seem to serve any purpose
     """Return the version of each YunoHost package"""
-    return get_installed_version(
-        'yunohost', 'yunohost-admin', 'moulinette', 'ssowat',
-        with_repo=True
-    )
+    from collections import OrderedDict
+    packages = OrderedDict()
+    for package in YUNOHOST_PACKAGES:
+        packages[package] = get_ynh_package_version(package)
+    return packages
 
 
 def dpkg_is_broken():
@@ -456,8 +417,6 @@ def dpkg_lock_available():
     return os.system("lsof /var/lib/dpkg/lock >/dev/null") != 0
 
 def _list_upgradable_apt_packages():
-
-    from moulinette.utils.process import check_output
 
     # List upgradable packages
     # LC_ALL=C is here to make sure the results are in english
