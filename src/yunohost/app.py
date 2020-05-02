@@ -914,6 +914,20 @@ def dump_app_log_extract_for_debugging(operation_logger):
     with open(operation_logger.log_path, "r") as f:
         lines = f.readlines()
 
+    filters = [
+        r"set [+-]x$",
+        r"set [+-]o xtrace$",
+        r"local \w+$",
+        r"local legacy_args=.*$",
+        r".*Helper used in legacy mode.*",
+        r"args_array=.*$",
+        r"local -A args_array$",
+        r"ynh_handle_getopts_args",
+        r"ynh_script_progression"
+    ]
+
+    filters = [re.compile(f) for f in filters]
+
     lines_to_display = []
     for line in lines:
 
@@ -924,6 +938,10 @@ def dump_app_log_extract_for_debugging(operation_logger):
         # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
         # And we just want the part starting by "DEBUG - "
         line = line.strip().split(": ", 1)[1]
+
+        if any(filter_.search(line) for filter_ in filters):
+            continue
+
         lines_to_display.append(line)
 
         if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
