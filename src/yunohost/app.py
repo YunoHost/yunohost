@@ -156,6 +156,9 @@ def app_info(app, full=False):
 
 
 def _app_upgradable(app_infos):
+    # python-pkg-resources contains the packaging module
+    # yunohost depends of python-jinja2 and python-jinja2 depends of python-pkg-resources
+    # so packaging module should be available on all yunohost instances
     from packaging import version
 
     # Determine upgradability
@@ -434,6 +437,9 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         url -- Git url to fetch for upgrade
 
     """
+    # python-pkg-resources contains the packaging module
+    # yunohost depends of python-jinja2 and python-jinja2 depends of python-pkg-resources
+    # so packaging module should be available on all yunohost instances
     from packaging import version
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
