@@ -41,6 +41,13 @@ Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
  , apache2
  , bind9
+ , nginx-extras (>= 1.16)
+ , openssl (>= 1.1.1g)
+ , slapd (>= 2.4.49)
+ , dovecot-core (>= 2.3.7)
+ , redis-server (>= 5.0.7)
+ , fail2ban (>= 0.11)
+ , iptables (>= 1.8.3)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
