@@ -7,30 +7,34 @@ from yunohost.diagnosis import Diagnoser
 class SystemResourcesDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
-    cache_duration = 3600 * 24
+    cache_duration = 300
     dependencies = []
 
     def run(self):
+
+        MB = 1024**2
+        GB = MB*1024
 
         #
         # RAM
         #
 
         ram = psutil.virtual_memory()
-        ram_total_abs_MB = ram.total / (1024**2)
-        ram_available_abs_MB = ram.available / (1024**2)
-        ram_available_percent = round(100 * ram.available / ram.total)
-        item = dict(meta={"test": "ram"})
-        infos = {"total_abs_MB": ram_total_abs_MB, "available_abs_MB": ram_available_abs_MB, "available_percent": ram_available_percent}
-        if ram_available_abs_MB < 100 or ram_available_percent < 5:
+        ram_available_percent = 100 * ram.available / ram.total
+        item = dict(meta={"test": "ram"},
+                    data={"total": human_size(ram.total),
+                          "available": human_size(ram.available),
+                          "available_percent": round_(ram_available_percent)})
+
+        if ram.available < 100 * MB or ram_available_percent < 5:
             item["status"] = "ERROR"
-            item["summary"] = ("diagnosis_ram_verylow", infos)
-        elif ram_available_abs_MB < 200 or ram_available_percent < 10:
+            item["summary"] = "diagnosis_ram_verylow"
+        elif ram.available < 200 * MB or ram_available_percent < 10:
             item["status"] = "WARNING"
-            item["summary"] = ("diagnosis_ram_low", infos)
+            item["summary"] = "diagnosis_ram_low"
         else:
             item["status"] = "SUCCESS"
-            item["summary"] = ("diagnosis_ram_ok", infos)
+            item["summary"] = "diagnosis_ram_ok"
         yield item
 
         #
@@ -38,19 +42,20 @@ class SystemResourcesDiagnoser(Diagnoser):
         #
 
         swap = psutil.swap_memory()
-        swap_total_abs_MB = swap.total / (1024*1024)
-        item = dict(meta={"test": "swap"})
-        infos = {"total_MB": swap_total_abs_MB}
-        if swap_total_abs_MB <= 0:
+        item = dict(meta={"test": "swap"},
+                    data={"total": human_size(swap.total), "recommended": "512 MiB"})
+        if swap.total <= 1 * MB:
             item["status"] = "ERROR"
-            item["summary"] = ("diagnosis_swap_none", infos)
-        elif swap_total_abs_MB <= 256:
+            item["summary"] = "diagnosis_swap_none"
+        elif swap.total < 500 * MB:
             item["status"] = "WARNING"
-            item["summary"] = ("diagnosis_swap_notsomuch", infos)
+            item["summary"] = "diagnosis_swap_notsomuch"
         else:
             item["status"] = "SUCCESS"
-            item["summary"] = ("diagnosis_swap_ok", infos)
+            item["summary"] = "diagnosis_swap_ok"
         yield item
+
+        # FIXME : add a check that swapiness is low if swap is on a sdcard...
 
         #
         # Disks usage
@@ -63,23 +68,54 @@ class SystemResourcesDiagnoser(Diagnoser):
             mountpoint = disk_partition.mountpoint
 
             usage = psutil.disk_usage(mountpoint)
-            free_abs_GB = usage.free / (1024 ** 3)
-            free_percent = 100 - usage.percent
+            free_percent = round_(100 - usage.percent)
 
-            item = dict(meta={"test": "diskusage", "mountpoint": mountpoint})
-            infos = {"mountpoint": mountpoint, "device": device, "free_abs_GB": free_abs_GB, "free_percent": free_percent}
-            if free_abs_GB < 1 or free_percent < 5:
-                item["status"] = "ERROR"
-                item["summary"] = ("diagnosis_diskusage_verylow", infos)
-            elif free_abs_GB < 2 or free_percent < 10:
-                item["status"] = "WARNING"
-                item["summary"] = ("diagnosis_diskusage_low", infos)
+            item = dict(meta={"test": "diskusage", "mountpoint": mountpoint},
+                        data={"device": device, "total": human_size(usage.total), "free": human_size(usage.free), "free_percent": free_percent})
+
+            # Special checks for /boot partition because they sometimes are
+            # pretty small and that's kind of okay... (for example on RPi)
+            if mountpoint.startswith("/boot"):
+                if usage.free < 10 * MB or free_percent < 10:
+                    item["status"] = "ERROR"
+                    item["summary"] = "diagnosis_diskusage_verylow"
+                elif usage.free < 20 * MB or free_percent < 20:
+                    item["status"] = "WARNING"
+                    item["summary"] = "diagnosis_diskusage_low"
+                else:
+                    item["status"] = "SUCCESS"
+                    item["summary"] = "diagnosis_diskusage_ok"
             else:
-                item["status"] = "SUCCESS"
-                item["summary"] = ("diagnosis_diskusage_ok", infos)
+                if usage.free < 1 * GB or free_percent < 5:
+                    item["status"] = "ERROR"
+                    item["summary"] = "diagnosis_diskusage_verylow"
+                elif usage.free < 2 * GB or free_percent < 10:
+                    item["status"] = "WARNING"
+                    item["summary"] = "diagnosis_diskusage_low"
+                else:
+                    item["status"] = "SUCCESS"
+                    item["summary"] = "diagnosis_diskusage_ok"
+
 
             yield item
 
+
+def human_size(bytes_):
+    # Adapted from https://stackoverflow.com/a/1094933
+    for unit in ['','ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(bytes_) < 1024.0:
+            return "%s %sB" % (round_(bytes_), unit)
+        bytes_ /= 1024.0
+    return "%s %sB" % (round_(bytes_), 'Yi')
+
+
+def round_(n):
+    # round_(22.124) -> 22
+    # round_(9.45) -> 9.4
+    n = round(n, 1)
+    if n > 10:
+        n = int(round(n))
+    return n
 
 def main(args, env, loggers):
     return SystemResourcesDiagnoser(args, env, loggers).diagnose()

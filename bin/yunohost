@@ -179,6 +179,10 @@ def _retrieve_namespaces():
             ret.append(n)
     return ret
 
+# Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
+default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+if os.environ["PATH"] != default_path:
+    os.environ["PATH"] = default_path + ":" + os.environ["PATH"]
 
 # Main action ----------------------------------------------------------
 

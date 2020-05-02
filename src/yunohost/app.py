@@ -110,13 +110,39 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
 
-def app_list(full=False):
+
+# Old legacy function...
+def app_fetchlist():
+    logger.warning("'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead")
+    from yunohost.tools import tools_update
+    tools_update(apps=True)
+
+
+def app_list(full=False, installed=False, filter=None):
     """
     List installed apps
     """
+
+    # Old legacy argument ... app_list was a combination of app_list and
+    # app_catalog before 3.8 ...
+    if installed:
+        logger.warning("Argument --installed ain't needed anymore when using 'yunohost app list'. It directly returns the list of installed apps..")
+
+    # Filter is a deprecated option...
+    if filter:
+        logger.warning("Using -f $appname in 'yunohost app list' is deprecated. Just use 'yunohost app list | grep -q 'id: $appname' to check a specific app is installed")
+
     out = []
     for app_id in sorted(_installed_apps()):
-        app_info_dict = app_info(app_id, full=full)
+
+        if filter and not app_id.startswith(filter):
+            continue
+
+        try:
+            app_info_dict = app_info(app_id, full=full)
+        except Exception as e:
+            logger.error("Failed to read info for %s : %s" % (app_id, e))
+            continue
         app_info_dict["id"] = app_id
         out.append(app_info_dict)
 
@@ -131,6 +157,7 @@ def app_info(app, full=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+
     settings = _get_app_settings(app)
 
     ret = {
@@ -250,6 +277,10 @@ def app_map(app=None, raw=False, user=None):
                 perm_domain, perm_path = perm_url.split("/", 1)
                 perm_path = "/" + perm_path.rstrip("/")
 
+            # N.B. : having '/' instead of empty string is needed in app_map
+            # but should *not* be done in app_ssowatconf (yeah :[)
+            perm_path = perm_path if perm_path.strip() != "" else "/"
+
             return perm_domain, perm_path
 
         this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
@@ -285,7 +316,6 @@ def app_map(app=None, raw=False, user=None):
                 continue
 
             perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
-
             if perm_name.endswith(".main"):
                 perm_label = label
             else:
@@ -542,16 +572,16 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
 
-        # Start register change on system
-        related_to = [('app', app_instance_name)]
-        operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
-        operation_logger.start()
-
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_php5(extracted_app_folder)
+
+        # Start register change on system
+        related_to = [('app', app_instance_name)]
+        operation_logger = OperationLogger('app_upgrade', related_to, env=env_dict)
+        operation_logger.start()
 
         # Execute App upgrade script
         os.system('chown -hR admin: %s' % INSTALL_TMP)
@@ -565,7 +595,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
             upgrade_failed = True if upgrade_retcode != 0 else False
             if upgrade_failed:
                 error = m18n.n('app_upgrade_script_failed')
-                logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
+                logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
                 failure_message_with_debug_instructions = operation_logger.error(error)
                 if msettings.get('interface') != 'api':
                     dump_app_log_extract_for_debugging(operation_logger)
@@ -573,13 +603,13 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         except (KeyboardInterrupt, EOFError):
             upgrade_retcode = -1
             error = m18n.n('operation_interrupted')
-            logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
+            logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
             error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
-            logger.exception(m18n.n("app_install_failed", app=app_instance_name, error=error))
+            logger.error(m18n.n("app_install_failed", app=app_instance_name, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Whatever happened (install success or failure) we check if it broke the system
@@ -589,7 +619,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                 _assert_system_is_sane_for_app(manifest, "post")
             except Exception as e:
                 broke_the_system = True
-                logger.exception(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
+                logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
 
             # If upgrade failed or broke the system,
@@ -748,6 +778,12 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Validate domain / path availability for webapps
     _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
 
+    # Attempt to patch legacy helpers ...
+    _patch_legacy_helpers(extracted_app_folder)
+
+    # Apply dirty patch to make php5 apps compatible with php7
+    _patch_php5(extracted_app_folder)
+
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
     env_dict["YNH_APP_ID"] = app_id
@@ -786,12 +822,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     }
     _set_app_settings(app_instance_name, app_settings)
 
-    # Attempt to patch legacy helpers ...
-    _patch_legacy_helpers(extracted_app_folder)
-
-    # Apply dirty patch to make php5 apps compatible with php7
-    _patch_php5(extracted_app_folder)
-
     os.system('chown -R admin: ' + extracted_app_folder)
 
     # Execute App install script
@@ -822,20 +852,20 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         install_failed = True if install_retcode != 0 else False
         if install_failed:
             error = m18n.n('app_install_script_failed')
-            logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+            logger.error(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
             if msettings.get('interface') != 'api':
                 dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
         error = m18n.n('operation_interrupted')
-        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
     except Exception as e:
         import traceback
         error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
-        logger.exception(m18n.n("app_install_failed", app=app_id, error=error))
+        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
         # Whatever happened (install success or failure) we check if it broke the system
@@ -845,7 +875,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             _assert_system_is_sane_for_app(manifest, "post")
         except Exception as e:
             broke_the_system = True
-            logger.exception(m18n.n("app_install_failed", app=app_id, error=str(e)))
+            logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
             failure_message_with_debug_instructions = operation_logger.error(str(e))
 
         # If the install failed or broke the system, we remove it
@@ -883,7 +913,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             except (KeyboardInterrupt, EOFError, Exception):
                 remove_retcode = -1
                 import traceback
-                logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+                logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
@@ -944,6 +974,20 @@ def dump_app_log_extract_for_debugging(operation_logger):
     with open(operation_logger.log_path, "r") as f:
         lines = f.readlines()
 
+    filters = [
+        r"set [+-]x$",
+        r"set [+-]o xtrace$",
+        r"local \w+$",
+        r"local legacy_args=.*$",
+        r".*Helper used in legacy mode.*",
+        r"args_array=.*$",
+        r"local -A args_array$",
+        r"ynh_handle_getopts_args",
+        r"ynh_script_progression"
+    ]
+
+    filters = [re.compile(f) for f in filters]
+
     lines_to_display = []
     for line in lines:
 
@@ -954,6 +998,10 @@ def dump_app_log_extract_for_debugging(operation_logger):
         # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
         # And we just want the part starting by "DEBUG - "
         line = line.strip().split(": ", 1)[1]
+
+        if any(filter_.search(line) for filter_ in filters):
+            continue
+
         lines_to_display.append(line)
 
         if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
@@ -1055,7 +1103,7 @@ def app_remove(operation_logger, app):
     except (KeyboardInterrupt, EOFError, Exception):
         ret = -1
         import traceback
-        logger.exception(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
 
     if ret == 0:
         logger.success(m18n.n('app_removed', app=app))
@@ -1161,10 +1209,11 @@ def app_makedefault(operation_logger, app, domain=None):
     elif domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown')
 
-    operation_logger.start()
     if '/' in app_map(raw=True)[domain]:
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
                             other_app=app_map(raw=True)[domain]["/"]["id"])
+
+    operation_logger.start()
 
     # TODO / FIXME : current trick is to add this to conf.json.persisten
     # This is really not robust and should be improved
@@ -1881,7 +1930,7 @@ def _get_app_settings(app_id):
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
-        logger.exception(m18n.n('app_not_correctly_installed',
+        logger.error(m18n.n('app_not_correctly_installed',
                                 app=app_id))
     return {}
 
@@ -2087,7 +2136,7 @@ def _get_manifest_of_app(path):
     elif os.path.exists(os.path.join(path, "manifest.json")):
         return read_json(os.path.join(path, "manifest.json"))
     else:
-        return None
+        raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
@@ -2899,29 +2948,46 @@ def _patch_legacy_helpers(app_folder):
         #    sudo yunohost app initdb $db_user -p $db_pwd
         # by
         #    ynh_mysql_setup_db --db_user=$db_user --db_name=$db_user --db_pwd=$db_pwd
-        "yunohost app initdb": (
-            r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
-            r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3"),
+        "yunohost app initdb": {
+            "pattern": r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
+            "replace": r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3",
+            "important": True
+        },
         # Replace
         #    sudo yunohost app checkport whaterver
         # by
         #    ynh_port_available whatever
-        "yunohost app checkport": (
-            r"(sudo )?yunohost app checkport",
-            r"ynh_port_available"),
+        "yunohost app checkport": {
+            "pattern": r"(sudo )?yunohost app checkport",
+            "replace": r"ynh_port_available",
+            "important": True
+        },
         # We can't migrate easily port-available
         # .. but at the time of writing this code, only two non-working apps are using it.
-        "yunohost tools port-available": (None, None),
+        "yunohost tools port-available": {"important":True},
         # Replace
         #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
         # by
         #    ynh_webpath_register --app=${app} --domain=${domain} --path_url=${path_url}
-        "yunohost app checkurl": (
-            r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
-            r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3"),
+        "yunohost app checkurl": {
+            "pattern": r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
+            "replace": r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3",
+            "important": True
+        },
+        # Remove
+        #    Automatic diagnosis data from YunoHost
+        #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"
+        #
+        "yunohost tools diagnosis": {
+            "pattern": r"(Automatic diagnosis data from YunoHost( *\n)*)? *(__\w+__)? *\$\(yunohost tools diagnosis.*\)(__\w+__)?",
+            "replace": r"",
+            "important": False
+        }
     }
 
-    stuff_to_replace_compiled = {h: (re.compile(r[0]), r[1]) if r[0] else (None,None) for h, r in stuff_to_replace.items()}
+    for helper, infos in stuff_to_replace.items():
+        infos["pattern"] = re.compile(infos["pattern"]) if infos.get("pattern") else None
+        infos["replace"] = infos.get("replace")
 
     for filename in files_to_patch:
 
@@ -2931,18 +2997,20 @@ def _patch_legacy_helpers(app_folder):
 
         content = read_file(filename)
         replaced_stuff = False
+        show_warning = False
 
-        for helper, regexes in stuff_to_replace_compiled.items():
-            pattern, replace = regexes
+        for helper, infos in stuff_to_replace.items():
             # If helper is used, attempt to patch the file
-            if helper in content and pattern != "":
-                content = pattern.sub(replace, content)
+            if helper in content and infos["pattern"]:
+                content = infos["pattern"].sub(infos["replace"], content)
                 replaced_stuff = True
+                if infos["important"]:
+                    show_warning = True
 
             # If the helpert is *still* in the content, it means that we
             # couldn't patch the deprecated helper in the previous lines.  In
             # that case, abort the install or whichever step is performed
-            if helper in content:
+            if helper in content and infos["important"]:
                 raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.")
 
         if replaced_stuff:
@@ -2958,5 +3026,7 @@ def _patch_legacy_helpers(app_folder):
 
             # Actually write the new content in the file
             write_to_file(filename, content)
+
+        if show_warning:
             # And complain about those damn deprecated helpers
             logger.error("/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ...")

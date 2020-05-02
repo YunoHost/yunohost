@@ -25,15 +25,14 @@
 """
 import os
 import re
-import yaml
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import app_ssowatconf
-from yunohost.regenconf import regen_conf
+from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings
+from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
@@ -41,24 +40,26 @@ from yunohost.hook import hook_callback
 logger = getActionLogger('yunohost.domain')
 
 
-def domain_list():
+def domain_list(exclude_subdomains=False):
     """
     List domains
 
     Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for domain fetching
-        limit -- Maximum number of domain fetched
+        exclude_subdomains -- Filter out domains that are subdomains of other declared domains
 
     """
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
-    result = ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])
+    result = [entry['virtualdomain'][0] for entry in ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])]
 
     result_list = []
     for domain in result:
-        result_list.append(domain['virtualdomain'][0])
+        if exclude_subdomains:
+            parent_domain = domain.split(".", 1)[1]
+            if parent_domain in result:
+                continue
+        result_list.append(domain)
 
     return {'domains': result_list}
 
@@ -122,6 +123,17 @@ def domain_add(operation_logger, domain, dyndns=False):
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists('/etc/yunohost/installed'):
+            # Sometime we have weird issues with the regenconf where some files
+            # appears as manually modified even though they weren't touched ...
+            # There are a few ideas why this happens (like backup/restore nginx
+            # conf ... which we shouldnt do ...). This in turns creates funky
+            # situation where the regenconf may refuse to re-create the conf
+            # (when re-creating a domain..)
+            # So here we force-clear the has out of the regenconf if it exists.
+            # This is a pretty ad hoc solution and only applied to nginx
+            # because it's one of the major service, but in the long term we
+            # should identify the root of this bug...
+            _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
             regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
             app_ssowatconf()
 
@@ -167,15 +179,9 @@ def domain_remove(operation_logger, domain, force=False):
             raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
-    for app in os.listdir('/etc/yunohost/apps/'):
-        with open('/etc/yunohost/apps/' + app + '/settings.yml') as f:
-            try:
-                app_domain = yaml.load(f)['domain']
-            except:
-                continue
-            else:
-                if app_domain == domain:
-                    raise YunohostError('domain_uninstall_app_first')
+    app_settings = [_get_app_settings(app) for app in _installed_apps()]
+    if any(s["domain"] == domain for s in app_settings):
+        raise YunohostError('domain_uninstall_app_first')
 
     operation_logger.start()
     ldap = _get_ldap_interface()
@@ -185,6 +191,25 @@ def domain_remove(operation_logger, domain, force=False):
         raise YunohostError('domain_deletion_failed', domain=domain, error=e)
 
     os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+
+    # Sometime we have weird issues with the regenconf where some files
+    # appears as manually modified even though they weren't touched ...
+    # There are a few ideas why this happens (like backup/restore nginx
+    # conf ... which we shouldnt do ...). This in turns creates funky
+    # situation where the regenconf may refuse to re-create the conf
+    # (when re-creating a domain..)
+    #
+    # So here we force-clear the has out of the regenconf if it exists.
+    # This is a pretty ad hoc solution and only applied to nginx
+    # because it's one of the major service, but in the long term we
+    # should identify the root of this bug...
+    _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+    # And in addition we even force-delete the file Otherwise, if the file was
+    # manually modified, it may not get removed by the regenconf which leads to
+    # catastrophic consequences of nginx breaking because it can't load the
+    # cert file which disappeared etc..
+    if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
+        _process_regen_conf("/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True)
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
@@ -395,7 +420,7 @@ def _normalize_domain_path(domain, path):
     return domain, path
 
 
-def _build_dns_conf(domain, ttl=3600):
+def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -448,21 +473,16 @@ def _build_dns_conf(domain, ttl=3600):
 
     if ipv6:
         basic.append(["@", ttl, "AAAA", ipv6])
+    elif include_empty_AAAA_if_no_ipv6:
+        basic.append(["@", ttl, "AAAA", None])
 
     #########
     # Email #
     #########
 
-    spf_record = '"v=spf1 a mx'
-    if ipv4:
-        spf_record += ' ip4:{ip4}'.format(ip4=ipv4)
-    if ipv6:
-        spf_record += ' ip6:{ip6}'.format(ip6=ipv6)
-    spf_record += ' -all"'
-
     mail = [
         ["@", ttl, "MX", "10 %s." % domain],
-        ["@", ttl, "TXT", spf_record],
+        ["@", ttl, "TXT", '"v=spf1 a mx -all"'],
     ]
 
     # DKIM/DMARC record
@@ -495,8 +515,11 @@ def _build_dns_conf(domain, ttl=3600):
 
     if ipv4:
         extra.append(["*", ttl, "A", ipv4])
+
     if ipv6:
         extra.append(["*", ttl, "AAAA", ipv6])
+    elif include_empty_AAAA_if_no_ipv6:
+        extra.append(["*", ttl, "AAAA", None])
 
     extra.append(["@", ttl, "CAA", '128 issue "letsencrypt.org"'])
 

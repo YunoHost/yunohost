@@ -43,7 +43,7 @@ from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
-from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages
+from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages, ynh_packages_version
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
 
@@ -53,6 +53,8 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger('yunohost.tools')
 
+def tools_versions():
+    return ynh_packages_version()
 
 def tools_ldapinit():
     """
@@ -596,8 +598,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
-                logger.warning(m18n.n('tools_upgrade_regular_packages_failed'),
-                               packages_list=', '.join(noncritical_packages_upgradable))
+                logger.warning(m18n.n('tools_upgrade_regular_packages_failed',
+                                      packages_list=', '.join(noncritical_packages_upgradable)))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
 

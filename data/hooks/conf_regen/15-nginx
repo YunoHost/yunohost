@@ -27,7 +27,8 @@ do_init_regen() {
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
   # Restart nginx if conf looks good, otherwise display error and exit unhappy
-  nginx -t 2>/dev/null && service nginx restart || (nginx -t && exit 1)
+  nginx -t 2>/dev/null || { nginx -t; exit 1; }
+  systemctl restart nginx || { journalctl --no-pager --lines=10 -u nginx >&2; exit 1; }
 
   exit 0
 }
@@ -46,14 +47,15 @@ do_pre_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
-  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
   ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
+  cert_status=$(yunohost domain cert-status --json)
+
   # add domain conf files
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
     domain_conf_dir="${nginx_conf_dir}/${domain}.d"
     mkdir -p "$domain_conf_dir"
     mail_autoconfig_dir="${pending_dir}/var/www/.well-known/${domain}/autoconfig/mail/"
@@ -61,7 +63,7 @@ do_pre_regen() {
 
     # NGINX server configuration
     export domain
-    export domain_cert_ca=$(yunohost domain cert-status $domain --json \
+    export domain_cert_ca=$(echo $cert_status \
                             | jq ".certificates.\"$domain\".CA_type" \
                             | tr -d '"')
 
@@ -81,7 +83,7 @@ do_pre_regen() {
                  | awk '/^[^\.]+\.[^\.]+.*\.conf$/ { print $1 }')
   for file in $conf_files; do
     domain=${file%.conf}
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || touch "${nginx_conf_dir}/${file}"
   done
 
@@ -89,7 +91,7 @@ do_pre_regen() {
   autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2>/dev/null || true)
   for file in $autoconfig_files; do
     domain=$(basename $(readlink -f $(dirname $file)/../..))
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || (mkdir -p "$(dirname ${pending_dir}/${file})" && touch "${pending_dir}/${file}")
   done
 
@@ -103,16 +105,28 @@ do_post_regen() {
 
   [ -z "$regen_conf_files" ] && exit 0
 
-  # retrieve variables
-  domain_list=$(yunohost domain list --output-as plain --quiet)
-
   # create NGINX conf directories for domains
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
     mkdir -p "/etc/nginx/conf.d/${domain}.d"
   done
 
-  # Reload nginx configuration
-  pgrep nginx && service nginx reload
+  # Get rid of legacy lets encrypt snippets
+  for domain in $YNH_DOMAINS; do
+      # If the legacy letsencrypt / acme-challenge domain-specific snippet is still there
+      if [ -e /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf ]
+      then
+          # And if we're effectively including the new domain-independant snippet now
+          if grep -q "include /etc/nginx/conf.d/acme-challenge.conf.inc;" /etc/nginx/conf.d/${domain}.conf
+          then
+              # Delete the old domain-specific snippet
+              rm /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf
+          fi
+      fi
+  done
+
+  # Reload nginx if conf looks good, otherwise display error and exit unhappy
+  nginx -t 2>/dev/null || { nginx -t; exit 1; }
+  pgrep nginx && systemctl reload nginx || { journalctl --no-pager --lines=10 -u nginx >&2; exit 1; }
 }
 
 FORCE=${2:-0}
