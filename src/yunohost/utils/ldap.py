@@ -52,7 +52,7 @@ def _get_ldap_interface():
 def assert_slapd_is_running():
 
     # Assert slapd is running...
-    if not os.system("pgrep slapd >dev/null") == 0:
+    if not os.system("pgrep slapd >/dev/null") == 0:
         raise YunohostError("Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'")
 
 
