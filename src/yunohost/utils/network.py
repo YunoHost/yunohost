@@ -76,7 +76,6 @@ def get_public_ip_from_remote_server(protocol=4):
     except Exception as e:
         logger.debug("Could not get public IPv%s : %s" % (str(protocol), str(e)))
         return None
-<<<<<<< HEAD
 
 
 def get_network_interfaces():
@@ -203,5 +202,3 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
         break
 
     return result
-=======
->>>>>>> Remove legacy migrations and code snippets which won't be needed anymore on buster
