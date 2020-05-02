@@ -14,9 +14,9 @@ Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 4.0.0~alpha), ssowat (>= 4.0.0~alpha)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-apt, python-miniupnpc, python-dbus, python-jinja2
- , python-toml, python-packaging
+ , python-toml, python-packaging, python-publicsuffix
  , apt, apt-transport-https
- , nginx, nginx-extras (>=1.6.2)
+ , nginx, nginx-extras
  , php-fpm, php-ldap, php-intl
  , mariadb-server, php-mysql | php-mysqlnd
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
@@ -25,11 +25,11 @@ Depends: ${python:Depends}, ${misc:Depends}
  , dnsmasq, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
- , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
+ , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , metronome (>=3.14.0)
  , git, curl, wget, cron, unzip, jq, bc
- , lsb-release, haveged, fake-hwclock, equivs, lsof, whois, python-publicsuffix
+ , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
@@ -39,6 +39,8 @@ Recommends: yunohost-admin
  , libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
+ , apache2
+ , bind9
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
