@@ -2270,34 +2270,25 @@ def backup_list(with_info=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    result = []
+    # Get local archives sorted according to last modification time
+    archives = sorted(glob("%s/*.tar.gz" % ARCHIVES_PATH), key=lambda x: os.path.getctime(x))
+    # Extract only filename without the extension
+    archives = [os.path.basename(f)[:-len(".tar.gz")] for f in archives]
 
-    try:
-        # Retrieve local archives
-        archives = os.listdir(ARCHIVES_PATH)
-    except OSError:
-        logger.debug("unable to iterate over local archives", exc_info=1)
-    else:
-        # Iterate over local archives
-        for f in archives:
-            try:
-                name = f[:f.rindex('.tar.gz')]
-            except ValueError:
-                continue
-            result.append(name)
-        result.sort(key=lambda x: os.path.getctime(os.path.join(ARCHIVES_PATH, x + ".tar.gz")))
-
-    if result and with_info:
+    if with_info:
         d = OrderedDict()
-        for a in result:
+        for archive in archives:
             try:
-                d[a] = backup_info(a, human_readable=human_readable)
+                d[archive] = backup_info(archive, human_readable=human_readable)
             except YunohostError as e:
                 logger.warning(str(e))
+            except Exception as e:
+                import traceback
+                logger.warning("Could not check infos for archive %s: %s" % (archive, '\n'+traceback.format_exc()))
 
-        result = d
+        archives = d
 
-    return {'archives': result}
+    return {'archives': archives}
 
 
 def backup_info(name, with_details=False, human_readable=False):
