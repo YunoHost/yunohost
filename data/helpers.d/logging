@@ -216,7 +216,7 @@ base_time=$(date +%s)
 # | arg: -m, --message= - The text to print
 # | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
 # | arg: -t, --time     - Print the execution time since the last call to this helper. Especially usefull to define weights. The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
-# | arg: -l, --last     - Use for the last call of the helper, to fill te progression bar.
+# | arg: -l, --last     - Use for the last call of the helper, to fill the progression bar.
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_script_progression () {
