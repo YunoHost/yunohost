@@ -9,10 +9,20 @@ from conftest import message, raiseYunohostError
 from moulinette import m18n
 from moulinette.utils.filesystem import mkdir
 
-from yunohost.app import app_install, app_remove, app_ssowatconf, _is_installed, app_upgrade, app_map
+from yunohost.app import (
+    app_install,
+    app_remove,
+    app_ssowatconf,
+    _is_installed,
+    app_upgrade,
+    app_map,
+)
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
-from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
+from yunohost.tests.test_permission import (
+    check_LDAP_db_integrity,
+    check_permission_for_apps,
+)
 from yunohost.permission import user_permission_list, permission_delete
 
 
@@ -20,9 +30,11 @@ def setup_function(function):
 
     clean()
 
+
 def teardown_function(function):
 
     clean()
+
 
 def clean():
 
@@ -44,16 +56,25 @@ def clean():
         for folderpath in glob.glob("/var/www/*%s*" % test_app):
             shutil.rmtree(folderpath, ignore_errors=True)
 
-        os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE %s' \"" % test_app)
-        os.system("bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER %s@localhost'\"" % test_app)
+        os.system(
+            "bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE %s' \""
+            % test_app
+        )
+        os.system(
+            "bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER %s@localhost'\""
+            % test_app
+        )
 
-    os.system("systemctl reset-failed nginx")  # Reset failed quota for service to avoid running into start-limit rate ?
+    os.system(
+        "systemctl reset-failed nginx"
+    )  # Reset failed quota for service to avoid running into start-limit rate ?
     os.system("systemctl start nginx")
 
     # Clean permissions
     for permission_name in user_permission_list(short=True)["permissions"]:
         if any(test_app in permission_name for test_app in test_apps):
             permission_delete(permission_name, force=True)
+
 
 @pytest.fixture(autouse=True)
 def check_LDAP_db_integrity_call():
@@ -68,6 +89,7 @@ def check_permission_for_apps_call():
     yield
     check_permission_for_apps()
 
+
 @pytest.fixture(scope="module")
 def secondary_domain(request):
 
@@ -76,6 +98,7 @@ def secondary_domain(request):
 
     def remove_example_domain():
         domain_remove("example.test")
+
     request.addfinalizer(remove_example_domain)
 
     return "example.test"
@@ -84,6 +107,7 @@ def secondary_domain(request):
 #
 # Helpers                                                                    #
 #
+
 
 def app_expected_files(domain, app):
 
@@ -98,18 +122,27 @@ def app_expected_files(domain, app):
 
 def app_is_installed(domain, app):
 
-    return _is_installed(app) and all(os.path.exists(f) for f in app_expected_files(domain, app))
+    return _is_installed(app) and all(
+        os.path.exists(f) for f in app_expected_files(domain, app)
+    )
 
 
 def app_is_not_installed(domain, app):
 
-    return not _is_installed(app) and not all(os.path.exists(f) for f in app_expected_files(domain, app))
+    return not _is_installed(app) and not all(
+        os.path.exists(f) for f in app_expected_files(domain, app)
+    )
 
 
 def app_is_exposed_on_http(domain, path, message_in_page):
 
     try:
-        r = requests.get("http://127.0.0.1" + path + "/", headers={"Host": domain}, timeout=10, verify=False)
+        r = requests.get(
+            "http://127.0.0.1" + path + "/",
+            headers={"Host": domain},
+            timeout=10,
+            verify=False,
+        )
         return r.status_code == 200 and message_in_page in r.text
     except Exception as e:
         return False
@@ -117,23 +150,27 @@ def app_is_exposed_on_http(domain, path, message_in_page):
 
 def install_legacy_app(domain, path, public=True):
 
-    app_install("./tests/apps/legacy_app_ynh",
-                args="domain=%s&path=%s&is_public=%s" % (domain, path, 1 if public else 0),
-                force=True)
+    app_install(
+        "./tests/apps/legacy_app_ynh",
+        args="domain=%s&path=%s&is_public=%s" % (domain, path, 1 if public else 0),
+        force=True,
+    )
 
 
 def install_full_domain_app(domain):
 
-    app_install("./tests/apps/full_domain_app_ynh",
-                args="domain=%s" % domain,
-                force=True)
+    app_install(
+        "./tests/apps/full_domain_app_ynh", args="domain=%s" % domain, force=True
+    )
 
 
 def install_break_yo_system(domain, breakwhat):
 
-    app_install("./tests/apps/break_yo_system_ynh",
-                args="domain=%s&breakwhat=%s" % (domain, breakwhat),
-                force=True)
+    app_install(
+        "./tests/apps/break_yo_system_ynh",
+        args="domain=%s&breakwhat=%s" % (domain, breakwhat),
+        force=True,
+    )
 
 
 def test_legacy_app_install_main_domain():
@@ -144,9 +181,9 @@ def test_legacy_app_install_main_domain():
 
     app_map_ = app_map(raw=True)
     assert main_domain in app_map_
-    assert '/legacy' in app_map_[main_domain]
-    assert 'id' in app_map_[main_domain]['/legacy']
-    assert app_map_[main_domain]['/legacy']['id'] == 'legacy_app'
+    assert "/legacy" in app_map_[main_domain]
+    assert "id" in app_map_[main_domain]["/legacy"]
+    assert app_map_[main_domain]["/legacy"]["id"] == "legacy_app"
 
     assert app_is_installed(main_domain, "legacy_app")
     assert app_is_exposed_on_http(main_domain, "/legacy", "This is a dummy app")
@@ -174,9 +211,9 @@ def test_legacy_app_install_secondary_domain_on_root(secondary_domain):
 
     app_map_ = app_map(raw=True)
     assert secondary_domain in app_map_
-    assert '/' in app_map_[secondary_domain]
-    assert 'id' in app_map_[secondary_domain]['/']
-    assert app_map_[secondary_domain]['/']['id'] == 'legacy_app'
+    assert "/" in app_map_[secondary_domain]
+    assert "id" in app_map_[secondary_domain]["/"]
+    assert app_map_[secondary_domain]["/"]["id"] == "legacy_app"
 
     assert app_is_installed(secondary_domain, "legacy_app")
     assert app_is_exposed_on_http(secondary_domain, "/", "This is a dummy app")
@@ -191,7 +228,9 @@ def test_legacy_app_install_private(secondary_domain):
     install_legacy_app(secondary_domain, "/legacy", public=False)
 
     assert app_is_installed(secondary_domain, "legacy_app")
-    assert not app_is_exposed_on_http(secondary_domain, "/legacy", "This is a dummy app")
+    assert not app_is_exposed_on_http(
+        secondary_domain, "/legacy", "This is a dummy app"
+    )
 
     app_remove("legacy_app")
 
@@ -246,7 +285,9 @@ def test_legacy_app_install_with_nginx_down(mocker, secondary_domain):
 
     os.system("systemctl stop nginx")
 
-    with raiseYunohostError(mocker, "app_action_cannot_be_ran_because_required_services_down"):
+    with raiseYunohostError(
+        mocker, "app_action_cannot_be_ran_because_required_services_down"
+    ):
         install_legacy_app(secondary_domain, "/legacy")
 
 
@@ -257,7 +298,7 @@ def test_legacy_app_failed_install(mocker, secondary_domain):
     mkdir("/var/www/legacy_app/", 0o750)
 
     with pytest.raises(YunohostError):
-        with message(mocker, 'app_install_script_failed'):
+        with message(mocker, "app_install_script_failed"):
             install_legacy_app(secondary_domain, "/legacy")
 
     assert app_is_not_installed(secondary_domain, "legacy_app")
@@ -302,7 +343,7 @@ def test_systemfuckedup_during_app_install(mocker, secondary_domain):
 
     with pytest.raises(YunohostError):
         with message(mocker, "app_install_failed"):
-            with message(mocker, 'app_action_broke_system'):
+            with message(mocker, "app_action_broke_system"):
                 install_break_yo_system(secondary_domain, breakwhat="install")
 
     assert app_is_not_installed(secondary_domain, "break_yo_system")
@@ -313,8 +354,8 @@ def test_systemfuckedup_during_app_remove(mocker, secondary_domain):
     install_break_yo_system(secondary_domain, breakwhat="remove")
 
     with pytest.raises(YunohostError):
-        with message(mocker, 'app_action_broke_system'):
-            with message(mocker, 'app_removed'):
+        with message(mocker, "app_action_broke_system"):
+            with message(mocker, "app_removed"):
                 app_remove("break_yo_system")
 
     assert app_is_not_installed(secondary_domain, "break_yo_system")
@@ -324,7 +365,7 @@ def test_systemfuckedup_during_app_install_and_remove(mocker, secondary_domain):
 
     with pytest.raises(YunohostError):
         with message(mocker, "app_install_failed"):
-            with message(mocker, 'app_action_broke_system'):
+            with message(mocker, "app_action_broke_system"):
                 install_break_yo_system(secondary_domain, breakwhat="everything")
 
     assert app_is_not_installed(secondary_domain, "break_yo_system")
@@ -335,7 +376,7 @@ def test_systemfuckedup_during_app_upgrade(mocker, secondary_domain):
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
     with pytest.raises(YunohostError):
-        with message(mocker, 'app_action_broke_system'):
+        with message(mocker, "app_action_broke_system"):
             app_upgrade("break_yo_system", file="./tests/apps/break_yo_system_ynh")
 
 
@@ -346,6 +387,10 @@ def test_failed_multiple_app_upgrade(mocker, secondary_domain):
 
     with pytest.raises(YunohostError):
         with message(mocker, "app_not_upgraded"):
-            app_upgrade(["break_yo_system", "legacy_app"],
-                        file={"break_yo_system": "./tests/apps/break_yo_system_ynh",
-                              "legacy": "./tests/apps/legacy_app_ynh"})
+            app_upgrade(
+                ["break_yo_system", "legacy_app"],
+                file={
+                    "break_yo_system": "./tests/apps/break_yo_system_ynh",
+                    "legacy": "./tests/apps/legacy_app_ynh",
+                },
+            )
