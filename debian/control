@@ -13,7 +13,7 @@ Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 3.7), ssowat (>= 3.7)
  , python-psutil, python-requests, python-dnspython, python-openssl
- , python-apt, python-miniupnpc, python-dbus, python-jinja2
+ , python-apt, python-miniupnpc, python-dbus, python-jinja2, python-packaging,
  , python-toml
  , apt, apt-transport-https
  , nginx, nginx-extras (>=1.6.2)
