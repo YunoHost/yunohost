@@ -6,7 +6,6 @@ import requests
 
 from conftest import message, raiseYunohostError
 
-from moulinette import m18n
 from moulinette.utils.filesystem import mkdir
 
 from yunohost.app import (
