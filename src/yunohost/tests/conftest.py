@@ -1,3 +1,4 @@
+import os
 import pytest
 import sys
 import moulinette
@@ -8,6 +9,15 @@ from contextlib import contextmanager
 
 sys.path.append("..")
 
+
+@pytest.fixture(scope="session", autouse=True)
+def clone_test_app(request):
+    cwd = os.path.split(os.path.realpath(__file__))[0]
+
+    if not os.path.exists(cwd + "/apps"):
+        os.system("git clone https://github.com/YunoHost/test_apps %s/apps" % cwd)
+    else:
+        os.system("cd %s/apps && git pull > /dev/null 2>&1" % cwd)
 
 
 @contextmanager
