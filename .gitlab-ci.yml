@@ -26,14 +26,6 @@ postinstall:
     - pip install -U pip
     - hash -d pip
     - pip --cache-dir=.pip install pytest pytest-sugar pytest-mock requests-mock mock
-    - pushd src/yunohost/tests
-    - >
-       if [ ! -d "./apps" ]; then
-         git clone https://github.com/YunoHost/test_apps ./apps
-       fi
-    - cd apps
-    - git pull > /dev/null 2>&1
-    - popd
     - export PYTEST_ADDOPTS="--color=yes"
   cache:
     paths: 
