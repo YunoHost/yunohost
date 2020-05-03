@@ -25,17 +25,17 @@ ynh_get_ram () {
     free=${free:-0}
     total=${total:-0}
 
-    local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
-    local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
-    local total_ram_swap=$(( total_ram + total_swap ))
-
-    local free_ram=$(vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
-    local free_swap=$(vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
-    local free_ram_swap=$(( free_ram + free_swap ))
-
-    # Use the total amount of ram
-    if [ $free -eq 1 ]
+    if [ $free -eq $total ]
     then
+        ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+        ram=0
+    # Use the total amount of ram
+    elif [ $free -eq 1 ]
+    then
+        local free_ram=$(vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
+        local free_swap=$(vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
+        local free_ram_swap=$(( free_ram + free_swap ))
+        
         # Use the total amount of free ram
         local ram=$free_ram_swap
         if [ $ignore_swap -eq 1 ]
@@ -49,6 +49,10 @@ ynh_get_ram () {
         fi
     elif [ $total -eq 1 ]
     then
+        local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
+        local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
+        local total_ram_swap=$(( total_ram + total_swap ))
+    
         local ram=$total_ram_swap
         if [ $ignore_swap -eq 1 ]
         then
@@ -59,9 +63,6 @@ ynh_get_ram () {
             # Use only the amount of free swap
             ram=$total_swap
         fi
-    else
-        ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
-        ram=0
     fi
 
     echo $ram
