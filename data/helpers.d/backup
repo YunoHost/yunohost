@@ -40,6 +40,24 @@ CAN_BIND=${CAN_BIND:-1}
 # ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf" "/conf/"
 # # => "/etc/nginx/conf.d/$domain.d/$app.conf","apps/wordpress/conf/$app.conf"
 #
+#
+# How to use --is_big:
+# --is_big is used to specify that this part of the backup can be quite huge.
+# So, you don't want that your package does backup that part during ynh_backup_before_upgrade.
+# In the same way, an user may doesn't want to backup this big part of the app for
+#   each of his backup. And so handle that part differently.
+# 
+# As this part of your backup may not be done, your restore script has to handle it.
+# In your restore script, use --not_mandatory with ynh_restore_file
+# As well in your remove script, you should not remove those data ! Or an user may end up with
+#   a failed upgrade restoring an app without data anymore !
+#
+# To have the benefit of --is_big while doing a backup, you can whether set the environement
+#   variable BACKUP_CORE_ONLY to 1 (BACKUP_CORE_ONLY=1) before the backup command. It will affect
+#   only that backup command.
+# Or set the config do_not_backup_data to 1 into the settings.yml of the app. This will affect
+#   all backups for this app until the setting is removed.
+#
 # Requires YunoHost version 2.4.0 or higher.
 # Requires YunoHost version 3.5.0 or higher for the argument --not_mandatory
 ynh_backup() {
