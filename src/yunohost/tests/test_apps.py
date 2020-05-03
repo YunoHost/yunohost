@@ -143,7 +143,7 @@ def app_is_exposed_on_http(domain, path, message_in_page):
             verify=False,
         )
         return r.status_code == 200 and message_in_page in r.text
-    except Exception as e:
+    except Exception:
         return False
 
 
