@@ -21,6 +21,7 @@
 
 import os
 import atexit
+from moulinette.core import MoulinetteLdapIsDownError
 from moulinette.authenticators import ldap
 from yunohost.utils.error import YunohostError
 
@@ -34,8 +35,6 @@ def _get_ldap_interface():
 
     if _ldap_interface is None:
 
-        assert_slapd_is_running()
-
         conf = { "vendor": "ldap",
                  "name": "as-root",
                  "parameters": { 'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
@@ -44,7 +43,12 @@ def _get_ldap_interface():
                  "extra": {}
                }
 
-        _ldap_interface = ldap.Authenticator(**conf)
+        try:
+            _ldap_interface = ldap.Authenticator(**conf)
+        except MoulinetteLdapIsDownError:
+            raise YunohostError("Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'")
+
+        assert_slapd_is_running()
 
     return _ldap_interface
 
