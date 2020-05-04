@@ -172,7 +172,7 @@ def app_info(app, full=False):
     ret["manifest"] = local_manifest
     ret['settings'] = settings
 
-    absolute_app_name = app if "__" not in app else app[:app.index('__')]  # idk this is the name of the app even for multiinstance apps (so wordpress__2 -> wordpress)
+    absolute_app_name, _ = _parse_app_instance_name(app)
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret['upgradable'] = _app_upgradable(ret)
     ret['supports_change_url'] = os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url"))
@@ -2177,12 +2177,14 @@ def _fetch_app_from_git(app):
     else:
         app_dict = _load_apps_catalog()["apps"]
 
-        if app not in app_dict:
+        app_id, _ = _parse_app_instance_name(app)
+
+        if app_id not in app_dict:
             raise YunohostError('app_unknown')
-        elif 'git' not in app_dict[app]:
+        elif 'git' not in app_dict[app_id]:
             raise YunohostError('app_unsupported_remote_type')
 
-        app_info = app_dict[app]
+        app_info = app_dict[app_id]
         app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
         manifest = app_info['manifest']
         url = app_info['git']['url']
