@@ -73,6 +73,20 @@ ynh_system_user_exists() {
     getent passwd "$username" &>/dev/null
 }
 
+# Check if the app user exists on LDAP
+#
+# Note that the username is : $YNH_APP_INSTANCE_NAME
+#
+# usage: ynh_ldap_user_exists
+# | exit: Return 1 if the user doesn't exist, 0 otherwise
+#
+# Requires YunoHost version 3.8.0 or higher.
+ynh_ldap_user_exists() {
+    # Declare an array to define the options of this helper.
+    local username=$YNH_APP_INSTANCE_NAME
+    test -n "$(yunohost tools shell -c "from yunohost.user import user_list; print(user_list(fields=['uid'], app_user=True)['users'].get('$username', ''))")"
+}
+
 # Check if a group exists on the system
 #
 # usage: ynh_system_group_exists --group=group
@@ -135,6 +149,64 @@ ynh_system_user_create () {
     fi
 }
 
+
+# Create a LDAP user for app
+#
+# Note that the username is : $YNH_APP_INSTANCE_NAME
+# This will create a user and a group in LDAP in the LDAP.
+# The user will be in: ou=users,ou=apps,dc=yunohost,dc=org
+# The group will be in: ou=groups,ou=apps,dc=yunohost,dc=org
+#
+# examples:
+#   # Create a nextcloud user with no home directory, /usr/sbin/nologin login shell (hence no login capability) and nextcloud@main_domain.tld as email
+#   ynh_ldap_user_create --password="The-Best_password" --home_dir /var/www/nextcloud
+#   # Create a discourse user using /var/www/discourse as home directory and the default login shell
+#   ynh_ldap_user_create --password="RAND0MP4sSw0RO" --home_dir=/var/www/discourse --mail forum@app_domain.tld --use_shell
+#
+# usage: ynh_ldap_user_create --username=user_name --password=password --home_dir=home_dir [--mail=app_email] [--use_shell]
+# | arg: -p, --password     - Password of the user. Used for the authentication in LDAP, sending and receiving email.
+# | arg: -h, --home_dir=    - Path of the home dir for the user. Usually the final path of the app.
+# | arg: -m, --mail         - Email of this user. By default it's username@yunohost_main_domain
+# | arg: -s, --use_shell    - Create a user using the default login shell if present. If this argument is omitted, the user will be created with /usr/sbin/nologin shell
+#
+# Note that with this helper the app will have a mailbox accessible with SMTP and IMAP.
+# the identifier are:
+# user: $YNH_APP_INSTANCE_NAME
+# password: password defined when the helper is called.
+#
+# Requires YunoHost version 3.8.0 or higher.
+ynh_ldap_user_create () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=phms
+    local -A args_array=([p]=password= [h]=home_dir= [m]=mail [s]=use_shell )
+    local password
+    local home_dir
+    local mail
+    local use_shell
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    local username=$YNH_APP_INSTANCE_NAME
+    mail="${mail:-}"
+    use_shell="${use_shell:-0}"
+
+    if ! ynh_ldap_user_exists	# Check if the user exists in LDAP
+    then	# If the user doesn't exist
+        if [ -n $mail ]
+        then
+            mail="$username"@$(cat /etc/yunohost/current_host)
+        fi
+        if [ $use_shell -eq 1 ]
+        then	# If we want a shell for the user
+            local shell="/bin/bash"
+        else
+            local shell="/usr/sbin/nologin"
+        fi
+
+        # Note that we can't use the CLI because we need to specify that it's a app_user and not a normal user.
+        yunohost tools shell -c "from yunohost.user import user_create; user_create('$username', firstname='$username', lastname='App', mail='$mail', password='$password', home_directory='$home_dir', shell='$shell', app_user=True)"
+    fi
+}
+
 # Delete a system user
 #
 # usage: ynh_system_user_delete --username=user_name
@@ -161,5 +233,27 @@ ynh_system_user_delete () {
     if ynh_system_group_exists "$username"
     then
         delgroup $username
+    fi
+}
+
+# Delete the LDAP user
+#
+# Note that the username is : $YNH_APP_INSTANCE_NAME
+#
+# Note that the LDAP app user is automatically deleted by the core when the app is removed
+#
+# usage: ynh_LDAP_user_delete
+#
+# Requires YunoHost version 3.8.0 or higher.
+ynh_ldap_user_delete () {
+    # Declare an array to define the options of this helper.
+    local username=$YNH_APP_INSTANCE_NAME
+
+    # Check if the user exists on the system
+    if ynh_ldap_user_exists
+    then
+        yunohost tools shell -c "from yunohost.user import user_delete; user_delete('$username', app_user=True)"
+    else
+        ynh_print_warn --message="The user $username was not found"
     fi
 }

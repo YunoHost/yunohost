@@ -626,6 +626,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
+    from yunohost.user import user_list, user_delete
     from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
 
     # Fetch or extract sources
@@ -860,6 +861,10 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                 if permission_name.startswith(app_instance_name+"."):
                     permission_delete(permission_name, force=True, sync_perm=False)
 
+            # Remove app user in LDAP
+            if app_instance_name in user_list(fields=['uid'], app_user=True)['users']:
+                user_delete(app_instance_name, app_user=True)
+
             if remove_retcode != 0:
                 msg = m18n.n('app_not_properly_removed',
                              app=app_instance_name)
@@ -992,6 +997,7 @@ def app_remove(operation_logger, app):
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
+    from yunohost.user import user_list, user_delete
     from yunohost.permission import user_permission_list, permission_delete, permission_sync_to_user
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
@@ -1059,6 +1065,10 @@ def app_remove(operation_logger, app):
     for permission_name in user_permission_list()["permissions"].keys():
         if permission_name.startswith(app+"."):
             permission_delete(permission_name, force=True, sync_perm=False)
+
+    # Remove app user in LDAP
+    if app in user_list(fields=['uid'], app_user=True)['users']:
+        user_delete(app, app_user=True)
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
