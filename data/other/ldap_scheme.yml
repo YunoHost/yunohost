@@ -64,6 +64,17 @@ children:
             - posixGroup
             - groupOfNamesYnh
 
+    ou=users,ou=apps:
+        ou: users
+        objectClass:
+            - organizationalUnit
+            - top
+    ou=groups,ou=apps:
+        ou: users
+        objectClass:
+            - organizationalUnit
+            - top
+
 depends_children:
     cn=mail.main,ou=permission:
         cn: mail.main

@@ -45,7 +45,7 @@ from yunohost.log import is_unit_operation
 logger = getActionLogger('yunohost.user')
 
 
-def user_list(fields=None):
+def user_list(fields=None, app_user=False):
     """
     List users
 
@@ -70,6 +70,7 @@ def user_list(fields=None):
 
     attrs = ['uid']
     users = {}
+    ldap_user_path = 'ou=users,ou=apps' if app_user else 'ou=users'
 
     if fields:
         keys = user_attrs.keys()
@@ -82,7 +83,7 @@ def user_list(fields=None):
         attrs = ['uid', 'cn', 'mail', 'mailuserquota', 'loginShell']
 
     ldap = _get_ldap_interface()
-    result = ldap.search('ou=users,dc=yunohost,dc=org',
+    result = ldap.search('%s,dc=yunohost,dc=org' % ldap_user_path,
                          '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
                          attrs)
 
@@ -106,17 +107,21 @@ def user_list(fields=None):
 
 @is_unit_operation([('username', 'user')])
 def user_create(operation_logger, username, firstname, lastname, mail, password,
-                mailbox_quota="0"):
+                home_directory=None, shell='/bin/false',
+                mailbox_quota="0", app_user=False):
     """
     Create user
 
     Keyword argument:
         firstname
         lastname
-        username -- Must be unique
-        mail -- Main mail address must be unique
+        username        -- Must be unique
+        mail            -- Main mail address must be unique
         password
-        mailbox_quota -- Mailbox size quota
+        home_directory  -- Home directory of user. Default is /home/username
+        shell           -- Shell of the user. Default is /bin/false
+        mailbox_quota   -- Mailbox size quota
+        app_user        -- Define if it is a user dedicated to an app
 
     """
     from yunohost.domain import domain_list, _get_maindomain
@@ -189,16 +194,19 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
         'userPassword': _hash_user_password(password),
         'gidNumber': uid,
         'uidNumber': uid,
-        'homeDirectory': '/home/' + username,
-        'loginShell': '/bin/false'
+        'homeDirectory': '/home/' + username if home_directory is None else home_directory,
+        'loginShell': shell
     }
 
     # If it is the first user, add some aliases
-    if not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
+    if not app_user and not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
         attr_dict['mail'] = [attr_dict['mail']] + aliases
 
+    # Define the place in LDAP where we put the user
+    ldap_user_path = 'ou=users,ou=apps' if app_user else 'ou=users'
+
     try:
-        ldap.add('uid=%s,ou=users' % username, attr_dict)
+        ldap.add('uid=%s,%s' % (username, ldap_user_path), attr_dict)
     except Exception as e:
         raise YunohostError('user_creation_failed', user=username, error=e)
 
@@ -206,65 +214,72 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     subprocess.call(['nscd', '-i', 'passwd'])
     subprocess.call(['nscd', '-i', 'group'])
 
-    try:
-        # Attempt to create user home folder
-        subprocess.check_call(
-            ['su', '-', username, '-c', "''"])
-    except subprocess.CalledProcessError:
-        if not os.path.isdir('/home/{0}'.format(username)):
-            logger.warning(m18n.n('user_home_creation_failed'),
-                           exc_info=1)
+    if not app_user:
+        try:
+            # Attempt to create user home folder
+            subprocess.check_call(
+                ['su', '-', username, '-c', "''"])
+        except subprocess.CalledProcessError:
+            if not os.path.isdir('/home/{0}'.format(username)):
+                logger.warning(m18n.n('user_home_creation_failed'),
+                            exc_info=1)
 
     # Create group for user and add to group 'all_users'
-    user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
-    user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
+    user_group_create(groupname=username, gid=uid, primary_group=True, app_group=app_user, sync_perm=False)
+    if not app_user:
+        user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
 
     # TODO: Send a welcome mail to user
     logger.success(m18n.n('user_created'))
 
-    hook_callback('post_user_create',
-                  args=[username, mail, password, firstname, lastname])
+    if not app_user:
+        hook_callback('post_user_create',
+                      args=[username, mail, password, firstname, lastname])
 
     return {'fullname': fullname, 'username': username, 'mail': mail}
 
 
 @is_unit_operation([('username', 'user')])
-def user_delete(operation_logger, username, purge=False):
+def user_delete(operation_logger, username, purge=False, app_user=False):
     """
     Delete user
 
     Keyword argument:
         username -- Username to delete
         purge
+        app_user        -- Define if it is a user dedicated to an app
 
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.permission import permission_sync_to_user
 
-    if username not in user_list()["users"]:
+    if username not in user_list(app_user=app_user)["users"]:
         raise YunohostError('user_unknown', user=username)
+
+    ldap_user_path = 'ou=users,ou=apps' if app_user else 'ou=users'
 
     operation_logger.start()
 
-    user_group_update("all_users", remove=username, force=True, sync_perm=False)
-    for group, infos in user_group_list()["groups"].items():
-        if group == "all_users":
-            continue
-        # If the user is in this group (and it's not the primary group),
-        # remove the member from the group
-        if username != group and username in infos["members"]:
-            user_group_update(group, remove=username, sync_perm=False)
+    if not app_user:
+        user_group_update("all_users", remove=username, force=True, sync_perm=False)
+        for group, infos in user_group_list()["groups"].items():
+            if group == "all_users":
+                continue
+            # If the user is in this group (and it's not the primary group),
+            # remove the member from the group
+            if username != group and username in infos["members"]:
+                user_group_update(group, remove=username, sync_perm=False)
 
     # Delete primary group if it exists (why wouldnt it exists ?  because some
     # epic bug happened somewhere else and only a partial removal was
     # performed...)
-    if username in user_group_list()['groups'].keys():
-        user_group_delete(username, force=True, sync_perm=True)
+    if username in user_group_list(app_group=app_user)['groups'].keys():
+        user_group_delete(username, force=True, app_group=app_user, sync_perm=True)
 
     ldap = _get_ldap_interface()
     try:
-        ldap.remove('uid=%s,ou=users' % username)
+        ldap.remove('uid=%s,%s' % (username, ldap_user_path))
     except Exception as e:
         raise YunohostError('user_deletion_failed', user=username, error=e)
 
@@ -272,10 +287,12 @@ def user_delete(operation_logger, username, purge=False):
     subprocess.call(['nscd', '-i', 'passwd'])
 
     if purge:
-        subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
+        if app_user:
+            subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
         subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
 
-    hook_callback('post_user_delete', args=[username, purge])
+    if not app_user:
+        hook_callback('post_user_delete', args=[username, purge])
 
     logger.success(m18n.n('user_deleted'))
 
@@ -410,12 +427,13 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     return user_info(username)
 
 
-def user_info(username):
+def user_info(username, app_user=False):
     """
     Get user informations
 
     Keyword argument:
         username -- Username or mail to get informations
+        app_user        -- Define if it is a user dedicated to an app
 
     """
     from yunohost.utils.ldap import _get_ldap_interface
@@ -425,13 +443,14 @@ def user_info(username):
     user_attrs = [
         'cn', 'mail', 'uid', 'maildrop', 'givenName', 'sn', 'mailuserquota'
     ]
+    ldap_user_path = 'ou=users,ou=apps' if app_user else 'ou=users'
 
     if len(username.split('@')) == 2:
         filter = 'mail=' + username
     else:
         filter = 'uid=' + username
 
-    result = ldap.search('ou=users,dc=yunohost,dc=org', filter, user_attrs)
+    result = ldap.search('%s,dc=yunohost,dc=org' % ldap_user_path, filter, user_attrs)
 
     if result:
         user = result[0]
@@ -497,7 +516,7 @@ def user_info(username):
 #
 # Group subcategory
 #
-def user_group_list(short=False, full=False, include_primary_groups=True):
+def user_group_list(short=False, full=False, include_primary_groups=True, app_group=False):
     """
     List users
 
@@ -508,13 +527,16 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
                                   This option is set to false by default in the action map because we don't want to have
                                   these displayed when the user runs `yunohost user group list`, but internally we do want
                                   to list them when called from other functions
+        app_group        -- Define if it is a group dedicated to an app
+
     """
 
     # Fetch relevant informations
 
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
-    groups_infos = ldap.search('ou=groups,dc=yunohost,dc=org',
+    ldap_group_path = 'ou=groups,ou=apps' if app_group else 'ou=groups'
+    groups_infos = ldap.search('%s,dc=yunohost,dc=org' % ldap_group_path,
                                '(objectclass=groupOfNamesYnh)',
                                ["cn", "member", "permission"])
 
@@ -543,13 +565,13 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
 
 
 @is_unit_operation([('groupname', 'group')])
-def user_group_create(operation_logger, groupname, gid=None, primary_group=False, sync_perm=True):
+def user_group_create(operation_logger, groupname, gid=None, primary_group=False, app_group=False, sync_perm=True):
     """
     Create group
 
     Keyword argument:
         groupname -- Must be unique
-
+        app_group        -- Define if it is a group dedicated to an app
     """
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
@@ -586,16 +608,18 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
         'cn': groupname,
         'gidNumber': gid,
     }
+    ldap_user_path = 'ou=users,ou=apps' if app_group else 'ou=users'
+    ldap_group_path = 'ou=groups,ou=apps' if app_group else 'ou=groups'
 
     # Here we handle the creation of a primary group
     # We want to initialize this group to contain the corresponding user
     # (then we won't be able to add/remove any user in this group)
     if primary_group:
-        attr_dict["member"] = ["uid=" + groupname + ",ou=users,dc=yunohost,dc=org"]
+        attr_dict["member"] = ["uid=%s,%s,dc=yunohost,dc=org" % (groupname, ldap_user_path)]
 
     operation_logger.start()
     try:
-        ldap.add('cn=%s,ou=groups' % groupname, attr_dict)
+        ldap.add('cn=%s,%s' % (groupname, ldap_group_path), attr_dict)
     except Exception as e:
         raise YunohostError('group_creation_failed', group=groupname, error=e)
 
@@ -611,18 +635,18 @@ def user_group_create(operation_logger, groupname, gid=None, primary_group=False
 
 
 @is_unit_operation([('groupname', 'group')])
-def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
+def user_group_delete(operation_logger, groupname, force=False, app_group=False, sync_perm=True):
     """
     Delete user
 
     Keyword argument:
         groupname -- Groupname to delete
-
+        app_group        -- Define if it is a group dedicated to an app
     """
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    existing_groups = user_group_list()['groups'].keys()
+    existing_groups = user_group_list(app_group=app_group)['groups'].keys()
     if groupname not in existing_groups:
         raise YunohostError('group_unknown', group=groupname)
 
@@ -635,10 +659,12 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     if groupname in undeletable_groups and not force:
         raise YunohostError('group_cannot_be_deleted', group=groupname)
 
+    ldap_group_path = 'ou=groups,ou=apps' if app_group else 'ou=groups'
+
     operation_logger.start()
     ldap = _get_ldap_interface()
     try:
-        ldap.remove('cn=%s,ou=groups' % groupname)
+        ldap.remove('cn=%s,%s' % (groupname, ldap_group_path))
     except Exception as e:
         raise YunohostError('group_deletion_failed', group=groupname, error=e)
 
