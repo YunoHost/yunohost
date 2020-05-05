@@ -1247,6 +1247,14 @@ class RestoreManager():
             if _is_installed(app_name):
                 permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
 
+        from yunohost.utils.ldap import _get_ldap_interface
+        ldap = _get_ldap_interface()
+        # Check if there are users et groups object in apps tree in LDAP
+        if len(ldap.search('ou=apps,dc=yunohost,dc=org')) <= 1:
+            from yunohost.tools import _get_migration_by_name
+            setup_group_permission = _get_migration_by_name("update_ldap_for_apps_users")
+            setup_group_permission.run()
+
         permission_sync_to_user()
 
 
