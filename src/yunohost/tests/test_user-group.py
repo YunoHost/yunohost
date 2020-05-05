@@ -5,6 +5,7 @@ from conftest import message, raiseYunohostError
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
                           user_group_list, user_group_create, user_group_delete, user_group_update
 from yunohost.domain import _get_maindomain
+from yunohost.app import app_install
 from yunohost.tests.test_permission import check_LDAP_db_integrity
 
 # Get main domain
@@ -19,6 +20,13 @@ def clean_user_groups():
         if g not in ["all_users", "visitors"]:
             user_group_delete(g)
 
+    for u in user_list(app_user=True)['users']:
+        user_delete(u, app_user=True)
+
+    for g in user_group_list(app_group=True)['groups']:
+        if g not in ["all_users", "visitors"]:
+            user_group_delete(g, app_group=True)
+
 
 def setup_function(function):
     clean_user_groups()
@@ -29,6 +37,7 @@ def setup_function(function):
     user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
     user_create("jack", "Jack", "Black", "jack@" + maindomain, "test123Ynh")
+    user_create("wordpress", "wordpress", "app", "wordpress@" + maindomain, "test123Ynh", app_user=True)
 
     user_group_create("dev")
     user_group_create("apps")
@@ -38,6 +47,10 @@ def setup_function(function):
 
 def teardown_function(function):
     clean_user_groups()
+    try:
+        app_remove("ldap_user_app")
+    except:
+        pass
 
 
 @pytest.fixture(autouse=True)
@@ -53,19 +66,35 @@ def check_LDAP_db_integrity_call():
 
 def test_list_users():
     res = user_list()['users']
+    res_app = user_list(app_user=True)['users']
 
     assert "alice" in res
     assert "bob" in res
     assert "jack" in res
+    assert "wordpress" not in res
+
+    assert "alice" not in res_app
+    assert "bob" not in res_app
+    assert "jack" not in res_app
+    assert "wordpress" in res_app
 
 
 def test_list_groups():
     res = user_group_list()['groups']
+    res_app = user_group_list(app_group=True)['groups']
 
     assert "all_users" in res
     assert "alice" in res
     assert "bob" in res
     assert "jack" in res
+    assert "wordpress" not in res
+
+    assert "all_users" not in res_app
+    assert "alice" not in res_app
+    assert "bob" not in res_app
+    assert "jack" not in res_app
+    assert "wordpress" in res_app
+
     for u in ["alice", "bob", "jack"]:
         assert u in res
         assert u in res[u]['members']
@@ -117,6 +146,18 @@ def test_del_group(mocker):
 
     group_res = user_group_list()['groups']
     assert "dev" not in group_res
+
+
+def test_create_app_user(mocker):
+    with message(mocker, "user_created"):
+        user_create("discourse", "discourse", "app", "discourse@" + maindomain, "test123Ynh", app_user=True)
+
+    group_res = user_group_list(app_group=False)['groups']
+    group_res_app = user_group_list(app_group=True)['groups']
+    assert "discourse" in user_list(app_user=True)['users']
+    assert "discourse" in group_res_app
+    assert "discourse" in group_res_app['discourse']['members']
+    assert "discourse" not in group_res['all_users']['members']    
 
 #
 # Error on create / remove function
@@ -248,3 +289,17 @@ def test_update_group_add_user_that_doesnt_exist(mocker):
         user_group_update("dev", add=["doesnt_exist"])
 
     assert "doesnt_exist" not in user_group_list()["groups"]["dev"]["members"]
+
+
+#
+# Test app with user in LDAP
+#
+
+def test_install_app_ldap_user():
+    app_install("./tests/apps/ldap_user_app_ynh",
+                args="domain=" + maindomain, force=True)
+
+    # App is configured as public by default using the legacy unprotected_uri mechanics
+    # It should automatically be migrated during the install
+    res = user_list(app_user=True)['users']
+    assert "ldap_user_app" in res
