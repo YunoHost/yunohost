@@ -1182,6 +1182,7 @@ class RestoreManager():
         if system_targets == []:
             return
 
+        from yunohost.tools import _get_migration_by_name
         from yunohost.user import user_group_list
         from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list, permission_sync_to_user
 
@@ -1230,7 +1231,6 @@ class RestoreManager():
         #
         # Legacy code
         if not "all_users" in user_group_list()["groups"].keys():
-            from yunohost.tools import _get_migration_by_name
             setup_group_permission = _get_migration_by_name("setup_group_permission")
             # Update LDAP schema restart slapd
             logger.info(m18n.n("migration_0011_update_LDAP_schema"))
@@ -1247,13 +1247,10 @@ class RestoreManager():
             if _is_installed(app_name):
                 permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
 
-        from yunohost.utils.ldap import _get_ldap_interface
-        ldap = _get_ldap_interface()
-        # Check if there are users et groups object in apps tree in LDAP
-        if len(ldap.search('ou=apps,dc=yunohost,dc=org')) <= 1:
-            from yunohost.tools import _get_migration_by_name
-            setup_group_permission = _get_migration_by_name("update_ldap_for_apps_users")
-            setup_group_permission.run()
+        # Run this migration in all case. This will clean all app user while the backup is made
+        # and this will update the LDAP tree for app user in LDAP
+        cleanup_ldap_app_users = _get_migration_by_name("update_ldap_for_apps_users")
+        cleanup_ldap_app_users.run()
 
         permission_sync_to_user()
 
