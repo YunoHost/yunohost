@@ -926,12 +926,12 @@ def dump_app_log_extract_for_debugging(operation_logger):
         r"ynh_script_progression"
     ]
 
-    filters = [re.compile(f) for f in filters]
+    filters = [re.compile(f_) for f_ in filters]
 
     lines_to_display = []
     for line in lines:
 
-        if not ": " in line.strip():
+        if ": " not in line.strip():
             continue
 
         # A line typically looks like
