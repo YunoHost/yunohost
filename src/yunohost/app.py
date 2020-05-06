@@ -2331,6 +2331,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     # Iterate over requirements
     for pkgname, spec in requirements.items():
         if not packages.meets_version_specifier(pkgname, spec):
+            version = packages.ynh_packages_version()[pkgname]["version"]
             raise YunohostError('app_requirements_unmeet',
                                 pkgname=pkgname, version=version,
                                 spec=spec, app=app_instance_name)
