@@ -5,7 +5,7 @@ from conftest import message, raiseYunohostError
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
                           user_group_list, user_group_create, user_group_delete, user_group_update
 from yunohost.domain import _get_maindomain
-from yunohost.app import app_install
+from yunohost.app import app_install, app_remove
 from yunohost.tests.test_permission import check_LDAP_db_integrity
 
 # Get main domain
