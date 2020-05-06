@@ -314,9 +314,8 @@ def service_status(names=[]):
 
         else:
             translation_key = "service_description_%s" % name
-            if "description" in infos is not None:
-                description = infos.get("description")
-            else:
+            description = infos.get("description")
+            if not description:
                 description = m18n.n(translation_key)
 
             # that mean that we don't have a translation for this string
