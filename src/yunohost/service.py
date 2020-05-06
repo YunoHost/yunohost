@@ -61,27 +61,27 @@ def service_add(name, description=None, log=None, log_type="file", test_status=N
     """
     services = _get_services()
 
-    services[name] = {}
+    services[name] = service = {}
 
     if log is not None:
         if not isinstance(log, list):
             log = [log]
 
-        services[name]['log'] = log
+        service['log'] = log
 
         if not isinstance(log_type, list):
             log_type = [log_type]
 
         if len(log_type) < len(log):
-            log_type.extend([log_type[-1]] * (len(log) - len(log_type))) # extend list to have the same size as log
+            log_type.extend([log_type[-1]] * (len(log) - len(log_type)))  # extend list to have the same size as log
 
         if len(log_type) == len(log):
-            services[name]['log_type'] = log_type
+            service['log_type'] = log_type
         else:
             raise YunohostError('service_add_failed', service=name)
 
     if description:
-        services[name]['description'] = description
+        service['description'] = description
     else:
         # Try to get the description from systemd service
         out = subprocess.check_output("systemctl show %s | grep '^Description='" % name, shell=True).strip()
@@ -92,23 +92,23 @@ def service_add(name, description=None, log=None, log_type="file", test_status=N
         if out == name + ".service":
             logger.warning("/!\\ Packager ! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
         else:
-            services[name]['description'] = out
+            service['description'] = out
 
     if need_lock:
-        services[name]['need_lock'] = True
+        service['need_lock'] = True
 
     if test_status:
-        services[name]["test_status"] = test_status
+        service["test_status"] = test_status
 
     if test_conf:
-        services[name]["test_conf"] = test_conf
+        service["test_conf"] = test_conf
 
     if needs_exposed_ports:
-        services[name]["needs_exposed_ports"] = needs_exposed_ports
+        service["needs_exposed_ports"] = needs_exposed_ports
 
     try:
         _save_services(services)
-    except:
+    except Exception:
         # we'll get a logger.warning with more details in _save_services
         raise YunohostError('service_add_failed', service=name)
 
@@ -288,6 +288,8 @@ def service_status(names=[]):
         if check_names and name not in services.keys():
             raise YunohostError('service_unknown', service=name)
 
+        service = services[name]
+
         # this "service" isn't a service actually so we skip it
         #
         # the historical reason is because regenconf has been hacked into the
@@ -296,10 +298,10 @@ def service_status(names=[]):
         # the hack was to add fake services...
         # we need to extract regenconf from service at some point, also because
         # some app would really like to use it
-        if services[name].get("status", "") is None:
+        if service.get("status", "") is None:
             continue
 
-        systemd_service = services[name].get("actual_systemd_service", name)
+        systemd_service = service.get("actual_systemd_service", name)
         status = _get_service_information_from_systemd(systemd_service)
 
         if status is None:
@@ -314,8 +316,8 @@ def service_status(names=[]):
 
         else:
             translation_key = "service_description_%s" % name
-            if "description" in services[name] is not None:
-                description = services[name].get("description")
+            if "description" in service is not None:
+                description = service.get("description")
             else:
                 description = m18n.n(translation_key)
 
@@ -336,7 +338,7 @@ def service_status(names=[]):
             # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
             # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
             if result[name]["start_on_boot"] == "generated":
-                result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??"+name) else "disabled"
+                result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??" + name) else "disabled"
             elif os.path.exists("/etc/systemd/system/multi-user.target.wants/%s.service" % name):
                 result[name]["start_on_boot"] = "enabled"
 
@@ -344,8 +346,8 @@ def service_status(names=[]):
                 result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
 
             # 'test_status' is an optional field to test the status of the service using a custom command
-            if "test_status" in services[name]:
-                p = subprocess.Popen(services[name]["test_status"],
+            if "test_status" in service:
+                p = subprocess.Popen(service["test_status"],
                                      shell=True,
                                      executable='/bin/bash',
                                      stdout=subprocess.PIPE,
@@ -356,8 +358,8 @@ def service_status(names=[]):
                 result[name]["status"] = "running" if p.returncode == 0 else "failed"
 
             # 'test_status' is an optional field to test the status of the service using a custom command
-            if "test_conf" in services[name]:
-                p = subprocess.Popen(services[name]["test_conf"],
+            if "test_conf" in service:
+                p = subprocess.Popen(service["test_conf"],
                                      shell=True,
                                      executable='/bin/bash',
                                      stdout=subprocess.PIPE,
