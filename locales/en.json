@@ -271,7 +271,7 @@
     "domain_dyndns_root_unknown": "Unknown DynDNS root domain",
     "domain_exists": "The domain already exists",
     "domain_hostname_failed": "Could not set new hostname. This might cause an issue later (it might be fine).",
-    "domain_uninstall_app_first": "One or more apps are installed on this domain. Please uninstall them before proceeding to domain removal",
+    "domain_uninstall_app_first": "Those applications are still installed on your domain: {apps}. Please uninstall them before proceeding to domain removal",
     "domain_unknown": "Unknown domain",
     "domains_available": "Available domains:",
     "done": "Done",
