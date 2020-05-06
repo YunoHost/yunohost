@@ -2103,11 +2103,11 @@ def _set_default_ask_questions(arguments):
     #                           type       namei
     # N.B. : this is only for install script ... should be reworked for other
     # scripts if we supports args for other scripts in the future...
-    questions_with_default = [("domain", "domain"),
-                              ("path", "path"),
-                              ("password", "password"),
-                              ("user", "admin"),
-                              ("boolean", "is_public")]
+    questions_with_default = [("domain", "domain"),      # i18n: app_manifest_install_ask_domain
+                              ("path", "path"),          # i18n: app_manifest_install_ask_path
+                              ("password", "password"),  # i18n: app_manifest_install_ask_password
+                              ("user", "admin"),         # i18n: app_manifest_install_ask_admin
+                              ("boolean", "is_public")]  # i18n: app_manifest_install_ask_is_public
 
     for script_name, arg_list in arguments.items():
 
@@ -2118,7 +2118,7 @@ def _set_default_ask_questions(arguments):
         for arg in arg_list:
 
             # Do not override 'ask' field if provided by app ?... Or shall we ?
-            #if "ask" in arg:
+            # if "ask" in arg:
             #    continue
 
             # If this arg corresponds to a question with default ask message...
@@ -2128,7 +2128,6 @@ def _set_default_ask_questions(arguments):
                 arg["ask"] = m18n.n(key)
 
     return arguments
-
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
