@@ -179,9 +179,15 @@ def domain_remove(operation_logger, domain, force=False):
             raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
-    app_settings = [_get_app_settings(app) for app in _installed_apps()]
-    if any("domain" in s and s["domain"] == domain for s in app_settings):
-        raise YunohostError('domain_uninstall_app_first')
+    apps_on_that_domain = []
+
+    for app in _installed_apps():
+        settings = _get_app_settings(app)
+        if settings.get("domain") == domain:
+            apps_on_that_domain.append("%s (on https://%s%s)" % (app, domain, settings.get("path")))
+
+    if apps_on_that_domain:
+        raise YunohostError('domain_uninstall_app_first', apps=", ".join(apps_on_that_domain))
 
     operation_logger.start()
     ldap = _get_ldap_interface()
