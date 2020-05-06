@@ -91,6 +91,8 @@ def app_catalog(full=False, with_categories=False):
                 "description": infos['manifest']['description'],
                 "level": infos["level"],
             }
+        else:
+            infos["manifest"]["arguments"] = _set_default_ask_questions(infos["manifest"]["arguments"])
 
     # Trim info for categories if not using --full
     for category in catalog["categories"]:
@@ -108,7 +110,6 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"]}
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
-
 
 
 # Old legacy function...
@@ -170,6 +171,7 @@ def app_info(app, full=False):
         return ret
 
     ret["manifest"] = local_manifest
+    ret["manifest"]["arguments"] = _set_default_ask_questions(ret["manifest"]["arguments"])
     ret['settings'] = settings
 
     absolute_app_name = app if "__" not in app else app[:app.index('__')]  # idk this is the name of the app even for multiinstance apps (so wordpress__2 -> wordpress)
@@ -2071,11 +2073,62 @@ def _get_manifest_of_app(path):
 
         manifest["arguments"]["install"] = install_arguments
 
-        return manifest
     elif os.path.exists(os.path.join(path, "manifest.json")):
-        return read_json(os.path.join(path, "manifest.json"))
+        manifest = read_json(os.path.join(path, "manifest.json"))
     else:
         raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
+
+    manifest["arguments"] = _set_default_ask_questions(manifest["arguments"])
+    return manifest
+
+
+def _set_default_ask_questions(arguments):
+
+    # arguments is something like
+    # { "install": [
+    #       { "name": "domain",
+    #         "type": "domain",
+    #         ....
+    #       },
+    #       { "name": "path",
+    #         "type": "path"
+    #         ...
+    #       },
+    #       ...
+    #   ],
+    #  "upgrade": [ ... ]
+    # }
+
+    # We set a default for any question with these matching (type, name)
+    #                           type       namei
+    # N.B. : this is only for install script ... should be reworked for other
+    # scripts if we supports args for other scripts in the future...
+    questions_with_default = [("domain", "domain"),
+                              ("path", "path"),
+                              ("password", "password"),
+                              ("user", "admin"),
+                              ("boolean", "is_public")]
+
+    for script_name, arg_list in arguments.items():
+
+        # We only support questions for install so far, and for other
+        if script_name != "install":
+            continue
+
+        for arg in arg_list:
+
+            # Do not override 'ask' field if provided by app ?... Or shall we ?
+            #if "ask" in arg:
+            #    continue
+
+            # If this arg corresponds to a question with default ask message...
+            if any((arg.get("type"), arg["name"]) == question for question in questions_with_default):
+                # The key is for example "app_manifest_install_ask_domain"
+                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
+                arg["ask"] = m18n.n(key)
+
+    return arguments
+
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
