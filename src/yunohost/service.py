@@ -427,8 +427,11 @@ def service_log(name, number=50):
 
     for log_path in log_list:
         # log is a file, read it
-        if not os.path.isdir(log_path):
-            result[log_path] = _tail(log_path, number) if os.path.exists(log_path) else []
+        if os.path.isfile(log_path):
+            result[log_path] = _tail(log_path, number)
+            continue
+        elif not os.path.isdir(log_path):
+            result[log_path] = []
             continue
 
         for log_file in os.listdir(log_path):
