@@ -125,14 +125,13 @@ def service_remove(name):
     """
     services = _get_services()
 
-    try:
-        del services[name]
-    except KeyError:
+    if name not in services:
         raise YunohostError('service_unknown', service=name)
 
+    del services[name]
     try:
         _save_services(services)
-    except:
+    except Exception:
         # we'll get a logger.warning with more details in _save_services
         raise YunohostError('service_remove_failed', service=name)
 
@@ -275,20 +274,24 @@ def service_status(names=[]):
 
     """
     services = _get_services()
-    check_names = True
+
+    # If function was called with a specific list of service
+    if names != []:
+        # If user wanna check the status of a single service
+        if isinstance(names, str):
+            names = [names]
+
+        # Validate service names requested
+        for name in names:
+            if name not in services.keys():
+                raise YunohostError('service_unknown', service=name)
+
+        # Filter only requested servivces
+        services = {k: v for k, v in services.items() if k in names}
+
     result = {}
 
-    if isinstance(names, str):
-        names = [names]
-    elif len(names) == 0:
-        names = services.keys()
-        check_names = False
-
-    for name in names:
-        if check_names and name not in services.keys():
-            raise YunohostError('service_unknown', service=name)
-
-        service = services[name]
+    for name, infos in services.items():
 
         # this "service" isn't a service actually so we skip it
         #
@@ -298,10 +301,10 @@ def service_status(names=[]):
         # the hack was to add fake services...
         # we need to extract regenconf from service at some point, also because
         # some app would really like to use it
-        if service.get("status", "") is None:
+        if infos.get("status", "") is None:
             continue
 
-        systemd_service = service.get("actual_systemd_service", name)
+        systemd_service = infos.get("actual_systemd_service", name)
         status = _get_service_information_from_systemd(systemd_service)
 
         if status is None:
@@ -316,8 +319,8 @@ def service_status(names=[]):
 
         else:
             translation_key = "service_description_%s" % name
-            if "description" in service is not None:
-                description = service.get("description")
+            if "description" in infos is not None:
+                description = infos.get("description")
             else:
                 description = m18n.n(translation_key)
 
@@ -346,8 +349,8 @@ def service_status(names=[]):
                 result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
 
             # 'test_status' is an optional field to test the status of the service using a custom command
-            if "test_status" in service:
-                p = subprocess.Popen(service["test_status"],
+            if "test_status" in infos:
+                p = subprocess.Popen(infos["test_status"],
                                      shell=True,
                                      executable='/bin/bash',
                                      stdout=subprocess.PIPE,
@@ -358,8 +361,8 @@ def service_status(names=[]):
                 result[name]["status"] = "running" if p.returncode == 0 else "failed"
 
             # 'test_status' is an optional field to test the status of the service using a custom command
-            if "test_conf" in service:
-                p = subprocess.Popen(service["test_conf"],
+            if "test_conf" in infos:
+                p = subprocess.Popen(infos["test_conf"],
                                      shell=True,
                                      executable='/bin/bash',
                                      stdout=subprocess.PIPE,
@@ -422,7 +425,7 @@ def service_log(name, number=50):
     if not isinstance(log_list, list):
         log_list = [log_list]
     if len(log_type_list) < len(log_list):
-        log_type_list.extend(["file"] * (len(log_list)-len(log_type_list)))
+        log_type_list.extend(["file"] * (len(log_list) - len(log_type_list)))
 
     result = {}
 
