@@ -12,25 +12,53 @@ do_init_regen() {
 
   do_pre_regen ""
 
-  # fix some permissions
-  chown root:openldap /etc/ldap/slapd.conf
-  chown -R openldap:openldap /etc/ldap/schema/
-  usermod -aG ssl-cert openldap
+  # Because slaptest can't test the LDAP config file
+  # we need to regenerate the new config and after validate it
+  # regenerate LDAP config directory from slapd.ldif
+  rm -Rf /etc/ldap/slapd_new.d
+  mkdir /etc/ldap/slapd_new.d
+  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1
 
   # check the slapd config file at first
-  slaptest -Q -u -f /etc/ldap/slapd.conf
+  slaptest -Q -u -F /etc/ldap/slapd_new.d
 
-  # regenerate LDAP config directory from slapd.conf
+  # Move to the new config
   rm -Rf /etc/ldap/slapd.d
-  mkdir /etc/ldap/slapd.d
-  slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
+  mv /etc/ldap/slapd_new.d /etc/ldap/slapd.d
+
+  # fix some permissions
+  chown root:openldap /etc/ldap/slapd.ldif
+  chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
+  usermod -aG ssl-cert openldap
 
   service slapd restart
 }
 
 do_pre_regen() {
   pending_dir=$1
+
+  # remove temporary backup file
+  rm -f "$tmp_backup_dir_file"
+
+  # Define if we need to migrate from hdb to mdb
+  curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
+  if [ -e /etc/ldap/slapd.conf ] && [ -n "$curr_backend" ] && \
+     [ $curr_backend != 'mdb' ]; then
+    backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
+    mkdir -p "$backup_dir"
+    slapcat -b dc=yunohost,dc=org \
+        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+    echo "$backup_dir" > "$tmp_backup_dir_file"
+  fi
+
+  # remove legacy configuration file
+  [ ! -f /etc/ldap/slapd-yuno.conf ] \
+    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
+  [ ! -f /etc/ldap/slapd.conf ] \
+    || touch "${pending_dir}/etc/ldap/slapd.conf"
+  [ ! -f /etc/ldap/schema/yunohost.schema ] \
+    || touch "${pending_dir}/etc/ldap/schema/yunohost.schema"
 
   cd /usr/share/yunohost/templates/slapd
 
@@ -39,29 +67,9 @@ do_pre_regen() {
   schema_dir="${ldap_dir}/schema"
   mkdir -p "$ldap_dir" "$schema_dir"
 
-  # remove legacy configuration file
-  [ ! -f /etc/ldap/slapd-yuno.conf ] \
-    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
-
-  # remove temporary backup file
-  rm -f "$tmp_backup_dir_file"
-
-  # retrieve current and new backends
-  curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
-  new_backend=$(grep '^database' slapd.conf | awk '{print $2}')
-
-  # save current database before any conf changes
-  if [[ -n "$curr_backend" && "$curr_backend" != "$new_backend" ]]; then
-    backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
-    mkdir -p "$backup_dir"
-    slapcat -b dc=yunohost,dc=org \
-      -l "${backup_dir}/dc=yunohost-dc=org.ldif"
-    echo "$backup_dir" > "$tmp_backup_dir_file"
-  fi
-
   # copy configuration files
-  cp -a ldap.conf slapd.conf "$ldap_dir"
-  cp -a sudo.schema mailserver.schema yunohost.schema "$schema_dir"
+  cp -a ldap.conf slapd.ldif "$ldap_dir"
+  cp -a sudo.ldif mailserver.ldif permission.ldif "$schema_dir"
 
   mkdir -p ${pending_dir}/etc/systemd/system/slapd.service.d/
   cp systemd-override.conf ${pending_dir}/etc/systemd/system/slapd.service.d/ynh-override.conf
@@ -72,14 +80,11 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
-  # ensure that slapd.d exists
-  mkdir -p /etc/ldap/slapd.d
-
   # fix some permissions
   echo "Making sure we have the right permissions needed ..."
   # penldap user should be in the ssl-cert group to let it access the certificate for TLS
   usermod -aG ssl-cert openldap
-  chown root:openldap /etc/ldap/slapd.conf
+  chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
   chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
@@ -95,29 +100,33 @@ do_post_regen() {
 
   [ -z "$regen_conf_files" ] && exit 0
 
-  # check the slapd config file at first
-  slaptest -Q -u -f /etc/ldap/slapd.conf
-
   # check if a backup should be restored
   backup_dir=$(cat "$tmp_backup_dir_file" 2>/dev/null || true)
+
+  # regenerate LDAP config directory from slapd.conf
+  echo "Regenerate LDAP config directory from slapd.conf"
+
+  # Because slaptest can't test the LDAP config file
+  # we need to regenerate the new config and after validate it
+  # regenerate LDAP config directory from slapd.ldif
+  rm -Rf /etc/ldap/slapd_new.d
+  mkdir /etc/ldap/slapd_new.d
+  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1
+
+  # check the slapd config file at first
+  slaptest -Q -u -F /etc/ldap/slapd_new.d
+
+  # Move to the new config
+  rm -Rf /etc/ldap/slapd.d
+  mv /etc/ldap/slapd_new.d /etc/ldap/slapd.d
+  chown -R openldap:openldap /etc/ldap/slapd.d/
+
   if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
       # regenerate LDAP config directory and import database as root
-      # since the admin user may be unavailable
-      echo "Regenerate LDAP config directory and import the database using slapadd"
-      sh -c "rm -Rf /etc/ldap/slapd.d;
-  mkdir /etc/ldap/slapd.d;
-  slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d;
-  chown -R openldap:openldap /etc/ldap/slapd.d;
-  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
-    -l '${backup_dir}/dc=yunohost-dc=org.ldif';
-  chown -R openldap:openldap /var/lib/ldap" 2>&1
-  else
-      # regenerate LDAP config directory from slapd.conf
-      echo "Regenerate LDAP config directory from slapd.conf"
-      rm -Rf /etc/ldap/slapd.d
-      mkdir /etc/ldap/slapd.d
-      slaptest -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d/ 2>&1
-      chown -R openldap:openldap /etc/ldap/slapd.d/
+    echo "Import the database using slapadd"
+    slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
+        -l '${backup_dir}/dc=yunohost-dc=org.ldif'
+    chown -R openldap:openldap /var/lib/ldap 2>&1
   fi
 
   echo "Running slapdindex"
@@ -156,6 +165,9 @@ case "$1" in
     ;;
   init)
     do_init_regen
+    ;;
+  apply_config)
+    do_post_regen /etc/ldap/slapd.ldif
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
