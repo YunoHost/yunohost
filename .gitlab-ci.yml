@@ -92,6 +92,12 @@ test-regenconf:
     - cd src/yunohost
     - py.test tests/test_regenconf.py
 
+test-service:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_service.py
+
 ########################################
 # LINTER
 ########################################
