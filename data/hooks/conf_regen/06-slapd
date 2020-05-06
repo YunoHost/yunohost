@@ -53,12 +53,18 @@ do_pre_regen() {
   fi
 
   # remove legacy configuration file
-  [ ! -f /etc/ldap/slapd-yuno.conf ] \
-    || touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
-  [ ! -f /etc/ldap/slapd.conf ] \
-    || touch "${pending_dir}/etc/ldap/slapd.conf"
-  [ ! -f /etc/ldap/schema/yunohost.schema ] \
-    || touch "${pending_dir}/etc/ldap/schema/yunohost.schema"
+  if [ -f /etc/ldap/slapd-yuno.conf ]; then
+    mkdir -p ${pending_dir}/etc/ldap
+    touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
+  fi
+  if [ -f /etc/ldap/slapd.conf ]; then
+    mkdir -p ${pending_dir}/etc/ldap
+    touch "${pending_dir}/etc/ldap/slapd.conf"
+  fi
+  if [ -f /etc/ldap/schema/yunohost.schema ]; then
+    mkdir -p ${pending_dir}/etc/ldap/schema
+    touch "${pending_dir}/etc/ldap/schema/yunohost.schema"
+  fi
 
   cd /usr/share/yunohost/templates/slapd
 
