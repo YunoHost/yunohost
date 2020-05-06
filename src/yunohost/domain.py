@@ -184,7 +184,7 @@ def domain_remove(operation_logger, domain, force=False):
     for app in _installed_apps():
         settings = _get_app_settings(app)
         if settings.get("domain") == domain:
-            apps_on_that_domain.append("%s (on https://%s%s)" % (app, domain, settings.get("path")))
+            apps_on_that_domain.append("%s (on https://%s%s)" % (app, domain, settings["path"]) if "path" in settings else app)
 
     if apps_on_that_domain:
         raise YunohostError('domain_uninstall_app_first', apps=", ".join(apps_on_that_domain))
