@@ -44,7 +44,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 logger = getActionLogger('yunohost.service')
 
 
-def service_add(name, description=None, log=None, log_type="file", test_status=None, test_conf=None, needs_exposed_ports=None, need_lock=False, status=None):
+def service_add(name, description=None, log=None, log_type=None, test_status=None, test_conf=None, needs_exposed_ports=None, need_lock=False, status=None):
     """
     Add a custom service
 
@@ -52,7 +52,7 @@ def service_add(name, description=None, log=None, log_type="file", test_status=N
         name -- Service name to add
         description -- description of the service
         log -- Absolute path to log file to display
-        log_type -- Specify if the corresponding log is a file or a systemd log
+        log_type -- (deprecated) Specify if the corresponding log is a file or a systemd log
         test_status -- Specify a custom bash command to check the status of the service. N.B. : it only makes sense to specify this if the corresponding systemd service does not return the proper information.
         test_conf -- Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
         needs_exposed_ports -- A list of ports that needs to be publicly exposed for the service to work as intended.
@@ -67,18 +67,13 @@ def service_add(name, description=None, log=None, log_type="file", test_status=N
         if not isinstance(log, list):
             log = [log]
 
+        # Deprecated log_type stuff
+        if log_type is not None:
+            logger.warning("/!\\ Packagers! --log_type is deprecated. You do not need to specify --log_type systemd anymore ... Yunohost now automatically fetch the journalctl of the systemd service by default.")
+            # Usually when adding such a service, the service name will be provided so we remove it as it's not a log file path
+            log.remove(name)
+
         service['log'] = log
-
-        if not isinstance(log_type, list):
-            log_type = [log_type]
-
-        if len(log_type) < len(log):
-            log_type.extend([log_type[-1]] * (len(log) - len(log_type)))  # extend list to have the same size as log
-
-        if len(log_type) == len(log):
-            service['log_type'] = log_type
-        else:
-            raise YunohostError('service_add_failed', service=name)
 
     if description:
         service['description'] = description
@@ -420,41 +415,33 @@ def service_log(name, number=50):
         raise YunohostError('service_unknown', service=name)
 
     log_list = services[name].get('log', [])
-    log_type_list = services[name].get('log_type', [])
 
-    if not isinstance(log_list, list):
-        log_list = [log_list]
-    if len(log_type_list) < len(log_list):
-        log_type_list.extend(["file"] * (len(log_list) - len(log_type_list)))
+    # Legacy stuff related to --log_type where we'll typically have the service
+    # name in the log list but it's not an actual logfile. Nowadays journalctl
+    # is automatically fetch as well as regular log files.
+    log_list.remove(name)
 
     result = {}
 
     # First we always add the logs from journalctl / systemd
     result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
 
-    for index, log_path in enumerate(log_list):
-        log_type = log_type_list[index]
+    for log_path in log_list:
+        # log is a file, read it
+        if not os.path.isdir(log_path):
+            result[log_path] = _tail(log_path, number) if os.path.exists(log_path) else []
+            continue
 
-        if log_type == "file":
-            # log is a file, read it
-            if not os.path.isdir(log_path):
-                result[log_path] = _tail(log_path, number) if os.path.exists(log_path) else []
+        for log_file in os.listdir(log_path):
+            log_file_path = os.path.join(log_path, log_file)
+            # not a file : skip
+            if not os.path.isfile(log_file_path):
                 continue
 
-            for log_file in os.listdir(log_path):
-                log_file_path = os.path.join(log_path, log_file)
-                # not a file : skip
-                if not os.path.isfile(log_file_path):
-                    continue
+            if not log_file.endswith(".log"):
+                continue
 
-                if not log_file.endswith(".log"):
-                    continue
-
-                result[log_file_path] = _tail(log_file_path, number) if os.path.exists(log_file_path) else []
-        else:
-            # N.B. : this is legacy code that can probably be removed ... to be confirmed
-            # get log with journalctl
-            result[log_path] = _get_journalctl_logs(log_path, number).splitlines()
+            result[log_file_path] = _tail(log_file_path, number) if os.path.exists(log_file_path) else []
 
     return result
 
