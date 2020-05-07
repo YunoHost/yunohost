@@ -426,6 +426,13 @@ def service_log(name, number=50):
     result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
 
     for log_path in log_list:
+
+        if not os.path.exists(log_path):
+            continue
+
+        # Make sure to resolve symlinks
+        log_path = os.path.realpath(log_path)
+
         # log is a file, read it
         if os.path.isfile(log_path):
             result[log_path] = _tail(log_path, number)
