@@ -22,7 +22,7 @@ ssl_prefer_server_ciphers off;
 # https://wiki.mozilla.org/Security/Guidelines/Web_Security
 # https://observatory.mozilla.org/
 more_set_headers "Content-Security-Policy : upgrade-insecure-requests";
-more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: 'unsafe-inline' 'unsafe-eval'";
+more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: 'unsafe-inline' 'unsafe-eval'  ";
 more_set_headers "X-Content-Type-Options : nosniff";
 more_set_headers "X-XSS-Protection : 1; mode=block";
 more_set_headers "X-Download-Options : noopen";
