@@ -27,7 +27,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
  , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
- , metronome
+ , metronome (>=3.14.0)
  , git, curl, wget, cron, unzip, jq
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois, python-publicsuffix
 Recommends: yunohost-admin
