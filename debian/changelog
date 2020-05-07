@@ -1,3 +1,22 @@
+yunohost (3.8.3) testing; urgency=low
+
+  - [fix] Remove dot in reverse DNS check
+  - [fix] Upgrade of multi-instance apps was broken (#976)
+  - [fix] Check was broken if an apps with no domain setting was installed (#978)
+  - [enh] Add a timeout to wget (#972)
+  - [fix] ynh_get_ram: Enforce choosing --free or --total (#972)
+  - [fix] Simplify / improve robustness of backup list
+  - [enh] Make nodejs helpers easier to use (#939)
+  - [fix] Misc tweak for disk usage diagnosis, some values were inconsistent / bad UX / ...
+  - [enh] Assert slapd is running to avoid miserably crashing with weird ldap errors
+  - [enh] Try to show smarter / more useful logs by filtering irrelevant lines like set +x etc
+  - Technical tweaks for metronome 3.14.0 support
+  - Misc improvements for tests and linters
+
+  Thanks to all contributors <3 ! (Bram, Kay0u, Maniack C., ljf, Maranda)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Apr 2020 04:00:00  +0000
+
 yunohost (3.8.2.2) testing; urgency=low
 
    Aleks broke everything /again/ *.*
