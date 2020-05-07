@@ -63,7 +63,7 @@ def meets_version_specifier(pkg_name, specifier):
     # context
     assert pkg_name in YUNOHOST_PACKAGES
     pkg_version = get_ynh_package_version(pkg_name)["version"]
-    pkg_version = pkg_version.split("~")[0]
+    pkg_version = re.split(r'\~|\+|\-', pkg_version)[0]
     pkg_version = version.parse(pkg_version)
 
     # Extract operator and version specifier
