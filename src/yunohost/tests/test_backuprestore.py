@@ -11,6 +11,7 @@ from yunohost.backup import backup_create, backup_restore, backup_list, backup_i
 from yunohost.domain import _get_maindomain
 from yunohost.user import user_permission_list, user_create, user_list, user_delete
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
+from yunohost.hook import CUSTOM_HOOK_FOLDER
 
 # Get main domain
 maindomain = ""
@@ -591,10 +592,30 @@ def test_restore_archive_with_bad_archive(mocker):
     clean_tmp_backup_directory()
 
 
+def test_restore_archive_with_custom_hook(mocker):
+
+    custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
+    os.system("touch %s/99-yolo" % custom_restore_hook_folder)
+
+    # Backup with custom hook system
+    with message(mocker, "backup_created"):
+        backup_create(system=[], apps=None)
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    # Restore system with custom hook
+    with message(mocker, "restore_complete"):
+        backup_restore(name=backup_list()["archives"][0],
+                        system=[],
+                        apps=None,
+                        force=True)
+
+    os.system("rm %s/99-yolo" % custom_restore_hook_folder)
+
+
 def test_backup_binds_are_readonly(mocker, monkeypatch):
 
-    def custom_mount_and_backup(self, backup_manager):
-        self.manager = backup_manager
+    def custom_mount_and_backup(self):
         self._organize_files()
 
         confssh = os.path.join(self.work_dir, "conf/ssh")
