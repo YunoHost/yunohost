@@ -486,7 +486,6 @@
     "no_internet_connection": "The server is not connected to the Internet",
     "not_enough_disk_space": "Not enough free space on '{path:s}'",
     "operation_interrupted": "The operation was manually interrupted?",
-    "package_unknown": "Unknown package '{pkgname}'",
     "packages_upgrade_failed": "Could not upgrade all the packages",
     "password_listed": "This password is among the most used passwords in the world. Please choose something more unique.",
     "password_too_simple_1": "The password needs to be at least 8 characters long",

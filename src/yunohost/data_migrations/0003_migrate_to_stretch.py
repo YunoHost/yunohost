@@ -14,7 +14,7 @@ from yunohost.service import _run_service_command
 from yunohost.regenconf import (manually_modified_files,
                                 manually_modified_files_compared_to_debian_default)
 from yunohost.utils.filesystem import free_space_in_directory
-from yunohost.utils.packages import get_installed_version
+from yunohost.utils.packages import get_ynh_package_version
 from yunohost.utils.network import get_network_interfaces
 from yunohost.firewall import firewall_allow, firewall_disallow
 
@@ -94,7 +94,7 @@ class MyMigration(Migration):
         return int(check_output("grep VERSION_ID /etc/os-release | head -n 1 | tr '\"' ' ' | cut -d ' ' -f2"))
 
     def yunohost_major_version(self):
-        return int(get_installed_version("yunohost").split('.')[0])
+        return int(get_ynh_package_version("yunohost")["version"].split('.')[0])
 
     def check_assertions(self):
 
