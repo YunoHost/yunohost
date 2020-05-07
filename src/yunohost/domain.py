@@ -534,10 +534,10 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     ####################
 
     records = {
-        "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
-        "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
-        "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
-        "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
+        "basic": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in basic],
+        "xmpp": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in xmpp],
+        "mail": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in mail],
+        "extra": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in extra],
     }
 
     ##################
