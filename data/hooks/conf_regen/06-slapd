@@ -52,26 +52,17 @@ do_pre_regen() {
     echo "$backup_dir" > "$tmp_backup_dir_file"
   fi
 
-  # remove legacy configuration file
-  if [ -f /etc/ldap/slapd-yuno.conf ]; then
-    mkdir -p ${pending_dir}/etc/ldap
-    touch "${pending_dir}/etc/ldap/slapd-yuno.conf"
-  fi
-  if [ -f /etc/ldap/slapd.conf ]; then
-    mkdir -p ${pending_dir}/etc/ldap
-    touch "${pending_dir}/etc/ldap/slapd.conf"
-  fi
-  if [ -f /etc/ldap/schema/yunohost.schema ]; then
-    mkdir -p ${pending_dir}/etc/ldap/schema
-    touch "${pending_dir}/etc/ldap/schema/yunohost.schema"
-  fi
-
-  cd /usr/share/yunohost/templates/slapd
-
   # create needed directories
   ldap_dir="${pending_dir}/etc/ldap"
   schema_dir="${ldap_dir}/schema"
   mkdir -p "$ldap_dir" "$schema_dir"
+
+  # remove legacy configuration file
+  [ ! -f /etc/ldap/slapd-yuno.conf ] || touch "${ldap_dir}/slapd-yuno.conf"
+  [ ! -f /etc/ldap/slapd.conf ] || touch "${ldap_dir}/slapd.conf"
+  [ ! -f /etc/ldap/schema/yunohost.schema ] || touch "${schema_dir}/yunohost.schema"
+
+  cd /usr/share/yunohost/templates/slapd
 
   # copy configuration files
   cp -a ldap.conf slapd.ldif "$ldap_dir"
