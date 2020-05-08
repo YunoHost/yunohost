@@ -996,7 +996,6 @@ service:
                     choices:
                         - file
                         - systemd
-                    default: file
                 --test_status:
                     help: Specify a custom bash command to check the status of the service. Note that it only makes sense to specify this if the corresponding systemd service does not return the proper information already.
                 --test_conf:
