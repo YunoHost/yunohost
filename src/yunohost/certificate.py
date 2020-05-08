@@ -40,8 +40,9 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from yunohost.utils.error import YunohostError
-from yunohost.utils.network import get_public_ip
+from yunohost.utils.network import get_public_ip, dig
 
+from yunohost.diagnosis import Diagnoser
 from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -790,14 +791,19 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-    public_ip = get_public_ip()
+
+    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}) or {}
+    httpreachable = Diagnoser.get_cached_report("web", item={"domain": domain}) or {}
+
+    if not dnsrecords or not httpreachable:
+        raise YunohostError('certmanager_domain_not_diagnosed_yet', domain=domain)
 
     # Check if IP from DNS matches public IP
-    if not _dns_ip_match_public_ip(public_ip, domain):
+    if not dnsrecords.get("status") in ["SUCCESS", "WARNING"]:  # Warning is for missing IPv6 record which ain't critical for ACME
         raise YunohostError('certmanager_domain_dns_ip_differs_from_public_ip', domain=domain)
 
     # Check if domain seems to be accessible through HTTP?
-    if not _domain_is_accessible_through_HTTP(public_ip, domain):
+    if not httpreachable.get("status") == "SUCCESS":
         raise YunohostError('certmanager_domain_http_not_working', domain=domain)
 
 
