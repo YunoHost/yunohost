@@ -29,7 +29,6 @@ import pwd
 import grp
 import smtplib
 import subprocess
-import dns.resolver
 import glob
 
 from datetime import datetime
@@ -68,18 +67,6 @@ STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
 INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
-
-DNS_RESOLVERS = [
-    # FFDN DNS resolvers
-    # See https://www.ffdn.org/wiki/doku.php?id=formations:dns
-    "80.67.169.12",    # FDN
-    "80.67.169.40",    #
-    "89.234.141.66",   # ARN
-    "141.255.128.100",  # Aquilenet
-    "141.255.128.101",
-    "89.234.186.18",   # Grifon
-    "80.67.188.188"   # LDN
-]
 
 #
 # Front-end stuff                                                           #
@@ -540,7 +527,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
             raise YunohostError('certmanager_hit_rate_limit', domain=domain)
         else:
             logger.error(str(e))
-            _display_debug_information(domain)
             raise YunohostError('certmanager_cert_signing_failed')
 
     except Exception as e:
@@ -817,59 +803,6 @@ def _check_domain_is_ready_for_ACME(domain):
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
         raise YunohostError('certmanager_domain_http_not_working', domain=domain)
-
-
-def _get_dns_ip(domain):
-    try:
-        resolver = dns.resolver.Resolver()
-        resolver.nameservers = DNS_RESOLVERS
-        answers = resolver.query(domain, "A")
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-        raise YunohostError('certmanager_error_no_A_record', domain=domain)
-
-    return str(answers[0])
-
-
-def _dns_ip_match_public_ip(public_ip, domain):
-    return _get_dns_ip(domain) == public_ip
-
-
-def _domain_is_accessible_through_HTTP(ip, domain):
-    import requests  # lazy loading this module for performance reasons
-    try:
-        requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
-    except requests.exceptions.Timeout as e:
-        logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
-        return False
-    except Exception as e:
-        logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
-        return False
-
-    return True
-
-
-def _get_local_dns_ip(domain):
-    try:
-        resolver = dns.resolver.Resolver()
-        answers = resolver.query(domain, "A")
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-        logger.warning("Failed to resolved domain '%s' locally", domain)
-        return None
-
-    return str(answers[0])
-
-
-def _display_debug_information(domain):
-    dns_ip = _get_dns_ip(domain)
-    public_ip = get_public_ip()
-    local_dns_ip = _get_local_dns_ip(domain)
-
-    logger.warning("""\
-Debug information:
- - domain ip from DNS        %s
- - domain ip from local DNS  %s
- - public ip of the server   %s
-""", dns_ip, local_dns_ip, public_ip)
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
