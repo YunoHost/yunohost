@@ -193,6 +193,7 @@
     "diagnosis_swap_none": "The system has no swap at all. You should consider adding at least {recommended} of swap to avoid situations where the system runs out of memory.",
     "diagnosis_swap_notsomuch": "The system has only {total} swap. You should consider having at least {recommended} to avoid situations where the system runs out of memory.",
     "diagnosis_swap_ok": "The system has {total} of swap!",
+    "diagnosis_swap_tip": "Please be careful and aware that if the server is hosting swap on an SD card or SSD storage, it may drastically reduce the life expectancy of the device`.",
     "diagnosis_mail_outgoing_port_25_ok": "The SMTP mail server is able to send emails (outgoing port 25 is not blocked).",
     "diagnosis_mail_outgoing_port_25_blocked": "The SMTP mail server cannot send emails to other servers because outgoing port 25 is blocked in IPv{ipversion}.",
     "diagnosis_mail_outgoing_port_25_blocked_details": "You should first try to unblock outgoing port 25 in your internet router interface or your hosting provider interface. (Some hosting provider may require you to send them a support ticket for this).",
