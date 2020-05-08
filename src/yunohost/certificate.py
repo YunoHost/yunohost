@@ -273,30 +273,36 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
     # Actual install steps
     for domain in domain_list:
 
-        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
-                                           args={'force': force, 'no_checks': no_checks,
-                                                 'staging': staging})
+        if not no_checks:
+            try:
+                _check_domain_is_ready_for_ACME(domain)
+            except Exception as e:
+                logger.error(e)
+                continue
+
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
+        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
+                                           args={'force': force, 'no_checks': no_checks,
+                                                 'staging': staging})
+        operation_logger.start()
+
         try:
-            if not no_checks:
-                _check_domain_is_ready_for_ACME(domain)
-
-            operation_logger.start()
-
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
+        except Exception as e:
+            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
+            logger.error(msg)
+            operation_logger.error(msg)
+            if no_checks:
+                logger.error("Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s." % domain)
+        else:
             _install_cron(no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
-        except Exception as e:
-            _display_debug_information(domain)
-            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
-            logger.error(msg)
-            operation_logger.error(msg)
 
 
 def certificate_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
@@ -367,32 +373,35 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
     # Actual renew steps
     for domain in domain_list:
 
-        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
-                                           args={'force': force, 'no_checks': no_checks,
-                                                 'staging': staging, 'email': email})
+        if not no_checks:
+            try:
+                _check_domain_is_ready_for_ACME(domain)
+            except:
+                msg = "Certificate renewing for %s failed !" % (domain)
+                logger.error(msg)
+                if email:
+                    logger.error("Sending email with details to root ...")
+                    _email_renewing_failed(domain, msg)
+                continue
 
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
 
+        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
+                                           args={'force': force, 'no_checks': no_checks,
+                                                 'staging': staging, 'email': email})
+        operation_logger.start()
+
         try:
-            if not no_checks:
-                _check_domain_is_ready_for_ACME(domain)
-
-            operation_logger.start()
-
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
-
-            logger.success(
-                m18n.n("certmanager_cert_renew_success", domain=domain))
-
-            operation_logger.success()
-
         except Exception as e:
             import traceback
             from StringIO import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
             msg = "Certificate renewing for %s failed !" % (domain)
+            if no_checks:
+                msg += "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s." % domain
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -400,7 +409,11 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
 
             if email:
                 logger.error("Sending email with details to root ...")
-                _email_renewing_failed(domain, e, stack.getvalue())
+                _email_renewing_failed(domain, msg + "\n" + e, stack.getvalue())
+        else:
+            logger.success(
+                m18n.n("certmanager_cert_renew_success", domain=domain))
+            operation_logger.success()
 
 #
 # Back-end stuff                                                            #
@@ -432,7 +445,7 @@ def _install_cron(no_checks=False):
     _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
-def _email_renewing_failed(domain, exception_message, stack):
+def _email_renewing_failed(domain, exception_message, stack=""):
     from_ = "certmanager@%s (Certificate Manager)" % domain
     to_ = "root"
     subject_ = "Certificate renewing attempt for %s failed!" % domain
