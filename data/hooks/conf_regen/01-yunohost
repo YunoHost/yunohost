@@ -60,7 +60,7 @@ do_pre_regen() {
   mkdir -p $pending_dir/etc/cron.d/
   cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
 SHELL=/bin/bash
-0 7,19 * * * root : YunoHost Diagnosis; sleep \$((RANDOM\\%600)); yunohost diagnosis run > /dev/null
+0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%600)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
 EOF
 
 }

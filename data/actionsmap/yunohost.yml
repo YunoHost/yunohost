@@ -1691,6 +1691,9 @@ diagnosis:
                 --share:
                     help: Share the logs using yunopaste
                     action: store_true
+                --human-readable:
+                    help: Show a human-readable output
+                    action: store_true
 
         run:
             action_help: Run diagnosis
@@ -1704,6 +1707,9 @@ diagnosis:
                     action: store_true
                 --except-if-never-ran-yet:
                     help: Don't run anything if diagnosis never ran yet ... (this is meant to be used by the webadmin)
+                    action: store_true
+                --email:
+                    help: Send an email to root with issues found (this is meant to be used by cron job)
                     action: store_true
 
         ignore:
