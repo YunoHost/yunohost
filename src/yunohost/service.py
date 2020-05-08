@@ -70,7 +70,8 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
         if log_type is not None:
             logger.warning("/!\\ Packagers! --log_type is deprecated. You do not need to specify --log_type systemd anymore ... Yunohost now automatically fetch the journalctl of the systemd service by default.")
             # Usually when adding such a service, the service name will be provided so we remove it as it's not a log file path
-            log.remove(name)
+            if name in log:
+                log.remove(name)
 
         service['log'] = log
 
