@@ -1,3 +1,21 @@
+yunohost (3.8.4) testing; urgency=low
+
+  - [fix] Restoration of custom hooks / missing restore hooks (#927)
+  - [enh] Real CSP headers for the webadmin (#961)
+  - [enh] Simplify / optimize reading version of yunohost packages... (#968)
+  - [fix] handle new auto restart of ldap in moulinette (#975)
+  - [enh] service.py cleanup  + add tests for services (#979, #986)
+  - [fix] Enforce permissions for stuff in /etc/yunohost/ (#963)
+  - [mod] Remove security diagnosis category for now, Move meltdown check to base system (a799740a)
+  - [mod] Change warning/errors about swap as info instead ... add a tip about the fact that having swap on SD or SSD is dangerous (23147161)
+  - [enh] Improve auto diagnosis cron UX, add a --human-readable option to diagnosis_show() (aecbb14a)
+  - [enh] Rely on new diagnosis for letsencrypt elligibility (#985)
+  - [i18n] Translations updated for Catalan, Esperanto, French, Spanish
+
+  Thanks to all contributors <3 ! (amirale qt, autra, Bram, clecle226, I. Hernández, Kay0u, xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 May 2020 21:20:00 +0200
+
 yunohost (3.8.3) testing; urgency=low
 
   - [fix] Remove dot in reverse DNS check
