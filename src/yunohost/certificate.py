@@ -39,7 +39,7 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from yunohost.utils.error import YunohostError
-from yunohost.utils.network import get_public_ip, dig
+from yunohost.utils.network import get_public_ip
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.service import _run_service_command
@@ -596,7 +596,8 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # For "parent" domains, include xmpp-upload subdomain in subject alternate names
     if domain in domain_list(exclude_subdomains=True)["domains"]:
         subdomain = "xmpp-upload." + domain
-        if dig(subdomain, "A", resolvers="force_external") == ("ok", [get_public_ip()]):
+        xmpp_records = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "xmpp"}).get("data") or {}
+        if xmpp_records.get("CNAME:xmpp-upload") == "OK":
             csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
         else:
             logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
