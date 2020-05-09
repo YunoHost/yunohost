@@ -34,7 +34,7 @@ class BaseSystemDiagnoser(Diagnoser):
 
         # Also possibly the board name
         if os.path.exists("/proc/device-tree/model"):
-            model = read_file('/proc/device-tree/model').strip()
+            model = read_file('/proc/device-tree/model').strip().replace('\x00', '')
             hardware["data"]["model"] = model
             hardware["details"] = ["diagnosis_basesystem_hardware_board"]
 
