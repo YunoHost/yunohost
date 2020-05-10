@@ -81,24 +81,23 @@ def test_service_remove_service_that_doesnt_exists(mocker):
 
 def test_service_update_to_add_properties():
 
-    service_add("dummyservice", description="")
+    service_add("dummyservice", description="dummy")
     assert not _get_services()["dummyservice"].get("test_status")
-    service_add("dummyservice", description="", test_status="true")
+    service_add("dummyservice", description="dummy", test_status="true")
     assert _get_services()["dummyservice"].get("test_status") == "true"
 
 
 def test_service_update_to_change_properties():
 
-    service_add("dummyservice", description="", test_status="false")
+    service_add("dummyservice", description="dummy", test_status="false")
     assert _get_services()["dummyservice"].get("test_status") == "false"
-    service_add("dummyservice", description="", test_status="true")
+    service_add("dummyservice", description="dummy", test_status="true")
     assert _get_services()["dummyservice"].get("test_status") == "true"
 
 
 def test_service_update_to_remove_properties():
 
-    service_add("dummyservice", description="", test_status="false")
+    service_add("dummyservice", description="dummy", test_status="false")
     assert _get_services()["dummyservice"].get("test_status") == "false"
-    service_add("dummyservice", description="", test_status="")
+    service_add("dummyservice", description="dummy", test_status="")
     assert not _get_services()["dummyservice"].get("test_status")
-
