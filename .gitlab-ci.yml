@@ -11,7 +11,7 @@ postinstall:
   image: before-postinstall
   stage: postinstall
   script:
-    - apt install --no-install-recommends -y $(cat debian/control | grep "^Depends" -A50 | grep "Recommends:" -B50 | grep "^ *," | grep -o -P "[\w\-]{3,}")
+    - apt install --no-install-recommends -y $(cat debian/control | grep "^Depends" -A50 | grep "Recommends:" -B50 | grep "^ *," | grep -o -P " [\w\-]{3,}")
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
 
 ########################################
