@@ -1,3 +1,11 @@
+yunohost (3.8.4.1) testing; urgency=low
+
+  - [mod] Tweak diagnosis threshold for swap warning (429df8c4)
+  - [fix] Make sure we have a list for log_list + make sure item is in list before using .remove()... (afbeb145, 43facfd5)
+  - [fix] Sometimes tree-model has a weird \x00 which breaks yunopaste (c346f5f1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 11 May 2020 00:50:34 +0200
+
 yunohost (3.8.4) testing; urgency=low
 
   - [fix] Restoration of custom hooks / missing restore hooks (#927)
