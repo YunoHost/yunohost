@@ -415,6 +415,9 @@ def service_log(name, number=50):
 
     log_list = services[name].get('log', [])
 
+    if not isinstance(log_list, list):
+        log_list = [log_list]
+
     # Legacy stuff related to --log_type where we'll typically have the service
     # name in the log list but it's not an actual logfile. Nowadays journalctl
     # is automatically fetch as well as regular log files.
