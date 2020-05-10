@@ -1,8 +1,8 @@
 import os
 
-from conftest import message, raiseYunohostError
+from conftest import raiseYunohostError
 
-from yunohost.service import _get_services, _save_services, service_status, service_add, service_remove
+from yunohost.service import _get_services, _save_services, service_status, service_add, service_remove, service_log
 
 
 def setup_function(function):
@@ -40,6 +40,13 @@ def test_service_status_single():
     status = service_status("ssh")
     assert "status" in status.keys()
     assert status["status"] == "running"
+
+
+def test_service_log():
+
+    logs = service_log("ssh")
+    assert "journalctl" in logs.keys()
+    assert "/var/log/auth.log" in logs.keys()
 
 
 def test_service_status_unknown_service(mocker):
