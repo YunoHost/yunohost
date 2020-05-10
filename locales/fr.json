@@ -166,7 +166,7 @@
     "certmanager_certificate_fetching_or_enabling_failed": "Il semble que l’activation du nouveau certificat pour {domain:s} a échoué …",
     "certmanager_attempt_to_renew_nonLE_cert": "Le certificat pour le domaine {domain:s} n’est pas émis par Let’s Encrypt. Impossible de le renouveler automatiquement !",
     "certmanager_attempt_to_renew_valid_cert": "Le certificat pour le domaine {domain:s} n’est pas sur le point d’expirer ! (Vous pouvez utiliser --force si vous savez ce que vous faites)",
-    "certmanager_domain_http_not_working": "Il semble que le domaine {domain:s} ne soit pas accessible via HTTP. Veuillez vérifier que vos configuration DNS et Nginx sont correctes",
+    "certmanager_domain_http_not_working": "Le domaine {domain:s} ne semble pas être accessible via HTTP. Merci de vérifier la catégorie 'Web' dans le diagnostic pour plus d'informations. (Ou si vous savez ce que vous faites, utilisé '--no-checks' pour désactiver la vérification.)",
     "certmanager_error_no_A_record": "Aucun enregistrement DNS 'A' n’a été trouvé pour {domain:s}. Vous devez faire pointer votre nom de domaine vers votre machine pour être en mesure d’installer un certificat Let’s Encrypt ! (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces contrôles)",
     "certmanager_domain_dns_ip_differs_from_public_ip": "L’enregistrement DNS 'A' du domaine {domain:s} est différent de l’adresse IP de ce serveur. Si vous avez récemment modifié votre enregistrement 'A', veuillez attendre sa propagation (des vérificateurs de propagation DNS sont disponibles en ligne). (Si vous savez ce que vous faites, utilisez --no-checks pour désactiver ces contrôles)",
     "certmanager_cannot_read_cert": "Quelque chose s’est mal passé lors de la tentative d’ouverture du certificat actuel pour le domaine {domain:s} (fichier : {file:s}), la cause est : {reason:s}",
@@ -647,5 +647,7 @@
     "diagnosis_domain_expiration_success": "Vos domaines sont enregistrés et ne vont pas expirer prochainement.",
     "diagnosis_domain_expiration_warning": "Certains domaines vont expirer prochainement !",
     "diagnosis_domain_expiration_error": "Certains domaines vont expirer TRÈS PROCHAINEMENT !",
-    "diagnosis_domain_expires_in": "Le {domain} expire dans {days} jours."
+    "diagnosis_domain_expires_in": "{domain} expire dans {days} jours.",
+    "certmanager_domain_not_diagnosed_yet": "Il n'y a pas encore de résultat de diagnostic pour le domaine %s. Merci de relancer un diagnostic pour les catégories 'Enregistrements DNS' et 'Web' dans la section Diagnostique pour vérifier si le domaine est prêt pour Let's Encrypt. (Ou si vous savez ce que vous faites, utilisez '--no-checks' pour désactiver la vérification.)",
+    "diagnosis_swap_tip": "Merci d'être prudent et conscient que si vous hébergez une partition SWAP sur une carte SD ou un disque SSD, cela risque de réduire drastiquement l’espérance de vie du périphérique."
 }
