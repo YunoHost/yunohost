@@ -418,7 +418,8 @@ def service_log(name, number=50):
     # Legacy stuff related to --log_type where we'll typically have the service
     # name in the log list but it's not an actual logfile. Nowadays journalctl
     # is automatically fetch as well as regular log files.
-    log_list.remove(name)
+    if name in log_list:
+        log_list.remove(name)
 
     result = {}
 
