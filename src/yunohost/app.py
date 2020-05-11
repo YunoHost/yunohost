@@ -33,6 +33,7 @@ import re
 import subprocess
 import glob
 import urllib.parse
+import base64
 import tempfile
 from collections import OrderedDict
 
@@ -1874,6 +1875,7 @@ def app_config_apply(operation_logger, app, args):
     }
     args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
+    upload_dir = None
     for tab in config_panel.get("panel", []):
         tab_id = tab["id"]  # this makes things easier to debug on crash
         for section in tab.get("sections", []):
@@ -1885,6 +1887,23 @@ def app_config_apply(operation_logger, app, args):
                 ).upper()
 
                 if generated_name in args:
+                    # Upload files from API
+                    # A file arg contains a string with "FILENAME:BASE64_CONTENT"
+                    if option["type"] == "file" and msettings.get('interface') == 'api':
+                        if upload_dir is None:
+                            upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
+                        filename, args[generated_name] = args[generated_name].split(':')
+                        logger.debug("Save uploaded file %s from API into %s", filename, upload_dir)
+                        file_path = os.join(upload_dir, filename)
+                        try:
+                            with open(file_path, 'wb') as f:
+                                f.write(args[generated_name])
+                        except IOError as e:
+                            raise YunohostError("cannot_write_file", file=file_path, error=str(e))
+                        except Exception as e:
+                            raise YunohostError("error_writing_file", file=file_path, error=str(e))
+                        args[generated_name] = file_path
+
                     logger.debug(
                         "include into env %s=%s", generated_name, args[generated_name]
                     )
@@ -1905,6 +1924,11 @@ def app_config_apply(operation_logger, app, args):
         args=["apply"],
         env=env,
     )[0]
+
+    # Delete files uploaded from API
+    if msettings.get('interface') == 'api':
+        if upload_dir is not None:
+            shutil.rmtree(upload_dir)
 
     if return_code != 0:
         msg = (
