@@ -706,7 +706,7 @@ def _get_journalctl_logs(service, number="all"):
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return subprocess.check_output("journalctl -xn -u {0} -n{1}".format(systemd_service, number), shell=True)
+        return subprocess.check_output("journalctl --no-hostname -xn -u {0} -n{1}".format(systemd_service, number), shell=True)
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
