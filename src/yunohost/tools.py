@@ -598,6 +598,8 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
+                upgradables = list(_list_upgradable_apt_packages())
+                noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
                 logger.warning(m18n.n('tools_upgrade_regular_packages_failed',
                                       packages_list=', '.join(noncritical_packages_upgradable)))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
