@@ -38,7 +38,7 @@ class MyMigration(Migration):
         # Tell libc6 it's okay to restart system stuff during the upgrade
         os.system("echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections")
 
-         # Don't send an email to root about the postgresql migration. It should be handled automatically after.
+        # Don't send an email to root about the postgresql migration. It should be handled automatically after.
         os.system("echo 'postgresql-common postgresql-common/obsolete-major seen true' | debconf-set-selections")
 
         #
@@ -46,11 +46,16 @@ class MyMigration(Migration):
         #
         logger.info(m18n.n("migration_0015_specific_upgrade"))
 
-        # Update unscd independently, was 0.53-1+yunohost on stretch (custom build of ours) but now it's 0.53-1+b1 on vanilla buster, which for apt appears as a lower version (hence the --allow-downgrades and the hardcoded version number)
-        self.apt_install('unscd=0.53-1+b1 --allow-downgrades')
+        # Update unscd independently, was 0.53-1+yunohost on stretch (custom build of ours) but now it's 0.53-1+b1 on vanilla buster,
+        # which for apt appears as a lower version (hence the --allow-downgrades and the hardcoded version number)
+        unscd_version = check_output('dpkg -s unscd | grep "^Version: " | cut -d " " -f 2')
+        if "yunohost" in unscd_version:
+            self.apt_install('unscd=0.53-1+b1 --allow-downgrades')
 
         # Upgrade libpam-modules independently, small issue related to willing to overwrite a file previously provided by Yunohost
-        self.apt_install('libpam-modules -o Dpkg::Options::="--force-overwrite"')
+        libpammodules_version = check_output('dpkg -s libpam-modules | grep "^Version: " | cut -d " " -f 2')
+        if not libpammodules_version.startswith("1.3"):
+            self.apt_install('libpam-modules -o Dpkg::Options::="--force-overwrite"')
 
         #
         # Main upgrade
@@ -90,10 +95,10 @@ class MyMigration(Migration):
 
     def check_assertions(self):
 
-        # Be on jessie (8.x) and yunohost 2.x
+        # Be on stretch (9.x) and yunohost 3.x
         # NB : we do both check to cover situations where the upgrade crashed
-        # in the middle and debian version could be >= 9.x but yunohost package
-        # would still be in 2.x...
+        # in the middle and debian version could be > 9.x but yunohost package
+        # would still be in 3.x...
         if not self.debian_major_version() == 9 \
            and not self.yunohost_major_version() == 3:
             raise YunohostError("migration_0015_not_stretch")
