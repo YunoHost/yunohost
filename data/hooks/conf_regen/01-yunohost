@@ -63,6 +63,14 @@ SHELL=/bin/bash
 0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%600)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
 EOF
 
+  # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
+  mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
+  echo "
+[Unit]
+ConditionCapability=CAP_SYS_TIME
+ConditionVirtualization=!container
+" > ${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf
+
 }
 
 do_post_regen() {
@@ -87,6 +95,7 @@ do_post_regen() {
   [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
   [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
 
+  [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
 }
 
 _update_services() {
