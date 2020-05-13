@@ -95,6 +95,8 @@ def ynh_packages_version(*args, **kwargs):
 
 
 def dpkg_is_broken():
+    if check_output("dpkg --audit").strip() != "":
+        return True
     # If dpkg is broken, /var/lib/dpkg/updates
     # will contains files like 0001, 0002, ...
     # ref: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
