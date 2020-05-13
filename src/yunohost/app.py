@@ -550,7 +550,7 @@ def app_upgrade(app=[], url=None, file=None):
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
-            error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+            error = m18n.n('unexpected_error', error="\n" + traceback.format_exc())
             logger.error(m18n.n("app_install_failed", app=app_instance_name, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
@@ -805,7 +805,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Something wrong happened in Yunohost's code (most probably hook_exec)
     except Exception as e:
         import traceback
-        error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+        error = m18n.n('unexpected_error', error="\n" + traceback.format_exc())
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
@@ -853,7 +853,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             except (KeyboardInterrupt, EOFError, Exception):
                 remove_retcode = -1
                 import traceback
-                logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+                logger.error(m18n.n('unexpected_error', error="\n" + traceback.format_exc()))
 
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
@@ -1042,7 +1042,7 @@ def app_remove(operation_logger, app):
     except (KeyboardInterrupt, EOFError, Exception):
         ret = -1
         import traceback
-        logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        logger.error(m18n.n('unexpected_error', error="\n" + traceback.format_exc()))
 
     if ret == 0:
         logger.success(m18n.n('app_removed', app=app))
