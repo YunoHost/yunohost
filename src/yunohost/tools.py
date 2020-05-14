@@ -564,7 +564,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
         dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
         dist_upgrade += " apt-get"
-        dist_upgrade += " --fix-broken --show-upgraded --assume-yes"
+        dist_upgrade += " --fix-broken --show-upgraded --assume-yes --quiet -o=Dpkg::Use-Pty=0"
         for conf_flag in ["old", "miss", "def"]:
             dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
         dist_upgrade += " dist-upgrade"
