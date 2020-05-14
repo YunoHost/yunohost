@@ -183,11 +183,10 @@ def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False, ema
             if report != {}:
                 issues.extend([item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]])
 
-    if issues:
-        if email:
-            _email_diagnosis_issues()
-        elif msettings.get("interface") == "cli":
-            logger.warning(m18n.n("diagnosis_display_tip"))
+    if email:
+        _email_diagnosis_issues()
+    if issues and msettings.get("interface") == "cli":
+        logger.warning(m18n.n("diagnosis_display_tip"))
 
 
 def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
@@ -565,7 +564,11 @@ def _email_diagnosis_issues():
 
     disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
 
-    content = _dump_human_readable_reports(diagnosis_show(issues=True)["reports"])
+    issues = diagnosis_show(issues=True)["reports"]
+    if not issues:
+        return
+
+    content = _dump_human_readable_reports(issues)
 
     message = """\
 From: %s
@@ -579,9 +582,6 @@ Subject: %s
 %s
 """ % (from_, to_, subject_, disclaimer, content)
 
-    print(message)
-
     smtp = smtplib.SMTP("localhost")
     smtp.sendmail(from_, [to_], message)
     smtp.quit()
-
