@@ -154,12 +154,10 @@ class MyMigration(Migration):
         # This :
         # - replace single 'stretch' occurence by 'buster'
         # - comments lines containing "backports"
-        # - comments lines containing "sury"
         # - replace 'stretch/updates' by 'strech/updates' (or same with -)
         for f in sources_list:
             command = "sed -i -e 's@ stretch @ buster @g' " \
                       "-e '/backports/ s@^#*@#@' " \
-                      "-e '/sury/ s@^#*@#@' " \
                       "-e 's@ stretch/updates @ buster/updates @g' " \
                       "-e 's@ stretch-updates @ buster-updates @g' " \
                       "{}".format(f)
