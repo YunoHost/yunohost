@@ -2389,7 +2389,7 @@ def _parse_args_in_yunohost_format(args, action_args):
     """Parse arguments store in either manifest.json or actions.json
     """
     from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_info, user_list
+    from yunohost.user import user_list
 
     args_dict = OrderedDict()
 
