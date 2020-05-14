@@ -427,10 +427,11 @@ class Diagnoser():
         return os.path.join(DIAGNOSIS_CACHE, "%s.json" % id_)
 
     @staticmethod
-    def get_cached_report(id_, item=None):
+    def get_cached_report(id_, item=None, warn_if_no_cache=True):
         cache_file = Diagnoser.cache_file(id_)
         if not os.path.exists(cache_file):
-            logger.warning(m18n.n("diagnosis_no_cache", category=id_))
+            if warn_if_no_cache:
+                logger.warning(m18n.n("diagnosis_no_cache", category=id_))
             report = {"id": id_,
                       "cached_for": -1,
                       "timestamp": -1,

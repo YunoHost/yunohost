@@ -103,9 +103,15 @@ def certificate_status(domain_list, full=False):
         if not full:
             del status["subject"]
             del status["CA_name"]
-            del status["ACME_eligible"]
             status["CA_type"] = status["CA_type"]["verbose"]
             status["summary"] = status["summary"]["verbose"]
+
+        if full:
+            try:
+                _check_domain_is_ready_for_ACME(domain)
+                status["ACME_eligible"] = True
+            except:
+                status["ACME_eligible"] = False
 
         del status["domain"]
         certificates[domain] = status
@@ -700,12 +706,6 @@ def _get_status(domain):
             "verbose": "Unknown?",
         }
 
-    try:
-        _check_domain_is_ready_for_ACME(domain)
-        ACME_eligible = True
-    except:
-        ACME_eligible = False
-
     return {
         "domain": domain,
         "subject": cert_subject,
@@ -713,7 +713,6 @@ def _get_status(domain):
         "CA_type": CA_type,
         "validity": days_remaining,
         "summary": status_summary,
-        "ACME_eligible": ACME_eligible
     }
 
 #
@@ -791,8 +790,8 @@ def _backup_current_cert(domain):
 
 def _check_domain_is_ready_for_ACME(domain):
 
-    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}) or {}
-    httpreachable = Diagnoser.get_cached_report("web", item={"domain": domain}) or {}
+    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}, warn_if_no_cache=False) or {}
+    httpreachable = Diagnoser.get_cached_report("web", item={"domain": domain}, warn_if_no_cache=False) or {}
 
     if not dnsrecords or not httpreachable:
         raise YunohostError('certmanager_domain_not_diagnosed_yet', domain=domain)
