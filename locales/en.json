@@ -468,7 +468,7 @@
     "migration_0015_start" : "Starting migration to Buster",
     "migration_0015_patching_sources_list": "Patching the sources.lists…",
     "migration_0015_main_upgrade": "Starting main upgrade…",
-    "migration_0015_still_on_jessie_after_main_upgrade": "Something went wrong during the main upgrade, the system appears to still be on Debian Stretch",
+    "migration_0015_still_on_stretch_after_main_upgrade": "Something went wrong during the main upgrade, the system appears to still be on Debian Stretch",
     "migration_0015_yunohost_upgrade" : "Starting YunoHost core upgrade…",
     "migration_0015_not_stretch" : "The current Debian distribution is not Stretch!",
     "migration_0015_not_enough_free_space" : "Free space is pretty low in /var/! You should have at least 1GB free to run this migration.",
