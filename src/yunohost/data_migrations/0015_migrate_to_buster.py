@@ -194,6 +194,6 @@ class MyMigration(Migration):
             lambda l: logger.warning(l.rstrip()),
         )
 
-        cmd = "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt install --fix-broken --assume-yes " + cmd
+        cmd = "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt install --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes " + cmd
 
         call_async_output(cmd, callbacks, shell=True)
