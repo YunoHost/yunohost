@@ -67,7 +67,7 @@ do_post_regen() {
   # Some stupid things like rabbitmq-server used by onlyoffice won't work if
   # the *short* hostname doesn't exists in /etc/hosts -_-
   short_hostname=$(hostname -s)
-  grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "127.0.0.1\t$short_hostname" >>/etc/hosts
+  grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
 
   [[ -z "$regen_conf_files" ]] \
     || service dnsmasq restart
