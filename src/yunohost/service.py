@@ -85,7 +85,7 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
         # systemd will anyway return foo.service as default value, so we wanna
         # make sure there's actually something here.
         if out == name + ".service":
-            logger.warning("/!\\ Packager ! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
+            logger.warning("/!\\ Packagers! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
         else:
             service['description'] = out
 
@@ -94,6 +94,8 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
 
     if test_status:
         service["test_status"] = test_status
+    elif subprocess.check_output("systemctl show %s | grep '^Type='" % name, shell=True).strip() == "oneshot":
+        logger.warning("/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not.")
 
     if test_conf:
         service["test_conf"] = test_conf
@@ -300,9 +302,9 @@ def service_status(names=[]):
             continue
 
         systemd_service = infos.get("actual_systemd_service", name)
-        status = _get_service_information_from_systemd(systemd_service)
+        raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
 
-        if status is None:
+        if raw_status is None:
             logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % systemd_service)
             result[name] = {
                 'status': "unknown",
@@ -322,11 +324,11 @@ def service_status(names=[]):
             # that's the only way to test for that for now
             # if we don't have it, uses the one provided by systemd
             if description == translation_key:
-                description = str(status.get("Description", ""))
+                description = str(raw_status.get("Description", ""))
 
             result[name] = {
-                'status': str(status.get("SubState", "unknown")),
-                'start_on_boot': str(status.get("UnitFileState", "unknown")),
+                'status': str(raw_status.get("SubState", "unknown")),
+                'start_on_boot': str(raw_status.get("UnitFileState", "unknown")),
                 'last_state_change': "unknown",
                 'description': description,
                 'configuration': "unknown",
@@ -339,8 +341,8 @@ def service_status(names=[]):
             elif os.path.exists("/etc/systemd/system/multi-user.target.wants/%s.service" % name):
                 result[name]["start_on_boot"] = "enabled"
 
-            if "StateChangeTimestamp" in status:
-                result[name]['last_state_change'] = datetime.utcfromtimestamp(status["StateChangeTimestamp"] / 1000000)
+            if "StateChangeTimestamp" in raw_status:
+                result[name]['last_state_change'] = datetime.utcfromtimestamp(raw_status["StateChangeTimestamp"] / 1000000)
 
             # 'test_status' is an optional field to test the status of the service using a custom command
             if "test_status" in infos:
@@ -353,6 +355,12 @@ def service_status(names=[]):
                 p.communicate()
 
                 result[name]["status"] = "running" if p.returncode == 0 else "failed"
+            elif raw_service.get("Type", "").lower() == "oneshot" and result[name]["status"] == "exited":
+                # These are services like yunohost-firewall, hotspot, vpnclient,
+                # ... they will be "exited" why doesn't provide any info about
+                # the real state of the service (unless they did provide a
+                # test_status, c.f. previous condition)
+                result[name]["status"] = "unknown"
 
             # 'test_status' is an optional field to test the status of the service using a custom command
             if "test_conf" in infos:
@@ -389,13 +397,14 @@ def _get_service_information_from_systemd(service):
     service_proxy = d.get_object('org.freedesktop.systemd1', str(service_unit))
     properties_interface = dbus.Interface(service_proxy, 'org.freedesktop.DBus.Properties')
 
-    properties = properties_interface.GetAll('org.freedesktop.systemd1.Unit')
+    unit = properties_interface.GetAll('org.freedesktop.systemd1.Unit')
+    service = properties_interface.GetAll('org.freedesktop.systemd1.Service')
 
-    if properties.get("LoadState", "not-found") == "not-found":
+    if unit.get("LoadState", "not-found") == "not-found":
         # Service doesn't really exist
-        return None
+        return (None, None)
     else:
-        return properties
+        return (unit, service)
 
 
 def service_log(name, number=50):
