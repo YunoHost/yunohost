@@ -195,3 +195,26 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_help():
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0]
         assert help_text in prompt.call_args[0]
+
+
+def test_parse_args_in_yunohost_format_string_with_choice():
+    questions = [{
+        "name": "some_string",
+        "type": "string",
+        "choices": ["fr", "en"]
+    }]
+    answers = {"some_string": "fr"}
+    expected_result = OrderedDict({"some_string": ("fr", "string")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_string_with_choice_bad():
+    questions = [{
+        "name": "some_string",
+        "type": "string",
+        "choices": ["fr", "en"]
+    }]
+    answers = {"some_string": "bad"}
+
+    with pytest.raises(YunohostError):
+        assert _parse_args_in_yunohost_format(answers, questions)
