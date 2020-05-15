@@ -301,81 +301,7 @@ def service_status(names=[]):
         if infos.get("status", "") is None:
             continue
 
-        systemd_service = infos.get("actual_systemd_service", name)
-        raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
-
-        if raw_status is None:
-            logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % systemd_service)
-            result[name] = {
-                'status': "unknown",
-                'start_on_boot': "unknown",
-                'last_state_change': "unknown",
-                'description': "Error: failed to get information for this service, it doesn't exists for systemd",
-                'configuration': "unknown",
-            }
-
-        else:
-            translation_key = "service_description_%s" % name
-            description = infos.get("description")
-            if not description:
-                description = m18n.n(translation_key)
-
-            # that mean that we don't have a translation for this string
-            # that's the only way to test for that for now
-            # if we don't have it, uses the one provided by systemd
-            if description == translation_key:
-                description = str(raw_status.get("Description", ""))
-
-            result[name] = {
-                'status': str(raw_status.get("SubState", "unknown")),
-                'start_on_boot': str(raw_status.get("UnitFileState", "unknown")),
-                'last_state_change': "unknown",
-                'description': description,
-                'configuration': "unknown",
-            }
-
-            # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
-            # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
-            if result[name]["start_on_boot"] == "generated":
-                result[name]["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??" + name) else "disabled"
-            elif os.path.exists("/etc/systemd/system/multi-user.target.wants/%s.service" % name):
-                result[name]["start_on_boot"] = "enabled"
-
-            if "StateChangeTimestamp" in raw_status:
-                result[name]['last_state_change'] = datetime.utcfromtimestamp(raw_status["StateChangeTimestamp"] / 1000000)
-
-            # 'test_status' is an optional field to test the status of the service using a custom command
-            if "test_status" in infos:
-                p = subprocess.Popen(infos["test_status"],
-                                     shell=True,
-                                     executable='/bin/bash',
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-
-                p.communicate()
-
-                result[name]["status"] = "running" if p.returncode == 0 else "failed"
-            elif raw_service.get("Type", "").lower() == "oneshot" and result[name]["status"] == "exited":
-                # These are services like yunohost-firewall, hotspot, vpnclient,
-                # ... they will be "exited" why doesn't provide any info about
-                # the real state of the service (unless they did provide a
-                # test_status, c.f. previous condition)
-                result[name]["status"] = "unknown"
-
-            # 'test_status' is an optional field to test the status of the service using a custom command
-            if "test_conf" in infos:
-                p = subprocess.Popen(infos["test_conf"],
-                                     shell=True,
-                                     executable='/bin/bash',
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
-
-                out, _ = p.communicate()
-                if p.returncode == 0:
-                    result[name]["configuration"] = "valid"
-                else:
-                    result[name]["configuration"] = "broken"
-                    result[name]["configuration-details"] = out.strip().split("\n")
+        result[name] = _get_and_format_service_status(name, infos)
 
     if len(names) == 1:
         return result[names[0]]
@@ -405,6 +331,86 @@ def _get_service_information_from_systemd(service):
         return (None, None)
     else:
         return (unit, service)
+
+
+def _get_and_format_service_status(service, infos):
+
+    systemd_service = infos.get("actual_systemd_service", service)
+    raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
+
+    if raw_status is None:
+        logger.error("Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')." % systemd_service)
+        return {
+            'status': "unknown",
+            'start_on_boot': "unknown",
+            'last_state_change': "unknown",
+            'description': "Error: failed to get information for this service, it doesn't exists for systemd",
+            'configuration': "unknown",
+        }
+
+    translation_key = "service_description_%s" % service
+    description = infos.get("description")
+    if not description:
+        description = m18n.n(translation_key)
+
+    # that mean that we don't have a translation for this string
+    # that's the only way to test for that for now
+    # if we don't have it, uses the one provided by systemd
+    if description == translation_key:
+        description = str(raw_status.get("Description", ""))
+
+    output = {
+        'status': str(raw_status.get("SubState", "unknown")),
+        'start_on_boot': str(raw_status.get("UnitFileState", "unknown")),
+        'last_state_change': "unknown",
+        'description': description,
+        'configuration': "unknown",
+    }
+
+    # Fun stuff™ : to obtain the enabled/disabled status for sysv services,
+    # gotta do this ... cf code of /lib/systemd/systemd-sysv-install
+    if output["start_on_boot"] == "generated":
+        output["start_on_boot"] = "enabled" if glob("/etc/rc[S5].d/S??" + service) else "disabled"
+    elif os.path.exists("/etc/systemd/system/multi-user.target.wants/%s.service" % service):
+        output["start_on_boot"] = "enabled"
+
+    if "StateChangeTimestamp" in raw_status:
+        output['last_state_change'] = datetime.utcfromtimestamp(raw_status["StateChangeTimestamp"] / 1000000)
+
+    # 'test_status' is an optional field to test the status of the service using a custom command
+    if "test_status" in infos:
+        p = subprocess.Popen(infos["test_status"],
+                             shell=True,
+                             executable='/bin/bash',
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+        p.communicate()
+
+        output["status"] = "running" if p.returncode == 0 else "failed"
+    elif raw_service.get("Type", "").lower() == "oneshot" and output["status"] == "exited":
+        # These are services like yunohost-firewall, hotspot, vpnclient,
+        # ... they will be "exited" why doesn't provide any info about
+        # the real state of the service (unless they did provide a
+        # test_status, c.f. previous condition)
+        output["status"] = "unknown"
+
+    # 'test_status' is an optional field to test the status of the service using a custom command
+    if "test_conf" in infos:
+        p = subprocess.Popen(infos["test_conf"],
+                             shell=True,
+                             executable='/bin/bash',
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+
+        out, _ = p.communicate()
+        if p.returncode == 0:
+            output["configuration"] = "valid"
+        else:
+            output["configuration"] = "broken"
+            output["configuration-details"] = out.strip().split("\n")
+
+    return output
 
 
 def service_log(name, number=50):
