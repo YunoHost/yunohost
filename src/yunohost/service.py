@@ -75,27 +75,32 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
 
         service['log'] = log
 
-    if description:
-        service['description'] = description
-    else:
+    if not description:
         # Try to get the description from systemd service
-        out = subprocess.check_output("systemctl show %s | grep '^Description='" % name, shell=True).strip()
-        out = out.replace("Description=", "")
+        unit, _ = _get_service_information_from_systemd(name)
+        description = unit.get("Description", "") if unit is not None else ""
         # If the service does not yet exists or if the description is empty,
         # systemd will anyway return foo.service as default value, so we wanna
         # make sure there's actually something here.
-        if out == name + ".service":
-            logger.warning("/!\\ Packagers! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
-        else:
-            service['description'] = out
+        if description == name + ".service":
+            description = ""
+
+    if description:
+        service['description'] = description
+    else:
+        logger.warning("/!\\ Packagers! You added a custom service without specifying a description. Please add a proper Description in the systemd configuration, or use --description to explain what the service does in a similar fashion to existing services.")
 
     if need_lock:
         service['need_lock'] = True
 
     if test_status:
         service["test_status"] = test_status
-    elif subprocess.check_output("systemctl show %s | grep '^Type='" % name, shell=True).strip() == "oneshot":
-        logger.warning("/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not.")
+    else:
+        # Try to get the description from systemd service
+        _, service = _get_service_information_from_systemd(name)
+        type_ = service.get("Type") if service is not None else ""
+        if type_ == "oneshot":
+            logger.warning("/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not.")
 
     if test_conf:
         service["test_conf"] = test_conf
