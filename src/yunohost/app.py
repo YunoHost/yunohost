@@ -2385,126 +2385,134 @@ def _parse_args_for_action(action, args={}):
     return _parse_args_in_yunohost_format(args, action_args)
 
 
-def _parse_args_in_yunohost_format(args, action_args):
-    """Parse arguments store in either manifest.json or actions.json
+def _parse_args_in_yunohost_format(user_answers, argument_questions):
+    """Parse arguments store in either manifest.json or actions.json or from a
+    config panel against the user answers when they are present.
+
+    Keyword arguments:
+        user_answers -- a dictionnary of arguments from the user (generally
+                        empty in CLI, filed from the admin interface)
+        argument_questions -- the arguments description store in yunohost
+                              format from actions.json/toml, manifest.json/toml
+                              or config_panel.json/toml
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.user import user_list
 
-    args_dict = OrderedDict()
+    parsed_answers_dict = OrderedDict()
 
-    for arg in action_args:
-        arg_name = arg['name']
-        arg_type = arg.get('type', 'string')
-        arg_default = arg.get('default', None)
-        arg_choices = arg.get('choices', [])
-        arg_value = None
+    for question in argument_questions:
+        question_name = question['name']
+        question_type = question.get('type', 'string')
+        question_default = question.get('default', None)
+        question_choices = question.get('choices', [])
+        question_value = None
 
         # Transpose default value for boolean type and set it to
         # false if not defined.
-        if arg_type == 'boolean':
-            arg_default = 1 if arg_default else 0
+        if question_type == 'boolean':
+            question_default = 1 if question_default else 0
 
         # do not print for webadmin
-        if arg_type == 'display_text' and msettings.get('interface') != 'api':
-            print(_value_for_locale(arg['ask']))
+        if question_type == 'display_text' and msettings.get('interface') != 'api':
+            print(_value_for_locale(question['ask']))
             continue
 
         # Attempt to retrieve argument value
-        if arg_name in args:
-            arg_value = args[arg_name]
+        if question_name in user_answers:
+            question_value = user_answers[question_name]
         else:
-            if 'ask' in arg:
+            if 'ask' in question:
                 # Retrieve proper ask string
-                ask_string = _value_for_locale(arg['ask'])
+                text_for_user_input_in_cli = _value_for_locale(question['ask'])
 
                 # Append extra strings
-                if arg_type == 'boolean':
-                    ask_string += ' [yes | no]'
-                elif arg_choices:
-                    ask_string += ' [{0}]'.format(' | '.join(arg_choices))
+                if question_type == 'boolean':
+                    text_for_user_input_in_cli += ' [yes | no]'
+                elif question_choices:
+                    text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question_choices))
 
-                if arg_default is not None:
-                    if arg_type == 'boolean':
-                        ask_string += ' (default: {0})'.format("yes" if arg_default == 1 else "no")
+                if question_default is not None:
+                    if question_type == 'boolean':
+                        text_for_user_input_in_cli += ' (default: {0})'.format("yes" if question_default == 1 else "no")
                     else:
-                        ask_string += ' (default: {0})'.format(arg_default)
+                        text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
 
                 # Check for a password argument
-                is_password = True if arg_type == 'password' else False
+                is_password = True if question_type == 'password' else False
 
-                if arg_type == 'domain':
-                    arg_default = _get_maindomain()
-                    ask_string += ' (default: {0})'.format(arg_default)
+                if question_type == 'domain':
+                    question_default = _get_maindomain()
+                    text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
                     msignals.display(m18n.n('domains_available'))
                     for domain in domain_list()['domains']:
                         msignals.display("- {}".format(domain))
 
-                elif arg_type == 'user':
+                elif question_type == 'user':
                     msignals.display(m18n.n('users_available'))
                     for user in user_list()['users'].keys():
                         msignals.display("- {}".format(user))
 
-                elif arg_type == 'password':
+                elif question_type == 'password':
                     msignals.display(m18n.n('good_practices_about_user_password'))
 
                 try:
-                    input_string = msignals.prompt(ask_string, is_password)
+                    input_string = msignals.prompt(text_for_user_input_in_cli, is_password)
                 except NotImplementedError:
                     input_string = None
                 if (input_string == '' or input_string is None) \
-                        and arg_default is not None:
-                    arg_value = arg_default
+                        and question_default is not None:
+                    question_value = question_default
                 else:
-                    arg_value = input_string
-            elif arg_default is not None:
-                arg_value = arg_default
+                    question_value = input_string
+            elif question_default is not None:
+                question_value = question_default
 
         # If the value is empty (none or '')
-        # then check if arg is optional or not
-        if arg_value is None or arg_value == '':
-            if arg.get("optional", False):
+        # then check if question is optional or not
+        if question_value is None or question_value == '':
+            if question.get("optional", False):
                 # Argument is optional, keep an empty value
-                # and that's all for this arg !
-                args_dict[arg_name] = ('', arg_type)
+                # and that's all for this question!
+                parsed_answers_dict[question_name] = ('', question_type)
                 continue
             else:
                 # The argument is required !
-                raise YunohostError('app_argument_required', name=arg_name)
+                raise YunohostError('app_argument_required', name=question_name)
 
         # Validate argument choice
-        if arg_choices and arg_value not in arg_choices:
-            raise YunohostError('app_argument_choice_invalid', name=arg_name, choices=', '.join(arg_choices))
+        if question_choices and question_value not in question_choices:
+            raise YunohostError('app_argument_choice_invalid', name=question_name, choices=', '.join(question_choices))
 
         # Validate argument type
-        if arg_type == 'domain':
-            if arg_value not in domain_list()['domains']:
-                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('domain_unknown'))
-        elif arg_type == 'user':
-            if not arg_value in user_list()["users"].keys():
-                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('user_unknown', user=arg_value))
-        elif arg_type == 'app':
-            if not _is_installed(arg_value):
-                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))
-        elif arg_type == 'boolean':
-            if isinstance(arg_value, bool):
-                arg_value = 1 if arg_value else 0
+        if question_type == 'domain':
+            if question_value not in domain_list()['domains']:
+                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('domain_unknown'))
+        elif question_type == 'user':
+            if question_value not in user_list()["users"].keys():
+                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('user_unknown', user=question_value))
+        elif question_type == 'app':
+            if not _is_installed(question_value):
+                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('app_unknown'))
+        elif question_type == 'boolean':
+            if isinstance(question_value, bool):
+                question_value = 1 if question_value else 0
             else:
-                if str(arg_value).lower() in ["1", "yes", "y"]:
-                    arg_value = 1
-                elif str(arg_value).lower() in ["0", "no", "n"]:
-                    arg_value = 0
+                if str(question_value).lower() in ["1", "yes", "y"]:
+                    question_value = 1
+                elif str(question_value).lower() in ["0", "no", "n"]:
+                    question_value = 0
                 else:
-                    raise YunohostError('app_argument_choice_invalid', name=arg_name, choices='yes, no, y, n, 1, 0')
-        elif arg_type == 'password':
+                    raise YunohostError('app_argument_choice_invalid', name=question_name, choices='yes, no, y, n, 1, 0')
+        elif question_type == 'password':
             forbidden_chars = "{}"
-            if any(char in arg_value for char in forbidden_chars):
+            if any(char in question_value for char in forbidden_chars):
                 raise YunohostError('pattern_password_app', forbidden_chars=forbidden_chars)
             from yunohost.utils.password import assert_password_is_strong_enough
-            assert_password_is_strong_enough('user', arg_value)
-        args_dict[arg_name] = (arg_value, arg_type)
+            assert_password_is_strong_enough('user', question_value)
+        parsed_answers_dict[question_name] = (question_value, question_type)
 
-    return args_dict
+    return parsed_answers_dict
 
 
 def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
