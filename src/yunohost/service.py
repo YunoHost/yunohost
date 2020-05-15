@@ -286,26 +286,19 @@ def service_status(names=[]):
         # Filter only requested servivces
         services = {k: v for k, v in services.items() if k in names}
 
-    result = {}
+    # Remove services that aren't "real" services
+    #
+    # the historical reason is because regenconf has been hacked into the
+    # service part of YunoHost will in some situation we need to regenconf
+    # for things that aren't services
+    # the hack was to add fake services...
+    services = {k: v for k, v in services.items() if v.get("status", "") is not None}
 
-    for name, infos in services.items():
-
-        # this "service" isn't a service actually so we skip it
-        #
-        # the historical reason is because regenconf has been hacked into the
-        # service part of YunoHost will in some situation we need to regenconf
-        # for things that aren't services
-        # the hack was to add fake services...
-        # we need to extract regenconf from service at some point, also because
-        # some app would really like to use it
-        if infos.get("status", "") is None:
-            continue
-
-        result[name] = _get_and_format_service_status(name, infos)
+    output = {s: _get_and_format_service_status(s, infos) for s, infos in services.items()}
 
     if len(names) == 1:
-        return result[names[0]]
-    return result
+        return output[names[0]]
+    return output
 
 
 def _get_service_information_from_systemd(service):
