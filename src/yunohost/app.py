@@ -809,15 +809,15 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
-        # Whatever happened (install success or failure) we check if it broke the system
-        # and warn the user about it
-        try:
-            broke_the_system = False
-            _assert_system_is_sane_for_app(manifest, "post")
-        except Exception as e:
-            broke_the_system = True
-            logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
-            failure_message_with_debug_instructions = operation_logger.error(str(e))
+        # If success so far, validate that app didn't break important stuff
+        if not install_failed:
+            try:
+                broke_the_system = False
+                _assert_system_is_sane_for_app(manifest, "post")
+            except Exception as e:
+                broke_the_system = True
+                logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
+                failure_message_with_debug_instructions = operation_logger.error(str(e))
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
