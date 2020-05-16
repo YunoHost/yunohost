@@ -590,3 +590,191 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_help():
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert help_text in prompt.call_args[0][0]
+
+
+def test_parse_args_in_yunohost_format_boolean():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+    }]
+    answers = {"some_boolean": "y"}
+    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_all_yes():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+    }]
+    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
+    assert _parse_args_in_yunohost_format({"some_boolean": "y"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "Y"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "yes"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "Yes"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "YES"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "1"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": 1}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": True}, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_all_no():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+    }]
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+    assert _parse_args_in_yunohost_format({"some_boolean": "n"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "N"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "no"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "No"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "No"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": "0"}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": 0}, questions) == expected_result
+    assert _parse_args_in_yunohost_format({"some_boolean": False}, questions) == expected_result
+
+
+# XXX apparently boolean are always False (0) by default, I'm not sure what to think about that
+def test_parse_args_in_yunohost_format_boolean_no_input():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+    }]
+    answers = {}
+
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_bad_input():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+    }]
+    answers = {"some_boolean": "stuff"}
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_boolean_input():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+        "ask": "some question",
+    }]
+    answers = {}
+
+    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
+    with patch.object(msignals, "prompt", return_value="y"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+    with patch.object(msignals, "prompt", return_value="n"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+@pytest.mark.skip  # we should work
+def test_parse_args_in_yunohost_format_boolean_input_no_ask():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_boolean": ("some_value", "boolean")})
+
+    with patch.object(msignals, "prompt", return_value="y"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_no_input_optional():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+        "optional": True,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})  # default to false
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_optional_with_input():
+    questions = [{
+        "name": "some_boolean",
+        "ask": "some question",
+        "type": "boolean",
+        "optional": True,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
+
+    with patch.object(msignals, "prompt", return_value="y"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_optional_with_input_without_ask():
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+        "optional": True,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+
+    with patch.object(msignals, "prompt", return_value="n"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_no_input_default():
+    questions = [{
+        "name": "some_boolean",
+        "ask": "some question",
+        "type": "boolean",
+        "default": 0,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+@pytest.mark.skip  # we should raise
+def test_parse_args_in_yunohost_format_boolean_bad_default():
+    questions = [{
+        "name": "some_boolean",
+        "ask": "some question",
+        "type": "boolean",
+        "default": "bad default",
+    }]
+    answers = {}
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_boolean_input_test_ask():
+    ask_text = "some question"
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+        "ask": ask_text,
+    }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value=0) as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        prompt.assert_called_with(ask_text + " [yes | no] (default: no)", False)
+
+
+def test_parse_args_in_yunohost_format_boolean_input_test_ask_with_default():
+    ask_text = "some question"
+    default_text = 1
+    questions = [{
+        "name": "some_boolean",
+        "type": "boolean",
+        "ask": ask_text,
+        "default": default_text,
+    }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value=1) as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        prompt.assert_called_with("%s [yes | no] (default: yes)" % ask_text, False)
