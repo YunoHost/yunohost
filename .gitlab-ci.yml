@@ -1,7 +1,105 @@
 stages:
+  - build
+  - install
   - postinstall
   - tests
   - lint
+
+########################################
+# BUILD DEB
+########################################
+
+.build-stage:
+  image: before-install
+  stage: build
+  variables:
+    YNH_BUILD_DIR: "ynh-build"
+    YNH_SOURCE: "https://github.com/yunohost"
+  before_script:
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" install git git-buildpackage postfix python-setuptools
+    - mkdir -p $YNH_BUILD_DIR
+    - cd $YNH_BUILD_DIR
+    - git clone $YNH_SOURCE/$DEB_TO_BUILD
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$DEB_TO_BUILD
+  cache:
+    paths:
+      - $YNH_BUILD_DIR/*.deb
+    key: "$CI_COMMIT_REF_SLUG"
+
+build-yunohost:
+  extends: .build-stage
+  variables:
+    DEB_TO_BUILD: "yunohost"
+  script:
+    - cd $DEB_TO_BUILD
+    - debuild -us -uc
+
+build-ssowat:
+  extends: .build-stage
+  variables:
+    DEB_TO_BUILD: "ssowat"
+  script:
+    - cd $DEB_TO_BUILD
+    - debuild -us -uc
+
+build-moulinette:
+  extends: .build-stage
+  variables:
+    DEB_TO_BUILD: "moulinette"
+  script:
+    - cd $DEB_TO_BUILD
+    - debuild -us -uc
+
+build-metronome:
+  extends: .build-stage
+  variables:
+    DEB_TO_BUILD: "metronome"
+  script:
+    - cd $DEB_TO_BUILD
+    - dpkg-buildpackage -rfakeroot -uc -b -d
+
+########################################
+# INSTALL DEB
+########################################
+
+install:
+  image: before-install
+  stage: install
+  variables:
+    YNH_BUILD_DIR: "ynh-build"
+  script:
+    - |
+     debconf-set-selections << EOF
+     slapd slapd/password1 password yunohost
+     slapd slapd/password2 password yunohost
+     slapd slapd/domain    string yunohost.org
+     slapd shared/organization   string yunohost.org
+     slapd slapd/allow_ldap_v2   boolean false
+     slapd slapd/invalid_config  boolean true
+     slapd slapd/backend	select MDB
+     postfix postfix/main_mailer_type select Internet Site
+     postfix postfix/mailname string /etc/mailname
+     mariadb-server-10.1 mysql-server/root_password password yunohost
+     mariadb-server-10.1 mysql-server/root_password_again password yunohost
+     nslcd nslcd/ldap-bindpw   password
+     nslcd nslcd/ldap-starttls boolean false
+     nslcd nslcd/ldap-reqcert  select
+     nslcd nslcd/ldap-uris   string  ldap://localhost/
+     nslcd nslcd/ldap-binddn string
+     nslcd nslcd/ldap-base   string  dc=yunohost,dc=org
+     libnss-ldapd libnss-ldapd/nsswitch multiselect group, passwd, shadow
+     postsrsd postsrsd/domain string yunohost.org
+     EOF
+    - cd $YNH_BUILD_DIR
+    - SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./*.deb
+  artifacts:
+    paths:
+      - $YNH_BUILD_DIR/*.deb
+  cache:
+    paths:
+      - $YNH_BUILD_DIR/
+    policy: pull
+    key: "$CI_COMMIT_REF_SLUG"
 
 ########################################
 # POSTINSTALL
@@ -21,16 +119,17 @@ postinstall:
 .test-stage:
   image: after-postinstall
   stage: tests
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   before_script:
     - apt-get install python-pip -y
-    - mkdir -p .pip
     - pip install -U pip
     - hash -d pip
-    - pip --cache-dir=.pip install pytest pytest-sugar pytest-mock requests-mock mock
+    - pip install pytest pytest-sugar pytest-mock requests-mock mock
     - export PYTEST_ADDOPTS="--color=yes"
   cache:
     paths: 
-      - .pip
+      - .cache/pip
       - src/yunohost/tests/apps
     key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
 
