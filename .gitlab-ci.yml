@@ -57,6 +57,12 @@ test-appurl:
     - cd src/yunohost
     - py.test tests/test_appurl.py
 
+test-apps-arguments-parsing:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_apps_arguments_parsing.py 
+
 test-backuprestore:
   extends: .test-stage
   script:
