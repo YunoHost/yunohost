@@ -176,8 +176,8 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_example():
 
     with patch.object(msignals, "prompt", return_value="some_value") as prompt:
         _parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0]
-        assert example_text in prompt.call_args[0]
+        assert ask_text in prompt.call_args[0][0]
+        assert example_text in prompt.call_args[0][0]
 
 
 @pytest.mark.skip  # we should do something with this help
@@ -193,8 +193,8 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_help():
 
     with patch.object(msignals, "prompt", return_value="some_value") as prompt:
         _parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0]
-        assert help_text in prompt.call_args[0]
+        assert ask_text in prompt.call_args[0][0]
+        assert help_text in prompt.call_args[0][0]
 
 
 def test_parse_args_in_yunohost_format_string_with_choice():
@@ -208,6 +208,18 @@ def test_parse_args_in_yunohost_format_string_with_choice():
     assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
+def test_parse_args_in_yunohost_format_string_with_choice_prompt():
+    questions = [{
+        "name": "some_string",
+        "type": "string",
+        "choices": ["fr", "en"]
+    }]
+    answers = {"some_string": "fr"}
+    expected_result = OrderedDict({"some_string": ("fr", "string")})
+    with patch.object(msignals, "prompt", return_value="fr"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
 def test_parse_args_in_yunohost_format_string_with_choice_bad():
     questions = [{
         "name": "some_string",
@@ -218,3 +230,33 @@ def test_parse_args_in_yunohost_format_string_with_choice_bad():
 
     with pytest.raises(YunohostError):
         assert _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_string_with_choice_ask():
+    ask_text = "some question"
+    choices = ["fr", "en", "es", "it", "ru"]
+    questions = [{
+        "name": "some_string",
+        "ask": ask_text,
+        "choices": choices,
+    }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="ru") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        assert ask_text in prompt.call_args[0][0]
+
+        for choice in choices:
+            assert choice in prompt.call_args[0][0]
+
+
+def test_parse_args_in_yunohost_format_string_with_choice_default():
+    questions = [{
+        "name": "some_string",
+        "type": "string",
+        "choices": ["fr", "en"],
+        "default": "en",
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_string": ("en", "string")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
