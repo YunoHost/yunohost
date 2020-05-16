@@ -260,3 +260,179 @@ def test_parse_args_in_yunohost_format_string_with_choice_default():
     answers = {}
     expected_result = OrderedDict({"some_string": ("en", "string")})
     assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_password():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+    }]
+    answers = {"some_password": "some_value"}
+    expected_result = OrderedDict({"some_password": ("some_value", "password")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_password_default_type():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+    }]
+    answers = {"some_password": "some_value"}
+    expected_result = OrderedDict({"some_password": ("some_value", "password")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_password_no_input():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+    }]
+    answers = {}
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_password_input():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "ask": "some question",
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_password": ("some_value", "password")})
+
+    with patch.object(msignals, "prompt", return_value="some_value"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+@pytest.mark.skip  # that shit should work x(
+def test_parse_args_in_yunohost_format_password_input_no_ask():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_password": ("some_value", "password")})
+
+    with patch.object(msignals, "prompt", return_value="some_value"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_password_no_input_optional():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "optional": True,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_password": ("", "password")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_password_optional_with_input():
+    questions = [{
+        "name": "some_password",
+        "ask": "some question",
+        "type": "password",
+        "optional": True,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_password": ("some_value", "password")})
+
+    with patch.object(msignals, "prompt", return_value="some_value"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+@pytest.mark.skip  # this should work without ask
+def test_parse_args_in_yunohost_format_password_optional_with_input_without_ask():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "optional": True,
+    }]
+    answers = {}
+    expected_result = OrderedDict({"some_password": ("some_value", "password")})
+
+    with patch.object(msignals, "prompt", return_value="some_value"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+@pytest.mark.skip  # this should raises
+def test_parse_args_in_yunohost_format_password_no_input_default():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "ask": "some question",
+        "default": "some_value",
+    }]
+    answers = {}
+
+    # no default for password!
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+@pytest.mark.skip  # this should raises
+def test_parse_args_in_yunohost_format_password_no_input_example():
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "ask": "some question",
+        "example": "some_value",
+    }]
+    answers = {"some_password": "some_value"}
+
+    # no example for password!
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_password_input_test_ask():
+    ask_text = "some question"
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "ask": ask_text,
+    }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="some_value") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        prompt.assert_called_with(ask_text, True)
+
+
+@pytest.mark.skip  # we should do something with this example
+def test_parse_args_in_yunohost_format_password_input_test_ask_with_example():
+    ask_text = "some question"
+    example_text = "some example"
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "ask": ask_text,
+        "example": example_text,
+    }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="some_value") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        assert ask_text in prompt.call_args[0][0]
+        assert example_text in prompt.call_args[0][0]
+
+
+@pytest.mark.skip  # we should do something with this help
+def test_parse_args_in_yunohost_format_password_input_test_ask_with_help():
+    ask_text = "some question"
+    help_text = "some_help"
+    questions = [{
+        "name": "some_password",
+        "type": "password",
+        "ask": ask_text,
+        "help": help_text,
+    }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="some_value") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        assert ask_text in prompt.call_args[0][0]
+        assert help_text in prompt.call_args[0][0]
