@@ -75,7 +75,16 @@ EOF
 ConditionCapability=CAP_SYS_TIME
 ConditionVirtualization=!container
 " > ${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf
-
+  
+  # Make nftable conflict with yunohost-firewall
+  mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
+  cat > ${pending_dir}/etc/systemd/system/nftables.service.d/ynh-override.conf << EOF
+[Unit]
+# yunohost-firewall and nftables conflict with each other
+Conflicts=yunohost-firewall.service
+ConditionFileIsExecutable=!/etc/init.d/yunohost-firewall
+ConditionPathExists=!/etc/systemd/system/multi-user.target.wants/yunohost-firewall.service
+EOF
 }
 
 do_post_regen() {
@@ -100,7 +109,9 @@ do_post_regen() {
   [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
   [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
 
+  # Propagates changes in systemd service config overrides
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
+  [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || { systemctl daemon-reload;  systemctl disable nftables -q; }
 }
 
 _update_services() {
