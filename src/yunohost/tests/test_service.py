@@ -25,7 +25,11 @@ def clean():
 
     if "dummyservice" in services:
         del services["dummyservice"]
-        _save_services(services)
+
+    if "networking" in services:
+        del services["networking"]
+
+    _save_services(services)
 
 
 def test_service_status_all():
@@ -60,6 +64,10 @@ def test_service_add():
     service_add("dummyservice", description="A dummy service to run tests")
     assert "dummyservice" in service_status().keys()
 
+def test_service_add_real_service()
+
+    service_add("networking")
+    assert "networking" in service_status().keys()
 
 def test_service_remove():
 

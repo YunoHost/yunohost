@@ -78,7 +78,7 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
     if not description:
         # Try to get the description from systemd service
         unit, _ = _get_service_information_from_systemd(name)
-        description = unit.get("Description", "") if unit is not None else ""
+        description = str(unit.get("Description", "")) if unit is not None else ""
         # If the service does not yet exists or if the description is empty,
         # systemd will anyway return foo.service as default value, so we wanna
         # make sure there's actually something here.
