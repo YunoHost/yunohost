@@ -64,7 +64,7 @@ def test_service_add():
     service_add("dummyservice", description="A dummy service to run tests")
     assert "dummyservice" in service_status().keys()
 
-def test_service_add_real_service()
+def test_service_add_real_service():
 
     service_add("networking")
     assert "networking" in service_status().keys()
