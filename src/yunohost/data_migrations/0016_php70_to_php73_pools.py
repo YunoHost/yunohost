@@ -4,6 +4,7 @@ from shutil import copy2
 
 from moulinette.utils.log import getActionLogger
 
+from yunohost.app import _is_installed, _get_app_settings, _set_app_settings
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command
 
@@ -50,21 +51,44 @@ class MyMigration(Migration):
             c = "sed -i '1i {}' {}".format(MIGRATION_COMMENT, dest)
             os.system(c)
 
+            app_id = os.path.basename(f)[:-len(".conf")]
+            self.migrate_app_settings(app_id)
+
+            nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/%s.conf" % app_id)
+            for f in nginx_conf_files:
+                # Replace the socket prefix if it's found
+                c = "sed -i -e 's@{}@{}@g' {}".format(PHP70_SOCKETS_PREFIX, PHP73_SOCKETS_PREFIX, f)
+                os.system(c)
+
+        os.system("rm /etc/logrotate.d/php7.0-fpm")  # We remove this otherwise the logrotate cron will be unhappy
+
         # Reload/restart the php pools
         _run_service_command("restart", "php7.3-fpm")
         _run_service_command("enable", "php7.3-fpm")
         os.system("systemctl stop php7.0-fpm")
         os.system("systemctl disable php7.0-fpm")
-        os.system("rm /etc/logrotate.d/php7.0-fpm")  # We remove this otherwise the logrotate cron will be unhappy
-
-        # Get list of nginx conf file
-        nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/*.conf")
-        for f in nginx_conf_files:
-            # Replace the socket prefix if it's found
-            c = "sed -i -e 's@{}@{}@g' {}".format(PHP70_SOCKETS_PREFIX, PHP73_SOCKETS_PREFIX, f)
-            os.system(c)
-            # FIXME : should tweak the checksum setting in settings.yml of the app so that the file ain't considered manually modified
-            # Aslo gotta tweak the settings fpm_service and fpm_config_dir ...
 
         # Reload nginx
         _run_service_command("reload", "nginx")
+
+    def migrate_app_settings(self, app_id):
+
+        if not _is_installed(app_id):
+            return
+
+        settings = _get_app_settings(app_id)
+
+        if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+            settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+        if settings.get("fpm_service") == "php7.0-fpm":
+            settings["fpm_service"] == "php7.3-fpm"
+        if settings.get("phpversion") == "7.0":
+            settings["phpversion"] == "7.3"
+
+        # We delete these checksums otherwise the file will appear as manually modified
+        list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
+                          "checksum__etc_nginx_conf.d"]
+        settings = {k: v for k, v in settings.items()
+                    if not any(k.startswith(to_remove) for to_remove in list_to_remove)}
+
+        _set_app_settings(app_id, settings)
