@@ -67,6 +67,11 @@ install:
   stage: install
   variables:
     YNH_BUILD_DIR: "ynh-build"
+  before_script:
+    - apt install wget --assume-yes
+    - echo "deb http://forge.yunohost.org/debian/ stretch stable testing unstable" > /etc/apt/sources.list.d/yunohost.list
+    - wget -O- https://forge.yunohost.org/yunohost.asc -q | apt-key add -qq - >/dev/null 2>&1
+    - apt update
   script:
     - |
      debconf-set-selections << EOF
