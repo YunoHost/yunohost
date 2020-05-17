@@ -515,6 +515,9 @@ def _run_service_command(action, service):
     need_lock = services[service].get('need_lock', False) \
         and action in ['start', 'stop', 'restart', 'reload', 'reload-or-restart']
 
+    if action in ["enable", "disable"]:
+        cmd += " --quiet"
+
     try:
         # Launch the command
         logger.debug("Running '%s'" % cmd)
