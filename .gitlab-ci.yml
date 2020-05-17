@@ -72,6 +72,8 @@ install:
     - echo "deb http://forge.yunohost.org/debian/ stretch stable testing unstable" > /etc/apt/sources.list.d/yunohost.list
     - wget -O- https://forge.yunohost.org/yunohost.asc -q | apt-key add -qq - >/dev/null 2>&1
     - apt update
+    # https://github.com/YunoHost/install_script/blob/3e16abd7c4e1fe9c518cbc573282cb8fb1fcbbd7/install_yunohost#L433-L485
+    - touch /var/log/auth.log
   script:
     - |
      debconf-set-selections << EOF
