@@ -111,7 +111,7 @@ do_post_regen() {
 
   # Propagates changes in systemd service config overrides
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
-  [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || { systemctl daemon-reload;  systemctl disable nftables -q; }
+  [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
 }
 
 _update_services() {
