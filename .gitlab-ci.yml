@@ -74,6 +74,15 @@ install:
     - apt update
     # https://github.com/YunoHost/install_script/blob/3e16abd7c4e1fe9c518cbc573282cb8fb1fcbbd7/install_yunohost#L433-L485
     - touch /var/log/auth.log
+    - >
+      if ! id avahi > /dev/null 2>&1; then
+        avahi_id=$((500 + RANDOM % 500))
+        while cut -d ':' -f 3 /etc/passwd | grep -q $avahi_id
+        do
+          avahi_id=$((500 + RANDOM % 500))
+        done
+        adduser --disabled-password  --quiet --system --home /var/run/avahi-daemon --no-create-home --gecos "Avahi mDNS daemon" --group avahi --uid $avahi_id
+      fi
   script:
     - |
      debconf-set-selections << EOF
@@ -98,7 +107,7 @@ install:
      postsrsd postsrsd/domain string yunohost.org
      EOF
     - cd $YNH_BUILD_DIR
-    - SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./*.deb
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./*.deb
   artifacts:
     paths:
       - $YNH_BUILD_DIR/*.deb
