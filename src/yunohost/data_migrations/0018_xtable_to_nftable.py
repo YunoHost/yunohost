@@ -38,11 +38,11 @@ class MyMigration(Migration):
         if self.do_ipv4 and not os.path.exists(self.backup_rules_ipv4):
             os.system("iptables-legacy -L >/dev/null")  # For some reason if we don't do this, iptables-legacy-save is empty ?
             subprocess.check_call("iptables-legacy-save > %s" % self.backup_rules_ipv4, shell=True)
-            assert subprocess.check_output("cat %s" % self.backup_rules_ipv4).strip(), "Uhoh backup of legacy ipv4 rules is empty !?"
+            assert subprocess.check_output("cat %s" % self.backup_rules_ipv4, shell=True).strip(), "Uhoh backup of legacy ipv4 rules is empty !?"
         if self.do_ipv6 and not os.path.exists(self.backup_rules_ipv6):
             os.system("ip6tables-legacy -L >/dev/null")  # For some reason if we don't do this, iptables-legacy-save is empty ?
             subprocess.check_call("ip6tables-legacy-save > %s" % self.backup_rules_ipv6, shell=True)
-            assert subprocess.check_output("cat %s" % self.backup_rules_ipv6).strip(), "Uhoh backup of legacy ipv6 rules is empty !?"
+            assert subprocess.check_output("cat %s" % self.backup_rules_ipv6, shell=True).strip(), "Uhoh backup of legacy ipv6 rules is empty !?"
 
         # We inject the legacy rules (iptables-legacy) into the new iptable (just "iptables")
         try:
