@@ -81,9 +81,9 @@ class MyMigration(Migration):
         if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
             settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
         if settings.get("fpm_service") == "php7.0-fpm":
-            settings["fpm_service"] == "php7.3-fpm"
+            settings["fpm_service"] = "php7.3-fpm"
         if settings.get("phpversion") == "7.0":
-            settings["phpversion"] == "7.3"
+            settings["phpversion"] = "7.3"
 
         # We delete these checksums otherwise the file will appear as manually modified
         list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
