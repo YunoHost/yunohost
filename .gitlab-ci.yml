@@ -21,12 +21,12 @@ stages:
   cache:
     paths:
       - $YNH_BUILD_DIR/*.deb
-    key: "$CI_COMMIT_REF_SLUG"
+    key: "$CI_PIPELINE_ID"
 
 .build_script: &build_script |
   cd $YNH_BUILD_DIR/$PACKAGE
   VERSION=$(dpkg-parsechangelog -S Version 2>/dev/null)
-  VERSION_NIGHTLY="${VERSION}+$CI_PIPELINE_ID+$(date +%Y%m%d%H%M)"
+  VERSION_NIGHTLY="${VERSION}~${CI_COMMIT_REF_SLUG//-}+$(date +%Y%m%d%H%M)"
   dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_NIGHTLY}" -D "unstable" --force-distribution "Daily build."
   debuild -us -uc
 
@@ -118,7 +118,7 @@ install:
     paths:
       - $YNH_BUILD_DIR/
     policy: pull
-    key: "$CI_COMMIT_REF_SLUG"
+    key: "$CI_PIPELINE_ID"
 
 ########################################
 # POSTINSTALL
