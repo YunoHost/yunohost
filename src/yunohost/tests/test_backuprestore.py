@@ -475,7 +475,7 @@ def test_restore_app_already_installed(mocker):
 
     assert _is_installed("wordpress")
 
-    with message(mocker, 'restore_already_installed_apps', apps="wordpress"):
+    with raiseYunohostError(mocker, 'restore_already_installed_apps'):
         backup_restore(system=None, name=backup_list()["archives"][0],
                        apps=["wordpress"])
 
