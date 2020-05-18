@@ -86,6 +86,7 @@ install:
         done
         adduser --disabled-password  --quiet --system --home /var/run/avahi-daemon --no-create-home --gecos "Avahi mDNS daemon" --group avahi --uid $avahi_id
       fi
+    - apt install --assume-yes debhelper
   script:
     - |
      debconf-set-selections << EOF
