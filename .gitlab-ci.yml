@@ -18,45 +18,48 @@ stages:
   before_script:
     - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" install git git-buildpackage postfix python-setuptools
     - mkdir -p $YNH_BUILD_DIR
-    - cd $YNH_BUILD_DIR
-    - git clone $YNH_SOURCE/$DEB_TO_BUILD
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$DEB_TO_BUILD
   cache:
     paths:
       - $YNH_BUILD_DIR/*.deb
     key: "$CI_COMMIT_REF_SLUG"
 
+.build_script: &build_script |
+  cd $YNH_BUILD_DIR/$PACKAGE
+  VERSION=$(dpkg-parsechangelog -S Version 2>/dev/null)
+  VERSION_NIGHTLY="${VERSION}+$CI_PIPELINE_ID+$(date +%Y%m%d%H%M)"
+  dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_NIGHTLY}" -D "unstable" --force-distribution "Daily build."
+  debuild -us -uc
+
 build-yunohost:
   extends: .build-stage
   variables:
-    DEB_TO_BUILD: "yunohost"
+    PACKAGE: "yunohost"
   script:
-    - cd $DEB_TO_BUILD
-    - debuild -us -uc
+    - git ls-files | xargs tar -czf archive.tar.gz
+    - mkdir -p $YNH_BUILD_DIR/$PACKAGE
+    - cat archive.tar.gz | tar -xz -C $YNH_BUILD_DIR/$PACKAGE
+    - rm archive.tar.gz
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - *build_script
+
 
 build-ssowat:
   extends: .build-stage
   variables:
-    DEB_TO_BUILD: "ssowat"
+    PACKAGE: "ssowat"
   script:
-    - cd $DEB_TO_BUILD
-    - debuild -us -uc
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - *build_script
 
 build-moulinette:
   extends: .build-stage
   variables:
-    DEB_TO_BUILD: "moulinette"
+    PACKAGE: "moulinette"
   script:
-    - cd $DEB_TO_BUILD
-    - debuild -us -uc
-
-build-metronome:
-  extends: .build-stage
-  variables:
-    DEB_TO_BUILD: "metronome"
-  script:
-    - cd $DEB_TO_BUILD
-    - dpkg-buildpackage -rfakeroot -uc -b -d
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - *build_script
 
 ########################################
 # INSTALL DEB
