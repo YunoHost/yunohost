@@ -1330,6 +1330,7 @@ class RestoreManager():
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_legacy_php_versions(app_settings_in_archive)
+        _path_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, '_common.sh')
