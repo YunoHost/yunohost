@@ -1239,12 +1239,11 @@ class RestoreManager():
         #
         # Legacy code
         if not "all_users" in user_group_list()["groups"].keys():
-            from yunohost.tools import _get_migration_by_name
-            setup_group_permission = _get_migration_by_name("setup_group_permission")
+            from yunohost.utils.legacy import SetupGroupPermissions
             # Update LDAP schema restart slapd
             logger.info(m18n.n("migration_0011_update_LDAP_schema"))
             regen_conf(names=['slapd'], force=True)
-            setup_group_permission.migrate_LDAP_db()
+            SetupGroupPermissions.migrate_LDAP_db()
 
         # Remove all permission for all app which is still in the LDAP
         for permission_name in user_permission_list(ignore_system_perms=True)["permissions"].keys():
@@ -1385,9 +1384,8 @@ class RestoreManager():
             else:
                 # Otherwise, we need to migrate the legacy permissions of this
                 # app (included in its settings.yml)
-                from yunohost.tools import _get_migration_by_name
-                setup_group_permission = _get_migration_by_name("setup_group_permission")
-                setup_group_permission.migrate_app_permission(app=app_instance_name)
+                from yunohost.utils.legacy import SetupGroupPermissions
+                SetupGroupPermissions.migrate_app_permission(app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
