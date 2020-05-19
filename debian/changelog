@@ -1,3 +1,21 @@
+yunohost (3.8.4.2) testing; urgency=low
+
+  - [enh] During failed upgrades: Only mention packages that couldn't be upgraded (26fcfed7)
+  - [enh] Also run dpkg --audit to check if dpkg is in a broken state (09d8500f, 97199d19)
+  - [enh] Improve logs readability (c6f18496, 9cbd368d, 5850bf61, 413778d2, 5c8c07b8, f73c34bf, 94ea8265)
+  - [enh] Crash early about apps already installed when attempting to restore (f9e4c96c)
+  - [fix] Add the damn short hostname to /etc/hosts automagically (c.f. rabbitmq-server) (e67dc791)
+  - [fix] Don't miserably crash if doveadm fails to run (c9b22138)
+  - [fix] Diagnosis: Try to not have weird warnings if no diagnosis ran yet... (65c87d55)
+  - [fix] Diagnosis: Change logic of --email to avoid sending empty mail if some issues are found but ignored (4cd4938e)
+  - [enh] Diagnosis/services: Report the service status as warning/unknown if service type is oneshot and status exited (dd09758f, 1cd7ffea)
+  - [fix] Rework ynh_psql_test_if_first_run ([#993](https://github.com/yunohost/yunohost/pull/993))
+  - [tests] Tests for args parsing ([#989](https://github.com/yunohost/yunohost/pull/989), 108a3ca4)
+
+  Thanks to all contributors <3 ! (Bram, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 May 2020 20:08:47 +0200
+
 yunohost (3.8.4.1) testing; urgency=low
 
   - [mod] Tweak diagnosis threshold for swap warning (429df8c4)
