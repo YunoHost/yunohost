@@ -2884,6 +2884,7 @@ LEGACY_PHP_VERSION_REPLACEMENTS = [
     ('"$phpversion" == "7.0"', '$(bc <<< "$phpversion >= 7.3") -eq 1')  # patch ynh_install_php to refuse installing/removing php <= 7.3
 ]
 
+
 def _patch_legacy_php_versions(app_folder):
 
     files_to_patch = []
@@ -2904,6 +2905,26 @@ def _patch_legacy_php_versions(app_folder):
             + "".join("-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r) for p, r in LEGACY_PHP_VERSION_REPLACEMENTS) \
             + "%s" % filename
         os.system(c)
+
+
+def _patch_legacy_php_versions_in_settings(app_folder):
+
+    settings = read_yaml(os.path.join(app_folder, 'settings.yml'))
+
+    if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+        settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+    if settings.get("fpm_service") == "php7.0-fpm":
+        settings["fpm_service"] = "php7.3-fpm"
+    if settings.get("phpversion") == "7.0":
+        settings["phpversion"] = "7.3"
+
+    # We delete these checksums otherwise the file will appear as manually modified
+    list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
+                      "checksum__etc_nginx_conf.d"]
+    settings = {k: v for k, v in settings.items()
+                if not any(k.startswith(to_remove) for to_remove in list_to_remove)}
+
+    write_to_yaml(app_folder + '/settings.yml', settings)
 
 
 def _patch_legacy_helpers(app_folder):

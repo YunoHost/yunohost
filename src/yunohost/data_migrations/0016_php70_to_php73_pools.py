@@ -4,7 +4,7 @@ from shutil import copy2
 
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import _is_installed, _get_app_settings, _set_app_settings
+from yunohost.app import _is_installed, _get_app_settings, _set_app_settings, _patch_legacy_php_versions_in_settings
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command
 
@@ -52,7 +52,8 @@ class MyMigration(Migration):
             os.system(c)
 
             app_id = os.path.basename(f)[:-len(".conf")]
-            self.migrate_app_settings(app_id)
+            if _is_installed(app_id):
+                _patch_legacy_php_versions_in_settings("/etc/yunohost/apps/%s/" % app_id)
 
             nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/%s.conf" % app_id)
             for f in nginx_conf_files:
@@ -70,25 +71,3 @@ class MyMigration(Migration):
 
         # Reload nginx
         _run_service_command("reload", "nginx")
-
-    def migrate_app_settings(self, app_id):
-
-        if not _is_installed(app_id):
-            return
-
-        settings = _get_app_settings(app_id)
-
-        if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
-            settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
-        if settings.get("fpm_service") == "php7.0-fpm":
-            settings["fpm_service"] = "php7.3-fpm"
-        if settings.get("phpversion") == "7.0":
-            settings["phpversion"] = "7.3"
-
-        # We delete these checksums otherwise the file will appear as manually modified
-        list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
-                          "checksum__etc_nginx_conf.d"]
-        settings = {k: v for k, v in settings.items()
-                    if not any(k.startswith(to_remove) for to_remove in list_to_remove)}
-
-        _set_app_settings(app_id, settings)
