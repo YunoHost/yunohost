@@ -297,7 +297,10 @@ ynh_remove_fpm_config () {
     fi
 
     ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-    ynh_exec_warn_less ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
+    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
+    then
+        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
+    fi
 
     # If the php version used is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]

@@ -1004,10 +1004,20 @@ class RestoreManager():
             logger.error(m18n.n('backup_archive_app_not_found',
                                 app=app))
 
-        self.targets.set_wanted("apps",
-                                apps,
-                                self.info['apps'].keys(),
-                                unknown_error)
+        to_be_restored = self.targets.set_wanted("apps",
+                                                 apps,
+                                                 self.info['apps'].keys(),
+                                                 unknown_error)
+
+        # If all apps to restore are already installed, stop right here.
+        # Otherwise, if at least one app can be restored, we keep going on
+        # because those which can be restored will indeed be restored
+        already_installed = [app for app in to_be_restored if _is_installed(app)]
+        if already_installed != []:
+            if already_installed == to_be_restored:
+                raise YunohostError("restore_already_installed_apps", apps=', '.join(already_installed))
+            else:
+                logger.warning(m18n.n("restore_already_installed_apps", apps=', '.join(already_installed)))
 
     #
     # Archive mounting                                                      #
@@ -1301,19 +1311,19 @@ class RestoreManager():
                 else:
                     shutil.copy2(s, d)
 
-        # Start register change on system
-        related_to = [('app', app_instance_name)]
-        operation_logger = OperationLogger('backup_restore_app', related_to)
-        operation_logger.start()
-
-        logger.info(m18n.n("app_start_restore", app=app_instance_name))
-
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
             logger.error(m18n.n('restore_already_installed_app',
                                 app=app_instance_name))
             self.targets.set_result("apps", app_instance_name, "Error")
             return
+
+        # Start register change on system
+        related_to = [('app', app_instance_name)]
+        operation_logger = OperationLogger('backup_restore_app', related_to)
+        operation_logger.start()
+
+        logger.info(m18n.n("app_start_restore", app=app_instance_name))
 
         app_dir_in_archive = os.path.join(self.work_dir, 'apps', app_instance_name)
         app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
