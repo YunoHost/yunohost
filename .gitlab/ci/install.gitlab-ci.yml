@@ -1,0 +1,16 @@
+########################################
+# INSTALL DEB
+########################################
+
+upgrade:
+  stage: install
+  image: "after-install"
+  script:
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+
+install-postinstall:
+  stage: install
+  image: "before-install"
+  script:
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
