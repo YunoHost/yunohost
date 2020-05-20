@@ -20,6 +20,9 @@
       - job: build-moulinette
         artifacts: true
       - job: upgrade
+  artifacts:
+    reports:
+      junit: report.xml
 
 ########################################
 # TESTS
@@ -48,70 +51,70 @@ full-tests:
 root-tests:
   extends: .test-stage
   script:
-    - py.test tests
+    - py.test tests --junitxml=report.xml
 
 test-apps:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_apps.py
+    - py.test tests/test_apps.py --junitxml=report.xml
 
 test-appscatalog:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_appscatalog.py
+    - py.test tests/test_appscatalog.py --junitxml=report.xml
 
 test-appurl:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_appurl.py
+    - py.test tests/test_appurl.py --junitxml=report.xml
 
 test-apps-arguments-parsing:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_apps_arguments_parsing.py 
+    - py.test tests/test_apps_arguments_parsing.py --junitxml=report.xml
 
 test-backuprestore:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_backuprestore.py
+    - py.test tests/test_backuprestore.py --junitxml=report.xml
 
 test-changeurl:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_changeurl.py
+    - py.test tests/test_changeurl.py --junitxml=report.xml
 
 test-permission:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_permission.py
+    - py.test tests/test_permission.py --junitxml=report.xml
 
 test-settings:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_settings.py
+    - py.test tests/test_settings.py --junitxml=report.xml
 
 test-user-group:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_user-group.py
+    - py.test tests/test_user-group.py --junitxml=report.xml
     
 test-regenconf:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_regenconf.py
+    - py.test tests/test_regenconf.py --junitxml=report.xml
 
 test-service:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - py.test tests/test_service.py
+    - py.test tests/test_service.py --junitxml=report.xml
