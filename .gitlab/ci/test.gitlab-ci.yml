@@ -12,6 +12,14 @@
     paths: 
       - src/yunohost/tests/apps
     key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+  needs:
+      - job: build-yunohost
+        artifacts: true
+      - job: build-ssowat
+        artifacts: true
+      - job: build-moulinette
+        artifacts: true
+      - job: upgrade
 
 ########################################
 # TESTS
@@ -29,6 +37,13 @@ full-tests:
     - py.test tests
     - cd src/yunohost
     - py.test tests
+  needs:
+      - job: build-yunohost
+        artifacts: true
+      - job: build-ssowat
+        artifacts: true
+      - job: build-moulinette
+        artifacts: true
 
 root-tests:
   extends: .test-stage
