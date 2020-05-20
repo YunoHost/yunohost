@@ -353,8 +353,6 @@ ynh_remove_app_dependencies () {
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }
 
-#=================================================
-
 # Install packages from an extra repository properly.
 #
 # usage: ynh_install_extra_app_dependencies --repo="repo" --package="dep1 dep2" [--key=key_url] [--name=name]
