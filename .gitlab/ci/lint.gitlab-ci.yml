@@ -5,6 +5,7 @@
 lint:
   stage: lint
   image: "before-install"
+  needs: []
   allow_failure: true
   script:
     - tox -e lint
@@ -12,6 +13,7 @@ lint:
 invalidcode:
   stage: lint
   image: "before-install"
+  needs: []
   script:
     - tox -e invalidcode
 
