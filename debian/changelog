@@ -1,3 +1,12 @@
+yunohost (3.8.4.3) stable; urgency=low
+
+  - [fix] Workaround for the sury pinning issues when installing dependencies
+  - [i18n] Translations updated for Catalan, French, Occitan
+
+  Thanks to all contributors <3 ! (Aleks, clecle226, Kay0u, ppr, Quenti)
+
+ -- Kay0u <pierre@kayou.io>  Wed, 20 May 2020 18:41:49 +0000
+
 yunohost (3.8.4.2) testing; urgency=low
 
   - [enh] During failed upgrades: Only mention packages that couldn't be upgraded (26fcfed7)
