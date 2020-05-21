@@ -618,7 +618,7 @@
     "diagnosis_mail_queue_too_big": "Trop d’e-mails en attente dans la file d'attente ({nb_pending} e-mails)",
     "global_settings_setting_smtp_allow_ipv6": "Autoriser l'utilisation d’IPv6 pour recevoir et envoyer du courrier",
     "diagnosis_security_all_good": "Aucune vulnérabilité de sécurité critique n’a été trouvée.",
-    "diagnosis_display_tip": "Pour voir les problèmes détectés, vous pouvez accéder à la section Diagnostic du webadmin ou exécuter « yunohost diagnostic show --issues » à partir de la ligne de commande.",
+    "diagnosis_display_tip": "Pour voir les problèmes détectés, vous pouvez accéder à la section Diagnostic du webadmin ou exécuter « yunohost diagnosis show --issues » à partir de la ligne de commande.",
     "diagnosis_ip_global": "IP globale : <code>{global}</code>",
     "diagnosis_ip_local": "IP locale : <code>{local}</code>",
     "diagnosis_dns_point_to_doc": "Veuillez consulter la documentation sur <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a> si vous avez besoin d’aide pour configurer les enregistrements DNS.",
