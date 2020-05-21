@@ -57,7 +57,7 @@ def get_public_ip_from_remote_server(protocol=4):
         return None
 
     # If we are indeed connected in ipv4 or ipv6, we should find a default route
-    routes = check_output("ip -%s route" % protocol).split("\n")
+    routes = check_output("ip -%s route show table all" % protocol).split("\n")
     def is_default_route(r):
         # Typically the default route starts with "default"
         # But of course IPv6 is more complex ... e.g. on internet cube there's
