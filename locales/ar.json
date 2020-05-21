@@ -172,5 +172,7 @@
     "apps_already_up_to_date": "كافة التطبيقات مُحدّثة",
     "app_remove_after_failed_install": "جارٍ حذف التطبيق بعدما فشل تنصيبها…",
     "apps_catalog_updating": "جارٍ تحديث فهرس التطبيقات…",
-    "apps_catalog_update_success": "تم تحديث فهرس التطبيقات!"
+    "apps_catalog_update_success": "تم تحديث فهرس التطبيقات!",
+    "diagnosis_domain_expiration_error": "ستنتهي مدة صلاحية بعض النطاقات في القريب العاجل!",
+    "diagnosis_domain_expiration_warning": "ستنتهي مدة صلاحية بعض النطاقات قريبًا!"
 }
