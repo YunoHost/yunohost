@@ -19,6 +19,9 @@ def clone_test_app(request):
     else:
         os.system("cd %s/apps && git pull > /dev/null 2>&1" % cwd)
 
+def get_test_apps_dir():
+    cwd = os.path.split(os.path.realpath(__file__))[0]
+    return os.path.join(cwd, "apps")
 
 @contextmanager
 def message(mocker, key, **kwargs):

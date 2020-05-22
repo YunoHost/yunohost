@@ -1,142 +1,22 @@
 stages:
-  - postinstall
+  - build
+  - install
   - tests
   - lint
+  - doc
 
-########################################
-# POSTINSTALL
-########################################
+default:
+  tags:
+    - yunohost-ci
+  # All jobs are interruptible by default
+  interruptible: true
 
-postinstall:
-  image: before-postinstall
-  stage: postinstall
-  script:
-    - apt install --no-install-recommends -y $(cat debian/control | grep "^Depends" -A50 | grep "Recommends:" -B50 | grep "^ *," | grep -o -P "[\w\-]{3,}")
-    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
+variables:
+    YNH_BUILD_DIR: "ynh-build"
 
-########################################
-# TESTS
-########################################
-
-.test-stage:
-  image: after-postinstall
-  stage: tests
-  before_script:
-    - apt-get install python-pip -y
-    - mkdir -p .pip
-    - pip install -U pip
-    - hash -d pip
-    - pip --cache-dir=.pip install pytest pytest-sugar pytest-mock requests-mock mock
-    - export PYTEST_ADDOPTS="--color=yes"
-  cache:
-    paths: 
-      - .pip
-      - src/yunohost/tests/apps
-    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
-
-root-tests:
-  extends: .test-stage
-  script:
-    - py.test tests
-
-test-apps:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_apps.py
-
-test-appscatalog:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_appscatalog.py
-
-test-appurl:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_appurl.py
-
-test-apps-arguments-parsing:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_apps_arguments_parsing.py 
-
-test-backuprestore:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_backuprestore.py
-
-test-changeurl:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_changeurl.py
-
-test-permission:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_permission.py
-
-test-settings:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_settings.py
-
-test-user-group:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_user-group.py
-    
-test-regenconf:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_regenconf.py
-
-test-service:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - py.test tests/test_service.py
-
-########################################
-# LINTER
-########################################
-
-.lint-stage:
-  image: before-postinstall
-  stage: lint
-  before_script:
-    - apt-get install python-pip -y
-    - mkdir -p .pip
-    - pip install -U pip
-    - hash -d pip
-    - pip --cache-dir=.pip install tox
-  cache:
-    paths: 
-      - .pip
-      - .tox
-    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
-
-lint:
-  extends: .lint-stage
-  allow_failure: true
-  script:
-    - tox -e lint
-
-invalidcode:
-  extends: .lint-stage
-  script:
-    - tox -e invalidcode
-
-# Disabled, waiting for buster
-#format-check:
-#  extends: .lint-stage
-#  script:
-#    - black --check --diff
+include:
+  - local: .gitlab/ci/build.gitlab-ci.yml
+  - local: .gitlab/ci/install.gitlab-ci.yml
+  - local: .gitlab/ci/test.gitlab-ci.yml
+  - local: .gitlab/ci/lint.gitlab-ci.yml
+  - local: .gitlab/ci/doc.gitlab-ci.yml

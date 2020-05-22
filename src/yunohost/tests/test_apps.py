@@ -4,7 +4,7 @@ import pytest
 import shutil
 import requests
 
-from conftest import message, raiseYunohostError
+from conftest import message, raiseYunohostError, get_test_apps_dir
 
 from moulinette.utils.filesystem import mkdir
 
@@ -150,7 +150,7 @@ def app_is_exposed_on_http(domain, path, message_in_page):
 def install_legacy_app(domain, path, public=True):
 
     app_install(
-        "./tests/apps/legacy_app_ynh",
+        os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
         args="domain=%s&path=%s&is_public=%s" % (domain, path, 1 if public else 0),
         force=True,
     )
@@ -159,14 +159,14 @@ def install_legacy_app(domain, path, public=True):
 def install_full_domain_app(domain):
 
     app_install(
-        "./tests/apps/full_domain_app_ynh", args="domain=%s" % domain, force=True
+        os.path.join(get_test_apps_dir(), "full_domain_app_ynh"), args="domain=%s" % domain, force=True
     )
 
 
 def install_break_yo_system(domain, breakwhat):
 
     app_install(
-        "./tests/apps/break_yo_system_ynh",
+        os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
         args="domain=%s&breakwhat=%s" % (domain, breakwhat),
         force=True,
     )
@@ -376,7 +376,7 @@ def test_systemfuckedup_during_app_upgrade(mocker, secondary_domain):
 
     with pytest.raises(YunohostError):
         with message(mocker, "app_action_broke_system"):
-            app_upgrade("break_yo_system", file="./tests/apps/break_yo_system_ynh")
+            app_upgrade("break_yo_system", file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"))
 
 
 def test_failed_multiple_app_upgrade(mocker, secondary_domain):
@@ -389,7 +389,7 @@ def test_failed_multiple_app_upgrade(mocker, secondary_domain):
             app_upgrade(
                 ["break_yo_system", "legacy_app"],
                 file={
-                    "break_yo_system": "./tests/apps/break_yo_system_ynh",
-                    "legacy": "./tests/apps/legacy_app_ynh",
+                    "break_yo_system": os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+                    "legacy": os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
                 },
             )

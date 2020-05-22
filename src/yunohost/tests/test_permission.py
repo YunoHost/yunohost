@@ -1,7 +1,8 @@
 import requests
 import pytest
+import os
 
-from conftest import message, raiseYunohostError
+from conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map, _installed_apps
 from yunohost.user import user_list, user_create, user_delete, \
@@ -418,7 +419,7 @@ def test_permission_remove_url():
 
 
 def test_permission_app_install():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
@@ -446,7 +447,7 @@ def test_permission_app_install():
 
 
 def test_permission_app_remove():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&path=%s&is_public=0&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
     app_remove("permissions_app")
 
@@ -456,7 +457,7 @@ def test_permission_app_remove():
 
 
 def test_permission_app_change_url():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
@@ -475,7 +476,7 @@ def test_permission_app_change_url():
 
 def test_permission_app_propagation_on_ssowat():
 
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&path=%s&is_public=1&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
@@ -505,7 +506,7 @@ def test_permission_app_propagation_on_ssowat():
 
 def test_permission_legacy_app_propagation_on_ssowat():
 
-    app_install("./tests/apps/legacy_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
                 args="domain=%s&path=%s" % (maindomain, "/legacy"), force=True)
 
     # App is configured as public by default using the legacy unprotected_uri mechanics
