@@ -1,3 +1,18 @@
+yunohost (3.8.4.4) stable; urgency=low
+
+  - [fix] Crash when the services file is empty (85f1802)
+  - [fix] IPv6 detection when using wg-quick (#997)
+  - [fix] Use a .get() to avoid crash if key doesn't exist (1f1b2338)
+  - [enh] Don't display the hostname when calling journalctl, this takes horizontal space for nothing (2bcfb5a1)
+  - [fix] Add --quiet, otherwise getopts is confused by "-- Logs" at the beginning (bdbf1822)
+  - [mod] We don't need those color codes... and warnings are already warnings... (2a631fa2)
+  - [fix] psql_setup_db: Do not create a new password if the user already exists (#998)
+  - [enh] Add an exception if packaging format is not recognized (f0cc6798)
+
+  Thanks to all contributors <3 ! (Aleks, Julien Rabier, Kayou)
+
+ -- Kay0u <pierre@kayou.io>  Fri, 22 May 2020 19:26:05 +0000
+
 yunohost (3.8.4.3) stable; urgency=low
 
   - [fix] Workaround for the sury pinning issues when installing dependencies
