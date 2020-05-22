@@ -578,5 +578,7 @@
     "diagnosis_mail_ehlo_could_not_diagnose_details": "Error : {error}",
     "diagnosis_mail_queue_unavailable_details": "Error : {error}",
     "diagnosis_basesystem_hardware": "L’arquitectura del servidor es {virt} {arch}",
-    "diagnosis_basesystem_hardware_board": "Lo modèl de carta del servidor es {model}"
+    "diagnosis_basesystem_hardware_board": "Lo modèl de carta del servidor es {model}",
+    "backup_archive_corrupted": "Sembla que l’archiu de la salvagarda « {archive} » es corromput : {error}",
+    "diagnosis_domain_expires_in": "{domain} expiraà d’aquí {days} jorns."
 }

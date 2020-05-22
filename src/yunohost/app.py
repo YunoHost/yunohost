@@ -35,14 +35,13 @@ import subprocess
 import glob
 import urllib
 from collections import OrderedDict
-from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
 from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
-from yunohost.service import service_log, service_status, _run_service_command
+from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
@@ -2323,6 +2322,11 @@ def _encode_string(value):
 
 def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
+
+    packaging_format = int(manifest.get('packaging_format', 0))
+    if packaging_format not in [0, 1]:
+        raise YunohostError("app_packaging_format_not_supported")
+
     requirements = manifest.get('requirements', dict())
 
     if not requirements:
@@ -2795,21 +2799,6 @@ def is_true(arg):
     else:
         logger.debug('arg should be a boolean or a string, got %r', arg)
         return True if arg else False
-
-
-def random_password(length=8):
-    """
-    Generate a random string
-
-    Keyword arguments:
-        length -- The string length to generate
-
-    """
-    import string
-    import random
-
-    char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
-    return ''.join([random.SystemRandom().choice(char_set) for x in range(length)])
 
 
 def unstable_apps():
