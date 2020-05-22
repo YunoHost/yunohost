@@ -145,7 +145,7 @@ ynh_systemd_action() {
     if ! systemctl $action $service_name
     then
         # Show syslog for this service
-        ynh_exec_err journalctl --no-hostname --no-pager --lines=$length --unit=$service_name
+        ynh_exec_err journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service_name
         # If a log is specified for this service, show also the content of this log
         if [ -e "$log_path" ]
         then
@@ -183,7 +183,7 @@ ynh_systemd_action() {
         then
             ynh_print_warn --message="The service $service_name didn't fully executed the action ${action} before the timeout."
             ynh_print_warn --message="Please find here an extract of the end of the log of the service $service_name:"
-            ynh_exec_warn journalctl --no-hostname --no-pager --lines=$length --unit=$service_name
+            ynh_exec_warn journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service_name
             if [ -e "$log_path" ]
             then
                 ynh_print_warn --message="\-\-\-"
