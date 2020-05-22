@@ -229,12 +229,14 @@ ynh_psql_setup_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local new_db_pwd=$(ynh_string_random) # Generate a random password
-    # If $db_pwd is not given, use new_db_pwd instead for db_pwd
-    db_pwd="${db_pwd:-$new_db_pwd}"
-
     if ! ynh_psql_user_exists --user=$db_user; then
+        local new_db_pwd=$(ynh_string_random) # Generate a random password
+        # If $db_pwd is not given, use new_db_pwd instead for db_pwd
+        db_pwd="${db_pwd:-$new_db_pwd}"
+        
         ynh_psql_create_user "$db_user" "$db_pwd"
+    elif [ -z $db_pwd ]; then
+        ynh_die --message="The user $db_user exists, please provide his password"
     fi
 
     ynh_psql_create_db "$db_name" "$db_user"                     # Create the database
