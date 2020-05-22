@@ -2322,6 +2322,11 @@ def _encode_string(value):
 
 def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
+
+    packaging_format = int(manifest.get('packaging_format', 0))
+    if packaging_format not in [0, 1]:
+        raise YunohostError("app_packaging_format_not_supported")
+
     requirements = manifest.get('requirements', dict())
 
     if not requirements:

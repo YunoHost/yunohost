@@ -48,6 +48,7 @@
     "app_upgrade_script_failed": "An error occurred inside the app upgrade script",
     "app_upgrade_some_app_failed": "Some apps could not be upgraded",
     "app_upgraded": "{app:s} upgraded",
+    "app_packaging_format_not_supported": "This app cannot be installed because its packaging format is not supported by your Yunohost version. You should probably consider upgrading your system.",
     "apps_already_up_to_date": "All apps are already up-to-date",
     "apps_catalog_init_success": "App catalog system initialized!",
     "apps_catalog_updating": "Updating application catalog…",
