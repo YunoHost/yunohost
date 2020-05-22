@@ -26,10 +26,9 @@ do_pre_regen() {
   ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
   ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
-  domain_list=$(yunohost domain list --output-as plain --quiet)
 
   # add domain conf files
-  for domain in $domain_list; do
+  for domain in $YNH_DOMAINS; do
     cat domain.tpl \
       | sed "s/{{ domain }}/${domain}/g" \
       | sed "s/{{ ip }}/${ipv4}/g" \
@@ -42,7 +41,7 @@ do_pre_regen() {
   conf_files=$(ls -1 /etc/dnsmasq.d \
                  | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
   for domain in $conf_files; do
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || touch "${dnsmasq_dir}/${domain}"
   done
 }
@@ -64,6 +63,11 @@ do_post_regen() {
       grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >> /etc/dhcp/dhclient.conf
       systemctl restart resolvconf
   fi
+
+  # Some stupid things like rabbitmq-server used by onlyoffice won't work if
+  # the *short* hostname doesn't exists in /etc/hosts -_-
+  short_hostname=$(hostname -s)
+  grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
 
   [[ -z "$regen_conf_files" ]] \
     || service dnsmasq restart

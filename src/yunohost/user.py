@@ -467,9 +467,14 @@ def user_info(username):
         elif username not in user_permission_list(full=True)["permissions"]["mail.main"]["corresponding_users"]:
             logger.warning(m18n.n('mailbox_disabled', user=username))
         else:
-            cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
-            cmd_result = subprocess.check_output(cmd, stderr=subprocess.STDOUT,
-                                                 shell=True)
+            try:
+                cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
+                cmd_result = subprocess.check_output(cmd, stderr=subprocess.STDOUT,
+                                                     shell=True)
+            except Exception as e:
+                cmd_result = ""
+                logger.warning("Failed to fetch quota info ... : %s " % str(e))
+
             # Exemple of return value for cmd:
             # """Quota name=User quota Type=STORAGE Value=0 Limit=- %=0
             # Quota name=User quota Type=MESSAGE Value=0 Limit=- %=0"""

@@ -35,7 +35,10 @@ ynh_exit_properly () {
         ynh_clean_setup	# Call the function to do specific cleaning for the app.
     fi
 
-    ynh_die	# Exit with error status
+    # Exit with error status
+    # We don't call ynh_die basically to avoid unecessary 10-ish
+    # debug lines about parsing args and stuff just to exit 1..
+    exit 1
 }
 
 # Exits if an error occurs during the execution of the script.
@@ -141,7 +144,8 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
-        local out=`wget --no-verbose --output-document=$src_filename $src_url 2>&1` || ynh_print_err --message="$out"
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        local out=`wget --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1` || ynh_print_err --message="$out"
     fi
 
     # Check the control sum

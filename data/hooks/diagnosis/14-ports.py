@@ -87,7 +87,7 @@ class PortsDiagnoser(Diagnoser):
                 # If any AAAA record is set, IPv6 is important...
                 def ipv6_is_important():
                     dnsrecords = Diagnoser.get_cached_report("dnsrecords") or {}
-                    return any(record["data"]["AAAA:@"] in ["OK", "WRONG"] for record in dnsrecords.get("items", []))
+                    return any(record["data"].get("AAAA:@") in ["OK", "WRONG"] for record in dnsrecords.get("items", []))
 
                 if failed == 4 or ipv6_is_important():
                     yield dict(meta={"port": port},

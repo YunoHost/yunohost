@@ -323,8 +323,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
 
     # Define output loggers and call command
     loggers = (
-        lambda l: logger.debug(l.rstrip()+"\r"),
-        lambda l: logger.warning(l.rstrip()),
+        lambda l: logger.debug(l.rstrip() + "\r"),
+        lambda l: logger.warning(l.rstrip()) if "invalid value for trace file descriptor" not in l.rstrip() else logger.debug(l.rstrip()),
         lambda l: logger.info(l.rstrip())
     )
 

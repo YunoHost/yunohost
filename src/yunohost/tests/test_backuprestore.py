@@ -12,6 +12,7 @@ from yunohost.domain import _get_maindomain, domain_list, domain_add, domain_rem
 from yunohost.user import user_create, user_list, user_delete
 from yunohost.permission import user_permission_list
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
+from yunohost.hook import CUSTOM_HOOK_FOLDER
 
 # Get main domain
 maindomain = ""
@@ -486,10 +487,9 @@ def test_restore_app_already_installed(mocker):
 
     assert _is_installed("wordpress")
 
-    with message(mocker, 'restore_already_installed_app', app="wordpress"):
-        with raiseYunohostError(mocker, 'restore_nothings_done'):
-            backup_restore(system=None, name=backup_list()["archives"][0],
-                           apps=["wordpress"])
+    with raiseYunohostError(mocker, 'restore_already_installed_apps'):
+        backup_restore(system=None, name=backup_list()["archives"][0],
+                       apps=["wordpress"])
 
     assert _is_installed("wordpress")
 
@@ -603,10 +603,30 @@ def test_restore_archive_with_bad_archive(mocker):
     clean_tmp_backup_directory()
 
 
+def test_restore_archive_with_custom_hook(mocker):
+
+    custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
+    os.system("touch %s/99-yolo" % custom_restore_hook_folder)
+
+    # Backup with custom hook system
+    with message(mocker, "backup_created"):
+        backup_create(system=[], apps=None)
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    # Restore system with custom hook
+    with message(mocker, "restore_complete"):
+        backup_restore(name=backup_list()["archives"][0],
+                        system=[],
+                        apps=None,
+                        force=True)
+
+    os.system("rm %s/99-yolo" % custom_restore_hook_folder)
+
+
 def test_backup_binds_are_readonly(mocker, monkeypatch):
 
-    def custom_mount_and_backup(self, backup_manager):
-        self.manager = backup_manager
+    def custom_mount_and_backup(self):
         self._organize_files()
 
         confssh = os.path.join(self.work_dir, "conf/ssh")

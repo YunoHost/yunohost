@@ -13,8 +13,8 @@ Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 3.7), ssowat (>= 3.7)
  , python-psutil, python-requests, python-dnspython, python-openssl
- , python-apt, python-miniupnpc, python-dbus, python-jinja2
- , python-toml
+ , python-miniupnpc, python-dbus, python-jinja2
+ , python-toml, python-packaging
  , apt, apt-transport-https
  , nginx, nginx-extras (>=1.6.2)
  , php-fpm, php-ldap, php-intl
@@ -27,9 +27,9 @@ Depends: ${python:Depends}, ${misc:Depends}
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
  , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
- , metronome
+ , metronome (>=3.14.0)
  , git, curl, wget, cron, unzip, jq
- , lsb-release, haveged, fake-hwclock, equivs, lsof
+ , lsb-release, haveged, fake-hwclock, equivs, lsof, whois, python-publicsuffix
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog

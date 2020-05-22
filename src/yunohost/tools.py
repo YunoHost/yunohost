@@ -564,7 +564,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
         dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
         dist_upgrade += " apt-get"
-        dist_upgrade += " --fix-broken --show-upgraded --assume-yes"
+        dist_upgrade += " --fix-broken --show-upgraded --assume-yes --quiet -o=Dpkg::Use-Pty=0"
         for conf_flag in ["old", "miss", "def"]:
             dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
         dist_upgrade += " dist-upgrade"
@@ -598,8 +598,10 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
-                logger.warning(m18n.n('tools_upgrade_regular_packages_failed'),
-                               packages_list=', '.join(noncritical_packages_upgradable))
+                upgradables = list(_list_upgradable_apt_packages())
+                noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
+                logger.warning(m18n.n('tools_upgrade_regular_packages_failed',
+                                      packages_list=', '.join(noncritical_packages_upgradable)))
                 operation_logger.error(m18n.n('packages_upgrade_failed'))
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
 

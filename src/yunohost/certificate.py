@@ -29,7 +29,6 @@ import pwd
 import grp
 import smtplib
 import subprocess
-import dns.resolver
 import glob
 
 from datetime import datetime
@@ -42,6 +41,7 @@ from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from yunohost.utils.error import YunohostError
 from yunohost.utils.network import get_public_ip
 
+from yunohost.diagnosis import Diagnoser
 from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
@@ -67,18 +67,6 @@ STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
 INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
-
-DNS_RESOLVERS = [
-    # FFDN DNS resolvers
-    # See https://www.ffdn.org/wiki/doku.php?id=formations:dns
-    "80.67.169.12",    # FDN
-    "80.67.169.40",    #
-    "89.234.141.66",   # ARN
-    "141.255.128.100",  # Aquilenet
-    "141.255.128.101",
-    "89.234.186.18",   # Grifon
-    "80.67.188.188"   # LDN
-]
 
 #
 # Front-end stuff                                                           #
@@ -115,9 +103,15 @@ def certificate_status(domain_list, full=False):
         if not full:
             del status["subject"]
             del status["CA_name"]
-            del status["ACME_eligible"]
             status["CA_type"] = status["CA_type"]["verbose"]
             status["summary"] = status["summary"]["verbose"]
+
+        if full:
+            try:
+                _check_domain_is_ready_for_ACME(domain)
+                status["ACME_eligible"] = True
+            except:
+                status["ACME_eligible"] = False
 
         del status["domain"]
         certificates[domain] = status
@@ -272,30 +266,36 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
     # Actual install steps
     for domain in domain_list:
 
-        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
-                                           args={'force': force, 'no_checks': no_checks,
-                                                 'staging': staging})
+        if not no_checks:
+            try:
+                _check_domain_is_ready_for_ACME(domain)
+            except Exception as e:
+                logger.error(e)
+                continue
+
         logger.info(
             "Now attempting install of certificate for domain %s!", domain)
 
+        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
+                                           args={'force': force, 'no_checks': no_checks,
+                                                 'staging': staging})
+        operation_logger.start()
+
         try:
-            if not no_checks:
-                _check_domain_is_ready_for_ACME(domain)
-
-            operation_logger.start()
-
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
+        except Exception as e:
+            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
+            logger.error(msg)
+            operation_logger.error(msg)
+            if no_checks:
+                logger.error("Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s." % domain)
+        else:
             _install_cron(no_checks=no_checks)
 
             logger.success(
                 m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
-        except Exception as e:
-            _display_debug_information(domain)
-            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
-            logger.error(msg)
-            operation_logger.error(msg)
 
 
 def certificate_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
@@ -366,32 +366,35 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
     # Actual renew steps
     for domain in domain_list:
 
-        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
-                                           args={'force': force, 'no_checks': no_checks,
-                                                 'staging': staging, 'email': email})
+        if not no_checks:
+            try:
+                _check_domain_is_ready_for_ACME(domain)
+            except:
+                msg = "Certificate renewing for %s failed !" % (domain)
+                logger.error(msg)
+                if email:
+                    logger.error("Sending email with details to root ...")
+                    _email_renewing_failed(domain, msg)
+                continue
 
         logger.info(
             "Now attempting renewing of certificate for domain %s !", domain)
 
+        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
+                                           args={'force': force, 'no_checks': no_checks,
+                                                 'staging': staging, 'email': email})
+        operation_logger.start()
+
         try:
-            if not no_checks:
-                _check_domain_is_ready_for_ACME(domain)
-
-            operation_logger.start()
-
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
-
-            logger.success(
-                m18n.n("certmanager_cert_renew_success", domain=domain))
-
-            operation_logger.success()
-
         except Exception as e:
             import traceback
             from StringIO import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
             msg = "Certificate renewing for %s failed !" % (domain)
+            if no_checks:
+                msg += "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s." % domain
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -399,7 +402,11 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
 
             if email:
                 logger.error("Sending email with details to root ...")
-                _email_renewing_failed(domain, e, stack.getvalue())
+                _email_renewing_failed(domain, msg + "\n" + e, stack.getvalue())
+        else:
+            logger.success(
+                m18n.n("certmanager_cert_renew_success", domain=domain))
+            operation_logger.success()
 
 #
 # Back-end stuff                                                            #
@@ -431,7 +438,7 @@ def _install_cron(no_checks=False):
     _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
-def _email_renewing_failed(domain, exception_message, stack):
+def _email_renewing_failed(domain, exception_message, stack=""):
     from_ = "certmanager@%s (Certificate Manager)" % domain
     to_ = "root"
     subject_ = "Certificate renewing attempt for %s failed!" % domain
@@ -526,7 +533,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
             raise YunohostError('certmanager_hit_rate_limit', domain=domain)
         else:
             logger.error(str(e))
-            _display_debug_information(domain)
             raise YunohostError('certmanager_cert_signing_failed')
 
     except Exception as e:
@@ -596,10 +602,10 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # For "parent" domains, include xmpp-upload subdomain in subject alternate names
     if domain in domain_list(exclude_subdomains=True)["domains"]:
         subdomain = "xmpp-upload." + domain
-        try:
-            _dns_ip_match_public_ip(get_public_ip(), subdomain)
+        xmpp_records = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "xmpp"}).get("data") or {}
+        if xmpp_records.get("CNAME:xmpp-upload") == "OK":
             csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
-        except YunohostError:
+        else:
             logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
 
     # Set the key
@@ -700,12 +706,6 @@ def _get_status(domain):
             "verbose": "Unknown?",
         }
 
-    try:
-        _check_domain_is_ready_for_ACME(domain)
-        ACME_eligible = True
-    except:
-        ACME_eligible = False
-
     return {
         "domain": domain,
         "subject": cert_subject,
@@ -713,7 +713,6 @@ def _get_status(domain):
         "CA_type": CA_type,
         "validity": days_remaining,
         "summary": status_summary,
-        "ACME_eligible": ACME_eligible
     }
 
 #
@@ -790,68 +789,20 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-    public_ip = get_public_ip()
+
+    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}, warn_if_no_cache=False) or {}
+    httpreachable = Diagnoser.get_cached_report("web", item={"domain": domain}, warn_if_no_cache=False) or {}
+
+    if not dnsrecords or not httpreachable:
+        raise YunohostError('certmanager_domain_not_diagnosed_yet', domain=domain)
 
     # Check if IP from DNS matches public IP
-    if not _dns_ip_match_public_ip(public_ip, domain):
+    if not dnsrecords.get("status") in ["SUCCESS", "WARNING"]:  # Warning is for missing IPv6 record which ain't critical for ACME
         raise YunohostError('certmanager_domain_dns_ip_differs_from_public_ip', domain=domain)
 
     # Check if domain seems to be accessible through HTTP?
-    if not _domain_is_accessible_through_HTTP(public_ip, domain):
+    if not httpreachable.get("status") == "SUCCESS":
         raise YunohostError('certmanager_domain_http_not_working', domain=domain)
-
-
-def _get_dns_ip(domain):
-    try:
-        resolver = dns.resolver.Resolver()
-        resolver.nameservers = DNS_RESOLVERS
-        answers = resolver.query(domain, "A")
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-        raise YunohostError('certmanager_error_no_A_record', domain=domain)
-
-    return str(answers[0])
-
-
-def _dns_ip_match_public_ip(public_ip, domain):
-    return _get_dns_ip(domain) == public_ip
-
-
-def _domain_is_accessible_through_HTTP(ip, domain):
-    import requests  # lazy loading this module for performance reasons
-    try:
-        requests.head("http://" + ip, headers={"Host": domain}, timeout=10)
-    except requests.exceptions.Timeout as e:
-        logger.warning(m18n.n('certmanager_http_check_timeout', domain=domain, ip=ip))
-        return False
-    except Exception as e:
-        logger.debug("Couldn't reach domain '%s' by requesting this ip '%s' because: %s" % (domain, ip, e))
-        return False
-
-    return True
-
-
-def _get_local_dns_ip(domain):
-    try:
-        resolver = dns.resolver.Resolver()
-        answers = resolver.query(domain, "A")
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
-        logger.warning("Failed to resolved domain '%s' locally", domain)
-        return None
-
-    return str(answers[0])
-
-
-def _display_debug_information(domain):
-    dns_ip = _get_dns_ip(domain)
-    public_ip = get_public_ip()
-    local_dns_ip = _get_local_dns_ip(domain)
-
-    logger.warning("""\
-Debug information:
- - domain ip from DNS        %s
- - domain ip from local DNS  %s
- - public ip of the server   %s
-""", dns_ip, local_dns_ip, public_ip)
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
