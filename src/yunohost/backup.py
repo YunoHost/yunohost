@@ -43,7 +43,13 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_legacy_php_versions, dump_app_log_extract_for_debugging, _patch_legacy_helpers, LEGACY_PHP_VERSION_REPLACEMENTS
+    app_info, _is_installed,
+    _parse_app_instance_name,
+    dump_app_log_extract_for_debugging,
+    _patch_legacy_helpers,
+    _patch_legacy_php_versions,
+    _patch_legacy_php_versions_in_settings,
+    LEGACY_PHP_VERSION_REPLACEMENTS
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -1329,7 +1335,7 @@ class RestoreManager():
 
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_legacy_php_versions(app_settings_in_archive)
-        _path_legacy_php_versions_in_settings(app_settings_in_archive)
+        _patch_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, '_common.sh')

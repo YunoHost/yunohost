@@ -4,7 +4,7 @@ from shutil import copy2
 
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import _is_installed, _get_app_settings, _set_app_settings, _path_legacy_php_versions_in_settings
+from yunohost.app import _is_installed, _get_app_settings, _set_app_settings, _patch_legacy_php_versions_in_settings
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command
 
@@ -53,7 +53,7 @@ class MyMigration(Migration):
 
             app_id = os.path.basename(f)[:-len(".conf")]
             if _is_installed(app_id):
-                _path_legacy_php_versions_in_settings("/etc/yunohost/apps/%s/" % app_id)
+                _patch_legacy_php_versions_in_settings("/etc/yunohost/apps/%s/" % app_id)
 
             nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/%s.conf" % app_id)
             for f in nginx_conf_files:
