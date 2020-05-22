@@ -98,7 +98,7 @@ with open('services.yml') as f:
     new_services = yaml.load(f)
 
 with open('/etc/yunohost/services.yml') as f:
-    services = yaml.load(f)
+    services = yaml.load(f) or {}
 
 updated = False
 

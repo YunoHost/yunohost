@@ -586,7 +586,7 @@ def _get_services():
     """
     try:
         with open('/etc/yunohost/services.yml', 'r') as f:
-            services = yaml.load(f)
+            services = yaml.load(f) or {}
     except:
         return {}
 
