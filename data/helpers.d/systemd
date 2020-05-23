@@ -58,7 +58,7 @@ ynh_add_systemd_config () {
     ynh_store_file_checksum --file="$finalsystemdconf"
 
     chown root: "$finalsystemdconf"
-    systemctl enable $service
+    systemctl enable $service --quiet
     systemctl daemon-reload
 }
 
@@ -81,7 +81,7 @@ ynh_remove_systemd_config () {
     if [ -e "$finalsystemdconf" ]
     then
         ynh_systemd_action --service_name=$service --action=stop
-        systemctl disable $service
+        systemctl disable $service --quiet
         ynh_secure_remove --file="$finalsystemdconf"
         systemctl daemon-reload
     fi

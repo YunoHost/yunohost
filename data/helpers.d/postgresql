@@ -295,7 +295,7 @@ ynh_psql_test_if_first_run() {
     # postgresql could be flagged as active even though the cluster is in
     # failed state because of how the service is configured..)
     systemctl is-active postgresql@$PSQL_VERSION-main -q || ynh_systemd_action --service_name=postgresql --action=restart
-    systemctl is-enabled postgresql -q || systemctl enable postgresql
+    systemctl is-enabled postgresql -q || systemctl enable postgresql --quiet
 
     # If this is the very first time, we define the root password
     # and configure a few things
