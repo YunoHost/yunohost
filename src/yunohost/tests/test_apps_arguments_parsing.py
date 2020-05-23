@@ -4,6 +4,7 @@ from mock import patch
 
 from moulinette import msignals
 
+from yunohost import domain
 from yunohost.app import _parse_args_in_yunohost_format
 from yunohost.utils.error import YunohostError
 
@@ -697,3 +698,119 @@ def test_parse_args_in_yunohost_format_boolean_input_test_ask_with_default():
     with patch.object(msignals, "prompt", return_value=1) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with("%s [yes | no] (default: yes)" % ask_text, False)
+
+
+def test_parse_args_in_yunohost_format_domain_empty():
+    questions = [{"name": "some_domain", "type": "domain",}]
+    answers = {}
+
+    with patch.object(
+        domain, "_get_maindomain", return_value="my_main_domain.com"
+    ), patch.object(
+        domain, "domain_list", return_value={"domains": ["my_main_domain.com"]}
+    ):
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_domain():
+    main_domain = "my_main_domain.com"
+    domains = [main_domain]
+    questions = [{"name": "some_domain", "type": "domain",}]
+
+    answers = {"some_domain": main_domain}
+    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_domain_two_domains():
+    main_domain = "my_main_domain.com"
+    other_domain = "some_other_domain.tld"
+    domains = [main_domain, other_domain]
+
+    questions = [{"name": "some_domain", "type": "domain",}]
+    answers = {"some_domain": other_domain}
+    expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    answers = {"some_domain": main_domain}
+    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_domain_two_domains_wrong_answer():
+    main_domain = "my_main_domain.com"
+    other_domain = "some_other_domain.tld"
+    domains = [main_domain, other_domain]
+
+    questions = [{"name": "some_domain", "type": "domain",}]
+    answers = {"some_domain": "doesnt_exist.pouet"}
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format(answers, questions)
+
+
+@pytest.mark.skip  # XXX should work
+def test_parse_args_in_yunohost_format_domain_two_domains_default_no_ask():
+    main_domain = "my_main_domain.com"
+    other_domain = "some_other_domain.tld"
+    domains = [main_domain, other_domain]
+
+    questions = [{"name": "some_domain", "type": "domain",}]
+    answers = {}
+    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_domain_two_domains_default():
+    main_domain = "my_main_domain.com"
+    other_domain = "some_other_domain.tld"
+    domains = [main_domain, other_domain]
+
+    questions = [{"name": "some_domain", "type": "domain", "ask": "choose a domain"}]
+    answers = {}
+    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_domain_two_domains_default_input():
+    main_domain = "my_main_domain.com"
+    other_domain = "some_other_domain.tld"
+    domains = [main_domain, other_domain]
+
+    questions = [{"name": "some_domain", "type": "domain", "ask": "choose a domain"}]
+    answers = {}
+
+    with patch.object(
+        domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+        expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
+        with patch.object(msignals, "prompt", return_value=main_domain):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+        expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
+        with patch.object(msignals, "prompt", return_value=other_domain):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
