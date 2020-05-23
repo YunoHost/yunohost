@@ -713,11 +713,13 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = [value[0] for value in args_odict.values()]
-    args_list.append(app_instance_name)
 
     # Validate domain / path availability for webapps
     _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
+
+    # build arg list tq
+    args_list = [value[0] for value in args_odict.values()]
+    args_list.append(app_instance_name)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
