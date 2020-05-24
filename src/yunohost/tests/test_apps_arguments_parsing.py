@@ -4,7 +4,7 @@ from mock import patch
 
 from moulinette import msignals
 
-from yunohost import domain
+from yunohost import domain, user
 from yunohost.app import _parse_args_in_yunohost_format
 from yunohost.utils.error import YunohostError
 
@@ -813,4 +813,177 @@ def test_parse_args_in_yunohost_format_domain_two_domains_default_input():
 
         expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
         with patch.object(msignals, "prompt", return_value=other_domain):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_user_empty():
+    users = {
+        "some_user": {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "p@ynh.local",
+            "fullname": "the first name the last name",
+        }
+    }
+
+    questions = [{"name": "some_user", "type": "user",}]
+    answers = {}
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_user():
+    username = "some_user"
+    users = {
+        username: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "p@ynh.local",
+            "fullname": "the first name the last name",
+        }
+    }
+
+    questions = [{"name": "some_user", "type": "user",}]
+    answers = {"some_user": username}
+
+    expected_result = OrderedDict({"some_user": (username, "user")})
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_user_two_users():
+    username = "some_user"
+    other_user = "some_other_user"
+    users = {
+        username: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "p@ynh.local",
+            "fullname": "the first name the last name",
+        },
+        other_user: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "z@ynh.local",
+            "fullname": "john doe",
+        },
+    }
+
+    questions = [{"name": "some_user", "type": "user",}]
+    answers = {"some_user": other_user}
+    expected_result = OrderedDict({"some_user": (other_user, "user")})
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    answers = {"some_user": username}
+    expected_result = OrderedDict({"some_user": (username, "user")})
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
+    username = "my_username.com"
+    other_user = "some_other_user"
+    users = {
+        username: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "p@ynh.local",
+            "fullname": "the first name the last name",
+        },
+        other_user: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "z@ynh.local",
+            "fullname": "john doe",
+        },
+    }
+
+    questions = [{"name": "some_user", "type": "user",}]
+    answers = {"some_user": "doesnt_exist.pouet"}
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_user_two_users_no_default():
+    username = "my_username.com"
+    other_user = "some_other_user.tld"
+    users = {
+        username: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "p@ynh.local",
+            "fullname": "the first name the last name",
+        },
+        other_user: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "z@ynh.local",
+            "fullname": "john doe",
+        },
+    }
+
+    questions = [{"name": "some_user", "type": "user", "ask": "choose a user"}]
+    answers = {}
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_user_two_users_default_input():
+    username = "my_username.com"
+    other_user = "some_other_user.tld"
+    users = {
+        username: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "p@ynh.local",
+            "fullname": "the first name the last name",
+        },
+        other_user: {
+            "ssh_allowed": False,
+            "username": "some_user",
+            "shell": "/bin/false",
+            "mailbox-quota": "0",
+            "mail": "z@ynh.local",
+            "fullname": "john doe",
+        },
+    }
+
+    questions = [{"name": "some_user", "type": "user", "ask": "choose a user"}]
+    answers = {}
+
+    with patch.object(user, "user_list", return_value={"users": users}):
+        expected_result = OrderedDict({"some_user": (username, "user")})
+        with patch.object(msignals, "prompt", return_value=username):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+        expected_result = OrderedDict({"some_user": (other_user, "user")})
+        with patch.object(msignals, "prompt", return_value=other_user):
             assert _parse_args_in_yunohost_format(answers, questions) == expected_result
