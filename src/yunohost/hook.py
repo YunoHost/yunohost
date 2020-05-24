@@ -432,7 +432,7 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
                     returncontent[key] = value
 
         else:
-            raise YunohostError("Excepted value for return_format is either 'json' or 'plain_dict', got '%s'" % return_format)
+            raise YunohostError("Expected value for return_format is either 'json' or 'plain_dict', got '%s'" % return_format)
     finally:
         stdreturndir = os.path.split(stdreturn)[0]
         os.remove(stdreturn)
