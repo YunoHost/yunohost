@@ -2886,7 +2886,7 @@ def _patch_legacy_php_versions(app_folder):
 
 def _patch_legacy_php_versions_in_settings(app_folder):
 
-    settings = read_yaml(os.path.join(app_folder, '/settings.yml'))
+    settings = read_yaml(os.path.join(app_folder, 'settings.yml'))
 
     if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
         settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
