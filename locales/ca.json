@@ -127,7 +127,7 @@
     "confirm_app_install_thirdparty": "PERILL! Aquesta aplicació no es part del catàleg d'aplicacions de YunoHost. La instal·lació d'aplicacions de terceres parts pot comprometre la integritat i seguretat del seu sistema. No hauríeu d'instal·lar-ne a no ser que sapigueu el que feu. No obtindreu CAP AJUDA si l'aplicació no funciona o trenca el sistema… Si accepteu el risc, escriviu «{answers:s}»",
     "custom_app_url_required": "Heu de especificar una URL per actualitzar la vostra aplicació personalitzada {app:s}",
     "admin_password_too_long": "Trieu una contrasenya de menys de 127 caràcters",
-    "dpkg_is_broken": "No es pot fer això en aquest instant perquè dpkg/APT (els gestors de paquets del sistema) sembla estar mal configurat… Podeu intentar solucionar-ho connectant-vos per SSH i executant «sudo dpkg --configure -a».",
+    "dpkg_is_broken": "No es pot fer això en aquest instant perquè dpkg/APT (els gestors de paquets del sistema) sembla estar mal configurat… Podeu intentar solucionar-ho connectant-vos per SSH i executant «sudo apt install --fix-broken» i/o «sudo dpkg --configure -a».",
     "domain_cannot_remove_main": "No es pot eliminar «{domain:s}» ja que és el domini principal, primer s'ha d'establir un nou domini principal utilitzant «yunohost domain main-domain -n <un-altre-domini>»; aquí hi ha una llista dels possibles dominis: {other_domains:s}",
     "domain_cert_gen_failed": "No s'ha pogut generar el certificat",
     "domain_created": "S'ha creat el domini",
@@ -390,7 +390,7 @@
     "ssowat_conf_updated": "S'ha actualitzat la configuració SSOwat",
     "system_upgraded": "S'ha actualitzat el sistema",
     "system_username_exists": "El nom d'usuari ja existeix en la llista d'usuaris de sistema",
-    "this_action_broke_dpkg": "Aquesta acció a trencat dpkg/APT (els gestors de paquets del sistema)… Podeu intentar resoldre el problema connectant-vos amb SSH i executant «sudo dpkg --configure -a».",
+    "this_action_broke_dpkg": "Aquesta acció a trencat dpkg/APT (els gestors de paquets del sistema)… Podeu intentar resoldre el problema connectant-vos amb SSH i executant «sudo apt install --fix-broken» i/o «sudo dpkg --configure -a».",
     "tools_upgrade_at_least_one": "Especifiqueu «--apps», o «--system»",
     "tools_upgrade_cant_both": "No es poden actualitzar tant el sistema com les aplicacions al mateix temps",
     "tools_upgrade_cant_hold_critical_packages": "No es poden mantenir els paquets crítics…",
@@ -648,5 +648,6 @@
     "diagnosis_domain_expiration_warning": "Alguns dominis expiraran properament!",
     "diagnosis_domain_expiration_error": "Alguns dominis expiraran EN BREUS!",
     "diagnosis_domain_expires_in": "{domain} expirarà en {days} dies.",
-    "diagnosis_swap_tip": "Vigileu i tingueu en compte que els servidor està allotjant memòria d'intercanvi en una targeta SD o en l'emmagatzematge SSD, això pot reduir dràsticament l'esperança de vida del dispositiu."
+    "diagnosis_swap_tip": "Vigileu i tingueu en compte que els servidor està allotjant memòria d'intercanvi en una targeta SD o en l'emmagatzematge SSD, això pot reduir dràsticament l'esperança de vida del dispositiu.",
+    "restore_already_installed_apps": "No s'han pogut restaurar les següents aplicacions perquè ja estan instal·lades: {apps}"
 }
