@@ -1867,6 +1867,9 @@ def _get_app_settings(app_id):
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
             settings = yaml.load(f)
+        # If label contains unicode char, this may later trigger issues when building strings...
+        # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
+        settings = {k:_encode_string(v) for k,v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
