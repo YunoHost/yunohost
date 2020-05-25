@@ -451,6 +451,7 @@ def app_upgrade(app=[], url=None, file=None):
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
+    from yunohost.regenconf import manually_modified_files
 
     apps = app
     # If no app is specified, upgrade all apps
@@ -513,6 +514,9 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
 
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_before_install = manually_modified_files()
+
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
@@ -562,6 +566,12 @@ def app_upgrade(app=[], url=None, file=None):
                 broke_the_system = True
                 logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+            # We'll check that the app didn't brutally edit some system configuration
+            manually_modified_files_after_install = manually_modified_files()
+            manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+            if manually_modified_files_by_app:
+                logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
@@ -626,6 +636,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
     from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
+    from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -732,9 +743,10 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-
-    # Start register change on system
     operation_logger.extra.update({'env': env_dict})
+
+    # We'll check that the app didn't brutally edit some system configuration
+    manually_modified_files_before_install = manually_modified_files()
 
     # Tell the operation_logger to redact all password-type args
     # Also redact the % escaped version of the password that might appear in
@@ -819,6 +831,12 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                 broke_the_system = True
                 logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_after_install = manually_modified_files()
+        manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+        if manually_modified_files_by_app:
+            logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
