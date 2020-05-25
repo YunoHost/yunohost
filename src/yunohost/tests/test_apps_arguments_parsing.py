@@ -1,6 +1,9 @@
+import sys
 import pytest
-from collections import OrderedDict
+
 from mock import patch
+from StringIO import StringIO
+from collections import OrderedDict
 
 from moulinette import msignals
 
@@ -1184,3 +1187,12 @@ def test_parse_args_in_yunohost_format_app_two_apps_default_input():
         expected_result = OrderedDict({"some_app": (other_app, "app")})
         with patch.object(msignals, "prompt", return_value=other_app):
             assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_display_text():
+    questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
+    answers = {}
+
+    with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
+        _parse_args_in_yunohost_format(answers, questions)
+        assert "foobar" in stdout.getvalue()
