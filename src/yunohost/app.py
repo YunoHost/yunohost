@@ -1338,7 +1338,7 @@ def app_ssowatconf():
             url = _sanitized_absolute_url(perm_info["url"])
             perm_info["url"] = url
             if "visitors" in perm_info["allowed"]:
-                if url not in unprotected_urls:
+                if url not in unprotected_urls and url not in skipped_urls:
                     unprotected_urls.append(url)
 
                 # Legacy stuff : we remove now protected-urls that might have been declared as unprotected earlier...
