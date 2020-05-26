@@ -452,7 +452,7 @@ class Diagnoser():
         key = "diagnosis_description_" + id_
         descr = m18n.n(key)
         # If no description available, fallback to id
-        return descr if descr != key else id_
+        return descr if descr.decode('utf-8') != key else id_
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
