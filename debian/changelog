@@ -1,3 +1,21 @@
+yunohost (3.8.4.5) stable; urgency=low
+
+  - [enh] Tell systemctl to stfu about creating symlinks when enabling/disabling services (6637c8a8)
+  - [enh] Add maindomain in diagnosis email subject (e30e25fa)
+  - [fix] Webpath should also be normalized for args_list, so that we can get rid of the 'malformed path' check of the CI... (58ce6e5e)
+  - [fix] Increase time window for auto diagnosis cron to avoid remote diagnosis server overload (dc221495)
+  - [fix] encoding bullshit (4c600125, 64596bc1)
+  - [fix] Typo in diagnosis message + fix FR translation report format of bad DNS conf (#1002, b8f8ea14)
+  - [fix] Flag old etckeeper.conf as 'should not exist' in regenconf (5a3b382f)
+  - [enh] Detect dyndns-domains managed by yunohost and advice to use yunohost dyndns update --force (8b169f13)
+  - [enh] Complain if apps savagely edit system configurations during install and upgrade (a23f02db)
+  - [i18n] Translations updated for Arabic, Catalan, French, German, Italian
+  - [tests] CI V2 : Rework CI workflow (#991)
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Kay0u, L. Noferini, rynas, V. Rubiolo, xaloc33, Yasss Gurl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 26 May 2020 03:20:39 +0200
+
 yunohost (3.8.4.4) stable; urgency=low
 
   - [fix] Crash when the services file is empty (85f1802)
