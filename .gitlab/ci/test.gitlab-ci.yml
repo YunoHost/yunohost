@@ -1,4 +1,5 @@
 .install_debs: &install_debs
+    - apt update
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
 
 .test-stage:
