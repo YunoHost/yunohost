@@ -705,15 +705,16 @@ def test_parse_args_in_yunohost_format_boolean_input_test_ask_with_default():
 
 def test_parse_args_in_yunohost_format_domain_empty():
     questions = [{"name": "some_domain", "type": "domain",}]
+    main_domain = "my_main_domain.com"
+    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
     answers = {}
 
     with patch.object(
         domain, "_get_maindomain", return_value="my_main_domain.com"
     ), patch.object(
-        domain, "domain_list", return_value={"domains": ["my_main_domain.com"]}
+        domain, "domain_list", return_value={"domains": [main_domain]}
     ):
-        with pytest.raises(YunohostError):
-            _parse_args_in_yunohost_format(answers, questions)
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_domain():
