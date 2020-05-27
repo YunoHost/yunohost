@@ -1,16 +1,21 @@
 # OpenLDAP server configuration for Yunohost
 # ------------------------------------------
 #
-# By the Yunohost regen-conf tools it's NOT possible to edit the config database by a LDAP request.
-# The way to to edit the config database is to edit THIS file
-# and after update the config database based on this file.
+# Because of the Yunohost's regen-conf mechanism, it is NOT POSSIBLE to
+# edit the config database using an LDAP request.
+#
+# If you wish to edit the config database, you should edit THIS file
+# and update the config database based on this file.
 #
 # Config database customization:
 # 1. Edit this file as you want.
 # 2. Apply your modifications. For this just run this following command in a shell:
 #    $ /usr/share/yunohost/hooks/conf_regen/06-slapd apply_config
 #
-# Note that if you customize this file after all modifications my Yunohost won't be applied.
+# Note that if you customize this file, YunoHost's regen-conf will NOT
+# overwrite this file. But that also means that you should be careful about
+# upgrades, because they may ship important/necessary changes to this
+# configuration that you will have to propagate yourself.
 
 #
 # Main configuration
