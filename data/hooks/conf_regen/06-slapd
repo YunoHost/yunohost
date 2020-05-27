@@ -14,21 +14,21 @@ do_init_regen() {
 
   systemctl daemon-reload
 
-  # Because slaptest can't test the LDAP config file
-  # we need to regenerate the new config and after validate it
-  # regenerate LDAP config directory from slapd.ldif
+  # Validate the new slapd config
+  # To do so, we have to use the .ldif to generate the config directory
+  # so we use a temporary directory slapd_new.d
   rm -Rf /etc/ldap/slapd_new.d
   mkdir /etc/ldap/slapd_new.d
   slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1
-
-  # check the slapd config file at first
+  # Actual validation (-Q is for quiet, -u is for dry-run)
   slaptest -Q -u -F /etc/ldap/slapd_new.d
 
-  # Move to the new config
+  # "Commit" / apply the new config (meaning we delete the old one and replace
+  # it with the new one)
   rm -Rf /etc/ldap/slapd.d
   mv /etc/ldap/slapd_new.d /etc/ldap/slapd.d
 
-  # fix some permissions
+  # Enforce permissions
   chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
@@ -50,7 +50,7 @@ do_pre_regen() {
     backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
     mkdir -p "$backup_dir"
     slapcat -b dc=yunohost,dc=org \
-        -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+      -l "${backup_dir}/dc=yunohost-dc=org.ldif"
     echo "$backup_dir" > "$tmp_backup_dir_file"
   fi
 
@@ -80,7 +80,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   # fix some permissions
-  echo "Making sure we have the right permissions needed ..."
+  echo "Enforce permissions on ldap/slapd directories and certs ..."
   # penldap user should be in the ssl-cert group to let it access the certificate for TLS
   usermod -aG ssl-cert openldap
   chown root:openldap /etc/ldap/slapd.ldif
@@ -100,16 +100,15 @@ do_post_regen() {
   backup_dir=$(cat "$tmp_backup_dir_file" 2>/dev/null || true)
 
   # regenerate LDAP config directory from slapd.conf
-  echo "Regenerate LDAP config directory from slapd.conf"
+  echo "Regenerate LDAP config directory from slapd.ldif"
 
-  # Because slaptest can't test the LDAP config file
-  # we need to regenerate the new config and after validate it
-  # regenerate LDAP config directory from slapd.ldif
+  # Validate the new slapd config
+  # To do so, we have to use the .ldif to generate the config directory
+  # so we use a temporary directory slapd_new.d
   rm -Rf /etc/ldap/slapd_new.d
   mkdir /etc/ldap/slapd_new.d
   slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1
-
-  # check the slapd config file at first
+  # Actual validation (-Q is for quiet, -u is for dry-run)
   slaptest -Q -u -F /etc/ldap/slapd_new.d
 
   # Move to the new config
