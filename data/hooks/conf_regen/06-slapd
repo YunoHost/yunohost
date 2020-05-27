@@ -12,6 +12,18 @@ do_init_regen() {
 
   do_pre_regen ""
 
+  _regenerate_slapd_conf
+
+   # Enforce permissions
+  chown root:openldap /etc/ldap/slapd.ldif
+  chown -R openldap:openldap /etc/ldap/schema/
+  usermod -aG ssl-cert openldap
+
+  service slapd restart
+}
+
+_regenerate_slapd_conf() {
+
   # Validate the new slapd config
   # To do so, we have to use the .ldif to generate the config directory
   # so we use a temporary directory slapd_new.d
@@ -26,13 +38,7 @@ do_init_regen() {
   rm -Rf /etc/ldap/slapd.d
   mv /etc/ldap/slapd_new.d /etc/ldap/slapd.d
 
-  # Enforce permissions
-  chown root:openldap /etc/ldap/slapd.ldif
-  chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
-  usermod -aG ssl-cert openldap
-
-  service slapd restart
 }
 
 do_pre_regen() {
@@ -47,8 +53,7 @@ do_pre_regen() {
      [ $curr_backend != 'mdb' ]; then
     backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
     mkdir -p "$backup_dir"
-    slapcat -b dc=yunohost,dc=org \
-      -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+    slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
     echo "$backup_dir" > "$tmp_backup_dir_file"
   fi
 
@@ -99,20 +104,7 @@ do_post_regen() {
 
   # regenerate LDAP config directory from slapd.conf
   echo "Regenerate LDAP config directory from slapd.ldif"
-
-  # Validate the new slapd config
-  # To do so, we have to use the .ldif to generate the config directory
-  # so we use a temporary directory slapd_new.d
-  rm -Rf /etc/ldap/slapd_new.d
-  mkdir /etc/ldap/slapd_new.d
-  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1
-  # Actual validation (-Q is for quiet, -u is for dry-run)
-  slaptest -Q -u -F /etc/ldap/slapd_new.d
-
-  # Move to the new config
-  rm -Rf /etc/ldap/slapd.d
-  mv /etc/ldap/slapd_new.d /etc/ldap/slapd.d
-  chown -R openldap:openldap /etc/ldap/slapd.d/
+  _regenerate_slapd_conf
 
   if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
       # regenerate LDAP config directory and import database as root
