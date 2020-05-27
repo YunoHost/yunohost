@@ -1,3 +1,15 @@
+yunohost (3.8.4.6) stable; urgency=low
+
+  - [fix] Bump server_names_hash_bucket_size to 128 to avoid nginx exploding for stupid reasons (b3db4d92)
+  - [fix] More sensible strategy for sury pinning ([#1006](https://github.com/YunoHost/yunohost/pull/1006))
+  - [fix] Stop trying to fetch log categories that are not implemented yet T.T (77bd9ae3)
+  - [enh] Add logging and persistent as default config for new muc room ([#1008](https://github.com/YunoHost/yunohost/pull/1008))
+  - [tests] Moar tests for app args parsing ([#1004](https://github.com/YunoHost/yunohost/pull/1004))
+
+  Thanks to all contributors <3 ! (Gabriel, Kay0u, Bram)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 28 May 2020 00:22:10 +0200
+
 yunohost (3.8.4.5) stable; urgency=low
 
   - [enh] Tell systemctl to stfu about creating symlinks when enabling/disabling services (6637c8a8)
