@@ -1,10 +1,10 @@
 yunohost (3.8.4.6) stable; urgency=low
 
   - [fix] Bump server_names_hash_bucket_size to 128 to avoid nginx exploding for stupid reasons (b3db4d92)
-  - [fix] More sensible strategy for sury pinning ([#1006](https://github.com/YunoHost/yunohost/pull/1006))
+  - [fix] More sensible strategy for sury pinning (#1006)
   - [fix] Stop trying to fetch log categories that are not implemented yet T.T (77bd9ae3)
-  - [enh] Add logging and persistent as default config for new muc room ([#1008](https://github.com/YunoHost/yunohost/pull/1008))
-  - [tests] Moar tests for app args parsing ([#1004](https://github.com/YunoHost/yunohost/pull/1004))
+  - [enh] Add logging and persistent as default config for new muc room (#1008)
+  - [tests] Moar tests for app args parsing (#1004)
 
   Thanks to all contributors <3 ! (Gabriel, Kay0u, Bram)
 
@@ -63,8 +63,8 @@ yunohost (3.8.4.2) testing; urgency=low
   - [fix] Diagnosis: Try to not have weird warnings if no diagnosis ran yet... (65c87d55)
   - [fix] Diagnosis: Change logic of --email to avoid sending empty mail if some issues are found but ignored (4cd4938e)
   - [enh] Diagnosis/services: Report the service status as warning/unknown if service type is oneshot and status exited (dd09758f, 1cd7ffea)
-  - [fix] Rework ynh_psql_test_if_first_run ([#993](https://github.com/yunohost/yunohost/pull/993))
-  - [tests] Tests for args parsing ([#989](https://github.com/yunohost/yunohost/pull/989), 108a3ca4)
+  - [fix] Rework ynh_psql_test_if_first_run (#993)
+  - [tests] Tests for args parsing (#989, 108a3ca4)
 
   Thanks to all contributors <3 ! (Bram, Kayou)
 
@@ -1743,7 +1743,7 @@ yunohost (2.5.2) testing; urgency=low
 
   Other fixes and improvements:
   * [enh] remove timeout from cli interface
-  * [fix] [#662](https://dev.yunohost.org/issues/662): missing 'python-openssl' dependency for Let's Encrypt integration.
+  * [fix] #662: missing 'python-openssl' dependency for Let's Encrypt integration.
   * [fix] --no-remove-on-failure for app install should behave as a flag.
   * [fix] don't remove trailing char if it's not a slash
 
