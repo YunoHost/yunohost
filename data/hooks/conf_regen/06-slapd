@@ -89,9 +89,6 @@ do_post_regen() {
   chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
-  chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
-  chmod o-rwx /etc/yunohost/certs/yunohost.org/
-  chmod -R g+rx /etc/yunohost/certs/yunohost.org/
 
   # If we changed the systemd ynh-override conf
   if echo "$regen_conf_files" | sed 's/,/\n/g' | grep -q "^/etc/systemd/system/slapd.service.d/ynh-override.conf$"

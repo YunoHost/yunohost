@@ -45,14 +45,15 @@ class SystemResourcesDiagnoser(Diagnoser):
         item = dict(meta={"test": "swap"},
                     data={"total": human_size(swap.total), "recommended": "512 MiB"})
         if swap.total <= 1 * MB:
-            item["status"] = "ERROR"
+            item["status"] = "INFO"
             item["summary"] = "diagnosis_swap_none"
-        elif swap.total < 500 * MB:
-            item["status"] = "WARNING"
+        elif swap.total < 450 * MB:
+            item["status"] = "INFO"
             item["summary"] = "diagnosis_swap_notsomuch"
         else:
             item["status"] = "SUCCESS"
             item["summary"] = "diagnosis_swap_ok"
+        item["details"] = ["diagnosis_swap_tip"]
         yield item
 
         # FIXME : add a check that swapiness is low if swap is on a sdcard...

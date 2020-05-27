@@ -55,13 +55,41 @@ do_pre_regen() {
   fi
 
   # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
-  # 0 and 10min, meant to avoid every instances running their diagnosis at
+  # 0 and 20min, meant to avoid every instances running their diagnosis at
   # exactly the same time, which may overload the diagnosis server.
   mkdir -p $pending_dir/etc/cron.d/
   cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
 SHELL=/bin/bash
-0 7,19 * * * root : YunoHost Diagnosis; sleep \$((RANDOM\\%600)); yunohost diagnosis run > /dev/null
+0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
 EOF
+
+  # legacy stuff to avoid yunohost reporting etckeeper as manually modified
+  # (this make sure that the hash is null / file is flagged as to-delete)
+  mkdir -p $pending_dir/etc/etckeeper
+  touch $pending_dir/etc/etckeeper/etckeeper.conf
+}
+
+do_post_regen() {
+  regen_conf_files=$1
+
+  ######################
+  # Enfore permissions #
+  ######################
+
+  # Certs
+  # We do this with find because there could be a lot of them...
+  chown -R root:ssl-cert /etc/yunohost/certs
+  chmod 750 /etc/yunohost/certs
+  find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
+  find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
+
+  # Misc configuration / state files
+  chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
+  chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
+
+  # Apps folder, custom hooks folder
+  [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
+  [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
 
 }
 
@@ -74,7 +102,7 @@ with open('services.yml') as f:
     new_services = yaml.load(f)
 
 with open('/etc/yunohost/services.yml') as f:
-    services = yaml.load(f)
+    services = yaml.load(f) or {}
 
 updated = False
 
@@ -132,6 +160,7 @@ case "$1" in
     do_pre_regen $4
     ;;
   post)
+    do_post_regen $4
     ;;
   init)
     do_init_regen

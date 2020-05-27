@@ -40,8 +40,8 @@ from moulinette.utils.filesystem import read_file, read_yaml
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
-CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service',
-              'app']
+#CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', 'app']
+CATEGORIES = ['operation']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
 RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
@@ -63,7 +63,7 @@ def log_list(category=[], limit=None, with_details=False):
 
     # In cli we just display `operation` logs by default
     if not categories:
-        categories = ["operation"] if not is_api else CATEGORIES
+        categories = CATEGORIES
 
     result = collections.OrderedDict()
     for category in categories:

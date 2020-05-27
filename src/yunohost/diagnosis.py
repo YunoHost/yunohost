@@ -27,6 +27,7 @@
 import re
 import os
 import time
+import smtplib
 
 from moulinette import m18n, msettings
 from moulinette.utils import log
@@ -40,6 +41,7 @@ logger = log.getActionLogger('yunohost.diagnosis')
 DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
 DIAGNOSIS_CONFIG_FILE = '/etc/yunohost/diagnosis.yml'
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
+
 
 def diagnosis_list():
     all_categories_names = [h for h, _ in _list_diagnosis_categories()]
@@ -65,7 +67,7 @@ def diagnosis_get(category, item):
     return Diagnoser.get_cached_report(category, item=item)
 
 
-def diagnosis_show(categories=[], issues=False, full=False, share=False):
+def diagnosis_show(categories=[], issues=False, full=False, share=False, human_readable=False):
 
     if not os.path.exists(DIAGNOSIS_CACHE):
         logger.warning(m18n.n("diagnosis_never_ran_yet"))
@@ -93,7 +95,7 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
             logger.error(m18n.n("diagnosis_failed", category=category, error=str(e)))
             continue
 
-        Diagnoser.i18n(report)
+        Diagnoser.i18n(report, force_remove_html_tags=share or human_readable)
 
         add_ignore_flag_to_issues(report)
         if not full:
@@ -123,8 +125,11 @@ def diagnosis_show(categories=[], issues=False, full=False, share=False):
             return {"url": url}
         else:
             return
+    elif human_readable:
+        print(_dump_human_readable_reports(all_reports))
     else:
         return {"reports": all_reports}
+
 
 def _dump_human_readable_reports(reports):
 
@@ -137,16 +142,16 @@ def _dump_human_readable_reports(reports):
         for item in report["items"]:
             output += "[{status}] {summary}\n".format(**item)
             for detail in item.get("details", []):
-                output += "  - " + detail + "\n"
+                output += "  - " + detail.replace("\n", "\n    ") + "\n"
             output += "\n"
         output += "\n\n"
 
     return(output)
 
 
-def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False):
+def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False, email=False):
 
-    if except_if_never_ran_yet and not os.path.exists(DIAGNOSIS_CACHE):
+    if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
 
     # Get all the categories
@@ -170,7 +175,7 @@ def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False):
 
         try:
             code, report = hook_exec(path, args={"force": force}, env=None)
-        except Exception as e:
+        except Exception:
             import traceback
             logger.error(m18n.n("diagnosis_failed_for_category", category=category, error='\n'+traceback.format_exc()))
         else:
@@ -178,10 +183,10 @@ def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False):
             if report != {}:
                 issues.extend([item for item in report["items"] if item["status"] in ["WARNING", "ERROR"]])
 
+    if email:
+        _email_diagnosis_issues()
     if issues and msettings.get("interface") == "cli":
         logger.warning(m18n.n("diagnosis_display_tip"))
-
-    return
 
 
 def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
@@ -318,6 +323,7 @@ def issue_matches_criterias(issue, criterias):
             return False
     return True
 
+
 def add_ignore_flag_to_issues(report):
     """
     Iterate over issues in a report, and flag them as ignored if they match an
@@ -420,10 +426,11 @@ class Diagnoser():
         return os.path.join(DIAGNOSIS_CACHE, "%s.json" % id_)
 
     @staticmethod
-    def get_cached_report(id_, item=None):
+    def get_cached_report(id_, item=None, warn_if_no_cache=True):
         cache_file = Diagnoser.cache_file(id_)
         if not os.path.exists(cache_file):
-            logger.warning(m18n.n("diagnosis_no_cache", category=id_))
+            if warn_if_no_cache:
+                logger.warning(m18n.n("diagnosis_no_cache", category=id_))
             report = {"id": id_,
                       "cached_for": -1,
                       "timestamp": -1,
@@ -445,10 +452,10 @@ class Diagnoser():
         key = "diagnosis_description_" + id_
         descr = m18n.n(key)
         # If no description available, fallback to id
-        return descr if descr != key else id_
+        return descr if descr.decode('utf-8') != key else id_
 
     @staticmethod
-    def i18n(report):
+    def i18n(report, force_remove_html_tags=False):
 
         # "Render" the strings with m18n.n
         # N.B. : we do those m18n.n right now instead of saving the already-translated report
@@ -477,7 +484,7 @@ class Diagnoser():
                 info[1].update(meta_data)
                 s = m18n.n(info[0], **(info[1]))
                 # In cli, we remove the html tags
-                if msettings.get("interface") != "api":
+                if msettings.get("interface") != "api" or force_remove_html_tags:
                     s = s.replace("<cmd>", "'").replace("</cmd>", "'")
                     s = html_tags.sub('', s.replace("<br>","\n"))
                 else:
@@ -547,3 +554,35 @@ def _list_diagnosis_categories():
             hooks.append((name, info["path"]))
 
     return hooks
+
+
+def _email_diagnosis_issues():
+    from yunohost.domain import _get_maindomain
+    maindomain = _get_maindomain()
+    from_ = "diagnosis@%s (Automatic diagnosis on %s)" % (maindomain, maindomain)
+    to_ = "root"
+    subject_ = "Issues found by automatic diagnosis on %s" % maindomain
+
+    disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
+
+    issues = diagnosis_show(issues=True)["reports"]
+    if not issues:
+        return
+
+    content = _dump_human_readable_reports(issues)
+
+    message = """\
+From: %s
+To: %s
+Subject: %s
+
+%s
+
+---
+
+%s
+""" % (from_, to_, subject_, disclaimer, content)
+
+    smtp = smtplib.SMTP("localhost")
+    smtp.sendmail(from_, [to_], message)
+    smtp.quit()

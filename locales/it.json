@@ -45,8 +45,8 @@
     "ask_new_admin_password": "Nuova password dell'amministrazione",
     "backup_app_failed": "Non è possibile fare il backup dell'applicazione '{app:s}'",
     "backup_archive_app_not_found": "L'applicazione '{app:s}' non è stata trovata nel archivio di backup",
-    "app_argument_choice_invalid": "Scelta non valida per l'argomento '{name:s}', deve essere uno di {choices:s}",
-    "app_argument_invalid": "Valore non valido per '{name:s}': {error:s}",
+    "app_argument_choice_invalid": "Usa una delle seguenti scelte '{choices:s}' per il parametro '{name:s}'",
+    "app_argument_invalid": "Scegli un valore valido per il parametro '{name:s}': {error:s}",
     "app_argument_required": "L'argomento '{name:s}' è requisito",
     "app_id_invalid": "Identificativo dell'applicazione non valido",
     "app_unsupported_remote_type": "Il tipo remoto usato per l'applicazione non è supportato",
@@ -171,9 +171,9 @@
     "certmanager_attempt_to_renew_nonLE_cert": "Il certificato per il dominio {domain:s} non è emesso da Let's Encrypt. Impossibile rinnovarlo automaticamente!",
     "certmanager_attempt_to_renew_valid_cert": "Il certificato per il dominio {domain:s} non è a scadere! Usa --force per ignorare",
     "certmanager_domain_http_not_working": "Sembra che non sia possibile accedere al dominio {domain:s} attraverso HTTP. Verifica la configurazione del DNS e di nginx",
-    "app_already_installed_cant_change_url": "Questa applicazione è già installata. L'URL non può essere cambiato solo da questa funzione. Guarda se `app changeurl` è disponibile.",
+    "app_already_installed_cant_change_url": "Questa applicazione è già installata. L'URL non può essere cambiato solo da questa funzione. Controlla se `app changeurl` è disponibile.",
     "app_already_up_to_date": "{app:s} è già aggiornata",
-    "app_change_url_failed_nginx_reload": "Riavvio di nginx fallito. Questo è il risultato di 'nginx -t':\n{nginx_errors:s}",
+    "app_change_url_failed_nginx_reload": "Non riesco a riavviare NGINX. Questo è il risultato di 'nginx -t':\n{nginx_errors:s}",
     "app_change_url_identical_domains": "Il vecchio ed il nuovo dominio/percorso_url sono identici ('{domain:s}{path:s}'), nessuna operazione necessaria.",
     "app_change_url_no_script": "L'applicazione '{app_name:s}' non supporta ancora la modifica dell'URL. Forse dovresti aggiornare l'applicazione.",
     "app_change_url_success": "URL dell'applicazione {app:s} cambiato con successo in {domain:s}{path:s}",
@@ -233,7 +233,7 @@
     "password_too_simple_4": "La password deve essere lunga almeno 12 caratteri e contenere numeri, maiuscole e minuscole",
     "users_available": "Utenti disponibili:",
     "yunohost_ca_creation_success": "L'autorità di certificazione locale è stata creata.",
-    "app_action_cannot_be_ran_because_required_services_down": "Questa app richiede alcuni servizi che attualmente non sono attivi. Prima di continuare, dovresti provare a riavviare i seguenti servizi (e possibilmente capire perchè questi non siano attivi) : {services}",
+    "app_action_cannot_be_ran_because_required_services_down": "I seguenti servizi dovrebbero essere in funzione per completare questa azione: {services}. Prova a riavviarli per proseguire (e possibilmente cercare di capire come ma non funzionano più).",
     "backup_output_symlink_dir_broken": "Hai un collegamento errato alla tua cartella di archiviazione '{path:s}'. Potresti avere delle impostazioni particolari per salvare i tuoi dati su un altro spazio, in questo caso probabilmente ti sei scordato di rimontare o collegare il tuo hard disk o la chiavetta usb.",
     "certmanager_conflicting_nginx_file": "Impossibile preparare il dominio per il controllo ACME: il file di configurazione nginx {filepath:s} è in conflitto e dovrebbe essere prima rimosso",
     "certmanager_couldnt_fetch_intermediate_cert": "Tempo scaduto durante il tentativo di recupero di un certificato intermedio da Let's Encrypt. Installazione/rinnovo non riuscito - per favore riprova più tardi.",
@@ -335,5 +335,5 @@
     "migration_0003_not_jessie": "La distribuzione attuale non è Jessie!",
     "migration_0003_system_not_fully_up_to_date": "Il tuo sistema non è completamente aggiornato. Per favore prima esegui un aggiornamento normale prima di migrare a stretch.",
     "this_action_broke_dpkg": "Questa azione ha danneggiato dpkg/apt (i gestori di pacchetti del sistema)… Puoi provare a risolvere questo problema connettendoti via SSH ed eseguendo `sudo dpkg --configure -a`.",
-    "app_action_broke_system": "Questa azione sembra avere roto servizi importanti: {services}"
+    "app_action_broke_system": "Questa azione sembra avere rotto questi servizi importanti: {services}"
 }

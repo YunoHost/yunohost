@@ -10,6 +10,7 @@
 # Requires YunoHost version 3.3.1 or higher.
 ynh_wait_dpkg_free() {
     local try
+    set +o xtrace # set +x
     # With seq 1 17, timeout will be almost 30 minutes
     for try in `seq 1 17`
     do
@@ -32,13 +33,16 @@ ynh_wait_dpkg_free() {
                 then
                     # If so, that a remaining of dpkg.
                     ynh_print_err "E: dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
+                    set -o xtrace # set -x
                     return 1
                 fi
             done 9<<< "$(ls -1 $dpkg_dir)"
+            set -o xtrace # set -x
             return 0
         fi
     done
     echo "apt still used, but timeout reached !"
+    set -o xtrace # set -x
 }
 
 # Check either a package is installed or not
@@ -96,7 +100,7 @@ ynh_package_version() {
 # Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
-    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Dpkg::Use-Pty=0 $@
 }
 
 # Update package index files
@@ -189,17 +193,37 @@ ynh_package_install_from_equivs () {
     LC_ALL=C equivs-build ./control 1> /dev/null
     dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1)
 
-    ynh_package_install --fix-broken || \
+    # Let's try to see if install will work using dry-run. It it fails,
+    # it could be because the pinning of sury is blocking some package install
+    # c.f. for example: https://github.com/YunoHost/issues/issues/1563#issuecomment-623406509
+    # ... In that case, we use an ugly hack were we'll use a tweaked
+    # preferences.d directory with looser contrains for sury...
+    if ! ynh_package_install --fix-broken --dry-run >/dev/null 2>&1 && [ -e /etc/apt/preferences.d/extra_php_version ]
+    then
+        cp -r /etc/apt/preferences.d/ /etc/apt/preferences.d.tmp/
+        sed 's/^Pin-Priority: .*/Pin-Priority: 600/g' -i /etc/apt/preferences.d.tmp/extra_php_version
+        local apt_tweaks='--option Dir::Etc::preferencesparts=preferences.d.tmp'
+        # Try a dry-run again to see if that fixes the issue ...
+        # If it did not, then that's probably not related to sury.
+        ynh_package_install $apt_tweaks --fix-broken --dry-run >/dev/null 2>&1 || apt_tweaks=""
+    else
+        local apt_tweaks=""
+    fi
+
+    # Try to install for real
+    ynh_package_install $apt_tweaks --fix-broken || \
         { # If the installation failed 
         # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
+        rm --recursive --force /etc/apt/preferences.d.tmp/
         # Get the list of dependencies from the deb
         local dependencies="$(dpkg --info "$TMPDIR/${pkgname}_${pkgversion}_all.deb" | grep Depends | \
             sed 's/^ Depends: //' | sed 's/,//g')"
         # Fake an install of those dependencies to see the errors
         # The sed command here is, Print only from '--fix-broken' to the end.
-        ynh_package_install $dependencies --dry-run | sed --quiet '/--fix-broken/,$p' >&2
+        ynh_package_install $apt_tweaks $dependencies --dry-run | sed --quiet '/--fix-broken/,$p' >&2
         ynh_die --message="Unable to install dependencies"; }
     [[ -n "$TMPDIR" ]] && rm --recursive --force $TMPDIR	# Remove the temp dir.
+    rm --recursive --force /etc/apt/preferences.d.tmp/
 
     # check if the package is actually installed
     ynh_package_is_installed "$pkgname"
@@ -328,8 +352,6 @@ ynh_remove_app_dependencies () {
     local dep_app=${app//_/-}	# Replace all '_' by '-'
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }
-
-#=================================================
 
 # Install packages from an extra repository properly.
 #

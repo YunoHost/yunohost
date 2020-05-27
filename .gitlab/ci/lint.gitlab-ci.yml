@@ -1,0 +1,24 @@
+########################################
+# LINTER
+########################################
+
+lint:
+  stage: lint
+  image: "before-install"
+  needs: []
+  allow_failure: true
+  script:
+    - tox -e lint
+
+invalidcode:
+  stage: lint
+  image: "before-install"
+  needs: []
+  script:
+    - tox -e invalidcode
+
+# Disabled, waiting for buster
+#format-check:
+#  extends: .lint-stage
+#  script:
+#    - black --check --diff

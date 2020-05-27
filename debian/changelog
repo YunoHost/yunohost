@@ -1,3 +1,108 @@
+yunohost (3.8.4.5) stable; urgency=low
+
+  - [enh] Tell systemctl to stfu about creating symlinks when enabling/disabling services (6637c8a8)
+  - [enh] Add maindomain in diagnosis email subject (e30e25fa)
+  - [fix] Webpath should also be normalized for args_list, so that we can get rid of the 'malformed path' check of the CI... (58ce6e5e)
+  - [fix] Increase time window for auto diagnosis cron to avoid remote diagnosis server overload (dc221495)
+  - [fix] encoding bullshit (4c600125, 64596bc1)
+  - [fix] Typo in diagnosis message + fix FR translation report format of bad DNS conf (#1002, b8f8ea14)
+  - [fix] Flag old etckeeper.conf as 'should not exist' in regenconf (5a3b382f)
+  - [enh] Detect dyndns-domains managed by yunohost and advice to use yunohost dyndns update --force (8b169f13)
+  - [enh] Complain if apps savagely edit system configurations during install and upgrade (a23f02db)
+  - [i18n] Translations updated for Arabic, Catalan, French, German, Italian
+  - [tests] CI V2 : Rework CI workflow (#991)
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Kay0u, L. Noferini, rynas, V. Rubiolo, xaloc33, Yasss Gurl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 26 May 2020 03:20:39 +0200
+
+yunohost (3.8.4.4) stable; urgency=low
+
+  - [fix] Crash when the services file is empty (85f1802)
+  - [fix] IPv6 detection when using wg-quick (#997)
+  - [fix] Use a .get() to avoid crash if key doesn't exist (1f1b2338)
+  - [enh] Don't display the hostname when calling journalctl, this takes horizontal space for nothing (2bcfb5a1)
+  - [fix] Add --quiet, otherwise getopts is confused by "-- Logs" at the beginning (bdbf1822)
+  - [mod] We don't need those color codes... and warnings are already warnings... (2a631fa2)
+  - [fix] psql_setup_db: Do not create a new password if the user already exists (#998)
+  - [enh] Add an exception if packaging format is not recognized (f0cc6798)
+
+  Thanks to all contributors <3 ! (Aleks, Julien Rabier, Kayou)
+
+ -- Kay0u <pierre@kayou.io>  Fri, 22 May 2020 19:26:05 +0000
+
+yunohost (3.8.4.3) stable; urgency=low
+
+  - [fix] Workaround for the sury pinning issues when installing dependencies
+  - [i18n] Translations updated for Catalan, French, Occitan
+
+  Thanks to all contributors <3 ! (Aleks, clecle226, Kay0u, ppr, Quenti)
+
+ -- Kay0u <pierre@kayou.io>  Wed, 20 May 2020 18:41:49 +0000
+
+yunohost (3.8.4.2) testing; urgency=low
+
+  - [enh] During failed upgrades: Only mention packages that couldn't be upgraded (26fcfed7)
+  - [enh] Also run dpkg --audit to check if dpkg is in a broken state (09d8500f, 97199d19)
+  - [enh] Improve logs readability (c6f18496, 9cbd368d, 5850bf61, 413778d2, 5c8c07b8, f73c34bf, 94ea8265)
+  - [enh] Crash early about apps already installed when attempting to restore (f9e4c96c)
+  - [fix] Add the damn short hostname to /etc/hosts automagically (c.f. rabbitmq-server) (e67dc791)
+  - [fix] Don't miserably crash if doveadm fails to run (c9b22138)
+  - [fix] Diagnosis: Try to not have weird warnings if no diagnosis ran yet... (65c87d55)
+  - [fix] Diagnosis: Change logic of --email to avoid sending empty mail if some issues are found but ignored (4cd4938e)
+  - [enh] Diagnosis/services: Report the service status as warning/unknown if service type is oneshot and status exited (dd09758f, 1cd7ffea)
+  - [fix] Rework ynh_psql_test_if_first_run ([#993](https://github.com/yunohost/yunohost/pull/993))
+  - [tests] Tests for args parsing ([#989](https://github.com/yunohost/yunohost/pull/989), 108a3ca4)
+
+  Thanks to all contributors <3 ! (Bram, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 May 2020 20:08:47 +0200
+
+yunohost (3.8.4.1) testing; urgency=low
+
+  - [mod] Tweak diagnosis threshold for swap warning (429df8c4)
+  - [fix] Make sure we have a list for log_list + make sure item is in list before using .remove()... (afbeb145, 43facfd5)
+  - [fix] Sometimes tree-model has a weird \x00 which breaks yunopaste (c346f5f1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 11 May 2020 00:50:34 +0200
+
+yunohost (3.8.4) testing; urgency=low
+
+  - [fix] Restoration of custom hooks / missing restore hooks (#927)
+  - [enh] Real CSP headers for the webadmin (#961)
+  - [enh] Simplify / optimize reading version of yunohost packages... (#968)
+  - [fix] handle new auto restart of ldap in moulinette (#975)
+  - [enh] service.py cleanup  + add tests for services (#979, #986)
+  - [fix] Enforce permissions for stuff in /etc/yunohost/ (#963)
+  - [mod] Remove security diagnosis category for now, Move meltdown check to base system (a799740a)
+  - [mod] Change warning/errors about swap as info instead ... add a tip about the fact that having swap on SD or SSD is dangerous (23147161)
+  - [enh] Improve auto diagnosis cron UX, add a --human-readable option to diagnosis_show() (aecbb14a)
+  - [enh] Rely on new diagnosis for letsencrypt elligibility (#985)
+  - [i18n] Translations updated for Catalan, Esperanto, French, Spanish
+
+  Thanks to all contributors <3 ! (amirale qt, autra, Bram, clecle226, I. Hernández, Kay0u, xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 May 2020 21:20:00 +0200
+
+yunohost (3.8.3) testing; urgency=low
+
+  - [fix] Remove dot in reverse DNS check
+  - [fix] Upgrade of multi-instance apps was broken (#976)
+  - [fix] Check was broken if an apps with no domain setting was installed (#978)
+  - [enh] Add a timeout to wget (#972)
+  - [fix] ynh_get_ram: Enforce choosing --free or --total (#972)
+  - [fix] Simplify / improve robustness of backup list
+  - [enh] Make nodejs helpers easier to use (#939)
+  - [fix] Misc tweak for disk usage diagnosis, some values were inconsistent / bad UX / ...
+  - [enh] Assert slapd is running to avoid miserably crashing with weird ldap errors
+  - [enh] Try to show smarter / more useful logs by filtering irrelevant lines like set +x etc
+  - Technical tweaks for metronome 3.14.0 support
+  - Misc improvements for tests and linters
+
+  Thanks to all contributors <3 ! (Bram, Kay0u, Maniack C., ljf, Maranda)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Apr 2020 04:00:00  +0000
+
 yunohost (3.8.2.2) testing; urgency=low
 
    Aleks broke everything /again/ *.*
