@@ -485,6 +485,12 @@ def _update_conf_hashes(category, hashes):
     if category_conf is None:
         category_conf = {}
 
+    # If a file shall be removed and is indeed removed, forget entirely about
+    # that path.
+    # It avoid keeping weird old entries like
+    # /etc/nginx/conf.d/some.domain.that.got.removed.conf
+    hashes = {path: hash_ for path, hash_ in hashes.items() if hash_ is not None or os.path.exists(path)}
+
     category_conf['conffiles'] = hashes
     categories[category] = category_conf
     _save_regenconf_infos(categories)
