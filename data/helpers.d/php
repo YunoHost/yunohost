@@ -153,6 +153,8 @@ ynh_add_fpm_config () {
         if [ ! -e "$phpfpm_path" ]; then
             phpfpm_path="../settings/conf/php-fpm.conf"	# Into the restore script, the php-fpm template is not at the same place
         fi
+        # Make sure now that the template indeed exists
+        [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure php-fpm."
         cp "$phpfpm_path" "$finalphpconf"
         ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
