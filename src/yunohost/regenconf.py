@@ -185,6 +185,42 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         succeed_regen = {}
         failed_regen = {}
 
+        # Consider the following scenario:
+        # - you add a domain foo.bar
+        # - the regen-conf creates file /etc/dnsmasq.d/foo.bar
+        # - the admin manually *deletes* /etc/dnsmasq.d/foo.bar
+        # - the file is now understood as manually deleted because there's the old file hash in regenconf.yml
+        #
+        # ... so far so good, that's the expected behavior.
+        #
+        # But then:
+        # - the admin remove domain foo.bar entirely
+        # - but now the hash for /etc/dnsmasq.d/foo.bar is *still* in
+        # regenconf.yml and and the file is still flagged as manually
+        # modified/deleted... And the user cannot even do anything about it
+        # except removing the hash in regenconf.yml...
+        #
+        # Expected behavior: it should forget about that
+        # hash because dnsmasq's regen-conf doesn't say anything about what's
+        # the state of that file so it should assume that it should be deleted.
+        #
+        # - then the admin tries to *re-add* foo.bar !
+        # - ... but because the file is still flagged as manually modified
+        # the regen-conf refuses to re-create the file.
+        #
+        # Excepted behavior : the regen-conf should have forgot about the hash
+        # from earlier and this wouldnt happen.
+        # ------
+        # conf_files contain files explicitly set by the current regen conf run
+        # conf_hashes contain all files known from the past runs
+        # we compare these to get the list of stale hashes and flag the file as
+        # "should be removed"
+        stale_files = set(conf_hashes.keys()) - set(conf_files.keys())
+        stale_files_with_non_empty_hash = [f for f in stale_files if conf_hashes.get(f)]
+        for f in stale_files_with_non_empty_hash:
+            conf_files[f] = None
+        # </> End discussion about stale file hashes
+
         for system_path, pending_path in conf_files.items():
             logger.debug("processing pending conf '%s' to system conf '%s'",
                          pending_path, system_path)
@@ -196,20 +232,45 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                 system_path, pending_path, True) if with_diff else None
 
             # Check if the conf must be removed
-            to_remove = True if os.path.getsize(pending_path) == 0 else False
+            to_remove = True if pending_path and os.path.getsize(pending_path) == 0 else False
 
             # Retrieve and calculate hashes
             system_hash = _calculate_hash(system_path)
             saved_hash = conf_hashes.get(system_path, None)
             new_hash = None if to_remove else _calculate_hash(pending_path)
 
+            # -> configuration was previously managed by yunohost but should now
+            # be removed / unmanaged
+            if system_path in stale_files_with_non_empty_hash:
+                # File is already deleted, so let's just silently forget about this hash entirely
+                if not system_hash:
+                    logger.debug("> forgetting about stale file/hash")
+                    conf_hashes[system_path] = None
+                    conf_status = 'forget-about-it'
+                    regenerated = True
+                # Otherwise there's still a file on the system but it's not managed by
+                # Yunohost anymore... But if user requested --force we shall
+                # force-erase it
+                elif force:
+                    logger.debug("> force-remove stale file")
+                    regenerated = _regen(system_path)
+                    conf_status = 'force-removed'
+                # Otherwise, flag the file as manually modified
+                else:
+                    logger.warning(m18n.n(
+                        'regenconf_file_manually_modified',
+                        conf=system_path))
+                    conf_status = 'modified'
+
             # -> system conf does not exists
-            if not system_hash:
+            elif not system_hash:
                 if to_remove:
                     logger.debug("> system conf is already removed")
                     os.remove(pending_path)
-                    continue
-                if not saved_hash or force:
+                    conf_hashes[system_path] = None
+                    conf_status = 'forget-about-it'
+                    regenerated = True
+                elif not saved_hash or force:
                     if force:
                         logger.debug("> system conf has been manually removed")
                         conf_status = 'force-created'
@@ -283,7 +344,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             if regenerated:
                 succeed_regen[system_path] = conf_result
                 conf_hashes[system_path] = new_hash
-                if os.path.isfile(pending_path):
+                if pending_path and os.path.isfile(pending_path):
                     os.remove(pending_path)
             else:
                 failed_regen[system_path] = conf_result
@@ -399,7 +460,7 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 def _calculate_hash(path):
     """Calculate the MD5 hash of a file"""
 
-    if not os.path.exists(path):
+    if not path or not os.path.exists(path):
         return None
 
     hasher = hashlib.md5()

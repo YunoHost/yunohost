@@ -118,3 +118,48 @@ def test_stale_hashes_if_file_manually_deleted():
 
     assert not os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
     assert TEST_DOMAIN_DNSMASQ_CONFIG not in _get_conf_hashes("dnsmasq")
+
+# This test only works if you comment the part at the end of the regen-conf in
+# dnsmasq that auto-flag /etc/dnsmasq.d/foo.bar as "to be removed" (using touch)
+# ... But we want to keep it because they also possibly flag files that were
+# never known by the regen-conf (e.g. if somebody adds a
+# /etc/dnsmasq.d/my.custom.extension)
+# Ideally we could use a system that's able to properly state 'no file in this
+# folder should exist except the ones excplicitly defined by regen-conf' but
+# that's too much work for the scope of this commit.
+#
+# ... Anyway, the proper way to write these tests would be to use a dummy
+# regen-conf hook just for tests but meh I'm lazy
+#
+#def test_stale_hashes_if_file_manually_modified():
+#    """
+#    Same as other test, but manually delete the file in between and check
+#    behavior
+#    """
+#
+#    domain_add(TEST_DOMAIN)
+#
+#    assert os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
+#    assert TEST_DOMAIN_DNSMASQ_CONFIG in _get_conf_hashes("dnsmasq")
+#
+#    os.system("echo '#pwet' > %s" % TEST_DOMAIN_DNSMASQ_CONFIG)
+#
+#    assert os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
+#    assert open(TEST_DOMAIN_DNSMASQ_CONFIG).read().strip() == "#pwet"
+#
+#    regen_conf(names=["dnsmasq"])
+#
+#    assert os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
+#    assert open(TEST_DOMAIN_DNSMASQ_CONFIG).read().strip() == "#pwet"
+#    assert TEST_DOMAIN_DNSMASQ_CONFIG in _get_conf_hashes("dnsmasq")
+#
+#    domain_remove(TEST_DOMAIN)
+#
+#    assert os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
+#    assert open(TEST_DOMAIN_DNSMASQ_CONFIG).read().strip() == "#pwet"
+#    assert TEST_DOMAIN_DNSMASQ_CONFIG in _get_conf_hashes("dnsmasq")
+#
+#    regen_conf(names=["dnsmasq"], force=True)
+#
+#    assert not os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
+#    assert TEST_DOMAIN_DNSMASQ_CONFIG not in _get_conf_hashes("dnsmasq")
