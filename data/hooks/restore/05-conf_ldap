@@ -39,7 +39,7 @@ else
     # Restore the configuration
     mv /etc/ldap/slapd.d "$TMPDIR"
     mkdir -p /etc/ldap/slapd.d
-    cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf
+    cp -a "${backup_dir}/ldap.conf" /etc/ldap/ldap.conf
     slapadd -F /etc/ldap/slapd.d -b cn=config \
         -l "${backup_dir}/cn=config.master.ldif" \
       || die 1 "Unable to restore LDAP configuration"
