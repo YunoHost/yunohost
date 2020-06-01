@@ -13,6 +13,7 @@
     "app_already_up_to_date": "{app:s} is already up-to-date",
     "app_argument_choice_invalid": "Use one of these choices '{choices:s}' for the argument '{name:s}'",
     "app_argument_invalid": "Pick a valid value for the argument '{name:s}': {error:s}",
+    "app_argument_password_no_default": "Error while parsing password argument '{name}': password argument can't have a default value for security reason",
     "app_argument_required": "Argument '{name:s}' is required",
     "app_change_url_failed_nginx_reload": "Could not reload NGINX. Here is the output of 'nginx -t':\n{nginx_errors:s}",
     "app_change_url_identical_domains": "The old and new domain/url_path are identical ('{domain:s}{path:s}'), nothing to do.",

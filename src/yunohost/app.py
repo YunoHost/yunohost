@@ -2468,6 +2468,14 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "password"
     default_value = ""
 
+    def parse_question(self, question, user_answers):
+        question = super(PasswordArgumentParser, self).parse_question(question, user_answers)
+
+        if question.default is not None:
+            raise YunohostError('app_argument_password_no_default', name=question.name)
+
+        return question
+
 
 class PathArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "path"
