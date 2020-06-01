@@ -70,7 +70,6 @@ def test_parse_args_in_yunohost_format_string_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # that shit should work x(
 def test_parse_args_in_yunohost_format_string_input_no_ask():
     questions = [{"name": "some_string",}]
     answers = {}
@@ -96,7 +95,6 @@ def test_parse_args_in_yunohost_format_string_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should work without ask
 def test_parse_args_in_yunohost_format_string_optional_with_input_without_ask():
     questions = [{"name": "some_string", "optional": True,}]
     answers = {}
@@ -237,7 +235,6 @@ def test_parse_args_in_yunohost_format_password_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # that shit should work x(
 def test_parse_args_in_yunohost_format_password_input_no_ask():
     questions = [{"name": "some_password", "type": "password",}]
     answers = {}
@@ -270,7 +267,6 @@ def test_parse_args_in_yunohost_format_password_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should work without ask
 def test_parse_args_in_yunohost_format_password_optional_with_input_without_ask():
     questions = [{"name": "some_password", "type": "password", "optional": True,}]
     answers = {}
@@ -388,7 +384,6 @@ def test_parse_args_in_yunohost_format_path_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # that shit should work x(
 def test_parse_args_in_yunohost_format_path_input_no_ask():
     questions = [{"name": "some_path", "type": "path",}]
     answers = {}
@@ -416,7 +411,6 @@ def test_parse_args_in_yunohost_format_path_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should work without ask
 def test_parse_args_in_yunohost_format_path_optional_with_input_without_ask():
     questions = [{"name": "some_path", "type": "path", "optional": True,}]
     answers = {}
@@ -604,11 +598,10 @@ def test_parse_args_in_yunohost_format_boolean_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # we should work
 def test_parse_args_in_yunohost_format_boolean_input_no_ask():
     questions = [{"name": "some_boolean", "type": "boolean",}]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": ("some_value", "boolean")})
+    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
     with patch.object(msignals, "prompt", return_value="y"):
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -660,7 +653,6 @@ def test_parse_args_in_yunohost_format_boolean_no_input_default():
     assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # we should raise
 def test_parse_args_in_yunohost_format_boolean_bad_default():
     questions = [
         {
@@ -769,7 +761,6 @@ def test_parse_args_in_yunohost_format_domain_two_domains_wrong_answer():
             _parse_args_in_yunohost_format(answers, questions)
 
 
-@pytest.mark.skip  # XXX should work
 def test_parse_args_in_yunohost_format_domain_two_domains_default_no_ask():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
