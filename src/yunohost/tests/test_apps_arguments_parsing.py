@@ -1011,14 +1011,14 @@ def test_parse_args_in_yunohost_format_app_no_apps():
             _parse_args_in_yunohost_format(answers, questions)
 
 
-@pytest.mark.skip  # XXX should work
 def test_parse_args_in_yunohost_format_app_no_apps_optional():
     apps = []
     questions = [{"name": "some_app", "type": "app", "optional": True}]
     answers = {}
+    expected_result = OrderedDict({"some_app": (None, "app")})
 
     with patch.object(app, "app_list", return_value={"apps": apps}):
-        assert _parse_args_in_yunohost_format(answers, questions) == []
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_app():

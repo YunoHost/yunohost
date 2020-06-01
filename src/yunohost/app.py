@@ -2429,7 +2429,7 @@ class YunoHostArgumentFormatParser(object):
             if not question.optional and question.default is None:
                 raise YunohostError('app_argument_required', name=question.name)
             else:
-                question.value = self.default_value if question.default is None else question.default
+                question.value = getattr(self, "default_value", None) if question.default is None else question.default
 
         # we have an answer, do some post checks
         if question.value is not None:
