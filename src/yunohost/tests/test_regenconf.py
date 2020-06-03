@@ -11,10 +11,11 @@ from moulinette.utils.filesystem import mkdir
 
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
-from yunohost.regenconf import manually_modified_files, _get_conf_hashes, _force_clear_hashes
+from yunohost.regenconf import manually_modified_files, regen_conf, _get_conf_hashes, _force_clear_hashes
 
 TEST_DOMAIN = "secondarydomain.test"
 TEST_DOMAIN_NGINX_CONFIG = "/etc/nginx/conf.d/secondarydomain.test.conf"
+SSHD_CONFIG = "/etc/ssh/sshd_config"
 
 def setup_function(function):
 
@@ -42,6 +43,8 @@ def clean():
     assert not os.path.exists(TEST_DOMAIN_NGINX_CONFIG)
     assert TEST_DOMAIN_NGINX_CONFIG not in _get_conf_hashes("nginx")
     assert TEST_DOMAIN_NGINX_CONFIG not in manually_modified_files()
+
+    regen_conf(['ssh'], force=True)
 
 
 def test_add_domain():
@@ -78,3 +81,38 @@ def test_add_domain_conf_already_exists():
     assert os.path.exists(TEST_DOMAIN_NGINX_CONFIG)
     assert TEST_DOMAIN_NGINX_CONFIG in _get_conf_hashes("nginx")
     assert TEST_DOMAIN_NGINX_CONFIG not in manually_modified_files()
+
+
+def test_ssh_conf_unmanaged():
+
+    _force_clear_hashes([SSHD_CONFIG])
+
+    assert SSHD_CONFIG not in _get_conf_hashes("ssh")
+
+    regen_conf()
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+
+
+def test_ssh_conf_unmanaged_and_manually_modified(mocker):
+
+    _force_clear_hashes([SSHD_CONFIG])
+    os.system("echo ' ' >> %s" % SSHD_CONFIG)
+
+    assert SSHD_CONFIG not in _get_conf_hashes("ssh")
+
+    regen_conf()
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+    assert SSHD_CONFIG in manually_modified_files()
+
+    with message(mocker, "regenconf_need_to_explicitly_specify_ssh"):
+        regen_conf(force=True)
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+    assert SSHD_CONFIG in manually_modified_files()
+
+    regen_conf(['ssh'], force=True)
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+    assert SSHD_CONFIG not in manually_modified_files()
