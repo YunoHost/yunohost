@@ -29,9 +29,9 @@ install-postinstall:
     - systemctl -q stop apt-daily.timer
     - systemctl -q stop apt-daily-upgrade.timer
     - systemctl -q stop apt-daily.service
-    - systemctl -q stop apt-daily-upgrade.servic
+    - systemctl -q stop apt-daily-upgrade.service
     - systemctl -q disable apt-daily.timer
     - systemctl -q disable apt-daily-upgrade.timer
     - systemctl -q disable apt-daily.service
-    - systemctl -q disable apt-daily-upgrade.servicee
+    - systemctl -q disable apt-daily-upgrade.service
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
