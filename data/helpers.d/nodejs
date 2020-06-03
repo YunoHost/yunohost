@@ -125,7 +125,7 @@ ynh_install_nodejs () {
     test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
 
     # If n is not previously setup, install it
-    if ! type $(n --version > /dev/null 2>&1)
+    if ! test $(n --version > /dev/null 2>&1)
     then
         ynh_install_n
     elif dpkg --compare-version "$($n_install_dir/bin/n --version | cut -d" " -f2)" lt "6.5.1"
