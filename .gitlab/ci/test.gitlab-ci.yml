@@ -1,0 +1,120 @@
+.install_debs: &install_debs
+    - apt update
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+
+.test-stage:
+  stage: tests
+  image: "after-install"
+  variables:
+    PYTEST_ADDOPTS: "--color=yes"
+  before_script:
+    - *install_debs
+  cache:
+    paths: 
+      - src/yunohost/tests/apps
+    key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+  needs:
+      - job: build-yunohost
+        artifacts: true
+      - job: build-ssowat
+        artifacts: true
+      - job: build-moulinette
+        artifacts: true
+      - job: upgrade
+
+
+########################################
+# TESTS
+########################################
+
+full-tests:
+  stage: tests
+  image: "before-install"
+  variables:
+    PYTEST_ADDOPTS: "--color=yes"
+  before_script:
+    - *install_debs
+    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns
+  script:
+    - pytest --cov=yunohost tests/ src/yunohost/tests/ --junitxml=report.xml
+  needs:
+      - job: build-yunohost
+        artifacts: true
+      - job: build-ssowat
+        artifacts: true
+      - job: build-moulinette
+        artifacts: true
+  artifacts:
+    reports:
+      junit: report.xml
+
+root-tests:
+  extends: .test-stage
+  script:
+    - py.test tests
+
+test-apps:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_apps.py
+
+test-appscatalog:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_appscatalog.py
+
+test-appurl:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_appurl.py
+
+test-apps-arguments-parsing:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_apps_arguments_parsing.py
+
+test-backuprestore:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_backuprestore.py
+
+test-changeurl:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_changeurl.py
+
+test-permission:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_permission.py
+
+test-settings:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_settings.py
+
+test-user-group:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_user-group.py
+    
+test-regenconf:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_regenconf.py
+
+test-service:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - py.test tests/test_service.py

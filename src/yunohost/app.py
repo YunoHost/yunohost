@@ -414,6 +414,7 @@ def app_upgrade(app=[], url=None, file=None):
     """
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user, user_permission_list
+    from yunohost.regenconf import manually_modified_files
 
     apps = app
     # If no app is specified, upgrade all apps
@@ -477,6 +478,9 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
         env_dict["YNH_APP_LABEL"] = user_permission_list(full=True, ignore_system_perms=True, full_path=False)['permissions'][app_id+".main"]['label']
 
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_before_install = manually_modified_files()
+
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
@@ -526,6 +530,12 @@ def app_upgrade(app=[], url=None, file=None):
                 broke_the_system = True
                 logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+            # We'll check that the app didn't brutally edit some system configuration
+            manually_modified_files_after_install = manually_modified_files()
+            manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+            if manually_modified_files_by_app:
+                logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
@@ -590,6 +600,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
     from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
+    from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -678,11 +689,13 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = [value[0] for value in args_odict.values()]
-    args_list.append(app_instance_name)
 
     # Validate domain / path availability for webapps
     _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
+
+    # build arg list tq
+    args_list = [value[0] for value in args_odict.values()]
+    args_list.append(app_instance_name)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
@@ -699,6 +712,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
+
+    # We'll check that the app didn't brutally edit some system configuration
+    manually_modified_files_before_install = manually_modified_files()
 
     # Tell the operation_logger to redact all password-type args
     # Also redact the % escaped version of the password that might appear in
@@ -782,6 +798,12 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                 broke_the_system = True
                 logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_after_install = manually_modified_files()
+        manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+        if manually_modified_files_by_app:
+            logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
@@ -1864,6 +1886,9 @@ def _get_app_settings(app_id):
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
             settings = yaml.load(f)
+        # If label contains unicode char, this may later trigger issues when building strings...
+        # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
+        settings = {k:_encode_string(v) for k,v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
@@ -2321,6 +2346,11 @@ def _encode_string(value):
 
 def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
+
+    packaging_format = int(manifest.get('packaging_format', 0))
+    if packaging_format not in [0, 1]:
+        raise YunohostError("app_packaging_format_not_supported")
+
     requirements = manifest.get('requirements', dict())
 
     if not requirements:

@@ -452,7 +452,7 @@ class Diagnoser():
         key = "diagnosis_description_" + id_
         descr = m18n.n(key)
         # If no description available, fallback to id
-        return descr if descr != key else id_
+        return descr if descr.decode('utf-8') != key else id_
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
@@ -558,9 +558,10 @@ def _list_diagnosis_categories():
 
 def _email_diagnosis_issues():
     from yunohost.domain import _get_maindomain
-    from_ = "diagnosis@%s (Automatic diagnosis)" % _get_maindomain()
+    maindomain = _get_maindomain()
+    from_ = "diagnosis@%s (Automatic diagnosis on %s)" % (maindomain, maindomain)
     to_ = "root"
-    subject_ = "Issues found by automatic diagnosis"
+    subject_ = "Issues found by automatic diagnosis on %s" % maindomain
 
     disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
 

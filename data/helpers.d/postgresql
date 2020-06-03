@@ -229,12 +229,14 @@ ynh_psql_setup_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local new_db_pwd=$(ynh_string_random) # Generate a random password
-    # If $db_pwd is not given, use new_db_pwd instead for db_pwd
-    db_pwd="${db_pwd:-$new_db_pwd}"
-
     if ! ynh_psql_user_exists --user=$db_user; then
+        local new_db_pwd=$(ynh_string_random) # Generate a random password
+        # If $db_pwd is not given, use new_db_pwd instead for db_pwd
+        db_pwd="${db_pwd:-$new_db_pwd}"
+        
         ynh_psql_create_user "$db_user" "$db_pwd"
+    elif [ -z $db_pwd ]; then
+        ynh_die --message="The user $db_user exists, please provide his password"
     fi
 
     ynh_psql_create_db "$db_name" "$db_user"                     # Create the database
@@ -293,7 +295,7 @@ ynh_psql_test_if_first_run() {
     # postgresql could be flagged as active even though the cluster is in
     # failed state because of how the service is configured..)
     systemctl is-active postgresql@$PSQL_VERSION-main -q || ynh_systemd_action --service_name=postgresql --action=restart
-    systemctl is-enabled postgresql -q || systemctl enable postgresql
+    systemctl is-enabled postgresql -q || systemctl enable postgresql --quiet
 
     # If this is the very first time, we define the root password
     # and configure a few things

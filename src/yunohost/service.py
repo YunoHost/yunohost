@@ -354,7 +354,7 @@ def _get_and_format_service_status(service, infos):
     # that mean that we don't have a translation for this string
     # that's the only way to test for that for now
     # if we don't have it, uses the one provided by systemd
-    if description == translation_key:
+    if description.decode('utf-8') == translation_key:
         description = str(raw_status.get("Description", ""))
 
     output = {
@@ -589,7 +589,7 @@ def _get_services():
     """
     try:
         with open('/etc/yunohost/services.yml', 'r') as f:
-            services = yaml.load(f)
+            services = yaml.load(f) or {}
     except:
         return {}
 

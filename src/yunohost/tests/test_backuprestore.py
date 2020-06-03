@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 
-from conftest import message, raiseYunohostError
+from conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
@@ -126,9 +126,9 @@ def app_is_installed(app):
 def backup_test_dependencies_are_met():
 
     # Dummy test apps (or backup archives)
-    assert os.path.exists("./tests/apps/backup_wordpress_from_2p4")
-    assert os.path.exists("./tests/apps/legacy_app_ynh")
-    assert os.path.exists("./tests/apps/backup_recommended_app_ynh")
+    assert os.path.exists(os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4"))
+    assert os.path.exists(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
+    assert os.path.exists(os.path.join(get_test_apps_dir(), "backup_recommended_app_ynh"))
 
     return True
 
@@ -184,7 +184,7 @@ def uninstall_test_apps_if_needed():
 
 def install_app(app, path, additionnal_args=""):
 
-    app_install("./tests/apps/%s" % app,
+    app_install(os.path.join(get_test_apps_dir(), app),
                 args="domain=%s&path=%s%s" % (maindomain, path,
                                               additionnal_args), force=True)
 
@@ -193,22 +193,22 @@ def add_archive_wordpress_from_2p4():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
-    os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.info.json \
-               /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.info.json") + \
+               " /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
 
-    os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.tar.gz \
-               /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.tar.gz") + \
+               " /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
 
 
 def add_archive_system_from_2p4():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
-    os.system("cp ./tests/apps/backup_system_from_2p4/backup.info.json \
-               /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.info.json") + \
+               " /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
 
-    os.system("cp ./tests/apps/backup_system_from_2p4/backup.tar.gz \
-               /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.tar.gz") + \
+               " /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
 
 #
 # System backup                                                              #

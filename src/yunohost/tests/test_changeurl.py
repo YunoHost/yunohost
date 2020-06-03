@@ -1,6 +1,9 @@
 import pytest
 import time
 import requests
+import os
+
+from conftest import get_test_apps_dir
 
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
@@ -20,7 +23,7 @@ def teardown_function(function):
 
 
 def install_changeurl_app(path):
-    app_install("./tests/apps/change_url_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "change_url_app_ynh"),
                 args="domain=%s&path=%s" % (maindomain, path), force=True)
 
 

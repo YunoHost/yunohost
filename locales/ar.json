@@ -164,7 +164,7 @@
     "diagnosis_basesystem_kernel": "هذا الخادم يُشغّل نواة لينكس {kernel_version}",
     "diagnosis_basesystem_ynh_single_version": "{package} الإصدار: {version} ({repo})",
     "diagnosis_basesystem_ynh_main_version": "هذا الخادم يُشغّل YunoHost {main_version} ({repo})",
-    "diagnosis_everything_ok": "كل شيء على ما يرام في {category}!",
+    "diagnosis_everything_ok": "كل شيء يبدو على ما يرام في {category}!",
     "diagnosis_ip_connected_ipv4": "الخادم مُتّصل بالإنترنت عبر IPv4!",
     "diagnosis_ip_connected_ipv6": "الخادم مُتّصل بالإنترنت عبر IPv6!",
     "diagnosis_ip_not_connected_at_all": "يبدو أنّ الخادم غير مُتّصل بتاتا بالإنترنت!؟",
@@ -172,5 +172,16 @@
     "apps_already_up_to_date": "كافة التطبيقات مُحدّثة",
     "app_remove_after_failed_install": "جارٍ حذف التطبيق بعدما فشل تنصيبها…",
     "apps_catalog_updating": "جارٍ تحديث فهرس التطبيقات…",
-    "apps_catalog_update_success": "تم تحديث فهرس التطبيقات!"
+    "apps_catalog_update_success": "تم تحديث فهرس التطبيقات!",
+    "diagnosis_domain_expiration_error": "ستنتهي مدة صلاحية بعض النطاقات في القريب العاجل!",
+    "diagnosis_domain_expiration_warning": "ستنتهي مدة صلاحية بعض النطاقات قريبًا!",
+    "diagnosis_ports_could_not_diagnose_details": "خطأ: {error}",
+    "diagnosis_description_regenconf": "إعدادات النظام",
+    "diagnosis_description_mail": "البريد الإلكتروني",
+    "diagnosis_description_web": "الويب",
+    "diagnosis_description_systemresources": "موارد النظام",
+    "diagnosis_description_services": "حالة الخدمات",
+    "diagnosis_description_dnsrecords": "تسجيلات خدمة DNS",
+    "diagnosis_description_ip": "الإتصال بالإنترنت",
+    "diagnosis_description_basesystem": "النظام الأساسي"
 }

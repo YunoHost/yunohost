@@ -346,6 +346,11 @@ def _save_regenconf_infos(infos):
     Keyword argument:
         categories -- A dict containing the regenconf infos
     """
+
+    # Ugly hack to get rid of legacy glances stuff
+    if "glances" in infos:
+        del infos["glances"]
+
     try:
         with open(REGEN_CONF_FILE, 'w') as f:
             yaml.safe_dump(infos, f, default_flow_style=False)

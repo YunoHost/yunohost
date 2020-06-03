@@ -1,0 +1,29 @@
+.install-stage:
+  stage: install
+  needs:
+      - job: build-yunohost
+        artifacts: true
+      - job: build-ssowat
+        artifacts: true
+      - job: build-moulinette
+        artifacts: true
+
+########################################
+# INSTALL DEB
+########################################
+
+upgrade:
+  extends: .install-stage
+  image: "after-install"
+  script:
+    - apt update
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+
+
+install-postinstall:
+  extends: .install-stage
+  image: "before-install"
+  script:
+    - apt update
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns

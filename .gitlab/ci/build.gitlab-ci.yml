@@ -1,0 +1,52 @@
+.build-stage:
+  stage: build
+  image: "before-install"
+  variables:
+    YNH_SOURCE: "https://github.com/yunohost"
+  before_script:
+    - mkdir -p $YNH_BUILD_DIR
+  artifacts:
+    paths:
+      - $YNH_BUILD_DIR/*.deb
+
+.build_script: &build_script
+  - cd $YNH_BUILD_DIR/$PACKAGE
+  - VERSION=$(dpkg-parsechangelog -S Version 2>/dev/null)
+  - VERSION_NIGHTLY="${VERSION}+$(date +%Y%m%d%H%M)"
+  - dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_NIGHTLY}" -D "unstable" --force-distribution "Daily build."
+  - debuild --no-lintian -us -uc
+
+########################################
+# BUILD DEB
+########################################
+
+build-yunohost:
+  extends: .build-stage
+  variables:
+    PACKAGE: "yunohost"
+  script:
+    - git ls-files | xargs tar -czf archive.tar.gz
+    - mkdir -p $YNH_BUILD_DIR/$PACKAGE
+    - cat archive.tar.gz | tar -xz -C $YNH_BUILD_DIR/$PACKAGE
+    - rm archive.tar.gz
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - *build_script
+
+
+build-ssowat:
+  extends: .build-stage
+  variables:
+    PACKAGE: "ssowat"
+  script:
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - *build_script
+
+build-moulinette:
+  extends: .build-stage
+  variables:
+    PACKAGE: "moulinette"
+  script:
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - *build_script
