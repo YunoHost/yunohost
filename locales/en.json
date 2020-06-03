@@ -535,6 +535,7 @@
     "regenconf_dry_pending_applying": "Checking pending configuration which would have been applied for category '{category}'…",
     "regenconf_failed": "Could not regenerate the configuration for category(s): {categories}",
     "regenconf_pending_applying": "Applying pending configuration for category '{category}'…",
+    "regenconf_need_to_explicitly_specify_ssh": "The ssh configuration has been manually modified, but you need to explicitly specify category 'ssh' with --force to actually apply the changes.",
     "restore_already_installed_app": "An app with the ID '{app:s}' is already installed",
     "restore_already_installed_apps": "The following apps can't be restored because they are already installed: {apps}",
     "restore_app_failed": "Could not restore the app '{app:s}'",

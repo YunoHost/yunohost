@@ -125,11 +125,12 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         # return the arguments to pass to the script
         return pre_args + [category_pending_path, ]
 
-    # Don't regen SSH if not specifically specified
+    ssh_explicitly_specified = isinstance(names, list) and "ssh" in names
+
+    # By default, we regen everything
     if not names:
         names = hook_list('conf_regen', list_by='name',
                           show_info=False)['hooks']
-        names.remove('ssh')
 
     # Dirty hack for legacy code : avoid attempting to regen the conf for
     # glances because it got removed ...  This is only needed *once*
@@ -184,6 +185,20 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         conf_hashes = _get_conf_hashes(category)
         succeed_regen = {}
         failed_regen = {}
+
+        # Here we are doing some weird legacy shit
+        # The thing is, on some very old or specific setup, the sshd_config file
+        # was absolutely not managed by the regenconf ...
+        # But we now want to make sure that this file is managed.
+        # However, we don't want to overwrite a specific custom sshd_config
+        # which may make the admin unhappy ...
+        # So : if the hash for this file does not exists, we set the hash as the
+        # hash of the pending configuration ...
+        # That way, the file will later appear as manually modified.
+        sshd_config = "/etc/ssh/sshd_config"
+        if category == "ssh" and sshd_config not in conf_hashes and sshd_config in conf_files:
+            conf_hashes[sshd_config] = _calculate_hash(conf_files[sshd_config])
+            _update_conf_hashes(category, conf_hashes)
 
         for system_path, pending_path in conf_files.items():
             logger.debug("processing pending conf '%s' to system conf '%s'",
@@ -267,6 +282,9 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                     logger.debug("> new conf is as current system conf")
                     conf_status = 'managed'
                     regenerated = True
+                elif force and system_path == sshd_config and not ssh_explicitly_specified:
+                    logger.warning(m18n.n('regenconf_need_to_explicitly_specify_ssh'))
+                    conf_status = 'modified'
                 elif force:
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'force-updated'
