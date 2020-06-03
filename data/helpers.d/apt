@@ -100,7 +100,7 @@ ynh_package_version() {
 # Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
-    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Dpkg::Use-Pty=0 $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 $@
 }
 
 # Update package index files
