@@ -1,5 +1,6 @@
 #!/bin/bash
 
+n_version=6.5.1
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -16,7 +17,7 @@ ynh_install_n () {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
     mkdir --parents "../conf"
-    echo "SOURCE_URL=https://github.com/tj/n/archive/v6.5.1.tar.gz
+    echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
 SOURCE_SUM=5833f15893b9951a9ed59487e87b6c181d96b83a525846255872c4f92f0d25dd" > "../conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
@@ -128,7 +129,7 @@ ynh_install_nodejs () {
     if ! test $(n --version > /dev/null 2>&1)
     then
         ynh_install_n
-    elif dpkg --compare-version "$($n_install_dir/bin/n --version | cut -d" " -f2)" lt "6.5.1"
+    elif dpkg --compare-version "$($n_install_dir/bin/n --version | cut -d" " -f2)" lt $n_version
     then
         ynh_install_n
     fi
