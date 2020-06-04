@@ -129,7 +129,7 @@ ynh_install_nodejs () {
     if ! test $(n --version > /dev/null 2>&1)
     then
         ynh_install_n
-    elif dpkg --compare-version "$($n_install_dir/bin/n --version | cut -d" " -f2)" lt $n_version
+    elif dpkg --compare-versions "$($n_install_dir/bin/n --version)" lt $n_version
     then
         ynh_install_n
     fi
