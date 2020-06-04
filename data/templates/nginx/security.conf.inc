@@ -14,9 +14,10 @@ ssl_protocols TLSv1.2;
 ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 ssl_prefer_server_ciphers off;
 
-# Uncomment the following directive after DH generation
-# > openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048
-#ssl_dhparam /etc/ssl/private/dh2048.pem;
+# Pre-defined FFDHE group (RFC 7919)
+# From https://ssl-config.mozilla.org/ffdhe2048.txt
+# https://security.stackexchange.com/a/149818
+ssl_dhparam /usr/share/yunohost/other/ffdhe2048.pem;
 
 # Follows the Web Security Directives from the Mozilla Dev Lab and the Mozilla Obervatory + Partners
 # https://wiki.mozilla.org/Security/Guidelines/Web_Security
