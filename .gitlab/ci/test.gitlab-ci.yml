@@ -1,5 +1,13 @@
 .install_debs: &install_debs
-    - apt update
+    - systemctl -q stop apt-daily.timer
+    - systemctl -q stop apt-daily-upgrade.timer
+    - systemctl -q stop apt-daily.service
+    - systemctl -q stop apt-daily-upgrade.service
+    - systemctl -q disable apt-daily.timer
+    - systemctl -q disable apt-daily-upgrade.timer
+    - systemctl -q disable apt-daily.service
+    - systemctl -q disable apt-daily-upgrade.service
+    - apt-get update -o Acquire::Retries=3
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
 
 .test-stage:
