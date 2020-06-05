@@ -1,4 +1,4 @@
-yunohost (4.0.0-alpha1) testing; urgency=low
+yunohost (4.0.0~alpha1) testing; urgency=low
 
   - [fix] It just make no sense to backup/restore the mysql password... (#911)
   - [fix] Fix getopts and helpers (#885, #886)
