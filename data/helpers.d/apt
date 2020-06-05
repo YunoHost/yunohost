@@ -264,7 +264,7 @@ ynh_install_app_dependencies () {
             if ! grep --recursive --quiet "^ *deb.*sury" /etc/apt/sources.list*
             then
                 # Re-add sury
-                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version
+                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
 
                 # Pin this sury repository to prevent sury of doing shit
                 for package_to_not_upgrade in "php" "php-fpm" "php-mysql" "php-xml" "php-zip" "php-mbstring" "php-ldap" "php-gd" "php-curl" "php-bz2" "php-json" "php-sqlite3" "php-intl" "openssl" "libssl1.1" "libssl-dev"

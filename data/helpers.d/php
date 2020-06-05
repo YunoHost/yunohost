@@ -354,7 +354,7 @@ ynh_install_php () {
     fi
 
     # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version
+    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version --priority=600
 
     # Install requested dependencies from this extra repository.
     # Install php-fpm first, otherwise php will install apache as a dependency.
