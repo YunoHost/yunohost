@@ -260,8 +260,8 @@ ynh_install_app_dependencies () {
         # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
         if dpkg --list | grep "php7.0" | grep --quiet --invert-match "7.0.33-0+deb9"
         then
-            # And sury ain't already installed
-            if ! grep --line-number --recursive --quiet "sury" /etc/apt/sources.list*
+            # And sury ain't already in sources.lists
+            if ! grep --recursive --quiet "^ *deb.*sury" /etc/apt/sources.list*
             then
                 # Re-add sury
                 ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version
