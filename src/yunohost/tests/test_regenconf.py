@@ -1,5 +1,6 @@
 import os
 
+from conftest import message
 from yunohost.domain import domain_add, domain_remove, domain_list
 from yunohost.regenconf import regen_conf, manually_modified_files, _get_conf_hashes, _force_clear_hashes
 
@@ -7,6 +8,7 @@ TEST_DOMAIN = "secondarydomain.test"
 TEST_DOMAIN_NGINX_CONFIG = "/etc/nginx/conf.d/%s.conf" % TEST_DOMAIN
 TEST_DOMAIN_DNSMASQ_CONFIG = "/etc/dnsmasq.d/%s" % TEST_DOMAIN
 
+SSHD_CONFIG = "/etc/ssh/sshd_config"
 
 def setup_function(function):
 
@@ -36,6 +38,8 @@ def clean():
     assert not os.path.exists(TEST_DOMAIN_NGINX_CONFIG)
     assert TEST_DOMAIN_NGINX_CONFIG not in _get_conf_hashes("nginx")
     assert TEST_DOMAIN_NGINX_CONFIG not in manually_modified_files()
+
+    regen_conf(['ssh'], force=True)
 
 
 def test_add_domain():
@@ -72,6 +76,41 @@ def test_add_domain_conf_already_exists():
     assert os.path.exists(TEST_DOMAIN_NGINX_CONFIG)
     assert TEST_DOMAIN_NGINX_CONFIG in _get_conf_hashes("nginx")
     assert TEST_DOMAIN_NGINX_CONFIG not in manually_modified_files()
+
+
+def test_ssh_conf_unmanaged():
+
+    _force_clear_hashes([SSHD_CONFIG])
+
+    assert SSHD_CONFIG not in _get_conf_hashes("ssh")
+
+    regen_conf()
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+
+
+def test_ssh_conf_unmanaged_and_manually_modified(mocker):
+
+    _force_clear_hashes([SSHD_CONFIG])
+    os.system("echo ' ' >> %s" % SSHD_CONFIG)
+
+    assert SSHD_CONFIG not in _get_conf_hashes("ssh")
+
+    regen_conf()
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+    assert SSHD_CONFIG in manually_modified_files()
+
+    with message(mocker, "regenconf_need_to_explicitly_specify_ssh"):
+        regen_conf(force=True)
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+    assert SSHD_CONFIG in manually_modified_files()
+
+    regen_conf(['ssh'], force=True)
+
+    assert SSHD_CONFIG in _get_conf_hashes("ssh")
+    assert SSHD_CONFIG not in manually_modified_files()
 
 
 def test_stale_hashes_get_removed_if_empty():
