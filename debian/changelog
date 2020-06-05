@@ -1,3 +1,25 @@
+yunohost (4.0.1~alpha) testing; urgency=low
+
+  - [fix] It just make no sense to backup/restore the mysql password... (#911)
+  - [fix] Fix getopts and helpers (#885, #886)
+  - [fix] Explicitly create home using mkhomedir_helper instead of obscure pam rule that doesn't work anymore (b67ff314)
+  - [fix] Ldap interface seems to expect lists everywhere now? (fb8c2b7b)
+  - [deb] Clean control file, remove some legacy Conflicts and Replaces (ca0d4933)
+  - [deb] Add conflicts with versions from backports for critical dependencies (#967)
+  - [cleanup] Stale / legacy code (217aaa36, d77da6a0, af047468, 82d468a3)
+  - [conf] Automatically disable/stop systemd-resolved that conflicts with dnsmasq on fresh setups ... (e7214b37)
+  - [conf] Remove deprecated option in sshd conf, c.f. https://patchwork.openembedded.org/patch/139981/ (2723d245)
+  - [conf] Small tweak in dovecot conf (deprecated settings) (dc0481e2)
+  - [conf] Update nslcd and nsswitch stuff using new Buster's default configs + get rid of nslcd service, only keep the regen-conf part (6ef3520f)
+  - [php] Migrate from php7.0 to php7.3 (3374e653, 9be10506, dd9564d3, 9679c291, 212a15e4, 25fcaa19, c4ad66f5)
+  - [psql] Migrate from psql 11 to 9.6 (e88aed72, 4920d4f9, c70b0ae4)
+  - [firewall] Migrate from xtable to nftable (05fb58f2, 2c4a8b73, 625d5372)
+  - [slapd] Rework slapd regenconf to use new backend (#984)
+
+  Thanks to all contributors <3 ! (Étienne M., Josué, Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Jun 2020 03:10:09 +0200
+
 yunohost (3.8.4.7) stable; urgency=low
 
   - [fix] Remove some remains of glances (17eec25e)
