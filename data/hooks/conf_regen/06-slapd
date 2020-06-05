@@ -12,6 +12,8 @@ do_init_regen() {
 
   do_pre_regen ""
 
+  systemctl daemon-reload
+
   # fix some permissions
   chown root:openldap /etc/ldap/slapd.conf
   chown -R openldap:openldap /etc/ldap/schema/

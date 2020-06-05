@@ -1,3 +1,18 @@
+yunohost (3.8.4.7) stable; urgency=low
+
+  - [fix] Remove some remains of glances (17eec25e)
+  - [fix] Force external resolution for reverse DNS dig (852cd14c)
+  - [fix] Make sure mysql is an alias to mariadb (e24191ce, ca89607d)
+  - [fix] Path for ynh_add_fpm_config template in restore (#1001)
+  - [fix] Add -o Acquire::Retries=3 to fix some stupid network issues happening sometimes with apt (03432349)
+  - [fix] ynh_setup_source: Retry wget on non-critical failures to try to avoid tmp dns issues (3d66eaec)
+  - [fix] ynh_setup_source: Calling ynh_print_err in case of error didn't work, and we probably want a ynh_die here (55036fad)
+  - [i18n] Translations updated for Catalan, French, Italian, Occitan
+
+  Thanks to all contributors <3 ! (JimboJoe, Leandro N., ppr, Quentí, xaloc33, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 Jun 2020 02:28:33 +0200
+
 yunohost (3.8.4.6) stable; urgency=low
 
   - [fix] Bump server_names_hash_bucket_size to 128 to avoid nginx exploding for stupid reasons (b3db4d92)

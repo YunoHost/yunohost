@@ -537,7 +537,7 @@
     "diagnosis_dns_good_conf": "Els registres DNS han estat correctament configurats pel domini {domain} (categoria {category})",
     "diagnosis_dns_bad_conf": "Alguns registres DNS són incorrectes o no existeixen pel domini {domain} (categoria {category})",
     "diagnosis_dns_missing_record": "Segons la configuració DNS recomanada, hauríeu d'afegir un registre DNS amb la següent informació.<br>Tipus: <code>{type}</code><br>Nom: <code>{name}</code><br>Valor: <code>{value}</code>",
-    "diagnosis_dns_discrepancy": "El registre DNS de tipus {type} i nom {name} no concorda amb la configuració recomanada.\nValor actual: {current}\nValor esperat: {value}",
+    "diagnosis_dns_discrepancy": "La configuració DNS següent sembla que no segueix la configuració recomanada: <br>Tipus: <code>{type}</code><br>Nom: <code>{name}</code><br>Valor actual: <code>{current}</code><br>Valor esperat: <code>{value}</code>",
     "diagnosis_services_bad_status": "El servei {service} està {status} :(",
     "diagnosis_diskusage_verylow": "El lloc d'emmagatzematge <code>{mountpoint}</code> (en l'aparell <code>{device}</code>) només té disponibles {free} ({free_percent}%). Hauríeu de considerar alliberar una mica d'espai!",
     "diagnosis_diskusage_low": "El lloc d'emmagatzematge <code>{mountpoint}</code> (en l'aparell <code>{device}</code>) només té disponibles {free} ({free_percent}%). Aneu amb compte.",
@@ -649,5 +649,7 @@
     "diagnosis_domain_expiration_error": "Alguns dominis expiraran EN BREUS!",
     "diagnosis_domain_expires_in": "{domain} expirarà en {days} dies.",
     "diagnosis_swap_tip": "Vigileu i tingueu en compte que els servidor està allotjant memòria d'intercanvi en una targeta SD o en l'emmagatzematge SSD, això pot reduir dràsticament l'esperança de vida del dispositiu.",
-    "restore_already_installed_apps": "No s'han pogut restaurar les següents aplicacions perquè ja estan instal·lades: {apps}"
+    "restore_already_installed_apps": "No s'han pogut restaurar les següents aplicacions perquè ja estan instal·lades: {apps}",
+    "app_packaging_format_not_supported": "No es pot instal·lar aquesta aplicació ja que el format del paquet no és compatible amb la versió de YunoHost del sistema. Hauríeu de considerar actualitzar el sistema.",
+    "diagnosis_dns_try_dyndns_update_force": "La configuració DNS d'aquest domini hauria de ser gestionada automàticament per YunoHost. Si aquest no és el cas, podeu intentar forçar-ne l'actualització utilitzant <cmd>yunohost dyndns update --force</cmd>."
 }
