@@ -1,3 +1,10 @@
+yunohost (3.8.5) testing; urgency=low
+
+  - [enh] Add migration procedure for Stretch->Buster (a2b83c0f, a26411db, 9f1211e9, e544bf3e, a0511cca)
+  - [fix] Disable/skip ntp when inside a container (9d0c0924)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jun 2020 02:11:51 +0200
+
 yunohost (3.8.4.8) stable; urgency=low
 
   - [fix] Don't add unprotected_urls if it's already in skipped_urls (#1005)
