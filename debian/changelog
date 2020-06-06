@@ -1,3 +1,18 @@
+yunohost (3.8.4.8) stable; urgency=low
+
+  - [fix] Don't add unprotected_urls if it's already in skipped_urls (#1005)
+  - [enh] Add pre-defined DHE group and set up Nginx to use it (#1007)
+  - [fix] Make sure to propagate change in slapd systemd conf during initial install (2d42480f)
+  - [fix] More accurate grep to avoid mistakenly grepping commented lines... (2408a620)
+  - [enh] Update n to 6.5.1 (#1012)
+  - [fix] Set sury default pinning to 600 (653c5fde)
+  - [enh] Clean stale file/hashes in regen-conf (#1009)
+  - [fix] Weirdness in regen-conf mechanism for SSH conf (#1014)
+
+  Thanks to all contributors <3 ! (É. Gaspar, Josué, SohKa)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jun 2020 01:59:08 +0200
+
 yunohost (3.8.4.7) stable; urgency=low
 
   - [fix] Remove some remains of glances (17eec25e)
