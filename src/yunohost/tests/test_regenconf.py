@@ -7,7 +7,6 @@ from yunohost.regenconf import regen_conf, manually_modified_files, _get_conf_ha
 TEST_DOMAIN = "secondarydomain.test"
 TEST_DOMAIN_NGINX_CONFIG = "/etc/nginx/conf.d/%s.conf" % TEST_DOMAIN
 TEST_DOMAIN_DNSMASQ_CONFIG = "/etc/dnsmasq.d/%s" % TEST_DOMAIN
-
 SSHD_CONFIG = "/etc/ssh/sshd_config"
 
 def setup_function(function):
