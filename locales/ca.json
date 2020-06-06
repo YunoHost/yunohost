@@ -665,5 +665,6 @@
     "migration_0015_main_upgrade": "Començant l'actualització principal…",
     "migration_0015_patching_sources_list": "Apedaçament de source.lists…",
     "migration_0015_start": "Començant la migració a Buster",
-    "migration_description_0015_migrate_to_buster": "Actualitza els sistema a Debian Buster i YunoHost 4.x"
+    "migration_description_0015_migrate_to_buster": "Actualitza els sistema a Debian Buster i YunoHost 4.x",
+    "regenconf_need_to_explicitly_specify_ssh": "La configuració ssh ha estat modificada manualment, però heu d'especificar explícitament la categoria «ssh» amb --force per fer realment els canvis."
 }
