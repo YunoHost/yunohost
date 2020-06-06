@@ -138,6 +138,8 @@ class MyMigration(Migration):
 
         message = m18n.n("migration_0015_general_warning")
 
+        message = "THIS MIGRATION IS CURRENTLY IN ALPHA-STAGE TESTING. YOU SHOULD *NOT* RUN IT FOR NOW ON A PRODUCTION SERVER UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING OR HAVE A WAY TO ROLLBACK. MORE INFO ON THE FORUM!\n\n" + message
+
         if problematic_apps:
             message += "\n\n" + m18n.n("migration_0015_problematic_apps_warning", problematic_apps=problematic_apps)
 
