@@ -1882,15 +1882,21 @@ def app_config_apply(operation_logger, app, args):
                 if generated_name in args:
                     # Upload files from API
                     # A file arg contains a string with "FILENAME:BASE64_CONTENT"
-                    if option["type"] == "file" and msettings.get('interface') == 'api':
+                    if 'type' in option and option["type"] == "file" \
+                       and msettings.get('interface') == 'api':
                         if upload_dir is None:
                             upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
-                        filename, args[generated_name] = args[generated_name].split(':')
+                        filename = args[generated_name + '[name]']
+                        content = args[generated_name]
                         logger.debug("Save uploaded file %s from API into %s", filename, upload_dir)
-                        file_path = os.join(upload_dir, filename)
+                        file_path = os.path.join(upload_dir, filename)
+                        i = 2
+                        while os.path.exists(file_path):
+                            file_path = os.path.join(upload_dir, filename + (".%d" % i))
+                            i += 1
                         try:
                             with open(file_path, 'wb') as f:
-                                f.write(args[generated_name])
+                                f.write(content.decode("base64"))
                         except IOError as e:
                             raise YunohostError("cannot_write_file", file=file_path, error=str(e))
                         except Exception as e:
@@ -1907,7 +1913,7 @@ def app_config_apply(operation_logger, app, args):
     # for debug purpose
     for key in args:
         if key not in env:
-            logger.warning(
+            logger.debug(
                 "Ignore key '%s' from arguments because it is not in the config", key
             )
 
