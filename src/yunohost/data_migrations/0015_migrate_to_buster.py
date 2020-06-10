@@ -50,7 +50,11 @@ class MyMigration(Migration):
         # which for apt appears as a lower version (hence the --allow-downgrades and the hardcoded version number)
         unscd_version = check_output('dpkg -s unscd | grep "^Version: " | cut -d " " -f 2')
         if "yunohost" in unscd_version:
-            self.apt_install('unscd=0.53-1+b1 --allow-downgrades')
+            new_version = check_output("apt policy unscd 2>/dev/null | grep -v '\\*\\*\\*' | grep -A100 'Version table' | grep debian -B1 | head -n 1 | awk '{print $1}'")
+            if new_version:
+                self.apt_install('unscd=%s --allow-downgrades' % new_version)
+            else:
+                logger.warning("Could not identify which version of unscd to install")
 
         # Upgrade libpam-modules independently, small issue related to willing to overwrite a file previously provided by Yunohost
         libpammodules_version = check_output('dpkg -s libpam-modules | grep "^Version: " | cut -d " " -f 2')
