@@ -639,7 +639,7 @@ def _save_services(services):
         raise
 
 
-def _tail(file, n, filters=[]):
+def _tail(file, n):
     """
     Reads a n lines from f with an offset of offset lines.  The return
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
@@ -650,8 +650,6 @@ def _tail(file, n, filters=[]):
     avg_line_length = 74
     to_read = n
 
-    if filters:
-        filters = [re.compile(f) for f in filters]
 
     try:
         if file.endswith(".gz"):
@@ -672,9 +670,6 @@ def _tail(file, n, filters=[]):
 
                 pos = f.tell()
                 lines = f.read().splitlines()
-
-                for filter_ in filters:
-                    lines = [l for l in lines if not filter_.search(l)]
 
                 if len(lines) >= to_read:
                     return lines[-to_read:]
