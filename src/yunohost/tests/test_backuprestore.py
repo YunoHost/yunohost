@@ -375,7 +375,7 @@ def test_backup_with_different_output_directory(mocker):
                       output_directory="/opt/test_backup_output_directory",
                       name="backup")
 
-    assert os.path.exists("/opt/test_backup_output_directory/backup.tar.gz")
+    assert os.path.exists("/opt/test_backup_output_directory/backup.tar")
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
