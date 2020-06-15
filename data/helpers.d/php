@@ -7,15 +7,14 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 
 # Create a dedicated php-fpm config
 #
-# usage 1: ynh_add_fpm_config [--phpversion=7.X] [--use_template] [--package=packages] [--dedicated_service]
+# usage 1: ynh_add_fpm_config [--phpversion=7.X] [--use_template] [--dedicated_service]
 # | arg: -v, --phpversion=          - Version of php to use.
 # | arg: -t, --use_template         - Use this helper in template mode.
-# | arg: -p, --package=             - Additionnal php packages to install
 # | arg: -d, --dedicated_service    - Use a dedicated php-fpm service instead of the common one.
 #
 # -----------------------------------------------------------------------------
 #
-# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--package=packages] [--dedicated_service]
+# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--dedicated_service]
 # | arg: -v, --phpversion=          - Version of php to use.
 # | arg: -f, --footprint=           - Memory footprint of the service (low/medium/high).
 # low    - Less than 20Mb of ram by pool.
@@ -30,7 +29,6 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
 #
-# | arg: -p, --package=             - Additionnal php packages to install for a specific version of php
 # | arg: -d, --dedicated_service    - Use a dedicated php-fpm service instead of the common one.
 #
 #
@@ -57,20 +55,18 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 #
 # Requires YunoHost version 2.7.2 or higher.
 # Requires YunoHost version 3.5.1 or higher for the argument --phpversion
-# Requires YunoHost version 3.8.1 or higher for the arguments --use_template, --usage, --footprint, --package and --dedicated_service
+# Requires YunoHost version 3.8.1 or higher for the arguments --use_template, --usage, --footprint and --dedicated_service
 ynh_add_fpm_config () {
     # Declare an array to define the options of this helper.
     local legacy_args=vtufpd
-    local -A args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service )
+    local -A args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [d]=dedicated_service )
     local phpversion
     local use_template
     local usage
     local footprint
-    local package
     local dedicated_service
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    package=${package:-}
 
     # The default behaviour is to use the template.
     use_template="${use_template:-1}"
@@ -84,24 +80,6 @@ ynh_add_fpm_config () {
 
     # Set the default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
-
-    # If the requested php version is not the default version for YunoHost
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
-    then
-        # If the argument --package is used, add the packages to ynh_install_php to install them from sury
-        if [ -n "$package" ]
-        then
-            local additionnal_packages="--package=$package"
-        else
-            local additionnal_packages=""
-        fi
-        # Install this specific version of php.
-        ynh_install_php --phpversion="$phpversion" "$additionnal_packages"
-    elif [ -n "$package" ]
-    then
-        # Install the additionnal packages from the default repository
-        ynh_install_app_dependencies "$package"
-    fi
 
     if [ $dedicated_service -eq 1 ]
     then
@@ -307,52 +285,6 @@ ynh_remove_fpm_config () {
     then
         ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
     fi
-
-    # If the php version used is not the default version for YunoHost
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
-    then
-        # Remove this specific version of php
-        ynh_remove_php
-    fi
-}
-
-# Install another version of php.
-#
-# [internal]
-#
-# usage: ynh_install_php --phpversion=phpversion [--package=packages]
-# | arg: -v, --phpversion=  - Version of php to install.
-# | arg: -p, --package=     - Additionnal php packages to install
-#
-# Requires YunoHost version 3.8.1 or higher.
-ynh_install_php () {
-    # Declare an array to define the options of this helper.
-    local legacy_args=vp
-    local -A args_array=( [v]=phpversion= [p]=package= )
-    local phpversion
-    local package
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    package=${package:-}
-
-    if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
-    then
-        ynh_die "Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
-    fi
-
-    ynh_install_app_dependencies "$package"
-    ynh_app_setting_set $app phpversion $phpversion
-}
-
-# Remove the specific version of php used by the app.
-#
-# [internal]
-#
-# usage: ynh_install_php
-#
-# Requires YunoHost version 3.8.1 or higher.
-ynh_remove_php () {
-    ynh_remove_app_dependencies
 }
 
 # Define the values to configure php-fpm

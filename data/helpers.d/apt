@@ -355,24 +355,6 @@ ynh_add_sury() {
 
 }
 
-
-# Add dependencies to install with ynh_install_app_dependencies
-#
-# usage: ynh_add_app_dependencies --package=phpversion [--replace]
-# | arg: -p, --package=     - Packages to add as dependencies for the app.
-#
-# Requires YunoHost version 3.8.1 or higher.
-ynh_add_app_dependencies () {
-    # Declare an array to define the options of this helper.
-    local legacy_args=pr
-    local -A args_array=( [p]=package= [r]=replace)
-    local package
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
-    ynh_install_app_dependencies "${package}"
-}
-
 # Remove fake package and its dependencies
 #
 # Dependencies will removed only if no other package need them.
