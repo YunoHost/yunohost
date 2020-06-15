@@ -1862,7 +1862,10 @@ class TarBackupMethod(BackupMethod):
     @property
     def _archive_file(self):
         """Return the compress archive path"""
-        return os.path.join(self.repo, self.name + '.tar.gz')
+        f = os.path.join(self.repo, self.name + '.tar')
+        if os.path.exists(f + ".gz"):
+            f += ".gz"
+        return f
 
     def backup(self):
         """
@@ -1885,7 +1888,7 @@ class TarBackupMethod(BackupMethod):
 
         # Open archive file for writing
         try:
-            tar = tarfile.open(self._archive_file, "w:gz")
+            tar = tarfile.open(self._archive_file, "w:gz" if self._archive_file.endswith(".gz") else "w")
         except:
             logger.debug("unable to open '%s' for writing",
                          self._archive_file, exc_info=1)
@@ -1909,7 +1912,7 @@ class TarBackupMethod(BackupMethod):
 
         # If backuped to a non-default location, keep a symlink of the archive
         # to that location
-        link = os.path.join(ARCHIVES_PATH, self.name + '.tar.gz')
+        link = os.path.join(ARCHIVES_PATH, self.name + '.tar')
         if not os.path.isfile(link):
             os.symlink(self._archive_file, link)
 
@@ -1928,7 +1931,7 @@ class TarBackupMethod(BackupMethod):
         # Mount the tarball
         logger.debug(m18n.n("restore_extracting"))
         try:
-            tar = tarfile.open(self._archive_file, "r:gz")
+            tar = tarfile.open(self._archive_file, "r:gz" if self._archive_file.endswith(".gz") else "r")
         except:
             logger.debug("cannot open backup archive '%s'",
                          self._archive_file, exc_info=1)
@@ -1997,7 +2000,7 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
     def copy(self, file, target):
-        tar = tarfile.open(self._archive_file, "r:gz")
+        tar = tarfile.open(self._archive_file, "r:gz" if self._archive_file.endswith(".gz") else "r")
         file_to_extract = tar.getmember(file)
         # Remove the path
         file_to_extract.name = os.path.basename(file_to_extract.name)
@@ -2284,9 +2287,14 @@ def backup_list(with_info=False, human_readable=False):
 
     """
     # Get local archives sorted according to last modification time
-    archives = sorted(glob("%s/*.tar.gz" % ARCHIVES_PATH), key=lambda x: os.path.getctime(x))
+    archives = sorted(glob("%s/*.tar.gz" % ARCHIVES_PATH) + glob("%s/*.tar" % ARCHIVES_PATH), key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
-    archives = [os.path.basename(f)[:-len(".tar.gz")] for f in archives]
+    def remove_extension(f):
+        if f.endswith(".tar.gz"):
+            return os.path.basename(f)[:-len(".tar.gz")]
+        else:
+            return os.path.basename(f)[:-len(".tar")]
+    archives = [remove_extension(f) for f in archives]
 
     if with_info:
         d = OrderedDict()
@@ -2314,11 +2322,13 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
+    archive_file = '%s/%s.tar' % (ARCHIVES_PATH, name)
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
-        raise YunohostError('backup_archive_name_unknown', name=name)
+        archive_file += ".gz"
+        if not os.path.lexists(archive_file):
+            raise YunohostError('backup_archive_name_unknown', name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2332,7 +2342,7 @@ def backup_info(name, with_details=False, human_readable=False):
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
     if not os.path.exists(info_file):
-        tar = tarfile.open(archive_file, "r:gz")
+        tar = tarfile.open(archive_file, "r:gz" if archive_file.endswith(".gz") else "r")
         info_dir = info_file + '.d'
 
         try:
@@ -2368,7 +2378,7 @@ def backup_info(name, with_details=False, human_readable=False):
     # Retrieve backup size
     size = info.get('size', 0)
     if not size:
-        tar = tarfile.open(archive_file, "r:gz")
+        tar = tarfile.open(archive_file, "r:gz" if archive_file.endswith(".gz") else "r")
         size = reduce(lambda x, y: getattr(x, 'size', x) + getattr(y, 'size', y),
                       tar.getmembers())
         tar.close()
@@ -2428,7 +2438,9 @@ def backup_delete(name):
 
     hook_callback('pre_backup_delete', args=[name])
 
-    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
+    archive_file = '%s/%s.tar' % (ARCHIVES_PATH, name)
+    if os.path.exists(archive_file + ".gz"):
+        archive_file += '.gz'
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
     files_to_delete = [archive_file, info_file]
