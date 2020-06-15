@@ -353,8 +353,7 @@ ynh_install_php () {
         echo "$YNH_APP_INSTANCE_NAME:$phpversion" | tee --append "/etc/php/ynh_app_version"
     fi
 
-    # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version --priority=600
+    ynh_add_sury
 
     # Install requested dependencies from this extra repository.
     # Install php-fpm first, otherwise php will install apache as a dependency.
@@ -363,12 +362,6 @@ ynh_install_php () {
 
     # Set the default php version back as the default version for php-cli.
     update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-
-    # Pin this extra repository after packages are installed to prevent sury of doing shit
-    for package_to_not_upgrade in "php" "php-fpm" "php-mysql" "php-xml" "php-zip" "php-mbstring" "php-ldap" "php-gd" "php-curl" "php-bz2" "php-json" "php-sqlite3" "php-intl" "openssl" "libssl1.1" "libssl-dev"
-    do
-        ynh_pin_repo --package="$package_to_not_upgrade" --pin="origin \"packages.sury.org\"" --priority="-1" --name=extra_php_version --append
-    done
 
     # Advertise service in admin panel
     yunohost service add php${phpversion}-fpm --log "/var/log/php${phpversion}-fpm.log"
