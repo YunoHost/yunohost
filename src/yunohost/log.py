@@ -35,6 +35,7 @@ from logging import FileHandler, getLogger, Formatter
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
+from yunohost.utils.packages import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
@@ -456,6 +457,7 @@ class OperationLogger(object):
         data = {
             'started_at': self.started_at,
             'operation': self.operation,
+            'yunohost_version': get_ynh_package_version("yunohost")["version"],
         }
         if self.related_to is not None:
             data['related_to'] = self.related_to
