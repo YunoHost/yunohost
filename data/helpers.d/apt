@@ -210,6 +210,8 @@ ynh_package_install_from_equivs () {
     ynh_package_is_installed "$pkgname"
 }
 
+YNH_INSTALL_APP_DEPENDENCIES_REPLACE="true"
+
 # Define and install dependencies with a equivs control file
 #
 # This helper can/should only be called once per app
@@ -248,6 +250,24 @@ ynh_install_app_dependencies () {
         dependencies="$(echo "$dependencies" | sed 's/\([^(\<=\>]\)\([\<=\>]\+\)\([^,]\+\)/\1 (\2 \3)/g')"
     fi
 
+    # The first time we run ynh_install_app_dependencies, we will replace the
+    # entire control file (This is in particular meant to cover the case of
+    # upgrade script where ynh_install_app_dependencies is called with this
+    # expected effect) Otherwise, any subsequent call will add dependencies
+    # to those already present in the equivs control file.
+    if [[ $YNH_INSTALL_APP_DEPENDENCIES_REPLACE == "true" ]]
+    then
+        YNH_INSTALL_APP_DEPENDENCIES_REPLACE="false"
+    else
+        local current_dependencies=""
+        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
+        then
+            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
+        fi
+        current_dependencies=${current_dependencies// | /|}
+        dependencies="$current_dependencies $dependencies"
+    fi
+
     #
     # Epic ugly hack to fix the goddamn dependency nightmare of sury
     # Sponsored by the "Djeezusse Fokin Kraiste Why Do Adminsys Has To Be So Fucking Complicated I Should Go Grow Potatoes Instead Of This Shit" collective
@@ -283,6 +303,9 @@ EOF
     rm /tmp/${dep_app}-ynh-deps.control
     ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
 }
+
+
+
 
 # Add dependencies to install with ynh_install_app_dependencies
 #
