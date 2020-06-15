@@ -136,6 +136,26 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
         share
     """
 
+    if filter_irrelevant:
+        filters = [
+            r"set [+-]x$",
+            r"set [+-]o xtrace$",
+            r"local \w+$",
+            r"local legacy_args=.*$",
+            r".*Helper used in legacy mode.*",
+            r"args_array=.*$",
+            r"local -A args_array$",
+            r"ynh_handle_getopts_args",
+            r"ynh_script_progression"
+        ]
+    else:
+        filters = []
+
+    def _filter_lines(lines, filters=[]):
+
+        filters = [re.compile(f) for f in filters]
+        return [l for l in lines if not any(f.search(l.strip()) for f in filters)]
+
     # Normalize log/metadata paths and filenames
     abs_path = path
     log_path = None
@@ -174,7 +194,8 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
             content += read_file(md_path)
             content += "\n============\n\n"
         if os.path.exists(log_path):
-            content += read_file(log_path)
+            actual_log = read_file(log_path)
+            content += "\n".join(_filter_lines(actual_log.split("\n"), filters))
 
         url = yunopaste(content)
 
@@ -203,27 +224,12 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
 
     # Display logs if exist
     if os.path.exists(log_path):
-
-        if filter_irrelevant:
-            filters = [
-                r"set [+-]x$",
-                r"set [+-]o xtrace$",
-                r"local \w+$",
-                r"local legacy_args=.*$",
-                r".*Helper used in legacy mode.*",
-                r"args_array=.*$",
-                r"local -A args_array$",
-                r"ynh_handle_getopts_args",
-                r"ynh_script_progression"
-            ]
-        else:
-            filters = []
-
         from yunohost.service import _tail
         if number:
-            logs = _tail(log_path, int(number), filters=filters)
+            logs = _tail(log_path, int(number))
         else:
             logs = read_file(log_path)
+        logs = _filter_lines(logs, filters)
         infos['log_path'] = log_path
         infos['logs'] = logs
 
