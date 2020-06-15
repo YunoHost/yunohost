@@ -136,6 +136,9 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
         share
     """
 
+    if share:
+        filter_irrelevant = True
+
     if filter_irrelevant:
         filters = [
             r"set [+-]x$",
