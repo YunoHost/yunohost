@@ -340,5 +340,6 @@
     "diagnosis_ip_weird_resolvconf": "DNS Auflösung scheint zu funktionieren, aber sei vorsichtig wenn du eine eigene <code>/etc/resolv.conf</code> verwendest.",
     "diagnosis_display_tip": "Um die gefundenen Probleme zu sehen, kannst Du zum Diagnose-Bereich des webadmin gehen, oder 'yunohost diagnosis show --issues' in der Kommandozeile ausführen.",
     "backup_archive_corrupted": "Das Backup-Archiv '{archive}' scheint beschädigt: {error}",
-    "backup_archive_cant_retrieve_info_json": "Die Informationen für das Archiv '{archive}' konnten nicht geladen werden... Die Datei info.json wurde nicht gefunden (oder ist kein gültiges json)."
+    "backup_archive_cant_retrieve_info_json": "Die Informationen für das Archiv '{archive}' konnten nicht geladen werden... Die Datei info.json wurde nicht gefunden (oder ist kein gültiges json).",
+    "app_packaging_format_not_supported": "Diese App kann nicht installiert werden da das Paketformat nicht von der Yunohost-Version unterstützt wird. Denken Sie darüber nach das System zu aktualisieren."
 }
