@@ -336,7 +336,7 @@ ynh_install_php () {
     fi
 
     ynh_install_app_dependencies "$package"
-    ynh_app_setting_set $app phpversion $phpversion
+    ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 }
 
 # Remove the specific version of PHP used by the app.

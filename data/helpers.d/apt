@@ -329,7 +329,7 @@ EOF
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
 
         # Store phpversion into the config of this app
-        ynh_app_setting_set $app phpversion $specific_php_version
+        ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
         # Integrate new php-fpm service in yunohost
         yunohost service add php${specific_php_version}-fpm --log "/var/log/php${phpversion}-fpm.log"
@@ -435,7 +435,7 @@ ynh_install_extra_app_dependencies () {
     ynh_install_extra_repo --repo="$repo" $key --priority=995 --name=$name
 
     # Install requested dependencies from this extra repository.
-    ynh_install_app_dependencies --package="$package"
+    ynh_install_app_dependencies "$package"
 
     # Remove this extra repository after packages are installed
     ynh_remove_extra_repo --name=$app
