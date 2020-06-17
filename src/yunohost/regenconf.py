@@ -236,6 +236,8 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             conf_files[f] = None
         # </> End discussion about stale file hashes
 
+        force_update_hashes_for_this_category = False
+
         for system_path, pending_path in conf_files.items():
             logger.debug("processing pending conf '%s' to system conf '%s'",
                          pending_path, system_path)
@@ -284,7 +286,8 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                     os.remove(pending_path)
                     conf_hashes[system_path] = None
                     conf_status = 'forget-about-it'
-                    regenerated = True
+                    force_update_hashes_for_this_category = True
+                    continue
                 elif not saved_hash or force:
                     if force:
                         logger.debug("> system conf has been manually removed")
@@ -377,7 +380,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             else:
                 logger.success(m18n.n('regenconf_would_be_updated', category=category))
 
-        if succeed_regen and not dry_run:
+        if (succeed_regen or force_update_hashes_for_this_category) and not dry_run:
             _update_conf_hashes(category, conf_hashes)
 
         # Append the category results
