@@ -1,3 +1,9 @@
+yunohost (3.8.5.2) testing; urgency=low
+
+  - [fix] Small issue with unscd upgrade/downgrade ... new version ain't always 0.53.1, so find it using dirty scrapping
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Jun 2020 16:19:35 +0200
+
 yunohost (3.8.5.1) testing; urgency=low
     
   - [fix] Update Stretch->Buster migration disclaimer to make it clear that this is alpha-stage
