@@ -11,6 +11,22 @@ yunohost (3.8.5) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jun 2020 02:11:51 +0200
 
+yunohost (3.8.4.9) stable; urgency=low
+
+  - [fix] Force lowercase on domain names (804f4b3e)
+  - [fix] Add dirmngr to Depends:, needed for apt-key / gpg (cd115ed8)
+  - [fix] Improve debugging when diagnosis ain't happy when renewing certs (0f0194be)
+  - [enh] Add yunohost version to logs metadata (d615546b)
+  - [enh] Alway filter irrelevant log lines when sharing it (38704cba, 51d53be5)
+  - [fix] Regen-conf outputing many 'forget-about-it' because of files flagged as to be removed (f4525488)
+  - [fix] postfix per-domain destination concurrency (#988)
+  - [fix] Call regenconf for ssh before the general regenconf during the postinstall to avoid an irrelevant warning (7805837b)
+  - [i18n] Translations updated for Catalan, French, German
+
+  Thanks to all contributors <3 ! (taziden, ljf, ppr, xaloc33, Yasss Gurl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Jun 2020 15:13:01 +0200
+
 yunohost (3.8.4.8) stable; urgency=low
 
   - [fix] Don't add unprotected_urls if it's already in skipped_urls (#1005)
