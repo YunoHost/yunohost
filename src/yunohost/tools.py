@@ -368,7 +368,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    regen_conf(force=True)
     regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
@@ -383,6 +382,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     original_sshd_conf = '/etc/ssh/sshd_config.before_yunohost'
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, '/etc/ssh/sshd_config')
+
+    regen_conf(force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 
