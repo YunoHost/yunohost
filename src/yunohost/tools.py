@@ -104,14 +104,6 @@ def tools_ldapinit():
     # Force nscd to refresh cache to take admin creation into account
     subprocess.call(['nscd', '-i', 'passwd'])
 
-    try:
-        # Attempt to create user home folder
-        subprocess.check_call(["mkhomedir_helper", "admin"])
-    except subprocess.CalledProcessError:
-        if not os.path.isdir('/home/{0}'.format("admin")):
-            logger.warning(m18n.n('user_home_creation_failed'),
-                           exc_info=1)
-
     # Check admin actually exists now
     try:
         pwd.getpwnam("admin")
@@ -119,6 +111,14 @@ def tools_ldapinit():
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
         raise YunohostError('installation_failed')
 
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(["mkhomedir_helper", "admin"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir('/home/{0}'.format("admin")):
+            logger.warning(m18n.n('user_home_creation_failed'),
+                           exc_info=1)
+        
     logger.success(m18n.n('ldap_initialized'))
 
 
