@@ -15,7 +15,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-miniupnpc, python-dbus, python-jinja2
  , python-toml, python-packaging
- , apt, apt-transport-https
+ , apt, apt-transport-https, dirmngr
  , nginx, nginx-extras (>=1.6.2)
  , php-fpm, php-ldap, php-intl
  , mariadb-server, php-mysql | php-mysqlnd

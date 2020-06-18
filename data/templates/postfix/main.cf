@@ -170,7 +170,7 @@ smtpd_milters = inet:localhost:11332
 milter_default_action = accept
 
 # Avoid to send simultaneously too many emails
-smtp_destination_concurrency_limit = 1
+smtp_destination_concurrency_limit = 2
 default_destination_rate_delay = 5s
 
 # Avoid email adress scanning
