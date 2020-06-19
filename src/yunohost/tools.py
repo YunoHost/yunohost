@@ -359,6 +359,12 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     except Exception as e:
         logger.warning(str(e))
 
+    # Create the archive directory (makes it easier for people to upload backup
+    # archives, otherwise it's only created after running `yunohost backup
+    # create` once.
+    from yunohost.backup import _create_archive_dir
+    _create_archive_dir()
+
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
 
