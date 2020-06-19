@@ -1,3 +1,12 @@
+yunohost (4.0.2~beta) testing; urgency=low
+
+  - [mod] Rebase on stretch-unstable to include recent changes
+  - [fix] Create admin's home during postinstall (#1021)
+
+  Thanks to all contributors <3 ! (Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Jun 2020 15:16:26 +0200
+
 yunohost (4.0.1~alpha) testing; urgency=low
 
   - [fix] It just make no sense to backup/restore the mysql password... (#911)
