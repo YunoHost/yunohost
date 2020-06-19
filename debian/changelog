@@ -1,3 +1,9 @@
+yunohost (3.8.5.3) testing; urgency=low
+
+  - [fix] Fix the fix about unscd downgrade :/
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Jun 2020 18:50:58 +0200
+
 yunohost (3.8.5.2) testing; urgency=low
 
   - [fix] Small issue with unscd upgrade/downgrade ... new version ain't always 0.53.1, so find it using dirty scrapping
