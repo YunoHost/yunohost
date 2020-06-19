@@ -50,7 +50,7 @@ class MyMigration(Migration):
         # which for apt appears as a lower version (hence the --allow-downgrades and the hardcoded version number)
         unscd_version = check_output('dpkg -s unscd | grep "^Version: " | cut -d " " -f 2')
         if "yunohost" in unscd_version:
-            new_version = check_output("apt policy unscd 2>/dev/null | grep -v '\\*\\*\\*' | grep -A100 'Version table' | grep debian -B1 | head -n 1 | awk '{print $1}'")
+            new_version = check_output("apt policy unscd 2>/dev/null | grep -v '\\*\\*\\*' | grep -A100 'Version table' | grep http -B1 | head -n 1 | awk '{print $1}'").strip()
             if new_version:
                 self.apt_install('unscd=%s --allow-downgrades' % new_version)
             else:
@@ -199,5 +199,7 @@ class MyMigration(Migration):
         )
 
         cmd = "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt install --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes " + cmd
+
+        logger.debug("Running: %s" % cmd)
 
         call_async_output(cmd, callbacks, shell=True)
