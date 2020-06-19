@@ -593,12 +593,17 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+
             def is_relevant(l):
-                return "Reading database ..." not in l.rstrip()
+                irrelevants = [
+                    "service sudo-ldap already provided",
+                    "Reading database ..."
+                ]
+                return all(i not in l.rstrip() for i in irrelevants)
 
             callbacks = (
                 lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()) if is_relevant(l) else logger.debug(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
