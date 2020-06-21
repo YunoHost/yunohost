@@ -61,7 +61,11 @@ def domain_list(exclude_subdomains=False):
                 continue
         result_list.append(domain)
 
-    return {'domains': result_list}
+    result_list.sort()
+    return {
+        'domains': result_list,
+        'default': result_list.index(_get_maindomain())
+    }
 
 
 @is_unit_operation()
@@ -89,7 +93,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         raise YunohostError('domain_exists')
 
     operation_logger.start()
-    
+
     # Lower domain to avoid some edge cases issues
     # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
     domain = domain.lower()
