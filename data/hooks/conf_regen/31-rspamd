@@ -42,6 +42,8 @@ do_post_regen() {
   chown _rspamd /etc/dkim/*.mail.key
   chmod 400 /etc/dkim/*.mail.key
 
+  [ ! -e /var/log/rspamd ] || chown _rspamd:_rspamd /var/log/rspamd
+
   regen_conf_files=$1
   [ -z "$regen_conf_files" ] && exit 0
 
