@@ -1,3 +1,11 @@
+yunohost (3.8.5.4) testing; urgency=low
+
+  - [fix] Fix unscd version parsing *again*
+  - [fix] Enforce permissions on rspamd log directory
+  - [enh] Ignore stupid warnings about sudo-ldap that is already provided
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 21 Jun 2020 23:37:09 +0200
+
 yunohost (3.8.5.3) testing; urgency=low
 
   - [fix] Fix the fix about unscd downgrade :/
