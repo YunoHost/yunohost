@@ -450,13 +450,13 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 
     """
 
-    if os.path.exists(orig_file):
+    if orig_file and os.path.exists(orig_file):
         with open(orig_file, 'r') as orig_file:
             orig_file = orig_file.readlines()
     else:
         orig_file = []
 
-    if os.path.exists(new_file):
+    if new_file and os.path.exists(new_file):
         with open(new_file, 'r') as new_file:
             new_file = new_file.readlines()
     else:
