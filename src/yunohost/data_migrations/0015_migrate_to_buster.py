@@ -16,6 +16,7 @@ from yunohost.utils.packages import get_ynh_package_version, _list_upgradable_ap
 
 logger = getActionLogger('yunohost.migration')
 
+
 class MyMigration(Migration):
 
     "Upgrade the system to Debian Buster and Yunohost 4.x"
@@ -27,6 +28,13 @@ class MyMigration(Migration):
         self.check_assertions()
 
         logger.info(m18n.n("migration_0015_start"))
+
+        #
+        # Make sure certificates do not use weak signature hash algorithms (md5, sha1)
+        # otherwise nginx will later refuse to start which result in
+        # catastrophic situation
+        #
+        self.validate_and_upgrade_cert_if_necessary()
 
         #
         # Patch sources.list
@@ -203,3 +211,34 @@ class MyMigration(Migration):
         logger.debug("Running: %s" % cmd)
 
         call_async_output(cmd, callbacks, shell=True)
+
+    def validate_and_upgrade_cert_if_necessary(self):
+
+        active_certs = set(check_output("grep -roh '/.*crt.pem' /etc/nginx/").strip().split("\n"))
+
+        cmd = "LC_ALL=C openssl x509 -in %s -text -noout | grep -i 'Signature Algorithm:' | awk '{print $3}' | uniq"
+
+        default_crt = '/etc/yunohost/certs/yunohost.org/crt.pem'
+        default_key = '/etc/yunohost/certs/yunohost.org/key.pem'
+        default_signature = check_output(cmd % default_crt).strip() if default_crt in active_certs else None
+        if default_signature is not None and (default_signature.startswith("md5") or default_signature.startswith("sha1")):
+            logger.warning("%s is using a pretty old certificate incompatible with newer versions of nginx ... attempting to regenerate a fresh one" % default_crt)
+
+            os.system("mv %s %s.old" % (default_crt, default_crt))
+            os.system("mv %s %s.old" % (default_key, default_key))
+            ret = os.system("/usr/share/yunohost/hooks/conf_regen/02-ssl init")
+
+            if ret != 0 or not os.path.exists(default_crt):
+                logger.error("Upgrading the certificate failed ... reverting")
+                os.system("mv %s.old %s" % (default_crt, default_crt))
+                os.system("mv %s.old %s" % (default_key, default_key))
+
+        signatures = {cert: check_output(cmd % cert).strip() for cert in active_certs}
+
+        def cert_is_weak(cert):
+            sig = signatures[cert]
+            return sig.startswith("md5") or sig.startswith("sha1")
+
+        weak_certs = [cert for cert in signatures.keys() if cert_is_weak(cert)]
+        if weak_certs:
+            raise YunohostError("migration_0015_weak_certs", certs=", ".join(weak_certs))

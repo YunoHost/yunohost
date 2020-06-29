@@ -479,6 +479,7 @@
     "migration_0015_modified_files": "Please note that the following files were found to be manually modified and might be overwritten following the upgrade: {manually_modified_files}",
     "migration_0015_specific_upgrade": "Starting upgrade of system packages that needs to be upgrade independently…",
     "migration_0015_cleaning_up": "Cleaning up cache and packages not useful anymore…",
+    "migration_0015_weak_certs": "The following certificates were found to still use weak signature algorithms and have to be upgraded to be compatible with the next version of nginx: {certs}",
     "migrations_already_ran": "Those migrations are already done: {ids}",
     "migrations_cant_reach_migration_file": "Could not access migrations files at the path '%s'",
     "migrations_dependencies_not_satisfied": "Run these migrations: '{dependencies_id}', before migration {id}.",
