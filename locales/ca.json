@@ -666,5 +666,6 @@
     "migration_0015_patching_sources_list": "Apedaçament de source.lists…",
     "migration_0015_start": "Començant la migració a Buster",
     "migration_description_0015_migrate_to_buster": "Actualitza els sistema a Debian Buster i YunoHost 4.x",
-    "regenconf_need_to_explicitly_specify_ssh": "La configuració ssh ha estat modificada manualment, però heu d'especificar explícitament la categoria «ssh» amb --force per fer realment els canvis."
+    "regenconf_need_to_explicitly_specify_ssh": "La configuració ssh ha estat modificada manualment, però heu d'especificar explícitament la categoria «ssh» amb --force per fer realment els canvis.",
+    "migration_0015_weak_certs": "S'han trobat els següents certificats que encara utilitzen algoritmes de signatura febles i s'han d'actualitzar per a ser compatibles amb la propera versió de nginx: {certs}"
 }
