@@ -2470,6 +2470,7 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
     hide_user_input_in_prompt = True
     argument_type = "password"
     default_value = ""
+    forbidden_chars = "{}"
 
     def parse_question(self, question, user_answers):
         question = super(PasswordArgumentParser, self).parse_question(question, user_answers)
@@ -2478,6 +2479,12 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
             raise YunohostError('app_argument_password_no_default', name=question.name)
 
         return question
+
+    def _post_parse_value(self, question):
+        if any(char in question.value for char in self.forbidden_chars):
+            raise YunohostError('pattern_password_app', forbidden_chars=self.forbidden_chars)
+
+        return super(PasswordArgumentParser, self)._post_parse_value(question)
 
 
 class PathArgumentParser(YunoHostArgumentFormatParser):

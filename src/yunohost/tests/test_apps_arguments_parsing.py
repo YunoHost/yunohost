@@ -8,7 +8,7 @@ from collections import OrderedDict
 from moulinette import msignals
 
 from yunohost import domain, user, app
-from yunohost.app import _parse_args_in_yunohost_format
+from yunohost.app import _parse_args_in_yunohost_format, PasswordArgumentParser
 from yunohost.utils.error import YunohostError
 
 
@@ -357,6 +357,21 @@ def test_parse_args_in_yunohost_format_password_input_test_ask_with_help():
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert help_text in prompt.call_args[0][0]
+
+
+def test_parse_args_in_yunohost_format_password_bad_chars():
+    questions = [
+        {
+            "name": "some_password",
+            "type": "password",
+            "ask": "some question",
+            "example": "some_value",
+        }
+    ]
+
+    for i in PasswordArgumentParser.forbidden_chars:
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format({"some_password": i * 8}, questions)
 
 
 def test_parse_args_in_yunohost_format_path():
