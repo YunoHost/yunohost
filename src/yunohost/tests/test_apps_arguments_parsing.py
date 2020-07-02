@@ -247,8 +247,9 @@ def test_parse_args_in_yunohost_format_password_input_no_ask():
 def test_parse_args_in_yunohost_format_password_no_input_optional():
     questions = [{"name": "some_password", "type": "password", "optional": True,}]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("", "password")})
-    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
 
 
 def test_parse_args_in_yunohost_format_password_optional_with_input():
@@ -372,6 +373,24 @@ def test_parse_args_in_yunohost_format_password_bad_chars():
     for i in PasswordArgumentParser.forbidden_chars:
         with pytest.raises(YunohostError):
             _parse_args_in_yunohost_format({"some_password": i * 8}, questions)
+
+
+def test_parse_args_in_yunohost_format_password_strong_enough():
+    questions = [
+        {
+            "name": "some_password",
+            "type": "password",
+            "ask": "some question",
+            "example": "some_value",
+        }
+    ]
+
+    with pytest.raises(YunohostError):
+        # too short
+        _parse_args_in_yunohost_format({"some_password": "a"}, questions)
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format({"some_password": "password"}, questions)
 
 
 def test_parse_args_in_yunohost_format_path():
