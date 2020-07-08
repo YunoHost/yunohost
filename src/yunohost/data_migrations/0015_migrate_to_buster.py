@@ -174,6 +174,8 @@ class MyMigration(Migration):
                       "-e '/backports/ s@^#*@#@' " \
                       "-e 's@ stretch/updates @ buster/updates @g' " \
                       "-e 's@ stretch-updates @ buster-updates @g' " \
+                      "-e 's@ stretch-utils @ buster-utils @g' " \
+                      "-e 's@ stretch-desktop @ buster-desktop @g' " \
                       "{}".format(f)
             os.system(command)
 
