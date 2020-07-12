@@ -30,6 +30,9 @@ more_set_headers "X-Download-Options : noopen";
 more_set_headers "X-Permitted-Cross-Domain-Policies : none";
 more_set_headers "X-Frame-Options : SAMEORIGIN";
 
+# Force HTTPOnly and Secure for all cookies
+proxy_cookie_path ~$ "; HTTPOnly; Secure;";
+
 # Disable gzip to protect against BREACH
 # Read https://trac.nginx.org/nginx/ticket/1720 (text/html cannot be disabled!)
 gzip off;
