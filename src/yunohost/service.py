@@ -97,8 +97,8 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
         service["test_status"] = test_status
     else:
         # Try to get the description from systemd service
-        _, service = _get_service_information_from_systemd(name)
-        type_ = service.get("Type") if service is not None else ""
+        _, systemd_info = _get_service_information_from_systemd(name)
+        type_ = systemd_info.get("Type") if systemd_info is not None else ""
         if type_ == "oneshot":
             logger.warning("/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not.")
 
