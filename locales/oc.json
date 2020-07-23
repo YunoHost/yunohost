@@ -580,5 +580,7 @@
     "diagnosis_basesystem_hardware": "L’arquitectura del servidor es {virt} {arch}",
     "diagnosis_basesystem_hardware_board": "Lo modèl de carta del servidor es {model}",
     "backup_archive_corrupted": "Sembla que l’archiu de la salvagarda « {archive} » es corromput : {error}",
-    "diagnosis_domain_expires_in": "{domain} expiraà d’aquí {days} jorns."
+    "diagnosis_domain_expires_in": "{domain} expiraà d’aquí {days} jorns.",
+    "migration_0015_cleaning_up": "Netejatge de la memòria cache e dels paquets pas mai necessaris…",
+    "restore_already_installed_apps": "Restauracion impossibla de las aplicacions seguentas que son ja installadas : {apps}"
 }
