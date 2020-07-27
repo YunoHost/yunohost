@@ -1,3 +1,21 @@
+yunohost (3.8.5.5) stable; urgency=low
+
+  - [enh] Allow to extend the nginx default_server configuration (f1bfc521)
+  - [mod] Move redirect to /yunohost/admin to a separate nginx conf file to allow customizing it more easily (ac9182d6)
+  - [enh] Make sure to validate/upgrade that we don't have any active weak certificate used by nginx at the beginning of the buster migration, otherwise nginx will later miserably fail to start (d4358897)
+  - [fix] get_files_diff crashing if {orig,new}_file is None (7bfe564a)
+  - [enh] Remove some useless message about file that "wasn't deleted because it doesn't exist." (#1024)
+  - [mod] Remove useless robot protection code (#1026)
+  - [fix] Let's not redefine the value for the 'service' var ... (1a2f26dc)
+  - [fix] More general stretch->buster patching for sources.list (#1028)
+  - [mod] Tweak custom disclaimer about the migration still being a bit touchy in preparation for stable release (852dea07)
+  - [mod] Typo/wording in en.json (#1030)
+  - [i18n] Translations updated for Catalan, French, Italian, Occitan
+
+  Thanks to all contributors <3 ! (É. Gaspar, Kay0u, L. Noferini, ppr, Quentí, xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 27 Jul 2020 19:03:33 +0200
+
 yunohost (3.8.5.4) testing; urgency=low
 
   - [fix] Fix unscd version parsing *again*
