@@ -173,7 +173,7 @@ class MyMigration(Migration):
             command = "sed -i -e 's@ stretch @ buster @g' " \
                       "-e '/backports/ s@^#*@#@' " \
                       "-e 's@ stretch/updates @ buster/updates @g' " \
-                      "-e 's@ stretch-updates @ buster-updates @g' " \
+                      "-e 's@ stretch-@ buster-@g' " \
                       "{}".format(f)
             os.system(command)
 
