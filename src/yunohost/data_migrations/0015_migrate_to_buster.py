@@ -150,7 +150,7 @@ class MyMigration(Migration):
 
         message = m18n.n("migration_0015_general_warning")
 
-        message = "THIS MIGRATION IS CURRENTLY IN ALPHA-STAGE TESTING. YOU SHOULD *NOT* RUN IT FOR NOW ON A PRODUCTION SERVER UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING OR HAVE A WAY TO ROLLBACK. MORE INFO ON THE FORUM!\n\n" + message
+        message = "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/12195\n\n" + message
 
         if problematic_apps:
             message += "\n\n" + m18n.n("migration_0015_problematic_apps_warning", problematic_apps=problematic_apps)
