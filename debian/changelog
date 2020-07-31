@@ -1,3 +1,9 @@
+yunohost (3.8.5.6) stable; urgency=low
+
+  - [fix] Buster migration: automatically downgrade openssl version if current version is from sury
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 31 Jul 2020 15:50:18 +0200
+
 yunohost (3.8.5.5) stable; urgency=low
 
   - [enh] Allow to extend the nginx default_server configuration (f1bfc521)
