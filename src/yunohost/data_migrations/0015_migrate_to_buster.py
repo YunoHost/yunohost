@@ -86,6 +86,20 @@ class MyMigration(Migration):
         os.system("apt autoremove --assume-yes")
         os.system("apt clean --assume-yes")
 
+        # Check if we need to downgrade openssl ... we do so in cases were
+        # openssl was installed from sury and the version will conflict with
+        # yunohost
+        openssl_version = check_output('dpkg -s unscd | grep "^Version: " | cut -d " " -f 2')
+        # Vanilla debian version looks like: 1.1.1d-0+deb10u3+rpt1
+        # Sury version looks like: 1.1.1g-1+0~20200421.17+debian9~1.gbpf6902f
+        if "gbp" in openssl_version:
+            new_version = check_output("LC_ALL=C apt policy openssl 2>/dev/null | tr -d '*' | grep '^\\s*1.1.1' | grep -v gbp | head -n 1 | awk '{print $1}'").strip()
+            if new_version:
+                logger.info("Downgrading openssl version from %s to %s ..." % (openssl_version, new_version))
+                self.apt_install('openssl=%s --allow-downgrades' % new_version)
+            else:
+                logger.warning("Could not identify which version of openssl to install")
+
         #
         # Yunohost upgrade
         #
