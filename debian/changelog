@@ -1,3 +1,9 @@
+yunohost (3.8.5.7) stable; urgency=low
+
+  - [fix] Typo in previous commit -.-
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Aug 2020 19:49:30 +0200
+
 yunohost (3.8.5.6) stable; urgency=low
 
   - [fix] Buster migration: automatically downgrade openssl version if current version is from sury
