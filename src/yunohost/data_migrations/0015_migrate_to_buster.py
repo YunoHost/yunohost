@@ -89,7 +89,7 @@ class MyMigration(Migration):
         # Check if we need to downgrade openssl ... we do so in cases were
         # openssl was installed from sury and the version will conflict with
         # yunohost
-        openssl_version = check_output('dpkg -s unscd | grep "^Version: " | cut -d " " -f 2')
+        openssl_version = check_output('dpkg -s openssl | grep "^Version: " | cut -d " " -f 2')
         # Vanilla debian version looks like: 1.1.1d-0+deb10u3+rpt1
         # Sury version looks like: 1.1.1g-1+0~20200421.17+debian9~1.gbpf6902f
         if "gbp" in openssl_version:
