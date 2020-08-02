@@ -1,6 +1,7 @@
 yunohost (3.8.5.7) stable; urgency=low
 
-  - [fix] Typo in previous commit -.-
+  - [fix] Typo in previous commit -.- + make sure to hold openssl during
+  regular upgrade to avoid having it re-upgraded right away
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 02 Aug 2020 19:49:30 +0200
 
