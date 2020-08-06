@@ -49,13 +49,17 @@ smtpd_tls_mandatory_ciphers=high
 smtpd_tls_eecdh_grade = ultra
 ###############################################################################
 smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
-smtpd_tls_loglevel=1
+smtpd_tls_loglevel = 1
 
 # -- TLS for outgoing connections
 # Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
-smtp_tls_security_level=may
+{% if smtp_relayhost %}
+smtp_tls_security_level = encrypt
+{% else %}
+smtp_tls_security_level = may
+{% endif %}
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
-smtp_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
+smtp_tls_exclude_ciphers = NULL, MD5, DES, ADH, RC4, 3DES
 smtp_tls_mandatory_ciphers= high
 smtp_tls_loglevel=1
 
@@ -72,12 +76,19 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydomain = {{ main_domain }}
 mydestination = localhost
-relayhost =
+relayhost = {{ smtp_relayhost }}
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
 mailbox_command = procmail -a "$EXTENSION"
 mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
+
+{% if smtp_relayhost %}
+smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = hash:/etc/postfix/sasl/relayhost_passwd
+smtp_sasl_security_options = noanonymous
+smtp_sasl_tls_security_options = noanonymous
+{% endif %}
 
 #### Fit to the maximum message size to 30mb, more than allowed by GMail or Yahoo ####
 message_size_limit = 31457280

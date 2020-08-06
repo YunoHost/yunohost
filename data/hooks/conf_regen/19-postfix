@@ -24,6 +24,16 @@ do_pre_regen() {
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
 
+  export smtp_relayhost="$(yunohost settings get 'smtp.relayhost')"
+  export smtp_relayhost_user="$(yunohost settings get 'smtp.relayhost_user')"
+  export smtp_relayhost_pass="$(yunohost settings get 'smtp.relayhost_pass')"
+
+  if [[ -n "$smtp_relayhost" ]]; then
+    echo -e "${smtp_relayhost} ${smtp_relayhost_user}:${smtp_relayhost_pass}" > /etc/postfix/sasl/relayhost_passwd
+    chmod 600 /etc/postfix/sasl/relayhost_passwd
+    postmap /etc/postfix/sasl/relayhost_passwd
+  fi
+
   export main_domain
   export domain_list="$YNH_DOMAINS"
   ynh_render_template "main.cf" "${postfix_dir}/main.cf"
