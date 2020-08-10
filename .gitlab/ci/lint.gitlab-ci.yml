@@ -17,8 +17,9 @@ invalidcode:
   script:
     - tox -e invalidcode
 
-# Disabled, waiting for buster
-#format-check:
-#  extends: .lint-stage
-#  script:
-#    - black --check --diff
+format-check:
+  stage: lint
+  image: "before-install"
+  needs: []
+  script:
+    - black --check --diff
