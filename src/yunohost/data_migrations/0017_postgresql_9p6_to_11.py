@@ -47,6 +47,9 @@ class MyMigration(Migration):
         return returncode == 0
 
     def runcmd(self, cmd, raise_on_errors=True):
+
+        logger.debug("Running command: " + cmd)
+
         p = subprocess.Popen(cmd,
                              shell=True,
                              executable='/bin/bash',

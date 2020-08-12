@@ -90,6 +90,9 @@ class MyMigration(Migration):
             self.runcmd("iptables-legacy-restore < %s" % self.backup_rules_ipv6)
 
     def runcmd(self, cmd, raise_on_errors=True):
+
+        logger.debug("Running command: " + cmd)
+
         p = subprocess.Popen(cmd,
                              shell=True,
                              executable='/bin/bash',
