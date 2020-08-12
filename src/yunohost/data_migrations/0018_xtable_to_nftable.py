@@ -36,20 +36,20 @@ class MyMigration(Migration):
 
         # Backup existing legacy rules to be able to rollback
         if self.do_ipv4 and not os.path.exists(self.backup_rules_ipv4):
-            os.system("iptables-legacy -L >/dev/null")  # For some reason if we don't do this, iptables-legacy-save is empty ?
-            subprocess.check_call("iptables-legacy-save > %s" % self.backup_rules_ipv4, shell=True)
-            assert subprocess.check_output("cat %s" % self.backup_rules_ipv4, shell=True).strip(), "Uhoh backup of legacy ipv4 rules is empty !?"
+            self.runcmd("iptables-legacy -L >/dev/null")  # For some reason if we don't do this, iptables-legacy-save is empty ?
+            self.runcmd("iptables-legacy-save > %s" % self.backup_rules_ipv4)
+            assert open(self.backup_rules_ipv4).read().strip(), "Uhoh backup of legacy ipv4 rules is empty !?"
         if self.do_ipv6 and not os.path.exists(self.backup_rules_ipv6):
-            os.system("ip6tables-legacy -L >/dev/null")  # For some reason if we don't do this, iptables-legacy-save is empty ?
-            subprocess.check_call("ip6tables-legacy-save > %s" % self.backup_rules_ipv6, shell=True)
-            assert subprocess.check_output("cat %s" % self.backup_rules_ipv6, shell=True).strip(), "Uhoh backup of legacy ipv6 rules is empty !?"
+            self.runcmd("ip6tables-legacy -L >/dev/null")  # For some reason if we don't do this, iptables-legacy-save is empty ?
+            self.runcmd("ip6tables-legacy-save > %s" % self.backup_rules_ipv6)
+            assert open(self.backup_rules_ipv6).read().strip(), "Uhoh backup of legacy ipv6 rules is empty !?"
 
         # We inject the legacy rules (iptables-legacy) into the new iptable (just "iptables")
         try:
             if self.do_ipv4:
-                subprocess.check_call("iptables-legacy-save | iptables-restore", shell=True)
+                self.runcmd("iptables-legacy-save | iptables-restore")
             if self.do_ipv6:
-                subprocess.check_call("ip6tables-legacy-save | ip6tables-restore", shell=True)
+                self.runcmd("ip6tables-legacy-save | ip6tables-restore")
         except Exception as e:
             self.rollback()
             raise YunohostError("migration_0018_failed_to_migrate_iptables_rules", error=e)
@@ -58,19 +58,17 @@ class MyMigration(Migration):
         # Stolen from https://serverfault.com/a/200642
         try:
             if self.do_ipv4:
-                subprocess.check_call(
+                self.runcmd(
                     "iptables-legacy-save | awk '/^[*]/ { print $1 }"                         # Keep lines like *raw, *filter and *nat
                     "                            /^:[A-Z]+ [^-]/ { print $1 \" ACCEPT\" ; }"  # Turn all policies to accept
                     "                            /COMMIT/ { print $0; }'"                     # Keep the line COMMIT
-                    " | iptables-legacy-restore",
-                    shell=True)
+                    " | iptables-legacy-restore")
             if self.do_ipv6:
-                subprocess.check_call(
+                self.runcmd(
                     "ip6tables-legacy-save | awk '/^[*]/ { print $1 }"                        # Keep lines like *raw, *filter and *nat
                     "                            /^:[A-Z]+ [^-]/ { print $1 \" ACCEPT\" ; }"  # Turn all policies to accept
                     "                            /COMMIT/ { print $0; }'"                     # Keep the line COMMIT
-                    " | ip6tables-legacy-restore",
-                    shell=True)
+                    " | ip6tables-legacy-restore")
         except Exception as e:
             self.rollback()
             raise YunohostError("migration_0018_failed_to_reset_legacy_rules", error=e)
@@ -87,6 +85,22 @@ class MyMigration(Migration):
     def rollback(self):
 
         if self.do_ipv4:
-            subprocess.check_call("iptables-legacy-restore < %s" % self.backup_rules_ipv4, shell=True)
+            self.runcmd("iptables-legacy-restore < %s" % self.backup_rules_ipv4)
         if self.do_ipv6:
-            subprocess.check_call("iptables-legacy-restore < %s" % self.backup_rules_ipv6, shell=True)
+            self.runcmd("iptables-legacy-restore < %s" % self.backup_rules_ipv6)
+
+    def runcmd(self, cmd, raise_on_errors=True):
+        p = subprocess.Popen(cmd,
+                             shell=True,
+                             executable='/bin/bash',
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+
+        out, err = p.communicate()
+        returncode = p.returncode
+        if raise_on_errors and returncode != 0:
+            raise YunohostError("Failed to run command '{}'.\nreturncode: {}\nstdout:\n{}\nstderr:\n{}\n".format(cmd, returncode, out, err))
+
+        out = out.strip().split("\n")
+        return (returncode, out, err)
+
