@@ -28,14 +28,29 @@ class MyMigration(Migration):
         if not space_used_by_directory("/var/lib/postgresql/9.6") > free_space_in_directory("/var/lib/postgresql"):
             raise YunohostError("migration_0017_not_enough_space", path="/var/lib/postgresql/")
 
-        subprocess.check_call("systemctl stop postgresql", shell=True)
-        subprocess.check_call("pg_dropcluster --stop 11 main", shell=True)
-        subprocess.check_call("pg_upgradecluster -m upgrade 9.6 main", shell=True)
-        subprocess.check_call("pg_dropcluster --stop 9.6 main", shell=True)
-        subprocess.check_call("systemctl start postgresql", shell=True)
+        self.runcmd("systemctl stop postgresql")
+        self.runcmd("pg_dropcluster --stop 11 main")
+        self.runcmd("pg_upgradecluster -m upgrade 9.6 main")
+        self.runcmd("pg_dropcluster --stop 9.6 main")
+        self.runcmd("systemctl start postgresql")
 
     def package_is_installed(self, package_name):
 
-        p = subprocess.Popen("dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name), shell=True)
-        p.communicate()
-        return p.returncode == 0
+        (returncode, out, err) = self.runcmd("dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name), raise_on_errors=False)
+        return returncode == 0
+
+    def runcmd(self, cmd, raise_on_errors=True):
+        p = subprocess.Popen(cmd,
+                             shell=True,
+                             executable='/bin/bash',
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+
+        out, err = p.communicate()
+        returncode = p.returncode
+        if raise_on_errors and returncode != 0:
+            raise YunohostError("Failed to run command '{}'.\nreturncode: {}\nstdout:\n{}\nstderr:\n{}\n".format(cmd, returncode, out, err))
+
+        out = out.strip().split("\n")
+        return (returncode, out, err)
+
