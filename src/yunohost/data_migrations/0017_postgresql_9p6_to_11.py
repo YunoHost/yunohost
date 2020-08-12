@@ -25,11 +25,18 @@ class MyMigration(Migration):
         if not self.package_is_installed("postgresql-11"):
             raise YunohostError("migration_0017_postgresql_11_not_installed")
 
+        # Make sure there's a 9.6 cluster
+        try:
+            self.runcmd("pg_lsclusters | grep -q '^9.6 '")
+        except Exception as e:
+            logger.warning("It looks like there's not active 9.6 cluster, so probably don't need to run this migration")
+            return
+
         if not space_used_by_directory("/var/lib/postgresql/9.6") > free_space_in_directory("/var/lib/postgresql"):
             raise YunohostError("migration_0017_not_enough_space", path="/var/lib/postgresql/")
 
         self.runcmd("systemctl stop postgresql")
-        self.runcmd("pg_dropcluster --stop 11 main")
+        self.runcmd("pg_dropcluster --stop 11 main || true") # We do not trigger an exception if the command fails because that probably means cluster 11 doesn't exists, which is fine because it's created during the pg_upgradecluster)
         self.runcmd("pg_upgradecluster -m upgrade 9.6 main")
         self.runcmd("pg_dropcluster --stop 9.6 main")
         self.runcmd("systemctl start postgresql")
