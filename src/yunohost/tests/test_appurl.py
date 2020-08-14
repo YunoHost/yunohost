@@ -1,4 +1,7 @@
 import pytest
+import os
+
+from conftest import get_test_apps_dir
 
 from yunohost.utils.error import YunohostError
 from yunohost.app import app_install, app_remove
@@ -43,19 +46,19 @@ def test_urlavailable():
 
 def test_registerurl():
 
-    app_install("./tests/apps/register_url_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
                 args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"), force=True)
 
     assert not domain_url_available(maindomain, "/urlregisterapp")
 
     # Try installing at same location
     with pytest.raises(YunohostError):
-        app_install("./tests/apps/register_url_app_ynh",
+        app_install(os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
                     args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"), force=True)
 
 
 def test_registerurl_baddomain():
 
     with pytest.raises(YunohostError):
-        app_install("./tests/apps/register_url_app_ynh",
+        app_install(os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
                     args="domain=%s&path=%s" % ("yolo.swag", "/urlregisterapp"), force=True)

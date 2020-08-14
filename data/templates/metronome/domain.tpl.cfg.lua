@@ -47,6 +47,10 @@ Component "muc.{{ domain }}" "muc"
 
   muc_event_rate = 0.5
   muc_burst_factor = 10
+  room_default_config = {
+    logging = true,
+    persistent = true
+  };
 
 ---Set up a PubSub server
 Component "pubsub.{{ domain }}" "pubsub"

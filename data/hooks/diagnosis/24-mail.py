@@ -126,7 +126,7 @@ class MailDiagnoser(Diagnoser):
                 query += '.ip6.arpa'
 
             # Do the DNS Query
-            status, value = dig(query, 'PTR')
+            status, value = dig(query, 'PTR', resolvers="force_external")
             if status == "nok":
                 yield dict(meta={"test": "mail_fcrdns", "ipversion": ipversion},
                            data={"ip": ip, "ehlo_domain": self.ehlo_domain},

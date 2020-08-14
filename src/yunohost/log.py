@@ -35,13 +35,14 @@ from logging import FileHandler, getLogger, Formatter
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
+from yunohost.utils.packages import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
-CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service',
-              'app']
+#CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', 'app']
+CATEGORIES = ['operation']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
 RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
@@ -63,7 +64,7 @@ def log_list(category=[], limit=None, with_details=False):
 
     # In cli we just display `operation` logs by default
     if not categories:
-        categories = ["operation"] if not is_api else CATEGORIES
+        categories = CATEGORIES
 
     result = collections.OrderedDict()
     for category in categories:
@@ -135,6 +136,29 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
         share
     """
 
+    if share:
+        filter_irrelevant = True
+
+    if filter_irrelevant:
+        filters = [
+            r"set [+-]x$",
+            r"set [+-]o xtrace$",
+            r"local \w+$",
+            r"local legacy_args=.*$",
+            r".*Helper used in legacy mode.*",
+            r"args_array=.*$",
+            r"local -A args_array$",
+            r"ynh_handle_getopts_args",
+            r"ynh_script_progression"
+        ]
+    else:
+        filters = []
+
+    def _filter_lines(lines, filters=[]):
+
+        filters = [re.compile(f) for f in filters]
+        return [l for l in lines if not any(f.search(l.strip()) for f in filters)]
+
     # Normalize log/metadata paths and filenames
     abs_path = path
     log_path = None
@@ -173,7 +197,8 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
             content += read_file(md_path)
             content += "\n============\n\n"
         if os.path.exists(log_path):
-            content += read_file(log_path)
+            actual_log = read_file(log_path)
+            content += "\n".join(_filter_lines(actual_log.split("\n"), filters))
 
         url = yunopaste(content)
 
@@ -202,27 +227,12 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
 
     # Display logs if exist
     if os.path.exists(log_path):
-
-        if filter_irrelevant:
-            filters = [
-                r"set [+-]x$",
-                r"set [+-]o xtrace$",
-                r"local \w+$",
-                r"local legacy_args=.*$",
-                r".*Helper used in legacy mode.*",
-                r"args_array=.*$",
-                r"local -A args_array$",
-                r"ynh_handle_getopts_args",
-                r"ynh_script_progression"
-            ]
-        else:
-            filters = []
-
         from yunohost.service import _tail
         if number:
-            logs = _tail(log_path, int(number), filters=filters)
+            logs = _tail(log_path, int(number))
         else:
             logs = read_file(log_path)
+        logs = _filter_lines(logs, filters)
         infos['log_path'] = log_path
         infos['logs'] = logs
 
@@ -456,6 +466,7 @@ class OperationLogger(object):
         data = {
             'started_at': self.started_at,
             'operation': self.operation,
+            'yunohost_version': get_ynh_package_version("yunohost")["version"],
         }
         if self.related_to is not None:
             data['related_to'] = self.related_to

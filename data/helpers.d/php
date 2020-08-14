@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly YNH_DEFAULT_PHP_VERSION=7.0
+readonly YNH_DEFAULT_PHP_VERSION=7.3
 # Declare the actual php version to use.
 # A packager willing to use another version of php can override the variable into its _common.sh.
 YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
@@ -148,8 +148,14 @@ ynh_add_fpm_config () {
 
     if [ $use_template -eq 1 ]
     then
-        # Usage 1, use the template in ../conf/php-fpm.conf
-        cp ../conf/php-fpm.conf "$finalphpconf"
+        # Usage 1, use the template in conf/php-fpm.conf
+        local phpfpm_path="../conf/php-fpm.conf"
+        if [ ! -e "$phpfpm_path" ]; then
+            phpfpm_path="../settings/conf/php-fpm.conf"	# Into the restore script, the php-fpm template is not at the same place
+        fi
+        # Make sure now that the template indeed exists
+        [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure php-fpm."
+        cp "$phpfpm_path" "$finalphpconf"
         ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
         ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
@@ -297,7 +303,10 @@ ynh_remove_fpm_config () {
     fi
 
     ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-    ynh_exec_warn_less ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
+    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
+    then
+        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
+    fi
 
     # If the php version used is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
@@ -345,7 +354,7 @@ ynh_install_php () {
     fi
 
     # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version
+    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version --priority=600
 
     # Install requested dependencies from this extra repository.
     # Install php-fpm first, otherwise php will install apache as a dependency.
@@ -356,8 +365,10 @@ ynh_install_php () {
     update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
 
     # Pin this extra repository after packages are installed to prevent sury of doing shit
-    ynh_pin_repo --package="*" --pin="origin \"packages.sury.org\"" --priority=200 --name=extra_php_version
-    ynh_pin_repo --package="php${YNH_DEFAULT_PHP_VERSION}*" --pin="origin \"packages.sury.org\"" --priority=600 --name=extra_php_version --append
+    for package_to_not_upgrade in "php" "php-fpm" "php-mysql" "php-xml" "php-zip" "php-mbstring" "php-ldap" "php-gd" "php-curl" "php-bz2" "php-json" "php-sqlite3" "php-intl" "openssl" "libssl1.1" "libssl-dev"
+    do
+        ynh_pin_repo --package="$package_to_not_upgrade" --pin="origin \"packages.sury.org\"" --priority="-1" --name=extra_php_version --append
+    done
 
     # Advertise service in admin panel
     yunohost service add php${phpversion}-fpm --log "/var/log/php${phpversion}-fpm.log"

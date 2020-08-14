@@ -228,7 +228,7 @@ function driver:stores(username, type, pattern)
     return nil, "not implemented";
 end
 
-function driver:store_exists(username, datastore, type)
+function driver:store_exists(username, type)
     return nil, "not implemented";
 end
 
@@ -236,7 +236,7 @@ function driver:purge(username)
     return nil, "not implemented";
 end
 
-function driver:users()
+function driver:nodes(type)
     return nil, "not implemented";
 end
 

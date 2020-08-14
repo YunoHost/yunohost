@@ -64,8 +64,21 @@ do_post_regen() {
       systemctl restart resolvconf
   fi
 
-  [[ -z "$regen_conf_files" ]] \
-    || service dnsmasq restart
+  # Some stupid things like rabbitmq-server used by onlyoffice won't work if
+  # the *short* hostname doesn't exists in /etc/hosts -_-
+  short_hostname=$(hostname -s)
+  grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
+
+  [[ -n "$regen_conf_files" ]] || return
+
+  # Remove / disable services likely to conflict with dnsmasq
+  for SERVICE in systemd-resolved bind9
+  do
+      systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
+      systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
+  done
+
+  systemctl restart dnsmasq
 }
 
 FORCE=${2:-0}
