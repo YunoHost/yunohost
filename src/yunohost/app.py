@@ -2478,8 +2478,15 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
 
                 elif question_type == 'user':
                     msignals.display(m18n.n('users_available'))
-                    for user in user_list()['users'].keys():
+                    users = user_list()['users']
+                    for user in users.keys():
                         msignals.display("- {}".format(user))
+
+                    root_mail = "root@%s" % _get_maindomain()
+                    for user in users.keys():
+                        if root_mail in user_info(user)["mail-aliases"]:
+                            arg_default = user
+                            ask_string += ' (default: {0})'.format(arg_default)
 
                 elif question_type == 'password':
                     msignals.display(m18n.n('good_practices_about_user_password'))
