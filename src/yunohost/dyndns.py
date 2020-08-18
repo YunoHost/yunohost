@@ -205,22 +205,6 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
 
             key = keys[0]
 
-    # This mean that hmac-md5 is used
-    # (Re?)Trigger the migration to sha256 and return immediately.
-    # The actual update will be done in next run.
-    if "+157" in key:
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("migrate_to_tsig_sha256")
-        try:
-            migration.run(dyn_host, domain, key)
-        except Exception as e:
-            logger.error(m18n.n('migrations_migration_has_failed',
-                                exception=e,
-                                number=migration.number,
-                                name=migration.name),
-                         exc_info=1)
-        return
-
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
     host = domain.split('.')[1:]
     host = '.'.join(host)

@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 
-from conftest import message, raiseYunohostError
+from conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
@@ -11,6 +11,7 @@ from yunohost.backup import backup_create, backup_restore, backup_list, backup_i
 from yunohost.domain import _get_maindomain
 from yunohost.user import user_permission_list, user_create, user_list, user_delete
 from yunohost.tests.test_permission import check_LDAP_db_integrity, check_permission_for_apps
+from yunohost.hook import CUSTOM_HOOK_FOLDER
 
 # Get main domain
 maindomain = ""
@@ -116,9 +117,9 @@ def app_is_installed(app):
 def backup_test_dependencies_are_met():
 
     # Dummy test apps (or backup archives)
-    assert os.path.exists("./tests/apps/backup_wordpress_from_2p4")
-    assert os.path.exists("./tests/apps/legacy_app_ynh")
-    assert os.path.exists("./tests/apps/backup_recommended_app_ynh")
+    assert os.path.exists(os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4"))
+    assert os.path.exists(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
+    assert os.path.exists(os.path.join(get_test_apps_dir(), "backup_recommended_app_ynh"))
 
     return True
 
@@ -174,7 +175,7 @@ def uninstall_test_apps_if_needed():
 
 def install_app(app, path, additionnal_args=""):
 
-    app_install("./tests/apps/%s" % app,
+    app_install(os.path.join(get_test_apps_dir(), app),
                 args="domain=%s&path=%s%s" % (maindomain, path,
                                               additionnal_args), force=True)
 
@@ -183,22 +184,22 @@ def add_archive_wordpress_from_2p4():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
-    os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.info.json \
-               /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.info.json") + \
+               " /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
 
-    os.system("cp ./tests/apps/backup_wordpress_from_2p4/backup.tar.gz \
-               /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.tar.gz") + \
+               " /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
 
 
 def add_archive_system_from_2p4():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
-    os.system("cp ./tests/apps/backup_system_from_2p4/backup.info.json \
-               /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.info.json") + \
+               " /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
 
-    os.system("cp ./tests/apps/backup_system_from_2p4/backup.tar.gz \
-               /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.tar.gz") + \
+               " /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
 
 #
 # System backup                                                              #
@@ -474,10 +475,9 @@ def test_restore_app_already_installed(mocker):
 
     assert _is_installed("wordpress")
 
-    with message(mocker, 'restore_already_installed_app', app="wordpress"):
-        with raiseYunohostError(mocker, 'restore_nothings_done'):
-            backup_restore(system=None, name=backup_list()["archives"][0],
-                           apps=["wordpress"])
+    with raiseYunohostError(mocker, 'restore_already_installed_apps'):
+        backup_restore(system=None, name=backup_list()["archives"][0],
+                       apps=["wordpress"])
 
     assert _is_installed("wordpress")
 
@@ -591,10 +591,30 @@ def test_restore_archive_with_bad_archive(mocker):
     clean_tmp_backup_directory()
 
 
+def test_restore_archive_with_custom_hook(mocker):
+
+    custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
+    os.system("touch %s/99-yolo" % custom_restore_hook_folder)
+
+    # Backup with custom hook system
+    with message(mocker, "backup_created"):
+        backup_create(system=[], apps=None)
+    archives = backup_list()["archives"]
+    assert len(archives) == 1
+
+    # Restore system with custom hook
+    with message(mocker, "restore_complete"):
+        backup_restore(name=backup_list()["archives"][0],
+                        system=[],
+                        apps=None,
+                        force=True)
+
+    os.system("rm %s/99-yolo" % custom_restore_hook_folder)
+
+
 def test_backup_binds_are_readonly(mocker, monkeypatch):
 
-    def custom_mount_and_backup(self, backup_manager):
-        self.manager = backup_manager
+    def custom_mount_and_backup(self):
         self._organize_files()
 
         confssh = os.path.join(self.work_dir, "conf/ssh")

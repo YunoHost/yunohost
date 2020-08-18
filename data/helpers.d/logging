@@ -80,7 +80,7 @@ ynh_print_warn () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_print_log "\e[93m\e[1m[WARN]\e[0m ${message}" >&2
+    ynh_print_log "${message}" >&2
 }
 
 # Print an error on stderr
@@ -97,7 +97,7 @@ ynh_print_err () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_print_log "\e[91m\e[1m[ERR]\e[0m ${message}" >&2
+    ynh_print_log "[Error] ${message}" >&2
 }
 
 # Execute a command and print the result as an error
@@ -216,7 +216,7 @@ base_time=$(date +%s)
 # | arg: -m, --message= - The text to print
 # | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
 # | arg: -t, --time     - Print the execution time since the last call to this helper. Especially usefull to define weights. The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
-# | arg: -l, --last     - Use for the last call of the helper, to fill te progression bar.
+# | arg: -l, --last     - Use for the last call of the helper, to fill the progression bar.
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_script_progression () {
@@ -332,7 +332,7 @@ ynh_debug () {
 
     if [ -n "$message" ]
     then
-        ynh_print_log "\e[34m\e[1m[DEBUG]\e[0m ${message}" >&2
+        ynh_print_log "[Debug] ${message}" >&2
     fi
 
     if [ "$trace" == "1" ]

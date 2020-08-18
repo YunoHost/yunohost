@@ -21,7 +21,7 @@ class ServicesDiagnoser(Diagnoser):
                         data={"status": result["status"], "configuration": result["configuration"]})
 
             if result["status"] != "running":
-                item["status"] = "ERROR"
+                item["status"] = "ERROR" if result["status"] != "unknown" else "WARNING"
                 item["summary"] = "diagnosis_services_bad_status"
                 item["details"] = ["diagnosis_services_bad_status_tip"]
 

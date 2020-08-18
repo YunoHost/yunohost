@@ -43,7 +43,13 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 
 from yunohost.app import (
-    app_info, _is_installed, _parse_app_instance_name, _patch_php5, dump_app_log_extract_for_debugging, _patch_legacy_helpers
+    app_info, _is_installed,
+    _parse_app_instance_name,
+    dump_app_log_extract_for_debugging,
+    _patch_legacy_helpers,
+    _patch_legacy_php_versions,
+    _patch_legacy_php_versions_in_settings,
+    LEGACY_PHP_VERSION_REPLACEMENTS
 )
 from yunohost.hook import (
     hook_list, hook_info, hook_callback, hook_exec, CUSTOM_HOOK_FOLDER
@@ -219,8 +225,8 @@ class BackupManager():
         backup_manager = BackupManager(name="mybackup", description="bkp things")
 
         # Add backup method to apply
-        backup_manager.add(BackupMethod.create('copy','/mnt/local_fs'))
-        backup_manager.add(BackupMethod.create('tar','/mnt/remote_fs'))
+        backup_manager.add(BackupMethod.create('copy', backup_manager, '/mnt/local_fs'))
+        backup_manager.add(BackupMethod.create('tar', backup_manager, '/mnt/remote_fs'))
 
         # Define targets to be backuped
         backup_manager.set_system_targets(["data"])
@@ -752,7 +758,7 @@ class BackupManager():
 
         for method in self.methods:
             logger.debug(m18n.n('backup_applying_method_' + method.method_name))
-            method.mount_and_backup(self)
+            method.mount_and_backup()
             logger.debug(m18n.n('backup_method_' + method.method_name + '_finished'))
 
     def _compute_backup_size(self):
@@ -851,7 +857,7 @@ class RestoreManager():
         self.info = backup_info(name, with_details=True)
         self.archive_path = self.info['path']
         self.name = name
-        self.method = BackupMethod.create(method)
+        self.method = BackupMethod.create(method, self)
         self.targets = BackupRestoreTargetsManager()
 
     #
@@ -956,6 +962,9 @@ class RestoreManager():
         # These are the hooks on the current installation
         available_restore_system_hooks = hook_list("restore")["hooks"]
 
+        custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
+        filesystem.mkdir(custom_restore_hook_folder, 755, parents=True, force=True)
+
         for system_part in target_list:
             # By default, we'll use the restore hooks on the current install
             # if available
@@ -967,24 +976,25 @@ class RestoreManager():
                 continue
 
             # Otherwise, attempt to find it (or them?) in the archive
-            hook_paths = '{:s}/hooks/restore/*-{:s}'.format(self.work_dir, system_part)
-            hook_paths = glob(hook_paths)
 
             # If we didn't find it, we ain't gonna be able to restore it
-            if len(hook_paths) == 0:
+            if system_part not in self.info['system'] or\
+                    'paths' not in self.info['system'][system_part] or\
+                    len(self.info['system'][system_part]['paths']) == 0:
                 logger.exception(m18n.n('restore_hook_unavailable', part=system_part))
                 self.targets.set_result("system", system_part, "Skipped")
                 continue
 
+            hook_paths = self.info['system'][system_part]['paths']
+            hook_paths = [ 'hooks/restore/%s' % os.path.basename(p) for p in hook_paths ]
+
             # Otherwise, add it from the archive to the system
             # FIXME: Refactor hook_add and use it instead
-            custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, 'restore')
-            filesystem.mkdir(custom_restore_hook_folder, 755, True)
             for hook_path in hook_paths:
                 logger.debug("Adding restoration script '%s' to the system "
                              "from the backup archive '%s'", hook_path,
                              self.archive_path)
-            shutil.copy(hook_path, custom_restore_hook_folder)
+                self.method.copy(hook_path, custom_restore_hook_folder)
 
     def set_apps_targets(self, apps=[]):
         """
@@ -1000,10 +1010,20 @@ class RestoreManager():
             logger.error(m18n.n('backup_archive_app_not_found',
                                 app=app))
 
-        self.targets.set_wanted("apps",
-                                apps,
-                                self.info['apps'].keys(),
-                                unknown_error)
+        to_be_restored = self.targets.set_wanted("apps",
+                                                 apps,
+                                                 self.info['apps'].keys(),
+                                                 unknown_error)
+
+        # If all apps to restore are already installed, stop right here.
+        # Otherwise, if at least one app can be restored, we keep going on
+        # because those which can be restored will indeed be restored
+        already_installed = [app for app in to_be_restored if _is_installed(app)]
+        if already_installed != []:
+            if already_installed == to_be_restored:
+                raise YunohostError("restore_already_installed_apps", apps=', '.join(already_installed))
+            else:
+                logger.warning(m18n.n("restore_already_installed_apps", apps=', '.join(already_installed)))
 
     #
     # Archive mounting                                                      #
@@ -1044,7 +1064,7 @@ class RestoreManager():
 
         filesystem.mkdir(self.work_dir, parents=True)
 
-        self.method.mount(self)
+        self.method.mount()
 
         self._read_info_files()
 
@@ -1127,7 +1147,7 @@ class RestoreManager():
             self._postinstall_if_needed()
 
             # Apply dirty patch to redirect php5 file on php7
-            self._patch_backup_csv_file()
+            self._patch_legacy_php_versions_in_csv_file()
 
             self._restore_system()
             self._restore_apps()
@@ -1136,9 +1156,9 @@ class RestoreManager():
         finally:
             self.clean()
 
-    def _patch_backup_csv_file(self):
+    def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 file on php7
+        Apply dirty patch to redirect php5 and php7.0 files to php7.3
         """
 
         backup_csv = os.path.join(self.work_dir, 'backup.csv')
@@ -1146,32 +1166,27 @@ class RestoreManager():
         if not os.path.isfile(backup_csv):
             return
 
-        contains_php5 = False
+        replaced_something = False
         with open(backup_csv) as csvfile:
             reader = csv.DictReader(csvfile, fieldnames=['source', 'dest'])
             newlines = []
             for row in reader:
-                if 'php5' in row['source']:
-                    contains_php5 = True
-                    row['source'] = row['source'].replace('/etc/php5', '/etc/php/7.0') \
-                        .replace('/var/run/php5-fpm', '/var/run/php/php7.0-fpm') \
-                        .replace('php5', 'php7')
+                for pattern, replace in LEGACY_PHP_VERSION_REPLACEMENTS:
+                    if pattern in row['source']:
+                        replaced_something = True
+                        row['source'] = row['source'].replace(pattern, replace)
 
                 newlines.append(row)
 
-        if not contains_php5:
+        if not replaced_something:
             return
 
-        try:
-            with open(backup_csv, 'w') as csvfile:
-                writer = csv.DictWriter(csvfile,
-                                        fieldnames=['source', 'dest'],
-                                        quoting=csv.QUOTE_ALL)
-                for row in newlines:
-                    writer.writerow(row)
-        except (IOError, OSError, csv.Error) as e:
-            logger.warning(m18n.n('backup_php5_to_php7_migration_may_fail',
-                                  error=str(e)))
+        with open(backup_csv, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile,
+                                    fieldnames=['source', 'dest'],
+                                    quoting=csv.QUOTE_ALL)
+            for row in newlines:
+                writer.writerow(row)
 
     def _restore_system(self):
         """ Restore user and system parts """
@@ -1230,12 +1245,11 @@ class RestoreManager():
         #
         # Legacy code
         if not "all_users" in user_group_list()["groups"].keys():
-            from yunohost.tools import _get_migration_by_name
-            setup_group_permission = _get_migration_by_name("setup_group_permission")
+            from yunohost.utils.legacy import SetupGroupPermissions
             # Update LDAP schema restart slapd
             logger.info(m18n.n("migration_0011_update_LDAP_schema"))
             regen_conf(names=['slapd'], force=True)
-            setup_group_permission.migrate_LDAP_db()
+            SetupGroupPermissions.migrate_LDAP_db()
 
         # Remove all permission for all app which is still in the LDAP
         for permission_name in user_permission_list(ignore_system_perms=True)["permissions"].keys():
@@ -1297,19 +1311,19 @@ class RestoreManager():
                 else:
                     shutil.copy2(s, d)
 
-        # Start register change on system
-        related_to = [('app', app_instance_name)]
-        operation_logger = OperationLogger('backup_restore_app', related_to)
-        operation_logger.start()
-
-        logger.info(m18n.n("app_start_restore", app=app_instance_name))
-
         # Check if the app is not already installed
         if _is_installed(app_instance_name):
             logger.error(m18n.n('restore_already_installed_app',
                                 app=app_instance_name))
             self.targets.set_result("apps", app_instance_name, "Error")
             return
+
+        # Start register change on system
+        related_to = [('app', app_instance_name)]
+        operation_logger = OperationLogger('backup_restore_app', related_to)
+        operation_logger.start()
+
+        logger.info(m18n.n("app_start_restore", app=app_instance_name))
 
         app_dir_in_archive = os.path.join(self.work_dir, 'apps', app_instance_name)
         app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
@@ -1320,7 +1334,8 @@ class RestoreManager():
         _patch_legacy_helpers(app_settings_in_archive)
 
         # Apply dirty patch to make php5 apps compatible with php7
-        _patch_php5(app_settings_in_archive)
+        _patch_legacy_php_versions(app_settings_in_archive)
+        _patch_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, '_common.sh')
@@ -1375,9 +1390,8 @@ class RestoreManager():
             else:
                 # Otherwise, we need to migrate the legacy permissions of this
                 # app (included in its settings.yml)
-                from yunohost.tools import _get_migration_by_name
-                setup_group_permission = _get_migration_by_name("setup_group_permission")
-                setup_group_permission.migrate_app_permission(app=app_instance_name)
+                from yunohost.utils.legacy import SetupGroupPermissions
+                SetupGroupPermissions.migrate_app_permission(app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
@@ -1499,19 +1513,19 @@ class BackupMethod(object):
         method_name
 
     Public methods:
-        mount_and_backup(self, backup_manager)
-        mount(self, restore_manager)
+        mount_and_backup(self)
+        mount(self)
         create(cls, method, **kwargs)
 
     Usage:
-        method = BackupMethod.create("tar")
-        method.mount_and_backup(backup_manager)
+        method = BackupMethod.create("tar", backup_manager)
+        method.mount_and_backup()
         #or
-        method = BackupMethod.create("copy")
-        method.mount(restore_manager)
+        method = BackupMethod.create("copy", restore_manager)
+        method.mount()
     """
 
-    def __init__(self, repo=None):
+    def __init__(self, manager, repo=None):
         """
         BackupMethod constructors
 
@@ -1524,6 +1538,7 @@ class BackupMethod(object):
                    BackupRepository object. If None, the default repo is used :
                    /home/yunohost.backup/archives/
         """
+        self.manager = manager
         self.repo = ARCHIVES_PATH if repo is None else repo
 
     @property
@@ -1569,18 +1584,13 @@ class BackupMethod(object):
         """
         return False
 
-    def mount_and_backup(self, backup_manager):
+    def mount_and_backup(self):
         """
         Run the backup on files listed by  the BackupManager instance
 
         This method shouldn't be overrided, prefer overriding self.backup() and
         self.clean()
-
-        Args:
-        backup_manager -- (BackupManager) A backup manager instance that has
-                          already done the files collection step.
         """
-        self.manager = backup_manager
         if self.need_mount():
             self._organize_files()
 
@@ -1589,17 +1599,13 @@ class BackupMethod(object):
         finally:
             self.clean()
 
-    def mount(self, restore_manager):
+    def mount(self):
         """
         Mount the archive from RestoreManager instance in the working directory
 
         This method should be extended.
-
-        Args:
-            restore_manager -- (RestoreManager) A restore manager instance
-                               contains an archive to restore.
         """
-        self.manager = restore_manager
+        pass
 
     def clean(self):
         """
@@ -1744,7 +1750,7 @@ class BackupMethod(object):
                 shutil.copy(path['source'], dest)
 
     @classmethod
-    def create(cls, method, *args):
+    def create(cls, method, manager, *args):
         """
         Factory method to create instance of BackupMethod
 
@@ -1760,7 +1766,7 @@ class BackupMethod(object):
         if not isinstance(method, basestring):
             methods = []
             for m in method:
-                methods.append(BackupMethod.create(m, *args))
+                methods.append(BackupMethod.create(m, manager, *args))
             return methods
 
         bm_class = {
@@ -1769,9 +1775,9 @@ class BackupMethod(object):
             'borg': BorgBackupMethod
         }
         if method in ["copy", "tar", "borg"]:
-            return bm_class[method](*args)
+            return bm_class[method](manager, *args)
         else:
-            return CustomBackupMethod(method=method, *args)
+            return CustomBackupMethod(manager, method=method, *args)
 
 
 class CopyBackupMethod(BackupMethod):
@@ -1781,8 +1787,8 @@ class CopyBackupMethod(BackupMethod):
     could be the inverse for restoring
     """
 
-    def __init__(self, repo=None):
-        super(CopyBackupMethod, self).__init__(repo)
+    def __init__(self, manager, repo=None):
+        super(CopyBackupMethod, self).__init__(manager, repo)
 
     @property
     def method_name(self):
@@ -1836,6 +1842,9 @@ class CopyBackupMethod(BackupMethod):
                         "&&", "umount", "-R", self.work_dir])
         raise YunohostError('backup_cant_mount_uncompress_archive')
 
+    def copy(self, file, target):
+        shutil.copy(file, target)
+
 
 class TarBackupMethod(BackupMethod):
 
@@ -1843,8 +1852,8 @@ class TarBackupMethod(BackupMethod):
     This class compress all files to backup in archive.
     """
 
-    def __init__(self, repo=None):
-        super(TarBackupMethod, self).__init__(repo)
+    def __init__(self, manager, repo=None):
+        super(TarBackupMethod, self).__init__(manager, repo)
 
     @property
     def method_name(self):
@@ -1904,7 +1913,7 @@ class TarBackupMethod(BackupMethod):
         if not os.path.isfile(link):
             os.symlink(self._archive_file, link)
 
-    def mount(self, restore_manager):
+    def mount(self):
         """
         Mount the archive. We avoid copy to be able to restore on system without
         too many space.
@@ -1914,9 +1923,10 @@ class TarBackupMethod(BackupMethod):
         backup_archive_corrupted -- Raised if the archive appears corrupted
         backup_archive_cant_retrieve_info_json -- If the info.json file can't be retrieved
         """
-        super(TarBackupMethod, self).mount(restore_manager)
+        super(TarBackupMethod, self).mount()
 
-        # Check the archive can be open
+        # Mount the tarball
+        logger.debug(m18n.n("restore_extracting"))
         try:
             tar = tarfile.open(self._archive_file, "r:gz")
         except:
@@ -1929,15 +1939,7 @@ class TarBackupMethod(BackupMethod):
         except IOError as e:
             raise YunohostError("backup_archive_corrupted", archive=self._archive_file, error=str(e))
 
-        # FIXME : Is this really useful to close the archive just to
-        # reopen it right after this with the same options ...?
-        tar.close()
-
-        # Mount the tarball
-        logger.debug(m18n.n("restore_extracting"))
-        tar = tarfile.open(self._archive_file, "r:gz")
-
-        if "info.json" in files_in_archive:
+        if "info.json" in tar.getnames():
             leading_dot = ""
             tar.extract('info.json', path=self.work_dir)
         elif "./info.json" in files_in_archive:
@@ -1992,7 +1994,15 @@ class TarBackupMethod(BackupMethod):
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
 
-        # FIXME : Don't we want to close the tar archive here or at some point ?
+        tar.close()
+
+    def copy(self, file, target):
+        tar = tarfile.open(self._archive_file, "r:gz")
+        file_to_extract = tar.getmember(file)
+        # Remove the path
+        file_to_extract.name = os.path.basename(file_to_extract.name)
+        tar.extract(file_to_extract, path=target)
+        tar.close()
 
 
 class BorgBackupMethod(BackupMethod):
@@ -2011,6 +2021,9 @@ class BorgBackupMethod(BackupMethod):
     def mount(self, mnt_path):
         raise YunohostError('backup_borg_not_implemented')
 
+    def copy(self, file, target):
+        raise YunohostError('backup_borg_not_implemented')
+
 
 class CustomBackupMethod(BackupMethod):
 
@@ -2020,8 +2033,8 @@ class CustomBackupMethod(BackupMethod):
     /etc/yunohost/hooks.d/backup_method/
     """
 
-    def __init__(self, repo=None, method=None, **kwargs):
-        super(CustomBackupMethod, self).__init__(repo)
+    def __init__(self, manager, repo=None, method=None, **kwargs):
+        super(CustomBackupMethod, self).__init__(manager, repo)
         self.args = kwargs
         self.method = method
         self._need_mount = None
@@ -2062,14 +2075,14 @@ class CustomBackupMethod(BackupMethod):
         if ret_failed:
             raise YunohostError('backup_custom_backup_error')
 
-    def mount(self, restore_manager):
+    def mount(self):
         """
         Launch a custom script to mount the custom archive
 
         Exceptions:
         backup_custom_mount_error -- Raised if the custom script failed
         """
-        super(CustomBackupMethod, self).mount(restore_manager)
+        super(CustomBackupMethod, self).mount()
         ret = hook_callback('backup_method', [self.method],
                             args=self._get_args('mount'))
 
@@ -2160,9 +2173,9 @@ def backup_create(name=None, description=None, methods=[],
 
     # Add backup methods
     if output_directory:
-        methods = BackupMethod.create(methods, output_directory)
+        methods = BackupMethod.create(methods, backup_manager, output_directory)
     else:
-        methods = BackupMethod.create(methods)
+        methods = BackupMethod.create(methods, backup_manager)
 
     for method in methods:
         backup_manager.add(method)
@@ -2270,34 +2283,25 @@ def backup_list(with_info=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    result = []
+    # Get local archives sorted according to last modification time
+    archives = sorted(glob("%s/*.tar.gz" % ARCHIVES_PATH), key=lambda x: os.path.getctime(x))
+    # Extract only filename without the extension
+    archives = [os.path.basename(f)[:-len(".tar.gz")] for f in archives]
 
-    try:
-        # Retrieve local archives
-        archives = os.listdir(ARCHIVES_PATH)
-    except OSError:
-        logger.debug("unable to iterate over local archives", exc_info=1)
-    else:
-        # Iterate over local archives
-        for f in archives:
-            try:
-                name = f[:f.rindex('.tar.gz')]
-            except ValueError:
-                continue
-            result.append(name)
-        result.sort(key=lambda x: os.path.getctime(os.path.join(ARCHIVES_PATH, x + ".tar.gz")))
-
-    if result and with_info:
+    if with_info:
         d = OrderedDict()
-        for a in result:
+        for archive in archives:
             try:
-                d[a] = backup_info(a, human_readable=human_readable)
+                d[archive] = backup_info(archive, human_readable=human_readable)
             except YunohostError as e:
                 logger.warning(str(e))
+            except Exception as e:
+                import traceback
+                logger.warning("Could not check infos for archive %s: %s" % (archive, '\n'+traceback.format_exc()))
 
-        result = d
+        archives = d
 
-    return {'archives': result}
+    return {'archives': archives}
 
 
 def backup_info(name, with_details=False, human_readable=False):

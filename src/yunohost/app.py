@@ -35,14 +35,13 @@ import subprocess
 import glob
 import urllib
 from collections import OrderedDict
-from datetime import datetime
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
 from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
-from yunohost.service import service_log, service_status, _run_service_command
+from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation, OperationLogger
@@ -172,7 +171,7 @@ def app_info(app, full=False):
     ret["manifest"] = local_manifest
     ret['settings'] = settings
 
-    absolute_app_name = app if "__" not in app else app[:app.index('__')]  # idk this is the name of the app even for multiinstance apps (so wordpress__2 -> wordpress)
+    absolute_app_name, _ = _parse_app_instance_name(app)
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret['upgradable'] = _app_upgradable(ret)
     ret['supports_change_url'] = os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url"))
@@ -467,6 +466,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     from packaging import version
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
+    from yunohost.regenconf import manually_modified_files
 
     apps = app
     # If no app is specified, upgrade all apps
@@ -566,11 +566,14 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
 
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_before_install = manually_modified_files()
+
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
         # Apply dirty patch to make php5 apps compatible with php7
-        _patch_php5(extracted_app_folder)
+        _patch_legacy_php_versions(extracted_app_folder)
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -602,7 +605,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
-            error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+            error = m18n.n('unexpected_error', error="\n" + traceback.format_exc())
             logger.error(m18n.n("app_install_failed", app=app_instance_name, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
@@ -615,6 +618,12 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                 broke_the_system = True
                 logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+            # We'll check that the app didn't brutally edit some system configuration
+            manually_modified_files_after_install = manually_modified_files()
+            manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+            if manually_modified_files_by_app:
+                logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
@@ -679,6 +688,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
     from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
+    from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -766,17 +776,19 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
-    args_list = [value[0] for value in args_odict.values()]
-    args_list.append(app_instance_name)
 
     # Validate domain / path availability for webapps
     _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
+
+    # build arg list tq
+    args_list = [value[0] for value in args_odict.values()]
+    args_list.append(app_instance_name)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
 
     # Apply dirty patch to make php5 apps compatible with php7
-    _patch_php5(extracted_app_folder)
+    _patch_legacy_php_versions(extracted_app_folder)
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
@@ -787,6 +799,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
+
+    # We'll check that the app didn't brutally edit some system configuration
+    manually_modified_files_before_install = manually_modified_files()
 
     # Tell the operation_logger to redact all password-type args
     # Also redact the % escaped version of the password that might appear in
@@ -858,19 +873,25 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Something wrong happened in Yunohost's code (most probably hook_exec)
     except Exception as e:
         import traceback
-        error = m18n.n('unexpected_error', error=u"\n" + traceback.format_exc())
+        error = m18n.n('unexpected_error', error="\n" + traceback.format_exc())
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
-        # Whatever happened (install success or failure) we check if it broke the system
-        # and warn the user about it
-        try:
-            broke_the_system = False
-            _assert_system_is_sane_for_app(manifest, "post")
-        except Exception as e:
-            broke_the_system = True
-            logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
-            failure_message_with_debug_instructions = operation_logger.error(str(e))
+        # If success so far, validate that app didn't break important stuff
+        if not install_failed:
+            try:
+                broke_the_system = False
+                _assert_system_is_sane_for_app(manifest, "post")
+            except Exception as e:
+                broke_the_system = True
+                logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
+                failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_after_install = manually_modified_files()
+        manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+        if manually_modified_files_by_app:
+            logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
@@ -900,6 +921,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
+
             # Here again, calling hook_exec could fail miserably, or get
             # manually interrupted (by mistake or because script was stuck)
             # In that case we still want to proceed with the rest of the
@@ -907,7 +929,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             except (KeyboardInterrupt, EOFError, Exception):
                 remove_retcode = -1
                 import traceback
-                logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+                logger.error(m18n.n('unexpected_error', error="\n" + traceback.format_exc()))
 
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
@@ -980,12 +1002,12 @@ def dump_app_log_extract_for_debugging(operation_logger):
         r"ynh_script_progression"
     ]
 
-    filters = [re.compile(f) for f in filters]
+    filters = [re.compile(f_) for f_ in filters]
 
     lines_to_display = []
     for line in lines:
 
-        if not ": " in line.strip():
+        if ": " not in line.strip():
             continue
 
         # A line typically looks like
@@ -1067,7 +1089,7 @@ def app_remove(operation_logger, app):
 
     # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
     # script might date back from jessie install)
-    _patch_php5(app_setting_path)
+    _patch_legacy_php_versions(app_setting_path)
 
     manifest = _get_manifest_of_app(app_setting_path)
 
@@ -1097,7 +1119,7 @@ def app_remove(operation_logger, app):
     except (KeyboardInterrupt, EOFError, Exception):
         ret = -1
         import traceback
-        logger.error(m18n.n('unexpected_error', error=u"\n" + traceback.format_exc()))
+        logger.error(m18n.n('unexpected_error', error="\n" + traceback.format_exc()))
 
     if ret == 0:
         logger.success(m18n.n('app_removed', app=app))
@@ -1394,7 +1416,7 @@ def app_ssowatconf():
             url = _sanitized_absolute_url(perm_info["url"])
             perm_info["url"] = url
             if "visitors" in perm_info["allowed"]:
-                if url not in unprotected_urls:
+                if url not in unprotected_urls and url not in skipped_urls:
                     unprotected_urls.append(url)
 
                 # Legacy stuff : we remove now protected-urls that might have been declared as unprotected earlier...
@@ -1921,6 +1943,9 @@ def _get_app_settings(app_id):
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
             settings = yaml.load(f)
+        # If label contains unicode char, this may later trigger issues when building strings...
+        # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
+        settings = {k:_encode_string(v) for k,v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
@@ -2232,12 +2257,14 @@ def _fetch_app_from_git(app):
     else:
         app_dict = _load_apps_catalog()["apps"]
 
-        if app not in app_dict:
+        app_id, _ = _parse_app_instance_name(app)
+
+        if app_id not in app_dict:
             raise YunohostError('app_unknown')
-        elif 'git' not in app_dict[app]:
+        elif 'git' not in app_dict[app_id]:
             raise YunohostError('app_unsupported_remote_type')
 
-        app_info = app_dict[app]
+        app_info = app_dict[app_id]
         app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
         manifest = app_info['manifest']
         url = app_info['git']['url']
@@ -2376,6 +2403,11 @@ def _encode_string(value):
 
 def _check_manifest_requirements(manifest, app_instance_name):
     """Check if required packages are met from the manifest"""
+
+    packaging_format = int(manifest.get('packaging_format', 0))
+    if packaging_format not in [0, 1]:
+        raise YunohostError("app_packaging_format_not_supported")
+
     requirements = manifest.get('requirements', dict())
 
     if not requirements:
@@ -2386,6 +2418,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     # Iterate over requirements
     for pkgname, spec in requirements.items():
         if not packages.meets_version_specifier(pkgname, spec):
+            version = packages.ynh_packages_version()[pkgname]["version"]
             raise YunohostError('app_requirements_unmeet',
                                 pkgname=pkgname, version=version,
                                 spec=spec, app=app_instance_name)
@@ -2437,126 +2470,141 @@ def _parse_args_for_action(action, args={}):
     return _parse_args_in_yunohost_format(args, action_args)
 
 
-def _parse_args_in_yunohost_format(args, action_args):
-    """Parse arguments store in either manifest.json or actions.json
+def _parse_args_in_yunohost_format(user_answers, argument_questions):
+    """Parse arguments store in either manifest.json or actions.json or from a
+    config panel against the user answers when they are present.
+
+    Keyword arguments:
+        user_answers -- a dictionnary of arguments from the user (generally
+                        empty in CLI, filed from the admin interface)
+        argument_questions -- the arguments description store in yunohost
+                              format from actions.json/toml, manifest.json/toml
+                              or config_panel.json/toml
     """
     from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_info, user_list
+    from yunohost.user import user_list
 
-    args_dict = OrderedDict()
+    parsed_answers_dict = OrderedDict()
 
-    for arg in action_args:
-        arg_name = arg['name']
-        arg_type = arg.get('type', 'string')
-        arg_default = arg.get('default', None)
-        arg_choices = arg.get('choices', [])
-        arg_value = None
+    for question in argument_questions:
+        question_name = question['name']
+        question_type = question.get('type', 'string')
+        question_default = question.get('default', None)
+        question_choices = question.get('choices', [])
+        question_value = None
 
         # Transpose default value for boolean type and set it to
         # false if not defined.
-        if arg_type == 'boolean':
-            arg_default = 1 if arg_default else 0
+        if question_type == 'boolean':
+            question_default = 1 if question_default else 0
 
         # do not print for webadmin
-        if arg_type == 'display_text' and msettings.get('interface') != 'api':
-            print(_value_for_locale(arg['ask']))
+        if question_type == 'display_text' and msettings.get('interface') != 'api':
+            print(_value_for_locale(question['ask']))
             continue
 
         # Attempt to retrieve argument value
-        if arg_name in args:
-            arg_value = args[arg_name]
+        if question_name in user_answers:
+            question_value = user_answers[question_name]
         else:
-            if 'ask' in arg:
+            if 'ask' in question:
                 # Retrieve proper ask string
-                ask_string = _value_for_locale(arg['ask'])
+                text_for_user_input_in_cli = _value_for_locale(question['ask'])
 
                 # Append extra strings
-                if arg_type == 'boolean':
-                    ask_string += ' [yes | no]'
-                elif arg_choices:
-                    ask_string += ' [{0}]'.format(' | '.join(arg_choices))
+                if question_type == 'boolean':
+                    text_for_user_input_in_cli += ' [yes | no]'
+                elif question_choices:
+                    text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question_choices))
 
-                if arg_default is not None:
-                    if arg_type == 'boolean':
-                        ask_string += ' (default: {0})'.format("yes" if arg_default == 1 else "no")
+                if question_default is not None:
+                    if question_type == 'boolean':
+                        text_for_user_input_in_cli += ' (default: {0})'.format("yes" if question_default == 1 else "no")
                     else:
-                        ask_string += ' (default: {0})'.format(arg_default)
+                        text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
 
                 # Check for a password argument
-                is_password = True if arg_type == 'password' else False
+                is_password = True if question_type == 'password' else False
 
-                if arg_type == 'domain':
-                    arg_default = _get_maindomain()
-                    ask_string += ' (default: {0})'.format(arg_default)
+                if question_type == 'domain':
+                    question_default = _get_maindomain()
+                    text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
                     msignals.display(m18n.n('domains_available'))
                     for domain in domain_list()['domains']:
                         msignals.display("- {}".format(domain))
 
-                elif arg_type == 'user':
+                elif question_type == 'user':
                     msignals.display(m18n.n('users_available'))
-                    for user in user_list()['users'].keys():
+                    users = user_list()['users']
+                    for user in users.keys():
                         msignals.display("- {}".format(user))
 
-                elif arg_type == 'password':
+                    root_mail = "root@%s" % _get_maindomain()
+                    for user in users.keys():
+                        if root_mail in user_info(user)["mail-aliases"]:
+                            arg_default = user
+                            ask_string += ' (default: {0})'.format(arg_default)
+
+                elif question_type == 'password':
                     msignals.display(m18n.n('good_practices_about_user_password'))
 
                 try:
-                    input_string = msignals.prompt(ask_string, is_password)
+                    input_string = msignals.prompt(text_for_user_input_in_cli, is_password)
                 except NotImplementedError:
                     input_string = None
                 if (input_string == '' or input_string is None) \
-                        and arg_default is not None:
-                    arg_value = arg_default
+                        and question_default is not None:
+                    question_value = question_default
                 else:
-                    arg_value = input_string
-            elif arg_default is not None:
-                arg_value = arg_default
+                    question_value = input_string
+            elif question_default is not None:
+                question_value = question_default
 
         # If the value is empty (none or '')
-        # then check if arg is optional or not
-        if arg_value is None or arg_value == '':
-            if arg.get("optional", False):
+        # then check if question is optional or not
+        if question_value is None or question_value == '':
+            if question.get("optional", False):
                 # Argument is optional, keep an empty value
-                # and that's all for this arg !
-                args_dict[arg_name] = ('', arg_type)
+                # and that's all for this question!
+                parsed_answers_dict[question_name] = ('', question_type)
                 continue
             else:
                 # The argument is required !
-                raise YunohostError('app_argument_required', name=arg_name)
+                raise YunohostError('app_argument_required', name=question_name)
 
         # Validate argument choice
-        if arg_choices and arg_value not in arg_choices:
-            raise YunohostError('app_argument_choice_invalid', name=arg_name, choices=', '.join(arg_choices))
+        if question_choices and question_value not in question_choices:
+            raise YunohostError('app_argument_choice_invalid', name=question_name, choices=', '.join(question_choices))
 
         # Validate argument type
-        if arg_type == 'domain':
-            if arg_value not in domain_list()['domains']:
-                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('domain_unknown'))
-        elif arg_type == 'user':
-            if not arg_value in user_list()["users"].keys():
-                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('user_unknown', user=arg_value))
-        elif arg_type == 'app':
-            if not _is_installed(arg_value):
-                raise YunohostError('app_argument_invalid', name=arg_name, error=m18n.n('app_unknown'))
-        elif arg_type == 'boolean':
-            if isinstance(arg_value, bool):
-                arg_value = 1 if arg_value else 0
+        if question_type == 'domain':
+            if question_value not in domain_list()['domains']:
+                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('domain_unknown'))
+        elif question_type == 'user':
+            if question_value not in user_list()["users"].keys():
+                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('user_unknown', user=question_value))
+        elif question_type == 'app':
+            if not _is_installed(question_value):
+                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('app_unknown'))
+        elif question_type == 'boolean':
+            if isinstance(question_value, bool):
+                question_value = 1 if question_value else 0
             else:
-                if str(arg_value).lower() in ["1", "yes", "y"]:
-                    arg_value = 1
-                elif str(arg_value).lower() in ["0", "no", "n"]:
-                    arg_value = 0
+                if str(question_value).lower() in ["1", "yes", "y"]:
+                    question_value = 1
+                elif str(question_value).lower() in ["0", "no", "n"]:
+                    question_value = 0
                 else:
-                    raise YunohostError('app_argument_choice_invalid', name=arg_name, choices='yes, no, y, n, 1, 0')
-        elif arg_type == 'password':
+                    raise YunohostError('app_argument_choice_invalid', name=question_name, choices='yes, no, y, n, 1, 0')
+        elif question_type == 'password':
             forbidden_chars = "{}"
-            if any(char in arg_value for char in forbidden_chars):
+            if any(char in question_value for char in forbidden_chars):
                 raise YunohostError('pattern_password_app', forbidden_chars=forbidden_chars)
             from yunohost.utils.password import assert_password_is_strong_enough
-            assert_password_is_strong_enough('user', arg_value)
-        args_dict[arg_name] = (arg_value, arg_type)
+            assert_password_is_strong_enough('user', question_value)
+        parsed_answers_dict[question_name] = (question_value, question_type)
 
-    return args_dict
+    return parsed_answers_dict
 
 
 def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
@@ -2699,12 +2747,6 @@ def _read_apps_catalog_list():
     Read the json corresponding to the list of apps catalogs
     """
 
-    # Legacy code - can be removed after moving to buster (if the migration got merged before buster)
-    if os.path.exists('/etc/yunohost/appslists.json'):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("futureproof_apps_catalog_system")
-        migration.run()
-
     try:
         list_ = read_yaml(APPS_CATALOG_CONF)
         # Support the case where file exists but is empty
@@ -2841,21 +2883,6 @@ def is_true(arg):
         return True if arg else False
 
 
-def random_password(length=8):
-    """
-    Generate a random string
-
-    Keyword arguments:
-        length -- The string length to generate
-
-    """
-    import string
-    import random
-
-    char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
-    return ''.join([random.SystemRandom().choice(char_set) for x in range(length)])
-
-
 def unstable_apps():
 
     output = []
@@ -2876,8 +2903,8 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm"]:
-            return "php7.0-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm"]:
+            return "php7.3-fpm"
         else:
             return service
     services = [replace_alias(s) for s in services]
@@ -2885,7 +2912,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php7.3-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -2910,11 +2937,24 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostError("this_action_broke_dpkg")
 
 
-def _patch_php5(app_folder):
+LEGACY_PHP_VERSION_REPLACEMENTS = [
+    ("/etc/php5", "/etc/php/7.3"),
+    ("/etc/php/7.0", "/etc/php/7.3"),
+    ("/var/run/php5-fpm", "/var/run/php/php7.3-fpm"),
+    ("/var/run/php/php7.0-fpm", "/var/run/php/php7.3-fpm"),
+    ("php5", "php7.3"),
+    ("php7.0", "php7.3"),
+    ('phpversion="${phpversion:-7.0}"', 'phpversion="${phpversion:-7.3}"'),  # Many helpers like the composer ones use 7.0 by default ...
+    ('"$phpversion" == "7.0"', '$(bc <<< "$phpversion >= 7.3") -eq 1')  # patch ynh_install_php to refuse installing/removing php <= 7.3
+]
+
+
+def _patch_legacy_php_versions(app_folder):
 
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
     files_to_patch.append("%s/manifest.json" % app_folder)
     files_to_patch.append("%s/manifest.toml" % app_folder)
@@ -2925,11 +2965,31 @@ def _patch_php5(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
-            "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
-            "-e 's@php5@php7.0@g' " \
-            "%s" % filename
+        c = "sed -i " \
+            + "".join("-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r) for p, r in LEGACY_PHP_VERSION_REPLACEMENTS) \
+            + "%s" % filename
         os.system(c)
+
+
+def _patch_legacy_php_versions_in_settings(app_folder):
+
+    settings = read_yaml(os.path.join(app_folder, 'settings.yml'))
+
+    if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+        settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+    if settings.get("fpm_service") == "php7.0-fpm":
+        settings["fpm_service"] = "php7.3-fpm"
+    if settings.get("phpversion") == "7.0":
+        settings["phpversion"] = "7.3"
+
+    # We delete these checksums otherwise the file will appear as manually modified
+    list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
+                      "checksum__etc_nginx_conf.d"]
+    settings = {k: v for k, v in settings.items()
+                if not any(k.startswith(to_remove) for to_remove in list_to_remove)}
+
+    write_to_yaml(app_folder + '/settings.yml', settings)
+
 
 def _patch_legacy_helpers(app_folder):
 
