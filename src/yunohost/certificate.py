@@ -369,12 +369,11 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
         if not no_checks:
             try:
                 _check_domain_is_ready_for_ACME(domain)
-            except:
-                msg = "Certificate renewing for %s failed !" % (domain)
-                logger.error(msg)
+            except Exception as e:
+                logger.error(e)
                 if email:
                     logger.error("Sending email with details to root ...")
-                    _email_renewing_failed(domain, msg)
+                    _email_renewing_failed(domain, e)
                 continue
 
         logger.info(

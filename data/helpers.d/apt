@@ -100,7 +100,7 @@ ynh_package_version() {
 # Requires YunoHost version 2.4.0.3 or higher.
 ynh_apt() {
     ynh_wait_dpkg_free
-    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Dpkg::Use-Pty=0 $@
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 $@
 }
 
 # Update package index files
@@ -260,11 +260,11 @@ ynh_install_app_dependencies () {
         # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
         if dpkg --list | grep "php7.0" | grep --quiet --invert-match "7.0.33-0+deb9"
         then
-            # And sury ain't already installed
-            if ! grep --line-number --recursive --quiet "sury" /etc/apt/sources.list*
+            # And sury ain't already in sources.lists
+            if ! grep --recursive --quiet "^ *deb.*sury" /etc/apt/sources.list*
             then
                 # Re-add sury
-                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version
+                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
 
                 # Pin this sury repository to prevent sury of doing shit
                 for package_to_not_upgrade in "php" "php-fpm" "php-mysql" "php-xml" "php-zip" "php-mbstring" "php-ldap" "php-gd" "php-curl" "php-bz2" "php-json" "php-sqlite3" "php-intl" "openssl" "libssl1.1" "libssl-dev"
@@ -467,8 +467,8 @@ ynh_remove_extra_repo () {
 
     ynh_secure_remove "/etc/apt/sources.list.d/$name.list"
     ynh_secure_remove "/etc/apt/preferences.d/$name"
-    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg"
-    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc"
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg" > /dev/null
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc" > /dev/null
 
     # Update the list of package to exclude the old repo
     ynh_package_update

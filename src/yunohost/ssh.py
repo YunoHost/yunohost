@@ -25,7 +25,7 @@ def user_ssh_allow(username):
 
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
-    ldap.update('uid=%s,ou=users' % username, {'loginShell': '/bin/bash'})
+    ldap.update('uid=%s,ou=users' % username, {'loginShell': ['/bin/bash']})
 
     # Somehow this is needed otherwise the PAM thing doesn't forget about the
     # old loginShell value ?
@@ -46,7 +46,7 @@ def user_ssh_disallow(username):
 
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
-    ldap.update('uid=%s,ou=users' % username, {'loginShell': '/bin/false'})
+    ldap.update('uid=%s,ou=users' % username, {'loginShell': ['/bin/false']})
 
     # Somehow this is needed otherwise the PAM thing doesn't forget about the
     # old loginShell value ?

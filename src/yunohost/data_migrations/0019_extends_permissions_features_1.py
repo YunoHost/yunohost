@@ -27,13 +27,13 @@ class MyMigration(Migration):
         ldap_regen_conf_status = regen_conf(names=['slapd'], dry_run=True)
         # By this we check if the have been customized
         if ldap_regen_conf_status and ldap_regen_conf_status['slapd']['pending']:
-            logger.warning(m18n.n("migration_0011_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
+            logger.warning(m18n.n("migration_0019_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
 
         # Update LDAP schema restart slapd
-        logger.info(m18n.n("migration_0011_update_LDAP_schema"))
+        logger.info(m18n.n("migration_0019_update_LDAP_schema"))
         regen_conf(names=['slapd'], force=True)
 
-        logger.info(m18n.n("migration_0015_add_new_attributes_in_ldap"))
+        logger.info(m18n.n("migration_0019_add_new_attributes_in_ldap"))
         ldap = _get_ldap_interface()
         permission_list = user_permission_list(short=True, full_path=False)["permissions"]
 
@@ -83,7 +83,7 @@ class MyMigration(Migration):
         # just display a warning if we detect that the conf was manually modified
 
         # Backup LDAP and the apps settings before to do the migration
-        logger.info(m18n.n("migration_0011_backup_before_migration"))
+        logger.info(m18n.n("migration_0019_backup_before_migration"))
         try:
             backup_folder = "/home/yunohost.backup/premigration/" + time.strftime('%Y%m%d-%H%M%S', time.gmtime())
             os.makedirs(backup_folder, 0o750)
@@ -92,7 +92,7 @@ class MyMigration(Migration):
             os.system("cp -r --preserve /var/lib/ldap %s/ldap_db" % backup_folder)
             os.system("cp -r --preserve /etc/yunohost/apps %s/apps_settings" % backup_folder)
         except Exception as e:
-            raise YunohostError("migration_0011_can_not_backup_before_migration", error=e)
+            raise YunohostError("migration_0019_can_not_backup_before_migration", error=e)
         finally:
             os.system("systemctl start slapd")
 
@@ -103,7 +103,7 @@ class MyMigration(Migration):
             app_ssowatconf()
 
         except Exception as e:
-            logger.warn(m18n.n("migration_0011_migration_failed_trying_to_rollback"))
+            logger.warn(m18n.n("migration_0019_migration_failed_trying_to_rollback"))
             os.system("systemctl stop slapd")
             os.system("rm -r /etc/ldap/slapd.d")  # To be sure that we don't keep some part of the old config
             os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
@@ -111,7 +111,7 @@ class MyMigration(Migration):
             os.system("cp -r --preserve %s/apps_settings/. /etc/yunohost/apps/" % backup_folder)
             os.system("systemctl start slapd")
             os.system("rm -r " + backup_folder)
-            logger.info(m18n.n("migration_0011_rollback_success"))
+            logger.info(m18n.n("migration_0019_rollback_success"))
             raise
         else:
             os.system("rm -r " + backup_folder)

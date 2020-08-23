@@ -97,8 +97,8 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
         service["test_status"] = test_status
     else:
         # Try to get the description from systemd service
-        _, service = _get_service_information_from_systemd(name)
-        type_ = service.get("Type") if service is not None else ""
+        _, systemd_info = _get_service_information_from_systemd(name)
+        type_ = systemd_info.get("Type") if systemd_info is not None else ""
         if type_ == "oneshot":
             logger.warning("/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not.")
 
@@ -618,7 +618,7 @@ def _get_services():
     if "postgresql" in services:
         if "description" in services["postgresql"]:
             del services["postgresql"]["description"]
-        services["postgresql"]["actual_systemd_service"] = "postgresql@9.6-main"
+        services["postgresql"]["actual_systemd_service"] = "postgresql@11-main"
 
     return services
 
@@ -639,7 +639,7 @@ def _save_services(services):
         raise
 
 
-def _tail(file, n, filters=[]):
+def _tail(file, n):
     """
     Reads a n lines from f with an offset of offset lines.  The return
     value is a tuple in the form ``(lines, has_more)`` where `has_more` is
@@ -650,8 +650,6 @@ def _tail(file, n, filters=[]):
     avg_line_length = 74
     to_read = n
 
-    if filters:
-        filters = [re.compile(f) for f in filters]
 
     try:
         if file.endswith(".gz"):
@@ -672,9 +670,6 @@ def _tail(file, n, filters=[]):
 
                 pos = f.tell()
                 lines = f.read().splitlines()
-
-                for filter_ in filters:
-                    lines = [l for l in lines if not filter_.search(l)]
 
                 if len(lines) >= to_read:
                     return lines[-to_read:]

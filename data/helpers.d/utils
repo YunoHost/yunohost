@@ -144,8 +144,13 @@ ynh_setup_source () {
     then    # Use the local source file if it is present
         cp $local_src $src_filename
     else    # If not, download the source
+        # NB. we have to declare the var as local first,
+        # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
+        # because local always return 0 ...
+        local out
         # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        local out=`wget --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1` || ynh_print_err --message="$out"
+        out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
+            || ynh_die --message="$out"
     fi
 
     # Check the control sum

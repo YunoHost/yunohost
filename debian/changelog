@@ -1,3 +1,143 @@
+yunohost (4.0.4) stable; urgency=low
+
+  - Debugging and robustness improvements for postgresql 9.6 -> 11 and xtables->nftables migrations (accc2da4, 59bd7d66, 4cb6f7fd, 4b14402c)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 12 Aug 2020 18:14:00 +0200
+
+yunohost (4.0.3) stable; urgency=low
+
+  - Bump version number for stable release
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 29 Jul 2020 17:00:00 +0200
+
+yunohost (4.0.2~beta) testing; urgency=low
+
+  - [mod] Rebase on stretch-unstable to include recent changes
+  - [fix] Create admin's home during postinstall (#1021)
+
+  Thanks to all contributors <3 ! (Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Jun 2020 15:16:26 +0200
+
+yunohost (4.0.1~alpha) testing; urgency=low
+
+  - [fix] It just make no sense to backup/restore the mysql password... (#911)
+  - [fix] Fix getopts and helpers (#885, #886)
+  - [fix] Explicitly create home using mkhomedir_helper instead of obscure pam rule that doesn't work anymore (b67ff314)
+  - [fix] Ldap interface seems to expect lists everywhere now? (fb8c2b7b)
+  - [deb] Clean control file, remove some legacy Conflicts and Replaces (ca0d4933)
+  - [deb] Add conflicts with versions from backports for critical dependencies (#967)
+  - [cleanup] Stale / legacy code (217aaa36, d77da6a0, af047468, 82d468a3)
+  - [conf] Automatically disable/stop systemd-resolved that conflicts with dnsmasq on fresh setups ... (e7214b37)
+  - [conf] Remove deprecated option in sshd conf, c.f. https://patchwork.openembedded.org/patch/139981/ (2723d245)
+  - [conf] Small tweak in dovecot conf (deprecated settings) (dc0481e2)
+  - [conf] Update nslcd and nsswitch stuff using new Buster's default configs + get rid of nslcd service, only keep the regen-conf part (6ef3520f)
+  - [php] Migrate from php7.0 to php7.3 (3374e653, 9be10506, dd9564d3, 9679c291, 212a15e4, 25fcaa19, c4ad66f5)
+  - [psql] Migrate from psql 11 to 9.6 (e88aed72, 4920d4f9, c70b0ae4)
+  - [firewall] Migrate from xtable to nftable (05fb58f2, 2c4a8b73, 625d5372)
+  - [slapd] Rework slapd regenconf to use new backend (#984)
+
+  Thanks to all contributors <3 ! (Étienne M., Josué, Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Jun 2020 03:10:09 +0200
+
+yunohost (3.8.5.5) stable; urgency=low
+
+  - [enh] Allow to extend the nginx default_server configuration (f1bfc521)
+  - [mod] Move redirect to /yunohost/admin to a separate nginx conf file to allow customizing it more easily (ac9182d6)
+  - [enh] Make sure to validate/upgrade that we don't have any active weak certificate used by nginx at the beginning of the buster migration, otherwise nginx will later miserably fail to start (d4358897)
+  - [fix] get_files_diff crashing if {orig,new}_file is None (7bfe564a)
+  - [enh] Remove some useless message about file that "wasn't deleted because it doesn't exist." (#1024)
+  - [mod] Remove useless robot protection code (#1026)
+  - [fix] Let's not redefine the value for the 'service' var ... (1a2f26dc)
+  - [fix] More general stretch->buster patching for sources.list (#1028)
+  - [mod] Tweak custom disclaimer about the migration still being a bit touchy in preparation for stable release (852dea07)
+  - [mod] Typo/wording in en.json (#1030)
+  - [i18n] Translations updated for Catalan, French, Italian, Occitan
+
+  Thanks to all contributors <3 ! (É. Gaspar, Kay0u, L. Noferini, ppr, Quentí, xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 27 Jul 2020 19:03:33 +0200
+
+yunohost (3.8.5.4) testing; urgency=low
+
+  - [fix] Fix unscd version parsing *again*
+  - [fix] Enforce permissions on rspamd log directory
+  - [enh] Ignore stupid warnings about sudo-ldap that is already provided
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 21 Jun 2020 23:37:09 +0200
+
+yunohost (3.8.5.3) testing; urgency=low
+
+  - [fix] Fix the fix about unscd downgrade :/
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Jun 2020 18:50:58 +0200
+
+yunohost (3.8.5.2) testing; urgency=low
+
+  - [fix] Small issue with unscd upgrade/downgrade ... new version ain't always 0.53.1, so find it using dirty scrapping
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Jun 2020 16:19:35 +0200
+
+yunohost (3.8.5.1) testing; urgency=low
+    
+  - [fix] Update Stretch->Buster migration disclaimer to make it clear that this is alpha-stage
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jun 2020 03:30:00 +0200
+
+yunohost (3.8.5) testing; urgency=low
+
+  - [enh] Add migration procedure for Stretch->Buster (a2b83c0f, a26411db, 9f1211e9, e544bf3e, a0511cca)
+  - [fix] Disable/skip ntp when inside a container (9d0c0924)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jun 2020 02:11:51 +0200
+
+yunohost (3.8.4.9) stable; urgency=low
+
+  - [fix] Force lowercase on domain names (804f4b3e)
+  - [fix] Add dirmngr to Depends:, needed for apt-key / gpg (cd115ed8)
+  - [fix] Improve debugging when diagnosis ain't happy when renewing certs (0f0194be)
+  - [enh] Add yunohost version to logs metadata (d615546b)
+  - [enh] Alway filter irrelevant log lines when sharing it (38704cba, 51d53be5)
+  - [fix] Regen-conf outputing many 'forget-about-it' because of files flagged as to be removed (f4525488)
+  - [fix] postfix per-domain destination concurrency (#988)
+  - [fix] Call regenconf for ssh before the general regenconf during the postinstall to avoid an irrelevant warning (7805837b)
+  - [i18n] Translations updated for Catalan, French, German
+
+  Thanks to all contributors <3 ! (taziden, ljf, ppr, xaloc33, Yasss Gurl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Jun 2020 15:13:01 +0200
+
+yunohost (3.8.4.8) stable; urgency=low
+
+  - [fix] Don't add unprotected_urls if it's already in skipped_urls (#1005)
+  - [enh] Add pre-defined DHE group and set up Nginx to use it (#1007)
+  - [fix] Make sure to propagate change in slapd systemd conf during initial install (2d42480f)
+  - [fix] More accurate grep to avoid mistakenly grepping commented lines... (2408a620)
+  - [enh] Update n to 6.5.1 (#1012)
+  - [fix] Set sury default pinning to 600 (653c5fde)
+  - [enh] Clean stale file/hashes in regen-conf (#1009)
+  - [fix] Weirdness in regen-conf mechanism for SSH conf (#1014)
+
+  Thanks to all contributors <3 ! (É. Gaspar, Josué, SohKa)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Jun 2020 01:59:08 +0200
+
+yunohost (3.8.4.7) stable; urgency=low
+
+  - [fix] Remove some remains of glances (17eec25e)
+  - [fix] Force external resolution for reverse DNS dig (852cd14c)
+  - [fix] Make sure mysql is an alias to mariadb (e24191ce, ca89607d)
+  - [fix] Path for ynh_add_fpm_config template in restore (#1001)
+  - [fix] Add -o Acquire::Retries=3 to fix some stupid network issues happening sometimes with apt (03432349)
+  - [fix] ynh_setup_source: Retry wget on non-critical failures to try to avoid tmp dns issues (3d66eaec)
+  - [fix] ynh_setup_source: Calling ynh_print_err in case of error didn't work, and we probably want a ynh_die here (55036fad)
+  - [i18n] Translations updated for Catalan, French, Italian, Occitan
+
+  Thanks to all contributors <3 ! (JimboJoe, Leandro N., ppr, Quentí, xaloc33, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 Jun 2020 02:28:33 +0200
+
 yunohost (3.8.4.6) stable; urgency=low
 
   - [fix] Bump server_names_hash_bucket_size to 128 to avoid nginx exploding for stupid reasons (b3db4d92)
