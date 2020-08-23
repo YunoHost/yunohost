@@ -93,6 +93,7 @@ class MyMigration(Migration):
         # Vanilla debian version looks like: 1.1.1d-0+deb10u3+rpt1
         # Sury version looks like: 1.1.1g-1+0~20200421.17+debian9~1.gbpf6902f
         if "gbp" in openssl_version:
+            check_output("apt-mark unhold openssl")
             new_version = check_output("LC_ALL=C apt policy openssl 2>/dev/null | tr -d '*' | grep '^\\s*1.1.1' | grep -v gbp | head -n 1 | awk '{print $1}'").strip()
             if new_version:
                 logger.info("Downgrading openssl version from %s to %s ..." % (openssl_version, new_version))
