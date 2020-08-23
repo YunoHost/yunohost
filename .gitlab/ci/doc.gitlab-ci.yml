@@ -1,0 +1,14 @@
+########################################
+# DOC
+########################################
+
+generate-helpers-doc:
+  stage: doc
+  image: "before-install"
+  needs: []
+  script:
+    - cd doc
+    - python generate_helper_doc.py
+  artifacts:
+    paths:
+      - doc/helpers.html

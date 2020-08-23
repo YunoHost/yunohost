@@ -62,16 +62,6 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
 
     """
 
-    # Legacy code to automatically run the migration
-    # This is required because regen_conf is called before the migration call
-    # in debian's postinst script
-    if os.path.exists("/etc/yunohost/installed") \
-       and ("conffiles" in read_file("/etc/yunohost/services.yml") \
-            or not os.path.exists(REGEN_CONF_FILE)):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("decouple_regenconf_from_services")
-        migration.run()
-
     result = {}
 
     # Return the list of pending conf
@@ -125,11 +115,12 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         # return the arguments to pass to the script
         return pre_args + [category_pending_path, ]
 
-    # Don't regen SSH if not specifically specified
+    ssh_explicitly_specified = isinstance(names, list) and "ssh" in names
+
+    # By default, we regen everything
     if not names:
         names = hook_list('conf_regen', list_by='name',
                           show_info=False)['hooks']
-        names.remove('ssh')
 
     # Dirty hack for legacy code : avoid attempting to regen the conf for
     # glances because it got removed ...  This is only needed *once*
@@ -141,7 +132,19 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
     if "glances" in names:
         names.remove("glances")
 
-    pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call)
+    # [Optimization] We compute and feed the domain list to the conf regen
+    # hooks to avoid having to call "yunohost domain list" so many times which
+    # ends up in wasted time (about 3~5 seconds per call on a RPi2)
+    from yunohost.domain import domain_list
+    env = {}
+    # Well we can only do domain_list() if postinstall is done ...
+    # ... but hooks that effectively need the domain list are only
+    # called only after the 'installed' flag is set so that's all good,
+    # though kinda tight-coupled to the postinstall logic :s
+    if os.path.exists("/etc/yunohost/installed"):
+        env["YNH_DOMAINS"] = " ".join(domain_list()["domains"])
+
+    pre_result = hook_callback('conf_regen', names, pre_callback=_pre_call, env=env)
 
     # Keep only the hook names with at least one success
     names = [hook for hook, infos in pre_result.items()
@@ -173,6 +176,58 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         succeed_regen = {}
         failed_regen = {}
 
+        # Here we are doing some weird legacy shit
+        # The thing is, on some very old or specific setup, the sshd_config file
+        # was absolutely not managed by the regenconf ...
+        # But we now want to make sure that this file is managed.
+        # However, we don't want to overwrite a specific custom sshd_config
+        # which may make the admin unhappy ...
+        # So : if the hash for this file does not exists, we set the hash as the
+        # hash of the pending configuration ...
+        # That way, the file will later appear as manually modified.
+        sshd_config = "/etc/ssh/sshd_config"
+        if category == "ssh" and sshd_config not in conf_hashes and sshd_config in conf_files:
+            conf_hashes[sshd_config] = _calculate_hash(conf_files[sshd_config])
+            _update_conf_hashes(category, conf_hashes)
+
+        # Consider the following scenario:
+        # - you add a domain foo.bar
+        # - the regen-conf creates file /etc/dnsmasq.d/foo.bar
+        # - the admin manually *deletes* /etc/dnsmasq.d/foo.bar
+        # - the file is now understood as manually deleted because there's the old file hash in regenconf.yml
+        #
+        # ... so far so good, that's the expected behavior.
+        #
+        # But then:
+        # - the admin remove domain foo.bar entirely
+        # - but now the hash for /etc/dnsmasq.d/foo.bar is *still* in
+        # regenconf.yml and and the file is still flagged as manually
+        # modified/deleted... And the user cannot even do anything about it
+        # except removing the hash in regenconf.yml...
+        #
+        # Expected behavior: it should forget about that
+        # hash because dnsmasq's regen-conf doesn't say anything about what's
+        # the state of that file so it should assume that it should be deleted.
+        #
+        # - then the admin tries to *re-add* foo.bar !
+        # - ... but because the file is still flagged as manually modified
+        # the regen-conf refuses to re-create the file.
+        #
+        # Excepted behavior : the regen-conf should have forgot about the hash
+        # from earlier and this wouldnt happen.
+        # ------
+        # conf_files contain files explicitly set by the current regen conf run
+        # conf_hashes contain all files known from the past runs
+        # we compare these to get the list of stale hashes and flag the file as
+        # "should be removed"
+        stale_files = set(conf_hashes.keys()) - set(conf_files.keys())
+        stale_files_with_non_empty_hash = [f for f in stale_files if conf_hashes.get(f)]
+        for f in stale_files_with_non_empty_hash:
+            conf_files[f] = None
+        # </> End discussion about stale file hashes
+
+        force_update_hashes_for_this_category = False
+
         for system_path, pending_path in conf_files.items():
             logger.debug("processing pending conf '%s' to system conf '%s'",
                          pending_path, system_path)
@@ -184,20 +239,46 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                 system_path, pending_path, True) if with_diff else None
 
             # Check if the conf must be removed
-            to_remove = True if os.path.getsize(pending_path) == 0 else False
+            to_remove = True if pending_path and os.path.getsize(pending_path) == 0 else False
 
             # Retrieve and calculate hashes
             system_hash = _calculate_hash(system_path)
             saved_hash = conf_hashes.get(system_path, None)
             new_hash = None if to_remove else _calculate_hash(pending_path)
 
+            # -> configuration was previously managed by yunohost but should now
+            # be removed / unmanaged
+            if system_path in stale_files_with_non_empty_hash:
+                # File is already deleted, so let's just silently forget about this hash entirely
+                if not system_hash:
+                    logger.debug("> forgetting about stale file/hash")
+                    conf_hashes[system_path] = None
+                    conf_status = 'forget-about-it'
+                    regenerated = True
+                # Otherwise there's still a file on the system but it's not managed by
+                # Yunohost anymore... But if user requested --force we shall
+                # force-erase it
+                elif force:
+                    logger.debug("> force-remove stale file")
+                    regenerated = _regen(system_path)
+                    conf_status = 'force-removed'
+                # Otherwise, flag the file as manually modified
+                else:
+                    logger.warning(m18n.n(
+                        'regenconf_file_manually_modified',
+                        conf=system_path))
+                    conf_status = 'modified'
+
             # -> system conf does not exists
-            if not system_hash:
+            elif not system_hash:
                 if to_remove:
                     logger.debug("> system conf is already removed")
                     os.remove(pending_path)
+                    conf_hashes[system_path] = None
+                    conf_status = 'forget-about-it'
+                    force_update_hashes_for_this_category = True
                     continue
-                if not saved_hash or force:
+                elif not saved_hash or force:
                     if force:
                         logger.debug("> system conf has been manually removed")
                         conf_status = 'force-created'
@@ -255,6 +336,9 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                     logger.debug("> new conf is as current system conf")
                     conf_status = 'managed'
                     regenerated = True
+                elif force and system_path == sshd_config and not ssh_explicitly_specified:
+                    logger.warning(m18n.n('regenconf_need_to_explicitly_specify_ssh'))
+                    conf_status = 'modified'
                 elif force:
                     regenerated = _regen(system_path, pending_path)
                     conf_status = 'force-updated'
@@ -271,7 +355,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             if regenerated:
                 succeed_regen[system_path] = conf_result
                 conf_hashes[system_path] = new_hash
-                if os.path.isfile(pending_path):
+                if pending_path and os.path.isfile(pending_path):
                     os.remove(pending_path)
             else:
                 failed_regen[system_path] = conf_result
@@ -286,7 +370,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             else:
                 logger.success(m18n.n('regenconf_would_be_updated', category=category))
 
-        if succeed_regen and not dry_run:
+        if (succeed_regen or force_update_hashes_for_this_category) and not dry_run:
             _update_conf_hashes(category, conf_hashes)
 
         # Append the category results
@@ -310,7 +394,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             regen_conf_files = ''
         return post_args + [regen_conf_files, ]
 
-    hook_callback('conf_regen', names, pre_callback=_pre_call)
+    hook_callback('conf_regen', names, pre_callback=_pre_call, env=env)
 
     operation_logger.success()
 
@@ -334,6 +418,11 @@ def _save_regenconf_infos(infos):
     Keyword argument:
         categories -- A dict containing the regenconf infos
     """
+
+    # Ugly hack to get rid of legacy glances stuff
+    if "glances" in infos:
+        del infos["glances"]
+
     try:
         with open(REGEN_CONF_FILE, 'w') as f:
             yaml.safe_dump(infos, f, default_flow_style=False)
@@ -351,13 +440,13 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 
     """
 
-    if os.path.exists(orig_file):
+    if orig_file and os.path.exists(orig_file):
         with open(orig_file, 'r') as orig_file:
             orig_file = orig_file.readlines()
     else:
         orig_file = []
 
-    if os.path.exists(new_file):
+    if new_file and os.path.exists(new_file):
         with open(new_file, 'r') as new_file:
             new_file = new_file.readlines()
     else:
@@ -382,7 +471,7 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 def _calculate_hash(path):
     """Calculate the MD5 hash of a file"""
 
-    if not os.path.exists(path):
+    if not path or not os.path.exists(path):
         return None
 
     hasher = hashlib.md5()
@@ -467,6 +556,12 @@ def _update_conf_hashes(category, hashes):
     # Handle the case where categories[category] is set to null in the yaml
     if category_conf is None:
         category_conf = {}
+
+    # If a file shall be removed and is indeed removed, forget entirely about
+    # that path.
+    # It avoid keeping weird old entries like
+    # /etc/nginx/conf.d/some.domain.that.got.removed.conf
+    hashes = {path: hash_ for path, hash_ in hashes.items() if hash_ is not None or os.path.exists(path)}
 
     category_conf['conffiles'] = hashes
     categories[category] = category_conf

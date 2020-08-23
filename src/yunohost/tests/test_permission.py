@@ -5,7 +5,7 @@ import os
 import json
 import shutil
 
-from conftest import message, raiseYunohostError
+from conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_upgrade, app_remove, app_change_url, app_list, app_map, _installed_apps, APPS_SETTING_PATH, _set_app_settings, _get_app_settings
 from yunohost.user import user_list, user_create, user_delete, \
@@ -352,7 +352,7 @@ def test_permission_create_extra(mocker):
     # all_users is only enabled by default on .main perms
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
-    assert res['site.test']['protected'] == True
+    assert res['site.test']['protected'] == False
 
 
 def test_permission_create_with_specific_user():
@@ -833,7 +833,7 @@ def test_ssowat_conf_show_tile_impossible():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_app_install():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True, full_path=False)['permissions']
@@ -862,7 +862,7 @@ def test_permission_app_install():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_app_remove():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
     app_remove("permissions_app")
 
@@ -873,7 +873,7 @@ def test_permission_app_remove():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_app_change_url():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
@@ -911,7 +911,7 @@ def test_permission_protection_management_by_helper():
 @pytest.mark.other_domains(number=1)
 def test_permission_app_propagation_on_ssowat():
 
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
@@ -942,7 +942,7 @@ def test_permission_app_propagation_on_ssowat():
 @pytest.mark.other_domains(number=1)
 def test_permission_legacy_app_propagation_on_ssowat():
 
-    app_install("./tests/apps/legacy_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s" % (maindomain, other_domains[0], "/legacy"), force=True)
 
     # App is configured as public by default using the legacy unprotected_uri mechanics

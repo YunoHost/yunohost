@@ -1,6 +1,7 @@
 #!/bin/bash
 
 PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
+PSQL_VERSION=11
 
 # Open a connection as a user
 #
@@ -45,8 +46,13 @@ ynh_psql_execute_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
+    if [ -n "$database" ]
+    then
+        database="--database=$database"
+    fi
+
     ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        --database="$database" <<<"$sql"
+        $database <<<"$sql"
 }
 
 # Execute a command from a file as root user
@@ -66,8 +72,13 @@ ynh_psql_execute_file_as_root() {
     ynh_handle_getopts_args "$@"
     database="${database:-}"
 
+    if [ -n "$database" ]
+    then
+        database="--database=$database"
+    fi
+
     ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        --database="$database" <"$file"
+        $database <"$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
@@ -212,7 +223,7 @@ ynh_psql_drop_user() {
 # usage: ynh_psql_setup_db --db_user=user --db_name=name [--db_pwd=pwd]
 # | arg: -u, --db_user=     - Owner of the database
 # | arg: -n, --db_name=     - Name of the database
-# | arg: -p, --db_pwd=      - Password of the database. If not given, a password will be generated
+# | arg: -p, --db_pwd=      - Password of the database. If not provided, a password will be generated
 #
 # After executing this helper, the password of the created database will be available in $db_pwd
 # It will also be stored as "psqlpwd" into the app settings.
@@ -228,12 +239,14 @@ ynh_psql_setup_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local new_db_pwd=$(ynh_string_random) # Generate a random password
-    # If $db_pwd is not given, use new_db_pwd instead for db_pwd
-    db_pwd="${db_pwd:-$new_db_pwd}"
-
     if ! ynh_psql_user_exists --user=$db_user; then
+        local new_db_pwd=$(ynh_string_random) # Generate a random password
+        # If $db_pwd is not provided, use new_db_pwd instead for db_pwd
+        db_pwd="${db_pwd:-$new_db_pwd}"
+        
         ynh_psql_create_user "$db_user" "$db_pwd"
+    elif [ -z $db_pwd ]; then
+        ynh_die --message="The user $db_user exists, please provide his password"
     fi
 
     ynh_psql_create_db "$db_name" "$db_user"                     # Create the database
@@ -273,46 +286,46 @@ ynh_psql_remove_db() {
 }
 
 # Create a master password and set up global settings
+# It also make sure that postgresql is installed and running
 # Please always call this script in install and restore scripts
 #
 # usage: ynh_psql_test_if_first_run
 #
 # Requires YunoHost version 2.7.13 or higher.
 ynh_psql_test_if_first_run() {
-    if [ -f "$PSQL_ROOT_PWD_FILE" ]
+
+    # Make sure postgresql is indeed installed
+    dpkg --list | grep -q "ii  postgresql-$PSQL_VERSION" || ynh_die "postgresql-$PSQL_VERSION is not installed !?"
+
+    # Check for some weird issue where postgresql could be installed but etc folder would not exist ...
+    [ -e "/etc/postgresql/$PSQL_VERSION" ] || ynh_die "It looks like postgresql was not properly configured ? /etc/postgresql/$PSQL_VERSION is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
+
+    # Make sure postgresql is started and enabled
+    # (N.B. : to check the active state, we check the cluster state because
+    # postgresql could be flagged as active even though the cluster is in
+    # failed state because of how the service is configured..)
+    systemctl is-active postgresql@$PSQL_VERSION-main -q || ynh_systemd_action --service_name=postgresql --action=restart
+    systemctl is-enabled postgresql -q || systemctl enable postgresql --quiet
+
+    # If this is the very first time, we define the root password
+    # and configure a few things
+    if [ ! -f "$PSQL_ROOT_PWD_FILE" ]
     then
-        ynh_print_info --message="PostgreSQL is already installed, no need to create master password"
-        return
+        local pg_hba=/etc/postgresql/$PSQL_VERSION/main/pg_hba.conf
+
+        local psql_root_password="$(ynh_string_random)"
+        echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
+        sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
+
+        # force all user to connect to local databases using hashed passwords
+        # https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
+        # Note: we can't use peer since YunoHost create users with nologin
+        #  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
+        ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
+
+        # Integrate postgresql service in yunohost
+        yunohost service add postgresql --log "/var/log/postgresql/"
+
+        ynh_systemd_action --service_name=postgresql --action=reload
     fi
-
-    local psql_root_password="$(ynh_string_random)"
-    echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
-
-    if [ -e /etc/postgresql/9.4/ ]
-    then
-        local pg_hba=/etc/postgresql/9.4/main/pg_hba.conf
-        local logfile=/var/log/postgresql/postgresql-9.4-main.log
-    elif [ -e /etc/postgresql/9.6/ ]
-    then
-        local pg_hba=/etc/postgresql/9.6/main/pg_hba.conf
-        local logfile=/var/log/postgresql/postgresql-9.6-main.log
-    else
-        ynh_die "postgresql shoud be 9.4 or 9.6"
-    fi
-
-    ynh_systemd_action --service_name=postgresql --action=start
-
-    sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
-
-    # force all user to connect to local databases using hashed passwords
-    # https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
-    # Note: we can't use peer since YunoHost create users with nologin
-    #  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
-    ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
-
-    # Advertise service in admin panel
-    yunohost service add postgresql --log "$logfile"
-
-    systemctl enable postgresql
-    ynh_systemd_action --service_name=postgresql --action=reload
 }

@@ -2,7 +2,6 @@
 
 import os
 import dns.resolver
-import socket
 import re
 
 from subprocess import CalledProcessError
@@ -118,15 +117,27 @@ class MailDiagnoser(Diagnoser):
                 details = ["diagnosis_mail_fcrdns_nok_details",
                            "diagnosis_mail_fcrdns_nok_alternatives_4"]
 
-            try:
-                rdns_domain, _, _ = socket.gethostbyaddr(ip)
-            except socket.herror:
+            rev = dns.reversename.from_address(ip)
+            subdomain = str(rev.split(3)[0])
+            query = subdomain
+            if ipversion == 4:
+                query += '.in-addr.arpa'
+            else:
+                query += '.ip6.arpa'
+
+            # Do the DNS Query
+            status, value = dig(query, 'PTR', resolvers="force_external")
+            if status == "nok":
                 yield dict(meta={"test": "mail_fcrdns", "ipversion": ipversion},
                            data={"ip": ip, "ehlo_domain": self.ehlo_domain},
                            status="ERROR",
                            summary="diagnosis_mail_fcrdns_dns_missing",
                            details=details)
                 continue
+
+            rdns_domain = ''
+            if len(value) > 0:
+                rdns_domain = value[0][:-1] if value[0].endswith('.') else value[0]
             if rdns_domain != self.ehlo_domain:
                 details = ["diagnosis_mail_fcrdns_different_from_ehlo_domain_details"] + details
                 yield dict(meta={"test": "mail_fcrdns", "ipversion": ipversion},

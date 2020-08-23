@@ -45,14 +45,15 @@ class SystemResourcesDiagnoser(Diagnoser):
         item = dict(meta={"test": "swap"},
                     data={"total": human_size(swap.total), "recommended": "512 MiB"})
         if swap.total <= 1 * MB:
-            item["status"] = "ERROR"
+            item["status"] = "INFO"
             item["summary"] = "diagnosis_swap_none"
-        elif swap.total <= 512 * MB:
-            item["status"] = "WARNING"
+        elif swap.total < 450 * MB:
+            item["status"] = "INFO"
             item["summary"] = "diagnosis_swap_notsomuch"
         else:
             item["status"] = "SUCCESS"
             item["summary"] = "diagnosis_swap_ok"
+        item["details"] = ["diagnosis_swap_tip"]
         yield item
 
         # FIXME : add a check that swapiness is low if swap is on a sdcard...
@@ -61,40 +62,36 @@ class SystemResourcesDiagnoser(Diagnoser):
         # Disks usage
         #
 
-        disk_partitions = psutil.disk_partitions()
+        disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
 
         for disk_partition in disk_partitions:
             device = disk_partition.device
             mountpoint = disk_partition.mountpoint
 
             usage = psutil.disk_usage(mountpoint)
-            free_percent = round_(100 - usage.percent)
+            free_percent = 100 - round_(usage.percent)
 
             item = dict(meta={"test": "diskusage", "mountpoint": mountpoint},
-                        data={"device": device, "total": human_size(usage.total), "free": human_size(usage.free), "free_percent": free_percent})
+                        data={"device": device,
+                              # N.B.: we do not use usage.total because we want
+                              # to take into account the 5% security margin
+                              # correctly (c.f. the doc of psutil ...)
+                              "total": human_size(usage.used+usage.free),
+                              "free": human_size(usage.free),
+                              "free_percent": free_percent})
 
-            # Special checks for /boot partition because they sometimes are
-            # pretty small and that's kind of okay... (for example on RPi)
-            if mountpoint.startswith("/boot"):
-                if usage.free < 10 * MB or free_percent < 10:
-                    item["status"] = "ERROR"
-                    item["summary"] = "diagnosis_diskusage_verylow"
-                elif usage.free < 20 * MB or free_percent < 20:
-                    item["status"] = "WARNING"
-                    item["summary"] = "diagnosis_diskusage_low"
-                else:
-                    item["status"] = "SUCCESS"
-                    item["summary"] = "diagnosis_diskusage_ok"
+            # We have an additional absolute constrain on / and /var because
+            # system partitions are critical, having them full may prevent
+            # upgrades etc...
+            if free_percent < 2.5 or (mountpoint in ["/", "/var"] and usage.free < 1 * GB):
+                item["status"] = "ERROR"
+                item["summary"] = "diagnosis_diskusage_verylow"
+            elif free_percent < 5 or (mountpoint in ["/", "/var"] and usage.free < 2 * GB):
+                item["status"] = "WARNING"
+                item["summary"] = "diagnosis_diskusage_low"
             else:
-                if usage.free < 1 * GB or free_percent < 5:
-                    item["status"] = "ERROR"
-                    item["summary"] = "diagnosis_diskusage_verylow"
-                elif usage.free < 2 * GB or free_percent < 10:
-                    item["status"] = "WARNING"
-                    item["summary"] = "diagnosis_diskusage_low"
-                else:
-                    item["status"] = "SUCCESS"
-                    item["summary"] = "diagnosis_diskusage_ok"
+                item["status"] = "SUCCESS"
+                item["summary"] = "diagnosis_diskusage_ok"
 
 
             yield item

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import re
 import os
 import random
 
@@ -9,6 +10,7 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
+
 
 class IPDiagnoser(Diagnoser):
 
@@ -72,8 +74,9 @@ class IPDiagnoser(Diagnoser):
         ipv6 = self.get_public_ip(6) if can_ping_ipv6 else None
 
         network_interfaces = get_network_interfaces()
+
         def get_local_ip(version):
-            local_ip = {iface:addr[version].split("/")[0]
+            local_ip = {iface: addr[version].split("/")[0]
                         for iface, addr in network_interfaces.items() if version in addr}
             if not local_ip:
                 return None
@@ -92,7 +95,7 @@ class IPDiagnoser(Diagnoser):
                    data={"global": ipv6, "local": get_local_ip("ipv6")},
                    status="SUCCESS" if ipv6 else "WARNING",
                    summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
-                   details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv6 else None)
+                   details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv6 else ["diagnosis_ip_no_ipv6_tip"])
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
 
@@ -105,9 +108,17 @@ class IPDiagnoser(Diagnoser):
             return False
 
         # If we are indeed connected in ipv4 or ipv6, we should find a default route
-        routes = check_output("ip -%s route" % protocol).split("\n")
-        if not any(r.startswith("default") for r in routes):
-            return False
+        routes = check_output("ip -%s route show table all" % protocol).split("\n")
+
+        def is_default_route(r):
+            # Typically the default route starts with "default"
+            # But of course IPv6 is more complex ... e.g. on internet cube there's
+            # no default route but a /3 which acts as a default-like route...
+            # e.g. 2000:/3 dev tun0 ...
+            return r.startswith("default") or (":" in r and re.match(r".*/[0-3]$", r.split()[0]))
+        if not any(is_default_route(r) for r in routes):
+            self.logger_debug("No default route for IPv%s, so assuming there's no IP address for that version" % protocol)
+            return None
 
         # We use the resolver file as a list of well-known, trustable (ie not google ;)) IPs that we can ping
         resolver_file = "/usr/share/yunohost/templates/dnsmasq/plain/resolv.dnsmasq.conf"

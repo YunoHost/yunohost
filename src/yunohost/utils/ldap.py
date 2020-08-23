@@ -19,8 +19,11 @@
 
 """
 
+import os
 import atexit
+from moulinette.core import MoulinetteLdapIsDownError
 from moulinette.authenticators import ldap
+from yunohost.utils.error import YunohostError
 
 # We use a global variable to do some caching
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
@@ -40,9 +43,21 @@ def _get_ldap_interface():
                  "extra": {}
                }
 
-        _ldap_interface = ldap.Authenticator(**conf)
+        try:
+            _ldap_interface = ldap.Authenticator(**conf)
+        except MoulinetteLdapIsDownError:
+            raise YunohostError("Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'")
+
+        assert_slapd_is_running()
 
     return _ldap_interface
+
+
+def assert_slapd_is_running():
+
+    # Assert slapd is running...
+    if not os.system("pgrep slapd >/dev/null") == 0:
+        raise YunohostError("Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'")
 
 
 # We regularly want to extract stuff like 'bar' in ldap path like
