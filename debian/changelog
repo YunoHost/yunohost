@@ -1,3 +1,16 @@
+yunohost (4.0.5) testing; urgency=low
+
+  - [enh] Update postfix, dovecot, nginx configuration according to Mozilla guidelines (Buster + DH params) (f3a4334a, 89bcf1ba, 2d661737)
+  - [enh] Update acme_tiny to 4.1.0 (#1037)
+  - [fix] ref to variable in i18n string (c.f. issue 1647) (7b1f02e0)
+  - [fix] Recursively enforce ownership for rspamd (8454f2ec)
+  - [fix] Stupid encoding issue when fetching service description (6ec0e7b6)
+  - [fix] Misc fixes for CI (ca0a42f2, 485c65a9, #1038, a891d20a)
+
+  Thanks to all contributors <3 ! (Eric G., Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Aug 2020 19:32:27 +0200
+
 yunohost (4.0.4) stable; urgency=low
 
   - Debugging and robustness improvements for postgresql 9.6 -> 11 and xtables->nftables migrations (accc2da4, 59bd7d66, 4cb6f7fd, 4b14402c)
