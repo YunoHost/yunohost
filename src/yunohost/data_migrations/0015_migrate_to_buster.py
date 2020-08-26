@@ -99,7 +99,12 @@ class MyMigration(Migration):
                 logger.info("Downgrading openssl version from %s to %s ..." % (openssl_version, new_version))
                 self.apt_install('openssl=%s --allow-downgrades' % new_version)
             else:
-                logger.warning("Could not identify which version of openssl to install")
+                logger.error("Could not identify which version of openssl to install")
+
+            # Validate that openssl's version is not from sury anymore
+            openssl_version = check_output('dpkg -s openssl | grep "^Version: " | cut -d " " -f 2')
+            if "gbp" in openssl_version:
+                raise YunohostError("Openssl version is from sury's repository and needs to be downgraded to a version from the official debian's repositories.")
 
         #
         # Yunohost upgrade
