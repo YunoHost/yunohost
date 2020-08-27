@@ -109,7 +109,7 @@ user:
                         comment: good_practices_about_user_password
                 -d:
                     full: --domain
-                    help: Domain for email and xmpp
+                    help: Domain for the email address and xmpp account
                     extra:
                         pattern: &pattern_domain
                             - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$

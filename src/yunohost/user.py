@@ -127,14 +127,20 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
 
+    # Validate domain used for email address/xmpp account
     if domain is None:
         if msettings.get('interface') == 'api':
             raise YunohostError('Invalide usage, specify domain argument')
         else:
             # On affiche les differents domaines possibles
-            for domain_checked in domain_list()['domains'] :
-                msignals.display("- {}".format(domain_checked))
-            domain = msignals.prompt(m18n.n('ask_domain'))
+            msignals.display(m18n.n('domains_available'))
+            for domain in domain_list()['domains']:
+                msignals.display("- {}".format(domain))
+
+            maindomain = _get_maindomain()
+            domain = msignals.prompt(m18n.n('ask_user_domain') + ' (default: %s)' % maindomain)
+            if not domain:
+                domain = maindomain
 
     # Check that the domain exists
     if domain not in domain_list()['domains']:
