@@ -1,37 +1,37 @@
 #!/bin/bash
 
 readonly YNH_DEFAULT_PHP_VERSION=7.3
-# Declare the actual php version to use.
-# A packager willing to use another version of php can override the variable into its _common.sh.
+# Declare the actual PHP version to use.
+# A packager willing to use another version of PHP can override the variable into its _common.sh.
 YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 
-# Create a dedicated php-fpm config
+# Create a dedicated PHP-FPM config
 #
 # usage 1: ynh_add_fpm_config [--phpversion=7.X] [--use_template] [--package=packages] [--dedicated_service]
-# | arg: -v, --phpversion=          - Version of php to use.
+# | arg: -v, --phpversion=          - Version of PHP to use.
 # | arg: -t, --use_template         - Use this helper in template mode.
-# | arg: -p, --package=             - Additionnal php packages to install
-# | arg: -d, --dedicated_service    - Use a dedicated php-fpm service instead of the common one.
+# | arg: -p, --package=             - Additionnal PHP packages to install
+# | arg: -d, --dedicated_service    - Use a dedicated PHP-FPM service instead of the common one.
 #
 # -----------------------------------------------------------------------------
 #
 # usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--package=packages] [--dedicated_service]
-# | arg: -v, --phpversion=          - Version of php to use.
+# | arg: -v, --phpversion=          - Version of PHP to use.
 # | arg: -f, --footprint=           - Memory footprint of the service (low/medium/high).
-# low    - Less than 20Mb of ram by pool.
-# medium - Between 20Mb and 40Mb of ram by pool.
-# high   - More than 40Mb of ram by pool.
-# Or specify exactly the footprint, the load of the service as Mb by pool instead of having a standard value.
+# low    - Less than 20 MB of RAM by pool.
+# medium - Between 20 MB and 40 MB of RAM by pool.
+# high   - More than 40 MB of RAM by pool.
+# Or specify exactly the footprint, the load of the service as MB by pool instead of having a standard value.
 # To have this value, use the following command and stress the service.
 # watch -n0.5 ps -o user,cmd,%cpu,rss -u APP
 #
 # | arg: -u, --usage=               - Expected usage of the service (low/medium/high).
-# low    - Personal usage, behind the sso.
+# low    - Personal usage, behind the SSO.
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
 #
-# | arg: -p, --package=             - Additionnal php packages to install for a specific version of php
-# | arg: -d, --dedicated_service    - Use a dedicated php-fpm service instead of the common one.
+# | arg: -p, --package=             - Additionnal PHP packages to install for a specific version of PHP
+# | arg: -d, --dedicated_service    - Use a dedicated PHP-FPM service instead of the common one.
 #
 #
 # The footprint of the service will be used to defined the maximum footprint we can allow, which is half the maximum RAM.
@@ -85,7 +85,7 @@ ynh_add_fpm_config () {
     # Set the default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
 
-    # If the requested php version is not the default version for YunoHost
+    # If the requested PHP version is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
     then
         # If the argument --package is used, add the packages to ynh_install_php to install them from sury
@@ -95,7 +95,7 @@ ynh_add_fpm_config () {
         else
             local additionnal_packages=""
         fi
-        # Install this specific version of php.
+        # Install this specific version of PHP.
         ynh_install_php --phpversion="$phpversion" "$additionnal_packages"
     elif [ -n "$package" ]
     then
@@ -118,7 +118,7 @@ ynh_add_fpm_config () {
         fpm_service="php5-fpm"
     fi
 
-    # Create the directory for fpm pools
+    # Create the directory for FPM pools
     mkdir --parents "$fpm_config_dir/pool.d"
 
     ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
@@ -127,7 +127,7 @@ ynh_add_fpm_config () {
     ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
     finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 
-    # Migrate from mutual php service to dedicated one.
+    # Migrate from mutual PHP service to dedicated one.
     if [ $dedicated_service -eq 1 ]
     then
         local old_fpm_config_dir="/etc/php/$phpversion/fpm"
@@ -137,9 +137,9 @@ ynh_add_fpm_config () {
             ynh_print_info --message="Migrate to a dedicated php-fpm service for $app."
             # Create a backup of the old file before migration
             ynh_backup_if_checksum_is_different --file="$old_fpm_config_dir/pool.d/$app.conf"
-            # Remove the old php config file
+            # Remove the old PHP config file
             ynh_secure_remove --file="$old_fpm_config_dir/pool.d/$app.conf"
-            # Reload php to release the socket and allow the dedicated service to use it
+            # Reload PHP to release the socket and allow the dedicated service to use it
             ynh_systemd_action --service_name=php${phpversion}-fpm --action=reload
         fi
     fi
@@ -151,10 +151,10 @@ ynh_add_fpm_config () {
         # Usage 1, use the template in conf/php-fpm.conf
         local phpfpm_path="../conf/php-fpm.conf"
         if [ ! -e "$phpfpm_path" ]; then
-            phpfpm_path="../settings/conf/php-fpm.conf"	# Into the restore script, the php-fpm template is not at the same place
+            phpfpm_path="../settings/conf/php-fpm.conf"	# Into the restore script, the PHP-FPM template is not at the same place
         fi
         # Make sure now that the template indeed exists
-        [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure php-fpm."
+        [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure PHP-FPM."
         cp "$phpfpm_path" "$finalphpconf"
         ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
@@ -162,13 +162,13 @@ ynh_add_fpm_config () {
         ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
 
     else
-        # Usage 2, generate a php-fpm config file with ynh_get_scalable_phpfpm
+        # Usage 2, generate a PHP-FPM config file with ynh_get_scalable_phpfpm
 
         # Store settings
         ynh_app_setting_set --app=$app --key=fpm_footprint --value=$footprint
         ynh_app_setting_set --app=$app --key=fpm_usage --value=$usage
 
-        # Define the values to use for the configuration of php.
+        # Define the values to use for the configuration of PHP.
         ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
         # Copy the default file
@@ -181,7 +181,7 @@ ynh_add_fpm_config () {
         ynh_replace_string --match_string="^group = .*" --replace_string="group = $app" --target_file="$finalphpconf"
         ynh_replace_string --match_string=".*chdir = .*" --replace_string="chdir = $final_path" --target_file="$finalphpconf"
 
-        # Configure fpm children
+        # Configure FPM children
         ynh_replace_string --match_string=".*pm = .*" --replace_string="pm = $php_pm" --target_file="$finalphpconf"
         ynh_replace_string --match_string=".*pm.max_children = .*" --replace_string="pm.max_children = $php_max_children" --target_file="$finalphpconf"
         ynh_replace_string --match_string=".*pm.max_requests = .*" --replace_string="pm.max_requests = 500" --target_file="$finalphpconf"
@@ -238,7 +238,7 @@ ynh_add_fpm_config () {
         ynh_replace_string --match_string="^[; ]*syslog.ident *=.*" --replace_string="syslog.ident = php-fpm-$app" --target_file="$globalphpconf"
         ynh_replace_string --match_string="^[; ]*include *=.*" --replace_string="include = $finalphpconf" --target_file="$globalphpconf"
 
-        # Create a config for a dedicated php-fpm service for the app
+        # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
 Description=PHP $phpversion FastCGI Process Manager for $app
 After=network.target
@@ -253,7 +253,7 @@ ExecReload=/bin/kill -USR2 \$MAINPID
 WantedBy=multi-user.target
 " > ../conf/$fpm_service
 
-        # Create this dedicated php-fpm service
+        # Create this dedicated PHP-FPM service
         ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
         # Integrate the service in YunoHost admin panel
         yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --log_type file --description "Php-fpm dedicated to $app"
@@ -262,12 +262,12 @@ WantedBy=multi-user.target
         # Restart the service, as this service is either stopped or only for this app
         ynh_systemd_action --service_name=$fpm_service --action=restart
     else
-        # Reload php, to not impact other parts of the system using php
+        # Reload PHP, to not impact other parts of the system using PHP
         ynh_systemd_action --service_name=$fpm_service --action=reload
     fi
 }
 
-# Remove the dedicated php-fpm config
+# Remove the dedicated PHP-FPM config
 #
 # usage: ynh_remove_fpm_config
 #
@@ -277,13 +277,13 @@ ynh_remove_fpm_config () {
     local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
     local dedicated_service=$(ynh_app_setting_get --app=$app --key=fpm_dedicated_service)
     dedicated_service=${dedicated_service:-0}
-    # Get the version of php used by this app
+    # Get the version of PHP used by this app
     local phpversion=$(ynh_app_setting_get $app phpversion)
 
     # Assume default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
 
-    # Assume default php files if not set
+    # Assume default PHP files if not set
     if [ -z "$fpm_config_dir" ]
     then
         fpm_config_dir="/etc/php/$YNH_DEFAULT_PHP_VERSION/fpm"
@@ -292,11 +292,11 @@ ynh_remove_fpm_config () {
 
     if [ $dedicated_service -eq 1 ]
     then
-        # Remove the dedicated service php-fpm service for the app
+        # Remove the dedicated service PHP-FPM service for the app
         ynh_remove_systemd_config --service=$fpm_service
-        # Remove the global php-fpm conf
+        # Remove the global PHP-FPM conf
         ynh_secure_remove --file="$fpm_config_dir/php-fpm-$app.conf"
-        # Remove the service from the list of services known by Yunohost
+        # Remove the service from the list of services known by YunoHost
         yunohost service remove $fpm_service
     elif ynh_package_is_installed --package="php${phpversion}-fpm"; then
         ynh_systemd_action --service_name=$fpm_service --action=reload
@@ -308,21 +308,21 @@ ynh_remove_fpm_config () {
         ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
-    # If the php version used is not the default version for YunoHost
+    # If the PHP version used is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
     then
-        # Remove this specific version of php
+        # Remove this specific version of PHP
         ynh_remove_php
     fi
 }
 
-# Install another version of php.
+# Install another version of PHP.
 #
 # [internal]
 #
 # usage: ynh_install_php --phpversion=phpversion [--package=packages]
-# | arg: -v, --phpversion=  - Version of php to install.
-# | arg: -p, --package=     - Additionnal php packages to install
+# | arg: -v, --phpversion=  - Version of PHP to install.
+# | arg: -p, --package=     - Additionnal PHP packages to install
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_install_php () {
@@ -349,7 +349,7 @@ ynh_install_php () {
     # Do not add twice the same line
     if ! grep --quiet "$YNH_APP_INSTANCE_NAME:" "/etc/php/ynh_app_version"
     then
-        # Store the ID of this app and the version of php requested for it
+        # Store the ID of this app and the version of PHP requested for it
         echo "$YNH_APP_INSTANCE_NAME:$phpversion" | tee --append "/etc/php/ynh_app_version"
     fi
 
@@ -357,11 +357,11 @@ ynh_install_php () {
     ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version --priority=600
 
     # Install requested dependencies from this extra repository.
-    # Install php-fpm first, otherwise php will install apache as a dependency.
+    # Install PHP-FPM first, otherwise PHP will install apache as a dependency.
     ynh_add_app_dependencies --package="php${phpversion}-fpm"
     ynh_add_app_dependencies --package="php$phpversion php${phpversion}-common $package"
 
-    # Set the default php version back as the default version for php-cli.
+    # Set the default PHP version back as the default version for php-cli.
     update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
 
     # Pin this extra repository after packages are installed to prevent sury of doing shit
@@ -374,7 +374,7 @@ ynh_install_php () {
     yunohost service add php${phpversion}-fpm --log "/var/log/php${phpversion}-fpm.log"
 }
 
-# Remove the specific version of php used by the app.
+# Remove the specific version of PHP used by the app.
 #
 # [internal]
 #
@@ -382,7 +382,7 @@ ynh_install_php () {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_php () {
-    # Get the version of php used by this app
+    # Get the version of PHP used by this app
     local phpversion=$(ynh_app_setting_get $app phpversion)
 
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ] || [ -z "$phpversion" ]
@@ -400,7 +400,7 @@ ynh_remove_php () {
     # Remove the line for this app
     sed --in-place "/$YNH_APP_INSTANCE_NAME:$phpversion/d" "/etc/php/ynh_app_version"
 
-    # If no other app uses this version of php, remove it.
+    # If no other app uses this version of PHP, remove it.
     if ! grep --quiet "$phpversion" "/etc/php/ynh_app_version"
     then
         # Remove the service from the admin panel
@@ -408,26 +408,26 @@ ynh_remove_php () {
             yunohost service remove php${phpversion}-fpm
         fi
 
-        # Purge php dependencies for this version.
+        # Purge PHP dependencies for this version.
         ynh_package_autopurge "php$phpversion php${phpversion}-fpm php${phpversion}-common"
     fi
 }
 
-# Define the values to configure php-fpm
+# Define the values to configure PHP-FPM
 #
 # [internal]
 #
 # usage: ynh_get_scalable_phpfpm --usage=usage --footprint=footprint [--print]
 # | arg: -f, --footprint=       - Memory footprint of the service (low/medium/high).
-# low    - Less than 20Mb of ram by pool.
-# medium - Between 20Mb and 40Mb of ram by pool.
-# high   - More than 40Mb of ram by pool.
-# Or specify exactly the footprint, the load of the service as Mb by pool instead of having a standard value.
+# low    - Less than 20 MB of RAM by pool.
+# medium - Between 20 MB and 40 MB of RAM by pool.
+# high   - More than 40 MB of RAM by pool.
+# Or specify exactly the footprint, the load of the service as MB by pool instead of having a standard value.
 # To have this value, use the following command and stress the service.
 # watch -n0.5 ps -o user,cmd,%cpu,rss -u APP
 #
 # | arg: -u, --usage=           - Expected usage of the service (low/medium/high).
-# low    - Personal usage, behind the sso.
+# low    - Personal usage, behind the SSO.
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
 #
@@ -498,7 +498,7 @@ ynh_get_scalable_phpfpm () {
 
     # Define pm.max_children
     # The value of pm.max_children is the total amount of ram divide by 2 and divide again by the footprint of a pool for this app.
-    # So if php-fpm start the maximum of children, it won't exceed half of the ram.
+    # So if PHP-FPM start the maximum of children, it won't exceed half of the ram.
     php_max_children=$(( $max_ram / 2 / $footprint ))
     # If process manager is set as static, use half less children.
     # Used as static, there's always as many children as the value of pm.max_children

@@ -1,24 +1,43 @@
 ########################################
 # LINTER
 ########################################
+# later we must fix lint and format-check jobs and remove "allow_failure"
 
-lint:
+lint27:
   stage: lint
   image: "before-install"
   needs: []
   allow_failure: true
   script:
-    - tox -e lint
+    - tox -e py27-lint
 
-invalidcode:
+lint37:
+  stage: lint
+  image: "before-install"
+  needs: []
+  allow_failure: true
+  script:
+    - tox -e py37-lint
+
+invalidcode27:
   stage: lint
   image: "before-install"
   needs: []
   script:
-    - tox -e invalidcode
+    - tox -e py27-invalidcode
 
-# Disabled, waiting for buster
-#format-check:
-#  extends: .lint-stage
-#  script:
-#    - black --check --diff
+invalidcode37:
+  stage: lint
+  image: "before-install"
+  allow_failure: true
+  needs: []
+  script:
+    - tox -e py37-invalidcode
+
+format-check:
+  stage: lint
+  image: "before-install"
+  needs: []
+  allow_failure: true
+  script:
+    - tox -e py37-black

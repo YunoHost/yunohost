@@ -346,16 +346,20 @@ def _get_and_format_service_status(service, infos):
             'configuration': "unknown",
         }
 
-    translation_key = "service_description_%s" % service
+    # Try to get description directly from services.yml
     description = infos.get("description")
+
+    # If no description was there, try to get it from the .json locales
     if not description:
+        translation_key = "service_description_%s" % service
         description = m18n.n(translation_key)
 
-    # that mean that we don't have a translation for this string
-    # that's the only way to test for that for now
-    # if we don't have it, uses the one provided by systemd
-    if description.decode('utf-8') == translation_key:
-        description = str(raw_status.get("Description", ""))
+        # If descrption is still equal to the translation key,
+        # that mean that we don't have a translation for this string
+        # that's the only way to test for that for now
+        # if we don't have it, uses the one provided by systemd
+        if description.decode('utf-8') == translation_key:
+            description = str(raw_status.get("Description", ""))
 
     output = {
         'status': str(raw_status.get("SubState", "unknown")),
