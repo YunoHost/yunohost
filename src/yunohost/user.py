@@ -34,7 +34,7 @@ import string
 import subprocess
 import copy
 
-from moulinette import m18n
+from moulinette import msignals, msettings, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
@@ -126,8 +126,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
 
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
-    from moulinette import msignals, msettings, m18n
-    from yunohost.domain import domain_list
+
     if domain is None:
         if msettings.get('interface') == 'api':
             raise YunohostError('Invalide usage, specify domain argument')
@@ -141,7 +140,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     if domain not in domain_list()['domains']:
         raise YunohostError('domain_unknown', domain)
 
-    mail=username+'@'+ domain
+    mail = username + '@' + domain
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:

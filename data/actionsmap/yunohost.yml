@@ -1338,7 +1338,7 @@ dyndns:
 tools:
     category_help: Specific tools
     actions:
-    
+
         ### tools_adminpw()
         adminpw:
             action_help: Change password of admin and root users
@@ -1366,6 +1366,9 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
+            configuration:
+                # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
+                authenticate: false
             arguments:
                 -d:
                     full: --domain
@@ -1373,7 +1376,7 @@ tools:
                     extra:
                         ask: ask_main_domain
                         pattern: *pattern_domain
-                        required: False
+                        required: True
                 -p:
                     full: --password
                     help: YunoHost admin password
