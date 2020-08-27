@@ -2477,7 +2477,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
                               or config_panel.json/toml
     """
     from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_list
+    from yunohost.user import user_list, user_info
 
     parsed_answers_dict = OrderedDict()
 
@@ -2503,27 +2503,9 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
             question_value = user_answers[question_name]
         else:
             if 'ask' in question:
-                # Retrieve proper ask string
-                text_for_user_input_in_cli = _value_for_locale(question['ask'])
-
-                # Append extra strings
-                if question_type == 'boolean':
-                    text_for_user_input_in_cli += ' [yes | no]'
-                elif question_choices:
-                    text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question_choices))
-
-                if question_default is not None:
-                    if question_type == 'boolean':
-                        text_for_user_input_in_cli += ' (default: {0})'.format("yes" if question_default == 1 else "no")
-                    else:
-                        text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
-
-                # Check for a password argument
-                is_password = True if question_type == 'password' else False
 
                 if question_type == 'domain':
                     question_default = _get_maindomain()
-                    text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
                     msignals.display(m18n.n('domains_available'))
                     for domain in domain_list()['domains']:
                         msignals.display("- {}".format(domain))
@@ -2537,11 +2519,29 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
                     root_mail = "root@%s" % _get_maindomain()
                     for user in users.keys():
                         if root_mail in user_info(user)["mail-aliases"]:
-                            arg_default = user
-                            ask_string += ' (default: {0})'.format(arg_default)
+                            question_default = user
+                            break
 
                 elif question_type == 'password':
                     msignals.display(m18n.n('good_practices_about_user_password'))
+
+                # Retrieve proper ask string
+                text_for_user_input_in_cli = _value_for_locale(question['ask'])
+
+                # Append extra strings
+                if question_type == 'boolean':
+                    text_for_user_input_in_cli += ' [yes | no]'
+                elif question_choices:
+                    text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question_choices))
+
+
+                if question_default is not None:
+                    if question_type == 'boolean':
+                        text_for_user_input_in_cli += ' (default: {0})'.format("yes" if question_default == 1 else "no")
+                    else:
+                        text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
+
+                is_password = True if question_type == 'password' else False
 
                 try:
                     input_string = msignals.prompt(text_for_user_input_in_cli, is_password)
