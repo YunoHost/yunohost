@@ -1,3 +1,7 @@
+yunohost (4.1.0) testing; urgency=low
+
+  - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
+
 yunohost (4.0.5) testing; urgency=low
 
   - [enh] Update postfix, dovecot, nginx configuration according to Mozilla guidelines (Buster + DH params) (f3a4334a, 89bcf1ba, 2d661737)
