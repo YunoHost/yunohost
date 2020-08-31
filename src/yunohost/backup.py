@@ -53,6 +53,7 @@ from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.settings import settings_get
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -1772,15 +1773,14 @@ class CopyBackupMethod(BackupMethod):
 
 class TarBackupMethod(BackupMethod):
 
-    """
-    This class compress all files to backup in archive.
-    """
-
     method_name = "tar"
 
     @property
     def _archive_file(self):
-        """Return the compress archive path"""
+
+        if isinstance(self.manager, BackupManager) and settings_get("backup.compress_tar_archives"):
+            return os.path.join(self.repo, self.name + '.tar.gz')
+
         f = os.path.join(self.repo, self.name + '.tar')
         if os.path.exists(f + ".gz"):
             f += ".gz"
