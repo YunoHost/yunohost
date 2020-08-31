@@ -1772,9 +1772,8 @@ class BackupMethod(object):
         bm_class = {
             'copy': CopyBackupMethod,
             'tar': TarBackupMethod,
-            'borg': BorgBackupMethod
         }
-        if method in ["copy", "tar", "borg"]:
+        if method in ["copy", "tar"]:
             return bm_class[method](manager, *args)
         else:
             return CustomBackupMethod(manager, method=method, *args)
@@ -2008,26 +2007,6 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
 
-class BorgBackupMethod(BackupMethod):
-
-    @property
-    def method_name(self):
-        return 'borg'
-
-    def backup(self):
-        """ Backup prepared files with borg """
-        super(CopyBackupMethod, self).backup()
-
-        # TODO run borg create command
-        raise YunohostError('backup_borg_not_implemented')
-
-    def mount(self, mnt_path):
-        raise YunohostError('backup_borg_not_implemented')
-
-    def copy(self, file, target):
-        raise YunohostError('backup_borg_not_implemented')
-
-
 class CustomBackupMethod(BackupMethod):
 
     """
@@ -2044,7 +2023,7 @@ class CustomBackupMethod(BackupMethod):
 
     @property
     def method_name(self):
-        return 'borg'
+        return 'custom'
 
     def need_mount(self):
         """Call the backup_method hook to know if we need to organize files
@@ -2153,7 +2132,7 @@ def backup_create(name=None, description=None, methods=[],
         if no_compress:
             methods = ['copy']
         else:
-            methods = ['tar']  # In future, borg will be the default actions
+            methods = ['tar']
 
     # If no --system or --apps given, backup everything
     if system is None and apps is None:
