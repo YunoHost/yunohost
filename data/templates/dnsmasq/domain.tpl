@@ -1,6 +1,8 @@
 address=/{{ domain }}/{{ ipv4 }}
+address=/xmpp-upload.{{ domain }}/{{ ipv4 }}
 {% if ipv6 %}
 address=/{{ domain }}/{{ ipv6 }}
+address=/xmpp-upload.{{ domain }}/{{ ipv6 }}
 {% endif %}
 txt-record={{ domain }},"v=spf1 mx a -all"
 mx-host={{ domain }},{{ domain }},5
