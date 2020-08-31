@@ -112,7 +112,7 @@ def find_expected_string_keys():
     # Hardcoded expected keys ...
     yield "admin_password"  # Not sure that's actually used nowadays...
 
-    for method in ["tar", "copy", "borg", "custom"]:
+    for method in ["tar", "copy", "custom"]:
         yield "backup_applying_method_%s" % method
         yield "backup_method_%s_finished" % method
 
