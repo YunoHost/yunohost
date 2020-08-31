@@ -11,12 +11,12 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 4.0.0~alpha), ssowat (>= 4.0.0~alpha)
+ , moulinette (>= 4.0), ssowat (>= 4.0)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-miniupnpc, python-dbus, python-jinja2
  , python-toml, python-packaging, python-publicsuffix
  , apt, apt-transport-https, dirmngr
- , php-fpm, php-ldap, php-intl
+ , php-fpm (>= 7.3), php-ldap, php-intl
  , mariadb-server, php-mysql | php-mysqlnd
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
  , openssl, ca-certificates, netcat-openbsd, iproute2
