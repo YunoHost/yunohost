@@ -27,14 +27,13 @@ do_pre_regen() {
   ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
 
+  export ipv4
+  export ipv6
+
   # add domain conf files
   for domain in $YNH_DOMAINS; do
-    cat domain.tpl \
-      | sed "s/{{ domain }}/${domain}/g" \
-      | sed "s/{{ ip }}/${ipv4}/g" \
-      > "${dnsmasq_dir}/${domain}"
-    [[ -n $ipv6 ]] \
-      && echo "address=/${domain}/${ipv6}" >> "${dnsmasq_dir}/${domain}"
+      export domain
+      ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
   done
 
   # remove old domain conf files
