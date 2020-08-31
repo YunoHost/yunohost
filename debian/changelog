@@ -1,3 +1,12 @@
+yunohost (3.8.5.8) stable; urgency=low
+
+  - Remove disclaimer about the migration procedure being still unstable-ish  (HEAD -> stretch-unstable)
+  - Add apt regenconf hook to manage for more consistent management of the sury pinning policy
+  - Make sure that openssl is not from sury before continuing the migration
+  - Make sure to unhold openssl before downgrade...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 31 Aug 2020 20:26:12 +0200
+
 yunohost (3.8.5.7) stable; urgency=low
 
   - [fix] Typo in previous commit -.- + make sure to hold openssl during
