@@ -62,16 +62,6 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
 
     """
 
-    # Legacy code to automatically run the migration
-    # This is required because regen_conf is called before the migration call
-    # in debian's postinst script
-    if os.path.exists("/etc/yunohost/installed") \
-       and ("conffiles" in read_file("/etc/yunohost/services.yml") \
-            or not os.path.exists(REGEN_CONF_FILE)):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("decouple_regenconf_from_services")
-        migration.run()
-
     result = {}
 
     # Return the list of pending conf
@@ -236,6 +226,8 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             conf_files[f] = None
         # </> End discussion about stale file hashes
 
+        force_update_hashes_for_this_category = False
+
         for system_path, pending_path in conf_files.items():
             logger.debug("processing pending conf '%s' to system conf '%s'",
                          pending_path, system_path)
@@ -284,7 +276,8 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
                     os.remove(pending_path)
                     conf_hashes[system_path] = None
                     conf_status = 'forget-about-it'
-                    regenerated = True
+                    force_update_hashes_for_this_category = True
+                    continue
                 elif not saved_hash or force:
                     if force:
                         logger.debug("> system conf has been manually removed")
@@ -377,7 +370,7 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
             else:
                 logger.success(m18n.n('regenconf_would_be_updated', category=category))
 
-        if succeed_regen and not dry_run:
+        if (succeed_regen or force_update_hashes_for_this_category) and not dry_run:
             _update_conf_hashes(category, conf_hashes)
 
         # Append the category results
@@ -447,13 +440,13 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 
     """
 
-    if os.path.exists(orig_file):
+    if orig_file and os.path.exists(orig_file):
         with open(orig_file, 'r') as orig_file:
             orig_file = orig_file.readlines()
     else:
         orig_file = []
 
-    if os.path.exists(new_file):
+    if new_file and os.path.exists(new_file):
         with open(new_file, 'r') as new_file:
             new_file = new_file.readlines()
     else:

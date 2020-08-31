@@ -90,6 +90,8 @@ def app_catalog(full=False, with_categories=False):
                 "description": infos['manifest']['description'],
                 "level": infos["level"],
             }
+        else:
+            infos["manifest"]["arguments"] = _set_default_ask_questions(infos["manifest"]["arguments"])
 
     # Trim info for categories if not using --full
     for category in catalog["categories"]:
@@ -107,7 +109,6 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"]}
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
-
 
 
 # Old legacy function...
@@ -169,6 +170,7 @@ def app_info(app, full=False):
         return ret
 
     ret["manifest"] = local_manifest
+    ret["manifest"]["arguments"] = _set_default_ask_questions(ret["manifest"]["arguments"])
     ret['settings'] = settings
 
     absolute_app_name, _ = _parse_app_instance_name(app)
@@ -521,7 +523,7 @@ def app_upgrade(app=[], url=None, file=None):
         _patch_legacy_helpers(extracted_app_folder)
 
         # Apply dirty patch to make php5 apps compatible with php7
-        _patch_php5(extracted_app_folder)
+        _patch_legacy_php_versions(extracted_app_folder)
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -736,7 +738,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     _patch_legacy_helpers(extracted_app_folder)
 
     # Apply dirty patch to make php5 apps compatible with php7
-    _patch_php5(extracted_app_folder)
+    _patch_legacy_php_versions(extracted_app_folder)
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
@@ -865,6 +867,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
+
             # Here again, calling hook_exec could fail miserably, or get
             # manually interrupted (by mistake or because script was stuck)
             # In that case we still want to proceed with the rest of the
@@ -1032,7 +1035,7 @@ def app_remove(operation_logger, app):
 
     # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
     # script might date back from jessie install)
-    _patch_php5(app_setting_path)
+    _patch_legacy_php_versions(app_setting_path)
 
     manifest = _get_manifest_of_app(app_setting_path)
 
@@ -2093,11 +2096,61 @@ def _get_manifest_of_app(path):
 
         manifest["arguments"]["install"] = install_arguments
 
-        return manifest
     elif os.path.exists(os.path.join(path, "manifest.json")):
-        return read_json(os.path.join(path, "manifest.json"))
+        manifest = read_json(os.path.join(path, "manifest.json"))
     else:
         raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
+
+    manifest["arguments"] = _set_default_ask_questions(manifest["arguments"])
+    return manifest
+
+
+def _set_default_ask_questions(arguments):
+
+    # arguments is something like
+    # { "install": [
+    #       { "name": "domain",
+    #         "type": "domain",
+    #         ....
+    #       },
+    #       { "name": "path",
+    #         "type": "path"
+    #         ...
+    #       },
+    #       ...
+    #   ],
+    #  "upgrade": [ ... ]
+    # }
+
+    # We set a default for any question with these matching (type, name)
+    #                           type       namei
+    # N.B. : this is only for install script ... should be reworked for other
+    # scripts if we supports args for other scripts in the future...
+    questions_with_default = [("domain", "domain"),      # i18n: app_manifest_install_ask_domain
+                              ("path", "path"),          # i18n: app_manifest_install_ask_path
+                              ("password", "password"),  # i18n: app_manifest_install_ask_password
+                              ("user", "admin"),         # i18n: app_manifest_install_ask_admin
+                              ("boolean", "is_public")]  # i18n: app_manifest_install_ask_is_public
+
+    for script_name, arg_list in arguments.items():
+
+        # We only support questions for install so far, and for other
+        if script_name != "install":
+            continue
+
+        for arg in arg_list:
+
+            # Do not override 'ask' field if provided by app ?... Or shall we ?
+            # if "ask" in arg:
+            #    continue
+
+            # If this arg corresponds to a question with default ask message...
+            if any((arg.get("type"), arg["name"]) == question for question in questions_with_default):
+                # The key is for example "app_manifest_install_ask_domain"
+                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
+                arg["ask"] = m18n.n(key)
+
+    return arguments
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
@@ -2424,7 +2477,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
                               or config_panel.json/toml
     """
     from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_list
+    from yunohost.user import user_list, user_info
 
     parsed_answers_dict = OrderedDict()
 
@@ -2450,6 +2503,28 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
             question_value = user_answers[question_name]
         else:
             if 'ask' in question:
+
+                if question_type == 'domain':
+                    question_default = _get_maindomain()
+                    msignals.display(m18n.n('domains_available'))
+                    for domain in domain_list()['domains']:
+                        msignals.display("- {}".format(domain))
+
+                elif question_type == 'user':
+                    msignals.display(m18n.n('users_available'))
+                    users = user_list()['users']
+                    for user in users.keys():
+                        msignals.display("- {}".format(user))
+
+                    root_mail = "root@%s" % _get_maindomain()
+                    for user in users.keys():
+                        if root_mail in user_info(user)["mail-aliases"]:
+                            question_default = user
+                            break
+
+                elif question_type == 'password':
+                    msignals.display(m18n.n('good_practices_about_user_password'))
+
                 # Retrieve proper ask string
                 text_for_user_input_in_cli = _value_for_locale(question['ask'])
 
@@ -2459,29 +2534,14 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
                 elif question_choices:
                     text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question_choices))
 
+
                 if question_default is not None:
                     if question_type == 'boolean':
                         text_for_user_input_in_cli += ' (default: {0})'.format("yes" if question_default == 1 else "no")
                     else:
                         text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
 
-                # Check for a password argument
                 is_password = True if question_type == 'password' else False
-
-                if question_type == 'domain':
-                    question_default = _get_maindomain()
-                    text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
-                    msignals.display(m18n.n('domains_available'))
-                    for domain in domain_list()['domains']:
-                        msignals.display("- {}".format(domain))
-
-                elif question_type == 'user':
-                    msignals.display(m18n.n('users_available'))
-                    for user in user_list()['users'].keys():
-                        msignals.display("- {}".format(user))
-
-                elif question_type == 'password':
-                    msignals.display(m18n.n('good_practices_about_user_password'))
 
                 try:
                     input_string = msignals.prompt(text_for_user_input_in_cli, is_password)
@@ -2682,12 +2742,6 @@ def _read_apps_catalog_list():
     Read the json corresponding to the list of apps catalogs
     """
 
-    # Legacy code - can be removed after moving to buster (if the migration got merged before buster)
-    if os.path.exists('/etc/yunohost/appslists.json'):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("futureproof_apps_catalog_system")
-        migration.run()
-
     try:
         list_ = read_yaml(APPS_CATALOG_CONF)
         # Support the case where file exists but is empty
@@ -2844,8 +2898,8 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm"]:
-            return "php7.0-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm"]:
+            return "php7.3-fpm"
         else:
             return service
     services = [replace_alias(s) for s in services]
@@ -2853,7 +2907,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php7.3-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -2878,11 +2932,24 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostError("this_action_broke_dpkg")
 
 
-def _patch_php5(app_folder):
+LEGACY_PHP_VERSION_REPLACEMENTS = [
+    ("/etc/php5", "/etc/php/7.3"),
+    ("/etc/php/7.0", "/etc/php/7.3"),
+    ("/var/run/php5-fpm", "/var/run/php/php7.3-fpm"),
+    ("/var/run/php/php7.0-fpm", "/var/run/php/php7.3-fpm"),
+    ("php5", "php7.3"),
+    ("php7.0", "php7.3"),
+    ('phpversion="${phpversion:-7.0}"', 'phpversion="${phpversion:-7.3}"'),  # Many helpers like the composer ones use 7.0 by default ...
+    ('"$phpversion" == "7.0"', '$(bc <<< "$phpversion >= 7.3") -eq 1')  # patch ynh_install_php to refuse installing/removing php <= 7.3
+]
+
+
+def _patch_legacy_php_versions(app_folder):
 
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
     files_to_patch.append("%s/manifest.json" % app_folder)
     files_to_patch.append("%s/manifest.toml" % app_folder)
@@ -2893,11 +2960,31 @@ def _patch_php5(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
-            "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
-            "-e 's@php5@php7.0@g' " \
-            "%s" % filename
+        c = "sed -i " \
+            + "".join("-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r) for p, r in LEGACY_PHP_VERSION_REPLACEMENTS) \
+            + "%s" % filename
         os.system(c)
+
+
+def _patch_legacy_php_versions_in_settings(app_folder):
+
+    settings = read_yaml(os.path.join(app_folder, 'settings.yml'))
+
+    if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+        settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+    if settings.get("fpm_service") == "php7.0-fpm":
+        settings["fpm_service"] = "php7.3-fpm"
+    if settings.get("phpversion") == "7.0":
+        settings["phpversion"] = "7.3"
+
+    # We delete these checksums otherwise the file will appear as manually modified
+    list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
+                      "checksum__etc_nginx_conf.d"]
+    settings = {k: v for k, v in settings.items()
+                if not any(k.startswith(to_remove) for to_remove in list_to_remove)}
+
+    write_to_yaml(app_folder + '/settings.yml', settings)
+
 
 def _patch_legacy_helpers(app_folder):
 

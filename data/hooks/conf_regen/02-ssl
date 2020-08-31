@@ -69,12 +69,11 @@ do_init_regen() {
         -out "${ssl_dir}/certs/yunohost_crt.pem" \
         -batch >>$LOGFILE 2>&1
 
-      last_cert=$(ls $ssl_dir/newcerts/*.pem | sort -V | tail -n 1)
       chmod 640 "${ssl_dir}/certs/yunohost_key.pem"
-      chmod 640 "$last_cert"
+      chmod 640 "${ssl_dir}/certs/yunohost_crt.pem"
 
       cp "${ssl_dir}/certs/yunohost_key.pem" "$ynh_key"
-      cp "$last_cert" "$ynh_crt"
+      cp "${ssl_dir}/certs/yunohost_crt.pem" "$ynh_crt"
       ln -sf "$ynh_crt" /etc/ssl/certs/yunohost_crt.pem
       ln -sf "$ynh_key" /etc/ssl/private/yunohost_key.pem
   fi

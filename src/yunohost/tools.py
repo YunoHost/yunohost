@@ -88,15 +88,15 @@ def tools_ldapinit():
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     admin_dict = {
-        'cn': 'admin',
-        'uid': 'admin',
-        'description': 'LDAP Administrator',
-        'gidNumber': '1007',
-        'uidNumber': '1007',
-        'homeDirectory': '/home/admin',
-        'loginShell': '/bin/bash',
+        'cn': ['admin'],
+        'uid': ['admin'],
+        'description': ['LDAP Administrator'],
+        'gidNumber': ['1007'],
+        'uidNumber': ['1007'],
+        'homeDirectory': ['/home/admin'],
+        'loginShell': ['/bin/bash'],
         'objectClass': ['organizationalRole', 'posixAccount', 'simpleSecurityObject'],
-        'userPassword': 'yunohost'
+        'userPassword': ['yunohost']
     }
 
     ldap.update('cn=admin', admin_dict)
@@ -111,6 +111,14 @@ def tools_ldapinit():
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
         raise YunohostError('installation_failed')
 
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(["mkhomedir_helper", "admin"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir('/home/{0}'.format("admin")):
+            logger.warning(m18n.n('user_home_creation_failed'),
+                           exc_info=1)
+        
     logger.success(m18n.n('ldap_initialized'))
 
 
@@ -140,7 +148,7 @@ def tools_adminpw(new_password, check_strength=True):
     ldap = _get_ldap_interface()
 
     try:
-        ldap.update("cn=admin", {"userPassword": new_hash, })
+        ldap.update("cn=admin", {"userPassword": [ new_hash ], })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
@@ -359,6 +367,12 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     except Exception as e:
         logger.warning(str(e))
 
+    # Create the archive directory (makes it easier for people to upload backup
+    # archives, otherwise it's only created after running `yunohost backup
+    # create` once.
+    from yunohost.backup import _create_archive_dir
+    _create_archive_dir()
+
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
 
@@ -368,7 +382,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    regen_conf(force=True)
     regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
@@ -383,6 +396,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     original_sshd_conf = '/etc/ssh/sshd_config.before_yunohost'
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, '/etc/ssh/sshd_config')
+
+    regen_conf(force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 
@@ -586,12 +601,17 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
+
             def is_relevant(l):
-                return "Reading database ..." not in l.rstrip()
+                irrelevants = [
+                    "service sudo-ldap already provided",
+                    "Reading database ..."
+                ]
+                return all(i not in l.rstrip() for i in irrelevants)
 
             callbacks = (
                 lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()) if is_relevant(l) else logger.debug(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:

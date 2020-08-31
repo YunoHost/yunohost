@@ -467,8 +467,8 @@ ynh_remove_extra_repo () {
 
     ynh_secure_remove "/etc/apt/sources.list.d/$name.list"
     ynh_secure_remove "/etc/apt/preferences.d/$name"
-    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg"
-    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc"
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg" > /dev/null
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc" > /dev/null
 
     # Update the list of package to exclude the old repo
     ynh_package_update

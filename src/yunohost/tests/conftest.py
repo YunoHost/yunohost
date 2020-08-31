@@ -1,12 +1,11 @@
 import os
 import pytest
 import sys
-import moulinette
 
+import moulinette
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from contextlib import contextmanager
-
 sys.path.append("..")
 
 
@@ -71,65 +70,7 @@ moulinette.core.Moulinette18n.n = new_m18nn
 
 
 def pytest_cmdline_main(config):
-    """Configure logging and initialize the moulinette"""
-    # Define loggers handlers
-    handlers = set(['tty'])
-    root_handlers = set(handlers)
 
-    # Define loggers level
-    level = 'DEBUG'
-    if config.option.yunodebug:
-        tty_level = 'DEBUG'
-    else:
-        tty_level = 'INFO'
-
-    # Custom logging configuration
-    logging = {
-        'version': 1,
-        'disable_existing_loggers': True,
-        'formatters': {
-            'tty-debug': {
-                'format': '%(relativeCreated)-4d %(fmessage)s'
-            },
-            'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
-            },
-        },
-        'filters': {
-            'action': {
-                '()': 'moulinette.utils.log.ActionFilter',
-            },
-        },
-        'handlers': {
-            'tty': {
-                'level': tty_level,
-                'class': 'moulinette.interfaces.cli.TTYHandler',
-                'formatter': '',
-            },
-        },
-        'loggers': {
-            'yunohost': {
-                'level': level,
-                'handlers': handlers,
-                'propagate': False,
-            },
-            'moulinette': {
-                'level': level,
-                'handlers': [],
-                'propagate': True,
-            },
-            'moulinette.interface': {
-                'level': level,
-                'handlers': handlers,
-                'propagate': False,
-            },
-        },
-        'root': {
-            'level': level,
-            'handlers': root_handlers,
-        },
-    }
-
-    # Initialize moulinette
-    moulinette.init(logging_config=logging, _from_source=False)
-    moulinette.m18n.load_namespace('yunohost')
+    sys.path.insert(0, "/usr/lib/moulinette/")
+    import yunohost
+    yunohost.init(debug=config.option.yunodebug)
