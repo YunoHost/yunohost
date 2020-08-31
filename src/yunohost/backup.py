@@ -219,8 +219,8 @@ class BackupManager():
         backup_manager = BackupManager(name="mybackup", description="bkp things")
 
         # Add backup method to apply
-        backup_manager.add(BackupMethod.create('copy', backup_manager, '/mnt/local_fs'))
-        backup_manager.add(BackupMethod.create('tar', backup_manager, '/mnt/remote_fs'))
+        backup_manager.add('copy', output_directory='/mnt/local_fs')
+        backup_manager.add('tar', output_directory='/mnt/remote_fs')
 
         # Define targets to be backuped
         backup_manager.set_system_targets(["data"])
@@ -716,17 +716,11 @@ class BackupManager():
     # Actual backup archive creation / method management                    #
     #
 
-    def add(self, method):
+    def add(self, method, output_directory=None):
         """
         Add a backup method that will be applied after the files collection step
-
-        Args:
-        method -- (BackupMethod) A backup method. Currently, you can use those:
-                  TarBackupMethod
-                  CopyBackupMethod
-                  CustomBackupMethod
         """
-        self.methods.append(method)
+        self.methods.append(BackupMethod.create(method, self, output_directory=output_directory))
 
     def backup(self):
         """Apply backup methods"""
@@ -816,14 +810,12 @@ class RestoreManager():
         return restore_manager.result
     """
 
-    def __init__(self, name, repo=None, method='tar'):
+    def __init__(self, name, method='tar'):
         """
         RestoreManager constructor
 
         Args:
         name -- (string) Archive name
-        repo -- (string|None) Repository where is this archive, it could be a
-                path (default: /home/yunohost.backup/archives)
         method -- (string) Method name to use to mount the archive
         """
         # Retrieve and open the archive
@@ -1489,7 +1481,24 @@ class BackupMethod(object):
         method.mount()
     """
 
-    def __init__(self, manager, repo=None):
+    @classmethod
+    def create(cls, method, manager, *args, **kwargs):
+        """
+        Factory method to create instance of BackupMethod
+
+        Args:
+        method -- (string) The method name of an existing BackupMethod. If the
+        name is unknown the CustomBackupMethod will be tried
+        *args    -- Specific args for the method, could be the repo target by the
+        method
+
+        Return a BackupMethod instance
+        """
+        known_methods = {c.method_name:c for c in BackupMethod.__subclasses__()}
+        backup_method = known_methods.get(method, CustomBackupMethod)
+        return backup_method(manager, method=method, *args, **kwargs)
+
+    def __init__(self, manager, repo=None, **kwargs):
         """
         BackupMethod constructors
 
@@ -1703,35 +1712,6 @@ class BackupMethod(object):
             else:
                 shutil.copy(path['source'], dest)
 
-    @classmethod
-    def create(cls, method, manager, *args):
-        """
-        Factory method to create instance of BackupMethod
-
-        Args:
-        method -- (string) The method name of an existing BackupMethod. If the
-        name is unknown the CustomBackupMethod will be tried
-
-        ...    -- Specific args for the method, could be the repo target by the
-        method
-
-        Return a BackupMethod instance
-        """
-        if not isinstance(method, basestring):
-            methods = []
-            for m in method:
-                methods.append(BackupMethod.create(m, manager, *args))
-            return methods
-
-        bm_class = {
-            'copy': CopyBackupMethod,
-            'tar': TarBackupMethod,
-        }
-        if method in ["copy", "tar"]:
-            return bm_class[method](manager, *args)
-        else:
-            return CustomBackupMethod(manager, method=method, *args)
-
 
 class CopyBackupMethod(BackupMethod):
 
@@ -1741,9 +1721,6 @@ class CopyBackupMethod(BackupMethod):
     """
 
     method_name = "copy"
-
-    def __init__(self, manager, repo=None):
-        super(CopyBackupMethod, self).__init__(manager, repo)
 
     def backup(self):
         """ Copy prepared files into a the repo """
@@ -1801,9 +1778,6 @@ class TarBackupMethod(BackupMethod):
 
     method_name = "tar"
 
-    def __init__(self, manager, repo=None):
-        super(TarBackupMethod, self).__init__(manager, repo)
-
     @property
     def _archive_file(self):
         """Return the compress archive path"""
@@ -1858,7 +1832,7 @@ class TarBackupMethod(BackupMethod):
 
     def mount(self):
         """
-        Mount the archive. We avoid intermediate copy to be able to restore on system with low free space.
+        Mount the archive. We avoid intermediate copies to be able to restore on system with low free space.
         """
         super(TarBackupMethod, self).mount()
 
@@ -2077,14 +2051,8 @@ def backup_create(name=None, description=None, methods=[],
     else:
         backup_manager = BackupManager(name, description)
 
-    # Add backup methods
-    if output_directory:
-        methods = BackupMethod.create(methods, backup_manager, output_directory)
-    else:
-        methods = BackupMethod.create(methods, backup_manager)
-
     for method in methods:
-        backup_manager.add(method)
+        backup_manager.add(method, output_directory=output_directory)
 
     # Add backup targets (system and apps)
     backup_manager.set_system_targets(system)
