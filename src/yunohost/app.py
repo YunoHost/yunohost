@@ -189,15 +189,12 @@ def _app_upgradable(app_infos):
 
     # Firstly use the version to know if an upgrade is available
     app_is_in_catalog = bool(app_infos.get("from_catalog"))
-    upgrade_only_if_version_changes = app_infos["manifest"].get('integration', {}).get("upgrade_only_if_version_changes", None) is True
     installed_version = version.parse(app_infos.get("version", "0~ynh0"))
     version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
 
     if app_is_in_catalog and '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
-        if upgrade_only_if_version_changes and installed_version < version_in_catalog:
+        if installed_version < version_in_catalog:
             return "yes"
-        else:
-            return "no"
 
     if not app_is_in_catalog:
         return "url_required"
@@ -512,14 +509,10 @@ def app_upgrade(app=[], url=None, file=None, force=False):
 
         # Manage upgrade type and avoid any upgrade if there is nothing to do
         upgrade_type = "UNKNOWN"
-        upgrade_only_if_version_changes = manifest.get('integration', {}).get("upgrade_only_if_version_changes", None) is True
         # Get current_version and new version
         app_new_version = version.parse(manifest.get("version", "?"))
         app_current_version = version.parse(app_dict.get("version", "?"))
-        if "~ynh" not in str(app_current_version) or "~ynh" not in str(app_new_version):
-            logger.warning("/!\\ Packagers ! You have enabled the setting 'upgrade_only_if_version_changes' but you haven't used the official way to define the package version")
-            upgrade_only_if_version_changes = False
-        if upgrade_only_if_version_changes:
+        if "~ynh" in str(app_current_version) and "~ynh" in str(app_new_version):
             if app_current_version >= app_new_version and not force:
                 # In case of upgrade from file or custom repository
                 # No new version available
@@ -542,7 +535,6 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                     upgrade_type = "UPGRADE_APP"
                 else:
                     upgrade_type = "UPGRADE_FULL"
-
 
         # Check requirements
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
