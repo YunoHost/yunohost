@@ -2158,7 +2158,10 @@ def backup_list(with_info=False, human_readable=False):
 
     """
     # Get local archives sorted according to last modification time
-    archives = sorted(glob("%s/*.tar.gz" % ARCHIVES_PATH) + glob("%s/*.tar" % ARCHIVES_PATH), key=lambda x: os.path.getctime(x))
+    # (we do a realpath() to resolve symlinks)
+    archives = glob("%s/*.tar.gz" % ARCHIVES_PATH) + glob("%s/*.tar" % ARCHIVES_PATH)
+    archives = set([os.path.realpath(archive) for archive in archives])
+    archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
     def remove_extension(f):
         if f.endswith(".tar.gz"):
