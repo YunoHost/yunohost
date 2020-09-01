@@ -1,3 +1,9 @@
+yunohost (4.0.6.1) stable; urgency=low
+
+  - [fix] Stupid syntax issue in dovecot conf
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 01 Sep 2020 02:00:19 +0200
+
 yunohost (4.0.6) stable; urgency=low
 
   - [mod] Add apt conf regen hook to manage sury pinning policy (#1041)
