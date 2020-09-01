@@ -1,8 +1,8 @@
 #!/usr/bin/python3
+import os
 import re
 import sys
 import yaml
-from pathlib import Path
 
 # DOCS:
 # - https://github.com/zsh-users/zsh/blob/master/Etc/completion-style-guide
@@ -28,13 +28,19 @@ from pathlib import Path
 # Link about this globbing system:
 # http://zsh.sourceforge.net/Doc/Release/Expansion.html#Filename-Generation
 #
+# NOTES:
+# - Command for debugging zsh: `unfunction _yunohost; autoload -U _yunohost`
+#
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # - Optimization:
 #   - caching mecanism: invalidate the cache afer some commands? Hard, the
 #   cache is local to user
 #   - implement a zstyle switch, to change the cache validity period?
 
-ZSH_COMPLETION_FILE = '/usr/local/share/zsh/site-functions/_yunohost'
+THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/yunohost.yml'
+ZSH_COMPLETION_FILE = THIS_SCRIPT_DIR + '/../zsh-site-functions/_yunohost'
+
 if len(sys.argv) and sys.argv[1] == '--debug':
     ZSH_COMPLETION_FILE = sys.argv[2]
 
@@ -43,7 +49,7 @@ COMPLETION_FUNCTIONS = {}
 
 
 def main():
-    yunohost_map = yaml.safe_load(open('yunohost.yml'))
+    yunohost_map = yaml.safe_load(open(ACTIONSMAP_FILE))
     output = CONST_HEADER
     #
     # Creation of the entry function of the completion script
