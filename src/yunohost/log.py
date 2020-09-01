@@ -29,6 +29,7 @@ import re
 import yaml
 import collections
 import glob
+import psutil
 
 from datetime import datetime
 from logging import FileHandler, getLogger, Formatter
@@ -408,7 +409,6 @@ class OperationLogger(object):
 
         recent_operation_logs = sorted(glob.iglob("/var/log/yunohost/categories/operation/*.log"), key=os.path.getctime, reverse=True)[:20]
 
-        import psutil
         proc = psutil.Process().parent()
         while proc is not None:
             # We use proc.open_files() to list files opened / actively used by this proc
