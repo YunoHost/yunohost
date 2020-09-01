@@ -407,7 +407,7 @@ class OperationLogger(object):
         # 4. if among those file, there's an operation log file, we use the id
         # of the most recent file
 
-        recent_operation_logs = sorted(glob.iglob("/var/log/yunohost/categories/operation/*.log"), key=os.path.getctime, reverse=True)[:20]
+        recent_operation_logs = sorted(glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True)[:20]
 
         proc = psutil.Process().parent()
         while proc is not None:
