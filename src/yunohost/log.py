@@ -27,7 +27,6 @@
 import os
 import re
 import yaml
-import collections
 import glob
 import psutil
 
@@ -43,8 +42,6 @@ from moulinette.utils.filesystem import read_file, read_yaml
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
-#CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', 'app']
-CATEGORIES = ['operation']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
 RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
@@ -52,77 +49,67 @@ RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
 logger = getActionLogger('yunohost.log')
 
 
-def log_list(category=[], limit=None, with_details=False):
+def log_list(limit=None, with_details=False, with_suboperations=False):
     """
     List available logs
 
     Keyword argument:
         limit -- Maximum number of logs
-        with_details -- Include details (e.g. if the operation was a success). Likely to increase the command time as it needs to open and parse the metadata file for each log... So try to use this in combination with --limit.
+        with_details -- Include details (e.g. if the operation was a success).
+        Likely to increase the command time as it needs to open and parse the
+        metadata file for each log... So try to use this in combination with
+        --limit.
     """
 
-    categories = category
     is_api = msettings.get('interface') == 'api'
 
-    # In cli we just display `operation` logs by default
-    if not categories:
-        categories = CATEGORIES
+    operations = []
 
-    result = collections.OrderedDict()
-    for category in categories:
-        result[category] = []
+    logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
+                  os.listdir(OPERATIONS_PATH))
+    logs = list(reversed(sorted(logs)))
 
-        category_path = os.path.join(CATEGORIES_PATH, category)
-        if not os.path.exists(category_path):
-            logger.debug(m18n.n('log_category_404', category=category))
-            continue
+    if limit is not None:
+        logs = logs[:limit]
 
-        logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
-                      os.listdir(category_path))
-        logs = list(reversed(sorted(logs)))
+    for log in logs:
 
-        if limit is not None:
-            logs = logs[:limit]
+        base_filename = log[:-len(METADATA_FILE_EXT)]
+        md_filename = log
+        md_path = os.path.join(OPERATIONS_PATH, md_filename)
 
-        for log in logs:
+        log = base_filename.split("-")
 
-            base_filename = log[:-len(METADATA_FILE_EXT)]
-            md_filename = log
-            md_path = os.path.join(category_path, md_filename)
+        entry = {
+            "name": base_filename,
+            "path": md_path,
+        }
+        entry["description"] = _get_description_from_name(base_filename)
+        try:
+            log_datetime = datetime.strptime(" ".join(log[:2]),
+                                             "%Y%m%d %H%M%S")
+        except ValueError:
+            pass
+        else:
+            entry["started_at"] = log_datetime
 
-            log = base_filename.split("-")
-
-            entry = {
-                "name": base_filename,
-                "path": md_path,
-            }
-            entry["description"] = _get_description_from_name(base_filename)
+        if with_details:
             try:
-                log_datetime = datetime.strptime(" ".join(log[:2]),
-                                                 "%Y%m%d %H%M%S")
-            except ValueError:
-                pass
-            else:
-                entry["started_at"] = log_datetime
+                metadata = read_yaml(md_path)
+            except Exception as e:
+                # If we can't read the yaml for some reason, report an error and ignore this entry...
+                logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
+                continue
+            entry["success"] = metadata.get("success", "?") if metadata else "?"
 
-            if with_details:
-                try:
-                    metadata = read_yaml(md_path)
-                except Exception as e:
-                    # If we can't read the yaml for some reason, report an error and ignore this entry...
-                    logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
-                    continue
-                entry["success"] = metadata.get("success", "?") if metadata else "?"
-
-            result[category].append(entry)
+        operations.append(entry)
 
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
     if not is_api:
-        for category in result:
-            result[category] = list(reversed(result[category]))
+        operations = list(reversed(operations))
 
-    return result
+    return {"operation": operations}
 
 
 def log_display(path, number=None, share=False, filter_irrelevant=False):
@@ -165,10 +152,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
     abs_path = path
     log_path = None
     if not path.startswith('/'):
-        for category in CATEGORIES:
-            abs_path = os.path.join(CATEGORIES_PATH, category, path)
-            if os.path.exists(abs_path) or os.path.exists(abs_path + METADATA_FILE_EXT):
-                break
+        abs_path = os.path.join(OPERATIONS_PATH, path)
 
     if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT):
         log_path = abs_path

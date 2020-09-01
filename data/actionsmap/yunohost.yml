@@ -1631,9 +1631,6 @@ log:
             action_help: List logs
             api: GET /logs
             arguments:
-                category:
-                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app
-                    nargs: "*"
                 -l:
                     full: --limit
                     help: Maximum number of logs
