@@ -27,7 +27,6 @@
 import re
 import os
 import time
-import smtplib
 
 from moulinette import m18n, msettings
 from moulinette.utils import log
@@ -583,6 +582,7 @@ Subject: %s
 %s
 """ % (from_, to_, subject_, disclaimer, content)
 
+    import smtplib
     smtp = smtplib.SMTP("localhost")
     smtp.sendmail(from_, [to_], message)
     smtp.quit()
