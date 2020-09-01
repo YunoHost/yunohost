@@ -40,7 +40,7 @@ def get_ynh_package_version(package):
     # may handle changelog differently !
 
     changelog = "/usr/share/doc/%s/changelog.gz" % package
-    cmd = "gzip -cd %s | head -n1" % changelog
+    cmd = "gzip -cd %s 2>/dev/null | head -n1" % changelog
     if not os.path.exists(changelog):
         return {"version": "?", "repo": "?"}
     out = check_output(cmd).split()
@@ -95,6 +95,8 @@ def ynh_packages_version(*args, **kwargs):
 
 
 def dpkg_is_broken():
+    if check_output("dpkg --audit").strip() != "":
+        return True
     # If dpkg is broken, /var/lib/dpkg/updates
     # will contains files like 0001, 0002, ...
     # ref: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174

@@ -99,6 +99,7 @@ def init_logging(interface="cli",
     if interface != "api":
         configure_logging({
             'version': 1,
+            'main_logger': "yunohost",
             'disable_existing_loggers': True,
             'formatters': {
                 'tty-debug': {

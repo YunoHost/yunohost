@@ -89,6 +89,10 @@ def domain_add(operation_logger, domain, dyndns=False):
         raise YunohostError('domain_exists')
 
     operation_logger.start()
+    
+    # Lower domain to avoid some edge cases issues
+    # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
+    domain = domain.lower()
 
     # DynDNS domain
     if dyndns:
@@ -534,10 +538,10 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     ####################
 
     records = {
-        "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
-        "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
-        "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
-        "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
+        "basic": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in basic],
+        "xmpp": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in xmpp],
+        "mail": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in mail],
+        "extra": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in extra],
     }
 
     ##################

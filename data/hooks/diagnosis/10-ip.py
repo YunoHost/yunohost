@@ -108,7 +108,7 @@ class IPDiagnoser(Diagnoser):
             return False
 
         # If we are indeed connected in ipv4 or ipv6, we should find a default route
-        routes = check_output("ip -%s route" % protocol).split("\n")
+        routes = check_output("ip -%s route show table all" % protocol).split("\n")
 
         def is_default_route(r):
             # Typically the default route starts with "default"

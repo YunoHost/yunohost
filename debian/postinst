@@ -29,11 +29,6 @@ do_configure() {
 
   # Yunoprompt
   systemctl enable yunoprompt.service
-
-  # remove old PAM config and update it
-  [[ ! -f /usr/share/pam-configs/my_mkhomedir ]] \
-    || rm /usr/share/pam-configs/my_mkhomedir
-  pam-auth-update --package
 }
 
 # summary of how this script can be called:

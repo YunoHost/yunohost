@@ -1,5 +1,0 @@
-# https://wiki.debian.org/UnattendedUpgrades#automatic_call_via_.2Fetc.2Fapt.2Fapt.conf.d.2F02periodic
-APT::Periodic::Enable "1";
-APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Unattended-Upgrade "1";
-APT::Periodic::Verbose "1";
