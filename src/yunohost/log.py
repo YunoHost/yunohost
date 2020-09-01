@@ -384,6 +384,12 @@ class OperationLogger(object):
                 # We are a child of the first one we found
                 return instance.name
 
+        # If no lock exists, we are probably in tests or yunohost is used as a
+        # lib ... let's not really care about that case and assume we're the
+        # root logger then.
+        if not os.path.exists("/var/run/moulinette_yunohost.lock"):
+            return None
+
         locks = read_file("/var/run/moulinette_yunohost.lock").strip().split("\n")
         # If we're the process with the lock, we're the root logger
         if locks == [] or str(os.getpid()) in locks:
