@@ -117,10 +117,11 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             if not parent:
                 continue
             parent["suboperations"].append(suboperation)
-        operations = list(reversed(sorted([o for o in operations.values() if o["parent"] is None], key=lambda o: o["name"])))
+        operations = [o for o in operations.values() if o["parent"] is None]
     else:
         operations = [o for o in operations.values()]
 
+    operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
     is_api = msettings.get('interface') == 'api'
@@ -259,7 +260,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False, with_su
                         if submetadata.get("parent") == base_filename:
                             yield {
                                 "name": filename[:-len(METADATA_FILE_EXT)],
-                                "description": _get_description_from_name(filename),
+                                "description": _get_description_from_name(filename[:-len(METADATA_FILE_EXT)]),
                                 "success": submetadata.get("success", "?")
                             }
 
