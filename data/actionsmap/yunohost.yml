@@ -1633,11 +1633,16 @@ log:
             arguments:
                 -l:
                     full: --limit
-                    help: Maximum number of logs
+                    help: Maximum number of operations to list (default to 50)
                     type: int
+                    default: 50
                 -d:
                     full: --with-details
                     help: Show additional infos (e.g. operation success) but may significantly increase command time. Consider using --limit in combination with this.
+                    action: store_true
+                -s:
+                    full: --with-suboperations
+                    help: Include metadata about operations that are not the main operation but are sub-operations triggered by another ongoing operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
         ### log_display()
@@ -1658,6 +1663,10 @@ log:
                 -i:
                     full: --filter-irrelevant
                     help: Do not show some lines deemed not relevant (like set +x or helper argument parsing)
+                    action: store_true
+                -s:
+                    full: --with-suboperations
+                    help: Include metadata about sub-operations of this operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
 

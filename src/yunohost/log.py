@@ -30,7 +30,7 @@ import yaml
 import glob
 import psutil
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
 
 from moulinette import m18n, msettings
@@ -57,13 +57,13 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
         limit -- Maximum number of logs
         with_details -- Include details (e.g. if the operation was a success).
         Likely to increase the command time as it needs to open and parse the
-        metadata file for each log... So try to use this in combination with
-        --limit.
+        metadata file for each log...
+        with_suboperations -- Include operations that are not the "main"
+        operation but are sub-operations triggered by another ongoing operation
+        ... (e.g. initializing groups/permissions when installing an app)
     """
 
-    is_api = msettings.get('interface') == 'api'
-
-    operations = []
+    operations = {}
 
     logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
                   os.listdir(OPERATIONS_PATH))
@@ -75,44 +75,62 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     for log in logs:
 
         base_filename = log[:-len(METADATA_FILE_EXT)]
-        md_filename = log
-        md_path = os.path.join(OPERATIONS_PATH, md_filename)
-
-        log = base_filename.split("-")
+        md_path = os.path.join(OPERATIONS_PATH, log)
 
         entry = {
             "name": base_filename,
             "path": md_path,
+            "description": _get_description_from_name(base_filename),
         }
-        entry["description"] = _get_description_from_name(base_filename)
+
         try:
-            log_datetime = datetime.strptime(" ".join(log[:2]),
-                                             "%Y%m%d %H%M%S")
+            entry["started_at"] = _get_datetime_from_name(base_filename)
         except ValueError:
             pass
-        else:
-            entry["started_at"] = log_datetime
+
+        try:
+            metadata = read_yaml(md_path)
+        except Exception as e:
+            # If we can't read the yaml for some reason, report an error and ignore this entry...
+            logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
+            continue
 
         if with_details:
-            try:
-                metadata = read_yaml(md_path)
-            except Exception as e:
-                # If we can't read the yaml for some reason, report an error and ignore this entry...
-                logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
-                continue
             entry["success"] = metadata.get("success", "?") if metadata else "?"
+            entry["parent"] = metadata.get("parent")
 
-        operations.append(entry)
+        if with_suboperations:
+            entry["parent"] = metadata.get("parent")
+            entry["suboperations"] = []
+        elif metadata.get("parent") is not None:
+            continue
+
+        operations[base_filename] = entry
+
+    # When displaying suboperations, we build a tree-like structure where
+    # "suboperations" is a list of suboperations (each of them may also have a list of
+    # "suboperations" suboperations etc...
+    if with_suboperations:
+        suboperations = [o for o in operations.values() if o["parent"] is not None]
+        for suboperation in suboperations:
+            parent = operations.get(suboperation["parent"])
+            if not parent:
+                continue
+            parent["suboperations"].append(suboperation)
+        operations = list(reversed(sorted([o for o in operations.values() if o["parent"] is None], key=lambda o: o["name"])))
+    else:
+        operations = [o for o in operations.values()]
 
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
+    is_api = msettings.get('interface') == 'api'
     if not is_api:
         operations = list(reversed(operations))
 
     return {"operation": operations}
 
 
-def log_display(path, number=None, share=False, filter_irrelevant=False):
+def log_display(path, number=None, share=False, filter_irrelevant=False, with_suboperations=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -210,6 +228,42 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
 
             if 'log_path' in metadata:
                 log_path = metadata['log_path']
+
+            if with_suboperations:
+
+                def suboperations():
+                    try:
+                        log_start = _get_datetime_from_name(base_filename)
+                    except ValueError:
+                        return
+
+                    for filename in os.listdir(OPERATIONS_PATH):
+
+                        if not filename.endswith(METADATA_FILE_EXT):
+                            continue
+
+                        # We first retrict search to a ~48h time window to limit the number
+                        # of .yml we look into
+                        try:
+                            date = _get_datetime_from_name(base_filename)
+                        except ValueError:
+                            continue
+                        if (date < log_start) or (date > log_start + timedelta(hours=48)):
+                            continue
+
+                        try:
+                            submetadata = read_yaml(os.path.join(OPERATIONS_PATH, filename))
+                        except Exception:
+                            continue
+
+                        if submetadata.get("parent") == base_filename:
+                            yield {
+                                "name": filename[:-len(METADATA_FILE_EXT)],
+                                "description": _get_description_from_name(filename),
+                                "success": submetadata.get("success", "?")
+                            }
+
+                metadata["suboperations"] = list(suboperations())
 
     # Display logs if exist
     if os.path.exists(log_path):
@@ -418,7 +472,6 @@ class OperationLogger(object):
         # If nothing found, assume we're the root operation logger
         return None
 
-
     def start(self):
         """
         Start to record logs that change the system
@@ -576,6 +629,15 @@ class OperationLogger(object):
             return
         else:
             self.error(m18n.n('log_operation_unit_unclosed_properly'))
+
+
+def _get_datetime_from_name(name):
+
+    # Filenames are expected to follow the format:
+    # 20200831-170740-short_description-and-stuff
+
+    raw_datetime = " ".join(name.split("-")[:2])
+    return datetime.strptime(raw_datetime, "%Y%m%d %H%M%S")
 
 
 def _get_description_from_name(name):
