@@ -386,7 +386,7 @@
     "log_user_group_create": "Create '{}' group",
     "log_user_group_delete": "Delete '{}' group",
     "log_user_group_update": "Update '{}' group",
-    "log_user_update": "Update user info of '{}'",
+    "log_user_update": "Update info for user '{}'",
     "log_user_permission_update": "Update accesses for permission '{}'",
     "log_user_permission_reset": "Reset permission '{}'",
     "log_domain_main_domain": "Make '{}' the main domain",
