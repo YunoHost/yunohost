@@ -269,11 +269,15 @@ def log_display(path, number=None, share=False, filter_irrelevant=False, with_su
     # Display logs if exist
     if os.path.exists(log_path):
         from yunohost.service import _tail
-        if number:
+        if number and filters:
+            logs = _tail(log_path, int(number*4))
+        elif number:
             logs = _tail(log_path, int(number))
         else:
             logs = read_file(log_path)
         logs = _filter_lines(logs, filters)
+        if number:
+            logs = logs[-number:]
         infos['log_path'] = log_path
         infos['logs'] = logs
 
