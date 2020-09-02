@@ -53,15 +53,11 @@ def is_boolean(value):
 # * enum (in the form of a python list)
 
 DEFAULTS = OrderedDict([
-    ("example.bool", {"type": "bool", "default": True}),
-    ("example.int", {"type": "int", "default": 42}),
-    ("example.string", {"type": "string", "default": "yolo swag"}),
-    ("example.enum", {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}),
-
     # Password Validation
     # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
     ("security.password.admin.strength", {"type": "int", "default": 1}),
     ("security.password.user.strength", {"type": "int", "default": 1}),
+
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
     ("security.ssh.compatibility", {"type": "enum", "default": "modern",
         "choices": ["intermediate", "modern"]}),
@@ -69,6 +65,7 @@ DEFAULTS = OrderedDict([
         "choices": ["intermediate", "modern"]}),
     ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
         "choices": ["intermediate", "modern"]}),
+
     ("pop3.enabled", {"type": "bool", "default": False}),
     ("smtp.allow_ipv6", {"type": "bool", "default": True}),
     ("backup.compress_tar_archives", {"type": "bool", "default": False}),
@@ -209,12 +206,19 @@ def settings_reset_all():
 
 
 def _get_settings():
+
+    def get_setting_description(key):
+        if key.startswith("example"):
+            # (This is for dummy stuff used during unit tests)
+            return "Dummy %s setting" % key.split(".")[-1]
+        return m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
+
     settings = {}
 
     for key, value in DEFAULTS.copy().items():
         settings[key] = value
         settings[key]["value"] = value["default"]
-        settings[key]["description"] = m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
+        settings[key]["description"] = get_setting_description(key)
 
     if not os.path.exists(SETTINGS_PATH):
         return settings
@@ -243,7 +247,7 @@ def _get_settings():
             for key, value in local_settings.items():
                 if key in settings:
                     settings[key] = value
-                    settings[key]["description"] = m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
+                    settings[key]["description"] = get_setting_description(key)
                 else:
                     logger.warning(m18n.n('global_settings_unknown_setting_from_settings_file',
                                           setting_key=key))
