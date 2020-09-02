@@ -112,7 +112,7 @@ user:
                     help: Domain for the email address and xmpp account
                     extra:
                         pattern: &pattern_domain
-                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
+                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W\d_]{2,})$
                             - "pattern_domain"
                 -q:
                     full: --mailbox-quota
@@ -156,7 +156,7 @@ user:
                     full: --mail
                     extra:
                         pattern: &pattern_email
-                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W\d_]{2,})$
                             - "pattern_email"
                 -p:
                     full: --change-password
