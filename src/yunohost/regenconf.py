@@ -47,7 +47,7 @@ logger = log.getActionLogger('yunohost.regenconf')
 # FIXME : check for all reference of 'service' close to operation_logger stuff
 @is_unit_operation([('names', 'configuration')])
 def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
-                       list_pending=False):
+               list_pending=False):
     """
     Regenerate the configuration file(s)
 

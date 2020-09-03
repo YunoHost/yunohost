@@ -91,7 +91,7 @@ def init_logging(interface="cli",
     logfile = os.path.join(logdir, "yunohost-%s.log" % interface)
 
     if not os.path.isdir(logdir):
-        os.makedirs(logdir, 0750)
+        os.makedirs(logdir, 0o750)
 
     # ####################################################################### #
     #  Logging configuration for CLI (or any other interface than api...)     #

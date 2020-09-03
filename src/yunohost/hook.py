@@ -270,9 +270,9 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
 
     # Validate callbacks
     if not callable(pre_callback):
-        pre_callback = lambda name, priority, path, args: args
+        def pre_callback(name, priority, path, args): return args
     if not callable(post_callback):
-        post_callback = lambda name, priority, path, succeed: None
+        def post_callback(name, priority, path, succeed): return None
 
     # Iterate over hooks and execute them
     for priority in sorted(hooks_dict):
@@ -283,7 +283,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
                 hook_return = hook_exec(path, args=hook_args, chdir=chdir, env=env,
-                          no_trace=no_trace, raise_on_error=True)[1]
+                                        no_trace=no_trace, raise_on_error=True)[1]
             except YunohostError as e:
                 state = 'failed'
                 hook_return = {}
@@ -293,9 +293,9 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
             else:
                 post_callback(name=name, priority=priority, path=path,
                               succeed=True)
-            if not name in result:
+            if name not in result:
                 result[name] = {}
-            result[name][path] = {'state' : state, 'stdreturn' : hook_return }
+            result[name][path] = {'state': state, 'stdreturn': hook_return}
     return result
 
 
@@ -446,17 +446,17 @@ def _hook_exec_python(path, args, env, loggers):
     dir_ = os.path.dirname(path)
     name = os.path.splitext(os.path.basename(path))[0]
 
-    if not dir_ in sys.path:
+    if dir_ not in sys.path:
         sys.path = [dir_] + sys.path
     module = import_module(name)
 
     ret = module.main(args, env, loggers)
     # # Assert that the return is a (int, dict) tuple
     assert isinstance(ret, tuple) \
-            and len(ret) == 2 \
-            and isinstance(ret[0],int) \
-            and isinstance(ret[1],dict), \
-            "Module %s did not return a (int, dict) tuple !" % module
+        and len(ret) == 2 \
+        and isinstance(ret[0], int) \
+        and isinstance(ret[1], dict), \
+        "Module %s did not return a (int, dict) tuple !" % module
     return ret
 
 

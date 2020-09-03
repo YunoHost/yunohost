@@ -15,6 +15,7 @@ logger = getActionLogger('yunohost.settings')
 SETTINGS_PATH = "/etc/yunohost/settings.json"
 SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
+
 def is_boolean(value):
     """
     Ensure a string value is intended as a boolean
@@ -60,11 +61,11 @@ DEFAULTS = OrderedDict([
 
     ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
     ("security.ssh.compatibility", {"type": "enum", "default": "modern",
-        "choices": ["intermediate", "modern"]}),
+                                    "choices": ["intermediate", "modern"]}),
     ("security.nginx.compatibility", {"type": "enum", "default": "intermediate",
-        "choices": ["intermediate", "modern"]}),
+                                      "choices": ["intermediate", "modern"]}),
     ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
-        "choices": ["intermediate", "modern"]}),
+                                        "choices": ["intermediate", "modern"]}),
 
     ("pop3.enabled", {"type": "bool", "default": False}),
     ("smtp.allow_ipv6", {"type": "bool", "default": True}),
@@ -321,16 +322,19 @@ def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['nginx'])
 
+
 @post_change_hook("security.ssh.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['ssh'])
+
 
 @post_change_hook("smtp.allow_ipv6")
 @post_change_hook("security.postfix.compatibility")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
         service_regen_conf(names=['postfix'])
+
 
 @post_change_hook("pop3.enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
