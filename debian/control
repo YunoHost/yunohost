@@ -16,8 +16,8 @@ Depends: ${python:Depends}, ${misc:Depends}
  , python-miniupnpc, python-dbus, python-jinja2
  , python-toml, python-packaging, python-publicsuffix
  , apt, apt-transport-https, dirmngr
- , php-fpm (>= 7.3), php-ldap, php-intl
- , mariadb-server, php-mysql | php-mysqlnd
+ , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
+ , mariadb-server, php7.3-mysql
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
@@ -32,7 +32,7 @@ Depends: ${python:Depends}, ${misc:Depends}
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
- , php-gd, php-curl, php-gettext
+ , php7.3-gd, php7.3-curl, php-gettext
  , python-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
