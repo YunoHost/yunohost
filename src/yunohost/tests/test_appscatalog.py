@@ -37,9 +37,11 @@ DUMMY_APP_CATALOG = """{
 }
 """
 
+
 class AnyStringWith(str):
     def __eq__(self, other):
         return self in other
+
 
 def setup_function(function):
 
@@ -165,6 +167,7 @@ def test_apps_catalog_update_404(mocker):
             _update_apps_catalog()
             m18n.n.assert_any_call("apps_catalog_failed_to_download")
 
+
 def test_apps_catalog_update_timeout(mocker):
 
     # Initialize ...
@@ -236,7 +239,6 @@ def test_apps_catalog_load_with_empty_cache(mocker):
         app_dict = _load_apps_catalog()["apps"]
         m18n.n.assert_any_call("apps_catalog_obsolete_cache")
         m18n.n.assert_any_call("apps_catalog_update_success")
-
 
     # Cache shouldn't be empty anymore empty
     assert glob.glob(APPS_CATALOG_CACHE + "/*")

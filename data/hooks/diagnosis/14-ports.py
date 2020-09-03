@@ -5,6 +5,7 @@ import os
 from yunohost.diagnosis import Diagnoser
 from yunohost.service import _get_services
 
+
 class PortsDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]

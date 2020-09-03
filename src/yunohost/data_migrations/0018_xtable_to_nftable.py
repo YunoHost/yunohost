@@ -106,4 +106,3 @@ class MyMigration(Migration):
 
         out = out.strip().split("\n")
         return (returncode, out, err)
-

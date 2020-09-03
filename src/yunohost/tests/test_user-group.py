@@ -3,7 +3,7 @@ import pytest
 from conftest import message, raiseYunohostError
 
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
-                          user_group_list, user_group_create, user_group_delete, user_group_update
+    user_group_list, user_group_create, user_group_delete, user_group_update
 from yunohost.domain import _get_maindomain
 from yunohost.tests.test_permission import check_LDAP_db_integrity
 
@@ -25,7 +25,7 @@ def setup_function(function):
 
     global maindomain
     maindomain = _get_maindomain()
-    
+
     user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
     user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
     user_create("jack", "Jack", "Black", "jack@" + maindomain, "test123Ynh")

@@ -36,7 +36,7 @@ class MyMigration(Migration):
             raise YunohostError("migration_0017_not_enough_space", path="/var/lib/postgresql/")
 
         self.runcmd("systemctl stop postgresql")
-        self.runcmd("pg_dropcluster --stop 11 main || true") # We do not trigger an exception if the command fails because that probably means cluster 11 doesn't exists, which is fine because it's created during the pg_upgradecluster)
+        self.runcmd("pg_dropcluster --stop 11 main || true")  # We do not trigger an exception if the command fails because that probably means cluster 11 doesn't exists, which is fine because it's created during the pg_upgradecluster)
         self.runcmd("pg_upgradecluster -m upgrade 9.6 main")
         self.runcmd("pg_dropcluster --stop 9.6 main")
         self.runcmd("systemctl start postgresql")
@@ -63,4 +63,3 @@ class MyMigration(Migration):
 
         out = out.strip().split("\n")
         return (returncode, out, err)
-

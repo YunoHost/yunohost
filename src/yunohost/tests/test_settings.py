@@ -13,6 +13,7 @@ DEFAULTS["example.int"] = {"type": "int", "default": 42}
 DEFAULTS["example.string"] = {"type": "string", "default": "yolo swag"}
 DEFAULTS["example.enum"] = {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}
 
+
 def setup_function(function):
     os.system("mv /etc/yunohost/settings.json /etc/yunohost/settings.json.saved")
 
@@ -68,6 +69,7 @@ def test_settings_set():
 
     settings_set("example.bool", "on")
     assert settings_get("example.bool") is True
+
 
 def test_settings_set_int():
     settings_set("example.int", 21)

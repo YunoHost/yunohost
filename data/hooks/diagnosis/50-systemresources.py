@@ -7,6 +7,7 @@ import re
 
 from yunohost.diagnosis import Diagnoser
 
+
 class SystemResourcesDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
@@ -16,7 +17,7 @@ class SystemResourcesDiagnoser(Diagnoser):
     def run(self):
 
         MB = 1024**2
-        GB = MB*1024
+        GB = MB * 1024
 
         #
         # RAM
@@ -79,7 +80,7 @@ class SystemResourcesDiagnoser(Diagnoser):
                               # N.B.: we do not use usage.total because we want
                               # to take into account the 5% security margin
                               # correctly (c.f. the doc of psutil ...)
-                              "total": human_size(usage.used+usage.free),
+                              "total": human_size(usage.used + usage.free),
                               "free": human_size(usage.free),
                               "free_percent": free_percent})
 
@@ -96,7 +97,6 @@ class SystemResourcesDiagnoser(Diagnoser):
                 item["status"] = "SUCCESS"
                 item["summary"] = "diagnosis_diskusage_ok"
 
-
             yield item
 
         #
@@ -111,7 +111,6 @@ class SystemResourcesDiagnoser(Diagnoser):
                        status="WARNING",
                        summary="diagnosis_processes_killed_by_oom_reaper",
                        data={"kills_summary": kills_summary})
-
 
     def recent_kills_by_oom_reaper(self):
         if not os.path.exists("/var/log/kern.log"):
@@ -145,7 +144,7 @@ class SystemResourcesDiagnoser(Diagnoser):
 
 def human_size(bytes_):
     # Adapted from https://stackoverflow.com/a/1094933
-    for unit in ['','ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+    for unit in ['', 'ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(bytes_) < 1024.0:
             return "%s %sB" % (round_(bytes_), unit)
         bytes_ /= 1024.0
@@ -159,6 +158,7 @@ def round_(n):
     if n > 10:
         n = int(round(n))
     return n
+
 
 def main(args, env, loggers):
     return SystemResourcesDiagnoser(args, env, loggers).diagnose()
