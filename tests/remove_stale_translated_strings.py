@@ -1,4 +1,3 @@
-import re
 import json
 import glob
 from collections import OrderedDict

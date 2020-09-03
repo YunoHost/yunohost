@@ -894,8 +894,6 @@ class RestoreManager():
         """
         from permission import permission_sync_to_user
 
-        successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
-
         permission_sync_to_user()
 
         if os.path.ismount(self.work_dir):
@@ -1160,7 +1158,7 @@ class RestoreManager():
             return
 
         from yunohost.user import user_group_list
-        from yunohost.permission import permission_create, permission_delete, user_permission_update, user_permission_list, permission_sync_to_user
+        from yunohost.permission import permission_create, permission_delete, user_permission_list, permission_sync_to_user
 
         # Backup old permission for apps
         # We need to do that because in case of an app is installed we can't remove the permission for this app
@@ -1257,7 +1255,7 @@ class RestoreManager():
                              name should be already install)
         """
         from yunohost.user import user_group_list
-        from yunohost.permission import permission_create, permission_delete, user_permission_list, user_permission_update, permission_sync_to_user
+        from yunohost.permission import permission_create, permission_delete, user_permission_list, permission_sync_to_user
 
         def copytree(src, dst, symlinks=False, ignore=None):
             for item in os.listdir(src):

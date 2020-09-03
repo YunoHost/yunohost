@@ -27,7 +27,6 @@ import os
 import re
 import pwd
 import grp
-import json
 import crypt
 import random
 import string
@@ -36,7 +35,6 @@ import copy
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.service import service_status
@@ -239,7 +237,6 @@ def user_delete(operation_logger, username, purge=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.permission import permission_sync_to_user
 
     if username not in user_list()["users"]:
         raise YunohostError('user_unknown', user=username)

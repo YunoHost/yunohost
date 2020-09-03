@@ -21,7 +21,6 @@
 
 import os
 import yaml
-import json
 import subprocess
 import shutil
 import hashlib
@@ -31,7 +30,6 @@ from datetime import datetime
 
 from moulinette import m18n
 from moulinette.utils import log, filesystem
-from moulinette.utils.filesystem import read_file
 
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation

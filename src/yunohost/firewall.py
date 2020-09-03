@@ -24,7 +24,6 @@
     Manage firewall rules
 """
 import os
-import sys
 import yaml
 import miniupnpc
 

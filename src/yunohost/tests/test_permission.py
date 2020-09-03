@@ -4,7 +4,7 @@ import os
 
 from conftest import message, raiseYunohostError, get_test_apps_dir
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map, _installed_apps
+from yunohost.app import app_install, app_remove, app_change_url, app_map, _installed_apps
 from yunohost.user import user_list, user_create, user_delete, \
                           user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
@@ -354,16 +354,6 @@ def test_permission_remove_group_already_not_allowed(mocker):
 def test_permission_reset(mocker):
     with message(mocker, "permission_updated", permission="blog.main"):
         user_permission_reset("blog.main")
-
-    res = user_permission_list(full=True)['permissions']
-    assert res['blog.main']['allowed'] == ["all_users"]
-    assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
-
-
-def test_permission_reset_idempotency():
-    # Reset permission
-    user_permission_reset("blog.main")
-    user_permission_reset("blog.main")
 
     res = user_permission_list(full=True)['permissions']
     assert res['blog.main']['allowed'] == ["all_users"]

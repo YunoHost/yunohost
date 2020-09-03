@@ -681,7 +681,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
+    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources

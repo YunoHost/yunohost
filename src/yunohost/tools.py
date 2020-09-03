@@ -26,10 +26,8 @@
 import re
 import os
 import yaml
-import json
 import subprocess
 import pwd
-import socket
 from importlib import import_module
 
 from moulinette import msignals, m18n
@@ -37,8 +35,8 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
-from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list, _initialize_apps_catalog_system
-from yunohost.domain import domain_add, domain_list
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, _initialize_apps_catalog_system
+from yunohost.domain import domain_add
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
@@ -118,7 +116,7 @@ def tools_ldapinit():
         if not os.path.isdir('/home/{0}'.format("admin")):
             logger.warning(m18n.n('user_home_creation_failed'),
                            exc_info=1)
-        
+
     logger.success(m18n.n('ldap_initialized'))
 
 

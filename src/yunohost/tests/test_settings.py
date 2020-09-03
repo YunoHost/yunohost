@@ -64,10 +64,10 @@ def test_settings_list():
 
 def test_settings_set():
     settings_set("example.bool", False)
-    assert settings_get("example.bool") == False
+    assert settings_get("example.bool") is False
 
     settings_set("example.bool", "on")
-    assert settings_get("example.bool") == True
+    assert settings_get("example.bool") is True
 
 def test_settings_set_int():
     settings_set("example.int", 21)

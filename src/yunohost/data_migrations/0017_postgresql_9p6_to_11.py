@@ -28,7 +28,7 @@ class MyMigration(Migration):
         # Make sure there's a 9.6 cluster
         try:
             self.runcmd("pg_lsclusters | grep -q '^9.6 '")
-        except Exception as e:
+        except Exception:
             logger.warning("It looks like there's not active 9.6 cluster, so probably don't need to run this migration")
             return
 

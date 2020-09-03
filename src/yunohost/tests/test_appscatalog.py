@@ -6,7 +6,7 @@ import glob
 import shutil
 
 from moulinette import m18n
-from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml, mkdir
+from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.app import (_initialize_apps_catalog_system,

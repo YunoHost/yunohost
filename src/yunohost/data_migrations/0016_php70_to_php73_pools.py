@@ -4,7 +4,7 @@ from shutil import copy2
 
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import _is_installed, _get_app_settings, _set_app_settings, _patch_legacy_php_versions_in_settings
+from yunohost.app import _is_installed, _patch_legacy_php_versions_in_settings
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command
 

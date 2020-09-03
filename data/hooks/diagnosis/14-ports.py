@@ -3,7 +3,6 @@
 import os
 
 from yunohost.diagnosis import Diagnoser
-from yunohost.utils.error import YunohostError
 from yunohost.service import _get_services
 
 class PortsDiagnoser(Diagnoser):
