@@ -660,6 +660,10 @@ app:
                 -f:
                     full: --file
                     help: Folder or tarball for upgrade
+                -F:
+                    full: --force
+                    help: Force the update, even though the app is up to date
+                    action: store_true
 
         ### app_change_url()
         change-url:
