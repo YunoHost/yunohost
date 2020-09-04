@@ -1,3 +1,12 @@
+yunohost (4.0.7) stable; urgency=low
+
+  - [fix] Require explicitly php7.3-foo packages because in some cases Sury's php7.4- packages are installed and php7.3-fpm doesn't get installed ... (1288159a)
+  - [fix] Make sure app nginx confs do not prevent the loading of /yunohost/sso (#1044)
+
+  Thanks to all contributors <3 ! (Kayou, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 04 Sep 2020 14:32:07 +0200
+
 yunohost (4.0.6.1) stable; urgency=low
 
   - [fix] Stupid syntax issue in dovecot conf
