@@ -97,6 +97,9 @@ user:
                         pattern: &pattern_lastname
                             - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
+                -m:
+                    full: --mail
+                    help: (Deprecated, see --domain) Main unique email address
                 -p:
                     full: --password
                     help: User password

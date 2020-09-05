@@ -46,16 +46,7 @@ logger = getActionLogger('yunohost.user')
 
 
 def user_list(fields=None):
-    """
-    List users
 
-    Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for user fetching
-        limit -- Maximum number of user fetched
-        fields -- fields to fetch
-
-    """
     from yunohost.utils.ldap import _get_ldap_interface
 
     user_attrs = {
@@ -106,19 +97,8 @@ def user_list(fields=None):
 
 @is_unit_operation([('username', 'user')])
 def user_create(operation_logger, username, firstname, lastname, domain, password,
-                mailbox_quota="0"):
-    """
-    Create user
+                mailbox_quota="0", mail=None):
 
-    Keyword argument:
-        firstname
-        lastname
-        username -- Must be unique
-        mail -- Main mail address must be unique
-        password
-        mailbox_quota -- Mailbox size quota
-
-    """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.utils.password import assert_password_is_strong_enough
@@ -126,6 +106,10 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
 
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
+
+    if mail is not None:
+        logger.warning("Packagers ! Using --mail in 'yunohost user create' is deprecated ... please use --domain instead.")
+        domain = mail.split("@")[-1]
 
     # Validate domain used for email address/xmpp account
     if domain is None:
