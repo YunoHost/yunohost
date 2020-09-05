@@ -2,6 +2,32 @@ yunohost (4.1.0) testing; urgency=low
 
   - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
 
+yunohost (4.0.7) stable; urgency=low
+
+  - [fix] Require explicitly php7.3-foo packages because in some cases Sury's php7.4- packages are installed and php7.3-fpm doesn't get installed ... (1288159a)
+  - [fix] Make sure app nginx confs do not prevent the loading of /yunohost/sso (#1044)
+
+  Thanks to all contributors <3 ! (Kayou, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 04 Sep 2020 14:32:07 +0200
+
+yunohost (4.0.6.1) stable; urgency=low
+
+  - [fix] Stupid syntax issue in dovecot conf
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 01 Sep 2020 02:00:19 +0200
+
+yunohost (4.0.6) stable; urgency=low
+
+  - [mod] Add apt conf regen hook to manage sury pinning policy (#1041)
+  - [fix] Use proper templating + handle xmpp-upload.domain.tld in dnsmasq conf (bc7344b6, 503e08b5)
+  - [fix] Explicitly require php-fpm >= 7.3 ... (41813744)
+  - [i18n] Translations updated for Catalan, French, German
+
+  Thanks to all contributors <3 ! (Christian W., Titus PiJean, xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 31 Aug 2020 19:57:24 +0200
+
 yunohost (4.0.5) testing; urgency=low
 
   - [enh] Update postfix, dovecot, nginx configuration according to Mozilla guidelines (Buster + DH params) (f3a4334a, 89bcf1ba, 2d661737)
