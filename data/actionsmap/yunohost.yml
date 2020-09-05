@@ -99,13 +99,7 @@ user:
                             - "pattern_lastname"
                 -m:
                     full: --mail
-                    help: Main unique email address
-                    extra:
-                        ask: ask_email
-                        required: True
-                        pattern: &pattern_email
-                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
-                            - "pattern_email"
+                    help: (Deprecated, see --domain) Main unique email address
                 -p:
                     full: --password
                     help: User password
@@ -116,6 +110,13 @@ user:
                             - !!str ^.{3,}$
                             - "pattern_password"
                         comment: good_practices_about_user_password
+                -d:
+                    full: --domain
+                    help: Domain for the email address and xmpp account
+                    extra:
+                        pattern: &pattern_domain
+                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_domain"
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -157,7 +158,9 @@ user:
                 -m:
                     full: --mail
                     extra:
-                        pattern: *pattern_email
+                        pattern: &pattern_email
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email"
                 -p:
                     full: --change-password
                     help: New password to set
@@ -419,9 +422,7 @@ domain:
                 domain:
                     help: Domain name to add
                     extra:
-                        pattern: &pattern_domain
-                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
-                            - "pattern_domain"
+                        pattern: *pattern_domain
                 -d:
                     full: --dyndns
                     help: Subscribe to the DynDNS service

@@ -25,10 +25,10 @@ def setup_function(function):
 
     global maindomain
     maindomain = _get_maindomain()
-    
-    user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
-    user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
-    user_create("jack", "Jack", "Black", "jack@" + maindomain, "test123Ynh")
+
+    user_create("alice", "Alice", "White", maindomain, "test123Ynh")
+    user_create("bob", "Bob", "Snow", maindomain, "test123Ynh")
+    user_create("jack", "Jack", "Black", maindomain, "test123Ynh")
 
     user_group_create("dev")
     user_group_create("apps")
@@ -79,7 +79,7 @@ def test_list_groups():
 def test_create_user(mocker):
 
     with message(mocker, "user_created"):
-        user_create("albert", "Albert", "Good", "alber@" + maindomain, "test123Ynh")
+        user_create("albert", "Albert", "Good", maindomain, "test123Ynh")
 
     group_res = user_group_list()['groups']
     assert "albert" in user_list()['users']
@@ -123,25 +123,26 @@ def test_del_group(mocker):
 #
 
 
-def test_create_user_with_mail_address_already_taken(mocker):
-    with raiseYunohostError(mocker, "user_creation_failed"):
-        user_create("alice2", "Alice", "White", "alice@" + maindomain, "test123Ynh")
-
-
 def test_create_user_with_password_too_simple(mocker):
     with raiseYunohostError(mocker, "password_listed"):
-        user_create("other", "Alice", "White", "other@" + maindomain, "12")
+        user_create("other", "Alice", "White", maindomain, "12")
 
 
 def test_create_user_already_exists(mocker):
     with raiseYunohostError(mocker, "user_already_exists"):
-        user_create("alice", "Alice", "White", "other@" + maindomain, "test123Ynh")
+        user_create("alice", "Alice", "White", maindomain, "test123Ynh")
 
+def test_create_user_with_domain_that_doesnt_exists(mocker):
+    with raiseYunohostError(mocker, "domain_unknown"):
+        user_create("alice", "Alice", "White", "doesnt.exists", "test123Ynh")
 
 def test_update_user_with_mail_address_already_taken(mocker):
     with raiseYunohostError(mocker, "user_update_failed"):
         user_update("bob", add_mailalias="alice@" + maindomain)
 
+def test_update_user_with_mail_address_with_unknown_domain(mocker):
+    with raiseYunohostError(mocker, "mail_domain_unknown"):
+        user_update("alice", add_mailalias="alice@doesnt.exists")
 
 def test_del_user_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "user_unknown"):
