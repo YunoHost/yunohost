@@ -119,7 +119,7 @@ class SystemResourcesDiagnoser(Diagnoser):
 
         def analyzed_kern_log():
 
-            cmd = 'tail -n 10000 /var/log/kern.log | grep "oom_reaper: reaped process"'
+            cmd = 'tail -n 10000 /var/log/kern.log | grep "oom_reaper: reaped process" || true'
             out = subprocess.check_output(cmd, shell=True)
             lines = out.strip().split("\n")
 
