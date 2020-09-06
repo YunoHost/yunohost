@@ -2186,6 +2186,36 @@ def backup_list(with_info=False, human_readable=False):
     return {'archives': archives}
 
 
+def backup_download(name):
+
+    if msettings.get('interface') != 'api':
+        logger.error("This option is only meant for the API/webadmin and doesn't make sense for the command line.")
+        return
+
+    archive_file = '%s/%s.tar' % (ARCHIVES_PATH, name)
+
+    # Check file exist (even if it's a broken symlink)
+    if not os.path.lexists(archive_file):
+        archive_file += ".gz"
+        if not os.path.lexists(archive_file):
+            raise YunohostError('backup_archive_name_unknown', name=name)
+
+    # If symlink, retrieve the real path
+    if os.path.islink(archive_file):
+        archive_file = os.path.realpath(archive_file)
+
+        # Raise exception if link is broken (e.g. on unmounted external storage)
+        if not os.path.exists(archive_file):
+            raise YunohostError('backup_archive_broken_link',
+                                path=archive_file)
+
+    # We return a raw bottle HTTPresponse (instead of serializable data like
+    # list/dict, ...), which is gonna be picked and used directly by moulinette
+    from bottle import static_file
+    archive_folder, archive_file_name = archive_file.rsplit("/", 1)
+    return static_file(archive_file_name, archive_folder, download=archive_file_name)
+
+
 def backup_info(name, with_details=False, human_readable=False):
     """
     Get info about a local backup archive

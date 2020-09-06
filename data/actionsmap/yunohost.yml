@@ -913,6 +913,14 @@ backup:
                     help: Print sizes in human readable format
                     action: store_true
 
+        ### backup_download()
+        download:
+            action_help: (API only) Request to download the file
+            api: GET /backup/download/<name>
+            arguments:
+                name:
+                    help: Name of the local backup archive
+
         ### backup_delete()
         delete:
             action_help: Delete a backup archive
