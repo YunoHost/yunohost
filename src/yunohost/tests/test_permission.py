@@ -55,9 +55,9 @@ def setup_function(function):
             return res
     socket.getaddrinfo = new_getaddrinfo
 
-    user_create("alice", "Alice", "White", "alice@" + maindomain, dummy_password)
-    user_create("bob", "Bob", "Snow", "bob@" + maindomain, dummy_password)
-    permission_create("wiki.main", url="/", allowed=["all_users"], sync_perm=False)
+    user_create("alice", "Alice", "White", maindomain, dummy_password)
+    user_create("bob", "Bob", "Snow", maindomain, dummy_password)
+    permission_create("wiki.main", url="/", allowed=["all_users"] , sync_perm=False)
     permission_create("blog.main", allowed=["all_users"], sync_perm=False)
     user_permission_update("blog.main", remove="all_users", add="alice")
 
