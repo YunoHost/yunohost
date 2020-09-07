@@ -668,5 +668,22 @@
     "migration_description_0015_migrate_to_buster": "Mise à niveau du système vers Debian Buster et YunoHost 4.x",
     "diagnosis_dns_try_dyndns_update_force": "La configuration DNS de ce domaine devrait être automatiquement gérée par Yunohost. Si ce n'est pas le cas, vous pouvez essayer de forcer une mise à jour en utilisant <cmd>yunohost dyndns update --force</cmd>.",
     "app_packaging_format_not_supported": "Cette application ne peut pas être installée car son format n'est pas pris en charge par votre version de YunoHost. Vous devriez probablement envisager de mettre à jour votre système.",
-    "migration_0015_weak_certs": "Il a été constaté que les certificats suivants utilisent encore des algorithmes de signature peu robustes et doivent être mis à jour pour être compatibles avec la prochaine version de nginx : {certs}"
+    "migration_0015_weak_certs": "Il a été constaté que les certificats suivants utilisent encore des algorithmes de signature peu robustes et doivent être mis à jour pour être compatibles avec la prochaine version de nginx : {certs}",
+    "global_settings_setting_backup_compress_tar_archives": "Compresser les archives (.tar.gz) au lieu de des archives non-compressées lors de la création des backups. N.B. Activer cette option implique de créer des archives plus légères, mais aussi d'avoir des procédures de backup significativement plus longues et plus gourmandes en CPU.",
+    "migration_description_0018_xtable_to_nftable": "Migrer les anciennes règles de trafic réseau vers les nouvelles nftables système",
+    "service_description_php7.3-fpm": "Lancer les applications écrites en PHP avec NGINX",
+    "migration_0018_failed_to_reset_legacy_rules": "La réinitialisation des règles iptable legacy a échoué :",
+    "migration_0018_failed_to_migrate_iptables_rules": "La migration des iptables legacy vers nftables a échoué: {error}",
+    "migration_0017_not_enough_space": "Laissez suffisamment d'espace disponible dans {path} avant de lancer la migration.",
+    "migration_0017_postgresql_11_not_installed": "PostgreSQL 9.6 est installé mais pas posgreSQL 11 ? Il s'est sans doute passé quelque chose d'étrange sur votre système :(...",
+    "migration_0017_postgresql_96_not_installed": "PostgreSQL n'a pas été installé sur votre système. Aucune opération à effectuer.",
+    "migration_description_0017_postgresql_9p6_to_11": "Migrer les bases de données de PostgreSQL 9.6 vers 11",
+    "migration_description_0016_php70_to_php73_pools": "Migrer php7.0-fpm 'pool' conf files vers php7.3",
+    "diagnosis_processes_killed_by_oom_reaper": "Certains processus ont été arrêtés récemment par le système car il manquait de mémoire. Cela apparaît généralement quand le système manque de mémoire ou qu'un processus consomme trop de mémoire. Liste des processus tués :",
+    "ask_user_domain": "Domaine à utiliser pour l'adresse mail des utilisateurs et le compte XMPP",
+    "app_manifest_install_ask_is_public": "Cette application devrait-elle apparaître aux visiteurs anonymes ?",
+    "app_manifest_install_ask_admin": "Choisissez un administrateur pour cette application",
+    "app_manifest_install_ask_password": "Choisissez un mot de passez administrateur pour cette application",
+    "app_manifest_install_ask_path": "Choisissez le chemin où cette application devrait être installée",
+    "app_manifest_install_ask_domain": "Choisissez le domaine où cette application devrait être insttallée"
 }
