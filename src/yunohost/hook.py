@@ -196,8 +196,7 @@ def hook_list(action, list_by='name', show_info=False):
         else:
             _append_folder(result, HOOK_FOLDER)
     except OSError:
-        logger.debug("No default hook for action '%s' in %s",
-                     action, HOOK_FOLDER)
+        pass
 
     try:
         # Append custom hooks
@@ -207,8 +206,7 @@ def hook_list(action, list_by='name', show_info=False):
         else:
             _append_folder(result, CUSTOM_HOOK_FOLDER)
     except OSError:
-        logger.debug("No custom hook for action '%s' in %s",
-                     action, CUSTOM_HOOK_FOLDER)
+        pass
 
     return {'hooks': result}
 
