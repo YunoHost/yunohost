@@ -2683,6 +2683,12 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
 
         question = super(UserArgumentParser, self).parse_question(question, user_answers)
         question.choices = user_list()["users"]
+        if question.default is None:
+            root_mail = "root@%s" % _get_maindomain()
+            for user in question.choices.keys():
+                if root_mail in user_info(user)["mail-aliases"]:
+                    question.default = user
+                    break
 
         return question
 
