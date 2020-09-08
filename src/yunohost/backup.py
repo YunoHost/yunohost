@@ -240,7 +240,7 @@ class BackupManager():
         backup_manager.backup()
     """
 
-    def __init__(self, name=None, description='', work_dir=None):
+    def __init__(self, name=None, description='', methods=[], work_dir=None):
         """
         BackupManager constructor
 
@@ -258,7 +258,6 @@ class BackupManager():
         self.created_at = int(time.time())
         self.apps_return = {}
         self.system_return = {}
-        self.methods = []
         self.paths_to_backup = []
         self.size_details = {
             'system': {},
@@ -276,6 +275,9 @@ class BackupManager():
         if self.work_dir is None:
             self.work_dir = os.path.join(BACKUP_PATH, 'tmp', name)
         self._init_work_dir()
+
+        # Initialize backup methods
+        self.methods = [BackupMethod.create(method, self, repo=work_dir) for method in methods]
 
     #
     # Misc helpers                                                          #
@@ -2035,9 +2037,7 @@ def backup_create(name=None, description=None, methods=[],
 
     # Initialize backup manager
 
-    backup_manager = BackupManager(name, description, work_dir=output_directory)
-    for method in methods:
-        backup_manager.methods += BackupMethod.create(method, backup_manager, repo=output_directory))
+    backup_manager = BackupManager(name, description, methods=methods, work_dir=output_directory)
 
     # Add backup targets (system and apps)
 
