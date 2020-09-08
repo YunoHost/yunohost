@@ -2567,7 +2567,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
 
                     root_mail = "root@%s" % _get_maindomain()
                     for user in users.keys():
-                        if root_mail in user_info(user)["mail-aliases"]:
+                        if root_mail in user_info(user).get("mail-aliases", []):
                             question_default = user
                             break
 
