@@ -402,5 +402,10 @@
     "migration_description_0018_xtable_to_nftable": "Alte Netzwerkverkehrsregeln zum neuen nftable-System migrieren",
     "service_reload_failed": "Der Dienst '{service:s}' konnte nicht erneut geladen werden.\n\nKürzlich erstellte Logs des Dienstes: {logs:s}",
     "service_reloaded": "Der Dienst '{service:s}' wurde erneut geladen",
-    "service_restart_failed": "Der Dienst '{service:s}' konnte nicht erneut gestartet werden.\n\nKürzlich erstellte Logs des Dienstes: {logs:s}"
+    "service_restart_failed": "Der Dienst '{service:s}' konnte nicht erneut gestartet werden.\n\nKürzlich erstellte Logs des Dienstes: {logs:s}",
+    "app_manifest_install_ask_password": "Wählen Sie ein Verwaltungspasswort für diese Applikation",
+    "app_manifest_install_ask_domain": "Wählen Sie die Domäne, auf welcher die Applikation installiert werden soll",
+    "log_letsencrypt_cert_renew": "Erneuern des Let's Encrypt-Zeritifikates von '{}'",
+    "log_selfsigned_cert_install": "Das selbstsignierte Zertifikat auf der Domäne '{}' installieren",
+    "log_letsencrypt_cert_install": "Das Let’s Encrypt auf der Domäne '{}' installieren"
 }
