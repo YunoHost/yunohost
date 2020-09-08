@@ -282,7 +282,7 @@ def app_map(app=None, raw=False, user=None):
                 continue
 
             perm_label = perm_info['label']
-            perm_all_urls = [] + (perm_info["url"] if perm_info["url"] else []) + perm_info['additional_urls']
+            perm_all_urls = [] + ([perm_info["url"]] if perm_info["url"] else []) + perm_info['additional_urls']
 
             for url in perm_all_urls:
 
@@ -653,7 +653,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, user_permission_update, permission_create, permission_url, permission_delete, permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
@@ -1308,7 +1308,6 @@ def app_ssowatconf():
 
     """
     from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_list
     from yunohost.permission import user_permission_list
 
     main_domain = _get_maindomain()
@@ -1476,6 +1475,7 @@ def app_ssowatconf():
 
 
 def app_change_label(app, new_label):
+    from permission import user_permission_update
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())

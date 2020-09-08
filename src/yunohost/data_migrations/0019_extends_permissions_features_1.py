@@ -7,7 +7,7 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
 from yunohost.app import app_setting, app_ssowatconf, _installed_apps
-from yunohost.permission import user_permission_list, SYSTEM_PERMS, permission_sync_to_user
+from yunohost.permission import user_permission_list
 
 logger = getActionLogger('yunohost.migration')
 
@@ -46,14 +46,14 @@ class MyMigration(Migration):
             if permission.split('.')[0] == 'mail':
                 ldap.update('cn=%s,ou=permission' % permission, {
                     'authHeader': ["FALSE"],
-                    'label': 'E-mail',
+                    'label': ['E-mail'],
                     'showTile': ["FALSE"],
                     'isProtected': ["TRUE"],
                 })
             elif permission.split('.')[0] == 'xmpp':
                 ldap.update('cn=%s,ou=permission' % permission, {
                     'authHeader': ["FALSE"],
-                    'label': 'XMPP',
+                    'label': ['XMPP'],
                     'showTile': ["FALSE"],
                     'isProtected': ["TRUE"],
                 })

@@ -86,9 +86,9 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             perm["additional_urls"] = infos.get("additionalUrls", [])
 
             if full_path:
-                app_base_path = apps_base_path[app]
+                app_base_path = apps_base_path[app] if app in apps_base_path else "" # Meh in some situation where the app is currently installed/removed, this function may be called and we still need to act as if the corresponding permission indeed exists ... dunno if that's really the right way to proceed but okay.
                 perm["url"] = _get_absolute_url(perm["url"], app_base_path)
-                perm["additional_urls"] = [_get_absolute_url(url, apps_base_path) for url in perm["additional_urls"]]
+                perm["additional_urls"] = [_get_absolute_url(url, app_base_path) for url in perm["additional_urls"]]
 
         permissions[name] = perm
 
@@ -368,7 +368,7 @@ def permission_url(operation_logger, permission,
     """
     from yunohost.app import app_setting
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.domain import _check_and_sanitize_permission_path, _get_conflicting_apps
+    from yunohost.domain import _check_and_sanitize_permission_path
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
