@@ -169,7 +169,7 @@ def domain_remove(operation_logger, domain, force=False):
     from yunohost.utils.ldap import _get_ldap_interface
 
     if not force and domain not in domain_list()['domains']:
-        raise YunohostError('domain_named_unknown', domain=domain)
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -294,7 +294,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     # Check domain exists
     if new_main_domain not in domain_list()['domains']:
-        raise YunohostError('domain_named_unknown', domain=new_main_domain)
+        raise YunohostError('domain_name_unknown', domain=new_main_domain)
 
     operation_logger.related_to.append(('domain', new_main_domain))
     operation_logger.start()
@@ -363,7 +363,7 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     # Abort if domain is unknown
     if domain not in domain_list()['domains']:
-        raise YunohostError('domain_named_unknown', domain=domain)
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     # This import cannot be put on top of file because it would create a
     # recursive import...
@@ -449,9 +449,7 @@ def _check_and_sanitize_permission_path(url, app_main_path, permission):
        re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
-    import re, sre_constants
 
-    # Uri with domain
     domains = domain_list()['domains']
 
     # regex without domain
@@ -464,7 +462,7 @@ def _check_and_sanitize_permission_path(url, app_main_path, permission):
         else:
             try:
                 re.compile(regex)
-            except sre_constants.error:
+            except Exception:
                 raise YunohostError('invalid_regex', regex=regex)
         return url
 
@@ -476,15 +474,15 @@ def _check_and_sanitize_permission_path(url, app_main_path, permission):
         path = '/' + url[3:].split('/', 1)[1]
 
         if domain.replace('%', '').replace('\\', '') not in domains:
-            raise YunohostError('domain_named_unknown', domain=domain)
+            raise YunohostError('domain_name_unknown', domain=domain)
 
         if '%' in path:
             logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
         else:
             try:
                 re.compile(path)
-            except sre_constants.error:
-                raise YunohostError('invalid_regex', regex=path)
+            except Exception:
+                raise YunohostError('invalid_regex', regex=regex)
 
         return 're:' + domain + path
 
@@ -498,7 +496,7 @@ def _check_and_sanitize_permission_path(url, app_main_path, permission):
     else:
         domain = url.split('/')[0]
         if domain not in domains:
-            raise YunohostError('domain_named_unknown', domain=domain)
+            raise YunohostError('domain_name_unknown', domain=domain)
 
         if '/' in url:
             path = '/' + url.split('/', 1)[1].rstrip('/')

@@ -59,17 +59,19 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
                                      'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
-    apps_main_path = {app['id']: app_setting(app['id'], 'domain') + app_setting(app['id'], 'path') 
-                        for app in app_list()['apps']
-                            if app_setting(app['id'], 'domain') and app_setting(app['id'], 'path')}
+    apps = [app["id"] for app in app_list()["apps"]]
+    apps_main_path = {app: app_setting(app, 'domain') + app_setting(app, 'path')
+                      for app in apps
+                      if app_setting(app, 'domain') and app_setting(app, 'path')}
 
     permissions = {}
     for infos in permissions_infos:
 
         name = infos['cn'][0]
-
         if ignore_system_perms and name.split(".")[0] in SYSTEM_PERMS:
             continue
+
+        app = name.split('.')[0]
 
         permissions[name] = {}
         permissions[name]["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
@@ -80,9 +82,9 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             permissions[name]["label"] = infos.get("label", [None])[0]
             permissions[name]["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
             permissions[name]["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
-            if full_path and name.split(".")[0] in apps_main_path:
-                permissions[name]["url"] = _get_full_url(infos["URL"][0], apps_main_path[name.split('.')[0]]) if "URL" in infos else None
-                permissions[name]["additional_urls"] = [_get_full_url(url, apps_main_path[name.split('.')[0]]) for url in infos.get("additionalUrls", [None]) if url]
+            if full_path and app in apps_main_path:
+                permissions[name]["url"] = _get_absolute_url(infos["URL"][0], apps_main_path[app]) if "URL" in infos else None
+                permissions[name]["additional_urls"] = [_get_absolute_url(url, apps_main_path[app]) for url in infos.get("additionalUrls", [None]) if url]
             else:
                 permissions[name]["url"] = infos.get("URL", [None])[0]
                 permissions[name]["additional_urls"] = infos.get("additionalUrls", [])
@@ -256,9 +258,9 @@ def user_permission_info(permission):
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, allowed=None, 
+def permission_create(operation_logger, permission, allowed=None,
                       url=None, additional_urls=None, auth_header=True,
-                      label=None, show_tile=False, 
+                      label=None, show_tile=False,
                       protected=False, sync_perm=True):
     """
     Create a new permission for a specific application
@@ -623,10 +625,16 @@ def _update_ldap_group_permission(permission, allowed,
     return new_permission
 
 
-def _get_full_url(url, app_main_path):
+def _get_absolute_url(url, base_path):
+    #
+    # For example transform:
+    #    (/api, domain.tld/nextcloud)     into  domain.tld/nextcloud/api
+    #    (re:/foo.*, domain.tld/app)      into  re:domain\.tld/app/foo.*
+    #    (domain.tld/bar, domain.tld/app) into  domain.tld/bar
+    #
     if url.startswith('/'):
-        return app_main_path + url.rstrip("/")
+        return base_path + url.rstrip("/")
     if url.startswith('re:/'):
-        return 're:' + app_main_path.replace('.', '\\.') + url[3:]
+        return 're:' + base_path.replace('.', '\\.') + url[3:]
     else:
         return url

@@ -211,15 +211,16 @@ def _app_upgradable(app_infos):
         return "no"
 
 
-def app_map(app=None, raw=False, user=None, permission=None):
+def app_map(app=None, raw=False, user=None):
     """
-    List apps by domain
+    Returns a map of url <-> app id such as :
 
-    Keyword argument:
-        user -- Allowed app map for a user
-        raw -- Return complete dict
-        app -- Specific app to map
-
+    {
+       "domain.tld/foo": "foo__2",
+       "domain.tld/mail: "rainloop",
+       "other.tld/": "bar",
+       "sub.other.tld/pwet": "pwet",
+    }
     """
 
     from yunohost.permission import user_permission_list
@@ -264,18 +265,17 @@ def app_map(app=None, raw=False, user=None, permission=None):
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"]:
                 continue
-            if permission == perm_name:
-                continue
 
             # The challenge with this is (beside actually implementing it)
             # to migrate all the legacy stuff like
             # protected/unprotected/skipped uris and regexes
 
             perm_label = perm_info['label']
+            perm_all_urls = [perm_info["url"]] + perm_info['additional_urls']
 
-            for url in [perm_info["url"]] + perm_info['additional_urls']:
+            for url in perm_all_urls:
                 if url is None:
-                    # Happend when 'additional_urls' is empty !!
+                    # Happens when 'additional_urls' is empty !!
                     continue
 
                 perm_domain, perm_path = url.split("/", 1)
@@ -1183,7 +1183,7 @@ def app_makedefault(operation_logger, app, domain=None):
         domain = app_domain
         operation_logger.related_to.append(('domain', domain))
     elif domain not in domain_list()['domains']:
-        raise YunohostError('domain_named_unknown', domain=domain)
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     if '/' in app_map(raw=True)[domain]:
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
@@ -1474,7 +1474,7 @@ def app_change_label(app, new_label):
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
-    logger.warning(m18n.n('app_label_depreciated'))
+    logger.warning(m18n.n('app_label_deprecated'))
     user_permission_update(app + ".main", label=new_label)
 
 

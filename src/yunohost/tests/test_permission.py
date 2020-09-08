@@ -62,7 +62,7 @@ def _clear_dummy_app_settings():
             if os.path.exists(app_setting_path):
                 shutil.rmtree(app_setting_path)
 
-                
+
 def clean_user_groups_permission():
     for u in user_list()['users']:
         user_delete(u)

@@ -126,7 +126,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
 
     # Check that the domain exists
     if domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown', domain)
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     mail = username + '@' + domain
     ldap = _get_ldap_interface()
