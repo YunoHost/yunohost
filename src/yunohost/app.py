@@ -221,13 +221,27 @@ def app_map(app=None, raw=False, user=None):
        "other.tld/": "bar",
        "sub.other.tld/pwet": "pwet",
     }
+
+    When using "raw", the structure changes to :
+
+    {
+        "domain.tld": {
+            "/foo": {"label": "App foo", "id": "foo__2"},
+            "/mail": {"label": "Rainloop", "id: "rainloop"},
+        },
+        "other.tld": {
+            "/": {"label": "Bar", "id": "bar"},
+        },
+        "sub.other.tld": {
+            "/pwet": {"label": "Pwet", "id": "pwet"}
+        }
+    }
     """
 
     from yunohost.permission import user_permission_list
 
     apps = []
     result = {}
-    permissions = user_permission_list(full=True, full_path=True)["permissions"]
 
     if app is not None:
         if not _is_installed(app):
@@ -236,6 +250,7 @@ def app_map(app=None, raw=False, user=None):
     else:
         apps = os.listdir(APPS_SETTING_PATH)
 
+    permissions = user_permission_list(full=True, full_path=True)["permissions"]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -258,7 +273,7 @@ def app_map(app=None, raw=False, user=None):
             if user not in main_perm["corresponding_users"]:
                 continue
 
-        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and (i["url"] or i['additional_urls'] != [None])}
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and (i["url"] or i['additional_urls'])}
 
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
@@ -266,29 +281,22 @@ def app_map(app=None, raw=False, user=None):
             if user and user not in perm_info["corresponding_users"]:
                 continue
 
-            # The challenge with this is (beside actually implementing it)
-            # to migrate all the legacy stuff like
-            # protected/unprotected/skipped uris and regexes
-
             perm_label = perm_info['label']
-            perm_all_urls = [perm_info["url"]] + perm_info['additional_urls']
+            perm_all_urls = [] + (perm_info["url"] if perm_info["url"] else []) + perm_info['additional_urls']
 
             for url in perm_all_urls:
-                if url is None:
-                    # Happens when 'additional_urls' is empty !!
-                    continue
 
-                perm_domain, perm_path = url.split("/", 1)
-                perm_path = '/' + perm_path
-                if raw:
+                if not raw:
+                    result[url] = perm_label
+                else:
+                    perm_domain, perm_path = url.split("/", 1)
+                    perm_path = '/' + perm_path
                     if perm_domain not in result:
                         result[perm_domain] = {}
                     result[perm_domain][perm_path] = {
                         'label': perm_label,
                         'id': app_id
                     }
-                else:
-                    result[perm_domain + perm_path] = perm_label
 
     return result
 
@@ -1430,20 +1438,17 @@ def app_ssowatconf():
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
-        # Ignore permissions for which there's no url defined
-        if perm_info["url"] is None and perm_info['additional_urls'] == [None]:
-            continue
 
-        uris = []
-        if perm_info['url'] is not None:
-            uris += [perm_info['url'].rstrip('/')]
-        if perm_info['additional_urls'] != [None]:
-            uris += [uri.rstrip('/') for uri in perm_info['additional_urls']]
+        uris = [] + ([perm_info['url']] if perm_info['url'] else []) + perm_info['additional_urls']
+
+        # Ignore permissions for which there's no url defined
+        if not uris:
+            continue
 
         permissions[perm_name] = {
             "users": perm_info['corresponding_users'],
             "label": perm_info['label'],
-            "show_tile": perm_info['show_tile'] if perm_info['url'] and not perm_info["url"].startswith('re:') else False,
+            "show_tile": perm_info['show_tile'] and perm_info['url'] and (not perm_info["url"].startswith('re:')),
             "auth_header": perm_info['auth_header'],
             "public": "visitors" in perm_info["allowed"],
             "uris": uris

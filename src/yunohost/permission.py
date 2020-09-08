@@ -60,7 +60,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
 
     # Parse / organize information to be outputed
     apps = [app["id"] for app in app_list()["apps"]]
-    apps_main_path = {app: app_setting(app, 'domain') + app_setting(app, 'path')
+    apps_base_path = {app: app_setting(app, 'domain') + app_setting(app, 'path')
                       for app in apps
                       if app_setting(app, 'domain') and app_setting(app, 'path')}
 
@@ -73,21 +73,24 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
 
         app = name.split('.')[0]
 
-        permissions[name] = {}
-        permissions[name]["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
+        perm = {}
+        perm["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
 
         if full:
-            permissions[name]["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
-            permissions[name]["auth_header"] = infos.get("authHeader", [False])[0] == "TRUE"
-            permissions[name]["label"] = infos.get("label", [None])[0]
-            permissions[name]["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
-            permissions[name]["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
-            if full_path and app in apps_main_path:
-                permissions[name]["url"] = _get_absolute_url(infos["URL"][0], apps_main_path[app]) if "URL" in infos else None
-                permissions[name]["additional_urls"] = [_get_absolute_url(url, apps_main_path[app]) for url in infos.get("additionalUrls", [None]) if url]
-            else:
-                permissions[name]["url"] = infos.get("URL", [None])[0]
-                permissions[name]["additional_urls"] = infos.get("additionalUrls", [])
+            perm["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
+            perm["auth_header"] = infos.get("authHeader", [False])[0] == "TRUE"
+            perm["label"] = infos.get("label", [None])[0]
+            perm["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
+            perm["protected"] = infos.get("isProtected", [False])[0] == "TRUE"
+            perm["url"] = infos.get("URL", [None])[0]
+            perm["additional_urls"] = infos.get("additionalUrls", [])
+
+            if full_path:
+                app_base_path = apps_base_path[app]
+                perm["url"] = _get_absolute_url(perm["url"], app_base_path)
+                perm["additional_urls"] = [_get_absolute_url(url, apps_base_path) for url in perm["additional_urls"]]
+
+        permissions[name] = perm
 
     if short:
         permissions = permissions.keys()
@@ -632,6 +635,8 @@ def _get_absolute_url(url, base_path):
     #    (re:/foo.*, domain.tld/app)      into  re:domain\.tld/app/foo.*
     #    (domain.tld/bar, domain.tld/app) into  domain.tld/bar
     #
+    if url is None:
+        return None
     if url.startswith('/'):
         return base_path + url.rstrip("/")
     if url.startswith('re:/'):
