@@ -12,9 +12,7 @@ from yunohost.utils.network import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
-# We put here domains we know has dyndns provider, but that are not yet
-# registered in the public suffix list
-PENDING_SUFFIX_LIST = ['ynh.fr', 'netlib.re']
+YNH_DYNDNS_DOMAINS = ['nohost.me', 'noho.st', 'ynh.fr']
 
 
 class DNSRecordsDiagnoser(Diagnoser):
@@ -38,7 +36,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         psl = PublicSuffixList()
         domains_from_registrar = [psl.get_public_suffix(domain) for domain in all_domains]
         domains_from_registrar = [domain for domain in domains_from_registrar if "." in domain]
-        domains_from_registrar = set(domains_from_registrar) - set(PENDING_SUFFIX_LIST)
+        domains_from_registrar = set(domains_from_registrar) - set(YNH_DYNDNS_DOMAINS + ["netlib.re"])
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
@@ -100,7 +98,13 @@ class DNSRecordsDiagnoser(Diagnoser):
                           summary=summary)
 
             if discrepancies:
-                output["details"] = ["diagnosis_dns_point_to_doc"] + discrepancies
+                # For ynh-managed domains (nohost.me etc...), tell people to try to "yunohost dyndns update --force"
+                if any(domain.endswith(ynh_dyndns_domain) for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS):
+                    output["details"] = ["diagnosis_dns_try_dyndns_update_force"]
+                # Otherwise point to the documentation
+                else:
+                    output["details"] = ["diagnosis_dns_point_to_doc"]
+                output["details"] += discrepancies
 
             yield output
 

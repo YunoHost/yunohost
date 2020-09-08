@@ -15,6 +15,18 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
+  # mysql is supposed to be an alias to mariadb... but in some weird case is not
+  # c.f. https://forum.yunohost.org/t/mysql-ne-fonctionne-pas/11661
+  # Playing with enable/disable allows to recreate the proper symlinks.
+  if [ ! -e /etc/systemd/system/mysql.service ]
+  then
+      systemctl stop mysql -q
+      systemctl disable mysql -q
+      systemctl disable mariadb -q
+      systemctl enable mariadb -q
+      systemctl is-active mariadb -q || systemctl start mariadb
+  fi
+
   if [ ! -f /etc/yunohost/mysql ]; then
 
       # ensure that mysql is running

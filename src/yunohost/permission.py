@@ -31,7 +31,6 @@ import random
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError
-from yunohost.user import user_list
 from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')

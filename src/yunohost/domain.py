@@ -90,6 +90,10 @@ def domain_add(operation_logger, domain, dyndns=False):
 
     operation_logger.start()
 
+    # Lower domain to avoid some edge cases issues
+    # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
+    domain = domain.lower()
+
     # DynDNS domain
     if dyndns:
 
@@ -610,17 +614,17 @@ def _get_DKIM(domain):
     if is_legacy_format:
         dkim = re.match((
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-             '[^"]*"v=(?P<v>[^";]+);'
-             '[\s"]*k=(?P<k>[^";]+);'
-             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+            '[^"]*"v=(?P<v>[^";]+);'
+            r'[\s"]*k=(?P<k>[^";]+);'
+            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
         )
     else:
         dkim = re.match((
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-             '[^"]*"v=(?P<v>[^";]+);'
-             '[\s"]*h=(?P<h>[^";]+);'
-             '[\s"]*k=(?P<k>[^";]+);'
-             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+            '[^"]*"v=(?P<v>[^";]+);'
+            r'[\s"]*h=(?P<h>[^";]+);'
+            r'[\s"]*k=(?P<k>[^";]+);'
+            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
         )
 
     if not dkim:

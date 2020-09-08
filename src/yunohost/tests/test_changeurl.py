@@ -13,6 +13,7 @@ from yunohost.utils.error import YunohostError
 # Get main domain
 maindomain = ""
 
+
 def setup_function(function):
     global maindomain
     maindomain = _get_maindomain()

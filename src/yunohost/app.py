@@ -90,6 +90,8 @@ def app_catalog(full=False, with_categories=False):
                 "description": infos['manifest']['description'],
                 "level": infos["level"],
             }
+        else:
+            infos["manifest"]["arguments"] = _set_default_ask_questions(infos["manifest"]["arguments"])
 
     # Trim info for categories if not using --full
     for category in catalog["categories"]:
@@ -107,7 +109,6 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"]}
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
-
 
 
 # Old legacy function...
@@ -169,6 +170,7 @@ def app_info(app, full=False):
         return ret
 
     ret["manifest"] = local_manifest
+    ret["manifest"]["arguments"] = _set_default_ask_questions(ret["manifest"]["arguments"])
     ret['settings'] = settings
 
     absolute_app_name, _ = _parse_app_instance_name(app)
@@ -182,11 +184,21 @@ def app_info(app, full=False):
 
 
 def _app_upgradable(app_infos):
+    from packaging import version
 
     # Determine upgradability
     # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
 
-    if not app_infos.get("from_catalog", None):
+    # Firstly use the version to know if an upgrade is available
+    app_is_in_catalog = bool(app_infos.get("from_catalog"))
+    installed_version = version.parse(app_infos.get("version", "0~ynh0"))
+    version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
+
+    if app_is_in_catalog and '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
+        if installed_version < version_in_catalog:
+            return "yes"
+
+    if not app_is_in_catalog:
         return "url_required"
     if not app_infos["from_catalog"].get("lastUpdate") or not app_infos["from_catalog"].get("git"):
         return "url_required"
@@ -376,6 +388,7 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
@@ -439,7 +452,7 @@ def app_change_url(operation_logger, app, domain, path):
     hook_callback('post_app_change_url', args=args_list, env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None):
+def app_upgrade(app=[], url=None, file=None, force=False):
     """
     Upgrade app
 
@@ -449,8 +462,10 @@ def app_upgrade(app=[], url=None, file=None):
         url -- Git url to fetch for upgrade
 
     """
+    from packaging import version
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.permission import permission_sync_to_user
+    from yunohost.regenconf import manually_modified_files
 
     apps = app
     # If no app is specified, upgrade all apps
@@ -488,11 +503,40 @@ def app_upgrade(app=[], url=None, file=None):
         elif app_dict["upgradable"] == "url_required":
             logger.warning(m18n.n('custom_app_url_required', app=app_instance_name))
             continue
-        elif app_dict["upgradable"] == "yes":
+        elif app_dict["upgradable"] == "yes" or force:
             manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
         else:
             logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
             continue
+
+        # Manage upgrade type and avoid any upgrade if there is nothing to do
+        upgrade_type = "UNKNOWN"
+        # Get current_version and new version
+        app_new_version = version.parse(manifest.get("version", "?"))
+        app_current_version = version.parse(app_dict.get("version", "?"))
+        if "~ynh" in str(app_current_version) and "~ynh" in str(app_new_version):
+            if app_current_version >= app_new_version and not force:
+                # In case of upgrade from file or custom repository
+                # No new version available
+                logger.success(m18n.n('app_already_up_to_date', app=app_instance_name))
+                # Save update time
+                now = int(time.time())
+                app_setting(app_instance_name, 'update_time', now)
+                app_setting(app_instance_name, 'current_revision', manifest.get('remote', {}).get('revision', "?"))
+                continue
+            elif app_current_version > app_new_version:
+                upgrade_type = "DOWNGRADE_FORCED"
+            elif app_current_version == app_new_version:
+                upgrade_type = "UPGRADE_FORCED"
+            else:
+                app_current_version_upstream, app_current_version_pkg = str(app_current_version).split("~ynh")
+                app_new_version_upstream, app_new_version_pkg = str(app_new_version).split("~ynh")
+                if app_current_version_upstream == app_new_version_upstream:
+                    upgrade_type = "UPGRADE_PACKAGE"
+                elif app_current_version_pkg == app_new_version_pkg:
+                    upgrade_type = "UPGRADE_APP"
+                else:
+                    upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
@@ -512,12 +556,18 @@ def app_upgrade(app=[], url=None, file=None):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+        env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
+        env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
+        env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_before_install = manually_modified_files()
 
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
         # Apply dirty patch to make php5 apps compatible with php7
-        _patch_php5(extracted_app_folder)
+        _patch_legacy_php_versions(extracted_app_folder)
 
         # Start register change on system
         related_to = [('app', app_instance_name)]
@@ -562,6 +612,12 @@ def app_upgrade(app=[], url=None, file=None):
                 broke_the_system = True
                 logger.error(m18n.n("app_upgrade_failed", app=app_instance_name, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
+
+            # We'll check that the app didn't brutally edit some system configuration
+            manually_modified_files_after_install = manually_modified_files()
+            manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+            if manually_modified_files_by_app:
+                logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
 
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
@@ -625,7 +681,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user, user_permission_update
+    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user
+    from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
     if not os.path.exists(INSTALL_TMP):
@@ -725,16 +782,20 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     _patch_legacy_helpers(extracted_app_folder)
 
     # Apply dirty patch to make php5 apps compatible with php7
-    _patch_php5(extracted_app_folder)
+    _patch_legacy_php_versions(extracted_app_folder)
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_dict(args_odict)
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     # Start register change on system
     operation_logger.extra.update({'env': env_dict})
+
+    # We'll check that the app didn't brutally edit some system configuration
+    manually_modified_files_before_install = manually_modified_files()
 
     # Tell the operation_logger to redact all password-type args
     # Also redact the % escaped version of the password that might appear in
@@ -820,6 +881,12 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                 logger.error(m18n.n("app_install_failed", app=app_id, error=str(e)))
                 failure_message_with_debug_instructions = operation_logger.error(str(e))
 
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_after_install = manually_modified_files()
+        manually_modified_files_by_app = set(manually_modified_files_after_install) - set(manually_modified_files_before_install)
+        if manually_modified_files_by_app:
+            logger.error("Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - " + '\n     -'.join(manually_modified_files_by_app))
+
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
 
@@ -834,6 +901,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
+            env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
             # Execute remove script
             operation_logger_remove = OperationLogger('remove_on_failed_install',
@@ -847,6 +915,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
                     os.path.join(extracted_app_folder, 'scripts/remove'),
                     args=[app_instance_name], env=env_dict_remove
                 )[0]
+
             # Here again, calling hook_exec could fail miserably, or get
             # manually interrupted (by mistake or because script was stuck)
             # In that case we still want to proceed with the rest of the
@@ -1014,7 +1083,7 @@ def app_remove(operation_logger, app):
 
     # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
     # script might date back from jessie install)
-    _patch_php5(app_setting_path)
+    _patch_legacy_php_versions(app_setting_path)
 
     manifest = _get_manifest_of_app(app_setting_path)
 
@@ -1029,6 +1098,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
     operation_logger.extra.update({'env': env_dict})
     operation_logger.flush()
 
@@ -1340,7 +1410,7 @@ def app_ssowatconf():
             url = _sanitized_absolute_url(perm_info["url"])
             perm_info["url"] = url
             if "visitors" in perm_info["allowed"]:
-                if url not in unprotected_urls:
+                if url not in unprotected_urls and url not in skipped_urls:
                     unprotected_urls.append(url)
 
                 # Legacy stuff : we remove now protected-urls that might have been declared as unprotected earlier...
@@ -1867,6 +1937,9 @@ def _get_app_settings(app_id):
         with open(os.path.join(
                 APPS_SETTING_PATH, app_id, 'settings.yml')) as f:
             settings = yaml.load(f)
+        # If label contains unicode char, this may later trigger issues when building strings...
+        # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
+        settings = {k:_encode_string(v) for k,v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
@@ -2072,11 +2145,61 @@ def _get_manifest_of_app(path):
 
         manifest["arguments"]["install"] = install_arguments
 
-        return manifest
     elif os.path.exists(os.path.join(path, "manifest.json")):
-        return read_json(os.path.join(path, "manifest.json"))
+        manifest = read_json(os.path.join(path, "manifest.json"))
     else:
         raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
+
+    manifest["arguments"] = _set_default_ask_questions(manifest["arguments"])
+    return manifest
+
+
+def _set_default_ask_questions(arguments):
+
+    # arguments is something like
+    # { "install": [
+    #       { "name": "domain",
+    #         "type": "domain",
+    #         ....
+    #       },
+    #       { "name": "path",
+    #         "type": "path"
+    #         ...
+    #       },
+    #       ...
+    #   ],
+    #  "upgrade": [ ... ]
+    # }
+
+    # We set a default for any question with these matching (type, name)
+    #                           type       namei
+    # N.B. : this is only for install script ... should be reworked for other
+    # scripts if we supports args for other scripts in the future...
+    questions_with_default = [("domain", "domain"),      # i18n: app_manifest_install_ask_domain
+                              ("path", "path"),          # i18n: app_manifest_install_ask_path
+                              ("password", "password"),  # i18n: app_manifest_install_ask_password
+                              ("user", "admin"),         # i18n: app_manifest_install_ask_admin
+                              ("boolean", "is_public")]  # i18n: app_manifest_install_ask_is_public
+
+    for script_name, arg_list in arguments.items():
+
+        # We only support questions for install so far, and for other
+        if script_name != "install":
+            continue
+
+        for arg in arg_list:
+
+            # Do not override 'ask' field if provided by app ?... Or shall we ?
+            # if "ask" in arg:
+            #    continue
+
+            # If this arg corresponds to a question with default ask message...
+            if any((arg.get("type"), arg["name"]) == question for question in questions_with_default):
+                # The key is for example "app_manifest_install_ask_domain"
+                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
+                arg["ask"] = m18n.n(key)
+
+    return arguments
 
 
 def _get_git_last_commit_hash(repository, reference='HEAD'):
@@ -2765,12 +2888,6 @@ def _read_apps_catalog_list():
     Read the json corresponding to the list of apps catalogs
     """
 
-    # Legacy code - can be removed after moving to buster (if the migration got merged before buster)
-    if os.path.exists('/etc/yunohost/appslists.json'):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("futureproof_apps_catalog_system")
-        migration.run()
-
     try:
         list_ = read_yaml(APPS_CATALOG_CONF)
         # Support the case where file exists but is empty
@@ -2927,8 +3044,8 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm"]:
-            return "php7.0-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm"]:
+            return "php7.3-fpm"
         else:
             return service
     services = [replace_alias(s) for s in services]
@@ -2936,7 +3053,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.0-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php7.3-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -2961,11 +3078,24 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostError("this_action_broke_dpkg")
 
 
-def _patch_php5(app_folder):
+LEGACY_PHP_VERSION_REPLACEMENTS = [
+    ("/etc/php5", "/etc/php/7.3"),
+    ("/etc/php/7.0", "/etc/php/7.3"),
+    ("/var/run/php5-fpm", "/var/run/php/php7.3-fpm"),
+    ("/var/run/php/php7.0-fpm", "/var/run/php/php7.3-fpm"),
+    ("php5", "php7.3"),
+    ("php7.0", "php7.3"),
+    ('phpversion="${phpversion:-7.0}"', 'phpversion="${phpversion:-7.3}"'),  # Many helpers like the composer ones use 7.0 by default ...
+    ('"$phpversion" == "7.0"', '$(bc <<< "$phpversion >= 7.3") -eq 1')  # patch ynh_install_php to refuse installing/removing php <= 7.3
+]
+
+
+def _patch_legacy_php_versions(app_folder):
 
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
     files_to_patch.append("%s/manifest.json" % app_folder)
     files_to_patch.append("%s/manifest.toml" % app_folder)
@@ -2976,11 +3106,31 @@ def _patch_php5(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        c = "sed -i -e 's@/etc/php5@/etc/php/7.0@g' " \
-            "-e 's@/var/run/php5-fpm@/var/run/php/php7.0-fpm@g' " \
-            "-e 's@php5@php7.0@g' " \
-            "%s" % filename
+        c = "sed -i " \
+            + "".join("-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r) for p, r in LEGACY_PHP_VERSION_REPLACEMENTS) \
+            + "%s" % filename
         os.system(c)
+
+
+def _patch_legacy_php_versions_in_settings(app_folder):
+
+    settings = read_yaml(os.path.join(app_folder, 'settings.yml'))
+
+    if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+        settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+    if settings.get("fpm_service") == "php7.0-fpm":
+        settings["fpm_service"] = "php7.3-fpm"
+    if settings.get("phpversion") == "7.0":
+        settings["phpversion"] = "7.3"
+
+    # We delete these checksums otherwise the file will appear as manually modified
+    list_to_remove = ["checksum__etc_php_7.0_fpm_pool",
+                      "checksum__etc_nginx_conf.d"]
+    settings = {k: v for k, v in settings.items()
+                if not any(k.startswith(to_remove) for to_remove in list_to_remove)}
+
+    write_to_yaml(app_folder + '/settings.yml', settings)
+
 
 def _patch_legacy_helpers(app_folder):
 

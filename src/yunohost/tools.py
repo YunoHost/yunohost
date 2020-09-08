@@ -26,10 +26,8 @@
 import re
 import os
 import yaml
-import json
 import subprocess
 import pwd
-import socket
 from importlib import import_module
 
 from moulinette import msignals, m18n
@@ -37,8 +35,8 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
-from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list, _initialize_apps_catalog_system
-from yunohost.domain import domain_add, domain_list
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, _initialize_apps_catalog_system
+from yunohost.domain import domain_add
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
@@ -53,8 +51,10 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger('yunohost.tools')
 
+
 def tools_versions():
     return ynh_packages_version()
+
 
 def tools_ldapinit():
     """
@@ -88,15 +88,15 @@ def tools_ldapinit():
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     admin_dict = {
-        'cn': 'admin',
-        'uid': 'admin',
-        'description': 'LDAP Administrator',
-        'gidNumber': '1007',
-        'uidNumber': '1007',
-        'homeDirectory': '/home/admin',
-        'loginShell': '/bin/bash',
+        'cn': ['admin'],
+        'uid': ['admin'],
+        'description': ['LDAP Administrator'],
+        'gidNumber': ['1007'],
+        'uidNumber': ['1007'],
+        'homeDirectory': ['/home/admin'],
+        'loginShell': ['/bin/bash'],
         'objectClass': ['organizationalRole', 'posixAccount', 'simpleSecurityObject'],
-        'userPassword': 'yunohost'
+        'userPassword': ['yunohost']
     }
 
     ldap.update('cn=admin', admin_dict)
@@ -110,6 +110,14 @@ def tools_ldapinit():
     except KeyError:
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
         raise YunohostError('installation_failed')
+
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(["mkhomedir_helper", "admin"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir('/home/{0}'.format("admin")):
+            logger.warning(m18n.n('user_home_creation_failed'),
+                           exc_info=1)
 
     logger.success(m18n.n('ldap_initialized'))
 
@@ -140,7 +148,7 @@ def tools_adminpw(new_password, check_strength=True):
     ldap = _get_ldap_interface()
 
     try:
-        ldap.update("cn=admin", {"userPassword": new_hash, })
+        ldap.update("cn=admin", {"userPassword": [new_hash], })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
@@ -359,6 +367,12 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     except Exception as e:
         logger.warning(str(e))
 
+    # Create the archive directory (makes it easier for people to upload backup
+    # archives, otherwise it's only created after running `yunohost backup
+    # create` once.
+    from yunohost.backup import _create_archive_dir
+    _create_archive_dir()
+
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
 
@@ -368,7 +382,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    regen_conf(force=True)
+    regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -382,10 +396,8 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     original_sshd_conf = '/etc/ssh/sshd_config.before_yunohost'
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, '/etc/ssh/sshd_config')
-    else:
-        # We need to explicitly ask the regen conf to regen ssh
-        # (by default, i.e. first argument = None, it won't because it's too touchy)
-        regen_conf(names=["ssh"], force=True)
+
+    regen_conf(force=True)
 
     logger.success(m18n.n('yunohost_configured'))
 
@@ -416,7 +428,7 @@ def tools_update(apps=False, system=False):
 
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
-        command = "LC_ALL=C apt update"
+        command = "LC_ALL=C apt-get update -o Acquire::Retries=3"
 
         # Filter boring message about "apt not having a stable CLI interface"
         # Also keep track of wether or not we encountered a warning...
@@ -492,7 +504,7 @@ def _list_upgradable_apps():
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, apps=None, system=False):
+def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgrade=True):
     """
     Update apps & package cache, then display changelog
 
@@ -555,7 +567,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
 
         # Critical packages are packages that we can't just upgrade
         # randomly from yunohost itself... upgrading them is likely to
-        critical_packages = ("moulinette", "yunohost", "yunohost-admin", "ssowat", "python")
+        critical_packages = ["moulinette", "yunohost", "yunohost-admin", "ssowat"]
 
         critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
         noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
@@ -590,11 +602,15 @@ def tools_upgrade(operation_logger, apps=None, system=False):
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
             def is_relevant(l):
-                return "Reading database ..." not in l.rstrip()
+                irrelevants = [
+                    "service sudo-ldap already provided",
+                    "Reading database ..."
+                ]
+                return all(i not in l.rstrip() for i in irrelevants)
 
             callbacks = (
                 lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip()),
+                lambda l: logger.warning(l.rstrip()) if is_relevant(l) else logger.debug(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
@@ -608,7 +624,7 @@ def tools_upgrade(operation_logger, apps=None, system=False):
         #
         # Critical packages upgrade
         #
-        if critical_packages_upgradable:
+        if critical_packages_upgradable and allow_yunohost_upgrade:
 
             logger.info(m18n.n("tools_upgrade_special_packages"))
 
@@ -921,7 +937,7 @@ def _migrate_legacy_migration_json():
     # Extract the list of migration ids
     from . import data_migrations
     migrations_path = data_migrations.__path__[0]
-    migration_files = filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
+    migration_files = filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
     # (here we remove the .py extension and make sure the ids are sorted)
     migration_ids = sorted([f.rsplit(".", 1)[0] for f in migration_files])
 
@@ -970,7 +986,7 @@ def _get_migrations_list():
     # (in particular, pending migrations / not already ran are not listed
     states = tools_migrations_state()["migrations"]
 
-    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+    for migration_file in filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
         m = _load_migration(migration_file)
         m.state = states.get(m.id, "pending")
         migrations.append(m)
@@ -989,7 +1005,7 @@ def _get_migration_by_name(migration_name):
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
     migrations_path = data_migrations.__path__[0]
-    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
+    migrations_found = filter(lambda x: re.match(r"^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
 
     assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
 
@@ -1033,7 +1049,7 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies = [] # List of migration ids required before running this migration
+    dependencies = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

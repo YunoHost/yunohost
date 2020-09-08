@@ -2,21 +2,25 @@ ssl_session_timeout 1d;
 ssl_session_cache shared:SSL:50m;  # about 200000 sessions
 ssl_session_tickets off;
 
-# nginx 1.10 in stretch doesn't support TLS1.3 and Mozilla doesn't have any
-# "modern" config recommendation with it.
-# So until buster the modern conf is same as intermediate
-{% if compatibility == "modern" %} {% else %} {% endif %}
-
+{% if compatibility == "modern" %}
+# generated 2020-08-14, Mozilla Guideline v5.6, nginx 1.14.2, OpenSSL 1.1.1d, modern configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.14.2&config=modern&openssl=1.1.1d&guideline=5.6
+ssl_protocols TLSv1.3;
+ssl_prefer_server_ciphers off;
+{% else %}
 # Ciphers with intermediate compatibility
-# generated 2020-04-03, Mozilla Guideline v5.4, nginx 1.10.3, OpenSSL 1.1.0l, intermediate configuration
-# https://ssl-config.mozilla.org/#server=nginx&version=1.10.3&config=intermediate&openssl=1.1.0l&guideline=5.4
-ssl_protocols TLSv1.2;
+# generated 2020-08-14, Mozilla Guideline v5.6, nginx 1.14.2, OpenSSL 1.1.1d, intermediate configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.14.2&config=intermediate&openssl=1.1.1d&guideline=5.6
+ssl_protocols TLSv1.2 TLSv1.3;
 ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 ssl_prefer_server_ciphers off;
 
-# Uncomment the following directive after DH generation
-# > openssl dhparam -out /etc/ssl/private/dh2048.pem -outform PEM -2 2048
-#ssl_dhparam /etc/ssl/private/dh2048.pem;
+# Pre-defined FFDHE group (RFC 7919)
+# From https://ssl-config.mozilla.org/ffdhe2048.txt
+# https://security.stackexchange.com/a/149818
+ssl_dhparam /usr/share/yunohost/other/ffdhe2048.pem;
+{% endif %}
+
 
 # Follows the Web Security Directives from the Mozilla Dev Lab and the Mozilla Obervatory + Partners
 # https://wiki.mozilla.org/Security/Guidelines/Web_Security

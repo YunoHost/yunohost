@@ -26,6 +26,9 @@ do_init_regen() {
   ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
 
+  mkdir -p $nginx_conf_dir/default.d/
+  cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
+
   # Restart nginx if conf looks good, otherwise display error and exit unhappy
   nginx -t 2>/dev/null || { nginx -t; exit 1; }
   systemctl restart nginx || { journalctl --no-pager --lines=10 -u nginx >&2; exit 1; }
@@ -77,6 +80,8 @@ do_pre_regen() {
   done
 
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
+  mkdir -p $nginx_conf_dir/default.d/
+  cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/nginx/conf.d \
