@@ -723,12 +723,6 @@ class BackupManager():
     # Actual backup archive creation / method management                    #
     #
 
-    def add(self, method, output_directory=None):
-        """
-        Add a backup method that will be applied after the files collection step
-        """
-        self.methods.append(BackupMethod.create(method, self, output_directory=output_directory))
-
     def backup(self):
         """Apply backup methods"""
 
@@ -1483,7 +1477,7 @@ class BackupMethod(object):
     """
 
     @classmethod
-    def create(cls, method, manager, *args, **kwargs):
+    def create(cls, method, manager, **kwargs):
         """
         Factory method to create instance of BackupMethod
 
@@ -1497,7 +1491,7 @@ class BackupMethod(object):
         """
         known_methods = {c.method_name:c for c in BackupMethod.__subclasses__()}
         backup_method = known_methods.get(method, CustomBackupMethod)
-        return backup_method(manager, method=method, *args, **kwargs)
+        return backup_method(manager, method=method, **kwargs)
 
     def __init__(self, manager, repo=None, **kwargs):
         """
@@ -2052,7 +2046,8 @@ def backup_create(name=None, description=None, methods=[],
         backup_manager = BackupManager(name, description)
 
     for method in methods:
-        backup_manager.add(method, output_directory=output_directory)
+        backup_manager.methods += BackupMethod.create(method, backup_manager, repo=output_directory))
+
 
     # Add backup targets (system and apps)
     backup_manager.set_system_targets(system)
