@@ -63,10 +63,10 @@ class BaseSystemDiagnoser(Diagnoser):
         ynh_core_version = ynh_packages["yunohost"]["version"]
         consistent_versions = all(infos["version"][:3] == ynh_core_version[:3] for infos in ynh_packages.values())
         ynh_version_details = [("diagnosis_basesystem_ynh_single_version",
-                                {"package":package,
+                                {"package": package,
                                  "version": infos["version"],
                                  "repo": infos["repo"]}
-                               )
+                                )
                                for package, infos in ynh_packages.items()]
 
         yield dict(meta={"test": "ynh_versions"},
@@ -74,7 +74,6 @@ class BaseSystemDiagnoser(Diagnoser):
                    status="INFO" if consistent_versions else "ERROR",
                    summary="diagnosis_basesystem_ynh_main_version" if consistent_versions else "diagnosis_basesystem_ynh_inconsistent_versions",
                    details=ynh_version_details)
-
 
         if self.is_vulnerable_to_meltdown():
             yield dict(meta={"test": "meltdown"},

@@ -29,19 +29,20 @@ from yunohost.utils.error import YunohostError
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
 _ldap_interface = None
 
+
 def _get_ldap_interface():
 
     global _ldap_interface
 
     if _ldap_interface is None:
 
-        conf = { "vendor": "ldap",
-                 "name": "as-root",
-                 "parameters": { 'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
-                                 'base_dn': 'dc=yunohost,dc=org',
-                                 'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth' },
-                 "extra": {}
-               }
+        conf = {"vendor": "ldap",
+                "name": "as-root",
+                "parameters": {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
+                               'base_dn': 'dc=yunohost,dc=org',
+                               'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'},
+                "extra": {}
+                }
 
         try:
             _ldap_interface = ldap.Authenticator(**conf)
@@ -81,5 +82,6 @@ def _destroy_ldap_interface():
     global _ldap_interface
     if _ldap_interface is not None:
         del _ldap_interface
+
 
 atexit.register(_destroy_ldap_interface)

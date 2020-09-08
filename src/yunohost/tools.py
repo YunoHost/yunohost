@@ -26,10 +26,8 @@
 import re
 import os
 import yaml
-import json
 import subprocess
 import pwd
-import socket
 from importlib import import_module
 
 from moulinette import msignals, m18n
@@ -37,8 +35,8 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
-from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list, _initialize_apps_catalog_system
-from yunohost.domain import domain_add, domain_list
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, _initialize_apps_catalog_system
+from yunohost.domain import domain_add
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
@@ -53,8 +51,10 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger('yunohost.tools')
 
+
 def tools_versions():
     return ynh_packages_version()
+
 
 def tools_ldapinit():
     """
@@ -118,7 +118,7 @@ def tools_ldapinit():
         if not os.path.isdir('/home/{0}'.format("admin")):
             logger.warning(m18n.n('user_home_creation_failed'),
                            exc_info=1)
-        
+
     logger.success(m18n.n('ldap_initialized'))
 
 
@@ -148,7 +148,7 @@ def tools_adminpw(new_password, check_strength=True):
     ldap = _get_ldap_interface()
 
     try:
-        ldap.update("cn=admin", {"userPassword": [ new_hash ], })
+        ldap.update("cn=admin", {"userPassword": [new_hash], })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
@@ -601,7 +601,6 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
-
             def is_relevant(l):
                 irrelevants = [
                     "service sudo-ldap already provided",
@@ -938,7 +937,7 @@ def _migrate_legacy_migration_json():
     # Extract the list of migration ids
     from . import data_migrations
     migrations_path = data_migrations.__path__[0]
-    migration_files = filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
+    migration_files = filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
     # (here we remove the .py extension and make sure the ids are sorted)
     migration_ids = sorted([f.rsplit(".", 1)[0] for f in migration_files])
 
@@ -987,7 +986,7 @@ def _get_migrations_list():
     # (in particular, pending migrations / not already ran are not listed
     states = tools_migrations_state()["migrations"]
 
-    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+    for migration_file in filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
         m = _load_migration(migration_file)
         m.state = states.get(m.id, "pending")
         migrations.append(m)
@@ -1006,7 +1005,7 @@ def _get_migration_by_name(migration_name):
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
     migrations_path = data_migrations.__path__[0]
-    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
+    migrations_found = filter(lambda x: re.match(r"^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
 
     assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
 
@@ -1050,7 +1049,7 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies = [] # List of migration ids required before running this migration
+    dependencies = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

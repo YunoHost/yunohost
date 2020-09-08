@@ -4,12 +4,13 @@ import os
 import glob
 import datetime
 
+
 def render(helpers):
 
-    data = { "helpers": helpers,
-             "date": datetime.datetime.now().strftime("%m/%d/%Y"),
-             "version": open("../debian/changelog").readlines()[0].split()[1].strip("()")
-           }
+    data = {"helpers": helpers,
+            "date": datetime.datetime.now().strftime("%m/%d/%Y"),
+            "version": open("../debian/changelog").readlines()[0].split()[1].strip("()")
+            }
 
     from jinja2 import Template
     from ansi2html import Ansi2HTMLConverter
@@ -22,12 +23,13 @@ def render(helpers):
         return conv.convert(shell, False)
 
     template = open("helper_doc_template.html", "r").read()
-    t        = Template(template)
+    t = Template(template)
     t.globals['now'] = datetime.datetime.utcnow
     result = t.render(data=data, convert=shell_to_html, shell_css=shell_css)
     open("helpers.html", "w").write(result)
 
 ##############################################################################
+
 
 class Parser():
 
@@ -42,15 +44,15 @@ class Parser():
         self.blocks = []
 
         current_reading = "void"
-        current_block = { "name": None,
-                          "line": -1,
-                          "comments": [],
-                          "code": [] }
+        current_block = {"name": None,
+                         "line": -1,
+                         "comments": [],
+                         "code": []}
 
         for i, line in enumerate(self.file):
 
             if line.startswith("#!/bin/bash"):
-               continue
+                continue
 
             line = line.rstrip().replace("\t", "    ")
 
@@ -73,7 +75,7 @@ class Parser():
                 elif line.strip() == "":
                     # Well eh that was not an actual helper definition ... start over ?
                     current_reading = "void"
-                    current_block = { "name": None,
+                    current_block = {"name": None,
                                      "line": -1,
                                      "comments": [],
                                      "code": []
@@ -101,10 +103,10 @@ class Parser():
                     # (we ignore helpers containing [internal] ...)
                     if not "[internal]" in current_block["comments"]:
                         self.blocks.append(current_block)
-                    current_block = { "name": None,
-                                      "line": -1,
-                                      "comments": [],
-                                      "code": [] }
+                    current_block = {"name": None,
+                                     "line": -1,
+                                     "comments": [],
+                                     "code": []}
                 else:
                     current_block["code"].append(line)
 
@@ -180,12 +182,13 @@ class Parser():
         b["usage"] = b["usage"].strip()
 
 
-
 def is_global_comment(line):
     return line.startswith('#')
 
+
 def malformed_error(line_number):
     return "Malformed file line {} ?".format(line_number)
+
 
 def main():
 
@@ -204,5 +207,5 @@ def main():
 
     render(helpers)
 
-main()
 
+main()

@@ -59,6 +59,7 @@ from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.settings import settings_get
 
 BACKUP_PATH = '/home/yunohost.backup'
 ARCHIVES_PATH = '%s/archives' % BACKUP_PATH
@@ -225,8 +226,8 @@ class BackupManager():
         backup_manager = BackupManager(name="mybackup", description="bkp things")
 
         # Add backup method to apply
-        backup_manager.add(BackupMethod.create('copy', backup_manager, '/mnt/local_fs'))
-        backup_manager.add(BackupMethod.create('tar', backup_manager, '/mnt/remote_fs'))
+        backup_manager.add('copy', output_directory='/mnt/local_fs')
+        backup_manager.add('tar', output_directory='/mnt/remote_fs')
 
         # Define targets to be backuped
         backup_manager.set_system_targets(["data"])
@@ -239,7 +240,7 @@ class BackupManager():
         backup_manager.backup()
     """
 
-    def __init__(self, name=None, description='', work_dir=None):
+    def __init__(self, name=None, description='', methods=[], work_dir=None):
         """
         BackupManager constructor
 
@@ -257,7 +258,6 @@ class BackupManager():
         self.created_at = int(time.time())
         self.apps_return = {}
         self.system_return = {}
-        self.methods = []
         self.paths_to_backup = []
         self.size_details = {
             'system': {},
@@ -275,6 +275,9 @@ class BackupManager():
         if self.work_dir is None:
             self.work_dir = os.path.join(BACKUP_PATH, 'tmp', name)
         self._init_work_dir()
+
+        # Initialize backup methods
+        self.methods = [BackupMethod.create(method, self, repo=work_dir) for method in methods]
 
     #
     # Misc helpers                                                          #
@@ -315,17 +318,6 @@ class BackupManager():
         """Initialize preparation directory
 
         Ensure the working directory exists and is empty
-
-        exception:
-        backup_output_directory_not_empty -- (YunohostError) Raised if the
-            directory was given by the user and isn't empty
-
-        (TODO) backup_cant_clean_tmp_working_directory -- (YunohostError)
-            Raised if the working directory isn't empty, is temporary and can't
-            be automaticcaly cleaned
-
-        (TODO) backup_cant_create_working_directory -- (YunohostError) Raised
-            if iyunohost can't create the working directory
         """
 
         # FIXME replace isdir by exists ? manage better the case where the path
@@ -509,10 +501,6 @@ class BackupManager():
                       files to backup
         hooks/     -- restore scripts associated to system backup scripts are
                       copied here
-
-        Exceptions:
-        "backup_nothings_done" -- (YunohostError) This exception is raised if
-        nothing has been listed.
         """
 
         self._collect_system_files()
@@ -679,10 +667,6 @@ class BackupManager():
 
         Args:
         app -- (string) an app instance name (already installed) to backup
-
-        Exceptions:
-        backup_app_failed -- Raised at the end if the app backup script
-                             execution failed
         """
         from yunohost.permission import user_permission_list
 
@@ -740,18 +724,6 @@ class BackupManager():
     #
     # Actual backup archive creation / method management                    #
     #
-
-    def add(self, method):
-        """
-        Add a backup method that will be applied after the files collection step
-
-        Args:
-        method -- (BackupMethod) A backup method. Currently, you can use those:
-                  TarBackupMethod
-                  CopyBackupMethod
-                  CustomBackupMethod
-        """
-        self.methods.append(method)
 
     def backup(self):
         """Apply backup methods"""
@@ -815,7 +787,7 @@ class RestoreManager():
     """
     RestoreManager allow to restore a past backup archive
 
-    Currently it's a tar.gz file, but it could be another kind of archive
+    Currently it's a tar file, but it could be another kind of archive
 
     Public properties:
         info (getter)i # FIXME
@@ -841,14 +813,12 @@ class RestoreManager():
         return restore_manager.result
     """
 
-    def __init__(self, name, repo=None, method='tar'):
+    def __init__(self, name, method='tar'):
         """
         RestoreManager constructor
 
         Args:
         name -- (string) Archive name
-        repo -- (string|None) Repository where is this archive, it could be a
-                path (default: /home/yunohost.backup/archives)
         method -- (string) Method name to use to mount the archive
         """
         # Retrieve and open the archive
@@ -876,9 +846,6 @@ class RestoreManager():
     def _read_info_files(self):
         """
         Read the info file from inside an archive
-
-        Exceptions:
-        backup_archive_cant_retrieve_info_json -- Raised if we can't read the info
         """
         # Retrieve backup info
         info_file = os.path.join(self.work_dir, "info.json")
@@ -922,8 +889,6 @@ class RestoreManager():
         regenerate ssowat conf (if some apps were restored)
         """
         from permission import permission_sync_to_user
-
-        successfull_apps = self.targets.list("apps", include=["Success", "Warning"])
 
         permission_sync_to_user()
 
@@ -1036,10 +1001,6 @@ class RestoreManager():
 
         Use the mount method from the BackupMethod instance and read info about
         this archive
-
-        Exceptions:
-        restore_removing_tmp_dir_failed -- Raised if it's not possible to remove
-        the working directory
         """
 
         self.work_dir = os.path.join(BACKUP_PATH, "tmp", self.name)
@@ -1113,11 +1074,6 @@ class RestoreManager():
     def assert_enough_free_space(self):
         """
         Check available disk space
-
-        Exceptions:
-        restore_may_be_not_enough_disk_space -- Raised if there isn't enough
-        space to cover the security margin space
-        restore_not_enough_disk_space -- Raised if there isn't enough space
         """
 
         free_space = free_space_in_directory(BACKUP_PATH)
@@ -1299,11 +1255,6 @@ class RestoreManager():
         Args:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
-
-        Exceptions:
-        restore_already_installed_app -- Raised if an app with this app instance
-                                        name already exists
-        restore_app_failed -- Raised if the restore bash script failed
         """
         from yunohost.user import user_group_list
         from yunohost.permission import permission_create, permission_delete, user_permission_list, permission_sync_to_user
@@ -1509,7 +1460,7 @@ class BackupMethod(object):
 
     TarBackupMethod
     ---------------
-    This method compresses all files to backup in a .tar.gz archive. When
+    This method compresses all files to backup in a .tar archive. When
     restoring, it untars the required parts.
 
     CustomBackupMethod
@@ -1534,7 +1485,24 @@ class BackupMethod(object):
         method.mount()
     """
 
-    def __init__(self, manager, repo=None):
+    @classmethod
+    def create(cls, method, manager, **kwargs):
+        """
+        Factory method to create instance of BackupMethod
+
+        Args:
+        method -- (string) The method name of an existing BackupMethod. If the
+        name is unknown the CustomBackupMethod will be tried
+        *args    -- Specific args for the method, could be the repo target by the
+        method
+
+        Return a BackupMethod instance
+        """
+        known_methods = {c.method_name:c for c in BackupMethod.__subclasses__()}
+        backup_method = known_methods.get(method, CustomBackupMethod)
+        return backup_method(manager, method=method, **kwargs)
+
+    def __init__(self, manager, repo=None, **kwargs):
         """
         BackupMethod constructors
 
@@ -1619,10 +1587,6 @@ class BackupMethod(object):
     def clean(self):
         """
         Umount sub directories of working dirextories and delete it if temporary
-
-        Exceptions:
-        backup_cleaning_failed -- Raise if we were not able to unmount sub
-                                  directories of the working directories
         """
         if self.need_mount():
             if not _recursive_umount(self.work_dir):
@@ -1634,9 +1598,6 @@ class BackupMethod(object):
     def _check_is_enough_free_space(self):
         """
         Check free space in repository or output directory before to backup
-
-        Exceptions:
-        not_enough_disk_space -- Raise if there isn't enough space.
         """
         # TODO How to do with distant repo or with deduplicated backup ?
         backup_size = self.manager.size
@@ -1658,9 +1619,6 @@ class BackupMethod(object):
 
         The usage of binding could be strange for a user because the du -sb
         command will return that the working directory is big.
-
-        Exceptions:
-        backup_unable_to_organize_files
         """
         paths_needed_to_be_copied = []
         for path in self.manager.paths_to_backup:
@@ -1758,36 +1716,6 @@ class BackupMethod(object):
             else:
                 shutil.copy(path['source'], dest)
 
-    @classmethod
-    def create(cls, method, manager, *args):
-        """
-        Factory method to create instance of BackupMethod
-
-        Args:
-        method -- (string) The method name of an existing BackupMethod. If the
-        name is unknown the CustomBackupMethod will be tried
-
-        ...    -- Specific args for the method, could be the repo target by the
-        method
-
-        Return a BackupMethod instance
-        """
-        if not isinstance(method, basestring):
-            methods = []
-            for m in method:
-                methods.append(BackupMethod.create(m, manager, *args))
-            return methods
-
-        bm_class = {
-            'copy': CopyBackupMethod,
-            'tar': TarBackupMethod,
-            'borg': BorgBackupMethod
-        }
-        if method in ["copy", "tar", "borg"]:
-            return bm_class[method](manager, *args)
-        else:
-            return CustomBackupMethod(manager, method=method, *args)
-
 
 class CopyBackupMethod(BackupMethod):
 
@@ -1796,12 +1724,7 @@ class CopyBackupMethod(BackupMethod):
     could be the inverse for restoring
     """
 
-    def __init__(self, manager, repo=None):
-        super(CopyBackupMethod, self).__init__(manager, repo)
-
-    @property
-    def method_name(self):
-        return 'copy'
+    method_name = "copy"
 
     def backup(self):
         """ Copy prepared files into a the repo """
@@ -1827,10 +1750,6 @@ class CopyBackupMethod(BackupMethod):
     def mount(self):
         """
         Mount the uncompress backup in readonly mode to the working directory
-
-        Exceptions:
-        backup_no_uncompress_archive_dir -- Raised if the repo doesn't exists
-        backup_cant_mount_uncompress_archive -- Raised if the binding failed
         """
         # FIXME: This code is untested because there is no way to run it from
         # the ynh cli
@@ -1857,21 +1776,18 @@ class CopyBackupMethod(BackupMethod):
 
 class TarBackupMethod(BackupMethod):
 
-    """
-    This class compress all files to backup in archive.
-    """
-
-    def __init__(self, manager, repo=None):
-        super(TarBackupMethod, self).__init__(manager, repo)
-
-    @property
-    def method_name(self):
-        return 'tar'
+    method_name = "tar"
 
     @property
     def _archive_file(self):
-        """Return the compress archive path"""
-        return os.path.join(self.repo, self.name + '.tar.gz')
+
+        if isinstance(self.manager, BackupManager) and settings_get("backup.compress_tar_archives"):
+            return os.path.join(self.repo, self.name + '.tar.gz')
+
+        f = os.path.join(self.repo, self.name + '.tar')
+        if os.path.exists(f + ".gz"):
+            f += ".gz"
+        return f
 
     def backup(self):
         """
@@ -1879,11 +1795,6 @@ class TarBackupMethod(BackupMethod):
 
         It adds the info.json in /home/yunohost.backup/archives and if the
         compress archive isn't located here, add a symlink to the archive to.
-
-        Exceptions:
-           backup_archive_open_failed -- Raised if we can't open the archive
-           backup_creation_failed     -- Raised if we can't write in the
-                                         compress archive
         """
 
         if not os.path.exists(self.repo):
@@ -1894,7 +1805,7 @@ class TarBackupMethod(BackupMethod):
 
         # Open archive file for writing
         try:
-            tar = tarfile.open(self._archive_file, "w:gz")
+            tar = tarfile.open(self._archive_file, "w:gz" if self._archive_file.endswith(".gz") else "w")
         except:
             logger.debug("unable to open '%s' for writing",
                          self._archive_file, exc_info=1)
@@ -1918,26 +1829,20 @@ class TarBackupMethod(BackupMethod):
 
         # If backuped to a non-default location, keep a symlink of the archive
         # to that location
-        link = os.path.join(ARCHIVES_PATH, self.name + '.tar.gz')
+        link = os.path.join(ARCHIVES_PATH, self.name + '.tar')
         if not os.path.isfile(link):
             os.symlink(self._archive_file, link)
 
     def mount(self):
         """
-        Mount the archive. We avoid copy to be able to restore on system without
-        too many space.
-
-        Exceptions:
-        backup_archive_open_failed -- Raised if the archive can't be open
-        backup_archive_corrupted -- Raised if the archive appears corrupted
-        backup_archive_cant_retrieve_info_json -- If the info.json file can't be retrieved
+        Mount the archive. We avoid intermediate copies to be able to restore on system with low free space.
         """
         super(TarBackupMethod, self).mount()
 
         # Mount the tarball
         logger.debug(m18n.n("restore_extracting"))
         try:
-            tar = tarfile.open(self._archive_file, "r:gz")
+            tar = tarfile.open(self._archive_file, "r:gz" if self._archive_file.endswith(".gz") else "r")
         except:
             logger.debug("cannot open backup archive '%s'",
                          self._archive_file, exc_info=1)
@@ -2006,32 +1911,12 @@ class TarBackupMethod(BackupMethod):
         tar.close()
 
     def copy(self, file, target):
-        tar = tarfile.open(self._archive_file, "r:gz")
+        tar = tarfile.open(self._archive_file, "r:gz" if self._archive_file.endswith(".gz") else "r")
         file_to_extract = tar.getmember(file)
         # Remove the path
         file_to_extract.name = os.path.basename(file_to_extract.name)
         tar.extract(file_to_extract, path=target)
         tar.close()
-
-
-class BorgBackupMethod(BackupMethod):
-
-    @property
-    def method_name(self):
-        return 'borg'
-
-    def backup(self):
-        """ Backup prepared files with borg """
-        super(CopyBackupMethod, self).backup()
-
-        # TODO run borg create command
-        raise YunohostError('backup_borg_not_implemented')
-
-    def mount(self, mnt_path):
-        raise YunohostError('backup_borg_not_implemented')
-
-    def copy(self, file, target):
-        raise YunohostError('backup_borg_not_implemented')
 
 
 class CustomBackupMethod(BackupMethod):
@@ -2042,21 +1927,16 @@ class CustomBackupMethod(BackupMethod):
     /etc/yunohost/hooks.d/backup_method/
     """
 
+    method_name = "custom"
+
     def __init__(self, manager, repo=None, method=None, **kwargs):
         super(CustomBackupMethod, self).__init__(manager, repo)
         self.args = kwargs
         self.method = method
         self._need_mount = None
 
-    @property
-    def method_name(self):
-        return 'borg'
-
     def need_mount(self):
         """Call the backup_method hook to know if we need to organize files
-
-        Exceptions:
-        backup_custom_need_mount_error -- Raised if the hook failed
         """
         if self._need_mount is not None:
             return self._need_mount
@@ -2071,9 +1951,6 @@ class CustomBackupMethod(BackupMethod):
     def backup(self):
         """
         Launch a custom script to backup
-
-        Exceptions:
-        backup_custom_backup_error -- Raised if the custom script failed
         """
 
         ret = hook_callback('backup_method', [self.method],
@@ -2087,9 +1964,6 @@ class CustomBackupMethod(BackupMethod):
     def mount(self):
         """
         Launch a custom script to mount the custom archive
-
-        Exceptions:
-        backup_custom_mount_error -- Raised if the custom script failed
         """
         super(CustomBackupMethod, self).mount()
         ret = hook_callback('backup_method', [self.method],
@@ -2111,7 +1985,7 @@ class CustomBackupMethod(BackupMethod):
 #
 
 def backup_create(name=None, description=None, methods=[],
-                  output_directory=None, no_compress=False,
+                  output_directory=None,
                   system=[], apps=[]):
     """
     Create a backup local archive
@@ -2121,7 +1995,6 @@ def backup_create(name=None, description=None, methods=[],
         description -- Short description of the backup
         method -- Method of backup to use
         output_directory -- Output directory for the backup
-        no_compress -- Do not create an archive file
         system -- List of system elements to backup
         apps -- List of application names to backup
     """
@@ -2136,6 +2009,10 @@ def backup_create(name=None, description=None, methods=[],
     if name and name in backup_list()['archives']:
         raise YunohostError('backup_archive_name_exists')
 
+    # By default we backup using the tar method
+    if not methods:
+        methods = ['tar']
+
     # Validate output_directory option
     if output_directory:
         output_directory = os.path.abspath(output_directory)
@@ -2146,20 +2023,12 @@ def backup_create(name=None, description=None, methods=[],
                      output_directory):
             raise YunohostError('backup_output_directory_forbidden')
 
+    if "copy" in methods:
+        if not output_directory:
+            raise YunohostError('backup_output_directory_required')
         # Check that output directory is empty
-        if os.path.isdir(output_directory) and no_compress and \
-                os.listdir(output_directory):
-
+        elif os.path.isdir(output_directory) and os.listdir(output_directory):
             raise YunohostError('backup_output_directory_not_empty')
-    elif no_compress:
-        raise YunohostError('backup_output_directory_required')
-
-    # Define methods (retro-compat)
-    if not methods:
-        if no_compress:
-            methods = ['copy']
-        else:
-            methods = ['tar']  # In future, borg will be the default actions
 
     # If no --system or --apps given, backup everything
     if system is None and apps is None:
@@ -2173,23 +2042,12 @@ def backup_create(name=None, description=None, methods=[],
     # Create yunohost archives directory if it does not exists
     _create_archive_dir()
 
-    # Prepare files to backup
-    if no_compress:
-        backup_manager = BackupManager(name, description,
-                                       work_dir=output_directory)
-    else:
-        backup_manager = BackupManager(name, description)
+    # Initialize backup manager
 
-    # Add backup methods
-    if output_directory:
-        methods = BackupMethod.create(methods, backup_manager, output_directory)
-    else:
-        methods = BackupMethod.create(methods, backup_manager)
-
-    for method in methods:
-        backup_manager.add(method)
+    backup_manager = BackupManager(name, description, methods=methods, work_dir=output_directory)
 
     # Add backup targets (system and apps)
+
     backup_manager.set_system_targets(system)
     backup_manager.set_apps_targets(apps)
 
@@ -2293,9 +2151,17 @@ def backup_list(with_info=False, human_readable=False):
 
     """
     # Get local archives sorted according to last modification time
-    archives = sorted(glob("%s/*.tar.gz" % ARCHIVES_PATH), key=lambda x: os.path.getctime(x))
+    # (we do a realpath() to resolve symlinks)
+    archives = glob("%s/*.tar.gz" % ARCHIVES_PATH) + glob("%s/*.tar" % ARCHIVES_PATH)
+    archives = set([os.path.realpath(archive) for archive in archives])
+    archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
-    archives = [os.path.basename(f)[:-len(".tar.gz")] for f in archives]
+    def remove_extension(f):
+        if f.endswith(".tar.gz"):
+            return os.path.basename(f)[:-len(".tar.gz")]
+        else:
+            return os.path.basename(f)[:-len(".tar")]
+    archives = [remove_extension(f) for f in archives]
 
     if with_info:
         d = OrderedDict()
@@ -2323,11 +2189,13 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
-    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
+    archive_file = '%s/%s.tar' % (ARCHIVES_PATH, name)
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
-        raise YunohostError('backup_archive_name_unknown', name=name)
+        archive_file += ".gz"
+        if not os.path.lexists(archive_file):
+            raise YunohostError('backup_archive_name_unknown', name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2341,7 +2209,7 @@ def backup_info(name, with_details=False, human_readable=False):
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
     if not os.path.exists(info_file):
-        tar = tarfile.open(archive_file, "r:gz")
+        tar = tarfile.open(archive_file, "r:gz" if archive_file.endswith(".gz") else "r")
         info_dir = info_file + '.d'
 
         try:
@@ -2377,7 +2245,7 @@ def backup_info(name, with_details=False, human_readable=False):
     # Retrieve backup size
     size = info.get('size', 0)
     if not size:
-        tar = tarfile.open(archive_file, "r:gz")
+        tar = tarfile.open(archive_file, "r:gz" if archive_file.endswith(".gz") else "r")
         size = reduce(lambda x, y: getattr(x, 'size', x) + getattr(y, 'size', y),
                       tar.getmembers())
         tar.close()
@@ -2437,7 +2305,9 @@ def backup_delete(name):
 
     hook_callback('pre_backup_delete', args=[name])
 
-    archive_file = '%s/%s.tar.gz' % (ARCHIVES_PATH, name)
+    archive_file = '%s/%s.tar' % (ARCHIVES_PATH, name)
+    if os.path.exists(archive_file + ".gz"):
+        archive_file += '.gz'
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
     files_to_delete = [archive_file, info_file]

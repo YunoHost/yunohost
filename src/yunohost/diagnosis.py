@@ -27,7 +27,6 @@
 import re
 import os
 import time
-import smtplib
 
 from moulinette import m18n, msettings
 from moulinette.utils import log
@@ -177,7 +176,7 @@ def diagnosis_run(categories=[], force=False, except_if_never_ran_yet=False, ema
             code, report = hook_exec(path, args={"force": force}, env=None)
         except Exception:
             import traceback
-            logger.error(m18n.n("diagnosis_failed_for_category", category=category, error='\n'+traceback.format_exc()))
+            logger.error(m18n.n("diagnosis_failed_for_category", category=category, error='\n' + traceback.format_exc()))
         else:
             diagnosed_categories.append(category)
             if report != {}:
@@ -404,11 +403,11 @@ class Diagnoser():
         Diagnoser.i18n(new_report)
         add_ignore_flag_to_issues(new_report)
 
-        errors   = [item for item in new_report["items"] if item["status"] == "ERROR" and not item["ignored"]]
+        errors = [item for item in new_report["items"] if item["status"] == "ERROR" and not item["ignored"]]
         warnings = [item for item in new_report["items"] if item["status"] == "WARNING" and not item["ignored"]]
         errors_ignored = [item for item in new_report["items"] if item["status"] == "ERROR" and item["ignored"]]
         warning_ignored = [item for item in new_report["items"] if item["status"] == "WARNING" and item["ignored"]]
-        ignored_msg = " " + m18n.n("diagnosis_ignored_issues", nb_ignored=len(errors_ignored+warning_ignored)) if errors_ignored or warning_ignored else ""
+        ignored_msg = " " + m18n.n("diagnosis_ignored_issues", nb_ignored=len(errors_ignored + warning_ignored)) if errors_ignored or warning_ignored else ""
 
         if errors and warnings:
             logger.error(m18n.n("diagnosis_found_errors_and_warnings", errors=len(errors), warnings=len(warnings), category=new_report["description"]) + ignored_msg)
@@ -478,6 +477,7 @@ class Diagnoser():
             meta_data.update(item.get("data", {}))
 
             html_tags = re.compile(r'<[^>]+>')
+
             def m18n_(info):
                 if not isinstance(info, tuple) and not isinstance(info, list):
                     info = (info, {})
@@ -486,7 +486,7 @@ class Diagnoser():
                 # In cli, we remove the html tags
                 if msettings.get("interface") != "api" or force_remove_html_tags:
                     s = s.replace("<cmd>", "'").replace("</cmd>", "'")
-                    s = html_tags.sub('', s.replace("<br>","\n"))
+                    s = html_tags.sub('', s.replace("<br>", "\n"))
                 else:
                     s = s.replace("<cmd>", "<code class='cmd'>").replace("</cmd>", "</code>")
                     # Make it so that links open in new tabs
@@ -583,6 +583,7 @@ Subject: %s
 %s
 """ % (from_, to_, subject_, disclaimer, content)
 
+    import smtplib
     smtp = smtplib.SMTP("localhost")
     smtp.sendmail(from_, [to_], message)
     smtp.quit()

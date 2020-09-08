@@ -1,3 +1,46 @@
+yunohost (4.1.0) testing; urgency=low
+
+  - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
+
+yunohost (4.0.7) stable; urgency=low
+
+  - [fix] Require explicitly php7.3-foo packages because in some cases Sury's php7.4- packages are installed and php7.3-fpm doesn't get installed ... (1288159a)
+  - [fix] Make sure app nginx confs do not prevent the loading of /yunohost/sso (#1044)
+
+  Thanks to all contributors <3 ! (Kayou, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 04 Sep 2020 14:32:07 +0200
+
+yunohost (4.0.6.1) stable; urgency=low
+
+  - [fix] Stupid syntax issue in dovecot conf
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 01 Sep 2020 02:00:19 +0200
+
+yunohost (4.0.6) stable; urgency=low
+
+  - [mod] Add apt conf regen hook to manage sury pinning policy (#1041)
+  - [fix] Use proper templating + handle xmpp-upload.domain.tld in dnsmasq conf (bc7344b6, 503e08b5)
+  - [fix] Explicitly require php-fpm >= 7.3 ... (41813744)
+  - [i18n] Translations updated for Catalan, French, German
+
+  Thanks to all contributors <3 ! (Christian W., Titus PiJean, xaloc33)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 31 Aug 2020 19:57:24 +0200
+
+yunohost (4.0.5) testing; urgency=low
+
+  - [enh] Update postfix, dovecot, nginx configuration according to Mozilla guidelines (Buster + DH params) (f3a4334a, 89bcf1ba, 2d661737)
+  - [enh] Update acme_tiny to 4.1.0 (#1037)
+  - [fix] ref to variable in i18n string (c.f. issue 1647) (7b1f02e0)
+  - [fix] Recursively enforce ownership for rspamd (8454f2ec)
+  - [fix] Stupid encoding issue when fetching service description (6ec0e7b6)
+  - [fix] Misc fixes for CI (ca0a42f2, 485c65a9, #1038, a891d20a)
+
+  Thanks to all contributors <3 ! (Eric G., Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Aug 2020 19:32:27 +0200
+
 yunohost (4.0.4) stable; urgency=low
 
   - Debugging and robustness improvements for postgresql 9.6 -> 11 and xtables->nftables migrations (accc2da4, 59bd7d66, 4cb6f7fd, 4b14402c)
