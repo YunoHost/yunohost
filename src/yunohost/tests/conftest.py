@@ -18,9 +18,11 @@ def clone_test_app(request):
     else:
         os.system("cd %s/apps && git pull > /dev/null 2>&1" % cwd)
 
+
 def get_test_apps_dir():
     cwd = os.path.split(os.path.realpath(__file__))[0]
     return os.path.join(cwd, "apps")
+
 
 @contextmanager
 def message(mocker, key, **kwargs):
@@ -36,7 +38,6 @@ def raiseYunohostError(mocker, key, **kwargs):
     assert e_info._excinfo[1].key == key
     if kwargs:
         assert e_info._excinfo[1].kwargs == kwargs
-
 
 
 def pytest_addoption(parser):
@@ -56,11 +57,14 @@ def new_translate(self, key, *args, **kwargs):
         raise KeyError("Unable to retrieve key %s for default locale !" % key)
 
     return old_translate(self, key, *args, **kwargs)
+
+
 moulinette.core.Translator.translate = new_translate
 
 
 def new_m18nn(self, key, *args, **kwargs):
     return self._namespaces[self._current_namespace].translate(key, *args, **kwargs)
+
 
 moulinette.core.Moulinette18n.n = new_m18nn
 

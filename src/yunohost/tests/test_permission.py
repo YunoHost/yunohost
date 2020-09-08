@@ -1,14 +1,15 @@
+import socket
 import requests
 import pytest
 import os
 
 from conftest import message, raiseYunohostError, get_test_apps_dir
 
-from yunohost.app import app_install, app_remove, app_change_url, app_list, app_map, _installed_apps
+from yunohost.app import app_install, app_remove, app_change_url, app_map, _installed_apps
 from yunohost.user import user_list, user_create, user_delete, \
-                          user_group_list, user_group_delete
+    user_group_list, user_group_delete
 from yunohost.permission import user_permission_update, user_permission_list, user_permission_reset, \
-                                permission_create, permission_delete, permission_url
+    permission_create, permission_delete, permission_url
 from yunohost.domain import _get_maindomain
 
 # Get main domain
@@ -17,9 +18,9 @@ dummy_password = "test123Ynh"
 
 # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
 # Mainly used for 'can_access_webpage' function
-import socket
 
 prv_getaddrinfo = socket.getaddrinfo
+
 
 def clean_user_groups_permission():
     for u in user_list()['users']:
@@ -44,6 +45,7 @@ def setup_function(function):
     # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
     # Mainly used for 'can_access_webpage' function
     dns_cache = {(maindomain, 443, 0, 1): [(2, 1, 6, '', ('127.0.0.1', 443))]}
+
     def new_getaddrinfo(*args):
         try:
             return dns_cache[args]
@@ -370,16 +372,6 @@ def test_permission_reset_idempotency():
     assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
 
 
-def test_permission_reset_idempotency():
-    # Reset permission
-    user_permission_reset("blog.main")
-    user_permission_reset("blog.main")
-
-    res = user_permission_list(full=True)['permissions']
-    assert res['blog.main']['allowed'] == ["all_users"]
-    assert set(res['blog.main']['corresponding_users']) == set(["alice", "bob"])
-
-
 #
 # Error on update function
 #
@@ -406,6 +398,7 @@ def test_permission_redefine_url():
 
     res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["url"] == "/pwet"
+
 
 def test_permission_remove_url():
     permission_url("blog.main", url=None)
@@ -499,9 +492,9 @@ def test_permission_app_propagation_on_ssowat():
     # alice gotta be allowed on the main permission to access the admin tho
     user_permission_update("permissions_app.main", remove="bob", add="all_users")
 
-    assert not can_access_webpage(app_webroot+"/admin", logged_as=None)
-    assert can_access_webpage(app_webroot+"/admin", logged_as="alice")
-    assert not can_access_webpage(app_webroot+"/admin", logged_as="bob")
+    assert not can_access_webpage(app_webroot + "/admin", logged_as=None)
+    assert can_access_webpage(app_webroot + "/admin", logged_as="alice")
+    assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
 
 
 def test_permission_legacy_app_propagation_on_ssowat():

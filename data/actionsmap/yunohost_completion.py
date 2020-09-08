@@ -15,14 +15,16 @@ THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIONSMAP_FILE = THIS_SCRIPT_DIR + '/yunohost.yml'
 BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + '/../bash-completion.d/yunohost'
 
+
 def get_dict_actions(OPTION_SUBTREE, category):
     ACTIONS = [action for action in OPTION_SUBTREE[category]["actions"].keys()
-                if not action.startswith('_')]
+               if not action.startswith('_')]
     ACTIONS_STR = '{}'.format(' '.join(ACTIONS))
 
-    DICT = { "actions_str": ACTIONS_STR }
+    DICT = {"actions_str": ACTIONS_STR}
 
     return DICT
+
 
 with open(ACTIONSMAP_FILE, 'r') as stream:
 
@@ -40,10 +42,10 @@ with open(ACTIONSMAP_FILE, 'r') as stream:
         ACTIONS_DICT[category]["subcategories_str"] = ""
 
         if "subcategories" in OPTION_TREE[category].keys():
-            SUBCATEGORIES = [ subcategory for subcategory in OPTION_TREE[category]["subcategories"].keys() ]
+            SUBCATEGORIES = [subcategory for subcategory in OPTION_TREE[category]["subcategories"].keys()]
 
             SUBCATEGORIES_STR = '{}'.format(' '.join(SUBCATEGORIES))
-            
+
             ACTIONS_DICT[category]["subcategories_str"] = SUBCATEGORIES_STR
 
             for subcategory in SUBCATEGORIES:

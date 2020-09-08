@@ -654,7 +654,6 @@ def _tail(file, n):
     avg_line_length = 74
     to_read = n
 
-
     try:
         if file.endswith(".gz"):
             import gzip
