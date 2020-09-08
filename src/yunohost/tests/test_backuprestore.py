@@ -387,13 +387,13 @@ def test_backup_with_different_output_directory(mocker):
 
 
 @pytest.mark.clean_opt_dir
-def test_backup_with_no_compress(mocker):
+def test_backup_using_copy_method(mocker):
 
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(system=["conf_nginx"], apps=None,
                       output_directory="/opt/test_backup_output_directory",
-                      no_compress=True,
+                      methods=["copy"],
                       name="backup")
 
     assert os.path.exists("/opt/test_backup_output_directory/info.json")

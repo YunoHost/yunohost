@@ -1976,7 +1976,7 @@ class CustomBackupMethod(BackupMethod):
 #
 
 def backup_create(name=None, description=None, methods=[],
-                  output_directory=None, no_compress=False,
+                  output_directory=None,
                   system=[], apps=[]):
     """
     Create a backup local archive
@@ -1986,7 +1986,6 @@ def backup_create(name=None, description=None, methods=[],
         description -- Short description of the backup
         method -- Method of backup to use
         output_directory -- Output directory for the backup
-        no_compress -- Do not create an archive file
         system -- List of system elements to backup
         apps -- List of application names to backup
     """
@@ -2001,6 +2000,10 @@ def backup_create(name=None, description=None, methods=[],
     if name and name in backup_list()['archives']:
         raise YunohostError('backup_archive_name_exists')
 
+    # By default we backup using the tar method
+    if not methods:
+        methods = ['tar']
+
     # Validate output_directory option
     if output_directory:
         output_directory = os.path.abspath(output_directory)
@@ -2011,20 +2014,12 @@ def backup_create(name=None, description=None, methods=[],
                      output_directory):
             raise YunohostError('backup_output_directory_forbidden')
 
+    if "copy" in methods:
+        if not output_directory:
+            raise YunohostError('backup_output_directory_required')
         # Check that output directory is empty
-        if os.path.isdir(output_directory) and no_compress and \
-                os.listdir(output_directory):
-
+        elif os.path.isdir(output_directory) and os.listdir(output_directory):
             raise YunohostError('backup_output_directory_not_empty')
-    elif no_compress:
-        raise YunohostError('backup_output_directory_required')
-
-    # Define methods (retro-compat)
-    if not methods:
-        if no_compress:
-            methods = ['copy']
-        else:
-            methods = ['tar']
 
     # If no --system or --apps given, backup everything
     if system is None and apps is None:
@@ -2038,18 +2033,14 @@ def backup_create(name=None, description=None, methods=[],
     # Create yunohost archives directory if it does not exists
     _create_archive_dir()
 
-    # Prepare files to backup
-    if no_compress:
-        backup_manager = BackupManager(name, description,
-                                       work_dir=output_directory)
-    else:
-        backup_manager = BackupManager(name, description)
+    # Initialize backup manager
 
+    backup_manager = BackupManager(name, description, work_dir=output_directory)
     for method in methods:
         backup_manager.methods += BackupMethod.create(method, backup_manager, repo=output_directory))
 
-
     # Add backup targets (system and apps)
+
     backup_manager.set_system_targets(system)
     backup_manager.set_apps_targets(apps)
 
