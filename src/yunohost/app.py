@@ -2687,7 +2687,7 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
         if question.default is None:
             root_mail = "root@%s" % _get_maindomain()
             for user in question.choices.keys():
-                if root_mail in user_info(user)["mail-aliases"]:
+                if root_mail in user_info(user).get("mail-aliases", []):
                     question.default = user
                     break
 
