@@ -2679,7 +2679,8 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "user"
 
     def parse_question(self, question, user_answers):
-        from yunohost.user import user_list
+        from yunohost.user import user_list, user_info
+        from yunohost.domain import _get_maindomain
 
         question = super(UserArgumentParser, self).parse_question(question, user_answers)
         question.choices = user_list()["users"]
