@@ -67,9 +67,9 @@ ynh_backup() {
     then
         if [ $BACKUP_CORE_ONLY -eq 1 ]
         then
-            ynh_print_warn --message="$src_path will not be saved, because 'BACKUP_CORE_ONLY' is set."
+            ynh_print_info --message="$src_path will not be saved, because 'BACKUP_CORE_ONLY' is set."
         else
-            ynh_print_warn --message="$src_path will not be saved, because 'do_not_backup_data' is set."
+            ynh_print_info --message="$src_path will not be saved, because 'do_not_backup_data' is set."
         fi
         return 0
     fi
