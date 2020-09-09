@@ -775,11 +775,10 @@ def test_ssowat_conf():
     permissions = res['permissions']
     assert "wiki.main" in permissions
     assert "blog.main" in permissions
-    assert "blog.api" in permissions
+    assert "blog.api" not in permissions  # blog.api has no url/additional url defined and therefore is not added to ssowat conf
 
     assert set(permissions['wiki.main']['users']) == {'alice', 'bob'}
     assert permissions['blog.main']['users'] == ['alice']
-    assert permissions['blog.api']['users'] == []
 
     assert permissions['wiki.main']['uris'][0] == maindomain + "/wiki"
 
@@ -787,26 +786,21 @@ def test_ssowat_conf():
                                                      maindomain + "/wiki/whatever",
                                                      maindomain + "/wiki/idontnow"}
     assert permissions['blog.main']['uris'] == [maindomain + "/blog"]
-    assert permissions['blog.api']['uris'] == []
 
     assert permissions['wiki.main']['public'] == False
     assert permissions['blog.main']['public'] == False
-    assert permissions['blog.api']['public'] == True
 
     assert permissions['wiki.main']['auth_header'] == False
     assert permissions['blog.main']['auth_header'] == True
-    assert permissions['blog.api']['auth_header'] == True
 
     assert permissions['wiki.main']['label'] == "Wiki"
     assert permissions['blog.main']['label'] == "Blog"
-    assert permissions['blog.api']['label'] == "Blog (api)"
 
     assert permissions['wiki.main']['show_tile'] == True
     assert permissions['blog.main']['show_tile'] == False
-    assert permissions['blog.api']['show_tile'] == False
 
 
-def test_ssowat_conf_show_tile_impossible():
+def test_show_tile_cant_be_enabled():
     _permission_create_with_dummy_app(permission="site.main", auth_header=False,
                                       label="Site", show_tile=True,
                                       allowed=["all_users"], protected=False, sync_perm=False,
@@ -817,10 +811,7 @@ def test_ssowat_conf_show_tile_impossible():
                                       allowed=["all_users"], protected=False, sync_perm=True,
                                       domain=maindomain, path="/web")
 
-    with open("/etc/ssowat/conf.json") as f:
-        res = json.load(f)
-
-    permissions = res['permissions']
+    permissions = user_permission_list(full=True, full_path=False)['permissions']
 
     assert permissions['site.main']['show_tile'] == False
     assert permissions['web.main']['show_tile'] == False

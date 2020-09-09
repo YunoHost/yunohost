@@ -482,7 +482,7 @@ def _check_and_sanitize_permission_path(url, app_main_path, permission):
             try:
                 re.compile(path)
             except Exception:
-                raise YunohostError('invalid_regex', regex=regex)
+                raise YunohostError('invalid_regex', regex=path)
 
         return 're:' + domain + path
 
