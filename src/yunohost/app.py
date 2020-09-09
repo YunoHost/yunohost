@@ -91,7 +91,7 @@ def app_catalog(full=False, with_categories=False):
                 "level": infos["level"],
             }
         else:
-            infos["manifest"]["arguments"] = _set_default_ask_questions(infos["manifest"]["arguments"])
+            infos["manifest"]["arguments"] = _set_default_ask_questions(infos["manifest"].get("arguments", {}))
 
     # Trim info for categories if not using --full
     for category in catalog["categories"]:
@@ -170,7 +170,7 @@ def app_info(app, full=False):
         return ret
 
     ret["manifest"] = local_manifest
-    ret["manifest"]["arguments"] = _set_default_ask_questions(ret["manifest"]["arguments"])
+    ret["manifest"]["arguments"] = _set_default_ask_questions(ret["manifest"].get("arguments", {}))
     ret['settings'] = settings
 
     absolute_app_name, _ = _parse_app_instance_name(app)
@@ -2134,12 +2134,6 @@ def _get_manifest_of_app(path):
 
         manifest = manifest_toml.copy()
 
-        if "arguments" not in manifest:
-            return manifest
-
-        if "install" not in manifest["arguments"]:
-            return manifest
-
         install_arguments = []
         for name, values in manifest_toml.get("arguments", {}).get("install", {}).items():
             args = values.copy()
@@ -2154,7 +2148,7 @@ def _get_manifest_of_app(path):
     else:
         raise YunohostError("There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed." % path, raw_msg=True)
 
-    manifest["arguments"] = _set_default_ask_questions(manifest["arguments"])
+    manifest["arguments"] = _set_default_ask_questions(manifest.get("arguments", {}))
     return manifest
 
 
@@ -2571,7 +2565,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
 
                     root_mail = "root@%s" % _get_maindomain()
                     for user in users.keys():
-                        if root_mail in user_info(user)["mail-aliases"]:
+                        if root_mail in user_info(user).get("mail-aliases", []):
                             question_default = user
                             break
 
