@@ -600,7 +600,6 @@
     "user_unknown": "Unknown user: {user:s}",
     "user_update_failed": "Could not update user {user}: {error}",
     "user_updated": "User info changed",
-    "users_available": "Available users:",
     "yunohost_already_installed": "YunoHost is already installed",
     "yunohost_ca_creation_failed": "Could not create certificate authority",
     "yunohost_ca_creation_success": "Local certification authority created.",

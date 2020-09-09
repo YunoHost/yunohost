@@ -883,7 +883,8 @@ def test_parse_args_in_yunohost_format_user():
     expected_result = OrderedDict({"some_user": (username, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_user_two_users():
@@ -913,13 +914,15 @@ def test_parse_args_in_yunohost_format_user_two_users():
     expected_result = OrderedDict({"some_user": (other_user, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
     answers = {"some_user": username}
     expected_result = OrderedDict({"some_user": (username, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
@@ -1008,13 +1011,14 @@ def test_parse_args_in_yunohost_format_user_two_users_default_input():
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        expected_result = OrderedDict({"some_user": (username, "user")})
-        with patch.object(msignals, "prompt", return_value=username):
-            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            expected_result = OrderedDict({"some_user": (username, "user")})
+            with patch.object(msignals, "prompt", return_value=username):
+                assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
-        expected_result = OrderedDict({"some_user": (other_user, "user")})
-        with patch.object(msignals, "prompt", return_value=other_user):
-            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+            expected_result = OrderedDict({"some_user": (other_user, "user")})
+            with patch.object(msignals, "prompt", return_value=other_user):
+                assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_app_empty():

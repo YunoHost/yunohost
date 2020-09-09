@@ -2715,6 +2715,7 @@ class AppArgumentParser(YunoHostArgumentFormatParser):
 
 
 class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "display_text"
 
     def parse(self, question, user_answers):
         print(question["ask"])
