@@ -8,7 +8,7 @@ from collections import OrderedDict
 from moulinette import msignals
 
 from yunohost import domain, user, app
-from yunohost.app import _parse_args_in_yunohost_format
+from yunohost.app import _parse_args_in_yunohost_format, PasswordArgumentParser
 from yunohost.utils.error import YunohostError
 
 
@@ -70,7 +70,6 @@ def test_parse_args_in_yunohost_format_string_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # that shit should work x(
 def test_parse_args_in_yunohost_format_string_input_no_ask():
     questions = [{"name": "some_string", }]
     answers = {}
@@ -96,7 +95,6 @@ def test_parse_args_in_yunohost_format_string_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should work without ask
 def test_parse_args_in_yunohost_format_string_optional_with_input_without_ask():
     questions = [{"name": "some_string", "optional": True, }]
     answers = {}
@@ -237,7 +235,6 @@ def test_parse_args_in_yunohost_format_password_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # that shit should work x(
 def test_parse_args_in_yunohost_format_password_input_no_ask():
     questions = [{"name": "some_password", "type": "password", }]
     answers = {}
@@ -250,8 +247,9 @@ def test_parse_args_in_yunohost_format_password_input_no_ask():
 def test_parse_args_in_yunohost_format_password_no_input_optional():
     questions = [{"name": "some_password", "type": "password", "optional": True, }]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("", "password")})
-    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
 
 
 def test_parse_args_in_yunohost_format_password_optional_with_input():
@@ -270,7 +268,6 @@ def test_parse_args_in_yunohost_format_password_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should work without ask
 def test_parse_args_in_yunohost_format_password_optional_with_input_without_ask():
     questions = [{"name": "some_password", "type": "password", "optional": True, }]
     answers = {}
@@ -280,7 +277,6 @@ def test_parse_args_in_yunohost_format_password_optional_with_input_without_ask(
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should raises
 def test_parse_args_in_yunohost_format_password_no_input_default():
     questions = [
         {
@@ -364,6 +360,39 @@ def test_parse_args_in_yunohost_format_password_input_test_ask_with_help():
         assert help_text in prompt.call_args[0][0]
 
 
+def test_parse_args_in_yunohost_format_password_bad_chars():
+    questions = [
+        {
+            "name": "some_password",
+            "type": "password",
+            "ask": "some question",
+            "example": "some_value",
+        }
+    ]
+
+    for i in PasswordArgumentParser.forbidden_chars:
+        with pytest.raises(YunohostError):
+            _parse_args_in_yunohost_format({"some_password": i * 8}, questions)
+
+
+def test_parse_args_in_yunohost_format_password_strong_enough():
+    questions = [
+        {
+            "name": "some_password",
+            "type": "password",
+            "ask": "some question",
+            "example": "some_value",
+        }
+    ]
+
+    with pytest.raises(YunohostError):
+        # too short
+        _parse_args_in_yunohost_format({"some_password": "a"}, questions)
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format({"some_password": "password"}, questions)
+
+
 def test_parse_args_in_yunohost_format_path():
     questions = [{"name": "some_path", "type": "path", }]
     answers = {"some_path": "some_value"}
@@ -388,7 +417,6 @@ def test_parse_args_in_yunohost_format_path_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # that shit should work x(
 def test_parse_args_in_yunohost_format_path_input_no_ask():
     questions = [{"name": "some_path", "type": "path", }]
     answers = {}
@@ -416,7 +444,6 @@ def test_parse_args_in_yunohost_format_path_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # this should work without ask
 def test_parse_args_in_yunohost_format_path_optional_with_input_without_ask():
     questions = [{"name": "some_path", "type": "path", "optional": True, }]
     answers = {}
@@ -604,11 +631,10 @@ def test_parse_args_in_yunohost_format_boolean_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # we should work
 def test_parse_args_in_yunohost_format_boolean_input_no_ask():
     questions = [{"name": "some_boolean", "type": "boolean", }]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": ("some_value", "boolean")})
+    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
     with patch.object(msignals, "prompt", return_value="y"):
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -660,7 +686,6 @@ def test_parse_args_in_yunohost_format_boolean_no_input_default():
     assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-@pytest.mark.skip  # we should raise
 def test_parse_args_in_yunohost_format_boolean_bad_default():
     questions = [
         {
@@ -704,16 +729,17 @@ def test_parse_args_in_yunohost_format_boolean_input_test_ask_with_default():
 
 
 def test_parse_args_in_yunohost_format_domain_empty():
-    questions = [{"name": "some_domain", "type": "domain", }]
+    questions = [{"name": "some_domain", "type": "domain",}]
+    main_domain = "my_main_domain.com"
+    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
     answers = {}
 
     with patch.object(
         domain, "_get_maindomain", return_value="my_main_domain.com"
     ), patch.object(
-        domain, "domain_list", return_value={"domains": ["my_main_domain.com"]}
+        domain, "domain_list", return_value={"domains": [main_domain]}
     ):
-        with pytest.raises(YunohostError):
-            _parse_args_in_yunohost_format(answers, questions)
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_domain():
@@ -768,7 +794,6 @@ def test_parse_args_in_yunohost_format_domain_two_domains_wrong_answer():
             _parse_args_in_yunohost_format(answers, questions)
 
 
-@pytest.mark.skip  # XXX should work
 def test_parse_args_in_yunohost_format_domain_two_domains_default_no_ask():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
@@ -858,7 +883,8 @@ def test_parse_args_in_yunohost_format_user():
     expected_result = OrderedDict({"some_user": (username, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_user_two_users():
@@ -888,13 +914,15 @@ def test_parse_args_in_yunohost_format_user_two_users():
     expected_result = OrderedDict({"some_user": (other_user, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
     answers = {"some_user": username}
     expected_result = OrderedDict({"some_user": (username, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
@@ -983,13 +1011,14 @@ def test_parse_args_in_yunohost_format_user_two_users_default_input():
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        expected_result = OrderedDict({"some_user": (username, "user")})
-        with patch.object(msignals, "prompt", return_value=username):
-            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+        with patch.object(user, "user_info", return_value={}):
+            expected_result = OrderedDict({"some_user": (username, "user")})
+            with patch.object(msignals, "prompt", return_value=username):
+                assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
-        expected_result = OrderedDict({"some_user": (other_user, "user")})
-        with patch.object(msignals, "prompt", return_value=other_user):
-            assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+            expected_result = OrderedDict({"some_user": (other_user, "user")})
+            with patch.object(msignals, "prompt", return_value=other_user):
+                assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_app_empty():
@@ -1020,14 +1049,14 @@ def test_parse_args_in_yunohost_format_app_no_apps():
             _parse_args_in_yunohost_format(answers, questions)
 
 
-@pytest.mark.skip  # XXX should work
 def test_parse_args_in_yunohost_format_app_no_apps_optional():
     apps = []
     questions = [{"name": "some_app", "type": "app", "optional": True}]
     answers = {}
+    expected_result = OrderedDict({"some_app": (None, "app")})
 
     with patch.object(app, "app_list", return_value={"apps": apps}):
-        assert _parse_args_in_yunohost_format(answers, questions) == []
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_app():
