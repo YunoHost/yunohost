@@ -66,12 +66,26 @@ AcceptEnv LANG LC_*
 
 # SFTP stuff
 Subsystem sftp internal-sftp
-Match User sftpusers
-        ForceCommand internal-sftp
-        ChrootDirectory /home/%u
-        AllowTcpForwarding no
-        GatewayPorts no
-        X11Forwarding no
+
+# Disallow unallowed users to use SSH as a VPN-like or a X11 server
+AllowTcpForwarding no
+AllowStreamLocalForwarding no
+GatewayPorts no
+X11Forwarding no
+PermitTTY no
+PermitUserRC no
+
+# Chroot standard users
+ChrootDirectory /home/%u
+
+Match User admin,root
+    ChrootDirectory none
+    AllowTcpForwarding yes
+    GatewayPorts no
+    X11Forwarding yes
+    PermitTTY yes
+    PermitUserRC yes
+
 
 # root login is allowed on local networks
 # It's meant to be a backup solution in case LDAP is down and
